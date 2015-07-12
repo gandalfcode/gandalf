@@ -749,7 +749,6 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
         part.tlast     = t;
         part.dt        = mfv->Timestep(part);
         dt_min         = min(dt_min, part.dt);
-        //cout << "Meh? : " << i << "   " << dt_min << "    " << part.dt << endl;
       }
 
     }
@@ -902,6 +901,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.itype == dead) continue;
+        part.active    = true;
         part.level     = level_max_hydro;
         part.levelneib = level_max_hydro;
         part.nlast     = n;
@@ -917,6 +917,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
         dt              = part.dt;
         level           = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
         level           = max(level,0);
+        part.active     = true;
         part.level      = level;
         part.levelneib  = level;
         part.nlast      = n;
@@ -958,6 +959,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.itype == dead) continue;
+        part.active = false;
 
         // SPH particles whose timestep has been artificially reduced by Saitoh & Makino scheme.
         if (part.nlast == n && part.nstep != pow(2, level_step - part.level)) {
@@ -965,6 +967,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
           level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
           level = max(level, part.levelneib - level_diff_max);
 
+          part.active    = true;
           part.level     = max(part.level, level);
           part.levelneib = part.level;
           part.dt        = dt;
@@ -991,6 +994,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
           else
             part.level = last_level;
 
+          part.active    = true;
           part.levelneib = level;
           part.dt        = dt;
           part.nlast     = n;
@@ -1197,7 +1201,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
   timing->EndTimingSection("BLOCK_TIMESTEPS");
 
-  //return;
+  return;
 
 
   // Some validations
@@ -1249,5 +1253,29 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 template <int ndim>
 void MeshlessFVSimulation<ndim>::WriteExtraSinkOutput(void)
 {
+  return;
+}
+
+
+
+//=================================================================================================
+//  MeshlessFVSimulation::WriteExtraSinkOutput
+/// For any simulations loaded into memory via a snapshot file, all particle
+/// variables are converted into dimensionless code units here.
+//=================================================================================================
+template <int ndim>
+void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
+{
+  MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
+
+  for (int i=0; i<mfv->Nhydro; i++) {
+    MeshlessFVParticle<ndim> &part = partdata[i];
+    if (part.itype == dead) continue;
+    for (int var=0; var<ndim+2; var++) part.Qcons[var] += part.dQ[var];
+    mfv->ConvertQToConserved(part.volume, part.Qcons, part.Ucons);
+    mfv->ConvertConservedToPrimitive(part.Ucons, part.Wprim);
+    mfv->UpdateArrayVariables(part);
+  }
+
   return;
 }

@@ -64,6 +64,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   debug2("[MfvMusclSimulation::MainLoop]");
 
+  // Update all active cell counters in the tree
+  mfvneib->UpdateActiveParticleCounters(partdata, mfv);
+
 
   // Calculate all properties (and copy updated data to ghost particles)
   mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
@@ -73,7 +76,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
   mfv->CopyDataToGhosts(simbox, partdata);
 
-
   // Compute timesteps for all particles
   if (Nlevels == 1) {
     this->ComputeGlobalTimestep();
@@ -81,8 +83,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   else {
     this->ComputeBlockTimesteps();
   }
+  mfv->CopyDataToGhosts(simbox, partdata);
 
-  // Advance time variables
+  // Advance all global time variables
   n++;
   Nsteps++;
   t = t + timestep;
@@ -128,7 +131,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // Search for new ghost particles and create on local processor
   //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-  tghost = timestep*(FLOAT)(ntreebuildstep - 1);
+  tghost = timestep*(FLOAT) (ntreebuildstep - 1);
   mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
   mfv->CopyDataToGhosts(simbox, partdata);
   mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
@@ -143,6 +146,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // End-step terms for all SPH particles
   mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+
 
   /*this->CalculateDiagnostics();
   this->OutputDiagnostics();

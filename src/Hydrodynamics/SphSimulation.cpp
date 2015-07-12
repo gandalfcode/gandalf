@@ -166,7 +166,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
     sph->eos = new Barotropic2<ndim>(floatparams["temp0"], floatparams["mu_bar"],
                                      floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
   }
-  else if (gas_eos == "rad_ws") {
+  else if (gas_eos == "rad_ws" || gas_eos == "radws") {
     sph->eos = new Radws<ndim>(floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
   }
   else {
@@ -659,8 +659,8 @@ void SphSimulation<ndim>::MainLoop(void)
   if (n%integration_step == 0) Nfullsteps = Nfullsteps + 1;
 
   // Advance SPH and N-body particles' positions and velocities
-  uint->EnergyIntegration(n, sph->Nhydro,(FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
-  sphint->AdvanceParticles(n, sph->Nhydro,(FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
+  uint->EnergyIntegration(n, sph->Nhydro, (FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
+  sphint->AdvanceParticles(n, sph->Nhydro, (FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Check all boundary conditions

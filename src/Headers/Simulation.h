@@ -128,6 +128,7 @@ class SimulationBase
   virtual void PreSetupForPython(void)=0;
   virtual void ProcessParameters(void)=0;
   virtual void SetComFrame(void)=0;
+  virtual void FinaliseSimulation(void) {};
 
 
   // Input-output routines
@@ -639,6 +640,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
+  virtual void FinaliseSimulation(void);
 
   MeshlessFV<ndim> *mfv;                       ///< Meshless FV hydrodynamics algorithm pointer
   MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< ..

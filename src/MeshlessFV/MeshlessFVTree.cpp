@@ -788,7 +788,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         //-----------------------------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-          // Skip if (i) neighbour is a dead(e.g. accreted) particle (ii) same i.d. as current
+          // Skip if (i) neighbour is a dead (e.g. accreted) particle (ii) same i.d. as current
           // active particle, (iii) neighbour is on lower timestep level (i.e. timestep is shorter),
           // or (iv) neighbour is on same level as current particle but has larger id. value
           // (to only calculate each pair once).
@@ -833,7 +833,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         i = activelist[j];
         for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += activepart[j].dQ[k];
         for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += activepart[j].rdmdt[k];
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] = activepart[j].dQdt[k];
+        //for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] = activepart[j].dQdt[k];
         //for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] = activepart[j].rdmdt[k];
       }
 

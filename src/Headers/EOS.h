@@ -283,10 +283,9 @@ class MCRadiationEOS: public EOS<ndim>
 
 
 //=================================================================================================
-//  Class Adiabatic
-/// \brief   Adiabatic equation of state
-/// \details Adiabatic equation of state.  Requires integrating the energy
-///          equation parallel to the main dynamical quantities.
+//  Class Radws
+/// \brief   Equation of state for Stamatellos wt al. (2007) radiative cooling scheme
+/// \details ...
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=================================================================================================
@@ -308,7 +307,7 @@ class Radws : public EOS<ndim>
   FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
   FLOAT temp0;
-  const FLOAT mu_bar;
+  FLOAT mu_bar;
 
 };
 #endif

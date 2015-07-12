@@ -349,6 +349,7 @@ void SimulationBase::Run
   }
   //-----------------------------------------------------------------------------------------------
 
+  FinaliseSimulation();
   CalculateDiagnostics();
   OutputDiagnostics();
   UpdateDiagnostics();
@@ -421,6 +422,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
   // Calculate and process all diagnostic quantities
   if (t >= tend || Nsteps >= Ntarget) {
+    FinaliseSimulation();
     CalculateDiagnostics();
     OutputDiagnostics();
     UpdateDiagnostics();

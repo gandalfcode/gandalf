@@ -329,19 +329,22 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       Nneib = 0;
       for (j=0; j<Ntot; j++) {
         for (k=0; k<ndim+2; k++) neibdata[j].dQdt[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim+2; k++) neibdata[j].dQ[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim+2; k++) neibdata[j].dQ[k]   = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) neibdata[j].rdmdt[k]  = (FLOAT) 0.0;
       }
 
       // Compute distances and the reciprical between the current particle and all neighbours here
       //-------------------------------------------------------------------------------------------
       for (j=0; j<mfv->Nhydro + mfv->NPeriodicGhost; j++) {
 
-        // Skip if (i) neighbour is a dead(e.g. accreted) particle (ii) same i.d. as current
+        // Skip if (i) neighbour is a dead (e.g. accreted) particle (ii) same i.d. as current
         // active particle, (iii) neighbour is on lower timestep level (i.e. timestep is shorter),
         // or (iv) neighbour is on same level as current particle but has larger id. value
         // (to only calculate each pair once).
-        if (mfvdata[j].itype == dead || j == i || mfvdata[i].level < mfvdata[j].level ||
-            (j < i && mfvdata[i].level == mfvdata[j].level)) continue;
+        if (neibdata[j].itype == dead || j == i || mfvdata[i].level < neibdata[j].level ||
+            (j < i && mfvdata[i].level == neibdata[j].level)) continue;
+        assert(mfvdata[i].nstep <= neibdata[j].nstep);
+        assert(mfvdata[i].level >= neibdata[j].level);
 
         hrangesqdj = mfvdata[j].hrangesqd;
         for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
@@ -381,7 +384,6 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     {
       for (i=0; i<Nhydro; i++) {
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
-        //for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
       }
     }

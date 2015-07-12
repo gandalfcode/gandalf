@@ -115,7 +115,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     eos_type = energy_eqn;
   else if (stringparams["gas_eos"] == "constant_temp")
     eos_type = constant_temp;
-  else if (stringparams["gas_eos"] == "radws")
+  else if (stringparams["gas_eos"] == "rad_ws" || stringparams["gas_eos"] == "radws")
     eos_type = radws;
   else {
     string message = "Unrecognised eos parameter : gas_eos = " + simparams->stringparams["gas_eos"];
@@ -189,7 +189,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     uint = new EnergyPEC<ndim, GradhSphParticle>(floatparams["energy_mult"]);
   }
   else if (stringparams["energy_integration"] == "Radws" ||
-           stringparams["energy_integration"] == "radws") {
+           stringparams["energy_integration"] == "radws"||
+           stringparams["energy_integration"] == "rad_ws") {
     uint = new EnergyRadws<ndim, GradhSphParticle>
       (floatparams["energy_mult"], stringparams["radws_table"],
        floatparams["temp_ambient"], &simunits, sph->eos);

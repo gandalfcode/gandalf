@@ -27,12 +27,12 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
-#include "Sph.h"
-#include "SmoothingKernel.h"
-#include "SphIntegration.h"
-#include "Particle.h"
-#include "EOS.h"
 #include "Debug.h"
+#include "EOS.h"
+#include "Particle.h"
+#include "SmoothingKernel.h"
+#include "Sph.h"
+#include "SphIntegration.h"
 using namespace std;
 
 

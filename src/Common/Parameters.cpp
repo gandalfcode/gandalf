@@ -276,12 +276,13 @@ void Parameters::SetDefaultValues(void)
   floatparams["alpha_visc_min"] = 0.1;
   floatparams["beta_visc"] = 2.0;
 
-  // Riemann solver parameters
+  // Meshless Finite-Volume parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["riemann_solver"] = "exact";
   stringparams["slope_limiter"] = "springel2009";
   intparams["riemann_order"] = 1;
   intparams["zero_mass_flux"] = 0;
+  intparams["static_particles"] = 0;
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------

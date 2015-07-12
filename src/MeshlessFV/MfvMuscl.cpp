@@ -111,10 +111,10 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
 
     // Initialise all variables for this value of h
     iteration++;
-    part.invh     = (FLOAT) 1.0/part.h;
     part.ndens    = (FLOAT) 0.0;
     part.invomega = (FLOAT) 0.0;
     part.zeta     = (FLOAT) 0.0;
+    part.invh     = (FLOAT) 1.0/part.h;
     part.hfactor  = pow(part.invh,ndim);
     invhsqd       = part.invh*part.invh;
 
@@ -326,6 +326,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
 
   // Initialise/zero all variables to be updated in this routine
   part.vsig_max = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) part.vreg[k] = 0.0;
   for (k=0; k<ndim; k++) {
     for (var=0; var<nvar; var++) {
       part.grad[var][k] = 0.0;
@@ -368,8 +369,15 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
                                        min((FLOAT) 0.0, dvdr/(sqrt(drsqd) + small_number)));
 
+    for (k=0; k<ndim; k++) part.vreg[k] -= draux[k]*kern.w0_s2(drsqd*invhsqd);
+
   }
   //-----------------------------------------------------------------------------------------------
+
+  for (k=0; k<ndim; k++) part.vreg[k] *= part.invh*part.sound;  //pow(part.invh, ndim);
+  //cout << "vreg? : " << part.vreg[0] << "    " << part.vreg[1] << endl;
+  //for (k=0; k<ndim; k++) part.v0[k] += part.vreg[k];
+  //for (k=0; k<ndim; k++) part.v[k] += part.vreg[k];
 
 
   // Find all max and min values for meshless slope limiters
@@ -460,7 +468,6 @@ void MfvMuscl<ndim, kernelclass>::CopyDataToGhosts
 
 
 
-
 //=================================================================================================
 //  MfvMuscl::ComputeGodunovFlux
 /// ...
@@ -502,8 +509,9 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
 
   // Initialise all particle flux variables
+  /*for (var=0; var<nvar; var++) part.dQ[var] = (FLOAT) 0.0;
   for (var=0; var<nvar; var++) part.dQdt[var] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;*/
 
 
   // Loop over all potential neighbours in the list
@@ -532,6 +540,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     // Calculate position and velocity of the face
     //for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
     //for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
+    //for (k=0; k<ndim; k++) vface[k] = 0.0;
     for (k=0; k<ndim; k++) rface[k] = part.r[k] +
       part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
     for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
@@ -566,6 +575,10 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     assert(Wleft[ipress] > 0.0);
     assert(Wright[irho] > 0.0);
     assert(Wright[ipress] > 0.0);
+    if (part.nstep > neibpart[j].nstep) {
+      cout << "TIMESTEP PROBLEM : " << part.nstep << "   " << part.level << "    neib : "
+           << neibpart[j].nstep << "    " << neibpart[j].level << endl;
+    }
     assert(part.nstep <= neibpart[j].nstep);
 
 
@@ -744,7 +757,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeStarGravForces
     drmag    = sqrt(drsqd);
     invdrmag = (FLOAT) 1.0/drmag;
     invhmean = (FLOAT) 2.0/(parti.h + nbodydata[j]->h);
-    drdt     = DotProduct(dv,dr,ndim)*invdrmag;
+    drdt     = DotProduct(dv, dr, ndim)*invdrmag;
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i

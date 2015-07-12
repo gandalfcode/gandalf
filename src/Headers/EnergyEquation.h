@@ -105,14 +105,14 @@ class EnergyRadws : public EnergyEquation<ndim>
   void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
   void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
   void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                      const FLOAT, FLOAT &,  FLOAT &, FLOAT &);
+                      const FLOAT, FLOAT &, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
                           const FLOAT, FLOAT &, FLOAT &);
 
   int GetIDens(FLOAT);
   int GetITemp(FLOAT);
   void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
-  FLOAT GetEnergy(int , int , FLOAT , FLOAT );
+  FLOAT GetEnergy(int ,int ,FLOAT ,FLOAT );
   FLOAT GetMuBar(int, int, FLOAT, FLOAT);
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
   FLOAT ebalance(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT);
