@@ -343,8 +343,8 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
         // (to only calculate each pair once).
         if (neibdata[j].itype == dead || j == i || mfvdata[i].level < neibdata[j].level ||
             (j < i && mfvdata[i].level == neibdata[j].level)) continue;
-        assert(mfvdata[i].nstep <= neibdata[j].nstep);
-        assert(mfvdata[i].level >= neibdata[j].level);
+        //assert(mfvdata[i].nstep <= neibdata[j].nstep);
+        //assert(mfvdata[i].level >= neibdata[j].level);
 
         hrangesqdj = mfvdata[j].hrangesqd;
         for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];

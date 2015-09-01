@@ -48,8 +48,9 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 NbodyLeapfrogDKD<ndim, kernelclass>::NbodyLeapfrogDKD
-(int nbody_softening_aux, int sub_systems_aux, DOUBLE nbody_mult_aux, string KernelName) :
-  Nbody<ndim>(nbody_softening_aux, sub_systems_aux, nbody_mult_aux, KernelName, 1),
+ (int nbody_softening_aux, int _perturbers, int sub_systems_aux,
+  DOUBLE nbody_mult_aux, string KernelName) :
+  Nbody<ndim>(nbody_softening_aux, _perturbers, sub_systems_aux, nbody_mult_aux, KernelName, 1),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;

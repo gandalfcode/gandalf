@@ -59,7 +59,7 @@ class Nbody
 
   // Constructor and destructor functions
   //-----------------------------------------------------------------------------------------------
-  Nbody(int, int, DOUBLE, string, int);
+  Nbody(int, int, int, DOUBLE, string, int);
 
 
   // N-body array memory allocation functions
@@ -89,7 +89,8 @@ class Nbody
   virtual void UpdateChildStars(SystemParticle<ndim> *);
   virtual void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
-  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE);
+  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system, const unsigned int,
+                                       const DOUBLE, const DOUBLE);
 
 
   // N-body counters and main data arrays
@@ -102,9 +103,9 @@ class Nbody
   int Nsystem;                          ///< No. of system particles
   int Nsystemmax;                       ///< No. of system particles
   int reset_tree;                       ///< Reset all star properties for tree
-  int perturbers;                       ///< Use perturbers or not
 
   const int nbody_softening;            ///< Use softened-gravity for stars?
+  const int perturbers;                 ///< Use perturbers or not
   const int sub_systems;                ///< Create sub-systems?
   const int Npec;                       ///< No. of iterations if using time-symmetric integrator
   const DOUBLE nbody_mult;              ///< N-body timestep multiplier
@@ -162,7 +163,7 @@ public:
   using Nbody<ndim>::system;
   using Nbody<ndim>::timing;
 
-  NbodyLeapfrogKDK(int, int, DOUBLE, string);
+  NbodyLeapfrogKDK(int, int, int, DOUBLE, string);
   ~NbodyLeapfrogKDK();
 
   void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
@@ -200,7 +201,7 @@ public:
   using Nbody<ndim>::system;
   using Nbody<ndim>::timing;
 
-  NbodyLeapfrogDKD(int, int, DOUBLE, string);
+  NbodyLeapfrogDKD(int, int, int, DOUBLE, string);
   ~NbodyLeapfrogDKD();
 
   void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
@@ -240,7 +241,7 @@ public:
   using Nbody<ndim>::perturbers;
   using Nbody<ndim>::timing;
 
-  NbodyHermite4(int, int, DOUBLE, string, int Npec=1);
+  NbodyHermite4(int, int, int, DOUBLE, string, int Npec=1);
   ~NbodyHermite4();
 
   void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
@@ -284,7 +285,7 @@ public:
   using Nbody<ndim>::perturbers;
   using Nbody<ndim>::timing;
 
-  NbodyHermite4TS(int, int, DOUBLE, string, int);
+  NbodyHermite4TS(int, int, int, DOUBLE, string, int);
   ~NbodyHermite4TS();
 
   void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
@@ -313,7 +314,7 @@ public:
   using Nbody<ndim>::perturbers;
   using Nbody<ndim>::timing;
 
-  NbodyHermite6TS(int, int, DOUBLE, string, int);
+  NbodyHermite6TS(int, int, int, DOUBLE, string, int);
   ~NbodyHermite6TS();
 
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);

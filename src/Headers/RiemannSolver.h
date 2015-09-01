@@ -52,7 +52,7 @@ class RiemannSolver
                              const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2][ndim]) = 0;
 
   void ComputeRotationMatrices(const FLOAT dr[ndim], FLOAT rotMat[ndim][ndim], FLOAT invRotMat[ndim][ndim]);
-  void RotateVector(FLOAT rotMat[ndim][ndim], FLOAT vec[ndim]);
+  void RotateVector(const FLOAT rotMat[ndim][ndim], FLOAT vec[ndim]);
 
 };
 

@@ -45,13 +45,14 @@ class EnergyEquation
  public:
 
   EnergyEquation(DOUBLE);
-  ~EnergyEquation();
+  virtual ~EnergyEquation();
 
-  virtual void EnergyIntegration(const int, const int, const FLOAT, const FLOAT,
-                                 Particle<ndim> *) = 0;
-  virtual void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT,
-                                     Particle<ndim> *) = 0;
-  virtual void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) = 0;
+  virtual void EnergyIntegration(const unsigned int, const int, const FLOAT,
+                                 const FLOAT, Particle<ndim> *) = 0;
+  virtual void EnergyCorrectionTerms(const unsigned int, const int, const FLOAT,
+                                     const FLOAT, Particle<ndim> *) = 0;
+  virtual void EndTimestep(const unsigned int, const int, const FLOAT,
+                           const FLOAT, Particle<ndim> *) = 0;
   virtual DOUBLE Timestep(Particle<ndim> &) = 0;
 
 
@@ -59,30 +60,6 @@ class EnergyEquation
   CodeTiming *timing;                  ///< Pointer to code timing object
 
 };
-
-
-
-//=================================================================================================
-//  EnergyPEC
-/// Energy equation integration class using a Predict-Evaluate-Correct (PEC) scheme.
-//=================================================================================================
-template <int ndim, template <int> class ParticleType>
-class EnergyPEC : public EnergyEquation<ndim>
-{
- public:
-
-  using EnergyEquation<ndim>::timing;
-
-  EnergyPEC(DOUBLE);
-  ~EnergyPEC();
-
-  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
-  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
-  DOUBLE Timestep(Particle<ndim> &);
-
-};
-
 
 
 
@@ -101,9 +78,9 @@ class EnergyRadws : public EnergyEquation<ndim>
   ~EnergyRadws();
 
   //  void ReadTable();
-  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
-  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
+  void EnergyIntegration(const unsigned int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
+  void EnergyCorrectionTerms(const unsigned int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  void EndTimestep(const unsigned int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
   void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                       const FLOAT, FLOAT &, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
@@ -140,11 +117,11 @@ class NullEnergy : public EnergyEquation<ndim>
  public:
 
   NullEnergy(DOUBLE dt_mult) : EnergyEquation<ndim>(dt_mult) {};
-  ~NullEnergy();
+  ~NullEnergy() {};
 
-  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
-  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  void EnergyIntegration(const unsigned int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  void EnergyCorrectionTerms(const unsigned int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  void EndTimestep(const unsigned int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
 };

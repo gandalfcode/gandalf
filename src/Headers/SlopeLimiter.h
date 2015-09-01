@@ -58,6 +58,64 @@ class SlopeLimiter
 
 
 //=================================================================================================
+//  Class ZeroSlopeLimiter
+/// \brief   Imposes 1st-order (Godunov method) by zeroing slopes.
+/// \details Imposes 1st-order (Godunov method) by zeroing slopes.
+/// \author  D. A. Hubber
+/// \date    28/08/2015
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class ZeroSlopeLimiter : public SlopeLimiter<ndim,ParticleType>
+{
+ public:
+
+  ZeroSlopeLimiter() {};
+  ~ZeroSlopeLimiter() {};
+
+  //===============================================================================================
+  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
+  {
+    for (int var=0; var<ndim+2; var++) {
+      dW[var] = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) gradW[var][k] = (FLOAT) 0.0;
+    }
+  }
+
+};
+
+
+
+//=================================================================================================
+//  Class NullLimiter
+/// \brief   Null slope limiter.  Extrapolates variables fully without limiting their values.
+/// \details Null slope limiter.  Extrapolates variables fully without limiting their values.
+/// \author  D. A. Hubber
+/// \date    23/03/2015
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class NullLimiter : public SlopeLimiter<ndim,ParticleType>
+{
+ public:
+
+  NullLimiter() {};
+  ~NullLimiter() {};
+
+  //===============================================================================================
+  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
+  {
+    for (int var=0; var<ndim+2; var++) {
+      dW[var] = DotProduct(parti.grad[var], draux, ndim);
+      for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
+    }
+  }
+
+};
+
+
+
+//=================================================================================================
 //  Class Springel2009Limiter
 /// \brief   ...
 /// \details ...
@@ -204,7 +262,7 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
     FLOAT phimid;
     const FLOAT beta = 1.0;
     const FLOAT psi1 = 0.5;
-    const FLOAT psi2 = 0.25;
+    const FLOAT psi2 = 0.375;  //0.25;
 
     //---------------------------------------------------------------------------------------------
     for (var=0; var<ndim+2; var++) {

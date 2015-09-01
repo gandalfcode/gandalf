@@ -54,11 +54,14 @@ template <int ndim>
 struct Particle
 {
   bool active;                      ///< Flag if active (i.e. recompute step)
+  bool potmin;                      ///< Is particle at a potential minima?
   int iorig;                        ///< Original particle i.d.
   int itype;                        ///< SPH particle type
-  int nstep;                        ///< Integer step-size of particle
-  int nlast;                        ///< Integer time at beginning of step
-  int level;                        ///< Current timestep level of particle
+  int sinkid;                       ///< i.d. of sink particle
+  unsigned int levelneib;           ///< Min. timestep level of neighbours
+  unsigned int nstep;               ///< Integer step-size of particle
+  unsigned int nlast;               ///< Integer time at beginning of step
+  unsigned int level;               ///< Current timestep level of particle
   FLOAT r[ndim];                    ///< Position
   FLOAT v[ndim];                    ///< Velocity
   FLOAT a[ndim];                    ///< Total acceleration
@@ -70,6 +73,10 @@ struct Particle
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
+  FLOAT invh;                       ///< 1 / h
+  FLOAT hfactor;                    ///< invh^(ndim + 1)
+  FLOAT invrho;                     ///< 1 / rho
+  FLOAT sound;                      ///< Sound speed
   FLOAT rho;                        ///< Density
   FLOAT u;                          ///< Specific internal energy
   FLOAT u0;                         ///< u at beginning of step
@@ -95,6 +102,7 @@ struct Particle
     level = 0;
     nstep = 0;
     nlast = 0;
+    sinkid = -1;
     for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a[k] = (FLOAT) 0.0;
@@ -106,7 +114,11 @@ struct Particle
     m         = (FLOAT) 0.0;
     h         = (FLOAT) 0.0;
     hrangesqd = (FLOAT) 0.0;
+    invh      = (FLOAT) 0.0;
+    hfactor   = (FLOAT) 0.0;
+    invrho    = (FLOAT) 0.0;
     rho       = (FLOAT) 0.0;
+    sound     = (FLOAT) 0.0;
     u         = (FLOAT) 0.0;
     u0        = (FLOAT) 0.0;
     dudt      = (FLOAT) 0.0;
@@ -131,14 +143,7 @@ struct Particle
 template <int ndim>
 struct SphParticle : public Particle<ndim>
 {
-  bool potmin;                      ///< Is particle at a potential minima?
-  int levelneib;                    ///< Min. timestep level of neighbours
-  int sinkid;                       ///< i.d. of sink particle
-  FLOAT invh;                       ///< 1 / h
-  FLOAT hfactor;                    ///< invh^(ndim + 1)
-  FLOAT invrho;                     ///< 1 / rho
   FLOAT pfactor;                    ///< Pressure factor in SPH EOM
-  FLOAT sound;                      ///< Sound speed
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
@@ -146,14 +151,7 @@ struct SphParticle : public Particle<ndim>
 
   SphParticle()
   {
-    potmin = false;
-    levelneib = 0;
-    sinkid = -1;
-    invh     = (FLOAT) 0.0;
-    hfactor  = (FLOAT) 0.0;
-    invrho   = (FLOAT) 0.0;
     pfactor  = (FLOAT) 0.0;
-    sound    = (FLOAT) 0.0;
     div_v    = (FLOAT) 0.0;
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
@@ -243,7 +241,6 @@ template <int ndim>
 struct MeshlessFVParticle : public Particle<ndim>
 {
   bool potmin;                         ///< Is particle at a potential minima?
-  int levelneib;                       ///< Min. timestep level of neighbours
   int sinkid;                          ///< i.d. of sink particle
   FLOAT invh;                          ///< 1 / h
   FLOAT hfactor;                       ///< invh^(ndim + 1)
@@ -280,7 +277,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   MeshlessFVParticle()
   {
     potmin    = false;
-    levelneib = 0;
     sinkid    = -1;
     invh      = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;

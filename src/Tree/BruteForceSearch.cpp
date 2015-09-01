@@ -50,7 +50,7 @@ using namespace std;
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::BuildTree
  (const bool rebuild_tree,             ///< [in] Flag to rebuild tree
-  const int n,                         ///< [in] Integer time
+  const unsigned int n,                ///< [in] Integer time
   const int ntreebuildstep,            ///< [in] Tree build frequency
   const int ntreestockstep,            ///< [in] Tree stocking frequency
   const int Npart,                     ///< [in] No. of particles
@@ -67,7 +67,8 @@ void BruteForceSearch<ndim,ParticleType>::BuildTree
 
 //=================================================================================================
 //  BruteForceSearch::GetGatherNeighbourList
-/// ..
+/// Compute gather neighbour list from all hydro particles within a distance rsearch of
+/// position rp using brute force.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 int BruteForceSearch<ndim,ParticleType>::GetGatherNeighbourList
@@ -114,9 +115,9 @@ int BruteForceSearch<ndim,ParticleType>::GetGatherNeighbourList
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
-(FLOAT tghost,                         ///< [in] Ghost particle 'lifetime'
- DomainBox<ndim> &simbox,               ///< [in] Simulation box structure
- Hydrodynamics<ndim> *hydro)           ///< [inout] Sph object pointer
+ (FLOAT tghost,                        ///< [in] Ghost particle 'lifetime'
+  DomainBox<ndim> &simbox,             ///< [in] Simulation box structure
+  Hydrodynamics<ndim> *hydro)          ///< [inout] Sph object pointer
 {
   int i;                               // Particle counter
 
@@ -182,6 +183,52 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
   }
 
   hydro->NPeriodicGhost = hydro->Nghost;
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  BruteForceSearch::UpdateAllStarGasForces
+/// ..
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
+ (int Nhydro,                          ///< [in] No. of SPH particles
+  int Ntot,                            ///< [in] Total no. of SPH particles (incl. ghosts)
+  Particle<ndim> *part_gen,            ///< [in] SPH particle array pointer
+  Hydrodynamics<ndim> *hydro,          ///< [inout] Pointer to SPH ptcl array
+  Nbody<ndim> *nbody)                  ///< [inout] Pointer to N-body object
+{
+  int i;                               // Particle and dimension counters
+  int Nneib = 0;                       // No. of (non-dead) neighbours
+  int *dummy = 0;                      // Dummy var to satisfy function argument
+  int *neiblist;                       // Array of (all) particle ids
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+
+  debug2("[BruteForceSearch::UpdateAllStarGasForces]");
+
+  // Allocate memory for storing neighbour ids and position data
+  neiblist = new int[Nhydro];
+  for (i=0; i<Nhydro; i++) {
+    if (partdata[i].itype != dead) neiblist[Nneib++] = i;
+  }
+
+  // Compute smoothing lengths of all SPH particles
+  //-----------------------------------------------------------------------------------------------
+  for (i=0; i<nbody->Nnbody; i++) {
+
+    // Skip over inactive particles
+    if (!nbody->nbodydata[i]->active) continue;
+
+    // Compute forces between SPH neighbours (hydro and gravity)
+    nbody->CalculateDirectHydroForces(nbody->nbodydata[i], Nneib, 0, neiblist, dummy, hydro);
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  delete[] neiblist;
 
   return;
 }

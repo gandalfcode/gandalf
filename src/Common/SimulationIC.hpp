@@ -96,6 +96,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "binaryacc") {
     icGenerator.BinaryAccretion();
   }
+  else if (ic == "blastwave") {
+    icGenerator.BlastWave();
+  }
   else if (ic == "bondi") {
     icGenerator.BondiAccretion();
   }

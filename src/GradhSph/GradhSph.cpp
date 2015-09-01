@@ -355,15 +355,14 @@ int GradhSph<ndim, kernelclass>::ComputeH
         parti.zeta += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
       }
     }
-    parti.invomega  = (FLOAT) 1.0 + Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
-    parti.invomega  = (FLOAT) 1.0/parti.invomega;
+    parti.invomega = (FLOAT) 1.0 + Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
+    parti.invomega = (FLOAT) 1.0/parti.invomega;
     parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*parti.invrho*parti.invomega;
   }
   else {
     parti.invomega = (FLOAT) 1.0;
     parti.zeta     = (FLOAT) 0.0;
   }
-
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
@@ -755,8 +754,8 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drmag;                         // Distance
   FLOAT drsqd;                         // Distance squared
-  FLOAT drdt;                          // Rate of change of relative distance
-  FLOAT dv[ndim];                      // Relative velocity vector
+  //FLOAT drdt;                          // Rate of change of relative distance
+  //FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT invdrmag;                      // 1 / drmag
   FLOAT invhmean;                      // 1 / hmean
   FLOAT ms;                            // Star mass
@@ -771,12 +770,12 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     else ms = nbodydata[j]->m;
 
     for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
-    for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
+    //for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
     drsqd    = DotProduct(dr,dr,ndim) + small_number;
     drmag    = sqrt(drsqd);
     invdrmag = (FLOAT) 1.0/drmag;
     invhmean = (FLOAT) 2.0/(parti.h + nbodydata[j]->h);
-    drdt     = DotProduct(dv,dr,ndim)*invdrmag;
+    //drdt     = DotProduct(dv,dr,ndim)*invdrmag;
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i

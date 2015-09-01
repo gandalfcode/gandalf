@@ -28,19 +28,19 @@
 
 #include <assert.h>
 #include <string>
-#include "Precision.h"
 #include "Constants.h"
-#include "Hydrodynamics.h"
-#include "Particle.h"
-#include "SmoothingKernel.h"
-#include "NbodyParticle.h"
-#include "Nbody.h"
-#include "Parameters.h"
 #include "DomainBox.h"
 #include "EOS.h"
+#include "ExternalPotential.h"
+#include "Hydrodynamics.h"
+#include "Nbody.h"
+#include "NbodyParticle.h"
+#include "Parameters.h"
+#include "Particle.h"
+#include "Precision.h"
 #include "RiemannSolver.h"
 #include "SlopeLimiter.h"
-#include "ExternalPotential.h"
+#include "SmoothingKernel.h"
 #if defined _OPENMP
 #include "omp.h"
 #endif
@@ -50,11 +50,10 @@ using namespace std;
 //=================================================================================================
 //  Class FV
 /// \brief   Main parent FV class.
-/// \details
+/// \details ..
 /// \author  D. A. Hubber, J. Ngoumou
 /// \date    19/02/2015
 //=================================================================================================
-//template <int ndim>
 template <int ndim>
 class FV : public Hydrodynamics<ndim>
 {
@@ -82,7 +81,7 @@ public:
   using Hydrodynamics<ndim>::riemann;
   using Hydrodynamics<ndim>::size_hydro_part;
 
-  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
+  static const FLOAT invndim;//=1./ndim;
   static const int nvar = ndim + 2;
   static const int ivx = 0;
   static const int ivy = 1;
@@ -117,15 +116,11 @@ public:
   void ConvertPrimitiveToConserved(const FLOAT Wprim[nvar], FLOAT Ucons[nvar]);
   //void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
 
-
-  // Functions needed to hide some implementation details
-  //-----------------------------------------------------------------------------------------------
-  /*FVParticle<ndim>& GetFVParticlePointer(const int i) {
-    return *((FVParticle<ndim>*)((unsigned char*) hydrodata_unsafe + i*size_hydro_part));
-  }
-  FVParticle<ndim>* GetFVParticleArray() {return hydrodata;}
-  virtual Particle<ndim>* GetParticleArray() {return hydrodata;};*/
-
-
 };
+
+
+// Declare invndim constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT FV<ndim>::invndim = 1.0/ndim;
+
 #endif

@@ -400,6 +400,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["rhofluid2"] = 1.0;
   floatparams["press1"] = 1.0;
   floatparams["press2"] = 1.0;
+  floatparams["rexplosion"] = 0.2;
   floatparams["amp"] = 0.1;
   floatparams["lambda"] = 0.5;
   floatparams["kefrac"] = 0.0;

@@ -47,9 +47,9 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 NbodyHermite4<ndim, kernelclass>::NbodyHermite4
-(int nbody_softening_aux, int sub_systems_aux,
+(int nbody_softening_aux, int _perturbers, int sub_systems_aux,
  DOUBLE nbody_mult_aux, string KernelName, int Npec) :
-  Nbody<ndim>(nbody_softening_aux, sub_systems_aux, nbody_mult_aux, KernelName, Npec),
+  Nbody<ndim>(nbody_softening_aux, _perturbers, sub_systems_aux, nbody_mult_aux, KernelName, Npec),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;

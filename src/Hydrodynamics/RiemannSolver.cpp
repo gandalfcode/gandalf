@@ -15,7 +15,7 @@
 using namespace std;
 
 
-static const int Niterationmax = 100;            // ..
+static const int Niterationmax = 100;            // Max. no. of Riemann solver iterations
 static const FLOAT tolerance = 1.0e-6;           // Iteration tolerance
 
 
@@ -44,13 +44,14 @@ RiemannSolver<ndim>::RiemannSolver(FLOAT gamma_aux, bool _zeroMassFlux):
 
 //=================================================================================================
 //  RiemannSolver::ComputeRotationMatrices
-/// ...
+/// Compute all rotation matrices from unit vector that are required for transforming from original
+/// coordinate frame to x-axis frame and back again once flux terms have been computed.
 //=================================================================================================
 template <int ndim>
 void RiemannSolver<ndim>::ComputeRotationMatrices
- (const FLOAT runit[ndim],
-  FLOAT rotMat[ndim][ndim],
-  FLOAT invRotMat[ndim][ndim])
+ (const FLOAT runit[ndim],             ///< [in] Directional unit vector
+  FLOAT rotMat[ndim][ndim],            ///< [out] Rotational matrix
+  FLOAT invRotMat[ndim][ndim])         ///< [out] Inverse rotational matrix
 {
   if (ndim == 1) {
     rotMat[0][0]    = runit[0];
@@ -68,8 +69,8 @@ void RiemannSolver<ndim>::ComputeRotationMatrices
     invRotMat[1][1] = cos(theta);
   }
   else if (ndim == 3) {
-    FLOAT phi = atan2(runit[1], runit[0]);
-    FLOAT delta = atan2(runit[2], sqrt(runit[0]*runit[0] + runit[1]*runit[1]));
+    const FLOAT phi = atan2(runit[1], runit[0]);
+    const FLOAT delta = atan2(runit[2], sqrt(runit[0]*runit[0] + runit[1]*runit[1]));
     invRotMat[0][0] = cos(delta)*cos(phi);
     invRotMat[0][1] = cos(delta)*sin(phi);
     invRotMat[0][2] = sin(delta);
@@ -88,25 +89,6 @@ void RiemannSolver<ndim>::ComputeRotationMatrices
     rotMat[2][0] = sin(delta);
     rotMat[2][1] = 0.0;
     rotMat[2][2] = cos(delta);
-    /*FLOAT theta = atan2(sqrt(runit[0]*runit[0] + runit[1]*runit[1]), runit[2]);
-    invRotMat[0][0] = cos(phi);
-    invRotMat[0][1] = sin(phi);
-    invRotMat[0][2] = 0.0;
-    invRotMat[1][0] = -cos(theta)*sin(phi);
-    invRotMat[1][1] = cos(theta)*cos(phi);
-    invRotMat[1][2] = sin(theta);
-    invRotMat[2][0] = sin(theta)*sin(phi);
-    invRotMat[2][1] = -sin(theta)*cos(phi);
-    invRotMat[2][2] = cos(theta);
-    rotMat[0][0] = cos(phi);
-    rotMat[0][1] = -cos(theta)*sin(phi);
-    rotMat[0][2] = sin(theta)*sin(phi);
-    rotMat[1][0] = sin(phi);
-    rotMat[1][1] = cos(theta)*cos(phi);
-    rotMat[1][2] = -sin(theta)*cos(phi);
-    rotMat[2][0] = 0.0;
-    rotMat[2][1] = sin(theta);
-    rotMat[2][2] = cos(theta);*/
   }
 
   return;
@@ -116,19 +98,15 @@ void RiemannSolver<ndim>::ComputeRotationMatrices
 
 //=================================================================================================
 //  RiemannSolver::RotateVector
-/// ...
+/// Rotate vector using the given rotation matrix
 //=================================================================================================
 template <int ndim>
 void RiemannSolver<ndim>::RotateVector
- (FLOAT rotMat[ndim][ndim],
-  FLOAT vec[ndim])
+ (const FLOAT rotMat[ndim][ndim],      ///< [in] Rotation mtrix
+  FLOAT vec[ndim])                     ///< [inout] Vector to be rotated
 {
-  FLOAT oldVec[ndim];
-
   if (ndim == 1) {
-    //cout << "Before : " << vec[0] << "    " << rotMat[0][0] << endl;
     vec[0] = rotMat[0][0]*vec[0];
-    //cout << "After  : " << vec[0] << endl;
   }
   else if (ndim == 2) {
     FLOAT oldVec[ndim];
@@ -158,7 +136,7 @@ FLOAT ExactRiemannSolver<ndim>::Prefun
  (const FLOAT pk,                      ///< LHS pressure
   const FLOAT dk,                      ///< LHS density
   const FLOAT ck,                      ///< LHS sound speed
-  const FLOAT pstar,                   ///< ..
+  const FLOAT pstar,                   ///< Pressure in the central 'star' region
   FLOAT &fprime)                       ///< Velocity of intermediate state
 {
   FLOAT ak, bk, f, pratio, qrt;
@@ -187,22 +165,21 @@ FLOAT ExactRiemannSolver<ndim>::Prefun
 //=================================================================================================
 template <int ndim>
 void ExactRiemannSolver<ndim>::ComputeStarRegion
- (const FLOAT pl,                      ///< LHS pressure
-  const FLOAT pr,                      ///< RHS pressure
-  const FLOAT dl,                      ///< LHS density
-  const FLOAT dr,                      ///< RHS density
-  const FLOAT cl,                      ///< LHS sound speed
-  const FLOAT cr,                      ///< RHS sound speed
-  const FLOAT ul,                      ///< LHS velocity
-  const FLOAT ur,                      ///< RHS velocity
-  FLOAT &pstar,                        ///< Intermediate pressure state
-  FLOAT &ustar)                        ///< Velocity of intermediate state
+ (const FLOAT pl,                      ///< [in] LHS pressure
+  const FLOAT pr,                      ///< [in] RHS pressure
+  const FLOAT dl,                      ///< [in] LHS density
+  const FLOAT dr,                      ///< [in] RHS density
+  const FLOAT cl,                      ///< [in] LHS sound speed
+  const FLOAT cr,                      ///< [in] RHS sound speed
+  const FLOAT ul,                      ///< [in] LHS velocity
+  const FLOAT ur,                      ///< [in] RHS velocity
+  FLOAT &pstar,                        ///< [out] Intermediate pressure state
+  FLOAT &ustar)                        ///< [out] Velocity of intermediate state
 {
-  const FLOAT Al = g5/dl;
-  const FLOAT Ar = g5/dr;
-  const FLOAT Bl = pl*g6;
-  const FLOAT Br = pr*g6;
-
+  const FLOAT Al = g5/dl;              // ..
+  const FLOAT Ar = g5/dr;              // ..
+  const FLOAT Bl = pl*g6;              // ..
+  const FLOAT Br = pr*g6;              // ..
   int iteration = 0;                   // No. of iterations (should be configured in parameter file)
   FLOAT cup;                           // Primitive variable ???
   FLOAT fl;                            // Left-state variable
@@ -211,7 +188,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
   FLOAT frprime;                       // Right-state variable gradient
   FLOAT gel;                           // Two-shock variable
   FLOAT ger;                           // Two-shock variable
-  FLOAT quser;                         // First guess of solution
+  FLOAT quser = 2.0;                   // First guess of solution
   FLOAT pmin;                          // Max. pressure
   FLOAT pmax;                          // Min. pressure
   FLOAT pold;                          // Old intermediate pressure
@@ -221,14 +198,6 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
   FLOAT um;                            // ..
   FLOAT ptl;                           // ..
   FLOAT ptr;                           // ..
-
-  //std::cout << "All values : press : " << pl << "   " << pr << "     vel : " << ul << "    " << ur
-  //<< "    sound : " << cl << "    " << cr << "    dens : " << dl << "   " << dr << std::endl;
-
-  //// Iteration variables
-
-  // Make guess of solution for first iteration
-  quser = 2.0;
 
   // Compute guess from Primitive Variable RS
   cup  = 0.25*(dl + dr)*(cl + cr);
@@ -255,10 +224,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
     ptl   = 1.0 + g7*(ul - um)/cl;
     ptr   = 1.0 + g7*(um - ur)/cr;
     pstar = 0.5*(pl*pow(ptl,g3) + pr*pow(ptr,g3));
-    FLOAT pstar2 = pow((cl + cr - g7*(ur - ul))/(cl/pow(pl,g1) + cr/pow(pr,g1)), g3);
-    /*if (pstar < 0.0) {
-      cout << "pstar : " << pstar << "   " << pstar2 << endl;
-    }*/
+    //FLOAT pstar2 = pow((cl + cr - g7*(ur - ul))/(cl/pow(pl,g1) + cr/pow(pr,g1)), g3);
   }
   // Select two-shock RS with PVRS as estimate
   else {
@@ -268,9 +234,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
   }
 
   pstar = max(pstar, small_number);
-
-  //cout << "Initial guess : " << ppv << "   " << pmin << "    pstar : " << pstar << endl;
-  assert(pstar >= 0.0);
+  assert(pstar > 0.0);
 
   // Main iteration loop
   //-----------------------------------------------------------------------------------------------
@@ -324,7 +288,6 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
 
   // Compute velocity of star region
   ustar = 0.5*(ul + ur) + 0.5*(fr - fl);
-
   assert(pstar > 0.0);
 
   return;
@@ -334,23 +297,24 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
 
 //=================================================================================================
 //  ExactRiemannSolver::SampleExactSolution
+/// Sample the solution of the exact Riemann solver at the dimensionless position 's'.
 //=================================================================================================
 template <int ndim>
 void ExactRiemannSolver<ndim>::SampleExactSolution
- (const FLOAT pstar,                   ///< ..
-  const FLOAT ustar,                   ///< ..
-  const FLOAT s,                       ///< ..
-  const FLOAT pl,                      ///< ..
-  const FLOAT pr,                      ///< ..
-  const FLOAT dl,                      ///< ..
-  const FLOAT dr,                      ///< ..
-  const FLOAT cl,                      ///< ..
-  const FLOAT cr,                      ///< ..
-  const FLOAT ul,                      ///< ..
-  const FLOAT ur,                      ///< ..
-  FLOAT &p,                            ///< ..
-  FLOAT &d,                            ///< ..
-  FLOAT &u)                            ///< ..
+ (const FLOAT pstar,                   ///< [in] Pressure of central 'star' region
+  const FLOAT ustar,                   ///< [in] Vecocity in central 'star' region
+  const FLOAT s,                       ///< [in] Dimensionless position to sample solution at
+  const FLOAT pl,                      ///< [in] LHS pressure
+  const FLOAT pr,                      ///< [in] RHS pressure
+  const FLOAT dl,                      ///< [in] LHS density
+  const FLOAT dr,                      ///< [in] RHS density
+  const FLOAT cl,                      ///< [in] LHS sound speed
+  const FLOAT cr,                      ///< [in] RHS sound speed
+  const FLOAT ul,                      ///< [in] LHS velocity
+  const FLOAT ur,                      ///< [in] RHS velocity
+  FLOAT &p,                            ///< [out] Sampled pressure state
+  FLOAT &d,                            ///< [out] Sampled density state
+  FLOAT &u)                            ///< [out] Sampled velocity state
 {
 
   FLOAT cm;                            // ..
@@ -368,9 +332,6 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
     if (pstar <= pl) {
       sh = ul - cl;
 
-      //cout << "Left rarefaction" << endl;
-      //cout << "s : " << s << "   " << sh << endl;
-
       // Sampled point is left data state
       if (s <= sh) {
         d = dl;
@@ -380,8 +341,6 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
       else {
         cm = cl*pow(pstar/pl,g1);
         st = ustar - cm;
-
-        //cout << "cm : " << cm << "    st : " << st << endl;
 
         // Sample point is star left state
         if (s > st) {
@@ -395,7 +354,6 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
           c = g5*(cl + g7*(ul - s));
           d = dl*pow(c/cl,g4);
           p = pl*pow(c/cl,g3);
-          //cout << "c/cl : " << c/cl << "    g4 : " << g4 << "    g3 : " << g3 << endl;
         }
 
       }
@@ -407,8 +365,6 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
     else {
       FLOAT pml = pstar/pl;
       sl = ul - cl*sqrt(g2*pml + g1);
-
-      //cout << "Left shock" << endl;
 
       // Sampled point is left data state
       if (s <= sl) {
@@ -437,8 +393,6 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
       FLOAT pmr = pstar/pr;
       sr = ur + cr*sqrt(g2*pmr + g1);
 
-      //cout << "Right shock" << endl;
-
       // Sampled point is right data state
       if (s >= sr) {
         d = dr;
@@ -458,8 +412,6 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
     else {
 
       sh = ur + cr;
-
-      //cout << "Right rarefaction" << endl;
 
       // Sampled point is left data state
       if (s >= sh) {
@@ -492,6 +444,7 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
   }
   //-----------------------------------------------------------------------------------------------
 
+  // Check pressure is positive.  If not, print to screen and quit.
   if (p < 0.0) {
     cout << "s : " << s << "   " << ustar << "   " << pstar << "   " << pl << "    " << pr << endl;
     cout << "p : " << p << "    d : " << d << "    c : " << c << "    u : " << u << endl;
@@ -509,47 +462,37 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
 //=================================================================================================
 template <int ndim>
 void ExactRiemannSolver<ndim>::ComputeFluxes
- (const FLOAT Wleft[nvar],             ///< LHS primitive state
-  const FLOAT Wright[nvar],            ///< RHS primitive state
-  const FLOAT runit[ndim],             ///< ..
-  FLOAT vface[ndim],                   ///< ..
-  FLOAT flux[nvar][ndim])              ///< flux vector
+ (const FLOAT Wleft[nvar],             ///< [in] LHS primitive state
+  const FLOAT Wright[nvar],            ///< [in] RHS primitive state
+  const FLOAT runit[ndim],             ///< [in] Unit vector pointing from left to right state
+  FLOAT vface[ndim],                   ///< [in] Velocity of the working face
+  FLOAT flux[nvar][ndim])              ///< [out] Flux vector
 {
-  const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);    // ..
-  const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);  // ..
+  const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);      // LHS sound speed
+  const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);    // RHS sound speed
 
-  int k,kv;
+  int k,kv;                            // Dimension counters
   FLOAT pstar;                         // Pressure in star region
   FLOAT ustar;                         // Velocity in star region
-  FLOAT etot;                          // Total specific energy
   FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
-  FLOAT rotMat[ndim][ndim];
-  FLOAT invRotMat[ndim][ndim];
-  FLOAT uleft[ndim];
-  FLOAT uright[ndim];
-  FLOAT Wface[ndim];
-
-  // Compute rotation matrices
-  this->ComputeRotationMatrices(runit, rotMat, invRotMat);
-
-  for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
-  for (k=0; k<ndim; k++) uright[k] = Wright[k];
-
-  this->RotateVector(invRotMat, uleft);
-  this->RotateVector(invRotMat, uright);
-
-
-  /*FLOAT runit2[ndim];
-  for (k=0; k<ndim; k++) runit2[k] = runit[k];
-  this->RotateVector(invRotMat, runit2);
-  cout << "runit (rotated) : " << runit2[0] << "   " << runit2[1] << "   " << runit2[2] << endl;*/
-
+  FLOAT rotMat[ndim][ndim];            // Rotation matrix
+  FLOAT invRotMat[ndim][ndim];         // Inverse rotation matrix
+  FLOAT uleft[ndim];                   // Left velocity state
+  FLOAT uright[ndim];                  // Right velocity state
+  FLOAT Wface[nvar];                   // Primitive vector at working face
 
   assert(Wleft[ipress] > 0.0);
   assert(Wleft[irho] > 0.0);
   assert(Wright[ipress] > 0.0);
   assert(Wright[irho] > 0.0);
 
+  for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
+  for (k=0; k<ndim; k++) uright[k] = Wright[k];
+
+  // Compute rotation matrices and rotate both left and right velocity states
+  this->ComputeRotationMatrices(runit, rotMat, invRotMat);
+  this->RotateVector(invRotMat, uleft);
+  this->RotateVector(invRotMat, uright);
 
   // Compute p and u values at interface (in star region)
   ComputeStarRegion(Wleft[ipress], Wright[ipress], Wleft[irho], Wright[irho],
@@ -561,18 +504,16 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   if (pstar > 0.0) {
     SampleExactSolution(pstar, ustar, 0.0, Wleft[ipress], Wright[ipress], Wleft[irho],
                         Wright[irho], cl, cr, uleft[0], uright[0], p, d, u);
-
+    assert(p >= 0.0);
+    assert(d >= 0.0);
 
     for (kv=0; kv<ndim; kv++) Wface[kv] = 0.0;
     Wface[irho]   = d;
     Wface[ivx]    = u;
     Wface[ipress] = p;
 
-    //cout << "p : " << p << endl;
-    assert(p >= 0.0);
-    assert(d >= 0.0);
-
-
+    // If using face that moves with star velocity, then mass flux should be zero.
+    // (Used for Meshless finite-mass scheme of Hopkins 2015)
     if (zeroMassFlux) {
 
       Wface[ivx] = 0.0;
@@ -608,7 +549,8 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 
     // Add corrections for transforming back to original lab frame
     for (k=0; k<ndim; k++) {
-      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] + DotProduct(vface, flux[k], ndim);
+      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] +
+        DotProduct(vface, flux[k], ndim);
     }
     for (k=0; k<ndim; k++) {
       for (kv=0; kv<ndim; kv++) flux[kv][k] += vface[kv]*flux[irho][k];
@@ -651,31 +593,24 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
   const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);  // ..
 
   int k,kv;
+  FLOAT ekin;                          // ..
+  FLOAT etotl, etotr, Sl, Sr, ddu, dstarl, dstarr, etotstarl, etotstarr, df, uf, pf, etotf;
   FLOAT pstar;                         // Pressure in star region
   FLOAT ustar;                         // Velocity in star region
-  FLOAT etot;                          // Total specific energy
-  FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
-  FLOAT rotMat[ndim][ndim];
-  FLOAT invRotMat[ndim][ndim];
-  FLOAT uleft[ndim];
-  FLOAT uright[ndim];
-  FLOAT Wface[ndim];
-
-  // Compute rotation matrices
-  this->ComputeRotationMatrices(runit, rotMat, invRotMat);
+  //FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
+  FLOAT rotMat[ndim][ndim];            // Rotation matrix
+  FLOAT invRotMat[ndim][ndim];         // Inverse rotation matrix
+  FLOAT uleft[ndim];                   // Left velocity state
+  FLOAT uright[ndim];                  // Right velocity state
+  FLOAT Wface[nvar];                   // Primitive vector at working face
 
   for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
   for (k=0; k<ndim; k++) uright[k] = Wright[k];
 
+  // Compute rotation matrices and rotate left and right velocity states
+  this->ComputeRotationMatrices(runit, rotMat, invRotMat);
   this->RotateVector(invRotMat, uleft);
   this->RotateVector(invRotMat, uright);
-
-
-  /*FLOAT runit2[ndim];
-  for (k=0; k<ndim; k++) runit2[k] = runit[k];
-  this->RotateVector(invRotMat, runit2);
-  cout << "runit (rotated) : " << runit2[0] << "   " << runit2[1] << "   " << runit2[2] << endl;*/
-
 
   assert(Wleft[ipress] > 0.0);
   assert(Wleft[irho] > 0.0);
@@ -684,7 +619,6 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
 
 
   // Compute total energy
-  FLOAT ekin, etotl, etotr, Sl, Sr, ddu, dstarl, dstarr, etotstarl, etotstarr, df, uf, pf, etotf;
   ekin = 0.0;
   for (int kv=0; kv<ndim; kv++) ekin += 0.5*Wleft[irho]*Wleft[kv]*Wleft[kv];
   etotl = Wleft[ipress]/(gamma - 1.0) + ekin;
@@ -808,9 +742,9 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
   // Otherwise assume vacuum state conditions
   //-----------------------------------------------------------------------------------------------
   else {
-    d = 0.0;
+    /*d = 0.0;
     u = 0.0;
-    p = 0.0;
+    p = 0.0;*/
 
     for (kv=0; kv<ndim; kv++) Wface[kv] = (FLOAT) 0.0;
     for (int var=0; var<ndim+2; var++) {

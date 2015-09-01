@@ -122,19 +122,19 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
 
     Nneibmaxbuf     = new int[Nthreads];
     Ngravcellmaxbuf = new int[Nthreads];
-    levelneibbuf    = new int*[Nthreads];
     activelistbuf   = new int*[Nthreads];
     activepartbuf   = new ParticleType<ndim>*[Nthreads];
     neibpartbuf     = new ParticleType<ndim>*[Nthreads];
+    levelneibbuf    = new unsigned int*[Nthreads];
     cellbuf         = new TreeCell<ndim>*[Nthreads];
 
     for (ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread]     = max(1,4*Ngather);
       Ngravcellmaxbuf[ithread] = max(1,4*Ngather);
-      levelneibbuf[ithread]    = new int[Ntotmax];
       activelistbuf[ithread]   = new int[Nleafmax];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
       neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
+      levelneibbuf[ithread]    = new unsigned int[Ntotmax];
       cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmaxbuf[ithread]];
     }
     allocated_buffer = true;
@@ -161,15 +161,16 @@ void HydroTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
 
     for (ithread=0; ithread<Nthreads; ithread++) {
       delete[] cellbuf[ithread];
+      delete[] levelneibbuf[ithread];
       delete[] neibpartbuf[ithread];
       delete[] activepartbuf[ithread];
       delete[] activelistbuf[ithread];
-      delete[] levelneibbuf[ithread];
     }
+    delete[] cellbuf;
+    delete[] levelneibbuf;
     delete[] neibpartbuf;
     delete[] activepartbuf;
     delete[] activelistbuf;
-    delete[] levelneibbuf;
     delete[] Ngravcellmaxbuf;
     delete[] Nneibmaxbuf;
 
@@ -187,7 +188,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::BuildTree
  (const bool rebuild_tree,             ///< [in] Flag to rebuild tree
-  const int n,                         ///< [in] Integer time
+  const unsigned int n,                         ///< [in] Integer time
   const int ntreebuildstep,            ///< [in] Tree build frequency
   const int ntreestockstep,            ///< [in] Tree stocking frequency
   const int Npart,                     ///< [in] No. of particles
@@ -243,7 +244,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildTree
   else if (n%ntreestockstep == 0) {
 
     tree->StockTree(tree->celldata[0],partdata);
-    //cout << "Work in local domain : " << tree->celldata[0].worktot << endl;
 
   }
 
@@ -275,7 +275,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildTree
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostTree
  (const bool rebuild_tree,             ///< [in] Flag to rebuild tree
-  const int n,                         ///< [in] Integer time
+  const unsigned int n,                         ///< [in] Integer time
   const int ntreebuildstep,            ///< [in] Tree build frequency
   const int ntreestockstep,            ///< [in] Tree stocking frequency
   const int Npart,                     ///< [in] No. of particles
@@ -774,6 +774,119 @@ void HydroTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 
   }
   //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  HydroTree::UpdateAllStarGasForces
+/// Calculate the gravitational acceleration on all star particles due to
+/// all gas particles via the tree.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
+ (int Nhydro,                          ///< [in] No. of SPH particles
+  int Ntot,                            ///< [in] No. of SPH + ghost particles
+  Particle<ndim> *part_gen,            ///< [inout] Pointer to SPH ptcl array
+  Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+{
+  int Nactive;                         // No. of active particles in cell
+  int *activelist;                     // List of active particle ids
+  NbodyParticle<ndim> *star;           // Pointer to star particle
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+
+
+  debug2("[GradhSphTree::UpdateAllStarGasForces]");
+  //timing->StartTimingSection("STAR_GAS_GRAV_FORCES");
+
+  // Make list of all active stars
+  Nactive = 0;
+  activelist = new int[nbody->Nstar];
+  for (int i=0; i<nbody->Nstar; i++) {
+    if (nbody->nbodydata[i]->active) activelist[Nactive++] = i;
+  }
+
+
+  // Set-up all OMP threads
+  //===============================================================================================
+#pragma omp parallel default(none) private(star)\
+  shared(activelist,hydro,Nactive,Ntot,nbody,partdata,cout)
+  {
+#if defined _OPENMP
+    const int ithread = omp_get_thread_num();
+#else
+    const int ithread = 0;
+#endif
+    int i;                                       // Particle id
+    int j;                                       // Aux. particle counter
+    int okflag;                                  // Flag if h-rho iteration is valid
+    int Ndirect;                                 // No. of direct-sum gravity particles
+    int Ngravcell;                               // No. of gravity cells
+    int Nneib;                                   // No. of neighbours
+    int Nneibmax = Ntot; //Nneibmaxbuf[ithread];
+    int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
+    FLOAT macfactor;                             // Gravity MAC factor
+    int* neiblist = new int[Nneibmax];           // ..
+    int* directlist = new int[Nneibmax];         // ..
+    TreeCell<ndim>* gravcell = new TreeCell<ndim>[Ngravcellmax];   // ..
+
+
+    // Loop over all active cells
+    //=============================================================================================
+#pragma omp for schedule(dynamic)
+    for (j=0; j<Nactive; j++) {
+      i = activelist[j];
+      star = nbody->nbodydata[i];
+
+      // Compute average/maximum term for computing gravity MAC
+      if (gravity_mac == "eigenmac") macfactor = pow((FLOAT) 1.0/star->gpot,twothirds);
+      else macfactor = (FLOAT) 0.0;
+
+      // Compute neighbour list for cell depending on physics options
+      okflag = tree->ComputeStarGravityInteractionList
+       (star, macfactor, Nneibmax, Nneibmax, Ngravcellmax, Nneib,
+        Ndirect, Ngravcell, neiblist, directlist, gravcell, partdata);
+
+      // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
+      while (okflag == -1) {
+        delete[] gravcell;
+        Ngravcellmax = 2*Ngravcellmax;
+        gravcell = new TreeCell<ndim>[Ngravcellmax];
+        okflag = tree->ComputeStarGravityInteractionList
+         (star, macfactor, Nneibmax, Nneibmax, Ngravcellmax, Nneib,
+          Ndirect, Ngravcell, neiblist, directlist, gravcell, partdata);
+      };
+
+      // Compute contributions to star force from nearby SPH particles
+      nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, hydro);
+
+      // Compute gravitational force due to distant cells
+      if (multipole == "monopole" || multipole == "fast_monopole") {
+        this->ComputeCellMonopoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
+      }
+      else if (multipole == "quadrupole") {
+        this->ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
+      }
+
+
+    }
+    //=============================================================================================
+
+
+    // Free-up local memory for OpenMP thread
+    delete[] gravcell;
+    delete[] directlist;
+    delete[] neiblist;
+
+  }
+  //===============================================================================================
+
+  delete[] activelist;
+
+  //timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
 
   return;
 }

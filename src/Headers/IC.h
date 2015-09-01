@@ -38,7 +38,7 @@
 //=================================================================================================
 //  Class Ic
 /// \brief   Class to contain all generic initial conditions functions.
-/// \details ...
+/// \details Class to contain all generic initial conditions functions.
 /// \author  D. A. Hubber & G. Rosotti
 /// \date    15/04/2013
 //=================================================================================================
@@ -49,11 +49,13 @@ private:
 
   Simulation<ndim>* const sim;              ///< Simulation class pointer
   Hydrodynamics<ndim>* const hydro;         ///< Hydrodynamics algorithm pointer
-  Parameters* simparams;
-  RandomNumber *randnumb;
-  const FLOAT invndim;
-  const SimUnits& simunits;
-  const DomainBox<ndim>& simbox;
+  const FLOAT invndim;                      ///< 1/ndim
+  const SimUnits& simunits;                 ///< Reference to main simunits object
+  const DomainBox<ndim>& simbox;            ///< Reference to simulation bounding box object
+
+  Parameters* simparams;                    ///< Pointer to parameters object
+  RandomNumber *randnumb;                   ///< Random number object pointer
+
 
   // Helper routines
   //-----------------------------------------------------------------------------------------------
@@ -79,8 +81,8 @@ public:
 
   Ic(Simulation<ndim>* sim_aux, Hydrodynamics<ndim>* hydro_aux, FLOAT invndim_aux) :
     sim(sim_aux), hydro(hydro_aux), invndim(invndim_aux),
-    simunits(sim_aux->simunits), simparams(sim_aux->simparams),
-    simbox(sim_aux->simbox), randnumb(sim_aux->randnumb)
+    simunits(sim_aux->simunits), simbox(sim_aux->simbox),
+    simparams(sim_aux->simparams), randnumb(sim_aux->randnumb)
   {
   };
 
@@ -89,6 +91,7 @@ public:
   //-----------------------------------------------------------------------------------------------
   void BinaryAccretion(void);
   void BinaryStar(void);
+  void BlastWave(void);
   void BondiAccretion(void);
   void BossBodenheimer(void);
   void CheckInitialConditions(void);
@@ -112,6 +115,6 @@ public:
   void IsothermSphere(void);
   void RotIsothermSphere(void);
   void TurbIsothermSphere(void);
-  
+
 };
 #endif

@@ -1,6 +1,6 @@
 //=================================================================================================
 //  MeshlessFVSimulation.cpp
-//  Contains all main functions controlling SPH simulation work-flow.
+//  Contains all main functions controlling Meshless Finite-Volume simulation work-flow.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -125,7 +125,6 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   }
 
 
-   cout << "SIM : |"<<sim<<"|mfvmuscl" << endl;
   // Create Meshless Finite-Volume object depending on choice of kernel
   //===============================================================================================
   if (sim == "meshlessfv" || sim == "mfvmuscl") {
@@ -235,11 +234,16 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   }
 
 
-
   // Slope limiter
   //-----------------------------------------------------------------------------------------------
   string limiter = stringparams["slope_limiter"];
-  if (limiter == "balsara2004") {
+  if (limiter == "null") {
+    mfv->limiter = new NullLimiter<ndim,MeshlessFVParticle>();
+  }
+  else if (limiter == "zeroslope") {
+    mfv->limiter = new ZeroSlopeLimiter<ndim,MeshlessFVParticle>();
+  }
+  else if (limiter == "balsara2004") {
     mfv->limiter = new Balsara2004Limiter<ndim,MeshlessFVParticle>();
   }
   else if (limiter == "springel2009") {
@@ -363,8 +367,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   nbody_single_timestep = intparams["nbody_single_timestep"];
   nbodytree.gpehard     = floatparams["gpehard"];
   nbodytree.gpesoft     = floatparams["gpesoft"];
-  nbody->perturbers     = intparams["perturbers"];
-  if (intparams["sub_systems"] == 1) subsystem->perturbers = intparams["perturbers"];
+  //nbody->perturbers     = intparams["perturbers"];
+  //if (intparams["sub_systems"] == 1) subsystem->perturbers = intparams["perturbers"];
 
 
   // Set other important simulation variables
@@ -434,7 +438,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   partdata = mfv->GetMeshlessFVParticleArray();
 
   // Set time variables here (for now)
-  nresync = 0;   // DAVID : Need to adapt this for block timesteps3
+  nresync = 0;   // DAVID : Need to adapt this for block timesteps
   n = 0;
   integration_step = 1;
 
@@ -462,7 +466,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       mfv->InitialSmoothingLengthGuess();
       mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                          mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
-      mfvneib->UpdateAllProperties(mfv->Nhydro,mfv->Ntot,mfv->GetMeshlessFVParticleArray(),mfv,nbody);
+      mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot,
+                                   mfv->GetMeshlessFVParticleArray(), mfv, nbody);
     }
     else {
       mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
@@ -471,8 +476,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Search ghost particles
     mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
-    mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-                            mfv->Nhydromax,timestep,mfv->GetMeshlessFVParticleArray(),mfv);
+    mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep ,mfv->Ntot,
+                            mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
 
 
     // Zero accelerations
@@ -489,24 +494,52 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).gpot = big_number;
 
     // Calculate all SPH properties
-    mfvneib->UpdateAllProperties(mfv->Nhydro,mfv->Ntot,mfv->GetMeshlessFVParticleArray(),mfv,nbody);
+    mfvneib->UpdateAllProperties(mfv->Nhydro ,mfv->Ntot,
+                                 mfv->GetMeshlessFVParticleArray(), mfv, nbody);
 
     // Search ghost particles
-    mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
-    mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-                            mfv->Nhydromax,timestep,mfv->GetMeshlessFVParticleArray(),mfv);
+    mfvneib->SearchBoundaryGhostParticles(0.0, simbox, mfv);
+    mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
+                            mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
 
     // Update neighbour tree
     rebuild_tree = true;
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                        mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
     mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
-    mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-                            mfv->Nhydromax,timestep,mfv->GetMeshlessFVParticleArray(),mfv);
+    mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
+                            mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
     mfvneib->neibcheck = true;
 
+  }
+
+
+  // Compute all initial N-body terms
+  //-----------------------------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+
+    // Zero all acceleration terms
+    for (i=0; i<nbody->Nstar; i++) {
+      for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
+      nbody->stardata[i].gpot   = 0.0;
+      nbody->stardata[i].gpe    = 0.0;
+      nbody->stardata[i].tlast  = t;
+      nbody->stardata[i].active = true;
+      nbody->stardata[i].level  = 0;
+      nbody->stardata[i].nstep  = 0;
+      nbody->stardata[i].nlast  = 0;
+      nbody->nbodydata[i]       = &(nbody->stardata[i]);
+    }
+    nbody->Nnbody = nbody->Nstar;
 
   }
+
+  // Read-in N-body table here
+  nbody->LoadStellarPropertiesTable(&simunits);
+  nbody->UpdateStellarProperties();
 
 
   // Compute all initial SPH force terms
@@ -525,11 +558,12 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).active = true;
 
     // Copy all other data from real SPH particles to ghosts
+    mfv->CopyDataToGhosts(simbox, partdata);
     //LocalGhosts->CopySphDataToGhosts(simbox,sph);
 
     mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                        mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
-    mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
+    mfvneib->SearchBoundaryGhostParticles(0.0, simbox, mfv);
     mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                             mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
 
@@ -560,23 +594,51 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
     mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
     mfv->CopyDataToGhosts(simbox, partdata);
-    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
+    //mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
 
     if (mfv->self_gravity == 1) {
       mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
     }
 
-    // Call EndTimestep to set all 'beginning-of-step' variables
-    mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  // Compute initial N-body forces
+  //-----------------------------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+    if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
+      mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot,
+                                      mfv->GetMeshlessFVParticleArray(), mfv, nbody);
+#if defined MPI_PARALLEL
+        // We need to sum up the contributions from the different domains
+        mpicontrol->ComputeTotalStarGasForces(nbody);
+#endif
+    }
+
+    if (nbody->nbody_softening == 1) {
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
+    }
+    else {
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+    }
+    nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata);
+
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->active) {
+        nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
+                                            nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
+                                            nbody->nbodydata[i]->gpot);
+      }
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
 
 
-  // Set particle values for initial step (e.g. r0, v0, a0, u0)
-  /*uint->EndTimestep(n,mfv->Nhydro,t,timestep,mfv->GetMeshlessFVParticleArray());
-  sphint->EndTimestep(n,mfv->Nhydro,t,timestep,mfv->GetMeshlessFVParticleArray());
-  nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);*/
+  // Call EndTimestep to set all 'beginning-of-step' variables
+  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+  nbody->EndTimestep(n, nbody->Nstar , t, timestep, nbody->nbodydata);
 
   this->CalculateDiagnostics();
   this->diag0 = this->diag;
@@ -589,123 +651,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
 //=================================================================================================
-//  MeshlessFVSimulation::MainLoop
-/// Main SPH simulation integration loop.
-//=================================================================================================
-/*template <int ndim>
-void MeshlessFVSimulation<ndim>::MainLoop(void)
-{
-  int activecount = 0;                 // Flag if we need to recompute particles
-  int i;                               // Particle loop counter
-  int it;                              // Time-symmetric iteration counter
-  int k;                               // Dimension counter
-  FLOAT tghost;                        // Approx. ghost particle lifetime
-  MeshlessFVParticle<ndim> *partdata;  // Pointer to main hydro data array
-
-  debug2("[MeshlessFVSimulation::MainLoop]");
-
-//cin >> i;
-  // Set pointer for SPH data array
-  partdata = mfv->GetMeshlessFVParticleArray();
-
-
-  // Advance SPH and N-body particles' positions and velocities
-  //uint->EnergyIntegration(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
-  //sphint->AdvanceParticles(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
-  //nbody->AdvanceParticles(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
-
-  // Check all boundary conditions
-  // (DAVID : Move this function to sphint and create an analagous one
-  //  for N-body.  Also, only check this on tree-build steps)
-  //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) sphint->CheckBoundaries(simbox,sph);
-
-
-  // Rebuild or update local neighbour and gravity tree
-  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                     mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
-
-
-  // Search for new ghost particles and create on local processor
-  //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-  tghost = timestep*(FLOAT)(ntreebuildstep - 1);
-  mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-  mfvneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
-                          mfv->Ntot,mfv->Nhydromax,timestep,partdata,mfv);
-
-  for (i=0; i<mfv->Nhydro; i++) {
-    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    part.active = true;
-  }
-
-  // Calculate all properties
-  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
-
-  mfv->CopyDataToGhosts(simbox, partdata);
-
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
-//cin >> i;
-  mfv->CopyDataToGhosts(simbox, partdata);
-
-
-  // Compute timesteps for all particles
-  this->ComputeGlobalTimestep();
-  //if (Nlevels == 1) this->ComputeGlobalTimestep();
-  //else this->ComputeBlockTimesteps();
-
-  // Advance time variables
-  n = n + 1;
-  Nsteps = Nsteps + 1;
-  t = t + timestep;
-  if (n == nresync) Nblocksteps = Nblocksteps + 1;
-  if (n%integration_step == 0) Nfullsteps = Nfullsteps + 1;
-
-
-  mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
-
-  // Integrate all conserved variables to end of timestep
-  for (i=0; i<mfv->Nhydro; i++) {
-    mfv->IntegrateConservedVariables(partdata[i], timestep);
-    mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
-    mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
-    mfv->UpdateArrayVariables(partdata[i]);
-
-    for (k=0; k<ndim; k++) {
-      //partdata[i].r[k] += (FLOAT) 0.5*(partdata[i].v0[k] + partdata[i].v[k])*timestep;
-      //partdata[i].v0[k] = partdata[i].v[k];
-      partdata[i].r[k] += partdata[i].v[k]*timestep;
-      if (partdata[i].r[k] < simbox.boxmin[k])
-        if (simbox.boundary_lhs[k] == periodicBoundary) {
-          partdata[i].r[k] += simbox.boxsize[k];
-        }
-      if (partdata[i].r[k] > simbox.boxmax[k])
-        if (simbox.boundary_rhs[k] == periodicBoundary) {
-          partdata[i].r[k] -= simbox.boxsize[k];
-        }
-    }
-
-
-  }
-
-  //this->CalculateDiagnostics();
-  //this->OutputDiagnostics();
-  //this->UpdateDiagnostics();
-
-
-  rebuild_tree = false;
-
-
-  // End-step terms for all SPH particles
-  //if (mfv->Nhydro > 0) {
-  //  uint->EndTimestep(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
-  //  sphint->EndTimestep(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
-  //}
-
-  return;
-}*/
-
-
-
-//=================================================================================================
 //  MeshlessFVSimulation::ComputeGlobalTimestep
 /// Computes global timestep for SPH simulation.  Calculates the minimum
 /// timestep for all SPH and N-body particles in the simulation.
@@ -714,10 +659,10 @@ template <int ndim>
 void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                               // Particle counter
-  DOUBLE dt;                           // Particle timestep
+  //DOUBLE dt;                           // Particle timestep
   DOUBLE dt_min = big_number_dp;       // Local copy of minimum timestep
-  DOUBLE dt_nbody;                     // Aux. minimum N-body timestep
-  DOUBLE dt_hydro;                       // Aux. minimum SPH timestep
+  //DOUBLE dt_nbody;                     // Aux. minimum N-body timestep
+  //DOUBLE dt_hydro;                     // Aux. minimum SPH timestep
 
   debug2("[MeshlessFVSimulation::ComputeGlobalTimestep]");
   timing->StartTimingSection("GLOBAL_TIMESTEPS");
@@ -731,7 +676,7 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
     level_max    = 0;
     level_step   = level_max + integration_step - 1;
     nresync      = integration_step;
-    dt_min_hydro   = big_number_dp;
+    dt_min_hydro = big_number_dp;
 
     // Find minimum timestep from all SPH particles
     //---------------------------------------------------------------------------------------------
@@ -776,26 +721,26 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 template <int ndim>
 void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 {
-  int i;                                // Particle counter
-  int imin;                             // i.d. of ptcl with minimum timestep
-  int imin_aux;                         // ..
-  int istep;                            // Aux. variable for changing steps
-  int last_level;                       // Previous timestep level
-  int level;                            // Particle timestep level
-  int level_max_aux;                    // Aux. maximum level variable
-  int level_max_nbody = 0;              // level_max for star particles only
-  int level_max_old = level_max;        // Old level_max
-  int level_max_hydro = 0;              // level_max for SPH particles only
-  int level_min_hydro = 9999999;        // level_min for SPH particles
-  int level_nbody;                      // local thread var. for N-body level
-  int level_hydro;                      // local thread var. for SPH level
-  int nfactor;                          // Increase/decrease factor of n
-  int nstep;                            // Particle integer step-size
-  DOUBLE dt;                            // Aux. timestep variable
-  DOUBLE dt_min = big_number_dp;        // Minimum timestep
-  DOUBLE dt_min_aux;                    // Aux. minimum timestep variable
-  DOUBLE dt_nbody;                      // Aux. minimum N-body timestep
-  DOUBLE dt_hydro;                      // Aux. minimum SPH timestep
+  int i;                                     // Particle counter
+  //int imin;                                  // i.d. of ptcl with minimum timestep
+  //int imin_aux;                              // ..
+  unsigned int istep;                        // Aux. variable for changing steps
+  unsigned int last_level;                   // Previous timestep level
+  unsigned int level;                        // Particle timestep level
+  unsigned int level_max_aux;                // Aux. maximum level variable
+  unsigned int level_max_nbody = 0;          // level_max for star particles only
+  unsigned int level_max_old = level_max;    // Old level_max
+  unsigned int level_max_hydro = 0;          // level_max for SPH particles only
+  unsigned int level_min_hydro = 9999999;    // level_min for SPH particles
+  //unsigned int level_nbody;                // local thread var. for N-body level
+  unsigned int level_hydro;                  // local thread var. for SPH level
+  unsigned int nfactor;                      // Increase/decrease factor of n
+  unsigned int nstep;                        // Particle integer step-size
+  DOUBLE dt;                                 // Aux. timestep variable
+  DOUBLE dt_min = big_number_dp;             // Minimum timestep
+  DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
+  DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
+  DOUBLE dt_hydro;                           // Aux. minimum SPH timestep
 
   debug2("[MeshlessFVSimulation::ComputeBlockTimesteps]");
   timing->StartTimingSection("BLOCK_TIMESTEPS");
@@ -825,7 +770,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.itype == dead) continue;
         dt = mfv->Timestep(part);
-        if (dt < dt_hydro) imin_aux = i;
+        //if (dt < dt_hydro) imin_aux = i;
         dt_min_aux = min(dt_min_aux, dt);
         dt_hydro   = min(dt_hydro, dt);
         part.dt    = dt;
@@ -842,7 +787,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
 #pragma omp critical
       {
-        if (dt_min_aux < timestep) imin = imin_aux;
+        //if (dt_min_aux < timestep) imin = imin_aux;
         timestep     = min(timestep, dt_min_aux);
         dt_min_hydro = min(dt_min_hydro, dt_hydro);
         dt_min_nbody = min(dt_min_nbody, dt_nbody);
@@ -868,7 +813,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     dt_max     = timestep*powf(2.0,level_max);
 
     // Calculate the maximum level occupied by all SPH particles
-    level_max_hydro   = min((int) (invlogetwo*log(dt_max/dt_min_hydro)) + 1, level_max);
+    level_max_hydro   = min((unsigned int) (invlogetwo*log(dt_max/dt_min_hydro)) + 1u, level_max);
     /*level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, level_max);
 
     // Populate timestep levels with N-body particles.
@@ -915,8 +860,8 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.itype == dead) continue;
         dt              = part.dt;
-        level           = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
-        level           = max(level,0);
+        level           = min((unsigned int) (invlogetwo*log(dt_max/dt)) + 1u, level_max);
+        level           = max(level, 0u);
         part.active     = true;
         part.level      = level;
         part.levelneib  = level;
@@ -928,7 +873,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     }
 
     nresync = pow(2,level_step);
-    assert(nresync > 0);
+    assert(nresync > 0u);
     timestep = dt_max / (DOUBLE) nresync;
 
   }
@@ -949,11 +894,11 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       dt_hydro      = big_number_dp;
       dt_nbody      = big_number_dp;
       level_max_aux = 0;
-      level_nbody   = 0;
+      //level_nbody   = 0;
       level_hydro   = 0;
 
 
-      // Find all SPH particles at the beginning of a new timestep
+      // Find all hydro particles at the beginning of a new timestep
       //-------------------------------------------------------------------------------------------
 #pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
@@ -964,7 +909,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
         // SPH particles whose timestep has been artificially reduced by Saitoh & Makino scheme.
         if (part.nlast == n && part.nstep != pow(2, level_step - part.level)) {
           dt    = mfv->Timestep(part);
-          level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+          level = max((unsigned int) (invlogetwo*log(dt_max/dt)) + 1u, 0u);
           level = max(level, part.levelneib - level_diff_max);
 
           part.active    = true;
@@ -975,14 +920,14 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
           part.tlast     = t;
           part.nstep     = pow(2, level_step - part.level);
         }
-        // SPH particles that have naturally reached the end of their step
+        // Hydro particles that have naturally reached the end of their step
         else if (part.nlast == n) {
           nstep      = part.nstep;
           last_level = part.level;
 
           // Compute new timestep value and level number
           dt    = mfv->Timestep(part);
-          level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+          level = max((unsigned int) (invlogetwo*log(dt_max/dt)) + 1u, 0u);
           level = max(level, part.levelneib - level_diff_max);
 
           // Move up one level (if levels are correctly synchronised) or
@@ -999,12 +944,12 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
           part.dt        = dt;
           part.nlast     = n;
           part.tlast     = t;
-          part.nstep     = pow(2,level_step - part.level);
+          part.nstep     = pow(2u,level_step - part.level);
         }
 
         // Find maximum level of all SPH particles
         level_hydro = max(level_hydro,part.level);
-        if (part.dt < dt_hydro) imin_aux = i;
+        //if (part.dt < dt_hydro) imin_aux = i;
         level_max_aux = max(level_max_aux,part.level);
 
         dt_hydro = min(dt_hydro,part.dt);
@@ -1014,7 +959,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
 #pragma omp critical
       {
-        if (dt_hydro < dt_min_hydro) imin = imin_aux;
+        //if (dt_hydro < dt_min_hydro) imin = imin_aux;
         dt_min        = min(dt_min,dt_hydro);
         dt_min_hydro    = min(dt_min_hydro,dt_hydro);
         level_max     = max(level_max,level_max_aux);
@@ -1206,7 +1151,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
   // Some validations
   //-----------------------------------------------------------------------------------------------
-  int *ninlevel;
+  /*int *ninlevel;
   int Nactive=0;
   ninlevel = new int[level_max+1];
   MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(imin);
@@ -1227,11 +1172,11 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   }
   cout << "No. of active Hydro particles : " << Nactive << endl;
   cout << "Hydro level occupancy" << endl;
-  for (int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
-  for (int l=0; l<=level_max; l++) ninlevel[l] = 0;
+  for (unsigned int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
+  for (unsigned int l=0; l<=level_max; l++) ninlevel[l] = 0;
   for (i=0; i<nbody->Nstar; i++) ninlevel[nbody->nbodydata[i]->level]++;
   cout << "N-body level occupancy" << endl;
-  for (int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
+  for (unsigned int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
 
   delete[] ninlevel;
 
@@ -1240,7 +1185,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     exit(0);
   }
 
-  return;
+  return;*/
 }
 
 

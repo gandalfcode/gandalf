@@ -57,10 +57,10 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
 {
 
   int i, j, l;
-    // int ndens, ntemp; defined in EnergyEquation
+  // int ndens, ntemp; defined in EnergyEquation
   DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_;
+  DOUBLE num, denom, tempunit;
   string line;
-  DOUBLE num, denom, tunit, tempunit;
 
   eos = eos_;
 
@@ -209,7 +209,7 @@ EnergyRadws<ndim,ParticleType>::~EnergyRadws()
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EnergyIntegration
- (const int n,                         ///< [in] Integer time in block time struct
+ (const unsigned int n,                ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
@@ -218,7 +218,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
   int i;                               // Particle counter
   FLOAT dt;                            // Timestep since start of step
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
-  FLOAT temp;
 
   debug2("[EnergyRadws::EnergyIntegration]");
   timing->StartTimingSection("ENERGY_RADWS_INTEGRATION");
@@ -264,16 +263,16 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EndTimestep
- (const int n,                         ///< [in] Integer time in block time struct
+ (const unsigned int n,                ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
   Particle<ndim>* part_gen)            ///< [inout] Pointer to SPH particle array
 {
-  int dn;                              // Integer time since beginning of step
+  unsigned int dn;                     // Integer time since beginning of step
   int i;                               // Particle counter
   FLOAT temp;                          // ..
-  FLOAT dt_therm;                      // ..
+  //FLOAT dt_therm;                      // ..
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[EnergyRadws::EndTimestep]");
@@ -399,11 +398,11 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   int itemplow, itemphigh;
 
   FLOAT accuracy = 0.001; // not shure what is a good accuracy (Paul)
-  FLOAT balance, minbalance ;
+  FLOAT balance; //minbalance ;
   FLOAT balanceLow, balanceHigh ;
   FLOAT kappa, kappar, kappap;
   FLOAT kappaLow, kappaHigh, kappapLow, kappapHigh;
-  FLOAT logtemp, logrho , tempmin;
+  FLOAT logtemp, logrho;
   FLOAT Tlow, Thigh, Tlow_log, Thigh_log, Tequi_log;
   FLOAT mu_bar_high, mu_bar_low;
   FLOAT dtemp;

@@ -483,9 +483,12 @@ class AnalyticalPlotCommand (PlotCommand):
 
 
     #--------------------------------------------------------------------------
-    def prepareData(self, globallimits):
+    def prepareData(self, globallimits, solutiontime="snaptime"):
         sim, snap = self.get_sim_and_snap()
-        time = snap.t
+        if solutiontime == "snaptime":
+            time = snap.t
+        else:
+            time = solutiontime
 
         if self.ic == "default":
             ictype = sim.simparams.stringparams["ic"]

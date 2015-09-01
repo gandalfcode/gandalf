@@ -87,18 +87,18 @@ if we are in interactive mode, or re-raising it, if we are in script mode
 def loadsim(run_id, fileformat=None, buffer_flag='cache'):
     '''Given the run_id of a simulation, reads it from the disk.
 Returns the newly created simulation object.
-    
+
 Required arguments:
     run_id      : Simulation run identification string.
-    
+
 Optional qrguments:
     fileformat  : Format of all snapshot files of simulation.
     buffer_flag : Record snapshot data in simulation buffer.
 '''
     SimBuffer.loadsim(run_id, fileformat=fileformat, buffer_flag=buffer_flag)
     return SimBuffer.get_current_sim()
-   
-   
+
+
 #------------------------------------------------------------------------------
 def plot(x, y, type="default", snap="current", sim="current",
          overplot=False, autoscale=False, xunit="default", yunit="default",
@@ -109,11 +109,11 @@ one does not already exist.
 Required arguments:
     x          : Quantity on the x-axis. Must be a string.
     y          : Quantity on the y-axis. Must be a string.
-        
+
 Optional arguments:
     type       : The type of the particles to plot (e.g. 'star' or 'sph').
-    snap       : Number of the snapshot to plot. Defaults to 'current'.       
-    sim        : Number of the simulation to plot. Defaults to 'current'.    
+    snap       : Number of the snapshot to plot. Defaults to 'current'.
+    sim        : Number of the simulation to plot. Defaults to 'current'.
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
     autoscale  : If True, the limits of the plot are set
@@ -151,7 +151,7 @@ Optional arguments:
 #------------------------------------------------------------------------------
 def time_plot(x, y, sim="current", overplot=False, autoscale=False,
               xunit="default", yunit="default", xaxis="linear",
-              yaxis="linear", idx=None, idy=None, id=None, 
+              yaxis="linear", idx=None, idy=None, id=None,
               typex="default", typey="default", type="default", **kwargs):
     '''Plot two quantities as evolved in time one versus the another.  Creates
 a new plotting window if one does not already exist.
@@ -165,9 +165,9 @@ Required arguments:
                  to look-up.
     y          : Quantity on y-axis.  Must be a string. The interpretation is
                  like for the previous argument.
-    
-Optional arguments:     
-    sim        : Number of the simulation to plot. Defaults to 'current'.    
+
+Optional arguments:
+    sim        : Number of the simulation to plot. Defaults to 'current'.
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
     autoscale  : If True, the limits of the plot are set
@@ -194,11 +194,11 @@ Optional arguments:
     simno = get_sim_no(sim)
     overplot = to_bool(overplot)
     command = Commands.TimePlot(x, y,simno,overplot,autoscale,
-                                  xunit,yunit,xaxis,yaxis,idx, idy, id, 
+                                  xunit,yunit,xaxis,yaxis,idx, idy, id,
                                   typex, typey, type, **kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
-    
+
 
 #------------------------------------------------------------------------------
 def render(x, y, render, snap="current", sim="current", overplot=False,
@@ -211,13 +211,13 @@ Required arguments:
     x          : Quantity on the x-axis. Must be a string.
     y          : Quantity on the y-axis. Must be a string.
     renderdata : Quantity to be rendered. Must be a string.
-        
+
 Optional arguments:
     snap       : Number of the snapshot to plot. Defaults to \'current\'.
     sim        : Number of the simulation to plot. Defaults to \'current\'.
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True, the coordinate limits of the plot are set 
+    autoscale  : If True, the coordinate limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
                  If False (default), autoscaling is not used. On an axis that
@@ -235,7 +235,7 @@ Optional arguments:
     zslice     : z-coordinate of the slice when doing a slice rendering.
                  Default is None, which produces a column-integrated plot.
                  If you set this variable, instead a slice rendering will
-                 be done. 
+                 be done.
     xunit      : Specify the unit to use for the plotting for the quantity
                  on the x-axis.
     yunit      : Specify the unit to use for the plotting for the quantity
@@ -301,7 +301,7 @@ Required arguments:
 
 Optional arguments:
     See render function optional arguments
-'''  
+'''
     try:
         kwargs['autoscale']
     except KeyError:
@@ -318,10 +318,10 @@ Required arguments:
     x          : Quantity on the x-axis. Must be a string.
     y          : Quantity on the y-axis. Must be a string.
     renderdata : Quantity to be rendered. Must be a string.
-        
+
 Optional arguments:
     See render function optional arguments
-''' 
+'''
     try:
         kwargs['autoscale']
     except KeyError:
@@ -368,21 +368,21 @@ def make_movie(filename, snapshots='all', window_no=0, fps=24):
 def limit(quantity, min=None, max=None, auto=False,
           window='current', subfigure='current'):
     '''Set plot limits. Quantity is the quantity to limit.
-    
+
 Required arguments:
     quantity   : Set limits of this variable. Must be a string.
 
 Optional arguments:
     min        : Minimum value of variable range.
     max        : Maximum value of variable range.
-    auto       : If auto is set to True, then the limits for that quantity are 
+    auto       : If auto is set to True, then the limits for that quantity are
                  set automatically. Otherwise, use the one given by max and min.
     window     : If window is set to 'global' is available, then any changes
-                 will affect also future plots that do not have autoscaling 
+                 will affect also future plots that do not have autoscaling
                  turned on.
     subfigure  : If subfigure is set to 'all', the limits in all the figures or
                  in all the subfigures of the current figure are set.
-''' 
+'''
     if min is not None:
         min = float(min)
     if max is not None:
@@ -407,10 +407,10 @@ to False to preserve the existing settings.
 Required arguments:
     x          : Quantity on the x-axis. Must be a string.
     y          : Quantity on the y-axis. Must be a string.
-        
+
 Optional arguments:
     See plot function optional arguments
-'''  
+'''
     try:
         kwargs['autoscale']
     except KeyError:
@@ -442,7 +442,7 @@ Return the new snapshot, or None if the call failed.'''
 
 #------------------------------------------------------------------------------
 def snap(no):
-    '''Jump to the given snapshot number of the current simulation.  Note that 
+    '''Jump to the given snapshot number of the current simulation.  Note that
 you can use standard Numpy index notation (e.g., -1 is the last snapshot).
 Return the new snapshot, or None if the call failed.
 
@@ -455,7 +455,7 @@ Required arguments:
         snapshot=SimBuffer.set_current_snapshot_number(no)
     except BufferException as e:
         handle(e)
-    
+
     update("current")
     return snapshot
 
@@ -505,9 +505,9 @@ afterwards.
 
 #------------------------------------------------------------------------------
 def setupsim():
-    '''Set up the current simulation object. Note that after calling this function, 
+    '''Set up the current simulation object. Note that after calling this function,
 no parameter change it\'s possible.
-'''  
+'''
     sim = SimBuffer.get_current_sim()
     sim.SetupSimulation()
     sim.simparams.RecordParametersToFile()
@@ -517,7 +517,7 @@ no parameter change it\'s possible.
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
 otherwise queries the buffer for the given simulation number.
-If the simulation has not been setup, does it before running. 
+If the simulation has not been setup, does it before running.
 
 Optional arguments:
     no         : Simulation number
@@ -531,7 +531,7 @@ Optional arguments:
             sim = SimBuffer.get_sim_no(no)
     except BufferError as e:
         handle(e)
-        
+
     #setup the simulation
     if not sim.setup:
         sim.SetupSimulation()
@@ -544,14 +544,14 @@ Optional arguments:
         snap_list = sim.InteractiveRun()
         for snap in snap_list:
             SimBuffer.add_snapshot(snap, sim)
-        
+
         SimBuffer.load_live_snapshot(sim)
         update("live")
 
 
 #------------------------------------------------------------------------------
 def block():
-    '''Stops the execution flow until the user presses 'enter'. 
+    '''Stops the execution flow until the user presses 'enter'.
 Useful in scripts, allowing to see a plot (which gets closed
 when the execution flow reaches the end of the script
 '''
@@ -562,10 +562,10 @@ when the execution flow reaches the end of the script
 #------------------------------------------------------------------------------
 def update(type=None):
     '''Updates all the plots. You should never call directly this function,
-because all the plotting functions should call this function for you. 
+because all the plotting functions should call this function for you.
 If you run into a situation when you need it, please contact the authors,
 because you probably just spotted a bug in the code.
-''' 
+'''
     #updates the plots
     for command in Singletons.commands:
         updateplot=False
@@ -611,16 +611,16 @@ Useful in scripts where no interaction is required
 #------------------------------------------------------------------------------
 def plotanalytical(x=None, y=None, ic="default", snap="current", sim="current",
                    overplot=True, autoscale=False, xunit="default",
-                   yunit="default"):
+                   yunit="default", time="snaptime"):
     '''Plots the analytical solution.  Reads the problem type from the \'ic\'
 parameter and plots the appropriate solution if implemented.  If no solution
 exists, then nothing is plotted.
-    
+
 Optional arguments:
     x          : Quantity on the x-axis. Must be a string.
     y          : Quantity on the y-axis. Must be a string.
-    snap       : Number of the snapshot to plot. Defaults to 'current'.       
-    sim        : Number of the simulation to plot. Defaults to 'current'.    
+    snap       : Number of the snapshot to plot. Defaults to 'current'.
+    sim        : Number of the simulation to plot. Defaults to 'current'.
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
     autoscale  : If True, the limits of the plot are set
@@ -632,15 +632,17 @@ Optional arguments:
     xunit      : Specify the unit to use for the plotting for the quantity
                  on the x-axis.
     yunit      : Specify the unit to use for the plotting for the quantity
-                 on the y-axis.   
-'''   
-    #TODO: figure out automatically the quantities to plot depending on current window    
-    
+                 on the y-axis.
+    time       : Plots the analytical solution for the given time.
+                 If not set, then reads the time from the sim or snapshot
+'''
+    #TODO: figure out automatically the quantities to plot depending on current window
+
     simno = get_sim_no(sim)
     overplot = to_bool(overplot)
     command = Commands.AnalyticalPlotCommand(x, y, ic, snap, simno, overplot,
                                              autoscale, xunit, yunit)
-    data = command.prepareData(Singletons.globallimits)
+    data = command.prepareData(Singletons.globallimits, time)
     Singletons.queue.put([command, data])
 
 
@@ -651,7 +653,7 @@ def rescale(quantity, unitname, window="current", subfig="current"):
 Required arguments:
     quantity   : Quantity to be rescaled.  Must be a string.
     unitname   : Required unit for quantity.
-    
+
 Optional qrguments:
     window     : Window containing plot
     subfig     : Sub-figure in window containing plot
@@ -676,7 +678,7 @@ def snaps(simno):
     '''For the given simulation number, print a list of all the snapshots
 
 Required argument:
-    simno      : Simulation number from which to print the snapshot list.    
+    simno      : Simulation number from which to print the snapshot list.
 '''
     simno = int(simno)
     sim = SimBuffer.get_sim_no(simno)
@@ -691,7 +693,7 @@ Required argument:
     except AttributeError:
         pass
     if live is not None:
-        print "In addition, there is a live snapshot in memory, at time " + str(live.t) 
+        print "In addition, there is a live snapshot in memory, at time " + str(live.t)
 
 
 #------------------------------------------------------------------------------
@@ -727,7 +729,7 @@ def to_list(str_variable,type):
     parenthesis_closed = (']',')')
     if str_variable[0] not in parenthesis_open or str_variable[-1] not in parenthesis_closed:
         raise ValueError('What you passed cannot be parsed as a tuple')
-    
+
     splitted = str_variable[1:-1].split(',')
     return map(type,splitted)
 
@@ -785,10 +787,10 @@ def init():
     CreateUserQuantity('press','(gamma_eos - 1)*rho*u',scaling_factor='press',label='$P$')
     CreateUserQuantity('sound','sqrt(gamma_eos*(gamma_eos - 1)*u)',scaling_factor='v', label='$c_s$')
     CreateUserQuantity('temp','(gamma_eos - 1)*u*mu_bar',scaling_factor='temp',label='T')
-    
+
     from data_fetcher import get_time_snapshot
     CreateTimeData('t',get_time_snapshot)
-    
+
     from compute import COM
     CreateTimeData('com_x',COM)
     CreateTimeData('com_y',COM,quantity='y')
@@ -802,7 +804,7 @@ def init():
 # Default code.  Run when facade.py is imported
 #------------------------------------------------------------------------------
 init()
- 
+
 signal.signal(signal.SIGINT, sigint)
 signal.signal(signal.SIGTERM, sigint)
 signal.signal(signal.SIGSEGV, sigint)
@@ -823,7 +825,7 @@ if __name__=="__main__":
     print 'L1 error norm : ',L1errornorm("x","rho",1.0,8.0)
 
     block()
-#    
+#
 #    loadsim('TEST')
 #    plot("x","y", snap=0)
 #    addplot("x", "y")
@@ -848,4 +850,3 @@ if __name__=="__main__":
 #    for i in range(10):
 #        time.sleep(1)
 #        previous()
-

@@ -580,52 +580,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
 
 
 
-//=================================================================================================
-//  SphBruteForceSearch::UpdateAllStarGasForces
-/// ..
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-void SphBruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] Total no. of SPH particles (incl. ghosts)
-  SphParticle<ndim> *part_gen,         ///< [in] SPH particle array pointer
-  Sph<ndim> *sph,                      ///< [inout] Pointer to SPH ptcl array
-  Nbody<ndim> *nbody)                  ///< [inout] Pointer to N-body object
-{
-  int i;                               // Particle and dimension counters
-  int Nneib = 0;                       // No. of (non-dead) neighbours
-  int *dummy = 0;                      // Dummy var to satisfy function argument
-  int *neiblist;                       // Array of (all) particle ids
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
-
-  debug2("[SphBruteForceSearch::UpdateAllSphForces]");
-
-  // Allocate memory for storing neighbour ids and position data
-  neiblist = new int[Nhydro];
-  for (i=0; i<Nhydro; i++) {
-    if (partdata[i].itype != dead) neiblist[Nneib++] = i;
-  }
-
-  // Compute smoothing lengths of all SPH particles
-  //-----------------------------------------------------------------------------------------------
-  for (i=0; i<nbody->Nnbody; i++) {
-
-    // Skip over inactive particles
-    if (!nbody->nbodydata[i]->active) continue;
-
-    // Compute forces between SPH neighbours (hydro and gravity)
-    nbody->CalculateDirectHydroForces(nbody->nbodydata[i],Nneib,0,neiblist,dummy,sph);
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  delete[] neiblist;
-
-  return;
-}
-
-
-
 template class SphBruteForceSearch<1,SphParticle>;
 template class SphBruteForceSearch<2,SphParticle>;
 template class SphBruteForceSearch<3,SphParticle>;

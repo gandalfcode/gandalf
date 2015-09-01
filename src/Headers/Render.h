@@ -53,6 +53,10 @@ using namespace std;
 class RenderBase
 {
 public:
+
+  RenderBase();
+  virtual ~RenderBase();
+
   static RenderBase* RenderFactory(int ndim, SimulationBase* sim);
 
   virtual int CreateColumnRenderingGrid(const int, const int, const string, const string,

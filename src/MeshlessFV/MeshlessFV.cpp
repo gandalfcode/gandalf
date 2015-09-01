@@ -53,7 +53,8 @@ MeshlessFV<ndim>::MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _
            h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part),
   accel_mult(_accel_mult),
   courant_mult(_courant_mult),
-  h_converge(h_converge_aux)
+  h_converge(h_converge_aux),
+  staticParticles(false)
   //gamma_eos(gamma_aux),
   //gammam1(gamma_aux - 1.0)
   //size_hydro_part(size_part)
@@ -236,6 +237,7 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
   if (hydro_forces && self_gravity) return min(dt_cfl, dt_grav);
   else if (hydro_forces) return dt_cfl;
   else if (self_gravity) return dt_grav;
+  else return big_number;
 
   //return courant_mult*part.h/part.vsig_max;
   //return courant_mult*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));
@@ -249,7 +251,7 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::EndTimestep
- (const int n,                         ///< [in] Integer time in block time struct
+ (const unsigned int n,                ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value

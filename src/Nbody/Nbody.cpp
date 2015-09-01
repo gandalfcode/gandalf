@@ -49,9 +49,10 @@ using namespace std;
 /// Nbody class constructor
 //=================================================================================================
 template <int ndim>
-Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux,
+Nbody<ndim>::Nbody(int nbody_softening_aux, int _perturbers, int sub_systems_aux,
                    DOUBLE nbody_mult_aux, string KernelName, int Npec_aux):
   nbody_softening(nbody_softening_aux),
+  perturbers(_perturbers),
   sub_systems(sub_systems_aux),
   nbody_mult(nbody_mult_aux),
   kerntab(TabulatedKernel<ndim>(KernelName)),
@@ -350,17 +351,15 @@ void Nbody<ndim>::CalculatePerturberForces
 template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
  (SystemParticle<ndim>* systemi,       ///< [inout] System to integrate the internal motionv for
-  const int n,                         ///< [in]    Integer time
+  const unsigned int n,                         ///< [in]    Integer time
   const DOUBLE tstart,                 ///< [in]    Initial (local) simulation time
   const DOUBLE tend)                   ///< [in]    Final (current) simulation
 {
   int i;                               // Particle counter
   int it;                              // Iteration counter
   int k;                               // Dimension counter
-  int Nchildren;                       // No. of child systems
-  int Npert;                           // No. of perturbing systems
-  int Nstar;                           // Total no. of stars
-  int nsteps_local=0;                  // Local no. of steps
+  //int Nstar;                           // Total no. of stars
+  unsigned int nsteps_local=0;         // Local no. of steps
   DOUBLE aext[ndim];                   // Acceleration due to external stars
   DOUBLE adotext[ndim];                // Jerk due to external stars
   DOUBLE a2dotext[ndim];               // Snap due to external stars
@@ -371,7 +370,10 @@ void Nbody<ndim>::IntegrateInternalMotion
   DOUBLE *apert;                       // Acceleration for perturbers
   DOUBLE *adotpert;                    // Jerk for perturbers
   NbodyParticle<ndim>** children;      // Child systems
-  NbodyParticle<ndim>* perturber;      // Local array of perturber properties
+  NbodyParticle<ndim>* perturber = 0;  // Local array of perturber properties
+  const int Nchildren = systemi->Nchildren;
+  const int Npert = systemi->Npert;
+
 
   // Only integrate internal motion once COM motion has finished
   if (n - systemi->nlast != systemi->nstep) return;
@@ -379,11 +381,8 @@ void Nbody<ndim>::IntegrateInternalMotion
   debug2("[Nbody::IntegrateInternalMotion]");
 
   // Allocate memory for both stars and perturbers
-  Nchildren = systemi->Nchildren;
-  Npert     = systemi->Npert;
-  Nstar     = Nchildren + Npert;
+  //Nstar     = Nchildren + Npert;
   children  = systemi->children;
-  perturber = 0;
 
   // Record total acceleration and jerk terms in order to compute external force
   // (i.e. force due to all object outside system that are not perturbers)
