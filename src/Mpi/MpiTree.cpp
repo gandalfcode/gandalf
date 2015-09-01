@@ -265,7 +265,7 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   }
 
   i = cell.ifirst;
-  for (k=0; k< ndim; k++) {
+  /*for (k=0; k< ndim; k++) {
     cell.bbmin[k] = +big_number;
     cell.bbmax[k] = -big_number;
   }
@@ -275,7 +275,7 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
       if (cell.bbmin[k] > partdata[j].r[k]) cell.bbmin[k] = partdata[j].r[k];
       if (cell.bbmax[k] < partdata[j].r[k]) cell.bbmax[k] = partdata[j].r[k];
     }
-  }
+  }*/
 
   // Determine dimension to split the cell along.
   // For now, simply split along direction of the bounding box's longest axis

@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <math.h>
 #include <string>
 #include <vector>
 #include "Precision.h"
@@ -193,31 +194,9 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
-  int ComputeActiveCellList(TreeCell<ndim> *);
-  int ComputeActiveCellPointers(TreeCell<ndim> **celllist);
-  int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
-  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
-                                 const FLOAT, const int, int &, int *);
-  int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                 const FLOAT, const int, int &, int *);
-  int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                           const int, int &, int *, ParticleType<ndim> *);
-  int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                    const FLOAT, const int, const int, int &, int &, int &, int &,
-                                    int *, int *, int *, TreeCell<ndim> *, ParticleType<ndim> *);
-  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                            const DomainBox<ndim> &, const FLOAT, const int, const int,
-                                            int &, int &, int &, int &, int *, int *, int *,
-                                            TreeCell<ndim> *, ParticleType<ndim> *) {return 0;}
-  int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
-                                        const int, const int, int &, int &, int &, int *, int *,
-                                        TreeCell<ndim> *, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
-  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
-                                           const int, int, TreeCell<ndim> *);
-  bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
-  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) {};
   void UpdateWorkCounters(TreeCell<ndim> &) {};
+  int GetMaxCellNumber(const int _level) {return pow(pow(2,ndim),_level);};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

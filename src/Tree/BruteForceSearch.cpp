@@ -28,7 +28,7 @@
 #include <math.h>
 #include <numeric>
 #include "NeighbourSearch.h"
-#include "SphNeighbourSearch.h"
+//#include "SphNeighbourSearch.h"
 #include "Sph.h"
 #include "Parameters.h"
 #include "Particle.h"
@@ -143,7 +143,7 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
   if ((simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary) == 0) {
 
     for (i=0; i<hydro->Ntot; i++) {
-      hydro->CheckXBoundaryGhostParticle(i,tghost,simbox);
+      hydro->CheckXBoundaryGhostParticle(i, tghost, simbox);
     }
 
     hydro->Ntot = hydro->Nhydro + hydro->Nghost;
@@ -156,7 +156,7 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
                     simbox.boundary_rhs[1] == openBoundary) == 0) {
 
     for (i=0; i<hydro->Ntot; i++) {
-      hydro->CheckYBoundaryGhostParticle(i,tghost,simbox);
+      hydro->CheckYBoundaryGhostParticle(i, tghost, simbox);
     }
 
     hydro->Ntot = hydro->Nhydro + hydro->Nghost;
@@ -169,7 +169,7 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
                     simbox.boundary_rhs[2] == openBoundary) == 0) {
 
     for (i=0; i<hydro->Ntot; i++) {
-      hydro->CheckZBoundaryGhostParticle(i,tghost,simbox);
+      hydro->CheckZBoundaryGhostParticle(i, tghost, simbox);
     }
 
     hydro->Ntot = hydro->Nhydro + hydro->Nghost;
@@ -298,8 +298,8 @@ int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
 
     // Construct maximum cell bounding box depending on particle velocities
     for (k=0; k<ndim; k++) {
-      scattermin[k] = part.r[k] + min(0.0,part.v[k]*tghost) - grange*part.h;
-      scattermax[k] = part.r[k] + max(0.0,part.v[k]*tghost) + grange*part.h;
+      scattermin[k] = part.r[k] + min((FLOAT) 0.0, part.v[k]*tghost) - grange*part.h;
+      scattermax[k] = part.r[k] + max((FLOAT) 0.0, part.v[k]*tghost) + grange*part.h;
     }
 
     // If maximum cell scatter box overlaps MPI domain, open cell
@@ -320,7 +320,7 @@ int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
 //  BruteForceSearch::SearchHydroExportParticles
 /// Compute on behalf of the MpiControl class the ghost particles we need to export to other nodes.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
+/*template <int ndim, template<int> class ParticleType>
 int BruteForceSearch<ndim,ParticleType>::SearchHydroExportParticles
  (const Box<ndim> &mpibox,             ///< [in] Bounding box of MPI domain
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
@@ -356,7 +356,7 @@ int BruteForceSearch<ndim,ParticleType>::SearchHydroExportParticles
   //-----------------------------------------------------------------------------------------------
 
   return Nexport;
-}
+}*/
 
 
 
@@ -414,7 +414,7 @@ void BruteForceSearch<ndim,ParticleType>::FindMpiTransferParticles
 //  BruteForceSearch::FindGhostParticlesToExport
 /// Compute on behalf of the MpiControl class the ghost particles we need to export to other nodes.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
+/*template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport
  (Hydrodynamics<ndim> *hydro,                                ///< [in] Pointer to sph class
   vector<vector<ParticleType<ndim>*> >& ptcl_export_buffers, ///< [inout] Buffers with ptcls to
@@ -442,7 +442,7 @@ void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport
   }
 
   return;
-}
+}*/
 
 
 
@@ -465,12 +465,14 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer
   for (int i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim>& part = partdata[i];
 
-    //Loop over potential domains and see if we need to transfer this particle to them
+    // Loop over potential domains and see if we need to transfer this particle to them
     for (int inode=0; inode<potential_nodes.size(); inode++) {
       int node_number = potential_nodes[inode];
-      if (ParticleInBox(part,mpinodes[node_number].domain)) {
+
+      if (ParticleInBox(part, mpinodes[node_number].domain)) {
         id_export_buffers[node_number].push_back(i);
         all_ids_export_buffer.push_back(i);
+
         // The particle can belong only to one domain, so we can break from this loop
         break;
       }

@@ -78,8 +78,9 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   // Sanity check for valid dimensionality
   if (ndim < 1 || ndim > 3) {
-    string message = "Invalid dimensionality chosen : ndim = " + ndim;
-    ExceptionHandler::getIstance().raise(message);
+    std::ostringstream message;
+    message << "Invalid dimensionality chosen : ndim = " << ndim;
+    ExceptionHandler::getIstance().raise(message.str());
   }
 
   // Set-up random number generator object
@@ -269,15 +270,16 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   }
   else if (stringparams["neib_search"] == "kdtree") {
     mfvneib = new MeshlessFVKDTree<ndim,MeshlessFVParticle,KDTreeCell>
-     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], mfv->kernp->kernrange,
-      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
-      &simbox, mfv->kernp, timing);
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     mfvneib = new MeshlessFVOctTree<ndim,MeshlessFVParticle,OctTreeCell>
-     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], mfv->kernp->kernrange,
-      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
-      &simbox, mfv->kernp, timing);
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing);
+;
   }
   else {
     string message = "Unrecognised parameter : neib_search = "
@@ -386,7 +388,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   ntreestockstep      = intparams["ntreestockstep"];
   Nstepsmax           = intparams["Nstepsmax"];
   out_file_form       = stringparams["out_file_form"];
-  pruning_level       = intparams["pruning_level"];
+  pruning_level_min   = intparams["pruning_level_min"];
+  pruning_level_max   = intparams["pruning_level_max"];
   run_id              = stringparams["run_id"];
   sph_single_timestep = intparams["sph_single_timestep"];
   tmax_wallclock      = floatparams["tmax_wallclock"];
@@ -678,10 +681,10 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
     nresync      = integration_step;
     dt_min_hydro = big_number_dp;
 
-    // Find minimum timestep from all SPH particles
+
+    // Find minimum timestep from all hydro particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) private(i,dt,dt_nbody,dt_hydro) \
-  shared(cout,dt_min) //,dt_min_nbody,dt_min_hydro)
+#pragma omp parallel default(none) private(i) shared(dt_min) //,dt_min_nbody,dt_min_hydro)
     {
 
 #pragma omp for

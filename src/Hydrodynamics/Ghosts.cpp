@@ -48,16 +48,16 @@ using namespace std;
 template <int ndim>
 void PeriodicGhosts<ndim>::CheckBoundaries
  (DomainBox<ndim> simbox,
-  Sph<ndim> *sph)
+  Hydrodynamics<ndim> *hydro)
 {
   debug2("[PeriodicGhosts::CheckBoundaries]");
 
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   //===============================================================================================
-#pragma omp parallel for default(none) shared(simbox,sph)
-  for (int i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+#pragma omp parallel for default(none) shared(simbox,hydro)
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
 
     // --------------------------------------------------------------------------------------------
     for (int k=0; k<ndim; k++) {
@@ -125,21 +125,21 @@ void PeriodicGhosts<ndim>::CheckBoundaries
 template <int ndim, template <int> class ParticleType>
 void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
 (DomainBox<ndim> simbox,
- Sph<ndim> *sph)
+ Hydrodynamics<ndim> *hydro)
 {
   int i;                            // Particle id
   int iorig;                        // Original (real) particle id
   int itype;                        // Ghost particle type
   int j;                            // Ghost particle counter
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   debug2("[SphSimulation::CopySphDataToGhosts]");
 
 
   //---------------------------------------------------------------------------
 //#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,sphdata)
-  for (j=0; j<sph->NPeriodicGhost; j++) {
-    i = sph->Nhydro + j;
+  for (j=0; j<hydro->NPeriodicGhost; j++) {
+    i = hydro->Nhydro + j;
     iorig = sphdata[i].iorig;
     itype = sphdata[i].itype;
 
@@ -199,7 +199,7 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
 /// Empty function when no ghost particles are required.
 //=============================================================================
 template <int ndim>
-void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
+void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
 {
   return;
 }
@@ -211,7 +211,7 @@ void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 /// Empty function when no ghost particles are required.
 //=============================================================================
 template <int ndim>
-void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Sph<ndim> *sph)
+void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
 {
   return;
 }
@@ -224,7 +224,7 @@ void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Sph<ndim> *sp
 /// ..
 //=============================================================================
 template <int ndim>
-void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
+void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
 {
   return;
 }
@@ -239,23 +239,23 @@ void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 //=============================================================================
 template <int ndim, template <int> class ParticleType>
 void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
-(FLOAT tghost,                      ///< Ghost particle 'lifetime'
- DomainBox<ndim> simbox,            ///< Simulation box structure
- Sph<ndim> *sph)                    ///< Sph object pointer
+(FLOAT tghost,                         ///< Ghost particle 'lifetime'
+ DomainBox<ndim> simbox,               ///< Simulation box structure
+ Hydrodynamics<ndim> *hydro)           ///< Sph object pointer
 {
   int i;
   int j;
   ParticleType<ndim>* ghost_array;
-  int Nmpighosts = mpicontrol->SendReceiveGhosts(tghost,sph,&ghost_array);
+  int Nmpighosts = mpicontrol->SendReceiveGhosts(tghost,hydro,&ghost_array);
 
-  if (sph->Ntot + Nmpighosts > sph->Nhydromax) {
+  if (hydro->Ntot + Nmpighosts > hydro->Nhydromax) {
     cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts
-         << " " << sph->Ntot << " " << sph->Nhydromax<<endl;
+         << " " << hydro->Ntot << " " << hydro->Nhydromax<<endl;
     ExceptionHandler::getIstance().raise("");
   }
 
-  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
-  int start_index = sph->Nhydro + sph->NPeriodicGhost;
+  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
+  int start_index = hydro->Nhydro + hydro->NPeriodicGhost;
 
   for (j=0; j<Nmpighosts; j++) {
     i = start_index + j;
@@ -263,13 +263,13 @@ void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
     main_array[i].active = false;
   }
 
-  sph->Nmpighost = Nmpighosts;
-  sph->Nghost += Nmpighosts;
-  sph->Ntot += Nmpighosts;
+  hydro->Nmpighost = Nmpighosts;
+  hydro->Nghost += Nmpighosts;
+  hydro->Ntot += Nmpighosts;
 
-  if (sph->Nghost > sph->Nghostmax || sph->Ntot > sph->Nhydromax) {
+  if (hydro->Nghost > hydro->Nghostmax || hydro->Ntot > hydro->Nhydromax) {
 	cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts
-             << " " << sph->Ntot << " " << sph->Nhydromax<<endl;
+             << " " << hydro->Ntot << " " << hydro->Nhydromax<<endl;
 	ExceptionHandler::getIstance().raise("");
   }
 
@@ -284,12 +284,12 @@ void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
 template <int ndim, template<int> class ParticleType >
 void MPIGhostsSpecific<ndim, ParticleType>::CopySphDataToGhosts
  (DomainBox<ndim> simbox,              ///< ..
-  Sph<ndim> *sph)                      ///< ..
+  Hydrodynamics<ndim> *hydro)          ///< ..
 {
   ParticleType<ndim>* ghost_array;
-  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
+  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
   int Nmpighosts = mpicontrol->UpdateGhostParticles(&ghost_array);
-  int start_index = sph->Nhydro + sph->NPeriodicGhost;
+  int start_index = hydro->Nhydro + hydro->NPeriodicGhost;
 
   for (int j=0; j<Nmpighosts; j++) {
     int i = start_index + j;

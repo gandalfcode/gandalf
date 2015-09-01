@@ -50,15 +50,15 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux,
                string gas_eos_aux, string KernelName, int size_sph):
   Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux,
                       gas_eos_aux, KernelName, size_sph),
+  size_sph_part(size_sph),
+  acond(acond_aux),
+  avisc(avisc_aux),
+  tdavisc(tdavisc_aux),
   alpha_visc(alpha_visc_aux),
   beta_visc(beta_visc_aux),
   h_converge(h_converge_aux),
   create_sinks(0),
-  fixed_sink_mass(0),
-  avisc(avisc_aux),
-  acond(acond_aux),
-  tdavisc(tdavisc_aux),
-  size_sph_part(size_sph)
+  fixed_sink_mass(0)
 {
   // Set all SPH particle types here
 

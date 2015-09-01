@@ -589,7 +589,6 @@ inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
       cout << "i : " << i << "     Nrange : " << Nrange << "    N : " << N << endl;
       return false;
     }
-    //assert(i >= 0 && i < Nrange);
     counter[i]++;
   }
 
@@ -598,7 +597,6 @@ inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
       cout << "Invalid counter : " << i << "    count : " << counter[i] << endl;
       return false;
     }
-    //assert(counter[i] == 1);
   }
 
   delete[] counter;

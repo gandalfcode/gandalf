@@ -178,7 +178,7 @@ OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
 OBJ += RiemannSolver.o
 OBJ += SphNeighbourSearch.o
-OBJ += BruteForceSearch.o HydroTree.o KDTree.o OctTree.o
+OBJ += BruteForceSearch.o HydroTree.o Tree.o KDTree.o OctTree.o
 OBJ += SphBruteForceSearch.o
 OBJ += MeshlessFVBruteForce.o MeshlessFVTree.o
 OBJ += GradhSphBruteForce.o GradhSphTree.o
@@ -203,7 +203,7 @@ OBJ += CodeTiming.o
 OBJ += IC.o
 
 ifeq ($(MPI),1)
-OBJ += MpiNode.o MpiTree.o MpiControl.o
+OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
 endif
 
 

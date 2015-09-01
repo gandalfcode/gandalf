@@ -37,10 +37,10 @@
 
 //=================================================================================================
 //  Class Ic
-/// \brief   Class to contain all generic initial conditions functions.
-/// \details Class to contain all generic initial conditions functions.
-/// \author  D. A. Hubber & G. Rosotti
-/// \date    15/04/2013
+/// \brief   Class containing functions for generating initial conditions.
+/// \details Class containing functions for generating initial conditions.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    02/02/2015
 //=================================================================================================
 template <int ndim>
 class Ic

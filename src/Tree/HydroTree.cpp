@@ -50,24 +50,19 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 HydroTree<ndim,ParticleType,TreeCell>::HydroTree
- (int Nleafmaxaux,
-  int Nmpiaux,
-  FLOAT thetamaxsqdaux,
-  FLOAT kernrangeaux,
-  FLOAT macerroraux,
-  string gravity_mac_aux,
-  string multipole_aux,
-  DomainBox<ndim> *boxaux,
-  SmoothingKernel<ndim> *kernaux,
-  CodeTiming *timingaux):
-  NeighbourSearch<ndim>(kernrangeaux,boxaux,kernaux,timingaux),
-  Nleafmax(Nleafmaxaux),
-  Nmpi(Nmpiaux),
-  thetamaxsqd(thetamaxsqdaux),
-  invthetamaxsqd((FLOAT) 1.0/thetamaxsqdaux),
-  gravity_mac(gravity_mac_aux),
-  macerror(macerroraux),
-  multipole(multipole_aux)
+ (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
+  Nleafmax(_Nleafmax),
+  Nmpi(_Nmpi),
+  pruning_level_min(_pruning_level_min),
+  pruning_level_max(_pruning_level_max),
+  thetamaxsqd(_thetamaxsqd),
+  invthetamaxsqd((FLOAT) 1.0/_thetamaxsqd),
+  macerror(_macerror),
+  gravity_mac(_gravity_mac),
+  multipole(_multipole)
 {
   allocated_buffer = false;
   neibcheck        = true;
@@ -112,10 +107,8 @@ HydroTree<ndim,ParticleType,TreeCell>::~HydroTree()
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
- (const int Ngather)                   ///< [in] ..
+ (const int Ngather)                   ///< [in] Average no. of gather neighbours
 {
-  int ithread;                         // Thread id number
-
   debug2("[HydroTree::AllocateMemory]");
 
   if (!allocated_buffer) {
@@ -128,7 +121,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
     levelneibbuf    = new unsigned int*[Nthreads];
     cellbuf         = new TreeCell<ndim>*[Nthreads];
 
-    for (ithread=0; ithread<Nthreads; ithread++) {
+    for (int ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread]     = max(1,4*Ngather);
       Ngravcellmaxbuf[ithread] = max(1,4*Ngather);
       activelistbuf[ithread]   = new int[Nleafmax];
@@ -912,9 +905,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   int i;                               // Particle id
   int ithread;                         // OpenMP thread i.d.
   int j;                               // Aux. particle counter
-  int jj;                              // Aux. particle counter
   int k;                               // Dimension counter
-  int okflag;                          // Flag if h-rho iteration is valid
   int Nactive;                         // No. of active particles in current cell
   int Ngravcell=0;                     // No. of gravity cells
   int Ngravcellmax;                    // Max. size of gravity cell pointer array
@@ -926,7 +917,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   TreeCell<ndim> **celllist;         // List of pointers to binary tree cells
   TreeCell<ndim> *gravcelllist;     // List of pointers to grav. cells
   ParticleType<ndim> *activepart;      // Local copies of active particles
-  ParticleType<ndim> *neibpart;        // Local copies of neighbouring particles
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[GradhHydroTree::UpdateGravityExportForces]");
@@ -947,9 +937,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(celllist,cactive,hydro,partdata,cout) \
-  private(activepart,activelist,cc,cellptr,directlist,draux,drsqd,gravcelllist,hrangesqdi,i)\
-  private(interactlist,ithread,j,jj,k,levelneib,macfactor,neiblist,neibpart,Nactive,Ndirect)\
-  private(Ndirectaux,Ndirectmax,Ngravcell,Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,rp)
+  private(activepart,activelist,cc,cellptr,gravcelllist,i)\
+  private(ithread,j,k,macfactor,Nactive)\
+  private(Ngravcell,Ngravcellmax, Ngravcelltemp) \
+  shared(rank)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -958,8 +949,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 #endif
 
     Ngravcellmax = Nprunedcellmax;
-    activelist = activelistbuf[ithread];
-    activepart = activepartbuf[ithread];
+    activelist   = activelistbuf[ithread];
+    activepart   = activepartbuf[ithread];
     gravcelllist = new TreeCell<ndim>[Ngravcellmax];
 
 
@@ -973,7 +964,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       Ngravcell = 0;
 
       // Find list of active particles in current cell
-      Nactive = tree->ComputeActiveParticleList(cell,partdata,activelist);
+      Nactive = tree->ComputeActiveParticleList(cell, partdata, activelist);
 
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) activepart[j] = partdata[activelist[j]];
@@ -997,12 +988,18 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         if (j == rank) continue;
 
         Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
-          (cellptr,macfactor,Ngravcellmax,Ngravcell,gravcelllist);
+          (cellptr, macfactor, Ngravcellmax, Ngravcell, gravcelllist);
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
         if (Ngravcelltemp == -1) {
-          cellexportlist[j][Ncellexport[j]++] = cellptr;
+          int index_cell;
+#pragma omp critical
+          {
+            index_cell = Ncellexport[j]++;
+          }
+          cellexportlist[j][index_cell] = cellptr;
+#pragma omp atomic
           Npartexport[j] += Nactive;
         }
         else Ngravcell = Ngravcelltemp;
@@ -1018,12 +1015,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
         // Compute gravitational force due to distant cells
         if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot,activepart[j].agrav,
-                                          activepart[j].r,Ngravcell,gravcelllist);
+          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
+                                          activepart[j].r, Ngravcell, gravcelllist);
         }
         else if (multipole == "quadrupole") {
-          this->ComputeCellQuadrupoleForces(activepart[j].gpot,activepart[j].agrav,
-                                            activepart[j].r,Ngravcell,gravcelllist);
+          this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+                                            activepart[j].r, Ngravcell, gravcelllist);
         }
 
       }
@@ -1038,10 +1035,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k] = activepart[j].a[k];
-        for (k=0; k<ndim; k++) partdata[i].agrav[k] = activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) partdata[i].a[k] += partdata[i].agrav[k];
-        partdata[i].gpot = activepart[j].gpot;
+        for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].a[k] + activepart[j].agrav[k];
+        for (k=0; k<ndim; k++) partdata[i].agrav[k] += activepart[j].agrav[k];
+        partdata[i].gpot += activepart[j].gpot;
       }
 
     }
@@ -1080,10 +1076,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   bool overlapflag;                    // Flag if cells overlap
   int cactive;                         // No. of active cells
   int cc;                              // Aux. cell counter
-  int i;                               // Particle id
   int ithread;                         // OpenMP thread i.d.
   int j;                               // Aux. particle counter
-  int jj;                              // Aux. particle counter
   TreeCell<ndim> *cellptr;             // Pointer to binary tree cell
   TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
   int *activelist;                     // List of active particles
@@ -1107,8 +1101,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,cout) \
-  private(cc,cellptr,i,ithread,j,jj,overlapflag)
+#pragma omp parallel default(none) shared(celllist,cactive,cout,rank,partdata) \
+  private(activelist,cc,cellptr,ithread,j,overlapflag)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -1131,20 +1125,22 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
         if (j == rank) continue;
 
         overlapflag = prunedtree[j]->ComputeHydroTreeCellOverlap(cellptr);
-        for (int jj=0; jj<Nghostpruned[jj]; jj++) {
-          bool overlapghostflag = ghostprunedtree[j][jj]->ComputeHydroTreeCellOverlap(cellptr);
-          overlapflag = overlapflag || overlapghostflag;
-        }
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
         if (overlapflag) {
-          cellexportlist[j][Ncellexport[j]++] = cellptr;
+          int index_cell;
+
+#pragma omp critical
+          {
+            index_cell = Ncellexport[j]++;
+          }
+          cellexportlist[j][index_cell] = cellptr;
           const int Nactive = tree->ComputeActiveParticleList(cell,partdata,activelist);
+
+#pragma omp atomic
           Npartexport[j] += Nactive;
           assert(Ncellexport[j] <= tree->gmax);
-          cout << "Found overlap : " << cc << "   " << j << "   " << Nactive << "    " << cellptr->N
-               << "    " << Npartexport[j] << "    " << Ncellexport[j] << endl;
         }
 
       }
@@ -1153,8 +1149,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
     }
     //=============================================================================================
 
+#ifdef VERIFY_ALL
     PrintArray("Ncellexport : ",Nmpi,Ncellexport);
     PrintArray("Npartexport : ",Nmpi,Npartexport);
+#endif
 
 
   }
@@ -1181,226 +1179,85 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
- (const int rank,                      ///< ..
-  const int pruning_level,             ///< ..
-  const int Nhydromax,                 ///< ..
+ (const int rank,                      ///< [in] ..
+  const int Nhydromax,                 ///< [in] ..
+  const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
+  const MpiNode<ndim> *mpinode,        ///< [in] ..
   Particle<ndim> *hydro_gen)           ///< [inout] Pointer to Hydrodynamics ptcl array
 {
+  bool localNode;
   int c;                               // Cell counter
-  int cnew;                            // New i.d. of copied cell in pruned tree
-  int cnext;                           // i.d. of next cell in pruned tree
-  int c1;                              // i.d. of first child cell
-  int c2;                              // i.d. of second child cell
   int i;                               // Particle counter
-  int k;                               // Dimension counter
-  int l;                               // ..
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro_gen);
+  int k;
+
 
   debug2("[HydroTree::BuildPrunedTree]");
   timing->StartTimingSection("BUILD_PRUNED_TREE");
 
-  cnew = 0;
+
   Nprunedcellmax = 0;
-  cout << "Levels : " << pruning_level << "    " << tree->ltot << endl;
-  assert(pruning_level < tree->ltot);
+  cout << "Levels : " << pruning_level_min << "    " << tree->ltot << endl;
 
   // Update all work counters in the tree for load-balancing purposes
   tree->UpdateWorkCounters(tree->celldata[0]);
 
+
   // Set level at which tree will be pruned (for all trees)
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nmpi; i++) {
-    prunedtree[i]->ltot_old = prunedtree[i]->ltot;
-    prunedtree[i]->ltot     = pruning_level;
-    prunedtree[i]->gmax     = pow(2,pruning_level);
-    prunedtree[i]->Ncellmax = 2*prunedtree[i]->gmax - 1;
-    prunedtree[i]->Ncell    = 2*prunedtree[i]->gmax - 1;
-    prunedtree[i]->Ntotmax  = prunedtree[i]->gmax;
-    prunedtree[i]->Ntot     = prunedtree[i]->gmax;
+
+    if (i == rank) localNode = true;
+    else localNode = false;
+
+    sendprunedtree[i]->ltot     = pruning_level_max;
+    sendprunedtree[i]->Ntot     = 0;
+    sendprunedtree[i]->gmax     = 0;
+    sendprunedtree[i]->Ncellmax = max(sendprunedtree[i]->Ncellmax,
+                                      sendprunedtree[i]->GetMaxCellNumber(pruning_level_min));
+    assert(sendprunedtree[i]->Ncellmax > 0);
+    sendprunedtree[i]->AllocateTreeMemory();
+
+    sendprunedtree[i]->Ncell = tree->CreatePrunedTreeForMpiNode
+      (mpinode[i], simbox, 0.0, localNode, pruning_level_min, pruning_level_max,
+       sendprunedtree[i]->Ncellmax, sendprunedtree[i]->celldata);
+
+
+    //---------------------------------------------------------------------------------------------
+    while (sendprunedtree[i]->Ncell == -1) {
+
+      sendprunedtree[i]->Ncellmax = max(2*sendprunedtree[i]->Ncellmax,
+                                        sendprunedtree[i]->GetMaxCellNumber(pruning_level_min));
+
+      assert(sendprunedtree[i]->Ncellmax > 0);
+      cout << "MEMORY FOR PRUNED TREE FOR NODE : " << i << "    Ncellmax : "
+           << sendprunedtree[i]->Ncellmax << "   " << tree->Ncellmax <<  "    "
+           << 2*sendprunedtree[i]->Ncellmax << "    "
+           << sendprunedtree[i]->GetMaxCellNumber(pruning_level_min) << "   "
+           << max(2*sendprunedtree[i]->Ncellmax,
+                  sendprunedtree[i]->GetMaxCellNumber(pruning_level_min)) << endl;
+
+      sendprunedtree[i]->AllocateTreeMemory();
+
+      sendprunedtree[i]->Ncell = tree->CreatePrunedTreeForMpiNode
+        (mpinode[i], simbox, 0.0, localNode, pruning_level_min, pruning_level_max,
+         sendprunedtree[i]->Ncellmax, sendprunedtree[i]->celldata);
+
+    }
+    //---------------------------------------------------------------------------------------------
 
     // Allocate (or reallocate if needed) all tree memory
-    prunedtree[i]->AllocateTreeMemory();
-    Nprunedcellmax += prunedtree[i]->Ncellmax;
+    Nprunedcellmax += sendprunedtree[i]->Ncell;
 
-    // Sanity-check to ensure pruned tree is not deeper than real local tree
-    assert(prunedtree[i]->gmax == pow(2,pruning_level));
-    assert(prunedtree[i]->ltot == pruning_level);
-    if (pruning_level > tree->ltot) {
-      string message = "Invalid pruned tree; pruning_level > ltot";
-      ExceptionHandler::getIstance().raise(message);
-    }
+    cout << "BUILDING PRUNED TREE FOR DOMAIN " << rank << " TO SEND TO NODE " << i << endl;
+    cout << "NO OF CELLS IN PRUNED TREE : " << sendprunedtree[i]->Ncell << endl;
+
 
   }
   //-----------------------------------------------------------------------------------------------
 
-
-  // Now walk through main tree cell-by-cell and copy all important data to pruned tree cells
-  //-----------------------------------------------------------------------------------------------
-  for (c=0; c<tree->Ncell; c++) {
-
-    // If cell is on a lower level, skip over
-    if (tree->celldata[c].level > pruning_level) continue;
-
-    // Otherwise, record all data from cell, except for cell links which
-    // are maintained to ensure a valid tree
-    c1 = prunedtree[rank]->celldata[cnew].c1;
-    c2 = prunedtree[rank]->celldata[cnew].c2;
-    cnext = prunedtree[rank]->celldata[cnew].cnext;
-    l = prunedtree[rank]->celldata[cnew].level;
-
-    prunedtree[rank]->celldata[cnew] = tree->celldata[c];
-    prunedtree[rank]->celldata[cnew].c1 = c1;
-    prunedtree[rank]->celldata[cnew].c2 = c2;
-    prunedtree[rank]->celldata[cnew].cnext = cnext;
-
-    if (c < pruning_level) assert (l == cnew);
-    assert(cnext >= 0);
-    assert(prunedtree[rank]->celldata[cnew].level <= pruning_level);
-    if (prunedtree[rank]->celldata[cnew].level < pruning_level) assert(c1 == cnew + 1);
-    if (c1 == -1) assert(prunedtree[rank]->celldata[cnew].level == pruning_level);
-
-    cnew++;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
-       << prunedtree[rank]->ltot << "    " << pruning_level << endl;
-  for (c=0; c<prunedtree[rank]->Ncell; c++) {
-    cout << "bb[" << c << "] : " << prunedtree[rank]->celldata[c].bbmin[0]
-         << "    " << prunedtree[rank]->celldata[c].bbmax[0]
-         << "    N : " << prunedtree[rank]->celldata[c].N
-         << "    worktot : " << prunedtree[rank]->celldata[c].worktot
-         << "    " << tree->celldata[0].worktot << endl;
-  }
-
-  //cin >> c;
+  //cin >> i;
   MPI_Barrier(MPI_COMM_WORLD);
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  HydroTree::BuildGhostPrunedTree
-/// Build the ghost pruned tree from the existing pruned trees.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
- (const int rank,                                ///< ..
-  const DomainBox<ndim> &simbox)                 ///< ..
-{
-  int c;                                         ///< ..
-  int i;                                         ///< ..
-  int ighosttree;                                ///< ..
-  int j;                                         ///< ..
-  int k;                                         ///< ..
-  int k_divide;                                  ///< ..
-  int Ntreelist;                                 ///< ..
-  FLOAT boxmin[ndim];                            ///< ..
-  FLOAT boxmax[ndim];                            ///< ..
-  Tree<ndim,ParticleType,TreeCell> **treelist;   ///< ..
-
-  debug2("[HydroTree::BuildGhostPrunedTree]");
-
-
-  treelist = new Tree<ndim,ParticleType,TreeCell>*[Nghostprunedmax];
-  for (i=0; i<Nmpi; i++) Nghostpruned[i] = 0;
-
-
-  // ..
-  //===============================================================================================
-  for (i=0; i<Nmpi; i++) {
-
-    Ntreelist = 0;
-    treelist[0] = prunedtree[i];
-
-
-    // Loop through all dimensional divisions and check if a pruned tree copy is needed
-    //---------------------------------------------------------------------------------------------
-    for (k_divide=0; k_divide<ndim; k_divide++) {
-
-
-      // Loop through all tree replicas to be tested
-      //-------------------------------------------------------------------------------------------
-      for (j=0; j<Ntreelist; j++) {
-
-
-        // Check for left-side periodic replica
-        //-----------------------------------------------------------------------------------------
-        for (k=0; k<ndim; k++) {
-          boxmin[k] = treelist[j]->celldata[0].bbmin[k];
-          boxmax[k] = treelist[j]->celldata[0].bbmax[k];
-        }
-        boxmin[k_divide] -= simbox.boxsize[k_divide];
-        boxmax[k_divide] -= simbox.boxsize[k_divide];
-
-        // If replica overlaps with local domain box, then do full tree-copy
-        if (BoxOverlap(ndim, boxmin, boxmax, prunedtree[rank]->celldata[0].bbmin,
-                       prunedtree[rank]->celldata[0].bbmax)) {
-          ighosttree = Ntreelist++;
-          treelist[ighosttree] = ghostprunedtree[i][Nghostpruned[i]++];
-          treelist[ighosttree]->Ncell = prunedtree[rank]->Ncell;
-          treelist[ighosttree]->Ncellmax = prunedtree[rank]->Ncellmax;
-
-          for (c=0; c<treelist[j]->Ncell; c++) {
-            treelist[ighosttree]->celldata[c] = treelist[j]->celldata[c];
-            treelist[ighosttree]->celldata[c].r[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].rcell[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].bbmin[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].bbmax[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].hboxmin[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].hboxmax[k_divide] -= simbox.boxsize[k_divide];
-          }
-          cout << "Adding left ghost pruned tree [" << Nghostpruned[i] << "] for tree " << i << endl;
-
-        }
-
-
-        // Check for right-side periodic replica
-        //-----------------------------------------------------------------------------------------
-        for (k=0; k<ndim; k++) {
-          boxmin[k] = treelist[j]->celldata[0].bbmin[k];
-          boxmax[k] = treelist[j]->celldata[0].bbmax[k];
-        }
-        boxmin[k_divide] += simbox.boxsize[k_divide];
-        boxmax[k_divide] += simbox.boxsize[k_divide];
-
-        // If replica overlaps with local domain box, then do full tree-copy
-        if (BoxOverlap(ndim, boxmin, boxmax, prunedtree[rank]->celldata[0].bbmin,
-                       prunedtree[rank]->celldata[0].bbmax)) {
-          ighosttree = Ntreelist++;
-          treelist[ighosttree] = ghostprunedtree[i][Nghostpruned[i]++];
-          treelist[ighosttree]->Ncell = prunedtree[rank]->Ncell;
-          treelist[ighosttree]->Ncellmax = prunedtree[rank]->Ncellmax;
-
-          for (c=0; c<treelist[j]->Ncell; c++) {
-            treelist[ighosttree]->celldata[c] = treelist[j]->celldata[c];
-            treelist[ighosttree]->celldata[c].r[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].rcell[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].bbmin[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].bbmax[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].hboxmin[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighosttree]->celldata[c].hboxmax[k_divide] += simbox.boxsize[k_divide];
-          }
-          cout << "Adding right ghost pruned tree [" << Nghostpruned[i] << "] for tree " << i << endl;
-
-        }
-
-
-      }
-      //-------------------------------------------------------------------------------------------
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-  }
-  //===============================================================================================
-
-
-  delete[] treelist;
-
+  timing->EndTimingSection("BUILD_PRUNED_TREE");
   return;
 }
 
@@ -1413,25 +1270,23 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
- (bool rebuild_tree,                   ///< Flag to rebuild tree
-  int n,                               ///< Integer time
-  int ntreebuildstep,                  ///< Tree build frequency
-  int ntreestockstep,                  ///< Tree stocking frequency
-  int Npart,                           ///< No. of particles
-  int Npartmax,                        ///< Max. no. of particles
+ (const bool rebuild_tree,             ///< Flag to rebuild tree
+  const int n,                         ///< Integer time
+  const int ntreebuildstep,            ///< Tree build frequency
+  const int ntreestockstep,            ///< Tree stocking frequency
+  const int Npart,                     ///< No. of particles
+  const int Npartmax,                  ///< Max. no. of particles
+  const FLOAT timestep,                ///< Smallest physical timestep
   Particle<ndim> *part_gen,            ///< Particle data array
-  Hydrodynamics<ndim> *hydro,          ///< Pointer to Hydrodynamics object
-  FLOAT timestep)                      ///< Smallest physical timestep
+  Hydrodynamics<ndim> *hydro)          ///< Pointer to Hydrodynamics object
 {
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
   ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
 
   // If no MPI ghosts exist, do not build tree
   //if (hydroNmpighost == 0) return;
 
-  debug2("[HydroTree::BuildGhostTree]");
+  debug2("[HydroTree::BuildMpiGhostTree]");
   timing->StartTimingSection("BUILD_MPIGHOST_TREE");
 
   // Activate nested parallelism for tree building routines
@@ -1450,7 +1305,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
     mpighosttree->Ntotmax    = max(mpighosttree->Ntotmax,mpighosttree->Ntot);
     mpighosttree->Ntotmax    = max(mpighosttree->Ntotmax,hydro->Nhydromax);
     mpighosttree->BuildTree(hydro->Nhydro + hydro->NPeriodicGhost,
-                            hydro->Nhydro + hydro->NPeriodicGhost +hydro->Nmpighost - 1,
+                            hydro->Nhydro + hydro->NPeriodicGhost + hydro->Nmpighost - 1,
                             mpighosttree->Ntot, mpighosttree->Ntotmax, partdata, timestep);
 
   }
@@ -1459,7 +1314,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
   //-----------------------------------------------------------------------------------------------
   else if (n%ntreestockstep == 0) {
 
-    mpighosttree->StockTree(mpighosttree->celldata[0],partdata);
+    mpighosttree->StockTree(mpighosttree->celldata[0], partdata);
 
   }
 
@@ -1495,19 +1350,17 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   vector<int> &export_list)            ///< [out] List of particle ids
 {
-  int c;                               // Cell counter
+  int c = 0;                           // Cell counter
   int i;                               // ..
   int k;                               // ..
   int Nexport = 0;                     // No. of MPI ghosts to export
   FLOAT scattermin[ndim];              // ..
   FLOAT scattermax[ndim];              // ..
   TreeCell<ndim> *cellptr;             // ..
-  const FLOAT grange = ghost_range*kernrange;
+  const FLOAT grange = 2.0*ghost_range*kernrange;
 
 
-  // Start from root-cell
-  c = 0;
-
+  // Start from root-cell of tree and walk all cells
   //-----------------------------------------------------------------------------------------------
   while (c < tree->Ncell) {
     cellptr = &(tree->celldata[c]);
@@ -1524,11 +1377,13 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
     if (BoxOverlap(ndim, scattermin, scattermax, mpibox.boxmin, mpibox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (cellptr->level != tree->ltot)
+      if (cellptr->level != tree->ltot) {
         c++;
+      }
 
-      else if (cellptr->N == 0)
+      else if (cellptr->N == 0) {
         c = cellptr->cnext;
+      }
 
       // If leaf-cell, check through particles in turn to find ghosts and
       // add to list to be exported
@@ -1546,131 +1401,15 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       c = cellptr->cnext;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-
-  // Start from root-cell of ghost-tree
-  c = 0;
-
-  //-----------------------------------------------------------------------------------------------
-  while (c < ghosttree->Ncell) {
-    cellptr = &(ghosttree->celldata[c]);
-
-    // Construct maximum cell bounding box depending on particle velocities
-    for (k=0; k<ndim; k++) {
-      scattermin[k] = cellptr->bbmin[k] + min(0.0,cellptr->v[k]*tghost) - grange*cellptr->hmax;
-      scattermax[k] = cellptr->bbmax[k] + max(0.0,cellptr->v[k]*tghost) + grange*cellptr->hmax;
     }
-
-    // If maximum cell scatter box overlaps MPI domain, open cell
-    //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(ndim, scattermin, scattermax, mpibox.boxmin, mpibox.boxmax)) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (cellptr->level != ghosttree->ltot)
-        c++;
-
-      else if (cellptr->N == 0)
-        c = cellptr->cnext;
-
-      // If leaf-cell, check through particles in turn to find ghosts and
-      // add to list to be exported
-      else if (cellptr->level == ghosttree->ltot) {
-        i = cellptr->ifirst;
-        while (i != -1) {
-          export_list.push_back(i);
-          Nexport++;
-          if (i == cellptr->ilast) break;
-          i = ghosttree->inext[i];
-        };
-        c = cellptr->cnext;
-      }
-    }
-
-    // If not in range, then open next cell
-    //---------------------------------------------------------------------------------------------
-    else
-      c = cellptr->cnext;
 
   }
   //-----------------------------------------------------------------------------------------------
 
 
   return Nexport;
-}
-
-
-
-//=================================================================================================
-//  HydroTree::SearchHydroExportParticles
-/// ...
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int HydroTree<ndim,ParticleType,TreeCell>::SearchHydroExportParticles
- (const Box<ndim> &mpibox,                 ///< [in] Bounding box of MPI domain
-  Hydrodynamics<ndim> *hydro,              ///< [in] Pointer to Hydrodynamics object
-  vector<TreeCell<ndim> *> &cell_list)     ///< [out] List of particle ids
-{
-  int c;                                   // Cell counter
-  int i;                                   // ..
-  int k;                                   // ..
-  int Nexport = 0;                         // No. of MPI ghosts to export
-  FLOAT scattermin[ndim];                  // ..
-  FLOAT scattermax[ndim];                  // ..
-  TreeCell<ndim> *cellptr;                 // ..
-  const FLOAT grange = ghost_range*kernrange;
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
-
-
-  // Start from root-cell
-  c = 0;
-
-  //-----------------------------------------------------------------------------------------------
-  while (c < tree->Ncell) {
-    cellptr = &(tree->celldata[c]);
-
-    // Construct maximum cell bounding box depending on particle velocities
-    for (k=0; k<ndim; k++) {
-      scattermin[k] = cellptr->bbmin[k] - grange*cellptr->hmax;
-      scattermax[k] = cellptr->bbmax[k] + grange*cellptr->hmax;
-    }
-
-
-    // If maximum cell scatter box overlaps MPI domain, open cell
-    //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(ndim, scattermin, scattermax, mpibox.boxmin, mpibox.boxmax)) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (cellptr->level != tree->ltot)
-        c++;
-
-      else if (cellptr->N == 0)
-        c = cellptr->cnext;
-
-      // If leaf-cell and active, add the cell to the list of cells being exported
-      else if (cellptr->level == tree->ltot) {
-        if (cellptr->Nactive>0) {
-          Nexport += cellptr->Nactive;
-          cell_list.push_back(cellptr);
-        }
-        c = cellptr->cnext;
-      }
-    }
-
-    // If not in range, then open next cell
-    //---------------------------------------------------------------------------------------------
-    else
-      c = cellptr->cnext;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return Nexport;
-
 }
 
 
@@ -1714,7 +1453,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::FindMpiTransferParticles
 
       // If maximum cell scatter box overlaps MPI domain, open cell
       //-------------------------------------------------------------------------------------------
-      if (BoxOverlap(ndim,cellptr->bbmin,cellptr->bbmax,nodebox.boxmin,nodebox.boxmax)) {
+      if (BoxOverlap(ndim, cellptr->bbmin, cellptr->bbmax, nodebox.boxmin, nodebox.boxmax)) {
 
         // If not a leaf-cell, then open cell to first child cell
         if (cellptr->level != tree->ltot)
@@ -1767,7 +1506,6 @@ FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
   FLOAT boxmax[ndim])                  ///< ..
 {
   int i;                               // ..
-  int j;
   int k;                               // ..
   FLOAT r_divide = r_old;              // Cell division location
   FLOAT r_max = boxmax[k_divide];      // Max. for bisection iteration of division
@@ -1800,17 +1538,11 @@ FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
     // Compute work included in left-hand side from pruned trees of all MPI domains
     for (i=0; i<Nmpi; i++) {
       workleft += prunedtree[i]->ComputeWorkInBox(boxleftmin, boxleftmax);
-      /*for (j=0; j<Nghostpruned[i]; j++) {
-        workleft += ghostprunedtree[i][j]->ComputeWorkInBox(boxleftmin, boxleftmax);
-      }*/
     }
 
     // Compute work included in right-hand side from pruned trees of all MPI domains
     for (i=0; i<Nmpi; i++) {
       workright += prunedtree[i]->ComputeWorkInBox(boxrightmin, boxrightmax);
-      /*for (j=0; j<Nghostpruned[i]; j++) {
-        workright += ghostprunedtree[i][j]->ComputeWorkInBox(boxrightmin, boxrightmax);
-      }*/
     }
 
     //cout << "workleft : " << workleft << "     workright : " << workright
@@ -1837,92 +1569,71 @@ FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
 //=================================================================================================
 //  HydroTree::GetExportInfo
 /// Get the array with the information that needs to be exported to the given processor
-/// (NB: Nproc is ignored at the moment, as we must export all ptcls to all other processors)
+/// (NB: iproc is ignored at the moment, as we must export all ptcls to all other processors)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
- (int Nproc,                           ///< [in] No. of processor we want to send data to
+ (int iproc,                           ///< [in] No. of processor we want to send data to
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to GetParticleArray object
   vector<char >& send_buffer,          ///< [inout] Vector where the ptcls to export will be stored
   MpiNode<ndim>& mpinode,              ///< ..
   int rank,                            ///< ..
   int Nmpi)                            ///< [in] Array with information for the other mpi nodes
 {
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
-  const bool first_proc = (Nproc==0) || (rank==0 && Nproc==1);
-  const bool hydro_only = !hydroself_gravity && hydro->hydro_forces;
-  int Nactive=0, cactive;
-
-  assert(tree->Nimportedcell==0);
-
-  // Get active cells and their number (so that we know how much memory to allocate)
-//  vector<TreeCell<ndim>*> celllist;
-//  celllist.reserve(tree->gtot);
-//  if (hydro_only) {
-//    Nactive += SearchHydroExportParticles(mpinode.domain,hydro,celllist);
-//    cactive = celllist.size();
-//  }
-//  else {
-//
-//    for (int i=0; i<hydro->Nhydro; i++) {
-//      if (partdata[i].active)
-//        Nactive++;
-//    }
-//
-//    celllist.resize(tree->gtot);
-//    cactive = tree->ComputeActiveCellList(&celllist[0]);
-//  }
-
-  TreeCell<ndim>** celllist = cellexportlist[Nproc];
-  cactive = Ncellexport[Nproc];
-  Nactive = Npartexport[Nproc];
-
-
-  // Work out size of the information we are sending
-  //Header consists of number of particles and number of cells
+  int cactive = Ncellexport[iproc];
+  int Nactive = Npartexport[iproc];
+  int activelist[Nleafmax];
+  int exported_particles   = 0;
   const int size_header    = 2*sizeof(int);
   const int size_particles = Nactive*sizeof(ParticleType<ndim>);
   const int size_cells     = cactive*sizeof(TreeCell<ndim>);
   const int old_size       = send_buffer.size();
-  send_buffer.resize(size_particles+size_cells+size_header+old_size);
+  int offset               = size_header + old_size;
+  TreeCell<ndim>** celllist = cellexportlist[iproc];
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
-  //Write the header
-  copy(&send_buffer[old_size],&Nactive);
-  copy(&send_buffer[old_size+sizeof(int)],&cactive);
+  assert(tree->Nimportedcell == 0);
 
-  //Clear the array needed for bookkeeping (which active particles we sent to which processor)
-  vector<int>& ids_active_particles = ids_sent_particles[Nproc];
-  ids_active_particles.clear(); ids_active_particles.reserve(Nactive);
+  // Work out size of the information we are sending
+  // Header consists of number of particles and number of cells
+  send_buffer.resize(size_particles + size_cells + size_header + old_size);
 
-  //Copy cells to export inside array
-  int offset = size_header+old_size;
-  int activelist[Nleafmax];
-  int exported_particles = 0;
+  // Write the header
+  copy(&send_buffer[old_size], &Nactive);
+  copy(&send_buffer[old_size+sizeof(int)], &cactive);
 
-  for (int i=0; i<cactive; i++) {
-    copy(&send_buffer[offset],celllist[i]);
-    const int Nactive_cell = tree->ComputeActiveParticleList(*(celllist[i]),partdata,activelist);
+  // Clear the array needed for bookkeeping (which active particles we sent to which processor)
+  vector<int>& ids_active_particles = ids_sent_particles[iproc];
+  ids_active_particles.clear();
+  ids_active_particles.reserve(Nactive);
+
+
+  // Loop over all cells to be exported and include all cell and particle data
+  //-----------------------------------------------------------------------------------------------
+  for (int cc=0; cc<cactive; cc++) {
+    copy(&send_buffer[offset], celllist[cc]);
+    const int Nactive_cell = tree->ComputeActiveParticleList(*(celllist[cc]), partdata, activelist);
 
     // Update the ifirst and ilast pointers in the cell
     TreeCell<ndim>* exported_cell = reinterpret_cast<TreeCell<ndim>*> (&send_buffer[offset]);
     exported_cell->ifirst = exported_particles;
-    exported_cell->ilast = exported_particles+Nactive_cell-1;
+    exported_cell->ilast  = exported_particles + Nactive_cell - 1;
     offset += sizeof(TreeCell<ndim>);
 
     // Copy active particles
-    for (int iparticle=0; iparticle<Nactive_cell; iparticle++) {
-      ids_active_particles.push_back(activelist[iparticle]);
-      copy(&send_buffer[offset],&partdata[activelist[iparticle]]);
+    for (int jpart=0; jpart<Nactive_cell; jpart++) {
+      ids_active_particles.push_back(activelist[jpart]);
+      copy(&send_buffer[offset], &partdata[activelist[jpart]]);
       offset += sizeof(ParticleType<ndim>);
     }
     exported_particles += Nactive_cell;
   }
+  //-----------------------------------------------------------------------------------------------
 
   assert(exported_particles == Nactive);
   assert(offset == send_buffer.size());
 
-  return size_particles+size_cells+size_header;
-
+  return size_particles + size_cells + size_header;
 }
 
 
@@ -1939,31 +1650,32 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
   Hydrodynamics<ndim> *hydro)
 {
   int offset = 0;
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
-  assert(hydro->NImportedParticles==0);
-  tree->Nimportedcell=0;
+  assert(hydro->NImportedParticles == 0);
+  tree->Nimportedcell = 0;
   tree->Ncelltot=tree->Ncell;
 
   N_imported_part_per_proc.resize(Nbytes_exported_from_proc.size());
 
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
 
   //-----------------------------------------------------------------------------------------------
-  for (int Nproc = 0; Nproc<Nbytes_exported_from_proc.size(); Nproc++) {
+  for (int iproc = 0; iproc<Nbytes_exported_from_proc.size(); iproc++) {
 
-    int N_received_bytes = Nbytes_exported_from_proc[Nproc];
-    int N_received_particles; int N_received_cells;
+    int N_received_bytes = Nbytes_exported_from_proc[iproc];
+    int N_received_cells;
+    int N_received_particles;
 
     if (N_received_bytes == 0) {
-      N_imported_part_per_proc[Nproc]=0;
+      N_imported_part_per_proc[iproc] = 0;
       continue;
     }
 
-    copy(&N_received_particles,&received_array[offset]);
-    N_imported_part_per_proc[Nproc]=N_received_particles;
-    copy(&N_received_cells,&received_array[offset+sizeof(int)]);
+    copy(&N_received_particles, &received_array[offset]);
+    N_imported_part_per_proc[iproc] = N_received_particles;
+    copy(&N_received_cells, &received_array[offset + sizeof(int)]);
 
-    //Ensure there is enough memory
+    // Ensure there is enough memory
     if (hydro->Ntot + N_received_particles > hydro->Nhydromax) {
       ExceptionHandler::getIstance().raise("Error while receiving imported particles: not enough memory!");
     }
@@ -1977,9 +1689,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
     int particle_index = hydro->Ntot;
     offset += 2*sizeof(int);
 
+    //---------------------------------------------------------------------------------------------
     for (int icell=0; icell<N_received_cells; icell++) {
-      TreeCell<ndim>& dest_cell = tree->celldata[icell+tree->Ncelltot];
-      copy(&dest_cell,&received_array[offset]);
+      TreeCell<ndim>& dest_cell = tree->celldata[icell + tree->Ncelltot];
+      copy(&dest_cell, &received_array[offset]);
       offset += sizeof(TreeCell<ndim>);
 
       // Offset the ifirst and ilast pointers
@@ -1987,10 +1700,11 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
       dest_cell.ilast += hydro->Ntot;
 
       // Now copy the received particles inside the hydro particle main arrays
-      for (int iparticle=0;iparticle<dest_cell.Nactive;iparticle++) {
-        copy( &partdata[particle_index] , &received_array[offset]);
+      for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
+        copy(&partdata[particle_index], &received_array[offset]);
         tree->inext[particle_index] = particle_index + 1;
-        particle_index++; offset+=sizeof(ParticleType<ndim>);
+        particle_index++;
+        offset += sizeof(ParticleType<ndim>);
       }
 
     }
@@ -2003,11 +1717,14 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
     // Update the tree counters
     tree->Nimportedcell += N_received_cells;
     tree->Ncelltot      += N_received_cells;
-    tree->Ntot          = hydro->Ntot;
+    tree->Ntot           = hydro->Ntot;
 
   }
+  //-----------------------------------------------------------------------------------------------
 
-  assert (offset == std::accumulate(Nbytes_exported_from_proc.begin(), Nbytes_exported_from_proc.end(),0));
+
+  assert (offset == std::accumulate(Nbytes_exported_from_proc.begin(),
+                                    Nbytes_exported_from_proc.end(), 0));
 
   return;
 }
@@ -2027,48 +1744,35 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
 {
   int removed_particles = 0;               // ..
   int InitialNImportedParticles = hydro->NImportedParticles;
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   // Loop over the processors, removing particles as we go
   send_buffer.resize(hydro->NImportedParticles * sizeof(ParticleType<ndim>));
 
   //-----------------------------------------------------------------------------------------------
-  for (int Nproc=0 ; Nproc<N_imported_part_per_proc.size(); Nproc++ ) {
-
-    const int N_received_particles = N_imported_part_per_proc[Nproc];
-
-//    //Copy the accelerations and gravitational potential of the particles
-//    ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
-//    int j=0;
-//    for (int i=hydro->Nhydro - N_received_particles; i<hydro->Nhydro; i++) {
-//      for (int k=0; k<ndim; k++)
-//        send_buffer[removed_particles+j].a[k] = partdata[i].a[k];
-//      send_buffer[removed_particles+j].gpot = partdata[i].gpot;
-//      j++;
-//    }
+  for (int iproc=0; iproc<N_imported_part_per_proc.size(); iproc++ ) {
 
     // Copy the particles inside the send buffer
-    ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
-    int j=0;
+    const int N_received_particles = N_imported_part_per_proc[iproc];
     const int start_index = hydro->Nhydro + hydro->Nghost + removed_particles;
+    int j = 0;
 
     for (int i=start_index; i<start_index + N_received_particles; i++) {
       copy (&send_buffer[(removed_particles + j)*sizeof(ParticleType<ndim>)], &partdata[i]);
       j++;
     }
-
-    assert(j==N_received_particles);
-
+    assert(j == N_received_particles);
     removed_particles += j;
 
-    //Decrease the particle counter
+    // Decrease the particle counter
     hydro->Ntot -= N_received_particles;
     hydro->NImportedParticles -= N_received_particles;
 
-    //Update the information about how much data we are sending
-    Nbytes_exported_from_proc[Nproc] = N_received_particles*sizeof(ParticleType<ndim>);
+    // Update the information about how much data we are sending
+    Nbytes_exported_from_proc[iproc] = N_received_particles*sizeof(ParticleType<ndim>);
 
-    //Update the information with how much data we are receiving
-    Nbytes_to_each_proc[Nproc] = ids_sent_particles[Nproc].size()*sizeof(ParticleType<ndim>);
+    // Update the information with how much data we are receiving
+    Nbytes_to_each_proc[iproc] = ids_sent_particles[iproc].size()*sizeof(ParticleType<ndim>);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -2094,39 +1798,42 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 void HydroTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
  (vector<char >& received_information,   ///< ..
   vector<int>& recv_displs,              ///< ..
-  Hydrodynamics<ndim> *hydro,                        ///< ..
+  Hydrodynamics<ndim> *hydro,            ///< ..
   int rank)                              ///< ..
 {
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
 
+
   // For each processor, sum up the received quantities for each particle
   //-----------------------------------------------------------------------------------------------
-  for (int Nproc=0; Nproc<recv_displs.size(); Nproc++ ) {
+  for (int iproc=0; iproc<recv_displs.size(); iproc++ ) {
 
-    if (rank == Nproc) continue;
+    // (IS THIS CORRECT WHEN NOT ALL PROCS SEND PARTICLES?)
+    if (rank == iproc) continue;
 
-    const vector<int>& ids_active_particles = ids_sent_particles[Nproc];
+    const vector<int>& ids_active_particles = ids_sent_particles[iproc];
 
-    for (int i=0; i< ids_active_particles.size(); i++ ) {
-      const int j = ids_active_particles[i];
+    for (int j=0; j<ids_active_particles.size(); j++) {
+      const int i = ids_active_particles[j];
 
       ParticleType<ndim>* received_particle = reinterpret_cast<ParticleType<ndim>*>
-        (&received_information[i*sizeof(ParticleType<ndim>) + recv_displs[Nproc] ]);
+        (&received_information[j*sizeof(ParticleType<ndim>) + recv_displs[iproc] ]);
 
-      assert(partdata[j].iorig == received_particle->iorig);
+      assert(partdata[i].iorig == received_particle->iorig);
 
       for (int k=0; k<ndim; k++) {
-        partdata[j].a[k] += received_particle->a[k];
-        partdata[j].agrav[k] += received_particle->agrav[k];
+        partdata[i].a[k]     += received_particle->a[k];
+        partdata[i].agrav[k] += received_particle->agrav[k];
       }
-      partdata[j].gpot += received_particle->gpot;
-      partdata[j].dudt += received_particle->dudt;
-      partdata[j].div_v += received_particle->div_v;
-      partdata[j].levelneib = max(partdata[j].levelneib, received_particle->levelneib);
+      partdata[i].gpot  += received_particle->gpot;
+      partdata[i].dudt  += received_particle->dudt;
+      partdata[i].div_v += received_particle->div_v;
+      partdata[i].levelneib = max(partdata[i].levelneib, received_particle->levelneib);
     }
 
   }
   //-----------------------------------------------------------------------------------------------
+
 
   return;
 }
@@ -2139,8 +1846,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
- (vector<int>& my_matches,             ///< ..
-  int rank)                            ///< ..
+ (vector<int>& my_matches,             ///< [in] Vector containing communication schedule
+  int rank)                            ///< [in] MPI rank
 {
   bool send_turn;                      // ..
 
@@ -2163,8 +1870,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
 
     // Do the actual communication
     for (int i=0; i<2; i++) {
+
       if (send_turn) {
-        Tree<ndim,ParticleType,TreeCell>* treeptr = prunedtree[rank];
+        Tree<ndim,ParticleType,TreeCell>* treeptr = sendprunedtree[inode];
+        MPI_Send(&(treeptr->Ncell), sizeof(int), MPI_INT, inode, 3, MPI_COMM_WORLD);
         MPI_Send(treeptr->celldata, treeptr->Ncell*sizeof(TreeCell<ndim>),
                  MPI_CHAR, inode, 3, MPI_COMM_WORLD);
         send_turn = false;
@@ -2172,9 +1881,31 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
       else {
         Tree<ndim,ParticleType,TreeCell>* treeptr = prunedtree[inode];
         MPI_Status status;
+        MPI_Recv(&(treeptr->Ncell), sizeof(int), MPI_INT, inode, 3, MPI_COMM_WORLD, &status);
+        treeptr->AllocateTreeMemory();
         MPI_Recv(treeptr->celldata, treeptr->Ncell*sizeof(TreeCell<ndim>),
                  MPI_CHAR, inode, 3, MPI_COMM_WORLD, &status);
         send_turn = true;
+
+#ifdef VERIFY_ALL
+        int cnext;
+        cout << "Node : " << inode << "   Ncell received : " << treeptr->Ncell << endl;
+
+        for (int c=0; c<treeptr->Ncell; c++) {
+          if (treeptr->celldata[c].copen != -1) {
+            cnext = treeptr->celldata[c].copen;
+            assert(cnext == c + 1);
+          }
+          else {
+            cnext = treeptr->celldata[c].cnext;
+            assert(cnext > c);
+          }
+
+          assert(treeptr->celldata[c].cnext > 0);
+          assert(treeptr->celldata[c].copen < treeptr->celldata[c].cnext);
+        }
+#endif
+
       }
     }
 
@@ -2183,12 +1914,13 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
 
   MPI_Barrier(MPI_COMM_WORLD);
   for (int i=0; i<Nmpi; i++) {
+    if (i == rank) continue;
     cout << "Writing pruned tree " << i << " for process " << rank << endl;
-    cout << "Ncell : " << prunedtree[i]->Ncell << endl;
-    cout << "r : " << prunedtree[i]->celldata[0].r[0]
-         << "   box : " << prunedtree[i]->celldata[0].bbmin[0]
-         << "   " << prunedtree[i]->celldata[0].bbmax[0]
-         << "   worktot : " << prunedtree[i]->celldata[0].worktot << endl;
+    cout << "Ncell : " << sendprunedtree[i]->Ncell << endl;
+    cout << "r : " << sendprunedtree[i]->celldata[0].r[0]
+         << "   box : " << sendprunedtree[i]->celldata[0].bbmin[0]
+         << "   " << sendprunedtree[i]->celldata[0].bbmax[0]
+         << "   worktot : " << sendprunedtree[i]->celldata[0].worktot << endl;
   }
 
 }
@@ -2237,6 +1969,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
   // Allocate array to store local copy of potential neighbour ids
   trueneiblist = new int[Ntot];
 
+
   // First, create list of 'true' neighbours by looping over all particles
   if (neibtype == "gather") {
     for (j=0; j<Ntot; j++) {
@@ -2251,8 +1984,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd < kernrangesqd*partdata[i].h*partdata[i].h ||
           drsqd < kernrangesqd*partdata[j].h*partdata[j].h) trueneiblist[Ntrueneib++] = j;
-     }
-   }
+    }
+  }
+
 
   // Now compare each given neighbour with true neighbour list for validation
   for (j=0; j<Ntrueneib; j++) {
@@ -2277,6 +2011,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
     }
 
   }
+
 
   // If the true neighbour is not in the list, or included multiple times,
   // then output to screen and terminate program

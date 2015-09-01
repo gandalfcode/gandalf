@@ -27,8 +27,9 @@
 
 #include <string>
 #include "Precision.h"
-#include "SphNeighbourSearch.h"
+#include "Hydrodynamics.h"
 #include "Particle.h"
+#include "SmoothingKernel.h"
 using namespace std;
 
 
@@ -55,27 +56,25 @@ class MpiNode
   //-----------------------------------------------------------------------------------------------
   void PackNodeData(void);
   void UnpackNodeData(void);
-  void UpdateBoundingBoxData(int, Sph<ndim> *, SmoothingKernel<ndim> *);
+  void UpdateBoundingBoxData(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *);
 
 
   // MPI node variables
   //-----------------------------------------------------------------------------------------------
   int ifirst;                          ///< i.d. of first ghost from node
   int ilast;                           ///< i.d. of last ghost from node
-  int Nhydro;                          ///< No. of SPH particles on node
-  int Ntot;                            ///< ..
-  int Ntotmax;                         ///< ..
+  int Nhydro;                          ///< No. of hydro particles on node
+  int Ntot;                            ///< Total no. of particles on node
+  int Ntotmax;                         ///< Max. no. of particles on node
   int Nghost;                          ///< No. of ghost particles originally
                                        ///< from node exported to current node
   FLOAT hmax;                          ///< Maximum smoothing length on node
   FLOAT worktot;                       ///< Total 'work' on each node
-  Box<ndim> domain;                    ///< ..
-  Box<ndim> rbox;                      ///< ..
-  Box<ndim> hbox;                      ///< ..
+  Box<ndim> domain;                    ///< Box representing node volume
+  Box<ndim> rbox;                      ///< Bounding box of particle positions in node
+  Box<ndim> hbox;                      ///< Bounding box of h-extent in node
 
   int *ids;                            ///< List of particles in tree
-  FLOAT *worksent;                     ///< ..
-  FLOAT *workreceived;                 ///< ..
 
 };
 #endif

@@ -592,7 +592,7 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
   const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);    // ..
   const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);  // ..
 
-  int k,kv;
+  int k,kv;                            // ..
   FLOAT ekin;                          // ..
   FLOAT etotl, etotr, Sl, Sr, ddu, dstarl, dstarr, etotstarl, etotstarr, df, uf, pf, etotf;
   FLOAT pstar;                         // Pressure in star region
@@ -603,6 +603,7 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
   FLOAT uleft[ndim];                   // Left velocity state
   FLOAT uright[ndim];                  // Right velocity state
   FLOAT Wface[nvar];                   // Primitive vector at working face
+
 
   for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
   for (k=0; k<ndim; k++) uright[k] = Wright[k];

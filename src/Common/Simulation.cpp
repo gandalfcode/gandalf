@@ -93,7 +93,7 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "nbody")
       return new NbodySimulation<1>(params);
   }
-  else if (ndim==2) {
+  else if (ndim == 2) {
     if (simtype == "gradhsph" || simtype == "sph")
       return new GradhSphSimulation<2>(params);
     else if (simtype == "sm2012sph")
@@ -105,7 +105,7 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "nbody")
       return new NbodySimulation<2>(params);
   }
-  else if (ndim==3) {
+  else if (ndim == 3) {
     if (simtype == "gradhsph" || simtype == "sph")
       return new GradhSphSimulation<3>(params);
     else if (simtype == "sm2012sph")
@@ -478,10 +478,9 @@ string SimulationBase::Output(void)
   }
   //-----------------------------------------------------------------------------------------------
 
-
   // Output a data snapshot if reached required time
   //-----------------------------------------------------------------------------------------------
-  if (t >= tsnapnext) {
+  if (t >= tsnapnext ) {
 
     // Prepare filename for new snapshot
     Noutsnap++;
@@ -517,6 +516,7 @@ string SimulationBase::Output(void)
 
 
   }
+//if (Noutsnap>4) exit(-3);//MPI_Abort(MPI_COMM_WORLD,-3);
   //-----------------------------------------------------------------------------------------------
 
 

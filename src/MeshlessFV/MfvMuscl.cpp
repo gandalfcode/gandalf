@@ -515,6 +515,11 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
   const FLOAT dt = timestep*(FLOAT) part.nstep;    // ..
 
 
+  // Initialise all particle flux variables
+  //for (var=0; var<nvar; var++) part.dQdt[var] = (FLOAT) 0.0;
+  //for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
+
+
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
@@ -571,10 +576,6 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
     for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*Wdot[var]*dt;
 
-    /*if (Wright[ipress] <= 0.0) {
-      cout << "press   : " << part.Wprim[ipress] << "   " << Wleft[ipress] << "   " << Wright[ipress] << "   " << neibpart[j].Wprim[ipress] << endl;
-      cout << "gradW,j : " << DotProduct(neibpart[j].grad[ipress], draux, ndim) << "   " << DotProduct(gradW[ipress], draux, ndim) << endl;
-    }*/
     assert(Wleft[irho] > 0.0);
     assert(Wleft[ipress] > 0.0);
     assert(Wright[irho] > 0.0);

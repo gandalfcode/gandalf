@@ -44,43 +44,44 @@ using namespace std;
 
 //=================================================================================================
 //  SM2012SphKDTree::SM2012SphKDTree
-/// SphTree constructor.  Initialises various variables.
+/// SM2012SphKDTree constructor.  Initialises various variables and creates tree objects.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 SM2012SphKDTree<ndim,ParticleType,TreeCell>::SM2012SphKDTree
- (int Nleafmaxaux,
-  int Nmpiaux,
-  FLOAT thetamaxsqdaux,
-  FLOAT kernrangeaux,
-  FLOAT macerroraux,
-  string gravity_mac_aux,
-  string multipole_aux,
-  DomainBox<ndim> *boxaux,
-  SmoothingKernel<ndim> *kernaux,
-  CodeTiming *timingaux):
- NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
- SM2012SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
-                                           macerroraux,gravity_mac_aux,multipole_aux,
-                                           boxaux,kernaux,timingaux)
+ (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+ NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
+ SM2012SphTree<ndim,ParticleType,TreeCell>
+  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
 {
   // Set-up main tree object
-  tree = new KDTree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                                macerroraux, gravity_mac_aux, multipole_aux);
+  tree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+                                                _macerror, _gravity_mac, _multipole);
 
   // Set-up ghost-particle tree object
-  ghosttree = new KDTree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                                     macerroraux, gravity_mac_aux, multipole_aux);
+  ghosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+                                                     _macerror, _gravity_mac, _multipole);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
-  mpighosttree = new KDTree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                                       macerroraux, gravity_mac_aux, multipole_aux);
+  mpighosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+                                                        _macerror, _gravity_mac, _multipole);
 
   // Set-up multiple pruned trees, one for each MPI process
-  *(prunedtree) = *(new KDTree<ndim,ParticleType,TreeCell>*[Nmpi]);
-  for (int j=0; j<Nmpi; j++) {
-    prunedtree[j] = new KDTree<ndim,ParticleType,TreeCell>
-      (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
+  KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
+  KDTree<ndim,ParticleType,TreeCell>** sendprunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  sendprunedtree = (Tree<ndim,ParticleType,TreeCell> **) sendprunedtree_derived;
+
+  for (int i=0; i<Nmpi; i++) {
+    prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+  }
+  for (int i=0; i<Nmpi; i++) {
+    sendprunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
   }
 #endif
 }
@@ -88,44 +89,47 @@ SM2012SphKDTree<ndim,ParticleType,TreeCell>::SM2012SphKDTree
 
 
 //=================================================================================================
-//  SM2012SphOctTree::Sm2012SphOctTree
+//  SM2012SphOctTree::SM2012SphOctTree
 /// SphTree constructor.  Initialises various variables.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 SM2012SphOctTree<ndim,ParticleType,TreeCell>::SM2012SphOctTree
- (int Nleafmaxaux,
-  int Nmpiaux,
-  FLOAT thetamaxsqdaux,
-  FLOAT kernrangeaux,
-  FLOAT macerroraux,
-  string gravity_mac_aux,
-  string multipole_aux,
-  DomainBox<ndim> *boxaux,
-  SmoothingKernel<ndim> *kernaux,
-  CodeTiming *timingaux):
- NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
- SM2012SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
-                                          macerroraux,gravity_mac_aux,multipole_aux,
-                                          boxaux,kernaux,timingaux)
+ (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+ NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
+ SM2012SphTree<ndim,ParticleType,TreeCell>
+  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
 {
   // Set-up main tree object
-  tree = new OctTree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                                 macerroraux, gravity_mac_aux, multipole_aux);
+  tree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+                                                 _macerror, _gravity_mac, _multipole);
 
   // Set-up ghost-particle tree object
-  ghosttree = new OctTree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                                      macerroraux, gravity_mac_aux, multipole_aux);
+  ghosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+                                                      _macerror, _gravity_mac, _multipole);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
-  mpighosttree = new OctTree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                                         macerroraux, gravity_mac_aux, multipole_aux);
+  mpighosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+                                                         _macerror, _gravity_mac, _multipole);
 
   // Set-up multiple pruned trees, one for each MPI process
-  *(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
+  //*(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
+  // Set-up multiple pruned trees, one for each MPI process
+  OctTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
+  OctTree<ndim,ParticleType,TreeCell>** sendprunedtree_derived = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  sendprunedtree = (Tree<ndim,ParticleType,TreeCell> **) sendprunedtree_derived;
+
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
-      (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+  }
+  for (int i=0; i<Nmpi; i++) {
+    sendprunedtree[i] = new OctTree<ndim,ParticleType,TreeCell>
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
   }
 #endif
 }
@@ -138,20 +142,13 @@ SM2012SphOctTree<ndim,ParticleType,TreeCell>::SM2012SphOctTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 SM2012SphTree<ndim,ParticleType,TreeCell>::SM2012SphTree
-(int Nleafmaxaux,
- int Nmpiaux,
- FLOAT thetamaxsqdaux,
- FLOAT kernrangeaux,
- FLOAT macerroraux,
- string gravity_mac_aux,
- string multipole_aux,
- DomainBox<ndim> *boxaux,
- SmoothingKernel<ndim> *kernaux,
- CodeTiming *timingaux):
-  NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
-  SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
-                                      macerroraux,gravity_mac_aux,multipole_aux,
-                                      boxaux,kernaux,timingaux)
+ (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+ NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
+ SphTree<ndim,ParticleType,TreeCell>
+  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
 {
 }
 

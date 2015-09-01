@@ -98,6 +98,29 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
 
 
+  if (Nsteps%1 == 0) {
+  stringstream ss;
+  string nostring = "";
+  ss << setfill('0') << setw(5) << Nsteps;
+  nostring = ss.str();
+  string filename = run_id + ".SLOPES." + nostring;
+  ss.str(std::string());
+  ofstream outfile;
+  outfile.open(filename.c_str());
+  for (i=0; i<mfv->Nhydro; i++) {
+    for (k=0; k<ndim; k++) outfile << partdata[i].r[k] << "    ";
+    for (k=0; k<ndim+2; k++) outfile << partdata[i].Wprim[k] << "    ";
+    for (k=0; k<ndim+2; k++) {
+      for (int kk=0; kk<ndim; kk++) outfile << partdata[i].grad[k][kk] << "    ";
+    }
+    for (k=0; k<ndim+2; k++) outfile << partdata[i].dQdt[k] << "    ";
+    outfile << endl;
+  }
+  outfile.close();
+  cout << "WROTE FILE : " << filename << endl;
+}
+
+
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
   if (!mfv->staticParticles) {

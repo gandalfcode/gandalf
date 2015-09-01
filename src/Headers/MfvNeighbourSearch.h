@@ -73,7 +73,7 @@ protected:
 
   //-----------------------------------------------------------------------------------------------
   MeshlessFVNeighbourSearch(FLOAT kernrangeaux, DomainBox<ndim> *boxaux,
-                     SmoothingKernel<ndim> *kernaux, CodeTiming *timingaux) :
+                            SmoothingKernel<ndim> *kernaux, CodeTiming *timingaux) :
     NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux) {};
   virtual ~MeshlessFVNeighbourSearch() {};
 
@@ -167,17 +167,16 @@ protected:
   using HydroTree<ndim,ParticleType,TreeCell>::tree;
   using HydroTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using HydroTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using HydroTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using HydroTree<ndim,ParticleType,TreeCell>::Nmpi;
   using HydroTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using HydroTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  MeshlessFVTree(int _Nleafmax, int _Nmpi, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
+  MeshlessFVTree(int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
+                 FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
                  string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
                  SmoothingKernel<ndim> *_kern, CodeTiming *_timing); //:
     /*NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
@@ -213,17 +212,15 @@ class MeshlessFVKDTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::tree;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nmpi;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using MeshlessFVTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  MeshlessFVKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  MeshlessFVKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
@@ -248,11 +245,12 @@ class MeshlessFVOctTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nmpi;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using MeshlessFVTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  MeshlessFVOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  MeshlessFVOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                     DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };

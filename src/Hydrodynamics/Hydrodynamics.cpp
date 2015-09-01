@@ -46,12 +46,12 @@ using namespace std;
 template <int ndim>
 Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
                                    string gas_eos_aux, string KernelName, int size_hydro):
+  size_hydro_part(size_hydro),
   hydro_forces(hydro_forces_aux),
   self_gravity(self_gravity_aux),
   gas_eos(gas_eos_aux),
   h_fac(h_fac_aux),
-  kerntab(TabulatedKernel<ndim>(KernelName)),
-  size_hydro_part(size_hydro)
+  kerntab(TabulatedKernel<ndim>(KernelName))
 {
   allocated          = false;
   Nhydro             = 0;

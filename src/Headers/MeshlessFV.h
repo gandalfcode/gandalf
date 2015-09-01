@@ -66,6 +66,7 @@ public:
   using Hydrodynamics<ndim>::h_fac;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
   using Hydrodynamics<ndim>::hydro_forces;
+  using Hydrodynamics<ndim>::invndim;
   using Hydrodynamics<ndim>::iorder;
   using Hydrodynamics<ndim>::kernfac;
   using Hydrodynamics<ndim>::kernfacsqd;
@@ -87,7 +88,6 @@ public:
   using FV<ndim>::gamma_eos;
   using FV<ndim>::gammam1;
 
-  static const FLOAT invndim; //=1./ndim;  ///< Copy of 1/ndim
   static const int nvar = ndim + 2;
   static const int ivx = 0;
   static const int ivy = 1;
@@ -177,10 +177,6 @@ public:
 
 };
 
-// Declare invndim constant here (prevents warnings with some compilers)
-template <int ndim>
-const FLOAT MeshlessFV<ndim>::invndim = 1.0/ndim;
-
 
 
 //=================================================================================================
@@ -203,6 +199,7 @@ class MfvMuscl : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
   using MeshlessFV<ndim>::hydrodata_unsafe;
+  using MeshlessFV<ndim>::invndim;
   using MeshlessFV<ndim>::kernfac;
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
@@ -285,6 +282,7 @@ class MfvRungeKutta : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
   using MeshlessFV<ndim>::hydrodata_unsafe;
+  using MeshlessFV<ndim>::invndim;
   using MeshlessFV<ndim>::kernfac;
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;

@@ -22,6 +22,7 @@
 
 
 #include <fstream>
+#include <sstream>
 #include "Precision.h"
 #include "Debug.h"
 #include "IC.h"
@@ -523,8 +524,9 @@ void Ic<ndim>::ShockTube(void)
   }
   //-----------------------------------------------------------------------------------------------
   else {
-    string message = "Wrong dimensionality : " + ndim;
-    ExceptionHandler::getIstance().raise(message);
+    std::ostringstream message;
+    message << "Invalid dimensionality chosen for Shocktube ICs : ndim = " << ndim;
+    ExceptionHandler::getIstance().raise(message.str());
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -4275,8 +4277,8 @@ void Ic<ndim>::InterpolateVelocityField
     int i,j,k;                           // Grid coordinates
     int kk;                              // Dimension counter
     int p;                               // Particle counter
-    FLOAT dx[ndim];                      // Position relative to grid point
-    FLOAT vint[ndim];                    // Interpolated velocity
+    FLOAT dx[3];                         // Position relative to grid point
+    FLOAT vint[8];                       // Interpolated velocity
 
 
     // Now interpolate velocity field onto particle positions

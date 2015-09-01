@@ -323,10 +323,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.div_v     = (FLOAT) 0.0;
 
-
-  // Set important thermal variables here
-  ComputeThermalProperties(parti);
-
   // Calculate the minimum neighbour potential (used later to identify new sinks)
   if (create_sinks == 1) {
     parti.potmin = true;
@@ -363,6 +359,11 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.invomega = (FLOAT) 1.0;
     parti.zeta     = (FLOAT) 0.0;
   }
+
+
+  // Set important thermal variables here
+  ComputeThermalProperties(parti);
+
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;

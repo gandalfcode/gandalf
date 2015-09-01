@@ -202,11 +202,22 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+
+
+  //-----------------------------------------------------------------------------------------------
 #if defined MPI_PARALLEL
-  mpicontrol = new MpiControlType<ndim, GradhSphParticle>;
+  if (stringparams["mpi_decomposition"] == "kdtree") {
+    mpicontrol = new MpiKDTreeDecomposition<ndim,GradhSphParticle>();
+  }
+  else {
+    string message = "Unrecognised parameter : mpi_decomposition = "
+      + simparams->stringparams["mpi_decomposition"];
+    ExceptionHandler::getIstance().raise(message);
+  }
   mpicontrol->timing = timing;
   rank = mpicontrol->rank;
   Nmpi = mpicontrol->Nmpi;
+  sinks.SetMpiControl(mpicontrol);
 #endif
 
 
@@ -218,15 +229,15 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell>
-     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], sph->kernp->kernrange,
-      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
-      &simbox, sph->kernp, timing);
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell>
-     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], sph->kernp->kernrange,
-      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
-      &simbox, sph->kernp, timing);
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
   }
   else {
     string message = "Unrecognised parameter : neib_search = "

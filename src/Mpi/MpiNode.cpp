@@ -97,13 +97,14 @@ void MpiNode<ndim>::UnpackNodeData(void)
 //=============================================================================
 template <int ndim>
 void MpiNode<ndim>::UpdateBoundingBoxData
-(int Npart,                        ///< No. of SPH particles
- Sph<ndim> *sph,       ///< Pointer to SPH object
- SmoothingKernel<ndim> *kernptr)         ///< Pointer to kernel object
+(int Npart,                            ///< No. of SPH particles
+ Hydrodynamics<ndim> *hydro,           ///< Pointer to SPH object
+ SmoothingKernel<ndim> *kernptr)       ///< Pointer to kernel object
 {
-  int i;                           // Particle counter
-  int k;                           // Dimension counter
-  FLOAT hrange;                    // ..
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  FLOAT hrange;                        // ..
+  const FLOAT kernange = kernptr->kernrange;
 
   // Initialise bounding box values
   for (k=0; k<ndim; k++) rbox.boxmin[k] = big_number;
@@ -111,25 +112,23 @@ void MpiNode<ndim>::UpdateBoundingBoxData
   for (k=0; k<ndim; k++) hbox.boxmin[k] = big_number;
   for (k=0; k<ndim; k++) hbox.boxmax[k] = -big_number;
 
+
   // Loop over all particles and compute new bounding boxes
   //---------------------------------------------------------------------------
-
-  const FLOAT kernange = kernptr->kernrange;
-
   for (i=0; i<Npart; i++) {
-
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
 
     hrange = 2.0*kernange*part.h;
     for (k=0; k<ndim; k++) {
-      rbox.boxmin[k] = min(rbox.boxmin[k],part.r[k]);
-      rbox.boxmax[k] = max(rbox.boxmax[k],part.r[k]);
-      hbox.boxmin[k] = min(hbox.boxmin[k],part.r[k] - hrange);
-      hbox.boxmax[k] = max(hbox.boxmax[k],part.r[k] + hrange);
+      rbox.boxmin[k] = min(rbox.boxmin[k], part.r[k]);
+      rbox.boxmax[k] = max(rbox.boxmax[k], part.r[k]);
+      hbox.boxmin[k] = min(hbox.boxmin[k], part.r[k] - hrange);
+      hbox.boxmax[k] = max(hbox.boxmax[k], part.r[k] + hrange);
     }
   }
 
   cout << "RBOX : " << rbox.boxmin[0] << "    " << rbox.boxmax[0] << endl;
+  cout << "HBOX : " << hbox.boxmin[0] << "    " << hbox.boxmax[0] << endl;
   cout << "DOMAIN : " << domain.boxmin[0] << "    " << domain.boxmax[0] << endl;
 
   return;

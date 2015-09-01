@@ -54,19 +54,19 @@ Nbody<ndim>::Nbody(int nbody_softening_aux, int _perturbers, int sub_systems_aux
   nbody_softening(nbody_softening_aux),
   perturbers(_perturbers),
   sub_systems(sub_systems_aux),
-  nbody_mult(nbody_mult_aux),
-  kerntab(TabulatedKernel<ndim>(KernelName)),
   Npec(Npec_aux),
-  Nstar(0),
-  Nstarmax(0),
-  Nsystem(0),
-  Nsystemmax(0),
-  Nnbody(0),
-  Nnbodymax(0),
-  reset_tree(0),
-  allocated(false),
-  Nstellartable(0)
+  nbody_mult(nbody_mult_aux),
+  kerntab(TabulatedKernel<ndim>(KernelName))
 {
+  allocated     = false;
+  Nnbody        = 0;
+  Nnbodymax     = 0;
+  Nstar         = 0;
+  Nstarmax      = 0;
+  Nsystem       = 0;
+  Nsystemmax    = 0;
+  Nstellartable = 0;
+  reset_tree    = 0;
 }
 
 

@@ -73,10 +73,10 @@ class MpiNode;
 template <int ndim>
 class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 {
-#if defined MPI_PARALLEL
+/*#if defined MPI_PARALLEL
 protected:
   vector<int> ids_active_particles;
-#endif
+#endif*/
  public:
 
   using NeighbourSearch<ndim>::neibcheck;
@@ -103,6 +103,8 @@ protected:
                                        Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                              Nbody<ndim> *, DomainBox<ndim> &) {};
   virtual void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                           Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
@@ -151,11 +153,11 @@ class SphBruteForceSearch : public SphNeighbourSearch<ndim>, public BruteForceSe
                                       Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
 
-#ifdef MPI_PARALLEL
+/*#ifdef MPI_PARALLEL
   using NeighbourSearch<ndim>::ids_active_particles;
   void UpdateGravityExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateHydroExportList(int, int, int, SphParticle<ndim> *,  Sph<ndim> *, Nbody<ndim> *);
-#endif
+#endif*/
 
 };
 
@@ -235,7 +237,7 @@ class SM2012SphBruteForce: public SphBruteForceSearch<ndim,ParticleType>
 /// \date    08/01/2014
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class SphTree: public SphNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType,TreeCell>
+class SphTree : public SphNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType,TreeCell>
 {
 #if defined MPI_PARALLEL
   vector<vector<int> > ids_sent_particles;
@@ -269,23 +271,23 @@ protected:
   using HydroTree<ndim,ParticleType,TreeCell>::tree;
   using HydroTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using HydroTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using HydroTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using HydroTree<ndim,ParticleType,TreeCell>::Nmpi;
   using HydroTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using HydroTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  SphTree(int _Nleafmax, int _Nmpi, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-          string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
-          SmoothingKernel<ndim> *_kern, CodeTiming *_timing) :
+  SphTree(int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
+          FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
+          string _gravity_mac, string _multipole,
+          DomainBox<ndim> *_box, SmoothingKernel<ndim> *_kern, CodeTiming *_timing) :
     NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     SphNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
-    HydroTree<ndim,ParticleType,TreeCell>(_Nleafmax, _Nmpi, _thetamaxsqd, _kernrange, _macerror,
-                                          _gravity_mac, _multipole, _box, _kern, _timing) {};
+    HydroTree<ndim,ParticleType,TreeCell>(_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
+                                          _thetamaxsqd, _kernrange, _macerror, _gravity_mac,
+                                          _multipole, _box, _kern, _timing) {};
   virtual ~SphTree() {};
 
 
@@ -294,6 +296,8 @@ protected:
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                       Nbody<ndim> *, DomainBox<ndim> &) {};
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
@@ -340,17 +344,15 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::tree;
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using SphTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  GradhSphTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   virtual ~GradhSphTree();
 
@@ -360,7 +362,9 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
-  //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                       Nbody<ndim> *, DomainBox<ndim> &);
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
@@ -385,17 +389,15 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::tree;
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using SphTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  GradhSphKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                  DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
@@ -420,11 +422,12 @@ class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  GradhSphOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
@@ -470,11 +473,12 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SM2012SphTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 
@@ -507,11 +511,12 @@ class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SM2012SphKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
@@ -536,11 +541,12 @@ class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SM2012SphOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };

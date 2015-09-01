@@ -161,7 +161,8 @@ class SimulationBase
   int Noutsnap;                     ///< No. of output snapshots
   int Noutlitesnap;                 ///< No. of lite output snapshots
   int Nthreads;                     ///< Max no. of (OpenMP) threads
-  int pruning_level;                ///< Level to prune trees for MPI
+  int pruning_level_min;            ///< Min. level of pruned trees for MPI
+  int pruning_level_max;            ///< Max. level of pruned trees for MPI
   int rank;                         ///< Process i.d. (for MPI simulations)
   int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
@@ -328,7 +329,8 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::extra_sink_output;
   using Simulation<ndim>::periodicBoundaries;
   using Simulation<ndim>::Nmpi;
-  using Simulation<ndim>::pruning_level;
+  using Simulation<ndim>::pruning_level_min;
+  using Simulation<ndim>::pruning_level_max;
   using Simulation<ndim>::restart;
   using Simulation<ndim>::simparams;
   using Simulation<ndim>::timing;
@@ -572,7 +574,8 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::extra_sink_output;
   using Simulation<ndim>::periodicBoundaries;
   using Simulation<ndim>::Nmpi;
-  using Simulation<ndim>::pruning_level;
+  using Simulation<ndim>::pruning_level_min;
+  using Simulation<ndim>::pruning_level_max;
   using Simulation<ndim>::restart;
   using Simulation<ndim>::simparams;
   using Simulation<ndim>::timing;
@@ -665,7 +668,8 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::extra_sink_output;
   using Simulation<ndim>::periodicBoundaries;
   using Simulation<ndim>::Nmpi;
-  using Simulation<ndim>::pruning_level;
+  using Simulation<ndim>::pruning_level_min;
+  using Simulation<ndim>::pruning_level_max;
   using Simulation<ndim>::restart;
   using Simulation<ndim>::simparams;
   using Simulation<ndim>::timing;
@@ -759,7 +763,8 @@ class MfvRungeKuttaSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::extra_sink_output;
   using Simulation<ndim>::periodicBoundaries;
   using Simulation<ndim>::Nmpi;
-  using Simulation<ndim>::pruning_level;
+  using Simulation<ndim>::pruning_level_min;
+  using Simulation<ndim>::pruning_level_max;
   using Simulation<ndim>::restart;
   using Simulation<ndim>::simparams;
   using Simulation<ndim>::timing;

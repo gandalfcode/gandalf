@@ -450,7 +450,9 @@ void Parameters::SetDefaultValues(void)
 
   // MPI parameters
   //-----------------------------------------------------------------------------------------------
-  intparams["pruning_level"] = 6;
+  stringparams["mpi_decomposition"] = "kdtree";
+  intparams["pruning_level_min"] = 6;
+  intparams["pruning_level_max"] = 6;
 
   // Python parameters
   //-----------------------------------------------------------------------------------------------
