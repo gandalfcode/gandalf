@@ -95,10 +95,8 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
   Nbody<ndim> *nbody)                  ///< [in] Main N-body object
 {
   int j;                               // Neighbour id
-  int k;                               // Dimension counter
   int iteration = 0;                   // h-rho iteration counter
   int iteration_max = 30;              // Max. no of iterations
-  FLOAT dr[ndim];                      // Relative position vector
   FLOAT h_lower_bound = (FLOAT) 0.0;   // Lower bound on h
   FLOAT h_upper_bound = hmax;          // Upper bound on h
   FLOAT invhsqd;                       // (1 / h)^2
@@ -111,10 +109,10 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
 
     // Initialise all variables for this value of h
     iteration++;
-    part.invh     = (FLOAT) 1.0/part.h;
     part.ndens    = (FLOAT) 0.0;
     part.invomega = (FLOAT) 0.0;
     part.zeta     = (FLOAT) 0.0;
+    part.invh     = (FLOAT) 1.0/part.h;
     part.hfactor  = pow(part.invh,ndim);
     invhsqd       = part.invh*part.invh;
 
@@ -134,13 +132,12 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
     part.zeta     *= invhsqd;
     part.volume    = (FLOAT) 1.0/part.ndens;
     part.rho       = part.m*part.ndens;
-
-
     if (part.rho > (FLOAT) 0.0) part.invrho = (FLOAT) 1.0/part.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (part.rho > (FLOAT) 0.0 && part.h > h_lower_bound &&
         fabs(part.h - h_fac*pow(part.volume,MeshlessFV<ndim>::invndim)) < h_converge) break;
+
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
     // not converge in a reasonable number of iterations (iteration_max), then assume something is
@@ -183,11 +180,9 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
   part.hfactor   = pow(part.invh, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
-
   part.invomega  = (FLOAT) 1.0 + MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
   part.invomega  = (FLOAT) 1.0/part.invomega;
   part.zeta      = -MeshlessFV<ndim>::invndim*part.h*part.zeta*part.invomega/part.ndens;
-  // *part.m;
 
 
   // Set important thermal variables here
@@ -230,7 +225,7 @@ void MfvMuscl<ndim, kernelclass>::ComputePsiFactors
   FLOAT E[ndim][ndim];                         // ..
   const FLOAT invhsqd = part.invh*part.invh;   // ..
 
-
+  // Zero all matrices
   for (k=0; k<ndim; k++) {
     for (int kk=0; kk<ndim; kk++) {
       E[k][kk] = (FLOAT) 0.0;
@@ -254,6 +249,7 @@ void MfvMuscl<ndim, kernelclass>::ComputePsiFactors
     }
   }
   //-----------------------------------------------------------------------------------------------
+
 
   // Invert the matrix (depending on dimensionality)
   if (ndim == 1) {
@@ -311,22 +307,17 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   int var;                             // ..
-  FLOAT alpha_mean;                    // Mean articial viscosity alpha value
   FLOAT draux[ndim];                   // Relative position vector
   FLOAT drsqd;                         // ..
   FLOAT dv[ndim];                      // ..
   FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT wkerni;                        // Value of w1 kernel function
-  FLOAT wkernj;                        // Value of w1 kernel function
-  FLOAT vsignal;                       // Signal velocity
-  FLOAT paux;                          // Aux. pressure force variable
-  FLOAT winvrho;                       // 0.5*(wkerni + wkernj)*invrhomean
-  FLOAT psitilda[ndim];
-  const FLOAT invhsqd = part.invh*part.invh;
+  FLOAT psitilda[ndim];                // ..
+  const FLOAT invhsqd = part.invh*part.invh;   // ..
 
 
   // Initialise/zero all variables to be updated in this routine
   part.vsig_max = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) part.vreg[k] = 0.0;
   for (k=0; k<ndim; k++) {
     for (var=0; var<nvar; var++) {
       part.grad[var][k] = 0.0;
@@ -369,8 +360,15 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
                                        min((FLOAT) 0.0, dvdr/(sqrt(drsqd) + small_number)));
 
+    for (k=0; k<ndim; k++) part.vreg[k] -= draux[k]*kern.w0_s2(drsqd*invhsqd);
+
   }
   //-----------------------------------------------------------------------------------------------
+
+  for (k=0; k<ndim; k++) part.vreg[k] *= part.invh*part.sound;  //pow(part.invh, ndim);
+  //cout << "vreg? : " << part.vreg[0] << "    " << part.vreg[1] << endl;
+  //for (k=0; k<ndim; k++) part.v0[k] += part.vreg[k];
+  //for (k=0; k<ndim; k++) part.v[k] += part.vreg[k];
 
 
   // Find all max and min values for meshless slope limiters
@@ -386,8 +384,10 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
     for (var=0; var<nvar; var++) {
       part.Wmin[var] = min(part.Wmin[var], neibpart[j].Wprim[var]);
       part.Wmax[var] = max(part.Wmax[var], neibpart[j].Wprim[var]);
-      part.Wmidmin[var] = min(part.Wmidmin[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
-      part.Wmidmax[var] = max(part.Wmidmax[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmin[var] =
+        min(part.Wmidmin[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmax[var] =
+        max(part.Wmidmax[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
       assert(part.Wmidmax[var] >= part.Wmidmin[var]);
       assert(part.Wmax[var] >= part.Wmin[var]);
     }
@@ -395,12 +395,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
   }
   //-----------------------------------------------------------------------------------------------
 
-  //cout << "vsig : " << part.vsig_max << "    " << part.sound << endl;
   assert(part.vsig_max >= part.sound);
-
-  //cout << "r : " << part.r[0] << "   " << part.r[1] << "   " << part.r[2] << "    vx gradient : "
-  //     << part.grad[ivx][0] << "    " << part.grad[ivx][1] << "   " << part.grad[ivx][2] << endl;
-  //cin >> j;
 
   return;
 }
@@ -408,7 +403,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
 
 
 //=================================================================================================
-//  ...
+//  MfvMuscl::ComputeGodunovFlux
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
@@ -421,10 +416,10 @@ void MfvMuscl<ndim, kernelclass>::CopyDataToGhosts
   int itype;                           // Ghost particle type
   int j;                               // Ghost particle counter
 
-  debug2("[MfvMuscl::CopySphDataToGhosts]");
+  debug2("[MfvMuscl::CopyDataToGhosts]");
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 //#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,partdata)
   for (j=0; j<this->NPeriodicGhost; j++) {
     i = this->Nhydro + j;
@@ -443,25 +438,42 @@ void MfvMuscl<ndim, kernelclass>::CopyDataToGhosts
     else if (itype == x_rhs_periodic) {
       partdata[i].r[0] -= simbox.boxsize[0];
     }
-    else if (itype == y_lhs_periodic && ndim > 1) {
+    else if (itype == x_lhs_mirror) {
+      partdata[i].r[0] = 2.0*simbox.boxmin[0] - partdata[i].r[0];
+    }
+    else if (itype == x_rhs_mirror) {
+      partdata[i].r[0] = 2.0*simbox.boxmax[0] - partdata[i].r[0];
+    }
+    else if (ndim > 1 && itype == y_lhs_periodic) {
       partdata[i].r[1] += simbox.boxsize[1];
     }
-    else if (itype == y_rhs_periodic && ndim > 1) {
+    else if (ndim > 1 && itype == y_rhs_periodic) {
       partdata[i].r[1] -= simbox.boxsize[1];
     }
-    else if (itype == z_lhs_periodic && ndim == 3) {
+    else if (ndim > 1 && itype == y_lhs_mirror) {
+      partdata[i].r[1] = 2.0*simbox.boxmin[1] - partdata[i].r[1];
+    }
+    else if (ndim > 1 && itype == y_rhs_mirror) {
+      partdata[i].r[1] = 2.0*simbox.boxmax[1] - partdata[i].r[1];
+    }
+    else if (ndim == 3 && itype == z_lhs_periodic) {
       partdata[i].r[2] += simbox.boxsize[2];
     }
-    else if (itype == z_rhs_periodic && ndim == 3) {
+    else if (ndim == 3 && itype == z_rhs_periodic) {
       partdata[i].r[2] -= simbox.boxsize[2];
+    }
+    else if (ndim == 3 && itype == z_lhs_mirror) {
+      partdata[i].r[2] = 2.0*simbox.boxmin[2] - partdata[i].r[2];
+    }
+    else if (ndim == 3 && itype == z_rhs_mirror) {
+      partdata[i].r[2] = 2.0*simbox.boxmax[2] - partdata[i].r[2];
     }
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
-
 
 
 
@@ -486,27 +498,21 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
   int k;                               // Dimension counter
   int var;                             // ..
   FLOAT Aij[ndim];                     // ..
-  FLOAT alpha;                         // ..
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
   FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
   FLOAT drsqd;                         // ..
-  FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT invdrmagaux;
-  FLOAT psitildai[ndim];
-  FLOAT psitildaj[ndim];
-  FLOAT rface[ndim];
-  FLOAT vface[ndim];
-  FLOAT flux[nvar][ndim];
-  FLOAT Wleft[nvar];
-  FLOAT Wright[nvar];
-  FLOAT Wdot[nvar];
-  FLOAT gradW[nvar][ndim];
-  FLOAT dW[nvar];
-
-
-  // Initialise all particle flux variables
-  for (var=0; var<nvar; var++) part.dQdt[var] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
+  FLOAT invdrmagaux;                   // ..
+  FLOAT psitildai[ndim];               // ..
+  FLOAT psitildaj[ndim];               // ..
+  FLOAT rface[ndim];                   // ..
+  FLOAT vface[ndim];                   // ..
+  FLOAT flux[nvar][ndim];              // ..
+  FLOAT Wleft[nvar];                   // ..
+  FLOAT Wright[nvar];                  // ..
+  FLOAT Wdot[nvar];                    // ..
+  FLOAT gradW[nvar][ndim];             // ..
+  FLOAT dW[nvar];                      // ..
+  const FLOAT dt = timestep*(FLOAT) part.nstep;    // ..
 
 
   // Loop over all potential neighbours in the list
@@ -533,12 +539,17 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     }
 
     // Calculate position and velocity of the face
-    //for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
-    //for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
-    for (k=0; k<ndim; k++) rface[k] = part.r[k] + part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
-    for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
-    for (k=0; k<ndim; k++) vface[k] = part.v[k] +
-      (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
+    if (staticParticles) {
+      for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+      for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.0;
+    }
+    else {
+      for (k=0; k<ndim; k++) rface[k] = part.r[k] +
+        part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
+      for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
+      for (k=0; k<ndim; k++) vface[k] = part.v[k] +
+        (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
+    }
 
     // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
@@ -548,10 +559,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Time-integrate LHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
-    assert(Wleft[irho] > 0.0);
-    assert(Wleft[ipress] > 0.0);
-    for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*timestep*Wdot[var];
-
+    for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*Wdot[var]*dt;
 
     // Compute slope-limited values for RHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - neibpart[j].r[k];
@@ -561,20 +569,21 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Time-integrate RHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
-    assert(Wright[irho] > 0.0);
-    assert(Wright[ipress] > 0.0);
-    for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*timestep*Wdot[var];
+    for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*Wdot[var]*dt;
 
-    if (Wright[ipress] <= 0.0) {
+    /*if (Wright[ipress] <= 0.0) {
       cout << "press   : " << part.Wprim[ipress] << "   " << Wleft[ipress] << "   " << Wright[ipress] << "   " << neibpart[j].Wprim[ipress] << endl;
       cout << "gradW,j : " << DotProduct(neibpart[j].grad[ipress], draux, ndim) << "   " << DotProduct(gradW[ipress], draux, ndim) << endl;
-    }
-
-
+    }*/
     assert(Wleft[irho] > 0.0);
     assert(Wleft[ipress] > 0.0);
     assert(Wright[irho] > 0.0);
     assert(Wright[ipress] > 0.0);
+    if (part.nstep > neibpart[j].nstep) {
+      cout << "TIMESTEP PROBLEM : " << part.nstep << "   " << part.level << "    neib : "
+           << neibpart[j].nstep << "    " << neibpart[j].level << endl;
+    }
+    assert(part.nstep <= neibpart[j].nstep);
 
 
     // Calculate Godunov flux using the selected Riemann solver
@@ -583,8 +592,10 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      part.dQdt[var] -= DotProduct(flux[var], Aij, ndim);
-      neibpart[j].dQdt[var] += DotProduct(flux[var], Aij, ndim);
+      //part.dQdt[var] -= DotProduct(flux[var], Aij, ndim);
+      //neibpart[j].dQdt[var] += DotProduct(flux[var], Aij, ndim);
+      part.dQ[var] -= DotProduct(flux[var], Aij, ndim)*dt;
+      neibpart[j].dQ[var] += DotProduct(flux[var], Aij, ndim)*dt;
     }
 
     // Compute mass-loss moments for gravitational correction terms
@@ -728,8 +739,8 @@ void MfvMuscl<ndim, kernelclass>::ComputeStarGravForces
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drmag;                         // Distance
   FLOAT drsqd;                         // Distance squared
-  FLOAT drdt;                          // Rate of change of relative distance
-  FLOAT dv[ndim];                      // Relative velocity vector
+  //FLOAT drdt;                          // Rate of change of relative distance
+  //FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT invdrmag;                      // 1 / drmag
   FLOAT invhmean;                      // 1 / hmean
   FLOAT ms;                            // Star mass
@@ -745,12 +756,12 @@ void MfvMuscl<ndim, kernelclass>::ComputeStarGravForces
     ms = nbodydata[j]->m;
 
     for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
-    for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
+    //for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
     drsqd    = DotProduct(dr,dr,ndim) + small_number;
     drmag    = sqrt(drsqd);
     invdrmag = (FLOAT) 1.0/drmag;
     invhmean = (FLOAT) 2.0/(parti.h + nbodydata[j]->h);
-    drdt     = DotProduct(dv,dr,ndim)*invdrmag;
+    //drdt     = DotProduct(dv, dr, ndim)*invdrmag;
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i

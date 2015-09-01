@@ -96,6 +96,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "binaryacc") {
     icGenerator.BinaryAccretion();
   }
+  else if (ic == "blastwave") {
+    icGenerator.BlastWave();
+  }
   else if (ic == "bondi") {
     icGenerator.BondiAccretion();
   }
@@ -149,6 +152,15 @@ void Simulation<ndim>::GenerateIC(void)
   }
   else if (ic == "turbcore") {
     icGenerator.TurbulentCore();
+  }
+  else if (ic == "isothermsphere") {
+    icGenerator.IsothermSphere();
+  }
+  else if (ic== "rotisothermsphere") {
+    icGenerator.RotIsothermSphere();
+  }
+  else if (ic== "turbisothermsphere") {
+    icGenerator.TurbIsothermSphere();
   }
   else if (ic == "python") {
     return;

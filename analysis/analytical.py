@@ -1,7 +1,7 @@
 #==============================================================================
 #  analytical.py
 #  Contains all python classes for computing analytical solutions for key
-#  test problems.
+#  test problems for plotting or analysis.
 #
 #  This file is part of GANDALF :
 #  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -55,10 +55,10 @@ class freefall (AnalyticalSolution):
         # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.radius = simfloatparams["radius"]
-        self.rho = simfloatparams["rhofluid1"]
-        self.time = time
-        self.ndim = sim.ndims
-        self.iMAX = 1000
+        self.rho    = simfloatparams["rhofluid1"]
+        self.time   = time
+        self.ndim   = sim.ndims
+        self.iMAX   = 1000
 
     # TODO : This is not the freefall solution.  Need to update!!
     def compute(self, x, y):
@@ -93,11 +93,11 @@ class noh (AnalyticalSolution):
         # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.radius = simfloatparams["radius"]
-        self.rho = simfloatparams["rhofluid1"]
-        self.time = time
-        self.ndim = sim.ndims
-        self.iMAX = 1000
-        self.gamma = simfloatparams["gamma_eos"]
+        self.rho    = simfloatparams["rhofluid1"]
+        self.time   = time
+        self.ndim   = sim.ndims
+        self.iMAX   = 1000
+        self.gamma  = simfloatparams["gamma_eos"]
 
     def compute(self, x, y):
         '''Computes the exact solution of the Noh problem for
@@ -138,12 +138,12 @@ class shocktube (AnalyticalSolution):
         self.PinL   = simfloatparams["press1"]
         self.PinR   = simfloatparams["press2"]
         self.xL     = simfloatparams["boxmin[0]"]
-        self.x0     = 0.0
         self.xR     = simfloatparams["boxmax[0]"]
+        self.x0     = 0.5*(self.xL + self.xR)
         self.time   = time
         self.iMAX   = 50000
         if sim.simparams.stringparams["gas_eos"] == "isothermal":
-            self.gamma = 1+1e-5
+            self.gamma = 1.0 + 1e-5
         else:
             self.gamma = simfloatparams["gamma_eos"]
 
@@ -155,8 +155,8 @@ class shocktube (AnalyticalSolution):
         # TODO : Needs to be updated; perhaps re-write in C++
         # Calls the fortran module that computes the state
         shocktub.shocktub(self.RHOinL, self.RHOinR, self.UinL, self.UinR,
-                 self.PinL, self.PinR, self.xL, self.x0, self.xR,
-                 self.time, self.iMAX, self.gamma)
+                          self.PinL, self.PinR, self.xL, self.x0, self.xR,
+                          self.time, self.iMAX, self.gamma)
 
         # Reads the data from the text file produced
         data = np.genfromtxt('sod.out',names=['x','rho','vx','press','u'])
@@ -173,13 +173,13 @@ class soundwave (AnalyticalSolution):
 
         # Extract the parameters
         simfloatparams = sim.simparams.floatparams
-        self.rho = simfloatparams["rhofluid1"]
-        self.press = simfloatparams["press1"]
-        self.temp0 = simfloatparams["temp0"]
+        self.rho    = simfloatparams["rhofluid1"]
+        self.press  = simfloatparams["press1"]
+        self.temp0  = simfloatparams["temp0"]
         self.mu_bar = simfloatparams["mu_bar"]
-        self.amp = simfloatparams["amp"]
-        self.xL = simfloatparams["boxmin[0]"]
-        self.xR = simfloatparams["boxmax[0]"]
+        self.amp    = simfloatparams["amp"]
+        self.xL     = simfloatparams["boxmin[0]"]
+        self.xR     = simfloatparams["boxmax[0]"]
         if sim.simparams.stringparams["gas_eos"] == "isothermal":
             self.gamma = 1.0
             self.csound = np.sqrt(self.temp0/self.mu_bar)
@@ -192,7 +192,7 @@ class soundwave (AnalyticalSolution):
         self.time = time
         self.iMAX = 1000
         if sim.simparams.stringparams["gas_eos"] == "isothermal":
-            self.gamma = 1+1e-5
+            self.gamma = 1.0 + 1e-5
         else:
             self.gamma = simfloatparams["gamma_eos"]
 

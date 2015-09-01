@@ -42,16 +42,19 @@ using namespace std;
 /// Creates and returns a new snapshot object based on dimensionality of sim.
 //=================================================================================================
 SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory
-(string filename,                   ///< Filename containing snapshot data
- SimulationBase* sim,               ///< Simulation object pointer
- int ndim)                          ///< Dimensionality of simulation
+ (string filename,                   ///< Filename containing snapshot data
+  SimulationBase* sim,               ///< Simulation object pointer
+  int ndim)                          ///< Dimensionality of simulation
 {
-  if (ndim == 1)
+  if (ndim == 1) {
     return new SphSnapshot<1>(filename, sim);
-  else if (ndim == 2)
+  }
+  else if (ndim == 2) {
     return new SphSnapshot<2>(filename, sim);
-  else if (ndim == 3)
+  }
+  else if (ndim == 3) {
     return new SphSnapshot<3>(filename, sim);
+  }
   return NULL;
 };
 
@@ -78,8 +81,8 @@ SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename): units(_u
   Norbitmax        = 0;
   Nquadruple       = 0;
   Ntriple          = 0;
-  Nhydro             = 0;
-  Nhydromax          = 0;
+  Nhydro           = 0;
+  Nhydromax        = 0;
   Nstar            = 0;
   Nstarmax         = 0;
   t                = 0.0;
@@ -485,8 +488,8 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   _species.clear();
 
   // Read which species are there
-  if (simulation->sph != NULL && simulation->sph->GetSphParticleArray() != NULL) {
-    Nhydro = simulation->sph->Nhydro;
+  if (simulation->hydro != NULL && simulation->hydro->GetParticleArray() != NULL) {
+    Nhydro = simulation->hydro->Nhydro;
     if (Nhydro != 0) _species.push_back("sph");
   }
   if (simulation->nbody != NULL && simulation->nbody->stardata != NULL) {
@@ -504,7 +507,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   // Loop over all SPH particles and record particle data
   //-----------------------------------------------------------------------------------------------
   for (int i=0; i<Nhydro; i++) {
-    SphParticle<ndims>& part = simulation->sph->GetSphParticlePointer(i);
+    Particle<ndims>& part = simulation->hydro->GetParticlePointer(i);
 
     if (ndims == 1) {
       x[i] = (float) part.r[0];

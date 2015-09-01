@@ -1,6 +1,6 @@
 //=================================================================================================
 //  KDRadiationTree.cpp
-//  ...
+//  File containing all functions for KD-tree to propagate radiation packets.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -674,7 +674,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockCellProperties
 
 
 //=================================================================================================
-//  KDRadiationTree
+//  KDRadiationTree::ComputeGatherCellList
 /// ...
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
@@ -685,24 +685,21 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::ComputeGatherCellList
   int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
   int cc = 0;                          // Cell counter
-  int i;                               // Particle id
   int k;                               // Neighbour counter
   int Nneib = 0;                       // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
-  const FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
 
 
+  // Walk tree from root cell downwards finding all overlapping leaf cells.
   //===============================================================================================
   while (cc < Ncell) {
 
     for (k=0; k<ndim; k++) dr[k] = radcell[cc].rcell[k] - rp[k];
     drsqd = DotProduct(dr,dr,ndim);
 
-    //cout << "Checking : " << drsqd << "   " << rsearchsqd << endl;
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    //if (drsqd < rsearchsqd) {
     if (drsqd < (rsearch + radcell[cc].rmax)*(rsearch + radcell[cc].rmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -744,7 +741,8 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::ComputeGatherCellList
 
 //=================================================================================================
 //  KDRadiationTree::OptimiseTree
-/// Optimises face-exit pointers in the tree to remove any redundant upper-level tree traversals.
+/// Optimises face-exit pointers in the tree to remove any redundant upper-level tree traversals
+/// to speed-up ray propagation through domain.
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::OptimiseTree(void)
@@ -851,7 +849,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::OptimiseTree(void)
 
 //=================================================================================================
 //  KDRadiationTree::FindCell
-/// ...
+/// Find child cell on a given tree level containing the point 'rp'.
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindCell
@@ -1026,11 +1024,11 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindAdjacentCell
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::SumRadiationField
- (const int level,                  ///< [in] maximum level to sum radiation field to
-  CellType<ndim,nfreq> &cell)       ///< [inout] KD radiation tree cell pointer
+ (const int level,                     ///< [in] maximum level to sum radiation field to
+  CellType<ndim,nfreq> &cell)          ///< [inout] KD radiation tree cell pointer
 {
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
 
   // If cell is not leaf, stock child cells
   if (cell.level != level) {

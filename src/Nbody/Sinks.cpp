@@ -108,9 +108,9 @@ void Sinks<ndim>::DeallocateMemory(void)
 //=================================================================================================
 template <int ndim>
 void Sinks<ndim>::SearchForNewSinkParticles
- (int n,                               ///< [in] Current integer time
-  FLOAT t,                             ///< [in] Current time
-  Sph<ndim> *sph,                      ///< [inout] Object containing SPH ptcls
+ (const unsigned int n,                ///< [in] Current integer time
+  const FLOAT t,                       ///< [in] Current time
+  Hydrodynamics<ndim> *hydro,          ///< [inout] Object containing SPH ptcls
   Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
 {
   bool sink_flag;                      // Flag if particle is to become a sink
@@ -136,9 +136,9 @@ void Sinks<ndim>::SearchForNewSinkParticles
     // Loop over all SPH particles finding the particle with the highest
     // density that obeys all of the formation criteria, if any do.
     //---------------------------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
+    for (i=0; i<hydro->Nhydro; i++) {
       sink_flag = true;
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
 
       // Make sure we don't include dead particles
       if (part.itype == dead) continue;
@@ -175,9 +175,9 @@ void Sinks<ndim>::SearchForNewSinkParticles
     // If all conditions have been met, then create a new sink particle.
     // Also, set minimum sink smoothing lengtha
     if (isink != -1) {
-      SphParticle<ndim>& part_sink = sph->GetSphParticlePointer(isink);
-      sph->hmin_sink = min(sph->hmin_sink,part_sink.h);
-      CreateNewSinkParticle(part_sink,isink,t,sph,nbody);
+      Particle<ndim>& part_sink = hydro->GetParticlePointer(isink);
+      hydro->hmin_sink = min(hydro->hmin_sink,part_sink.h);
+      CreateNewSinkParticle(isink, t, part_sink, hydro, nbody);
     }
 
   } while (isink != -1);
@@ -198,10 +198,10 @@ void Sinks<ndim>::SearchForNewSinkParticles
 //=================================================================================================
 template <int ndim>
 void Sinks<ndim>::CreateNewSinkParticle
- (SphParticle<ndim>& part_sink,        ///< [inout] SPH particle to be turned in a sink particle
-  int isink,                           ///< [in]    i.d. of the above SPH particle
-  FLOAT t,                             ///< [in]    Current time
-  Sph<ndim> *sph,                      ///< [inout] Object containing SPH ptcls
+ (const int isink,                     ///< [in]    i.d. of the above SPH particle
+  const FLOAT t,                       ///< [in]    Current time
+  Particle<ndim> &part_sink,           ///< [inout] SPH particle to be turned in a sink particle
+  Hydrodynamics<ndim> *hydro,          ///< [inout] Object containing SPH ptcls
   Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
 {
   int i;                               // SPH particle counter
@@ -229,12 +229,12 @@ void Sinks<ndim>::CreateNewSinkParticle
     sink[Nsink].radius = sink_radius*part_sink.h;
   }
   else {
-    sink[Nsink].radius = sph->kernp->kernrange*part_sink.h;
+    sink[Nsink].radius = hydro->kernp->kernrange*part_sink.h;
   }
 
 
   // Calculate all other sink properties based on radius and SPH particle properties
-  sink[Nsink].star->h            = sph->kernp->invkernrange*sink[Nsink].radius;
+  sink[Nsink].star->h            = hydro->kernp->invkernrange*sink[Nsink].radius;
   sink[Nsink].star->invh         = (FLOAT) 1.0/part_sink.h;
   sink[Nsink].star->radius       = sink[Nsink].radius;
   //sink[Nsink].star->hfactor      = pow(sink[Nsink].star->invh,ndim);
@@ -263,8 +263,8 @@ void Sinks<ndim>::CreateNewSinkParticle
 
   // Calculate total mass inside sink (direct sum for now since this is not computed that often).
   sink[Nsink].mmax = (FLOAT) 0.0;
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (part.itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = sink[Nsink].star->r[k] - part.r[k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -299,10 +299,10 @@ void Sinks<ndim>::CreateNewSinkParticle
 //=================================================================================================
 template <int ndim>
 void Sinks<ndim>::AccreteMassToSinks
- (Sph<ndim> *sph,                      ///< [inout] Object containing SPH ptcls
-  Nbody<ndim> *nbody,                  ///< [inout] Object containing star ptcls
-  int n,                               ///< [in] Integer timestep
-  DOUBLE timestep)                     ///< [in] Minimum timestep level
+ (const unsigned int n,                ///< [in] Integer timestep
+  const DOUBLE timestep,               ///< [in] Minimum timestep size
+  Hydrodynamics<ndim> *hydro,          ///< [inout] Object containing SPH ptcls
+  Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
 {
   int i,j,k;                           // Particle and dimension counters
   int Nlist = 0;                       // Max. no of gas particles inside sink
@@ -333,13 +333,13 @@ void Sinks<ndim>::AccreteMassToSinks
   timing->StartTimingSection("SINK_ACCRETE_MASS");
 
   // Allocate local memory and initialise values
-  for (i=0; i<sph->Ntot; i++) sph->GetSphParticlePointer(i).sinkid = -1;
+  for (i=0; i<hydro->Ntot; i++) hydro->GetParticlePointer(i).sinkid = -1;
   for (s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
 
   // Determine which sink each SPH particle accretes to.  If none, flag -1
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (part.itype == dead) continue;
 
     saux = -1;
@@ -349,13 +349,13 @@ void Sinks<ndim>::AccreteMassToSinks
     for (s=0; s<Nsink; s++) {
       for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
       drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= powf(sink[s].radius + sph->kernrange*part.h,2) && drsqd < rsqdmin) {
+      if (drsqd <= powf(sink[s].radius + hydro->kernrange*part.h,2) && drsqd < rsqdmin) {
         saux = s;
         rsqdmin = drsqd; //*part.m;
       }
 
       // If particle is close enough to sink, then record timestep level
-      if (drsqd <= powf(sink[s].radius + sph->kernrange*part.h,2)) {
+      if (drsqd <= powf(sink[s].radius + hydro->kernrange*part.h,2)) {
         part.levelneib = max(part.levelneib,sink[s].star->level);
       }
     }
@@ -371,7 +371,10 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
   // If there are no particles inside any sink, return to main loop.
-  if (Nlist == 0) return;
+  if (Nlist == 0) {
+    timing->EndTimingSection("SINK_ACCRETE_MASS");
+    return;
+  }
 
 
   // Calculate the accretion timescale and the total mass accreted from all
@@ -412,8 +415,8 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
     // Calculate distances (squared) from sink to all neighbouring particles
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       if (part.itype == dead) continue;
       if (part.sinkid == s) {
         for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
@@ -442,7 +445,7 @@ void Sinks<ndim>::AccreteMassToSinks
     for (j=0; j<Nneib; j++) {
       i = ilist[j];
 
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       if (part.itype == dead) continue;
 
       for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
@@ -451,12 +454,12 @@ void Sinks<ndim>::AccreteMassToSinks
       for (k=0; k<ndim; k++) dr[k] /= drmag;
 
       sink[s].menc += part.m;
-      wnorm += part.m*sph->kernp->w0(drmag*sink[s].star->invh)*
+      wnorm += part.m*hydro->kernp->w0(drmag*sink[s].star->invh)*
         pow(sink[s].star->invh,ndim)*part.invrho;
 
       // Sum total grav. potential energy of all particles inside sink
       sink[s].gpetot += (FLOAT) 0.5*part.m*(sink[s].star->m + sink[s].menc)*
-        sink[s].star->invh*sph->kernp->wpot(drmag*sink[s].star->invh);
+        sink[s].star->invh*hydro->kernp->wpot(drmag*sink[s].star->invh);
 
       // Compute rotational component of kinetic energy
       for (k=0; k<ndim; k++) dv[k] = part.v[k] - sink[s].star->v[k];
@@ -464,14 +467,14 @@ void Sinks<ndim>::AccreteMassToSinks
 
       // Compute total and rotational kinetic energies
       sink[s].ketot += part.m*DotProduct(dv,dv,ndim)*
-        sph->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)*part.invrho;
+        hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)*part.invrho;
       sink[s].rotketot += part.m*DotProduct(dvtang,dvtang,ndim)*
-        sph->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)*part.invrho;
+        hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)*part.invrho;
 
       // Add contributions to average timescales from particles
       sink[s].tvisc *= pow(sqrt(drmag)/part.sound/part.sound,part.m);
       sink[s].trad += fabs((FLOAT) 4.0*pi*drsqd*part.m*DotProduct(dv,dr,ndim)*
-                           sph->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim));
+                           hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim));
 
       //cout << "smooth : " << j << "    " << sink[s].star->invh << "    "
         //   <<  sink[s].ketot << "   " << sink[s].rotketot << "    " << sink[s].gpetot << endl;
@@ -508,9 +511,9 @@ void Sinks<ndim>::AccreteMassToSinks
       /*cout << "efrac : " << efrac << "    taccrete : " << sink[s].taccrete << "   "
            << sink[s].tvisc << "    " << sink[s].trad << "    " << sink[s].trot << endl;
       cout << "energy : " << sink[s].ketot << "   " << sink[s].rotketot << "    " << sink[s].gpetot << endl;
-      cout << "macc : " << macc << "     macc/mmean : " << macc/sph->mmean
+      cout << "macc : " << macc << "     macc/mmean : " << macc/hydro->mmean
            << "    " << sink[s].menc << "    mmax : " << sink[s].mmax
-           << "    mmax/mmean : " << sink[s].mmax/sph->mmean << "     dmdt : " << macc/dt << endl;
+           << "    mmax/mmean : " << sink[s].mmax/hydro->mmean << "     dmdt : " << macc/dt << endl;
       */
     }
     else {
@@ -536,18 +539,18 @@ void Sinks<ndim>::AccreteMassToSinks
     for (j=0; j<Nneib; j++) {
       i = ilist[j];
 
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       if (part.itype == dead) continue;
 
       mtemp = min(part.m,macc_temp);
       dt = part.dt;
 
       //cout << "Removing particle 1?? : " << j << "    " << Nneib << "    " << i << "    " << part.m
-      //     << "    " << sph->mmean << "    " << mtemp << "     macc : " << macc_temp
+      //     << "    " << hydro->mmean << "    " << mtemp << "     macc : " << macc_temp
       //     << "      dt : " << part.dt << endl;
 
       // Special conditions for total particle accretion
-      if (smooth_accretion == 0 || part.m - mtemp < smooth_accrete_frac*sph->mmean ||
+      if (smooth_accretion == 0 || part.m - mtemp < smooth_accrete_frac*hydro->mmean ||
           dt < smooth_accrete_dt*sink[s].trot) {
         mtemp = part.m;
       }
@@ -602,18 +605,18 @@ void Sinks<ndim>::AccreteMassToSinks
     for (j=0; j<Nneib; j++) {
       i = ilist[j];
 
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       if (part.itype == dead) continue;
 
       mtemp = min(part.m,macc);
       dt = part.dt;
 
       //cout << "Removing particle 2?? : " << j << "    " << Nneib << "    " << i << "    " << part.m
-      //     << "    " << sph->mmean << "    " << mtemp << "     macc : " << macc
+      //     << "    " << hydro->mmean << "    " << mtemp << "     macc : " << macc
       //     << "      dt : " << part.dt << endl;
 
       // Special conditions for total particle accretion
-      if (smooth_accretion == 0 || part.m - mtemp < smooth_accrete_frac*sph->mmean ||
+      if (smooth_accretion == 0 || part.m - mtemp < smooth_accrete_frac*hydro->mmean ||
           dt < smooth_accrete_dt*sink[s].trot) {
         mtemp       = part.m;
         part.m      = (FLOAT) 0.0;

@@ -1,7 +1,6 @@
 //=================================================================================================
 //  NeighbourSearch.h
-//  Header file containing class definitions for all SPH neighbour searching
-//  data structures and algorithms.
+//  Header file containing virtual class definitions for all hydro neighbour searching algorithms.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -52,12 +51,11 @@ using namespace std;
 
 
 
-
 //=================================================================================================
 //  Class NeighbourSearch
 /// \brief   NeighbourSearch class definition.
-/// \details Class for creating the SPH neighbour search data structure, and for computing local
-///          neighbour lists and calling SPH functions (e.g. computing h, SPH forces, etc..).
+/// \details Class for creating the hydro neighbour search data structure, and for computing local
+///          neighbour lists and calling hydro functions (e.g. computing h, forces/fluxes, etc..).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    20/04/2015
 //=================================================================================================
@@ -79,19 +77,19 @@ protected:
     kernp(kernaux),
     kernfac(1.0),
     timing(timingaux) {};
-  //NeighbourSearch() {};
-  //NeighbourSearch(const NeighbourSearch &) {};
   virtual ~NeighbourSearch() {};
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const int, const int, const int, const int, const int,
-                         const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
-  virtual void BuildGhostTree(const bool, const int, const int, const int, const int, const int,
-                              const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
+  virtual void BuildTree(const bool, const unsigned int, const int, const int, const int,
+                         const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
+  virtual void BuildGhostTree(const bool, const unsigned int, const int, const int, const int,
+                              const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *) {return -1;};
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) {};
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
+  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
+                                      Hydrodynamics<ndim> *, Nbody<ndim> *) {};
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const int, ParticleType<ndim> *);
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &);
@@ -121,17 +119,14 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  FLOAT kernrange;               ///< Kernel extent (in units of h)
-  FLOAT kernrangesqd;            ///< Kernel extent (squared)
-
-
-  //-----------------------------------------------------------------------------------------------
   CodeTiming *timing;                  ///< Pointer to code timing object
   DomainBox<ndim> *box;                ///< Pointer to simulation bounding box
   SmoothingKernel<ndim> *kernp;        ///< Pointer to SPH kernel object
 
   bool neibcheck;                      ///< Flag to verify neighbour lists
   FLOAT kernfac;                       ///< ..
+  FLOAT kernrange;                     ///< Kernel extent (in units of h)
+  FLOAT kernrangesqd;                  ///< Kernel extent (squared)
 
 };
 
@@ -139,8 +134,8 @@ protected:
 
 //=================================================================================================
 //  Class BruteForceSearch
-/// \brief   ..
-/// \details Class for computing SPH neighbour lists using brute force only
+/// \brief   Class for computing hydro neighbour lists using brute force only.
+/// \details Class for computing hydro neighbour lists using brute force only
 ///          (i.e. direct summation over all particles).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
@@ -166,13 +161,15 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const int, const int, const int, const int, const int,
-                         const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void BuildGhostTree(const bool, const int, const int, const int, const int, const int,
-                              const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
+  virtual void BuildTree(const bool, const unsigned int, const int, const int, const int,
+                         const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
+  virtual void BuildGhostTree(const bool, const unsigned int, const int, const int, const int,
+                              const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
+  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
+                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const int, ParticleType<ndim> *) {};
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
@@ -207,7 +204,7 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
 //=================================================================================================
 //  Class HydroTree
 /// \brief   Class containing tree for efficient neighbour searching and gravity calculations.
-/// \details ..
+/// \details Class containing tree for efficient neighbour searching and gravity calculations.
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=================================================================================================
@@ -238,13 +235,15 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const int, const int, const int, const int, const int,
-                         const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void BuildGhostTree(const bool, const int, const int, const int, const int, const int,
-                              const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
+  virtual void BuildTree(const bool, const unsigned int, const int, const int, const int,
+                         const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
+  virtual void BuildGhostTree(const bool, const unsigned int, const int, const int, const int,
+                              const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
+  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
+                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const int, ParticleType<ndim> *);
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &);
@@ -316,7 +315,7 @@ protected:
   int *Nneibmaxbuf;                                ///< ..
   int *Ngravcellmaxbuf;                            ///< ..
   int **activelistbuf;                             ///< ..
-  int **levelneibbuf;                              ///< ..
+  unsigned int **levelneibbuf;                     ///< ..
   ParticleType<ndim> **neibpartbuf;                ///< Local copy of neighbouring ptcls
   ParticleType<ndim> **activepartbuf;              ///< Local copy of SPH particle
   TreeCell<ndim> **cellbuf;                        ///< ..

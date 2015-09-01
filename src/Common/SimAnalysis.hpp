@@ -282,7 +282,7 @@ void Simulation<ndim>::RecordDiagnostics(void)
   outfile << t*simunits.t.outscale << "     ";
   outfile << Nsteps << "      ";
   outfile << timestep << "      ";
-  outfile << dt_min_sph << "      ";
+  outfile << dt_min_hydro << "      ";
   outfile << dt_min_nbody << "      ";
   outfile << level_max << "      ";
   outfile << diag.Nhydro << "     ";

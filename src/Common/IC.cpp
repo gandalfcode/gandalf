@@ -362,19 +362,18 @@ void Ic<ndim>::ShockTube(void)
     int Nbox2;                           // No. of particles in RHS box
     int Nlattice1[ndim];                 // Particles per dimension for LHS lattice
     int Nlattice2[ndim];                 // Particles per dimension for RHS lattice
-    FLOAT dr[ndim];                      // Relative position vector
-    FLOAT drmag;                         // Distance
-    FLOAT drsqd;                         // Distance squared
+    //FLOAT dr[ndim];                      // Relative position vector
+    //FLOAT drmag;                         // Distance
+    //FLOAT drsqd;                         // Distance squared
     FLOAT volume;                        // Volume of box
     FLOAT vfluid1[ndim];                 // Velocity vector of LHS fluid
     FLOAT vfluid2[ndim];                 // Velocity vector of RHS fluid
-    FLOAT wnorm;                         // Kernel normalisation
+    //FLOAT wnorm;                         // Kernel normalisation
     FLOAT *r;                            // Position vectors
-    FLOAT *uaux;                         // Temp. array for internal energy
-    FLOAT *vaux;                         // Temp. array for x-velocities
+    //FLOAT *uaux;                         // Temp. array for internal energy
+    //FLOAT *vaux;                         // Temp. array for x-velocities
     DomainBox<ndim> box1;                // LHS box
     DomainBox<ndim> box2;                // RHS box
-    Particle<ndim> *partdata;            // Pointer to main SPH data array
 
     Parameters* simparams = sim->simparams;
     DomainBox<ndim>& simbox = sim->simbox;
@@ -407,9 +406,6 @@ void Ic<ndim>::ShockTube(void)
     // Allocate local and main particle memory
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
-
-    // Set pointer to SPH particle data
-    partdata = hydro->GetParticleArray();
 
 
     // Add particles for LHS of the shocktube
@@ -448,7 +444,7 @@ void Ic<ndim>::ShockTube(void)
     }
 
     sim->initial_h_provided = true;
-    bool smooth_ic = true;
+    //bool smooth_ic = true;
 
     // Smooth the initial conditions
     //---------------------------------------------------------------------------------------------
@@ -869,20 +865,17 @@ void Ic<ndim>::GreshoVortex(void)
   if (ndim == 2) {
 
     int i;                             // Particle counter
-    int j;                             // Aux. particle counter
     int k;                             // Dimension counter
     int Nbox;                          // No. of particles in fluid box 1
     int Nlattice[ndim];                // Lattice particles in fluid box 1
     FLOAT dr_unit[ndim];               // ..
     FLOAT drmag;                       // ..
     FLOAT drsqd;                       // ..
-    FLOAT invdrmag;                    // ..
     FLOAT press;
     FLOAT rhofluid;                    // Density of fluid
     FLOAT rotspeed;
     FLOAT volume;                      // Volume of fluid box
     FLOAT *r;                          // Array of particle positions
-    Particle<ndim> *partdata;          // Pointer to main SPH data array
 
     // Record local copies of all important parameters
     FLOAT gammaone  = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
@@ -898,15 +891,10 @@ void Ic<ndim>::GreshoVortex(void)
     volume = (simbox.boxmax[0] - simbox.boxmin[0])*(simbox.boxmax[1] - simbox.boxmin[1]);
     Nbox = Nlattice[0]*Nlattice[1];
 
-
-    // Allocate local and main particle memory
+    // Allocate local and main particle memory and calculate positions for cubic lattice
     hydro->Nhydro = Nbox;
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
-
-    // Set pointer to SPH particle data
-    partdata = hydro->GetParticleArray();
-
     AddCubicLattice(Nbox, Nlattice, r, simbox, false);
 
     for (i=0; i<Nbox; i++) {
@@ -914,7 +902,7 @@ void Ic<ndim>::GreshoVortex(void)
       for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
       drsqd = DotProduct(part.r, part.r, ndim);
       drmag = sqrt(drsqd) + small_number;
-      invdrmag = 1.0/drmag;
+      //invdrmag = 1.0/drmag;
       for (k=0; k<ndim; k++) dr_unit[k] = part.r[k]/drmag;
 
       // Set velocity and pressure/internal energy depending on radial position
@@ -976,7 +964,6 @@ void Ic<ndim>::KHI(void)
     FLOAT *r;                         // Array of particle positions
     DomainBox<ndim> box1;             // Bounding box of fluid 1
     DomainBox<ndim> box2;             // Bounding box of fluid 2
-    Particle<ndim> *partdata;      // Pointer to main SPH data array
 
     // Record local copies of all important parameters
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -1015,9 +1002,6 @@ void Ic<ndim>::KHI(void)
     hydro->Nhydro = Nbox1 + Nbox2;
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
-
-    // Set pointer to SPH particle data
-    partdata = hydro->GetParticleArray();
 
 
     // Add particles for LHS of the shocktube
@@ -1089,11 +1073,10 @@ void Ic<ndim>::KHI(void)
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
     */
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      cout << "r[" << i << "] : " << part.r[0] << "   " << part.r[1] << endl;
-      //part.u = press1/part.rho/gammaone;
-    }
+    //for (i=0; i<hydro->Nhydro; i++) {
+    //  Particle<ndim>& part = hydro->GetParticlePointer(i);
+    //  //part.u = press1/part.rho/gammaone;
+    //}
 
 
     delete[] r;
@@ -1211,7 +1194,6 @@ void Ic<ndim>::RTI(void)
     FLOAT *r;                          // Array of particle positions
     DomainBox<ndim> box1;              // Bounding box of fluid 1
     DomainBox<ndim> box2;              // Bounding box of fluid 2
-    Particle<ndim> *partdata;          // Pointer to main SPH data array
 
     // Record local copies of all important parameters
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -1247,9 +1229,6 @@ void Ic<ndim>::RTI(void)
     hydro->Nhydro = Nbox1 + Nbox2;
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
-
-    // Set pointer to SPH particle data
-    partdata = hydro->GetParticleArray();
 
 
     // Add particles for LHS of the shocktube
@@ -1297,7 +1276,7 @@ void Ic<ndim>::RTI(void)
     //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      if (part.r[1] >= 0.3 && part.r[2] <= 0.7) {
+      if (part.r[1] >= 0.3 && part.r[1] <= 0.7) {
         part.v[1] = amp*((FLOAT) 1.0 + cos((FLOAT) 8.0*pi*(part.r[0] + (FLOAT) 0.25)))*
           ((FLOAT) 1.0 + cos((FLOAT) 5.0*pi*(part.r[1] - (FLOAT) 0.5)));
       }
@@ -1325,11 +1304,11 @@ void Ic<ndim>::RTI(void)
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
     */
-    for (i=0; i<hydro->Nhydro; i++) {
+    /*for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       //cout << "r[" << i << "] : " << part.r[0] << "   " << part.r[1] << endl;
       //part.u = press1/part.rho/gammaone;
-    }
+    }*/
 
 
     delete[] r;
@@ -2208,6 +2187,125 @@ void Ic<ndim>::PlummerSphere(void)
 
 
 //=================================================================================================
+//  Ic::BlastWave
+/// Set-up spherical blast wave test.
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::BlastWave(void)
+{
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  int Nbox;                            // No. of particles in box
+  int Nlattice[3];                     // Lattice size
+  FLOAT drsqd;                         // Distance squared
+  FLOAT mbox;                          // Total mass inside simulation box
+  FLOAT volume;                        // Volume of box
+  FLOAT *r;                            // Positions of all particles
+
+  // Create local copies of initial conditions parameters
+  Nlattice[0]          = simparams->intparams["Nlattice1[0]"];
+  Nlattice[1]          = simparams->intparams["Nlattice1[1]"];
+  Nlattice[2]          = simparams->intparams["Nlattice1[2]"];
+  FLOAT gammaone       = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+  FLOAT rhofluid       = simparams->floatparams["rhofluid1"];
+  FLOAT press1         = simparams->floatparams["press1"];
+  FLOAT press2         = simparams->floatparams["press2"];
+  FLOAT radius         = simparams->floatparams["radius"];
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[Ic::BlastWave]");
+
+
+  // Compute size and range of fluid bounding boxes
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 1) {
+    volume = simbox.boxmax[0] - simbox.boxmin[0];
+    Nbox = Nlattice[0];
+  }
+  else if (ndim == 2) {
+    volume = (simbox.boxmax[0] - simbox.boxmin[0])*(simbox.boxmax[1] - simbox.boxmin[1]);
+    Nbox = Nlattice[0]*Nlattice[1];
+  }
+  else if (ndim == 3) {
+    volume = (simbox.boxmax[0] - simbox.boxmin[0])*
+      (simbox.boxmax[1] - simbox.boxmin[1])*(simbox.boxmax[2] - simbox.boxmin[2]);
+    Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
+  }
+  mbox  = volume*rhofluid;
+
+  // Allocate local and main particle memory
+  hydro->Nhydro = Nbox;
+  sim->AllocateParticleMemory();
+  r = new FLOAT[ndim*hydro->Nhydro];
+
+  // Set pointer to SPH particle data
+
+
+  // Add a cube of random particles defined by the simulation bounding box and
+  // depending on the chosen particle distribution
+  if (particle_dist == "random") {
+    AddRandomBox(Nbox, r, simbox);
+  }
+  else if (particle_dist == "cubic_lattice") {
+    AddCubicLattice(Nbox, Nlattice, r, simbox, true);
+  }
+  else if (particle_dist == "hexagonal_lattice") {
+    AddHexagonalLattice(Nbox, Nlattice, r, simbox, true);
+  }
+  else {
+    string message = "Invalid particle distribution option";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Record positions in main memory
+  for (i=0; i<Nbox; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+    drsqd = DotProduct(part.r, part.r, ndim);
+    for (k=0; k<ndim; k++) part.v[k] = 0.0;
+    part.m = mbox/(FLOAT) Nbox;
+    part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
+    if (drsqd < radius*radius) {
+      part.u = press1/rhofluid/gammaone;
+    }
+    else {
+      part.u = press2/rhofluid/gammaone;
+    }
+  }
+
+  // Set initial smoothing lengths and create initial ghost particles
+  //-----------------------------------------------------------------------------------------------
+  hydro->Nghost = 0;
+  hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
+  hydro->Ntot = hydro->Nhydro;
+  for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
+
+  // Search ghost particles
+  //sim->sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+
+  sim->initial_h_provided = true;
+  sim->rebuild_tree = true;
+  //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                     //hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
+
+  //sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
+
+  // Update neighbour tre
+  sim->rebuild_tree = true;
+  //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                     //hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
+
+  // Calculate all SPH properties
+  //sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
+
+
+  delete[] r;
+
+  return;
+}
+
+
+//=================================================================================================
 //  Ic::SedovBlastWave
 /// Set-up Sedov blast wave test
 //=================================================================================================
@@ -2230,7 +2328,6 @@ void Ic<ndim>::SedovBlastWave(void)
   FLOAT utot;                          // Total internal energy
   FLOAT volume;                        // Volume of box
   FLOAT *r;                            // Positions of all particles
-  Particle<ndim> *partdata;            // Pointer to main SPH data array
 
   // Create local copies of initial conditions parameters
   Nlattice[0]    = simparams->intparams["Nlattice1[0]"];
@@ -2270,9 +2367,6 @@ void Ic<ndim>::SedovBlastWave(void)
   sim->AllocateParticleMemory();
   r = new FLOAT[ndim*hydro->Nhydro];
   hotlist = new int[hydro->Nhydro];
-
-  // Set pointer to SPH particle data
-  partdata = hydro->GetParticleArray();
 
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
@@ -2550,9 +2644,9 @@ void Ic<ndim>::SpitzerExpansion(void)
   FLOAT *r;                            // Particle position vectors
 
   // Local copies of important parameters
-  int Npart      = simparams->intparams["Nhydro"];
-  FLOAT mcloud   = simparams->floatparams["mcloud"];
-  FLOAT radius   = simparams->floatparams["radius"];
+  int Npart            = simparams->intparams["Nhydro"];
+  FLOAT mcloud         = simparams->floatparams["mcloud"];
+  FLOAT radius         = simparams->floatparams["radius"];
   string particle_dist = simparams->stringparams["particle_distribution"];
 
   debug2("[Ic::SpitzerExpansion]");
@@ -2611,6 +2705,310 @@ void Ic<ndim>::SpitzerExpansion(void)
 
   sim->initial_h_provided = true;
 
+  delete[] r;
+
+  return;
+}
+
+
+//=================================================================================================
+//  Ic::IsothermSphere
+/// Create a r^-2 density sphere of particles of given origin and radius.
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::IsothermSphere(void)
+{
+  int i,k;                          // Particle and dimension counters
+  FLOAT rcentre[ndim];              // Position of sphere centre
+  FLOAT volume;                     // Volume of sphere
+  FLOAT *r;                         // Particle position vectors
+
+  // Local copies of important parameters
+  int Npart            = simparams->intparams["Nsph"];
+  FLOAT mcloud         = simparams->floatparams["mcloud"];
+  FLOAT radius         = simparams->floatparams["radius"];
+  FLOAT rhofluid       = simparams->floatparams["rhofluid1"];
+  FLOAT press          = simparams->floatparams["press1"];
+  FLOAT temp0          = simparams->floatparams["temp0"];
+  FLOAT mu_bar         = simparams->floatparams["mu_bar"];
+  FLOAT gammaone       = simparams->floatparams["gamma_eos"] - 1.0;
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[Ic::IsothermSphere]");
+
+  mcloud   /= simunits.m.outscale;
+  radius   /= simunits.r.outscale;
+  rhofluid /= simunits.rho.outscale;
+  press    /= simunits.press.outscale;
+  r = new FLOAT[ndim*Npart];
+
+  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
+  for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
+  Addr2Sphere(Npart, r, rcentre, radius);
+
+  hydro->Nhydro = Npart;
+  sim->AllocateParticleMemory();
+
+  if (ndim == 1) volume = 2.0*radius;
+  else if (ndim == 2) volume = pi*radius*radius;
+  else if (ndim == 3) volume = 4.0*onethird*pi*pow(radius,3);
+  //if (mcloud > small_number && radius > small_number)
+  //  rhofluid = mcloud / volume;
+  rhofluid = mcloud / volume;
+
+
+  // Record particle positions and initialise all other variables
+#pragma omp parallel for default(none)\
+  shared(gammaone,mcloud,Npart,press,r,rhofluid,volume,temp0,mu_bar) private(i,k)
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (k=0; k<ndim; k++) {
+      part.r[k] = r[ndim*i + k];
+      part.v[k] = (FLOAT) 0.0;
+      part.a[k] = (FLOAT) 0.0;
+    }
+    if (hydro->gas_eos == "isothermal") {
+      part.u = temp0/gammaone/mu_bar;
+    }
+    else {
+      part.u = press/rhofluid/gammaone;
+    }
+    part.m = mcloud / (FLOAT) Npart;
+    part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
+
+    part.iorig = i;
+  }
+
+  sim->initial_h_provided = true;
+
+  delete[] r;
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Ic::RotIsothermSphere
+/// Create a r^-2 density sphere of particles of given origin and radius with solid body rotation.
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::RotIsothermSphere(void)
+{
+  int i,k;                             // Particle and dimension counters
+  FLOAT rcentre[ndim];                 // Position of sphere centre
+  FLOAT volume;                        // Volume of sphere
+  FLOAT *r;                            // Particle position vectors
+  FLOAT r_perp[3];                     // Perpendicular vector
+  FLOAT r_center;                      // Radius to centre
+  FLOAT norm;                          // ..
+  FLOAT pc = 3.08567758*pow(10,16);    // ..
+
+  // Local copies of important parameters
+  int Npart            = simparams->intparams["Nsph"];
+  FLOAT mcloud         = simparams->floatparams["mcloud"];
+  FLOAT radius         = simparams->floatparams["radius"];
+  FLOAT rhofluid       = simparams->floatparams["rhofluid1"];
+  FLOAT press          = simparams->floatparams["press1"];
+  FLOAT temp0          = simparams->floatparams["temp0"];
+  FLOAT mu_bar         = simparams->floatparams["mu_bar"];
+  FLOAT gammaone       = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT omega          = simparams->floatparams["omega"];
+  FLOAT omega_inv      = 1.0/omega;
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[Ic::RotIsothermSphere]");
+
+  mcloud    /= simunits.m.outscale;
+  radius    /= simunits.r.outscale;
+  rhofluid  /= simunits.rho.outscale;
+  press     /= simunits.press.outscale;
+  omega_inv /= simunits.t.outscale;
+  std::cout << omega << endl;
+  omega = 1 / omega_inv;
+  std::cout << omega << endl;
+  r = new FLOAT[ndim*Npart];
+
+  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
+  for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
+  Addr2Sphere(Npart, r, rcentre, radius);
+
+  hydro->Nhydro = Npart;
+  sim->AllocateParticleMemory();
+
+  if (ndim == 1) volume = 2.0*radius;
+  else if (ndim == 2) volume = pi*radius*radius;
+  else if (ndim == 3) volume = 4.0*onethird*pi*pow(radius,3);
+  //if (mcloud > small_number && radius > small_number)
+  //  rhofluid = mcloud / volume;
+  rhofluid = mcloud / volume;
+
+
+  // Record particle positions and initialise all other variables
+#pragma omp parallel for default(none)\
+  shared(gammaone,mcloud,Npart,press,r,rhofluid,volume,temp0,mu_bar) private(i,k)
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (k=0; k<ndim; k++) {
+      part.r[k] = r[ndim*i + k];
+      part.a[k] = (FLOAT) 0.0;
+    }
+
+    if (hydro->gas_eos == "isothermal") {
+      part.u = temp0/gammaone/mu_bar;
+    }
+    else {
+      part.u = press/rhofluid/gammaone;
+    }
+    part.m = mcloud / (FLOAT) Npart;
+    part.h = hydro->h_fac*pow(part.m/rhofluid, invndim);
+  }
+
+  if (ndim == 3) {
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      part.iorig = i;
+
+      r_perp[0] = -part.r[1];
+      r_perp[1] = part.r[0];
+      r_perp[2] = (FLOAT) 0.0;
+      norm      = pow(pow(r_perp[0],2) + pow(r_perp[1],2),0.5);
+      r_perp[0] = r_perp[0]/norm;
+      r_perp[1] = r_perp[1]/norm;
+      r_perp[2] = r_perp[2]/norm;
+      r_center  = pow(pow(part.r[0],2) + pow(part.r[1],2) + pow(part.r[2],2),0.5);
+      for (k=0; k<ndim; k++) part.v[k] = r_perp[k]*r_center*omega*pc;
+    }
+  }
+
+  sim->initial_h_provided = true;
+
+  delete[] r;
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Ic::TurbIsothermSphere
+/// Create a r^-2 density sphere of particles of given origin and radius with turbulent velocity.
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::TurbIsothermSphere(void)
+{
+  int i,k;                          // Particle and dimension counters
+  FLOAT rcentre[ndim];              // Position of sphere centre
+  FLOAT gpecloud;                   // ..
+  FLOAT keturb;                     // ..
+  FLOAT mp;                         // Mass of one particle
+  FLOAT rho;                        // Fluid density
+  FLOAT xmin;                       // ..
+  FLOAT vfactor;                    // ..
+  FLOAT *r;                         // Positions of all particles
+  FLOAT *v;                         // Velocities of all particles
+  FLOAT dxgrid;                     // ..
+  FLOAT rmax[ndim];                 // ..
+  FLOAT rmin[ndim];                 // ..
+  DOUBLE *vfield;                   // ..
+
+  // Local copies of important parameters
+  int Npart            = simparams->intparams["Nsph"];
+  int field_type       = simparams->intparams["field_type"];
+  int gridsize         = simparams->intparams["gridsize"];
+  FLOAT mcloud         = simparams->floatparams["mcloud"];
+  FLOAT radius         = simparams->floatparams["radius"];
+  FLOAT temp0          = simparams->floatparams["temp0"];
+  FLOAT mu_bar         = simparams->floatparams["mu_bar"];
+  FLOAT gammaone       = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT alpha_turb     = simparams->floatparams["alpha_turb"];
+  FLOAT power_turb     = simparams->floatparams["power_turb"];
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[Ic::TurbIsothermSphere]");
+
+#if !defined(FFTW_TURBULENCE)
+  string message = "FFTW turbulence flag not set";
+  ExceptionHandler::getIstance().raise(message);
+#endif
+
+  // Convert any parameters to code units
+  mcloud /= simunits.m.outscale;
+  radius /= simunits.r.outscale;
+  temp0  /= simunits.temp.outscale;
+
+  // Calculate gravitational potential energy of uniform cloud
+  gpecloud = 0.6*mcloud*mcloud/radius;
+
+  r = new FLOAT[ndim*Npart];
+  v = new FLOAT[ndim*Npart];
+
+  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
+  for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
+  Addr2Sphere(Npart, r, rcentre, radius);
+
+  // Allocate local and main particle memory
+  hydro->Nhydro = Npart;
+  sim->AllocateParticleMemory();
+  mp = mcloud / (FLOAT) Npart;
+  rho = 3.0*mcloud / (4.0*pi*pow(radius,3));
+
+  // Record particle properties in main memory
+  for (i=0; i<Npart; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+    for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
+    part.m = mp;
+    part.h = hydro->h_fac*pow(part.m/rho,invndim);
+    part.u = temp0/gammaone/mu_bar;
+  }
+
+  sim->initial_h_provided = true;
+
+
+  // Generate turbulent velocity field for given power spectrum slope
+  vfield = new DOUBLE[ndim*gridsize*gridsize*gridsize];
+  hydro->ComputeBoundingBox(rmax, rmin, hydro->Nhydro);
+  xmin = 9.9e20;
+  dxgrid = 0.0;
+  for (k=0; k<ndim; k++) {
+    dxgrid = max(dxgrid,(rmax[k] - rmin[k])/(FLOAT) (gridsize - 1));
+    xmin = min(xmin, rmin[k]);
+  }
+
+  // Generate gridded velocity field
+  GenerateTurbulentVelocityField(field_type, gridsize, power_turb, vfield);
+
+  // Now interpolate generated field onto particle positions
+  InterpolateVelocityField(hydro->Nhydro, gridsize, xmin, dxgrid, r, vfield, v);
+
+  // Finally, copy velocities to main SPH particle array
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
+  }
+
+  // Change to COM frame of reference
+  sim->SetComFrame();
+
+  // Calculate total kinetic energy of turbulent velocity field
+  keturb = 0.0;
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    keturb += part.m*DotProduct(part.v, part.v, ndim);
+  }
+  keturb *= 0.5;
+
+  vfactor = sqrt(alpha_turb*gpecloud/keturb);
+  cout << "Scaling factor : " << vfactor << endl;
+
+  // Now rescale velocities to give required turbulent energy in cloud
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (k=0; k<ndim; k++) part.v[k] *= vfactor;
+  }
+
+  delete[] v;
   delete[] r;
 
   return;
@@ -3019,6 +3417,47 @@ int Ic<ndim>::AddLatticeSphere
 
 
 
+//=================================================================================================
+//  Ic::Addr2Sphere
+/// Add r^-2 sphere of particles
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::Addr2Sphere
+ (int Npart,                           ///< [in] No. of particles in sphere
+  FLOAT *r,                            ///< [out] Positions of particles in sphere
+  FLOAT *rcentre,                      ///< [in] Position of sphere centre
+  FLOAT radius)                        ///< [in] Radius of sphere
+{
+  int i;                               // Particle counter
+  FLOAT phi;                           // ..
+  FLOAT theta;                         // ..
+  FLOAT sintheta;                      // ..
+  FLOAT costheta;                      // ..
+  FLOAT rpart;                         // ..
+
+  debug2("[Ic::Addr2Sphere]");
+
+  // Loop over all required particles
+  //-----------------------------------------------------------------------------------------------
+  for (i=0; i<Npart; i++) {
+
+    // Continously loop until random particle lies inside sphere
+    phi      = (FLOAT) 2.0*pi*randnumb->floatrand();
+    costheta = (FLOAT) 2.0*randnumb->floatrand() - (FLOAT) 1.0;
+    theta    = acos(costheta);
+    sintheta = sin(theta);
+    rpart    = radius*randnumb->floatrand();
+    r[ndim*i + 0] = rpart*sintheta*cos(phi);
+    r[ndim*i + 1] = rpart*sintheta*sin(phi);
+    r[ndim*i + 2] = rpart*costheta;
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
 
 //=================================================================================================
 //  Ic::AddCubicLattice
@@ -3250,65 +3689,68 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
   FLOAT *rcentre,                      ///< [in] Position of sphere centre
   FLOAT *r)                            ///< [inout] Positions of particles
 {
-  int i,k;                             // Particle and dimension counters
-  int j;                               // Aux. counter
-  int tabtot;                          // No of elements in tables
-  FLOAT phi,phi1,phi2,phiprime;        // Aux. azimuthal angle variables
-  FLOAT Rsqd;                          // Radial distance (from z-axis) squared
-  FLOAT Rmag;                          // Radial distance (from z-axis)
-  FLOAT rpos[3];                       // Random position of new particle
-  FLOAT spacing;                       // Table spacing
+  if (ndim > 1) {
+    int i,k;                             // Particle and dimension counters
+    int j;                               // Aux. counter
+    int tabtot;                          // No of elements in tables
+    FLOAT phi,phi1,phi2,phiprime;        // Aux. azimuthal angle variables
+    FLOAT Rsqd;                          // Radial distance (from z-axis) squared
+    FLOAT Rmag;                          // Radial distance (from z-axis)
+    FLOAT rpos[2];                       // Random position of new particle
+    FLOAT spacing;                       // Table spacing
 
-  debug2("[Ic::AddAzimuthalDensityPerturbation]");
+    debug2("[Ic::AddAzimuthalDensityPerturbation]");
 
-  tabtot = 10000;
-  spacing = twopi/(FLOAT)(tabtot - 1);
+    tabtot = 10000;
+    spacing = twopi/(FLOAT)(tabtot - 1);
 
-  // Loop over all required particles
-  //-----------------------------------------------------------------------------------------------
+    // Loop over all required particles
+    //---------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(amp,mpert,Npart,r,rcentre,spacing,tabtot)\
   private(i,j,k,phi,phiprime,phi1,phi2,rpos,Rmag,Rsqd)
-  for (i=0; i<Npart; i++) {
-    for (k=0; k<ndim; k++) rpos[k] = r[ndim*i + k] - rcentre[k];
+    for (i=0; i<Npart; i++) {
+      for (k=0; k<2; k++) rpos[k] = r[ndim*i + k] - rcentre[k];
 
-    // Calculate distance from z-axis and
-    Rsqd = rpos[0]*rpos[0] + rpos[1]*rpos[1];
-    Rmag = sqrt(Rsqd);
+      // Calculate distance from z-axis and
+      Rsqd = rpos[0]*rpos[0] + rpos[1]*rpos[1];
+      Rmag = sqrt(Rsqd);
 
-    // Find azimuthal angle around z-axis correcting for which quadrant
-    if (Rmag > small_number) phi = asin(fabs(rpos[1])/Rmag);
-    else phi = (FLOAT) 0.0;
-    phiprime = (FLOAT) 0.0;
+      // Find azimuthal angle around z-axis correcting for which quadrant
+      if (Rmag > small_number) phi = asin(fabs(rpos[1])/Rmag);
+      else phi = (FLOAT) 0.0;
+      phiprime = (FLOAT) 0.0;
 
-    if (rpos[0] < (FLOAT) 0.0 && rpos[1] > (FLOAT) 0.0) phi = pi - phi;
-    else if (rpos[0] < (FLOAT) 0.0 && rpos[1] < (FLOAT) 0.0) phi = pi + phi;
-    else if (rpos[0] > (FLOAT) 0.0 && rpos[1] < (FLOAT) 0.0) phi = twopi - phi;
+      if (rpos[0] < (FLOAT) 0.0 && rpos[1] > (FLOAT) 0.0) phi = pi - phi;
+      else if (rpos[0] < (FLOAT) 0.0 && rpos[1] < (FLOAT) 0.0) phi = pi + phi;
+      else if (rpos[0] > (FLOAT) 0.0 && rpos[1] < (FLOAT) 0.0) phi = twopi - phi;
 
-    // Wrap angle to fit between 0 and two*pi
-    if (phi < amp/(FLOAT) mpert) phi = phi + twopi;
+      // Wrap angle to fit between 0 and two*pi
+      if (phi < amp/(FLOAT) mpert) phi = phi + twopi;
 
-    // Numerically find new phi angle for perturbation.  Search through grid of values,
-    // find upper and lower bounds, then use linear interpolation to find new value of phi.
-    for (j=1; j<tabtot; j++) {
-      phi1 = spacing*(FLOAT) (j - 1);
-      phi2 = spacing*(FLOAT) j;
-      phi1 = phi1 + amp*cos((FLOAT) mpert*phi1)/(FLOAT) mpert;
-      phi2 = phi2 + amp*cos((FLOAT) mpert*phi2)/(FLOAT) mpert;
+      // Numerically find new phi angle for perturbation.  Search through grid of values,
+      // find upper and lower bounds, then use linear interpolation to find new value of phi.
+      for (j=1; j<tabtot; j++) {
+        phi1 = spacing*(FLOAT) (j - 1);
+        phi2 = spacing*(FLOAT) j;
+        phi1 = phi1 + amp*cos((FLOAT) mpert*phi1)/(FLOAT) mpert;
+        phi2 = phi2 + amp*cos((FLOAT) mpert*phi2)/(FLOAT) mpert;
 
-      if (phi2 >= phi && phi1 < phi) {
-        phiprime = spacing*(FLOAT)(j - 1) + spacing*(phi - phi1) / (phi2 - phi1);
-        r[ndim*i] = rcentre[0] + Rmag*cos(phiprime);
-        r[ndim*i + 1] = rcentre[1] + Rmag*sin(phiprime);
-        break;
+        if (phi2 >= phi && phi1 < phi) {
+          phiprime = spacing*(FLOAT)(j - 1) + spacing*(phi - phi1) / (phi2 - phi1);
+          r[ndim*i] = rcentre[0] + Rmag*cos(phiprime);
+          r[ndim*i + 1] = rcentre[1] + Rmag*sin(phiprime);
+          break;
+        }
       }
-    }
 
-    // Reposition particle with new angle
-    //r[ndim*i] = rcentre[0] + Rmag*cos(phiprime);
-    //r[ndim*i + 1] = rcentre[1] + Rmag*sin(phiprime);
+      // Reposition particle with new angle
+      //r[ndim*i] = rcentre[0] + Rmag*cos(phiprime);
+      //r[ndim*i + 1] = rcentre[1] + Rmag*sin(phiprime);
+
+    }
+    //---------------------------------------------------------------------------------------------
 
   }
-  //-----------------------------------------------------------------------------------------------
 
   return;
 }

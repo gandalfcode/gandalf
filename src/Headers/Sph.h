@@ -135,7 +135,7 @@ class Sph : public Hydrodynamics<ndim>
   SphParticle<ndim>& GetSphParticlePointer(const int i) {
     return *((SphParticle<ndim>*)((unsigned char*)sphdata_unsafe + i*size_sph_part));
   };
-  virtual SphParticle<ndim>* GetSphParticleArray ()=0;
+  virtual SphParticle<ndim>* GetSphParticleArray() = 0;
 
 
   // Const variables (read in from parameters file)

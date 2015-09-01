@@ -32,8 +32,6 @@
 #include "Constants.h"
 #include "Particle.h"
 #include "SmoothingKernel.h"
-#include "NbodyParticle.h"
-#include "Nbody.h"
 #include "Parameters.h"
 #include "DomainBox.h"
 #include "EOS.h"
@@ -44,13 +42,11 @@
 #endif
 using namespace std;
 
-template <int ndim>
-class Hydrodynamics;
 
 template <int ndim>
 class EOS;
 
-static const FLOAT ghost_range = 1.6;
+static const FLOAT ghost_range = 1.8;
 
 
 //=================================================================================================
@@ -125,7 +121,7 @@ public:
   FLOAT kernfacsqd;                    ///< Kernel range neib. fraction squared
   FLOAT kernrange;                     ///< Kernel range
   FLOAT mmean;                         ///< Mean SPH particle mass
-
+  
 
   int *iorder;                         ///< Array containing particle ordering
   EOS<ndim> *eos;                      ///< Equation-of-state
@@ -141,4 +137,31 @@ public:
 template <int ndim>
 const FLOAT Hydrodynamics<ndim>::invndim = 1.0/ndim;
 
+
+
+//=================================================================================================
+//  Class NullHydrodynamics
+/// \brief   Class definition for empty Hydrodynamics class (needed in NbodySimulation).
+/// \details Class definition for empty Hydrodynamics class (needed in NbodySimulation).
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=================================================================================================
+template <int ndim>
+class NullHydrodynamics : public Hydrodynamics<ndim>
+{
+ public:
+
+  NullHydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
+                    string gas_eos_aux, string KernelName, int size_hydro_part):
+    Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux,
+                        gas_eos_aux, KernelName, size_hydro_part) {};
+
+  virtual Particle<ndim>* GetParticleArray() {return NULL;};
+
+  virtual void AllocateMemory(int) {};
+  virtual void DeallocateMemory(void) {};
+  virtual void DeleteDeadParticles(void) {};
+  virtual void ReorderParticles(void) {};
+
+};
 #endif

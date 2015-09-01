@@ -1,7 +1,6 @@
 //=================================================================================================
 //  SphNeighbourSearch.h
-//  Header file containing class definitions for all SPH neighbour searching
-//  data structures and algorithms.
+//  Header file containing class definitions for all SPH neighbour searching algorithms.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -108,8 +107,8 @@ protected:
                                           Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                               Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
-  virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *,
-                                      Sph<ndim> *, Nbody<ndim> *) = 0;
+  //virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *,
+  //                                    Sph<ndim> *, Nbody<ndim> *) = 0;
 
 };
 
@@ -117,7 +116,7 @@ protected:
 
 //=================================================================================================
 //  Class SphBruteForceSearch
-/// \brief   ..
+/// \brief   Class for computing SPH neighbour lists using brute force only.
 /// \details Class for computing SPH neighbour lists using brute force only
 ///          (i.e. direct summation over all particles).
 /// \author  D. A. Hubber, G. Rosotti
@@ -150,7 +149,7 @@ class SphBruteForceSearch : public SphNeighbourSearch<ndim>, public BruteForceSe
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                       Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
-  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
 
 #ifdef MPI_PARALLEL
   using NeighbourSearch<ndim>::ids_active_particles;
@@ -164,9 +163,9 @@ class SphBruteForceSearch : public SphNeighbourSearch<ndim>, public BruteForceSe
 
 //=================================================================================================
 //  Class GradhSphBruteForce
-/// \brief   ..
+/// \brief   Class for computing neighbour lists using brute force only for grad-h SPH.
 /// \details Class for computing SPH neighbour lists using brute force only
-///          (i.e. direct summation over all particles).
+///          (i.e. direct summation over all particles) for grad-h SPH.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    12/05/2014
 //=================================================================================================
@@ -197,9 +196,9 @@ class GradhSphBruteForce: public SphBruteForceSearch<ndim,ParticleType>
 
 //=================================================================================================
 //  Class SM2012SphBruteForce
-/// \brief   ..
-/// \details Class for computing SPH neighbour lists using brute force only
-///          (i.e. direct summation over all particles).
+/// \brief   Class for computing neighbour lists using brute force only for SM2012 SPH.
+/// \details Class for computing neighbour lists using brute force only
+///          (i.e. direct summation over all particles) for SM2012 SPH.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    12/05/2014
 //=================================================================================================
@@ -230,8 +229,8 @@ class SM2012SphBruteForce: public SphBruteForceSearch<ndim,ParticleType>
 
 //=================================================================================================
 //  Class SphTree
-/// \brief   Class containing tree for efficient neighbour searching and gravity calculations.
-/// \details ..
+/// \brief   Class containing tree for efficient SPH neighbour searching and gravity calculations.
+/// \details Class containing tree for efficient SPH neighbour searching and gravity calculations.
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=================================================================================================
@@ -299,7 +298,7 @@ protected:
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                       Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
-  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
 
 };
 
@@ -307,8 +306,8 @@ protected:
 
 //=================================================================================================
 //  Class GradhSphTree
-/// \brief   Class containing tree for computing grad-h SPH force loops.
-/// \details ...
+/// \brief   Class containing tree for computing grad-h SPH summation and force loops.
+/// \details Class containing tree for computing grad-h SPH summation and force loops.
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=================================================================================================
@@ -361,7 +360,7 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
@@ -373,8 +372,8 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
 
 //=================================================================================================
 //  Class GradhSphKDTree
-/// \brief   ...
-/// \details ...
+/// \brief   Grad-h SPH neighbour searching class using the KD-tree.
+/// \details Grad-h SPH neighbour searching class using the KD-tree.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
 //=================================================================================================
@@ -406,7 +405,7 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 //=================================================================================================
 //  Class GradhSphOctTree
 /// \brief   Class containing octal tree for computing grad-h SPH force loops.
-/// \details ...
+/// \details Class containing octal tree for computing grad-h SPH force loops.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
 //=================================================================================================
@@ -435,8 +434,7 @@ class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 //=================================================================================================
 //  Class SM2012SphTree
 /// \brief   Class containing tree for computing Saitoh & Makino (2012) SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
+/// \details Class containing tree for computing Saitoh & Makino (2012) SPH force loops.
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=================================================================================================
@@ -485,7 +483,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
 
 };
 
@@ -493,9 +491,8 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
 
 //=================================================================================================
 //  Class SM2012SphKDTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
+/// \brief   Class containing kd-tree for computing SM2012 SPH force loops.
+/// \details Class containing kd-tree for computing SM2012 SPH force loops.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
 //=================================================================================================
@@ -523,9 +520,8 @@ class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 
 //=================================================================================================
 //  Class SM2012SphOctTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
+/// \brief   Class containing octal-tree for computing SM2012 SPH summation and force loops.
+/// \details Class containing octal-tree for computing SM2012 SPH summation and force loops.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
 //=================================================================================================

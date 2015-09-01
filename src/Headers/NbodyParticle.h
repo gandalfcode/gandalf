@@ -44,10 +44,10 @@ class NbodyParticle
 
   bool active;                      ///< Flag if active (i.e. recompute step)
   int istar;                        ///< Internal i.d.
-  int level;                        ///< Current timestep level
-  int nstep;                        ///< Integer step-size of particle
-  int nlast;                        ///< Integer time at beginning of step
   int Ncomp;                        ///< No. of internal components
+  unsigned int level;               ///< Current timestep level
+  unsigned int nstep;               ///< Integer step-size of particle
+  unsigned int nlast;               ///< Integer time at beginning of step
   DOUBLE r[ndim];                   ///< Position
   DOUBLE v[ndim];                   ///< Velocity
   DOUBLE a[ndim];                   ///< Acceleration

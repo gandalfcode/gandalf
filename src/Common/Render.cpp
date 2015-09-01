@@ -45,10 +45,10 @@ using namespace std;
 /// Create new render object for simulation object depending on dimensionality.
 //=================================================================================================
 RenderBase* RenderBase::RenderFactory
-(int ndim,                          ///< Simulation dimensionality
- SimulationBase* sim)               ///< Simulation object pointer
+ (int ndim,                            ///< Simulation dimensionality
+  SimulationBase* sim)                 ///< Simulation object pointer
 {
-  RenderBase* render;               // Pointer to new render object
+  RenderBase* render;                  // Pointer to new render object
   if (ndim == 1) {
     render = new Render<1> (sim);
   }
@@ -72,7 +72,7 @@ RenderBase* RenderBase::RenderFactory
 //=================================================================================================
 template <int ndim>
 Render<ndim>::Render(SimulationBase* sim):
-sph(static_cast<Sph<ndim>* > (static_cast<Simulation<ndim>* > (sim)->sph))
+  hydro(static_cast<Hydrodynamics<ndim>* > (static_cast<Simulation<ndim>* > (sim)->hydro))
 {
 }
 
@@ -190,8 +190,8 @@ int Render<ndim>::CreateColumnRenderingGrid
  private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,hvalues,mvalues)\
  shared(Nhydro,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues)
   for (i=0; i<Nhydro; i++) {
-    const float hrange = sph->kerntab.kernrange*hvalues[i];
-    //const float hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
+    const float hrange = hydro->kerntab.kernrange*hvalues[i];
+    //const float hrangesqd = hydro->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
     if (xvalues[i] + hrange < xmin || xvalues[i] - hrange > xmax ||
         yvalues[i] + hrange < ymin || yvalues[i] - hrange > ymax) continue;
@@ -217,8 +217,8 @@ int Render<ndim>::CreateColumnRenderingGrid
         drsqd = dr[0]*dr[0] + dr[1]*dr[1];
         //if (drsqd > hrangesqd) continue;
         drmag = sqrt(drsqd);
-        if (ndim == 3) wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
-        else if (ndim == 2) wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
+        if (ndim == 3) wkern = float(hydro->kerntab.wLOS((FLOAT) (drmag*invh)));
+        else if (ndim == 2) wkern = float(hydro->kerntab.w0((FLOAT) (drmag*invh)));
         else if (ndim == 1) wkern = 0.0f;
 #pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
@@ -348,8 +348,8 @@ int Render<ndim>::CreateSliceRenderingGrid
    private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,hvalues,mvalues)\
    shared(Nhydro,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues,zvalues)
   for (i=0; i<Nhydro; i++) {
-    const float hrange = sph->kerntab.kernrange*hvalues[i];
-    //const float hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
+    const float hrange = hydro->kerntab.kernrange*hvalues[i];
+    //const float hrangesqd = hydro->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
     if (xvalues[i] + hrange < xmin || xvalues[i] - hrange > xmax ||
         yvalues[i] + hrange < ymin || yvalues[i] - hrange > ymax ||
@@ -377,7 +377,7 @@ int Render<ndim>::CreateSliceRenderingGrid
         drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
         //if (drsqd > hrangesqd) continue;
         drmag = sqrt(drsqd);
-        wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
+        wkern = float(hydro->kerntab.w0((FLOAT) (drmag*invh)));
 #pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
 #pragma omp atomic

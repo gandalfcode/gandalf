@@ -36,7 +36,7 @@
 #include "SimUnits.h"
 
 
-// Forward declaration of Sph to break circular dependency
+// Forward declaration of Hydrodynamics to break circular dependency
 template <int ndim>
 class Hydrodynamics;
 
@@ -277,6 +277,37 @@ class MCRadiationEOS: public EOS<ndim>
   FLOAT temp0;
   FLOAT temp_ion;
   EOS<ndim> *eos;
+
+};
+
+
+
+//=================================================================================================
+//  Class Radws
+/// \brief   Equation of state for Stamatellos wt al. (2007) radiative cooling scheme
+/// \details ...
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=================================================================================================
+template <int ndim>
+class Radws : public EOS<ndim>
+{
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+
+ public:
+
+  Radws(FLOAT, FLOAT, FLOAT);
+  ~Radws();
+
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+
+  FLOAT temp0;
+  FLOAT mu_bar;
 
 };
 #endif

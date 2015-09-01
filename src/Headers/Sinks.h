@@ -29,12 +29,12 @@
 #include "Precision.h"
 #include "CodeTiming.h"
 #include "Constants.h"
+#include "Hydrodynamics.h"
 #include "Nbody.h"
 #include "NbodyParticle.h"
 #include "Parameters.h"
-#include "SmoothingKernel.h"
 #include "Particle.h"
-#include "Sph.h"
+#include "SmoothingKernel.h"
 #include "StarParticle.h"
 #include "SystemParticle.h"
 using namespace std;
@@ -54,26 +54,26 @@ class SinkParticle
 {
  public:
 
-  StarParticle<ndim> *star;         ///< Pointer to connected star particle
-  int istar;                        ///< i.d. of connected star particle
-  int Ngas;                         ///< No. of gas particles inside sink
-  DOUBLE macctot;                   ///< Total accreted mass
-  DOUBLE radius;                    ///< Softening/sink radius of particle
-  DOUBLE dt;                        ///< Particle timestep
-  DOUBLE dmdt;                      ///< Accretion rate
-  DOUBLE menc;                      ///< Gas mass enclosed within sink radius
-  DOUBLE mmax;                      ///< Max. mass before increasing dmdt
-  DOUBLE racc;                      ///< Accretion radius
-  DOUBLE ketot;                     ///< Internal kinetic energy
-  DOUBLE gpetot;                    ///< Internal grav. pot. energy
-  DOUBLE rotketot;                  ///< Internal rotational kinetic energy
-  DOUBLE utot;                      ///< Internal energy accrted by sink
-  DOUBLE taccrete;                  ///< Accretion timescale
-  DOUBLE trad;                      ///< Radial accretion timescale
-  DOUBLE trot;                      ///< Rotational period at sink radius
-  DOUBLE tvisc;                     ///< Viscous accretion timescale
-  DOUBLE angmom[3];                 ///< Internal sink angular momentum
-  DOUBLE fhydro[ndim];              ///< Hydro force (from accreted ptcls)
+  StarParticle<ndim> *star;            ///< Pointer to connected star particle
+  int istar;                           ///< i.d. of connected star particle
+  int Ngas;                            ///< No. of gas particles inside sink
+  DOUBLE macctot;                      ///< Total accreted mass
+  DOUBLE radius;                       ///< Softening/sink radius of particle
+  DOUBLE dt;                           ///< Particle timestep
+  DOUBLE dmdt;                         ///< Accretion rate
+  DOUBLE menc;                         ///< Gas mass enclosed within sink radius
+  DOUBLE mmax;                         ///< Max. mass before increasing dmdt
+  DOUBLE racc;                         ///< Accretion radius
+  DOUBLE ketot;                        ///< Internal kinetic energy
+  DOUBLE gpetot;                       ///< Internal grav. pot. energy
+  DOUBLE rotketot;                     ///< Internal rotational kinetic energy
+  DOUBLE utot;                         ///< Internal energy accrted by sink
+  DOUBLE taccrete;                     ///< Accretion timescale
+  DOUBLE trad;                         ///< Radial accretion timescale
+  DOUBLE trot;                         ///< Rotational period at sink radius
+  DOUBLE tvisc;                        ///< Viscous accretion timescale
+  DOUBLE angmom[3];                    ///< Internal sink angular momentum
+  DOUBLE fhydro[ndim];                 ///< Hydro force (from accreted ptcls)
 
 
   // Star particle constructor to initialise all values
@@ -129,28 +129,30 @@ class Sinks
   //-----------------------------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
-  void SearchForNewSinkParticles(int, FLOAT, Sph<ndim> *, Nbody<ndim> *);
-  void CreateNewSinkParticle(SphParticle<ndim>&, int, FLOAT, Sph<ndim> *, Nbody<ndim> *);
-  void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *, int, DOUBLE);
+  void SearchForNewSinkParticles(const unsigned int, const FLOAT,
+                                 Hydrodynamics<ndim> *, Nbody<ndim> *);
+  void CreateNewSinkParticle(const int, const FLOAT, Particle<ndim>&,
+                             Hydrodynamics<ndim> *, Nbody<ndim> *);
+  void AccreteMassToSinks(const unsigned int, const DOUBLE, Hydrodynamics<ndim> *, Nbody<ndim> *);
 
 
   // Local class variables
   //-----------------------------------------------------------------------------------------------
-  bool allocated_memory;            ///< Has sink memory been allocated?
-  int Nsink;                        ///< No. of sink particles
-  int Nsinkmax;                     ///< Max. no. of sink particles
-  int sink_particles;               ///< Using sink particles?
-  int create_sinks;                 ///< Create new sink particles?
-  int smooth_accretion;             ///< Use smooth accretion?
-  FLOAT alpha_ss;                   ///< Shakura-Sunyaev alpha viscosity
-  FLOAT rho_sink;                   ///< Sink formation density
-  FLOAT sink_radius;                ///< New sink radius (in units of h)
-  FLOAT smooth_accrete_frac;        ///< Minimum particle mass fraction
-  FLOAT smooth_accrete_dt;          ///< ..
-  string sink_radius_mode;          ///< Sink radius mode
+  bool allocated_memory;               ///< Has sink memory been allocated?
+  int Nsink;                           ///< No. of sink particles
+  int Nsinkmax;                        ///< Max. no. of sink particles
+  int sink_particles;                  ///< Using sink particles?
+  int create_sinks;                    ///< Create new sink particles?
+  int smooth_accretion;                ///< Use smooth accretion?
+  FLOAT alpha_ss;                      ///< Shakura-Sunyaev alpha viscosity
+  FLOAT rho_sink;                      ///< Sink formation density
+  FLOAT sink_radius;                   ///< New sink radius (in units of h)
+  FLOAT smooth_accrete_frac;           ///< Minimum particle mass fraction
+  FLOAT smooth_accrete_dt;             ///< Minimum particle timestep fraction
+  string sink_radius_mode;             ///< Sink radius mode
 
-  SinkParticle<ndim> *sink;         ///< Main sink particle array
-  CodeTiming *timing;               ///< Pointer to code timing objectx
+  SinkParticle<ndim> *sink;            ///< Main sink particle array
+  CodeTiming *timing;                  ///< Pointer to code timing objectx
 
 };
 #endif

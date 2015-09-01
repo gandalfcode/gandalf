@@ -87,7 +87,7 @@ public:
   using FV<ndim>::gamma_eos;
   using FV<ndim>::gammam1;
 
-  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
+  static const FLOAT invndim; //=1./ndim;  ///< Copy of 1/ndim
   static const int nvar = ndim + 2;
   static const int ivx = 0;
   static const int ivy = 1;
@@ -139,6 +139,7 @@ public:
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &);
   void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
+  void EndTimestep(const unsigned int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
 
 
   // Functions needed to hide some implementation details
@@ -152,6 +153,7 @@ public:
 
   // Const variables (read in from parameters file)
   //-----------------------------------------------------------------------------------------------
+  const bool staticParticles;          ///< ..
   const FLOAT accel_mult;              ///< ..
   const FLOAT courant_mult;            ///< ..
   //const FLOAT gamma_eos;               ///< ..
@@ -174,6 +176,10 @@ public:
   MeshlessFVParticle<ndim> *hydrodata;
 
 };
+
+// Declare invndim constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT MeshlessFV<ndim>::invndim = 1.0/ndim;
 
 
 
@@ -214,8 +220,8 @@ class MfvMuscl : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::Ntot;
   using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
+  using MeshlessFV<ndim>::staticParticles;
 
-  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
   static const int nvar = ndim + 2;
   static const int ivx = 0;
   static const int ivy = 1;
@@ -254,10 +260,7 @@ class MfvMuscl : public MeshlessFV<ndim>
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
-  //Balsara2004Limiter<ndim,MeshlessFVParticle> limiter;
-  //Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
-  //TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
-  //GizmoLimiter<ndim,MeshlessFVParticle> limiter;
+
 };
 
 
@@ -299,8 +302,8 @@ class MfvRungeKutta : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::Ntot;
   using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
+  using MeshlessFV<ndim>::staticParticles;
 
-  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
   static const int nvar = ndim + 2;
   static const int ivx = 0;
   static const int ivy = 1;
@@ -308,7 +311,6 @@ class MfvRungeKutta : public MeshlessFV<ndim>
   static const int irho = ndim;
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
-
 
 
   // Constructor
@@ -339,9 +341,6 @@ class MfvRungeKutta : public MeshlessFV<ndim>
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
-  //Balsara2004Limiter<ndim,MeshlessFVParticle> limiter;
-  //Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
-  //TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
-  //GizmoLimiter<ndim,MeshlessFVParticle> limiter;
+
 };
 #endif

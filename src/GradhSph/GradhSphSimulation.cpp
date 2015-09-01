@@ -45,7 +45,6 @@ using namespace std;
 
 
 
-
 //=================================================================================================
 //  Simulation::ProcessSphParameters
 /// Process all the options chosen in the parameters file, setting various
@@ -56,7 +55,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 {
   aviscenum avisc = noav;              // Artificial viscosity enum
   acondenum acond = noac;              // Artificial conductivity enum
-  eosenum gas_eos = noeos;             // Gas EOS enum
+  eosenum eos_type = noeos;            // Gas EOS enum
   tdaviscenum tdavisc = notdav;        // Time-dependent viscosity enum
 
   // Local references to parameter variables for brevity
@@ -64,6 +63,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   map<string, double> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
   string KernelName = stringparams["kernel"];
+  string gas_eos = stringparams["gas_eos"];
   string gas_radiation = stringparams["radiation"];
 
   debug2("[GradhSphSimulation::ProcessSphParameters]");
@@ -106,19 +106,19 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Set gas EOS values
   if (stringparams["gas_eos"] == "isothermal")
-    gas_eos = isothermal;
+    eos_type = isothermal;
   else if (stringparams["gas_eos"] == "barotropic")
-    gas_eos = barotropic;
+    eos_type = barotropic;
   else if (stringparams["gas_eos"] == "barotropic2")
-    gas_eos = barotropic2;
+    eos_type = barotropic2;
   else if (stringparams["gas_eos"] == "energy_eqn")
-    gas_eos = energy_eqn;
+    eos_type = energy_eqn;
   else if (stringparams["gas_eos"] == "constant_temp")
-    gas_eos = constant_temp;
-  else if (stringparams["gas_eos"] == "radws")
-    gas_eos = radws;
+    eos_type = constant_temp;
+  else if (stringparams["gas_eos"] == "rad_ws" || stringparams["gas_eos"] == "radws")
+    eos_type = radws;
   else {
-    string message = "Unrecognised parameter : gas_eos = " + simparams->stringparams["gas_eos"];
+    string message = "Unrecognised eos parameter : gas_eos = " + simparams->stringparams["gas_eos"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -168,12 +168,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim, GradhSphParticle>
       (floatparams["accel_mult"], floatparams["courant_mult"],
-       floatparams["energy_mult"], gas_eos, tdavisc);
+       floatparams["energy_mult"], eos_type, tdavisc);
   }
   else if (stringparams["sph_integration"] == "lfdkd") {
     sphint = new SphLeapfrogDKD<ndim, GradhSphParticle>
       (floatparams["accel_mult"], floatparams["courant_mult"],
-       floatparams["energy_mult"], gas_eos, tdavisc);
+       floatparams["energy_mult"], eos_type, tdavisc);
     integration_step = max(integration_step,2);
   }
   else {
@@ -185,17 +185,15 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Energy integration object
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["energy_integration"] == "PEC") {
-    uint = new EnergyPEC<ndim, GradhSphParticle>(floatparams["energy_mult"]);
-  }
-  else if (stringparams["energy_integration"] == "Radws" ||
-           stringparams["energy_integration"] == "radws") {
+  if (stringparams["energy_integration"] == "Radws" ||
+           stringparams["energy_integration"] == "radws"||
+           stringparams["energy_integration"] == "rad_ws") {
     uint = new EnergyRadws<ndim, GradhSphParticle>
       (floatparams["energy_mult"], stringparams["radws_table"],
-       floatparams["temp_ambient"], &simunits);
+       floatparams["temp_ambient"], &simunits, sph->eos);
   }
   else if (stringparams["energy_integration"] == "null" ||
-            stringparams["energy_integration"] == "none") {
+           stringparams["energy_integration"] == "none") {
     uint = new NullEnergy<ndim>(floatparams["energy_mult"]);
   }
   else {
@@ -216,7 +214,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //-----------------------------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce") {
     sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
-      (sph->kernp->kernrange, &simbox, sph->kernp, timing);
+     (sph->kernp->kernrange, &simbox, sph->kernp, timing);
   }
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell>
@@ -280,10 +278,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Create ghost particle object
   //-----------------------------------------------------------------------------------------------
-  if (IsAnyBoundarySpecial(simbox))
+  if (IsAnyBoundarySpecial(simbox)) {
     LocalGhosts = new PeriodicGhostsSpecific<ndim,GradhSphParticle >();
-  else
+  }
+  else {
     LocalGhosts = new NullGhosts<ndim>();
+  }
 #ifdef MPI_PARALLEL
   MpiGhosts = new MPIGhostsSpecific<ndim, GradhSphParticle>(mpicontrol);
 #endif

@@ -55,106 +55,113 @@ using namespace std;
 template <int ndim>
 void MfvMusclSimulation<ndim>::MainLoop(void)
 {
-  int activecount = 0;                 // Flag if we need to recompute particles
+  //int activecount = 0;                 // Flag if we need to recompute particles
   int i;                               // Particle loop counter
-  int it;                              // Time-symmetric iteration counter
+  //int it;                              // Time-symmetric iteration counter
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
-  MeshlessFVParticle<ndim> *partdata;         // Pointer to main SPH data array
+  MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
 
   debug2("[MfvMusclSimulation::MainLoop]");
 
+  // Update all active cell counters in the tree
+  mfvneib->UpdateActiveParticleCounters(partdata, mfv);
 
-  // Set pointer for SPH data array
-  partdata = mfv->GetMeshlessFVParticleArray();
-
-
-  // Advance SPH and N-body particles' positions and velocities
-  /*uint->EnergyIntegration(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
-  sphint->AdvanceParticles(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
-  nbody->AdvanceParticles(n,nbody->Nnbody,t,timestep,nbody->nbodydata);*/
-
-  // Check all boundary conditions
-  // (DAVID : Move this function to sphint and create an analagous one
-  //  for N-body.  Also, only check this on tree-build steps)
-  //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) sphint->CheckBoundaries(simbox,sph);
-
-
-    //}
-    // Otherwise copy properties from original particles to ghost particles
-    /*else {
-      LocalGhosts->CopySphDataToGhosts(simbox, sph);
-#ifdef MPI_PARALLEL
-      MpiGhosts->CopySphDataToGhosts(simbox, sph);
-#endif
-    }*/
-
-  for (i=0; i<mfv->Nhydro; i++) {
-    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    part.active = true;
-    for (k=0; k<ndim+2; k++) partdata[i].Qcons0[k] = partdata[i].Qcons[k];
-    for (k=0; k<ndim; k++) partdata[i].rdmdt0[k] = partdata[i].rdmdt[k];
-  }
-
-  // Calculate all properties
+  // Calculate all properties (and copy updated data to ghost particles)
   mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
-
   mfv->CopyDataToGhosts(simbox, partdata);
 
+  // Calculate all matrices and gradients (and copy updated data to ghost particles)
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
-
   mfv->CopyDataToGhosts(simbox, partdata);
 
 
   // Compute timesteps for all particles
-  this->ComputeGlobalTimestep();
-  //if (Nlevels == 1) this->ComputeGlobalTimestep();
-  //else this->ComputeBlockTimesteps();
+  if (Nlevels == 1) {
+    this->ComputeGlobalTimestep();
+  }
+  else {
+    this->ComputeBlockTimesteps();
+  }
+  mfv->CopyDataToGhosts(simbox, partdata);
 
-  // Advance time variables
-  n = n + 1;
-  Nsteps = Nsteps + 1;
+
+  // Advance all global time variables
+  n++;
+  Nsteps++;
   t = t + timestep;
-  if (n == nresync) Nblocksteps = Nblocksteps + 1;
-  if (n%integration_step == 0) Nfullsteps = Nfullsteps + 1;
+  if (n == nresync) Nblocksteps++;
+  if (n%integration_step == 0) Nfullsteps++;
 
 
+  // Update the numerical fluxes of all active particles
   mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
 
 
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<mfv->Nhydro; i++) {
+  if (!mfv->staticParticles) {
+    for (i=0; i<mfv->Nhydro; i++) {
+      MeshlessFVParticle<ndim> &part = partdata[i];
+      int dn = n - part.nlast;
 
-    for (k=0; k<ndim; k++) {
-      //partdata[i].r[k] += (FLOAT) 0.5*(partdata[i].v0[k] + partdata[i].v[k])*timestep;
-      partdata[i].a0[k] = partdata[i].a[k];
-      partdata[i].v0[k] = partdata[i].v[k];
-      partdata[i].r[k] += partdata[i].v[k]*timestep;
-      if (partdata[i].r[k] < simbox.boxmin[k]) {
-        if (simbox.boundary_lhs[k] == periodicBoundary) {
-          partdata[i].r[k] += simbox.boxsize[k];
+      //-------------------------------------------------------------------------------------------
+      for (k=0; k<ndim; k++) {
+        part.r[k] = part.r0[k] + part.v0[k]*timestep*(FLOAT) dn;
+
+        // Check if particle has crossed LHS boundary
+        //-----------------------------------------------------------------------------------------
+        if (part.r[k] < simbox.boxmin[k]) {
+
+          // Check if periodic boundary
+          if (simbox.boundary_lhs[k] == periodicBoundary) {
+            part.r[k]  += simbox.boxsize[k];
+            part.r0[k] += simbox.boxsize[k];
+          }
+
+          // Check if wall or mirror boundary
+          if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
+            part.r[k]  = (FLOAT) 2.0*simbox.boxmin[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.boxmin[k] - part.r0[k];
+            part.v[k]  = -part.v[k];
+            part.v0[k] = -part.v0[k];
+            part.a[k]  = -part.a[k];
+            part.a0[k] = -part.a0[k];
+          }
         }
-      }
-      if (partdata[i].r[k] > simbox.boxmax[k]) {
-        if (simbox.boundary_rhs[k] == periodicBoundary) {
-          partdata[i].r[k] -= simbox.boxsize[k];
+
+        // Check if particle has crossed RHS boundary
+        //-----------------------------------------------------------------------------------------
+        if (part.r[k] > simbox.boxmax[k]) {
+
+          // Check if periodic boundary
+          if (simbox.boundary_rhs[k] == periodicBoundary) {
+            part.r[k]  -= simbox.boxsize[k];
+            part.r0[k] -= simbox.boxsize[k];
+          }
+
+          // Check if wall or mirror boundary
+          if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
+            part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
+            part.v[k]  = -part.v[k];
+            part.v0[k] = -part.v0[k];
+            part.a[k]  = -part.a[k];
+            part.a0[k] = -part.a0[k];
+          }
+
         }
+        //-----------------------------------------------------------------------------------------
+
       }
+      //-------------------------------------------------------------------------------------------
+
     }
-
   }
   //-----------------------------------------------------------------------------------------------
 
-
-
-  // Integrate all conserved variables to end of timestep
-  for (i=0; i<mfv->Nhydro; i++) {
-    mfv->IntegrateConservedVariables(partdata[i], timestep);
-    mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
-    mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
-    mfv->UpdateArrayVariables(partdata[i]);
-  }
+  // Advance N-body particle positions
+  nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
 
   // Rebuild or update local neighbour and gravity tree
@@ -164,52 +171,98 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // Search for new ghost particles and create on local processor
   //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-  tghost = timestep*(FLOAT)(ntreebuildstep - 1);
+  tghost = timestep*(FLOAT) (ntreebuildstep - 1);
   mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-  mfvneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
-                          mfv->Ntot,mfv->Nhydromax,timestep,partdata,mfv);
+  mfv->CopyDataToGhosts(simbox, partdata);
+  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                          mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
 
 
-  //-----------------------------------------------------------------------------------------------
+  // Calculate terms due to self-gravity
   if (mfv->self_gravity == 1) {
     mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+  }
 
-    // Integrate all conserved variables to end of timestep
-    for (i=0; i<mfv->Nhydro; i++) {
+  // Compute N-body forces
+  //-----------------------------------------------------------------------------------------------
+  if (nbody->Nnbody > 0) {
 
-      for (k=0; k<ndim; k++) {
-        partdata[i].Qcons[k] += (FLOAT) 0.5*timestep*
-          (partdata[i].Qcons0[MeshlessFV<ndim>::irho]*partdata[i].a0[k] +
-           partdata[i].Qcons[MeshlessFV<ndim>::irho]*partdata[i].a[k]);
+    // Zero all acceleration terms
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->active) {
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k] = 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k] = 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = 0.0;
+        nbody->nbodydata[i]->gpot = 0.0;
+        nbody->nbodydata[i]->gpe = 0.0;
       }
-      partdata[i].Qcons[MeshlessFV<ndim>::ietot] += (FLOAT) 0.5*timestep*
-        (partdata[i].Qcons0[MeshlessFV<ndim>::irho]*DotProduct(partdata[i].v0, partdata[i].a0, ndim) +
-         partdata[i].Qcons[MeshlessFV<ndim>::irho]*DotProduct(partdata[i].v, partdata[i].a, ndim)); //+
-         //DotProduct(partdata[i].a0, partdata[i].rdmdt0, ndim) +
-         //DotProduct(partdata[i].a, partdata[i].rdmdt, ndim));
-
-      mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
-      mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
-      mfv->UpdateArrayVariables(partdata[i]);
     }
+    if (sink_particles == 1) {
+      for (i=0; i<sinks.Nsink; i++) {
+        if (sinks.sink[i].star->active) {
+          for (k=0; k<ndim; k++) sinks.sink[i].fhydro[k] = 0.0;
+        }
+      }
+    }
+
+    if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
+      mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+#if defined MPI_PARALLEL
+      // We need to sum up the contributions from the different domains
+      mpicontrol->ComputeTotalStarGasForces(nbody);
+#endif
+    }
+
+    // Calculate forces, force derivatives etc.., for active stars/systems
+    if (nbody->nbody_softening == 1) {
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
+    }
+    else {
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+    }
+
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->active) {
+        nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
+                                            nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
+                                            nbody->nbodydata[i]->gpot);
+      }
+    }
+
+    // Calculate correction step for all stars at end of step.
+    nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   }
   //-----------------------------------------------------------------------------------------------
 
 
-  /*this->CalculateDiagnostics();
-  this->OutputDiagnostics();
-  this->UpdateDiagnostics();*/
+  // End-step terms for all hydro particles
+  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+
+  // End-step terms for all star particles
+  if (nbody->Nstar > 0) nbody->EndTimestep(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
 
 
-  rebuild_tree = false;
+  // Search for new sink particles (if activated) and accrete to existing sinks
+  if (sink_particles == 1) {
+    if (sinks.create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
+      sinks.SearchForNewSinkParticles(n, t, mfv, nbody);
+    }
+    if (sinks.Nsink > 0) {
+      sinks.AccreteMassToSinks(n, timestep, mfv, nbody);
+      nbody->UpdateStellarProperties();
+      //if (extra_sink_output) WriteExtraSinkOutput();
+    }
+    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
+    if ((t >= tsnapnext && sinks.Nsink > 0) || n == nresync || kill_simulation ||
+         timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
+      hydro->DeleteDeadParticles();
+      rebuild_tree = true;
+    }
+  }
 
-
-  // End-step terms for all SPH particles
-  /*if (mfv->Nhydro > 0) {
-    uint->EndTimestep(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
-    sphint->EndTimestep(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
-  }*/
+  rebuild_tree = true;
 
   return;
 }

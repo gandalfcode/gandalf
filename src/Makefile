@@ -45,7 +45,7 @@ INCLUDE = $(PWD)/src/Headers
 
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
-ifeq ($(CPP),g++)
+ifeq ($(findstring g++,$(CPP)),g++)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),STANDARD)
@@ -88,27 +88,11 @@ OPT += -fopenmp
 endif
 endif
 
-ifeq ($(CPP),g++-5)
-ifeq ($(COMPILER_MODE),FAST)
-OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
-else ifeq ($(COMPILER_MODE),STANDARD)
-OPT += -O3 -fPIC -fno-exceptions -fno-rtti
-else ifeq ($(COMPILER_MODE),PROFILE)
-OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
-else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC -O3 #-fprofile-arcs -ftest-coverage
-endif
-ifeq ($(OPENMP),1)
-OPT += -fopenmp -DOPENMP
-endif
-endif
-
-
 ifeq ($(CPP),clang)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check
+OPT += -g -pg -Wall
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp -DOPENMP
@@ -131,7 +115,8 @@ ifeq ($(FFTW),1)
 CFLAGS += -DFFTW_TURBULENCE
 #OPT += -I/Users/davidhubber/astro/code/gandalf/src -L/Users/davidhubber/astro/code/gandalf/src -lm -lfftw3f
 #OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
-OPT += -I/sw/include -L/sw/lib -lfftw3
+INCLUDE += -I/sw/include
+LIB +=-L/sw/lib -lfftw3
 #OPT += $(FFTW_LIB) $(FFTW_INC)
 endif
 
@@ -140,7 +125,8 @@ endif
 #--------------------------------------------------------------------------------------------------
 ifeq ($(GSL),1)
 CFLAGS += -DGANDALF_GSL
-OPT += -I/usr/local/include -L/usr/local/lib -lgsl -lgslcblas
+INCLUDE += -I/usr/local/include
+LIB += -L/usr/local/lib -lgsl -lgslcblas
 endif
 
 
@@ -198,13 +184,13 @@ OBJ += MeshlessFVBruteForce.o MeshlessFVTree.o
 OBJ += GradhSphBruteForce.o GradhSphTree.o
 OBJ += SM2012SphBruteForce.o SM2012SphTree.o
 OBJ += Ewald.o
-OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o Barotropic2EOS.o
+OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o Barotropic2EOS.o RadwsEOS.o
 OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
 OBJ += MultipleSourceIonisation.o
 OBJ += KDRadiationTree.o TreeMonteCarlo.o
 OBJ += MonochromaticIonisationMonteCarlo.o
 OBJ += TreeRay.o chealpix.o
-OBJ += EnergyPEC.o EnergyRadws.o
+OBJ += EnergyEquation.o EnergyRadws.o
 #OBJ += SimGhostParticles.o
 #OBJ += Render.o
 OBJ += Nbody.o NbodyLeapfrogKDK.o NbodyLeapfrogDKD.o
@@ -261,15 +247,15 @@ all : $(WRAP_OBJ) $(OBJ) Exception.o shocktub.so _SphSim.so executable
 #==================================================================================================
 
 executable : $(OBJ) gandalf.o Exception.o
-	$(CPP) $(CFLAGS) -I$(INCLUDE) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT)
+	$(CPP) $(CFLAGS) -I$(INCLUDE) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT) $(LIB)
 	cp gandalf ../bin/gandalf
 
 unittests : $(OBJ) $(TEST_OBJ) Exception.o
-	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
+	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) $(LIB) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
 	cp testgandalf ../bin/testgandalf
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o
-	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
+	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) $(LIB) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
 
 shocktub.so : shocktub.f shocktub.pyf
 	$(F2PY) --quiet -c shocktub.f shocktub.pyf

@@ -315,17 +315,17 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 void SimulationBase::Run
  (int Nadvance)                        ///< [in] Selected max no. of timesteps (Optional argument)
 {
-  int Ntarget;                         // Target step no before finishing main code integration.
-  string filename;                     // Output snapshot filename
-  string filename2;                    // ..
-  stringstream ss;                     // Stream object for preparing filename
-  ofstream outfile;                    // Stream of restart file
+  unsigned int Ntarget;                // Target step no before finishing main code integration.
+  //string filename;                     // Output snapshot filename
+  //string filename2;                    // ..
+  //stringstream ss;                     // Stream object for preparing filename
+  //ofstream outfile;                    // Stream of restart file
 
   debug1("[SimulationBase::Run]");
 
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
-  else Ntarget = Nsteps + Nadvance;
+  else Ntarget = (int) (Nsteps + Nadvance);
 
   // Continue to run simulation until we reach the required time, or
   // exeeded the maximum allowed number of steps.
@@ -349,6 +349,7 @@ void SimulationBase::Run
   }
   //-----------------------------------------------------------------------------------------------
 
+  FinaliseSimulation();
   CalculateDiagnostics();
   OutputDiagnostics();
   UpdateDiagnostics();
@@ -377,7 +378,7 @@ void SimulationBase::Run
 list<SphSnapshotBase*> SimulationBase::InteractiveRun
  (int Nadvance)                        ///< [in] Max no. of integer steps (Optional argument)
 {
-  int Ntarget;                         // Selected integer timestep
+  unsigned int Ntarget;                // Selected integer timestep
   DOUBLE tdiff = 0.0;                  // Measured time difference
   clock_t tstart = clock();            // Initial CPU clock time
   string filename;                     // Name of the output file
@@ -388,7 +389,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
-  else Ntarget = Nsteps + Nadvance;
+  else Ntarget = (int) (Nsteps + Nadvance);
 
   // Continue to run simulation until we reach the required time, or
   // exeeded the maximum allowed number of steps.
@@ -421,6 +422,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
   // Calculate and process all diagnostic quantities
   if (t >= tend || Nsteps >= Ntarget) {
+    FinaliseSimulation();
     CalculateDiagnostics();
     OutputDiagnostics();
     UpdateDiagnostics();
@@ -644,23 +646,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyLeapfrogKDK<ndim, TabulatedKernel>
-        (intparams["nbody_softening"], intparams["sub_systems"],
+        (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
          floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
         nbody = new NbodyLeapfrogKDK<ndim, M4Kernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "quintic") {
         nbody = new NbodyLeapfrogKDK<ndim, QuinticKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "gaussian") {
         nbody = new NbodyLeapfrogKDK<ndim, GaussianKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else {
@@ -680,23 +682,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyLeapfrogDKD<ndim, TabulatedKernel>
-        (intparams["nbody_softening"], intparams["sub_systems"],
+        (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
          floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
         nbody = new NbodyLeapfrogDKD<ndim, M4Kernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "quintic") {
         nbody = new NbodyLeapfrogDKD<ndim, QuinticKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "gaussian") {
         nbody = new NbodyLeapfrogDKD<ndim, GaussianKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else {
@@ -716,23 +718,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyHermite4<ndim, TabulatedKernel>
-        (intparams["nbody_softening"], intparams["sub_systems"],
+        (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
          floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
         nbody = new NbodyHermite4<ndim, M4Kernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "quintic") {
         nbody = new NbodyHermite4<ndim, QuinticKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "gaussian") {
         nbody = new NbodyHermite4<ndim, GaussianKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName);
       }
       else {
@@ -752,23 +754,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyHermite4TS<ndim, TabulatedKernel>
-        (intparams["nbody_softening"], intparams["sub_systems"],
+        (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
          floatparams["nbody_mult"], KernelName, intparams["Npec"]);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
         nbody = new NbodyHermite4TS<ndim, M4Kernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else if (KernelName == "quintic") {
         nbody = new NbodyHermite4TS<ndim, QuinticKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else if (KernelName == "gaussian") {
         nbody = new NbodyHermite4TS<ndim, GaussianKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else {
@@ -787,23 +789,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyHermite6TS<ndim, TabulatedKernel>
-        (intparams["nbody_softening"], intparams["sub_systems"],
+        (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
          floatparams["nbody_mult"], KernelName, intparams["Npec"]);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
         nbody = new NbodyHermite6TS<ndim, M4Kernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else if (KernelName == "quintic") {
         nbody = new NbodyHermite6TS<ndim, QuinticKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else if (KernelName == "gaussian") {
         nbody = new NbodyHermite6TS<ndim, GaussianKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else {
@@ -835,23 +837,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
         subsystem = new NbodyLeapfrogKDK<ndim, TabulatedKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
         if (KernelName == "m4") {
           subsystem = new NbodyLeapfrogKDK<ndim, M4Kernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName);
         }
         else if (KernelName == "quintic") {
           subsystem = new NbodyLeapfrogKDK<ndim, QuinticKernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName);
         }
         else if (KernelName == "gaussian") {
           subsystem = new NbodyLeapfrogKDK<ndim, GaussianKernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName);
         }
         else {
@@ -870,23 +872,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
         subsystem = new NbodyHermite4<ndim, TabulatedKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
         if (KernelName == "m4") {
           subsystem = new NbodyHermite4<ndim, M4Kernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName);
         }
         else if (KernelName == "quintic") {
           subsystem = new NbodyHermite4<ndim, QuinticKernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName);
         }
         else if (KernelName == "gaussian") {
           subsystem = new NbodyHermite4<ndim, GaussianKernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName);
         }
         else {
@@ -905,23 +907,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
         subsystem = new NbodyHermite4TS<ndim, TabulatedKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["subsys_mult"], KernelName, intparams["Npec"]);
       }
       else if (intparams["tabulated_kernel"] == 0) {
         if (KernelName == "m4") {
           subsystem = new NbodyHermite4TS<ndim, M4Kernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName, intparams["Npec"]);
         }
         else if (KernelName == "quintic") {
           subsystem = new NbodyHermite4TS<ndim, QuinticKernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName, intparams["Npec"]);
         }
         else if (KernelName == "gaussian") {
           subsystem = new NbodyHermite4TS<ndim, GaussianKernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName, intparams["Npec"]);
         }
         else {
@@ -940,23 +942,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
         subsystem = new NbodyHermite6TS<ndim, TabulatedKernel>
-          (intparams["nbody_softening"], intparams["sub_systems"],
+          (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
            floatparams["subsys_mult"], KernelName, intparams["Npec"]);
       }
       else if (intparams["tabulated_kernel"] == 0) {
         if (KernelName == "m4") {
           subsystem = new NbodyHermite6TS<ndim, M4Kernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName, intparams["Npec"]);
         }
         else if (KernelName == "quintic") {
           subsystem = new NbodyHermite6TS<ndim, QuinticKernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName, intparams["Npec"]);
         }
         else if (KernelName == "gaussian") {
           subsystem = new NbodyHermite6TS<ndim, GaussianKernel>
-            (intparams["nbody_softening"], intparams["sub_systems"],
+            (intparams["nbody_softening"], intparams["perturbers"], intparams["sub_systems"],
              floatparams["subsys_mult"], KernelName, intparams["Npec"]);
         }
         else {
@@ -1065,6 +1067,7 @@ void Simulation<ndim>::PreSetupForPython(void)
   ProcessParameters();
 
   // Allocate all memory for both hydro and N-body particles
+  hydro->Nhydro = simparams->intparams["Nhydro"];
   AllocateParticleMemory();
 
   return;
