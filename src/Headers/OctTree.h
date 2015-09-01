@@ -42,6 +42,7 @@ using namespace std;
 
 
 static const int Noctchild = 8;
+static const int nfreq=1;
 
 
 //=================================================================================================
@@ -51,10 +52,10 @@ static const int Noctchild = 8;
 template <int ndim>
 struct OctTreeCell {
   int copen;                        ///< ..
-  int c2g;                          ///< i.d. of tree-cell c/grid-cell g
+  //int c2g;                          ///< i.d. of tree-cell c/grid-cell g
   int cnext;                        ///< i.d. of next cell if not opened
   int id;                           ///< Cell id
-  int k_divide;                     ///< Dimension along which cell is split
+  //int k_divide;                     ///< Dimension along which cell is split
   int level;                        ///< Level of cell on tree
   int ifirst;                       ///< i.d. of first particle in cell
   int ilast;                        ///< i.d. of last particle in cell
@@ -83,10 +84,6 @@ struct OctTreeCell {
 #endif
 };
 
-
-
-
-static const int nfreq=1;
 
 
 //=================================================================================================
@@ -135,13 +132,11 @@ struct OsTreeRayCell : public TreeRayCell<ndim>
 
 
 
-
 //=================================================================================================
 //  Class OctTree
-/// \brief   Class containing binary tree
-/// \details Binary tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces
-/// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
+/// \brief   Class containing Barnes-Hut octal tree.
+/// \details Class containing Barnes-Hut octal tree.
+/// \author  D. A. Hubber
 /// \date    17/08/2014
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>

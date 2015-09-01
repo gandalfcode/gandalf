@@ -167,15 +167,12 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   int c;                               // Cell counter
   int cc;                              // Child cell counter
   int ckid;                            // ..
-  int clist[Noctchild];                // ..
   int cnew;                            // ..
   int ilast;                           // ..
   int i;                               // Particle counter
   int k;                               // Dimension counter
   int kk;                              // ..
   int Nlist;                           // ..
-  int Nincell[Noctchild];              // ..
-  int Nkids;                           // ..
   int *celllist;                       // ..
   int *whichChild;                     // ..
   FLOAT cellSize = (FLOAT) 0.0;        // Size of new cell (from centre to edge)
@@ -186,8 +183,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory();
 
-  //cout << "Building Oct-tree with " << Npart << " particles.   first/last : "
-  //     << _ifirst << "   " << _ilast << endl;
 
   // Set properties for root cell before constructing tree
   ifirst = _ifirst;
@@ -252,7 +247,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     while (!allDone) {
       cellSize *= (FLOAT) 0.5;
 
-      //cout << "Level : " << ltot << "      Ncell : " << Ncell << "     Nlist : " << Nlist << endl;
 
       // Loop over all unfinished cells to find new child cell occupancy
       //-------------------------------------------------------------------------------------------
@@ -270,7 +264,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
           celldata[cnew].level  = ltot + 1;
           for (kk=0; kk<ndim; kk++) celldata[cnew].bbmin[kk] = cell.bbmin[kk];
           for (kk=0; kk<ndim; kk++) celldata[cnew].bbmax[kk] = cell.bbmax[kk];
-
 
           // Assign positions of child cells
           if (k == 0 || k == 2 || k == 4 || k == 6) {
