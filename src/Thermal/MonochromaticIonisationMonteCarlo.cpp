@@ -139,7 +139,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 {
   bool converged;                      // Is radiation field converged?
   int c;                               // Cell counter
-  int i;                               // ..
+  //int i;                               // ..
   int it;                              // Iteration counter
   int k;                               // Dimension counter
   int level;                           // Level to walk tree on

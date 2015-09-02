@@ -291,6 +291,10 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
         activecount++;
       }
     }
+    if (part.level > 100) {
+      cout << "DT_NEIB PROBLEM : " << i << "   " << part.level << "   " << part.levelneib << endl;
+      exit(0);
+    }
   }
   //-----------------------------------------------------------------------------------------------
 

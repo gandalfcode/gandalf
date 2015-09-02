@@ -352,7 +352,7 @@ void Nbody<ndim>::CalculatePerturberForces
 template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
  (SystemParticle<ndim>* systemi,       ///< [inout] System to integrate the internal motionv for
-  const unsigned int n,                         ///< [in]    Integer time
+  const unsigned int n,                ///< [in]    Integer time
   const DOUBLE tstart,                 ///< [in]    Initial (local) simulation time
   const DOUBLE tend)                   ///< [in]    Final (current) simulation
 {
@@ -368,8 +368,8 @@ void Nbody<ndim>::IntegrateInternalMotion
   DOUBLE gpotext;                      // Grav. potential due to external sources
   DOUBLE tlocal=tstart;                // Local time counter
   DOUBLE tpert;                        // Time since beginning of step for perturbing stars
-  DOUBLE *apert;                       // Acceleration for perturbers
-  DOUBLE *adotpert;                    // Jerk for perturbers
+  DOUBLE *apert = 0;                   // Acceleration for perturbers
+  DOUBLE *adotpert = 0;                // Jerk for perturbers
   NbodyParticle<ndim>** children;      // Child systems
   NbodyParticle<ndim>* perturber = 0;  // Local array of perturber properties
   const int Nchildren = systemi->Nchildren;

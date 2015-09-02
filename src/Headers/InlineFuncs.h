@@ -239,10 +239,10 @@ static inline void InsertionSortIds
 //=============================================================================
 template <typename T>
 static inline void EulerAngleMatrix
-(T phi,
- T theta,
- T psi,
- T Arot[3][3])
+ (T phi,
+  T theta,
+  T psi,
+  T Arot[3][3])
 {
   Arot[0][0] = cos(theta)*cos(psi);
   Arot[1][0] = cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi);
@@ -265,10 +265,10 @@ static inline void EulerAngleMatrix
 //=============================================================================
 template <typename T>
 static inline void EulerAngleRotation
-(T phi,
- T theta,
- T psi,
- T vec[3])
+ (T phi,
+  T theta,
+  T psi,
+  T vec[3])
 {
   int k;
   T Arot[3][3];
@@ -278,8 +278,9 @@ static inline void EulerAngleRotation
 
   for (k=0; k<3; k++) vecaux[k] = vec[k];
 
-  for (k=0; k<3; k++)
+  for (k=0; k<3; k++) {
     vec[k] = Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
+  }
 
   cout << "rot angles : " << phi << "    " << theta << "    " << psi << endl;
   cout << "vec orig : " << vecaux[0] << "   " << vecaux[1] << "   " << vecaux[2] << endl;
@@ -296,11 +297,11 @@ static inline void EulerAngleRotation
 //=============================================================================
 template <typename T>
 static inline void EulerAngleArrayRotation
-(int N,
- T phi,
- T theta,
- T psi,
- T *vec)
+ (int N,
+  T phi,
+  T theta,
+  T psi,
+  T *vec)
 {
   int i;
   int k;
@@ -312,9 +313,9 @@ static inline void EulerAngleArrayRotation
   for (i=0; i<N; i++) {
     for (k=0; k<3; k++) vecaux[k] = vec[3*i + k];
 
-    for (k=0; k<3; k++)
-      vec[3*i + k] =
-	Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
+    for (k=0; k<3; k++) {
+      vec[3*i + k] = Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
+    }
 
   }
 
@@ -327,7 +328,8 @@ static inline void EulerAngleArrayRotation
 //  clamp
 //  ...
 //=============================================================================
-inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
+static inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
+{
   bool smaller = value < min;
   if (smaller) return min;
   bool bigger = value > max;
@@ -513,8 +515,8 @@ static inline FLOAT FractionalBoxOverlap
 //  ...
 //=============================================================================
 template <int ndim>
-inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
-
+inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
+{
   // Find the closest point to the circle within the rectangle
   FLOAT closest_coord[ndim];
   for (int i=0; i<ndim; i++) {
@@ -539,7 +541,8 @@ inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
 //  ..
 //=============================================================================
 template <int ndim, template<int> class Particle >
-inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box) {
+inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box)
+{
   for (int k=0; k<ndim; k++) {
     if (part.r[k] < box.boxmin[k] || part.r[k] > box.boxmax[k]) return false;
   }
@@ -587,6 +590,7 @@ inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
     i = values[j];
     if (!(i >= 0 && i < Nrange)) {
       cout << "i : " << i << "     Nrange : " << Nrange << "    N : " << N << endl;
+      delete[] counter;
       return false;
     }
     counter[i]++;
@@ -595,6 +599,7 @@ inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
   for (j=0; j<N; j++) {
     if (!(counter[i] == 0 || counter[i] == 1)) {
       cout << "Invalid counter : " << i << "    count : " << counter[i] << endl;
+      delete[] counter;
       return false;
     }
   }
@@ -605,5 +610,18 @@ inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
 }
 
 
+//=============================================================================
+//  ComputeTimestepLevel
+/// Check if two bounding boxes overlap.  If yes, then returns true.
+//=============================================================================
+static inline unsigned int ComputeTimestepLevel
+ (const DOUBLE dt,
+  const DOUBLE dt_max)
+{
+  assert(dt_max > 0.0);
+  assert(dt > 0.0);
+  int level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+  return (unsigned int) level;
+}
 
 #endif

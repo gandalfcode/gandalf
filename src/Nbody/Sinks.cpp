@@ -260,10 +260,9 @@ void Sinks<ndim>::CreateNewSinkParticle
   Hydrodynamics<ndim> *hydro,          ///< [inout] Object containing SPH ptcls
   Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
 {
-  int i;                               // SPH particle counter
   int k;                               // Dimension counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
+  //FLOAT dr[ndim];                      // Relative position vector
+  //FLOAT drsqd;                         // Distance squared
 
   debug2("[Sinks::CreateNewSinkParticle]");
 
@@ -320,7 +319,7 @@ void Sinks<ndim>::CreateNewSinkParticle
 
   // Calculate total mass inside sink (direct sum for now since this is not computed that often).
   /*sink[Nsink].mmax = (FLOAT) 0.0;
-  for (i=0; i<hydro->Nhydro; i++) {
+  for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (part.itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = sink[Nsink].star->r[k] - part.r[k];
@@ -414,7 +413,7 @@ void Sinks<ndim>::AccreteMassToSinks
     for (s=0; s<Nsink; s++) {
       for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
       drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= powf(sink[s].radius + sph->kernrange*part.h,2) && drsqd < rsqdmin) {
+      if (drsqd <= powf(sink[s].radius + hydro->kernrange*part.h,2) && drsqd < rsqdmin) {
 #if defined MPI_PARALLEL
         // If the sink is NOT local, then we should not accrete locally this SPH particle
         if (!ParticleInBox(*(sink[s].star), mydomain)) {

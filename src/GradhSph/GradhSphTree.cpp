@@ -703,7 +703,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     int *sphlist     = new int[Nneibmax];        // ..
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
-    unsigned int *levelneib   = levelneibbuf[ithread];       // ..
+    unsigned int *levelneib        = levelneibbuf[ithread];  // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread]; // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];   // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];       // ..
@@ -733,9 +733,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
+        activepart[j].levelneib = 0;
         activepart[j].div_v     = (FLOAT) 0.0;
         activepart[j].dudt      = (FLOAT) 0.0;
-        activepart[j].levelneib = 0;
         activepart[j].gpot      = activepart[j].m*activepart[j].invh*sph->kernp->wpot((FLOAT) 0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
@@ -830,8 +830,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
       // Compute all star forces for active particles belonging to this domain
       for (j=0; j<Nactive; j++) {
-        if ( activelist[j] < sph->Nhydro )
+        if (activelist[j] < sph->Nhydro) {
           sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+        }
       }
 
       // Add all active particles contributions to main array
@@ -853,6 +854,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 #pragma omp critical
     for (i=0; i<sph->Nhydro; i++) {
       sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+      if (sphdata[i].levelneib > 100) {
+        cout << "MEH?? : " << i << sphdata[i].levelneib << "   " << levelneib[i] << "   " << sphdata[i].level << endl;
+        exit(0);
+      }
     }
 
     // Free-up local memory for OpenMP thread
@@ -1129,7 +1134,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 /// Calculate the gravitational acceleration on all star particles due to
 /// all gas particles via the tree.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+/*template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
@@ -1205,7 +1210,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
       };
 
       // Compute contributions to star force from nearby SPH particles
-      nbody->CalculateDirectSPHForces(star, Nneib, Ndirect, neiblist, directlist, sph);
+      nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, sph);
 
       // Compute gravitational force due to distant cells
       if (multipole == "monopole" || multipole == "fast_monopole") {
@@ -1233,7 +1238,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
   //timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
 
   return;
-}
+}*/
 
 
 
@@ -1301,12 +1306,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
     FLOAT rp[ndim];                                // Local copy of particle position
     int Nneibmax      = Nneibmaxbuf[ithread];      // ..
     int* activelist   = activelistbuf[ithread];    // ..
-    int* levelneib    = levelneibbuf[ithread];     // ..
     int* neiblist     = new int[Nneibmax];         // ..
     int* sphlist      = new int[Nneibmax];         // ..
     FLOAT* dr         = new FLOAT[Nneibmax*ndim];  // ..
     FLOAT* drmag      = new FLOAT[Nneibmax];       // ..
     FLOAT* invdrmag   = new FLOAT[Nneibmax];       //..
+    unsigned int* levelneib        = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
 
@@ -1441,7 +1446,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
 
     // Finally, add all contributions from distant pair-wise forces to arrays
 #pragma omp critical
-    for (i=0; i<sph->Nhydro; i++) sphdata[i].levelneib = max(sphdata[i].levelneib,levelneib[i]);
+    for (i=0; i<sph->Nhydro; i++) sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
 
 
     // Free-up local memory for OpenMP thread

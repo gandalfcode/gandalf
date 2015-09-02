@@ -115,6 +115,15 @@ DOUBLE SphIntegration<ndim>::Timestep
   //adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
   //timestep = min(timestep, accel_mult*amag/(adotmag + small_number_dp));
 
+  if (timestep > 1.0e20) {
+    cout << "Timestep problem : " << timestep << "   " << amag << "   " << part.h << "    "
+         << part.sound << "    " << part.h*fabs(part.div_v) << endl;
+    exit(0);
+  }
+
+  assert(!(isnan(amag)) && !(isinf(amag)));
+  assert(!(isnan(timestep)) && !(isinf(timestep)));
+
   return timestep;
 }
 

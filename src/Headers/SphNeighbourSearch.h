@@ -316,7 +316,7 @@ protected:
 /// \date    08/01/2014
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
+class GradhSphTree : public SphTree<ndim,ParticleType,TreeCell>
 {
  public:
 
@@ -362,7 +362,7 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                        Nbody<ndim> *, DomainBox<ndim> &);
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,

@@ -51,18 +51,10 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
                                              string gravity_mac_aux, string multipole_aux) :
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
                                    macerroraux, gravity_mac_aux, multipole_aux)
-  /*gravity_mac(gravity_mac_aux),
-  multipole(multipole_aux),
-  Nleafmax(Nleafmaxaux),
-  invthetamaxsqd(1.0/thetamaxsqdaux),
-  kernrange(kernrangeaux),
-  macerror(macerroraux),
-  theta(sqrt(thetamaxsqdaux)),
-  thetamaxsqd(thetamaxsqdaux)*/
 {
   allocated_tree = false;
   ltot           = 0;
-  lmax           = 5;
+  lmax           = 40;
   Ncell          = 0;
   Ncellmax       = 0;
   Ntot           = 0;
@@ -105,15 +97,14 @@ void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 
   if (!allocated_tree || Ntotmax > Ntotmaxold || Ncell > Ncellmax) {
     if (allocated_tree) DeallocateTreeMemory();
-    Ntotmax = max(Ntotmax,Ntot);
+    Ntotmax    = max(Ntotmax,Ntot);
     Ntotmaxold = Ntotmax;
-    Ncellmax = max((int) ((FLOAT) 1.5*(FLOAT) Ncellmax), 2*Ntotmax);
+    Ncellmax   = max((int) ((FLOAT) 1.5*(FLOAT) Ncellmax), 2*Ntotmax);
     gmax = Ntotmax;
     gtot = Ntotmax;
 
     firstCell = new int[lmax];
     lastCell  = new int[lmax];
-    g2c       = new int[gmax];
     ids       = new int[Ntotmax];
     inext     = new int[Ntotmax];
     celldata  = new struct TreeCell<ndim>[Ncellmax];
@@ -139,7 +130,6 @@ void OctTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
     delete[] celldata;
     delete[] inext;
     delete[] ids;
-    delete[] g2c;
     delete[] lastCell;
     delete[] firstCell;
     allocated_tree = false;
@@ -219,11 +209,12 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     for (k=0; k<ndim; k++) celldata[0].bbmax[k] = max(celldata[0].bbmax[k], partdata[i].r[k]);
   }
   for (k=0; k<ndim; k++) {
-    celldata[0].rcell[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
-    //celldata[0].r[k] = (FLOAT) 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
+    //celldata[0].rcell[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
+    celldata[0].r[k] = (FLOAT) 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
     cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].rcell[k]);
+    cout << "Bounding box[" << k << "] : " << celldata[0].bbmin[k] << "   " << celldata[0].bbmax[k] << endl;
   }
-  rootCellSize = 2.0*cellSize;
+  rootCellSize = (FLOAT) 2.0*cellSize;
 
 
   // Build tree if there are any particles
@@ -246,6 +237,10 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     //---------------------------------------------------------------------------------------------
     while (!allDone) {
       cellSize *= (FLOAT) 0.5;
+
+      cout << "LEVEL : " << ltot << "   " << lmax << "    " << Nlist << "   "
+           << Npart << "     Nleafmax : " << Nleafmax << "    " << celldata[celllist[0]].N
+           << "    cellsize : " << cellSize << endl;
 
 
       // Loop over all unfinished cells to find new child cell occupancy
@@ -347,7 +342,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
       //-------------------------------------------------------------------------------------------
 
 
-
       // Record first and last cells in newly created level
       Ncell += Noctchild*Nlist;
       ltot++;
@@ -405,7 +399,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   ParticleType<ndim> *partdata)        ///< SPH particle data array
 {
   int c,cc;                            // Cell counters
-  int cfirst,cend;                     // ..
+  int cend;                            // ..
   int i;                               // Particle counter
   int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
@@ -419,7 +413,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   debug2("[OctTree::StockTree]");
 
 
-  // Loop over all levels in tree starting from lowest
+  // Loop over all levels in tree starting from lowest up to the top root cell level.
   //===============================================================================================
   for (l=ltot; l>=0; l--) {
 
@@ -538,12 +532,9 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       else {
 
         // Set limits for children (maximum of 8 but may be less)
-        cfirst = cell.copen;
-        cend   = cell.cnext;
+        cc   = cell.copen;
+        cend = cell.cnext;
 
-        //cout << "c : " << cfirst << "   " << cend << endl;
-
-        cc = cfirst;
         while (cc != cend) {
           TreeCell<ndim> &child = celldata[cc];
 
@@ -574,10 +565,9 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 #endif
 
         // Set limits for children (maximum of 8 but may be less)
-        cfirst = cell.copen;
-        cend   = cell.cnext;
+        cc   = cell.copen;
+        cend = cell.cnext;
 
-        cc = cfirst;
         while (cc != cend) {
           TreeCell<ndim> &child = celldata[cc];
 
@@ -910,23 +900,6 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
   return;
 }
 #endif
-
-
-/*template class Tree<1,Particle,OctTreeCell>;
-template class Tree<2,Particle,OctTreeCell>;
-template class Tree<3,Particle,OctTreeCell>;
-template class Tree<1,SphParticle,OctTreeCell>;
-template class Tree<2,SphParticle,OctTreeCell>;
-template class Tree<3,SphParticle,OctTreeCell>;
-template class Tree<1,GradhSphParticle,OctTreeCell>;
-template class Tree<2,GradhSphParticle,OctTreeCell>;
-template class Tree<3,GradhSphParticle,OctTreeCell>;
-template class Tree<1,SM2012SphParticle,OctTreeCell>;
-template class Tree<2,SM2012SphParticle,OctTreeCell>;
-template class Tree<3,SM2012SphParticle,OctTreeCell>;
-template class Tree<1,MeshlessFVParticle,OctTreeCell>;
-template class Tree<2,MeshlessFVParticle,OctTreeCell>;
-template class Tree<3,MeshlessFVParticle,OctTreeCell>;*/
 
 
 
