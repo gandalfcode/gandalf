@@ -296,7 +296,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 #endif
         };
 
-
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j        = neiblist[jj];
@@ -304,7 +303,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
           m[jj]    = sphdata[j].m;
           for (k=0; k<ndim; k++) r[ndim*jj + k] = sphdata[j].r[k];
         }
-
 
         // Loop over all active particles in the cell
         //-----------------------------------------------------------------------------------------
@@ -462,12 +460,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     FLOAT rp[ndim];                              // Local copy of particle position
     int Nneibmax    = Nneibmaxbuf[ithread];      // ..
     int* activelist = activelistbuf[ithread];    // ..
+    int* levelneib  = levelneibbuf[ithread];     // ..
     int* neiblist   = new int[Nneibmax];         // ..
     int* sphlist    = new int[Nneibmax];         // ..
     FLOAT* dr       = new FLOAT[Nneibmax*ndim];  // ..
     FLOAT* drmag    = new FLOAT[Nneibmax];       // ..
     FLOAT* invdrmag = new FLOAT[Nneibmax];       //..
-    unsigned int* levelneib  = levelneibbuf[ithread];        // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread]; // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];   // ..
 
@@ -703,7 +701,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     int *sphlist     = new int[Nneibmax];        // ..
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
-    unsigned int *levelneib        = levelneibbuf[ithread];  // ..
+    int *levelneib        = levelneibbuf[ithread];  // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread]; // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];   // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];       // ..
@@ -957,7 +955,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     int *sphauxlist   = new int[Nneibmax];
     int* directlist   = new int[Nneibmax];
     int* activelist   = activelistbuf[ithread];
-    unsigned int* levelneib        = levelneibbuf[ithread];
+    int* levelneib        = levelneibbuf[ithread];
     ParticleType<ndim>* activepart = activepartbuf[ithread];
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];
     TreeCell<ndim>* gravcell       = cellbuf[ithread];
@@ -1285,7 +1283,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,nbody,sph,sphdata)
+#pragma omp parallel default(none) shared(cactive,celllist,nbody,simbox,sph,sphdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -1299,19 +1297,19 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
     int k;                                         // Dimension counter
     int Nactive;                                   // ..
     int Nneib;                                     // ..
-    int Nhydroaux;                                   // ..
+    int Nhydroaux;                                 // ..
     FLOAT draux[ndim];                             // Aux. relative position vector
     FLOAT drsqd;                                   // Distance squared
     FLOAT hrangesqdi;                              // Kernel gather extent
     FLOAT rp[ndim];                                // Local copy of particle position
     int Nneibmax      = Nneibmaxbuf[ithread];      // ..
     int* activelist   = activelistbuf[ithread];    // ..
+    int* levelneib    = levelneibbuf[ithread];     // ..
     int* neiblist     = new int[Nneibmax];         // ..
     int* sphlist      = new int[Nneibmax];         // ..
     FLOAT* dr         = new FLOAT[Nneibmax*ndim];  // ..
     FLOAT* drmag      = new FLOAT[Nneibmax];       // ..
     FLOAT* invdrmag   = new FLOAT[Nneibmax];       //..
-    unsigned int* levelneib        = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
 
@@ -1549,7 +1547,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
     int *sphlist     = new int[Nneibmax];        // ..
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
-    unsigned int *levelneib        = levelneibbuf[ithread];    // ..
+    int *levelneib        = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
@@ -1803,7 +1801,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
     int *sphlist     = new int[Nneibmax];        // ..
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
-    unsigned int *levelneib        = levelneibbuf[ithread];    // ..
+    int *levelneib        = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..

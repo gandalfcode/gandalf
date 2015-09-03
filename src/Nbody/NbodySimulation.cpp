@@ -451,14 +451,14 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                                     // Particle counter
   int istep;                                 // Aux. variable for changing steps
-  unsigned int level;                        // Particle timestep level
-  unsigned int last_level;                   // Previous timestep level
-  unsigned int level_max_aux;                // Aux. maximum level variable
-  unsigned int level_max_old;                // Old level_max
-  unsigned int level_max_nbody = 0;          // level_max for star particles only
-  unsigned int level_nbody;                  // local thread var. for N-body level
-  unsigned int nfactor;                      // Increase/decrease factor of n
-  unsigned int nstep;                        // Particle integer step-size
+  int level;                        // Particle timestep level
+  int last_level;                   // Previous timestep level
+  int level_max_aux;                // Aux. maximum level variable
+  int level_max_old;                // Old level_max
+  int level_max_nbody = 0;          // level_max for star particles only
+  int level_nbody;                  // local thread var. for N-body level
+  int nfactor;                      // Increase/decrease factor of n
+  int nstep;                        // Particle integer step-size
   DOUBLE dt;                                 // Aux. timestep variable
   DOUBLE dt_min = big_number_dp;             // Minimum timestep
   DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
@@ -505,7 +505,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
     dt_max = timestep*powf(2.0,level_max);
 
     // Calculate the maximum level occupied by all SPH particles
-    level_max_nbody = min((unsigned int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1u, level_max);
+    level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, level_max);
 
     // Populate timestep levels with N-body particles.
     // Ensures that N-body particles occupy levels lower than all SPH particles
@@ -518,8 +518,8 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
       }
       else {
         dt = nbody->nbodydata[i]->dt;
-        level = min((unsigned int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
-        level = max(level, 0u);
+        level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
+        level = max(level, 0);
         nbody->nbodydata[i]->level = level;
         nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
       }

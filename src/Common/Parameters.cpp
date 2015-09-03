@@ -129,10 +129,10 @@ void Parameters::ParseLine
   // First, trim all white space from line
   paramline = TrimWhiteSpace(paramline);
 
-  unsigned int colon_pos = paramline.find(':'); // Position of colon in string
-  unsigned int equal_pos = paramline.find('='); // Position of equals in string
-  unsigned int hash_pos = paramline.find('#');  // Position of hash in string
-  unsigned int length = paramline.length();     // Length of string
+  int colon_pos = paramline.find(':'); // Position of colon in string
+  int equal_pos = paramline.find('='); // Position of equals in string
+  int hash_pos = paramline.find('#');  // Position of hash in string
+  int length = paramline.length();     // Length of string
 
   // Ignore line if it is a comment (i.e. begins with a hash character)
   if (hash_pos == 0) return;
@@ -590,7 +590,7 @@ void Parameters::RecordParametersToFile(void)
 std::string Parameters::TrimWhiteSpace
  (std::string instr)                   ///< [in] Input string to be trimmed
 {
-  unsigned int i;                      // Character counter
+  int i;                      // Character counter
   string outstr;                       // Final string without any whitespace
 
   // Loop over all characters and ignore any white-space characters

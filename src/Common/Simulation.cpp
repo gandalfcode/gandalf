@@ -315,7 +315,7 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 void SimulationBase::Run
  (int Nadvance)                        ///< [in] Selected max no. of timesteps (Optional argument)
 {
-  unsigned int Ntarget;                // Target step no before finishing main code integration.
+  int Ntarget;                // Target step no before finishing main code integration.
   //string filename;                     // Output snapshot filename
   //string filename2;                    // ..
   //stringstream ss;                     // Stream object for preparing filename
@@ -378,7 +378,7 @@ void SimulationBase::Run
 list<SphSnapshotBase*> SimulationBase::InteractiveRun
  (int Nadvance)                        ///< [in] Max no. of integer steps (Optional argument)
 {
-  unsigned int Ntarget;                // Selected integer timestep
+  int Ntarget;                // Selected integer timestep
   DOUBLE tdiff = 0.0;                  // Measured time difference
   clock_t tstart = clock();            // Initial CPU clock time
   string filename;                     // Name of the output file

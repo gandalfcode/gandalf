@@ -515,7 +515,7 @@ static inline FLOAT FractionalBoxOverlap
 //  ...
 //=============================================================================
 template <int ndim>
-inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
+static inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
 {
   // Find the closest point to the circle within the rectangle
   FLOAT closest_coord[ndim];
@@ -541,7 +541,7 @@ inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
 //  ..
 //=============================================================================
 template <int ndim, template<int> class Particle >
-inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box)
+static inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box)
 {
   for (int k=0; k<ndim; k++) {
     if (part.r[k] < box.boxmin[k] || part.r[k] > box.boxmax[k]) return false;
@@ -556,7 +556,7 @@ inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box)
 /// Given a vector of counts, compute the displacement of the elements and save it
 /// in displs
 //=============================================================================
-inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) {
+static inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) {
 
   const int size = displs.size();
 
@@ -580,7 +580,7 @@ inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) 
 //  VerifyUniqueIds
 /// ...
 //=============================================================================
-inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
+static inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
 {
   int i,j;
   int *counter = new int[Nrange];
@@ -614,14 +614,14 @@ inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
 //  ComputeTimestepLevel
 /// Check if two bounding boxes overlap.  If yes, then returns true.
 //=============================================================================
-static inline unsigned int ComputeTimestepLevel
+static inline int ComputeTimestepLevel
  (const DOUBLE dt,
   const DOUBLE dt_max)
 {
   assert(dt_max > 0.0);
   assert(dt > 0.0);
   int level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
-  return (unsigned int) level;
+  return (int) level;
 }
 
 #endif

@@ -352,7 +352,7 @@ void Nbody<ndim>::CalculatePerturberForces
 template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
  (SystemParticle<ndim>* systemi,       ///< [inout] System to integrate the internal motionv for
-  const unsigned int n,                ///< [in]    Integer time
+  const int n,                ///< [in]    Integer time
   const DOUBLE tstart,                 ///< [in]    Initial (local) simulation time
   const DOUBLE tend)                   ///< [in]    Final (current) simulation
 {
@@ -360,7 +360,7 @@ void Nbody<ndim>::IntegrateInternalMotion
   int it;                              // Iteration counter
   int k;                               // Dimension counter
   //int Nstar;                           // Total no. of stars
-  unsigned int nsteps_local=0;         // Local no. of steps
+  int nsteps_local=0;         // Local no. of steps
   DOUBLE aext[ndim];                   // Acceleration due to external stars
   DOUBLE adotext[ndim];                // Jerk due to external stars
   DOUBLE a2dotext[ndim];               // Snap due to external stars

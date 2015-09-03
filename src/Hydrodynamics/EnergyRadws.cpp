@@ -209,7 +209,7 @@ EnergyRadws<ndim,ParticleType>::~EnergyRadws()
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EnergyIntegration
- (const unsigned int n,                ///< [in] Integer time in block time struct
+ (const int n,                         ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
@@ -263,13 +263,13 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EndTimestep
- (const unsigned int n,                ///< [in] Integer time in block time struct
+ (const int n,                         ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
   Particle<ndim>* part_gen)            ///< [inout] Pointer to SPH particle array
 {
-  unsigned int dn;                     // Integer time since beginning of step
+  int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
   FLOAT temp;                          // ..
   //FLOAT dt_therm;                      // ..

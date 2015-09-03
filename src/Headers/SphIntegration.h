@@ -54,13 +54,13 @@ class SphIntegration
   SphIntegration(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphIntegration();
 
-  virtual void AdvanceParticles(const unsigned int, const int, const FLOAT,
+  virtual void AdvanceParticles(const int, const int, const FLOAT,
                                 const FLOAT, SphParticle<ndim> *) = 0;
-  virtual void CorrectionTerms(const unsigned int, const int, const FLOAT,
+  virtual void CorrectionTerms(const int, const int, const FLOAT,
                                const FLOAT, SphParticle<ndim> *) = 0;
-  virtual void EndTimestep(const unsigned int, const int, const FLOAT,
+  virtual void EndTimestep(const int, const int, const FLOAT,
                            const FLOAT, SphParticle<ndim> *) = 0;
-  virtual int CheckTimesteps(const unsigned int, const unsigned int, const unsigned int,
+  virtual int CheckTimesteps(const int, const int, const int,
                              const int, SphParticle<ndim> *) = 0;
   virtual DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
   virtual void CheckBoundaries(DomainBox<ndim> &, Sph<ndim> *);
@@ -99,11 +99,11 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
   SphLeapfrogKDK(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphLeapfrogKDK();
 
-  void AdvanceParticles(const unsigned int, const int, const FLOAT,
+  void AdvanceParticles(const int, const int, const FLOAT,
                         const FLOAT, SphParticle<ndim> *);
-  void CorrectionTerms(const unsigned int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  void EndTimestep(const unsigned int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  int CheckTimesteps(const unsigned int, const unsigned int, const unsigned int,
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  int CheckTimesteps(const int, const int, const int,
                      const int, SphParticle<ndim> *);
 
 };
@@ -131,10 +131,10 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
   SphLeapfrogDKD(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphLeapfrogDKD();
 
-  void AdvanceParticles(const unsigned int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  void CorrectionTerms(const unsigned int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
-  void EndTimestep(const unsigned int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  int CheckTimesteps(const unsigned int, const unsigned int, const unsigned int,
+  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  int CheckTimesteps(const int, const int, const int,
                      const int, SphParticle<ndim> *);
 
 };

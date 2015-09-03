@@ -464,7 +464,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
     FLOAT* dr       = new FLOAT[Nneibmax*ndim];    // ..
     FLOAT* drmag    = new FLOAT[Nneibmax];         // ..
     FLOAT* invdrmag = new FLOAT[Nneibmax];         // ..
-    unsigned int* levelneib        = levelneibbuf[ithread];    // ..
+    int* levelneib        = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
 
@@ -685,7 +685,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     FLOAT* dr         = new FLOAT[Nneibmax*ndim];            // ..
     FLOAT* drmag      = new FLOAT[Nneibmax];                 // ..
     FLOAT* invdrmag   = new FLOAT[Nneibmax];                 // ..
-    unsigned int* levelneib = levelneibbuf[ithread];         // ..
+    int* levelneib = levelneibbuf[ithread];         // ..
     FLOAT (*fluxBuffer)[ndim+2] = new FLOAT[Ntot][ndim+2];   // ..
     FLOAT (*rdmdtBuffer)[ndim] = new FLOAT[Ntot][ndim];      // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread]; // ..
@@ -939,7 +939,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     int *mfvauxlist                = new int[Nneibmax];
     int* directlist                = new int[Nneibmax];
     int* activelist                = activelistbuf[ithread];
-    unsigned int* levelneib        = levelneibbuf[ithread];
+    int* levelneib        = levelneibbuf[ithread];
     ParticleType<ndim>* activepart = activepartbuf[ithread];
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];
     TreeCell<ndim>* gravcell       = cellbuf[ithread];

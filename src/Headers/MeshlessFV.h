@@ -139,7 +139,7 @@ public:
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &);
   void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
-  void EndTimestep(const unsigned int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
 
 
   // Functions needed to hide some implementation details

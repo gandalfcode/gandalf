@@ -528,11 +528,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
 //=================================================================================================
 //  Tree::ComputePeriodicGravityInteractionList
-/// Computes and returns number of SPH neighbours (Nneib), direct sum particles (Ndirect) and
-/// number of cells (Ngravcell), including lists of ids, from the gravity tree walk for active
-/// particles inside cell c.  Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
-/// overflow, return with error code (-1) to reallocate more memory.
+/// Computes and returns number of SPH neighbours (Nneib), including lists of ids, from the
+/// tree walk for all active particles inside cell c.  If the interaction list array overflows,
+/// returns with error code (-1) to reallocate more memory.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicNeighbourList

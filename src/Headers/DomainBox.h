@@ -135,7 +135,7 @@ inline boundaryEnum setBoundaryType(string boundaryString)
 //=================================================================================================
 /// \brief  Helper function to say if a value is contained inside an interval
 //=================================================================================================
-inline bool valueInRange(FLOAT value, FLOAT min, FLOAT max)
+static inline bool valueInRange(const FLOAT value, const FLOAT min, const FLOAT max)
 {
   return (value >= min) && (value <= max);
 }
@@ -149,7 +149,7 @@ inline bool valueInRange(FLOAT value, FLOAT min, FLOAT max)
 /// \return A boolean saying whether the boxes overlap
 //=================================================================================================
 template <int ndim>
-inline bool BoxesOverlap (Box<ndim>& A, Box<ndim>& B)
+static inline bool BoxesOverlap (const Box<ndim>& A, const Box<ndim>& B)
 {
   bool coord_overlap[ndim];
 
@@ -176,14 +176,20 @@ inline bool BoxesOverlap (Box<ndim>& A, Box<ndim>& B)
 /// \return A boolean saying whether the boxes overlap
 //=================================================================================================
 template <int ndim>
-inline void NearestPeriodicVector(const DomainBox<ndim> &box, FLOAT dr[ndim], FLOAT dr_corr[ndim])
+static inline void NearestPeriodicVector
+ (const DomainBox<ndim> &box,
+  FLOAT dr[ndim],
+  FLOAT dr_corr[ndim])
 {
   for (int k=0; k<ndim; k++) dr_corr[k] = 0.0;
-  if (box.boundary_lhs[0] == periodicBoundary && box.boundary_rhs[0] == periodicBoundary) {
-    if (dr[0] > box.boxhalf[0]) dr_corr[0] = -box.boxsize[0];
-    else if (dr[0] < -box.boxhalf[0]) dr_corr[0] = box.boxsize[0];
+  for (int k=0; k<ndim; k++) {
+    if (box.boundary_lhs[k] == periodicBoundary && box.boundary_rhs[k] == periodicBoundary) {
+      if (dr[k] > box.boxhalf[k]) dr_corr[k] = -box.boxsize[k];
+      else if (dr[k] < -box.boxhalf[k]) dr_corr[k] = box.boxsize[k];
+    }
   }
-  if (ndim > 1) {
+  for (int k=0; k<ndim; k++) dr[k] += dr_corr[k];
+  /*if (ndim == 2 || ndim == 3) {
     if (box.boundary_lhs[1] == periodicBoundary && box.boundary_rhs[1] == periodicBoundary) {
       if (dr[1] > box.boxhalf[1]) dr_corr[1] = -box.boxsize[1];
       else if (dr[1] < -box.boxhalf[1]) dr_corr[1] = box.boxsize[1];
@@ -194,9 +200,9 @@ inline void NearestPeriodicVector(const DomainBox<ndim> &box, FLOAT dr[ndim], FL
       if (dr[2] > box.boxhalf[2]) dr_corr[2] = -box.boxsize[2];
       else if (dr[2] < -box.boxhalf[2]) dr_corr[2] = box.boxsize[2];
     }
-  }
-  for (int k=0; k<ndim; k++) dr[k] += dr_corr[k];
+  }*/
 
+  return;
 }
 
 

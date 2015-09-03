@@ -50,7 +50,7 @@ using namespace std;
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::BuildTree
  (const bool rebuild_tree,             ///< [in] Flag to rebuild tree
-  const unsigned int n,                ///< [in] Integer time
+  const int n,                ///< [in] Integer time
   const int ntreebuildstep,            ///< [in] Tree build frequency
   const int ntreestockstep,            ///< [in] Tree stocking frequency
   const int Npart,                     ///< [in] No. of particles

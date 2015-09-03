@@ -725,20 +725,18 @@ template <int ndim>
 void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                                     // Particle counter
-  //int imin;                                  // i.d. of ptcl with minimum timestep
-  //int imin_aux;                              // ..
-  unsigned int istep;                        // Aux. variable for changing steps
-  unsigned int last_level;                   // Previous timestep level
-  unsigned int level;                        // Particle timestep level
-  unsigned int level_max_aux;                // Aux. maximum level variable
-  unsigned int level_max_nbody = 0;          // level_max for star particles only
-  unsigned int level_max_old = level_max;    // Old level_max
-  unsigned int level_max_hydro = 0;          // level_max for SPH particles only
-  unsigned int level_min_hydro = 9999999;    // level_min for SPH particles
-  //unsigned int level_nbody;                // local thread var. for N-body level
-  unsigned int level_hydro;                  // local thread var. for SPH level
-  unsigned int nfactor;                      // Increase/decrease factor of n
-  unsigned int nstep;                        // Particle integer step-size
+  int istep;                                 // Aux. variable for changing steps
+  int last_level;                            // Previous timestep level
+  int level;                                 // Particle timestep level
+  int level_max_aux;                         // Aux. maximum level variable
+  int level_max_nbody = 0;                   // level_max for star particles only
+  int level_max_old = level_max;             // Old level_max
+  int level_max_hydro = 0;                   // level_max for SPH particles only
+  int level_min_hydro = 9999999;             // level_min for SPH particles
+  //int level_nbody;                         // local thread var. for N-body level
+  int level_hydro;                           // local thread var. for SPH level
+  int nfactor;                               // Increase/decrease factor of n
+  int nstep;                                 // Particle integer step-size
   DOUBLE dt;                                 // Aux. timestep variable
   DOUBLE dt_min = big_number_dp;             // Minimum timestep
   DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
@@ -760,7 +758,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     n = 0;
     timestep = big_number_dp;
 
-#pragma omp parallel default(none) shared(imin) private(dt,dt_min_aux,dt_nbody,dt_hydro,i,imin_aux)
+#pragma omp parallel default(none) private(dt,dt_min_aux,dt_nbody,dt_hydro,i)
     {
       // Initialise all timestep and min/max variables
       dt_min_aux = big_number_dp;
@@ -772,8 +770,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.itype == dead) continue;
-        dt = mfv->Timestep(part);
-        //if (dt < dt_hydro) imin_aux = i;
+        dt         = mfv->Timestep(part);
         dt_min_aux = min(dt_min_aux, dt);
         dt_hydro   = min(dt_hydro, dt);
         part.dt    = dt;
@@ -790,7 +787,6 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
 #pragma omp critical
       {
-        //if (dt_min_aux < timestep) imin = imin_aux;
         timestep     = min(timestep, dt_min_aux);
         dt_min_hydro = min(dt_min_hydro, dt_hydro);
         dt_min_nbody = min(dt_min_nbody, dt_nbody);
@@ -816,7 +812,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     dt_max     = timestep*powf(2.0,level_max);
 
     // Calculate the maximum level occupied by all SPH particles
-    level_max_hydro   = min((unsigned int) (invlogetwo*log(dt_max/dt_min_hydro)) + 1u, level_max);
+    level_max_hydro   = min((int) (invlogetwo*log(dt_max/dt_min_hydro)) + 1, level_max);
     /*level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, level_max);
 
     // Populate timestep levels with N-body particles.
@@ -863,8 +859,8 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.itype == dead) continue;
         dt              = part.dt;
-        level           = min((unsigned int) (invlogetwo*log(dt_max/dt)) + 1u, level_max);
-        level           = max(level, 0u);
+        level           = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
+        level           = max(level, 0);
         part.active     = true;
         part.level      = level;
         part.levelneib  = level;
@@ -876,7 +872,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     }
 
     nresync = pow(2,level_step);
-    assert(nresync > 0u);
+    assert(nresync > 0);
     timestep = dt_max / (DOUBLE) nresync;
 
   }
@@ -890,9 +886,9 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max_hydro = 0;
 
 
-#pragma omp parallel default(none) private(dt,dt_nbody,dt_hydro,i,imin_aux) \
-  private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor) \
-  shared(dt_min,imin,level_max_nbody,level_max_hydro,level_min_hydro)
+#pragma omp parallel default(none) private(dt,dt_nbody,dt_hydro,i) \
+  private(istep,last_level,level,level_max_aux,level_hydro,nstep,nfactor) \
+  shared(dt_min,level_max_nbody,level_max_hydro,level_min_hydro)
     {
       dt_hydro      = big_number_dp;
       dt_nbody      = big_number_dp;
@@ -912,7 +908,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
         // SPH particles whose timestep has been artificially reduced by Saitoh & Makino scheme.
         if (part.nlast == n && part.nstep != pow(2, level_step - part.level)) {
           dt    = mfv->Timestep(part);
-          level = max((unsigned int) (invlogetwo*log(dt_max/dt)) + 1u, 0u);
+          level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
           level = max(level, part.levelneib - level_diff_max);
 
           part.active    = true;
@@ -930,7 +926,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
           // Compute new timestep value and level number
           dt    = mfv->Timestep(part);
-          level = max((unsigned int) (invlogetwo*log(dt_max/dt)) + 1u, 0u);
+          level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
           level = max(level, part.levelneib - level_diff_max);
 
           // Move up one level (if levels are correctly synchronised) or
@@ -951,8 +947,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
         }
 
         // Find maximum level of all SPH particles
-        level_hydro = max(level_hydro,part.level);
-        //if (part.dt < dt_hydro) imin_aux = i;
+        level_hydro   = max(level_hydro,part.level);
         level_max_aux = max(level_max_aux,part.level);
 
         dt_hydro = min(dt_hydro,part.dt);
@@ -962,10 +957,9 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
 #pragma omp critical
       {
-        //if (dt_hydro < dt_min_hydro) imin = imin_aux;
-        dt_min        = min(dt_min,dt_hydro);
+        dt_min          = min(dt_min,dt_hydro);
         dt_min_hydro    = min(dt_min_hydro,dt_hydro);
-        level_max     = max(level_max,level_max_aux);
+        level_max       = max(level_max,level_max_aux);
         level_max_hydro = max(level_max_hydro,level_hydro);
       }
 #pragma omp barrier
@@ -1175,11 +1169,11 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   }
   cout << "No. of active Hydro particles : " << Nactive << endl;
   cout << "Hydro level occupancy" << endl;
-  for (unsigned int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
-  for (unsigned int l=0; l<=level_max; l++) ninlevel[l] = 0;
+  for (int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
+  for (int l=0; l<=level_max; l++) ninlevel[l] = 0;
   for (i=0; i<nbody->Nstar; i++) ninlevel[nbody->nbodydata[i]->level]++;
   cout << "N-body level occupancy" << endl;
-  for (unsigned int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
+  for (int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
 
   delete[] ninlevel;
 

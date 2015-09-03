@@ -73,14 +73,14 @@ SphLeapfrogDKD<ndim, ParticleType>::~SphLeapfrogDKD()
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
- (const unsigned int n,                ///< [in] Integer time in block time struct
+ (const int n,                         ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
   SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
 {
-  unsigned int dn;                     // Integer time since beginning of step
-  unsigned int nstep;                  // Particle (integer) step size
+  int dn;                              // Integer time since beginning of step
+  int nstep;                           // Particle (integer) step size
   int i;                               // Particle counter
   int k;                               // Dimension counter
   FLOAT dt;                            // Timestep since start of step
@@ -144,14 +144,14 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
- (const unsigned int n,                ///< [in] Integer time in block time struct
+ (const int n,                         ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
   SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
 {
-  unsigned int dn;                     // Integer time since beginning of step
-  unsigned  int nstep;                 // Particle (integer) step size
+  int dn;                              // Integer time since beginning of step
+  int nstep;                           // Particle (integer) step size
   int i;                               // Particle counter
   int k;                               // Dimension counter
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
@@ -196,15 +196,15 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
- (const unsigned int level_diff_max,   ///< [in] Max. allowed SPH neib dt diff
-  const unsigned int level_step,       ///< [in] Level of base timestep
-  const unsigned int n,                ///< [in] Integer time in block time struct
+ (const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
+  const int level_step,                ///< [in] Level of base timestep
+  const int n,                         ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
 {
-  unsigned int dn;                     // Integer time since beginning of step
-  unsigned int level_new;              // New timestep level
-  unsigned int nnewstep;               // New integer timestep
+  int dn;                              // Integer time since beginning of step
+  int level_new;                       // New timestep level
+  int nnewstep;                        // New integer timestep
   int activecount = 0;                 // No. of newly active particles
   int i;                               // Particle counter
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);

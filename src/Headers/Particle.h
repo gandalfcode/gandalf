@@ -58,10 +58,10 @@ struct Particle
   int iorig;                        ///< Original particle i.d.
   int itype;                        ///< SPH particle type
   int sinkid;                       ///< i.d. of sink particle
-  unsigned int levelneib;           ///< Min. timestep level of neighbours
-  unsigned int nstep;               ///< Integer step-size of particle
-  unsigned int nlast;               ///< Integer time at beginning of step
-  unsigned int level;               ///< Current timestep level of particle
+  int levelneib;           ///< Min. timestep level of neighbours
+  int nstep;               ///< Integer step-size of particle
+  int nlast;               ///< Integer time at beginning of step
+  int level;               ///< Current timestep level of particle
   FLOAT r[ndim];                    ///< Position
   FLOAT v[ndim];                    ///< Velocity
   FLOAT a[ndim];                    ///< Total acceleration

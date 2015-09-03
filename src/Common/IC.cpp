@@ -97,7 +97,7 @@ void Ic<ndim>::BinaryAccretion(void)
 {
   // Only compile for 2 or 3 dimensions
   //-----------------------------------------------------------------------------------------------
-  if (ndim == 2 | ndim == 3) {
+  if (ndim == 2 || ndim == 3) {
 
     int i;                               // Particle counter
     int j;                               // Aux. particle counter
@@ -119,30 +119,30 @@ void Ic<ndim>::BinaryAccretion(void)
     FLOAT *r2;                           // Positions for particles in fluid 2
     DomainBox<ndim> box1;                // Bounding box for fluid 1
     DomainBox<ndim> box2;                // Bounding box for fluid 2
-    Nbody<ndim>* nbody = sim->nbody;
-    Sinks<ndim>& sinks = sim->sinks;
+    Nbody<ndim>* nbody = sim->nbody;     // Pointer to Nbody object
+    Sinks<ndim>& sinks = sim->sinks;     // Point to Sinks object
 
     // Create local copies of initial conditions parameters
-    int Nstar       = simparams->intparams["Nstar"];
-    FLOAT abin      = simparams->floatparams["abin"];
-    FLOAT ebin      = simparams->floatparams["ebin"];
-    FLOAT phirot    = simparams->floatparams["phirot"];
-    FLOAT thetarot  = simparams->floatparams["thetarot"];
-    FLOAT psirot    = simparams->floatparams["psirot"];
-    FLOAT vmachbin  = simparams->floatparams["vmachbin"];
-    FLOAT m1        = simparams->floatparams["m1"];
-    FLOAT m2        = simparams->floatparams["m2"];
-    FLOAT gammaone  = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
-    FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
-    FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
-    FLOAT press1    = simparams->floatparams["press1"];
-    string particle_dist = simparams->stringparams["particle_distribution"];
-    Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
-    Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
-    Nlattice1[2] = simparams->intparams["Nlattice1[2]"];
-    Nlattice2[0] = simparams->intparams["Nlattice2[0]"];
-    Nlattice2[1] = simparams->intparams["Nlattice2[1]"];
-    Nlattice2[2] = simparams->intparams["Nlattice2[2]"];
+    int Nstar        = simparams->intparams["Nstar"];
+    FLOAT abin       = simparams->floatparams["abin"];
+    FLOAT ebin       = simparams->floatparams["ebin"];
+    FLOAT phirot     = simparams->floatparams["phirot"];
+    FLOAT thetarot   = simparams->floatparams["thetarot"];
+    FLOAT psirot     = simparams->floatparams["psirot"];
+    FLOAT vmachbin   = simparams->floatparams["vmachbin"];
+    FLOAT m1         = simparams->floatparams["m1"];
+    FLOAT m2         = simparams->floatparams["m2"];
+    FLOAT gammaone   = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+    FLOAT rhofluid1  = simparams->floatparams["rhofluid1"];
+    FLOAT rhofluid2  = simparams->floatparams["rhofluid2"];
+    FLOAT press1     = simparams->floatparams["press1"];
+    string part_dist = simparams->stringparams["particle_distribution"];
+    Nlattice1[0]     = simparams->intparams["Nlattice1[0]"];
+    Nlattice1[1]     = simparams->intparams["Nlattice1[1]"];
+    Nlattice1[2]     = simparams->intparams["Nlattice1[2]"];
+    Nlattice2[0]     = simparams->intparams["Nlattice2[0]"];
+    Nlattice2[1]     = simparams->intparams["Nlattice2[1]"];
+    Nlattice2[2]     = simparams->intparams["Nlattice2[2]"];
 
     debug2("[Ic::BinaryAccretion]");
 
@@ -209,13 +209,13 @@ void Ic<ndim>::BinaryAccretion(void)
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
       r1 = new FLOAT[ndim*Nbox1];
-      if (particle_dist == "random") {
+      if (part_dist == "random") {
         AddRandomBox(Nbox1,r1,box1);
       }
-      else if (particle_dist == "cubic_lattice") {
+      else if (part_dist == "cubic_lattice") {
         AddCubicLattice(Nbox1,Nlattice1,r1,box1,true);
       }
-      else if (particle_dist == "hexagonal_lattice") {
+      else if (part_dist == "hexagonal_lattice") {
         AddHexagonalLattice(Nbox1,Nlattice1,r1,box1,true);
       }
       else {
@@ -243,13 +243,13 @@ void Ic<ndim>::BinaryAccretion(void)
     //---------------------------------------------------------------------------------------------
     if (Nbox2 > 0) {
       r2 = new FLOAT[ndim*Nbox2];
-      if (particle_dist == "random") {
+      if (part_dist == "random") {
         AddRandomBox(Nbox2,r2,box2);
       }
-      else if (particle_dist == "cubic_lattice") {
+      else if (part_dist == "cubic_lattice") {
         AddCubicLattice(Nbox2,Nlattice2,r2,box2,true);
       }
-      else if (particle_dist == "hexagonal_lattice") {
+      else if (part_dist == "hexagonal_lattice") {
         AddHexagonalLattice(Nbox2,Nlattice2,r2,box2,true);
       }
       else {

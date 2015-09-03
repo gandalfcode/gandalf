@@ -9,7 +9,7 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = KHI2
-Select SPH simulation                       : sim = sph
+Select SPH simulation                       : sim = gradhsph
 Select Kelvin-Helmholtz initial conditions  : ic = khi
 Select 2D                                   : ndim = 2
 x-velocity of fluid 1                       : vfluid1[0] = -0.5
@@ -62,7 +62,6 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 #---------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
-SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = quintic
 SPH smoothing length iteration tolerance    : h_converge = 0.02
 
@@ -84,7 +83,6 @@ Slope limiter                               : slope_limiter = simple
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
 SPH energy equation timestep multiplier     : energy_mult = 0.5

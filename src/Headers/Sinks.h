@@ -138,11 +138,11 @@ class Sinks
   //-----------------------------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
-  void SearchForNewSinkParticles(const unsigned int, const FLOAT,
+  void SearchForNewSinkParticles(const int, const FLOAT,
                                  Hydrodynamics<ndim> *, Nbody<ndim> *);
   void CreateNewSinkParticle(const int, const FLOAT, Particle<ndim>&,
                              Hydrodynamics<ndim> *, Nbody<ndim> *);
-  void AccreteMassToSinks(const unsigned int, const DOUBLE, Hydrodynamics<ndim> *, Nbody<ndim> *);
+  void AccreteMassToSinks(const int, const DOUBLE, Hydrodynamics<ndim> *, Nbody<ndim> *);
 
 
   // Local class variables

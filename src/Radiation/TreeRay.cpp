@@ -252,7 +252,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateIntersectList(void)
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i1d,ins,iph,ith,rnode,theta)
+//#pragma omp parallel for default(none) private(i1d,ins,iph,ith,rnode,theta)
   for (int ith=0; ith<ilNTheta + 1; ith++) {
     theta = pi*(FLOAT) ith/(FLOAT) ilNTheta;
 
@@ -509,7 +509,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::AddRadiationSource
   // Write code to find leaf cell containing sink
 
 
-  
+
 
 
   return;

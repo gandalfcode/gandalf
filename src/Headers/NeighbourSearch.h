@@ -81,9 +81,9 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const unsigned int, const int, const int, const int,
+  virtual void BuildTree(const bool, const int, const int, const int, const int,
                          const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
-  virtual void BuildGhostTree(const bool, const unsigned int, const int, const int, const int,
+  virtual void BuildGhostTree(const bool, const int, const int, const int, const int,
                               const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *) {return -1;};
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) {};
@@ -165,9 +165,9 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const unsigned int, const int, const int, const int,
+  virtual void BuildTree(const bool, const int, const int, const int, const int,
                          const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void BuildGhostTree(const bool, const unsigned int, const int, const int, const int,
+  virtual void BuildGhostTree(const bool, const int, const int, const int, const int,
                               const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
@@ -240,9 +240,9 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const unsigned int, const int, const int, const int,
+  virtual void BuildTree(const bool, const int, const int, const int, const int,
                          const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void BuildGhostTree(const bool, const unsigned int, const int, const int, const int,
+  virtual void BuildGhostTree(const bool, const int, const int, const int, const int,
                               const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
@@ -319,7 +319,7 @@ protected:
   int *Nneibmaxbuf;                                ///< Size of neighbour buffers (for each thread)
   int *Ngravcellmaxbuf;                            ///< Size of tree-cell buffers (for each thread)
   int **activelistbuf;                             ///< Arrays of active particle ids
-  unsigned int **levelneibbuf;                     ///< Arrays of neighbour timestep levels
+  int **levelneibbuf;                     ///< Arrays of neighbour timestep levels
   ParticleType<ndim> **neibpartbuf;                ///< Local copy of neighbouring ptcls
   ParticleType<ndim> **activepartbuf;              ///< Local copy of SPH particle
   TreeCell<ndim> **cellbuf;                        ///< Buffers of tree-cell copies

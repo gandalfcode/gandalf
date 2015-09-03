@@ -293,7 +293,7 @@ N=N+nos;	 //Inreases N to accomidate sinks
 if (debug==1){
 gettimeofday(&end, NULL);
 
-delta = (((end.tv_sec  - start.tv_sec) * 1000000u +
+delta = (((end.tv_sec  - start.tv_sec) * 1000000 +
          end.tv_usec - start.tv_usec) / 1.e6)-delta;
 cout<<delta<<"s to ";
 cout<<"Starting"<<endl; //Debug message
@@ -441,7 +441,7 @@ for(jj=0;jj<nos;jj++)
 if (debug==1){
 gettimeofday(&end, NULL);
 
-delta = (((end.tv_sec  - start.tv_sec) * 1000000u +
+delta = (((end.tv_sec  - start.tv_sec) * 1000000 +
          end.tv_usec - start.tv_usec) / 1.e6)-delta;
 cout<<delta<<"s to ";
 cout<<"Particle arrays created"<<endl;
@@ -528,7 +528,7 @@ for (ii=0;ii<N;ii++) 				//Loop over all particles
 if (debug==1){
 gettimeofday(&end, NULL);
 
-delta = (((end.tv_sec  - start.tv_sec) * 1000000u +
+delta = (((end.tv_sec  - start.tv_sec) * 1000000 +
          end.tv_usec - start.tv_usec) / 1.e6)-delta;
 cout<<delta<<"s to ";
 cout<<"neigbour step one compleate"<<endl;
@@ -577,7 +577,7 @@ for (ii=0;ii<N;ii++) 				//Loop over all particles
 if (debug==1){
 gettimeofday(&end, NULL);
 
-delta = (((end.tv_sec  - start.tv_sec) * 1000000u +
+delta = (((end.tv_sec  - start.tv_sec) * 1000000 +
          end.tv_usec - start.tv_usec) / 1.e6)-delta;
 cout<<delta<<"s to ";
 cout<<"All neighbours found"<<endl; //Debug message
@@ -620,7 +620,7 @@ while (change!=0 or finalcheck==0)	//loop until no changes are made (We have con
 if (debug==1){
 gettimeofday(&end, NULL);
 
-delta = (((end.tv_sec  - start.tv_sec) * 1000000u +
+delta = (((end.tv_sec  - start.tv_sec) * 1000000 +
          end.tv_usec - start.tv_usec) / 1.e6)-delta;
 cout<<delta<<"s to ";
 cout<<"Iterations compleate"<<endl; //Debug message
@@ -665,7 +665,7 @@ for (ii=0;ii<N;ii++)								//For each particle
 if (debug==1){
 gettimeofday(&end, NULL);
 
-delta = (((end.tv_sec  - start.tv_sec) * 1000000u +
+delta = (((end.tv_sec  - start.tv_sec) * 1000000 +
          end.tv_usec - start.tv_usec) / 1.e6)-delta;
 
 cout<<delta<<"s to ";
@@ -747,7 +747,7 @@ delete [] ionisedsph;
 
 gettimeofday(&end, NULL);
 
-delta = ((end.tv_sec  - start.tv_sec) * 1000000u +
+delta = ((end.tv_sec  - start.tv_sec) * 1000000 +
          end.tv_usec - start.tv_usec) / 1.e6;
 cout<<"The time taken to calculate ionisation temperatures = "<<delta<<" s"<<endl;
 

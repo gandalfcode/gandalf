@@ -230,11 +230,19 @@ int GradhSph<ndim, kernelclass>::ComputeH
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
 
 
-  // If there are sink particles present, check if the particle is inside one
+  // If there are sink particles present, check if the particle is inside one.
+  // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
   if (parti.sinkid != -1) {
-    h_lower_bound = hmin_sink;
-    h_upper_bound = max(h_upper_bound, (FLOAT) 1.5*h_lower_bound);
+    h_lower_bound = nbody->stardata[parti.sinkid].h;  //hmin_sink;
+    if (hmax < hmin_sink) return -1;
   }
+
+  // Some basic sanity-checking in case of invalid input into routine
+  assert(Nneib > 0);
+  assert(hmax > (FLOAT) 0.0);
+  assert(parti.itype != dead);
+  assert(parti.m > (FLOAT) 0.0);
+
 
 
   // Main smoothing length iteration loop
@@ -270,10 +278,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
     if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
 
-    /*cout << "iteration : " << iteration << "      Checking h : " << parti.h << "   "
-         << h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim) << "    "
-         << h_lower_bound << "    " << h_upper_bound << "    rho : " << parti.rho
-         << "   m : " << parti.m << endl;*/
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
@@ -317,11 +321,12 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h         = max(h_fac*powf(parti.m*parti.invrho,Sph<ndim>::invndim), h_lower_bound);
+  parti.h         = max(h_fac*powf(parti.m*parti.invrho, Sph<ndim>::invndim), h_lower_bound);
   parti.invh      = (FLOAT) 1.0/parti.h;
-  parti.hfactor   = pow(parti.invh,ndim+1);
+  parti.hfactor   = pow(parti.invh, ndim+1);
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.div_v     = (FLOAT) 0.0;
+  assert(!(isinf(parti.h)) && !(isnan(parti.h)));
 
   // Calculate the minimum neighbour potential (used later to identify new sinks)
   if (create_sinks == 1) {
@@ -418,14 +423,17 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   FLOAT alpha_mean;                    // Mean articial viscosity alpha value
   FLOAT draux[ndim];                   // Relative position vector
   FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT wkerni;                        // Value of w1 kernel function
-  FLOAT wkernj;                        // Value of w1 kernel function
+  FLOAT wkerni;                        // Value of w1 kernel function for part i
+  FLOAT wkernj;                        // Value of w1 kernel function for neighbour j
   FLOAT vsignal;                       // Signal velocity
   FLOAT paux;                          // Aux. pressure force variable
   FLOAT winvrho;                       // 0.5*(wkerni + wkernj)*invrhomean
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
   GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
+  // Some basic sanity-checking in case of invalid input into routine
+  assert(Nneib > 0);
+  assert(parti.itype != dead);
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
@@ -455,14 +463,14 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
       // Artificial viscosity term
       if (avisc == mon97) {
-        vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
-        paux -= alpha_visc*vsignal*dvdr*winvrho;
+        vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
+        paux       -= alpha_visc*vsignal*dvdr*winvrho;
         parti.dudt -= neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
       }
       else if (avisc == mon97mm97) {
-        alpha_mean = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
-        vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
-        paux -= alpha_mean*vsignal*dvdr*winvrho;
+        alpha_mean  = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
+        vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
+        paux       -= alpha_mean*vsignal*dvdr*winvrho;
         parti.dudt -= neibpart[j].m*alpha_mean*vsignal*dvdr*dvdr*winvrho;
       }
 
@@ -472,8 +480,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
           (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
       }
       else if (acond == price2008) {
-        //vsignal = sqrt(fabs(eos->Pressure(parti) -eos->Pressure(neibpart[j]))*
-          //0.5*(parti.invrho + neibpart[j].invrho));
         parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
           winvrho*(parti.invrho + neibpart[j].invrho)*
           sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
@@ -493,7 +499,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   parti.div_v    *= parti.invrho;
   parti.dudt     *= (FLOAT) 0.5;
   parti.dudt     -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
-  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*parti.invh +
+  parti.dalphadt  = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*parti.invh +
     max(-parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
 
 
@@ -522,6 +528,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
+  FLOAT alpha_mean;                    // Mean articial viscosity alpha value
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drmag;                         // Distance
   FLOAT dv[ndim];                      // Relative velocity vector
@@ -530,9 +537,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   FLOAT wkerni;                        // Value of w1 kernel function
   FLOAT wkernj;                        // Value of w1 kernel function
   FLOAT vsignal;                       // Signal velocity
-  FLOAT gaux;                          // Aux. grav. potential variable
   FLOAT paux;                          // Aux. pressure force variable
-  FLOAT uaux;                          // Aux. internal energy variable
   FLOAT winvrho;                       // 0.5*(wkerni + wkernj)*invrhomean
 
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
@@ -571,22 +576,26 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
       // Artificial viscosity term
       if (avisc == mon97) {
-        vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
-        paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
-        uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
-        parti.dudt -= neibpart[j].m*uaux;
+        vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
+        paux       -= alpha_visc*vsignal*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
+      }
+      else if (avisc == mon97mm97) {
+        alpha_mean  = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
+        vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
+        paux       -= alpha_mean*vsignal*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*alpha_mean*vsignal*dvdr*dvdr*winvrho;
       }
 
       // Artificial conductivity term
       if (acond == wadsley2008) {
-        uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
+        parti.dudt += neibpart[j].m*dvdr*(neibpart[j].u - parti.u)*
           (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-        parti.dudt += neibpart[j].m*uaux;
       }
       else if (acond == price2008) {
-        vsignal = sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j]))*
-          (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho));
-        parti.dudt += (FLOAT) 0.5*neibpart[j].m*vsignal*(parti.u - neibpart[j].u)*winvrho;
+        parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
+          winvrho*(parti.invrho + neibpart[j].invrho)*
+          sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
       }
 
     }
@@ -596,18 +605,17 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
 
 
-    // Main SPH gravity terms
+    // Compute SPH gravity terms
     //---------------------------------------------------------------------------------------------
-    paux = (FLOAT) 0.5*(invhsqdi*kern.wgrav(drmag*parti.invh) +
-                        parti.zeta*wkerni + neibpart[j].invh*neibpart[j].invh*
-                        kern.wgrav(drmag*neibpart[j].invh) + neibpart[j].zeta*wkernj);
-    gaux = (FLOAT) 0.5*(parti.invh*kern.wpot(drmag*parti.invh) +
-                        neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
-
-    // Add total hydro contribution to acceleration for particle i
+    paux = (FLOAT) 0.5*(invhsqdi*kern.wgrav(drmag*parti.invh) + parti.zeta*wkerni +
+                        neibpart[j].invh*neibpart[j].invh*kern.wgrav(drmag*neibpart[j].invh) +
+                        neibpart[j].zeta*wkernj);
     for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
-    parti.gpot      += neibpart[j].m*gaux;
-    parti.div_v     -= neibpart[j].m*dvdr*wkerni;
+    parti.gpot += (FLOAT) 0.5*neibpart[j].m*(parti.invh*kern.wpot(drmag*parti.invh) +
+                                             neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
+
+    // Add velocity divergence and neighbour timestep level terms
+    parti.div_v -= neibpart[j].m*dvdr*wkerni;
     parti.levelneib = max(parti.levelneib,neibpart[j].level);
 
   }
@@ -615,8 +623,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
 
   // Set velocity divergence and compressional heating rate terms
-  parti.div_v    *= parti.invrho;
-  parti.dudt     -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
+  parti.div_v   *= parti.invrho;
+  parti.dudt    -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
   parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*
     parti.invh + max(parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
 
@@ -730,6 +738,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     for (k=0; k<ndim; k++) parti.agrav[k] += sphdata[j].m*dr[k]*invdr3;
     parti.gpot += sphdata[j].m*invdrmag;
 
+    // Sanity-checkt to ensure particles are really un-softened direct-sum neighbours
     assert(drsqd >= parti.hrangesqd && drsqd >= sphdata[j].hrangesqd);
 
   }
@@ -785,8 +794,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
 
-    assert(drmag > (FLOAT) 0.0);
-    assert(drmag*invhmean > (FLOAT) 0.0);
+    assert(invhmean > (FLOAT) 0.0);
 
   }
   //-----------------------------------------------------------------------------------------------

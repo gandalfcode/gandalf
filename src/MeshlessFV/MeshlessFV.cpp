@@ -249,7 +249,7 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::EndTimestep
- (const unsigned int n,                ///< [in] Integer time in block time struct
+ (const int n,                ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value

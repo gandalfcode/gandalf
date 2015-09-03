@@ -213,7 +213,7 @@ static void ring2xyf (int nside_, int pix, int *ix, int *iy, int *face_num)
     }
   else if (pix<(npix_-ncap_)) /* Equatorial region */
     {
-    unsigned int ire, irm;
+    int ire, irm;
     int ifm, ifp;
     int ip = pix - ncap_;
     iring = (ip/(4*nside_)) + nside_; /* counted from North pole */

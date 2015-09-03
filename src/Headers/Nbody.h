@@ -89,7 +89,7 @@ class Nbody
   virtual void UpdateChildStars(SystemParticle<ndim> *);
   virtual void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
-  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system, const unsigned int,
+  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system, const int,
                                        const DOUBLE, const DOUBLE);
 
 

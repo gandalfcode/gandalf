@@ -156,15 +156,14 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   bool allDone = false;                // Are all cell divisions completed?
   int c;                               // Cell counter
   int cc;                              // Child cell counter
-  int ckid;                            // ..
-  int cnew;                            // ..
-  int ilast;                           // ..
+  int ckid;                            // i.d. fo child cell
+  int cnew;                            // i.d. of newly created cell
+  int ilast;                           // i.d. of last particle in cell
   int i;                               // Particle counter
   int k;                               // Dimension counter
   int kk;                              // ..
   int Nlist;                           // ..
-  int *celllist;                       // ..
-  int *whichChild;                     // ..
+  int *celllist;                       // List of cells to be processed
   FLOAT cellSize = (FLOAT) 0.0;        // Size of new cell (from centre to edge)
 
   debug2("[OctTree::BuildTree]");
@@ -189,7 +188,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     celldata[c].copen  = -1;
     celldata[c].cnext  = Ncellmax;
     celldata[c].id     = c;
-    //for (k=0; k<Noctchild; k++) celldata[c].childof[k] = -2;
   }
 
   // Return now if tree contains no particles
@@ -199,7 +197,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].ifirst = ifirst;
   celldata[0].ilast  = ilast;
   celldata[0].level  = 0;
-  celldata[0].copen   = -1;
+  celldata[0].copen  = -1;
 
   // Compute the bounding box of all particles in root cell and the root cell size
   for (k=0; k<ndim; k++) celldata[0].bbmin[k] = +big_number;
@@ -212,7 +210,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     //celldata[0].rcell[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
     celldata[0].r[k] = (FLOAT) 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
     cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].rcell[k]);
-    cout << "Bounding box[" << k << "] : " << celldata[0].bbmin[k] << "   " << celldata[0].bbmax[k] << endl;
   }
   rootCellSize = (FLOAT) 2.0*cellSize;
 
@@ -222,7 +219,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   if (Ntot > 0) {
 
     celllist = new int[Npartmax];
-    whichChild = new int[Npartmax];
 
     ltot         = 0;
     Nlist        = 1;
@@ -230,17 +226,12 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     celllist[0]  = 0;
     firstCell[0] = 0;
     lastCell[0]  = 0;
-    for (i=0; i<Npartmax; i++) whichChild[i] = -1;
 
 
     // Recursively divide tree to lower levels until all leaf cells contain maximum no. of ptcls.
     //---------------------------------------------------------------------------------------------
     while (!allDone) {
       cellSize *= (FLOAT) 0.5;
-
-      cout << "LEVEL : " << ltot << "   " << lmax << "    " << Nlist << "   "
-           << Npart << "     Nleafmax : " << Nleafmax << "    " << celldata[celllist[0]].N
-           << "    cellsize : " << cellSize << endl;
 
 
       // Loop over all unfinished cells to find new child cell occupancy
@@ -370,7 +361,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     }
     //---------------------------------------------------------------------------------------------
 
-    delete[] whichChild;
     delete[] celllist;
 
   }

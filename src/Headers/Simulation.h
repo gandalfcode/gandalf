@@ -166,25 +166,25 @@ class SimulationBase
   int rank;                         ///< Process i.d. (for MPI simulations)
   int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
-  unsigned int level_diff_max;      ///< Max. allowed neib timestep level diff
-  unsigned int level_max;           ///< Maximum timestep level
-  unsigned int level_step;          ///< Level of smallest timestep unit
-  unsigned int n;                   ///< Integer time counter
-  unsigned int ndiagstep;           ///< Diagnostic output frequency (in units
+  int level_diff_max;      ///< Max. allowed neib timestep level diff
+  int level_max;           ///< Maximum timestep level
+  int level_step;          ///< Level of smallest timestep unit
+  int n;                   ///< Integer time counter
+  int ndiagstep;           ///< Diagnostic output frequency (in units
                                     ///< of full block timestep steps)
-  unsigned int nlastrestart;        ///< Integer time of last restart snapshot
-  unsigned int noutputstep;         ///< Output frequency
-  unsigned int nradstep;            ///< Integer time between computing radiation field
-  unsigned int nrestartstep;        ///< Integer time between creating temp restart files
-  unsigned int nresync;             ///< Integer time for resynchronisation
-  unsigned int nsystembuildstep;    ///< Integer time between rebuilding N-body system tree
-  unsigned int ntreebuildstep;      ///< Integer time between rebuilding tree
-  unsigned int ntreestockstep;      ///< Integer time between restocking tree
-  unsigned int Nblocksteps;         ///< No. of full block timestep steps
-  unsigned int Nlevels;             ///< No. of timestep levels
-  unsigned int Nfullsteps;          ///< No. of full steps in simulation
-  unsigned int Nstepsmax;           ///< Max. allowed no. of steps
-  unsigned int Nsteps;              ///< Total no. of steps in simulation
+  int nlastrestart;        ///< Integer time of last restart snapshot
+  int noutputstep;         ///< Output frequency
+  int nradstep;            ///< Integer time between computing radiation field
+  int nrestartstep;        ///< Integer time between creating temp restart files
+  int nresync;             ///< Integer time for resynchronisation
+  int nsystembuildstep;    ///< Integer time between rebuilding N-body system tree
+  int ntreebuildstep;      ///< Integer time between rebuilding tree
+  int ntreestockstep;      ///< Integer time between restocking tree
+  int Nblocksteps;         ///< No. of full block timestep steps
+  int Nlevels;             ///< No. of timestep levels
+  int Nfullsteps;          ///< No. of full steps in simulation
+  int Nstepsmax;           ///< Max. allowed no. of steps
+  int Nsteps;              ///< Total no. of steps in simulation
   DOUBLE dt_litesnap;               ///< Lite-snapshot time interval
   DOUBLE dt_max;                    ///< Value of maximum timestep level
   DOUBLE dt_min_nbody;              ///< Minimum timestep of all N-body particles
