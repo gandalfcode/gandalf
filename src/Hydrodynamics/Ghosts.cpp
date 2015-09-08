@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Ghosts.cpp
 //  Contains all routines for searching for and creating ghost particles.
 //  Also contains routine to correct particle positions/velocities to keep
@@ -20,7 +20,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdlib>
@@ -39,12 +39,11 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Ghosts::CheckBoundaries
-/// Check all particles to see if any have crossed the simulation bounding
-/// box.  If so, then move the particles to their new location on the other
-/// side of the periodic box.
-//=============================================================================
+/// Check all particles to see if any have crossed the simulation bounding box.
+/// If so, then move the particles to their new location on the other side of the periodic box.
+//================================================================================================
 template <int ndim>
 void PeriodicGhosts<ndim>::CheckBoundaries
  (DomainBox<ndim> simbox,
@@ -118,12 +117,12 @@ void PeriodicGhosts<ndim>::CheckBoundaries
 
 
 
-//=============================================================================
-//  Ghosts::CopySphDataToGhosts
+//=================================================================================================
+//  Ghosts::CopyHydroDataToGhosts
 /// Copy any newly calculated data from original SPH particles to ghosts.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
-void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
+void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
 (DomainBox<ndim> simbox,
  Hydrodynamics<ndim> *hydro)
 {
@@ -133,10 +132,10 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
   int j;                            // Ghost particle counter
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
-  debug2("[SphSimulation::CopySphDataToGhosts]");
+  debug2("[SphSimulation::CopyHydroDataToGhosts]");
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 //#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,sphdata)
   for (j=0; j<hydro->NPeriodicGhost; j++) {
     i = hydro->Nhydro + j;
@@ -187,17 +186,17 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
     }
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  NullGhosts::CheckBoundaries
 /// Empty function when no ghost particles are required.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
 {
@@ -206,12 +205,12 @@ void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Hydrodynamics<ndi
 
 
 
-//=============================================================================
-//  NullGhosts::CopySphDataToGhosts
+//=================================================================================================
+//  NullGhosts::CopyHydroDataToGhosts
 /// Empty function when no ghost particles are required.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
+void NullGhosts<ndim>::CopyHydroDataToGhosts(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
 {
   return;
 }
@@ -219,29 +218,28 @@ void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Hydrodynamics
 
 
 #if defined MPI_PARALLEL
-//=============================================================================
+//=================================================================================================
 //  MpiGhosts::CheckBoundaries
 /// ..
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
+void MpiGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
 {
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MpiGhosts::SearchGhostParticles
-/// Handle control to MpiControl to compute particles to send to other nodes
-/// and receive from them, then copy received ghost particles inside the main
-/// arrays.
-//=============================================================================
+/// Handle control to MpiControl to compute particles to send to other nodes and receive from them,
+/// then copy received ghost particles inside the main arrays.
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
-void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
-(FLOAT tghost,                         ///< Ghost particle 'lifetime'
- DomainBox<ndim> simbox,               ///< Simulation box structure
- Hydrodynamics<ndim> *hydro)           ///< Sph object pointer
+void MpiGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
+ (FLOAT tghost,                        ///< [in] Ghost particle 'lifetime'
+  DomainBox<ndim> simbox,              ///< [in] Simulation box structure
+  Hydrodynamics<ndim> *hydro)          ///< [inout] Sph object pointer
 {
   int i;
   int j;
@@ -268,23 +266,23 @@ void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
   hydro->Ntot += Nmpighosts;
 
   if (hydro->Nghost > hydro->Nghostmax || hydro->Ntot > hydro->Nhydromax) {
-	cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts
+    cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts
              << " " << hydro->Ntot << " " << hydro->Nhydromax<<endl;
-	ExceptionHandler::getIstance().raise("");
+    ExceptionHandler::getIstance().raise("");
   }
 
 }
 
 
 
-//=============================================================================
-//  MpiGhosts::CopySphDataToGhosts
-/// ..
-//=============================================================================
+//=================================================================================================
+//  MpiGhosts::CopyHydroDataToGhosts
+/// Copy all hydro data from the real particles to the MPI ghost particles
+//=================================================================================================
 template <int ndim, template<int> class ParticleType >
-void MPIGhostsSpecific<ndim, ParticleType>::CopySphDataToGhosts
- (DomainBox<ndim> simbox,              ///< ..
-  Hydrodynamics<ndim> *hydro)          ///< ..
+void MpiGhostsSpecific<ndim, ParticleType>::CopyHydroDataToGhosts
+ (DomainBox<ndim> simbox,              ///< [in] Simulation box
+  Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to hydrodynamics object
 {
   ParticleType<ndim>* ghost_array;
   ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
@@ -293,7 +291,7 @@ void MPIGhostsSpecific<ndim, ParticleType>::CopySphDataToGhosts
 
   for (int j=0; j<Nmpighosts; j++) {
     int i = start_index + j;
-    main_array[i] =  ghost_array[j];
+    main_array[i] = ghost_array[j];
     main_array[i].active = false;
   }
 
@@ -315,13 +313,13 @@ template class PeriodicGhostsSpecific<2, SM2012SphParticle>;
 template class PeriodicGhostsSpecific<3, SM2012SphParticle>;
 
 #ifdef MPI_PARALLEL
-template class MPIGhosts<1>;
-template class MPIGhosts<2>;
-template class MPIGhosts<3>;
-template class MPIGhostsSpecific<1, GradhSphParticle>;
-template class MPIGhostsSpecific<2, GradhSphParticle>;
-template class MPIGhostsSpecific<3, GradhSphParticle>;
-template class MPIGhostsSpecific<1, SM2012SphParticle>;
-template class MPIGhostsSpecific<2, SM2012SphParticle>;
-template class MPIGhostsSpecific<3, SM2012SphParticle>;
+template class MpiGhosts<1>;
+template class MpiGhosts<2>;
+template class MpiGhosts<3>;
+template class MpiGhostsSpecific<1, GradhSphParticle>;
+template class MpiGhostsSpecific<2, GradhSphParticle>;
+template class MpiGhostsSpecific<3, GradhSphParticle>;
+template class MpiGhostsSpecific<1, SM2012SphParticle>;
+template class MpiGhostsSpecific<2, SM2012SphParticle>;
+template class MpiGhostsSpecific<3, SM2012SphParticle>;
 #endif

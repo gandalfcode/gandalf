@@ -98,7 +98,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
 
 
-  if (Nsteps%1 == 0) {
+  /*if (Nsteps%1 == 0) {
   stringstream ss;
   string nostring = "";
   ss << setfill('0') << setw(5) << Nsteps;
@@ -118,7 +118,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   }
   outfile.close();
   cout << "WROTE FILE : " << filename << endl;
-}
+}*/
 
 
   // Integrate all conserved variables to end of timestep

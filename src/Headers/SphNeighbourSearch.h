@@ -263,6 +263,7 @@ protected:
   using HydroTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
   using HydroTree<ndim,ParticleType,TreeCell>::Nleafmax;
   using HydroTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
+  using HydroTree<ndim,ParticleType,TreeCell>::Nthreads;
   using HydroTree<ndim,ParticleType,TreeCell>::Ntot;
   using HydroTree<ndim,ParticleType,TreeCell>::Ntotmax;
   using HydroTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
@@ -336,6 +337,7 @@ class GradhSphTree : public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
   using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Nthreads;
   using SphTree<ndim,ParticleType,TreeCell>::Ntot;
   using SphTree<ndim,ParticleType,TreeCell>::Ntotmax;
   using SphTree<ndim,ParticleType,TreeCell>::Ntotmaxold;

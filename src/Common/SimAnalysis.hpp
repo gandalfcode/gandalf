@@ -56,9 +56,9 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   debug2("[Simulation::CalculateDiagnostics]");
 
-  diag.Nhydro  = hydro->Nhydro;
-  diag.Nstar = nbody->Nstar;
-  diag.Ndead = 0;
+  diag.Nhydro = hydro->Nhydro;
+  diag.Nstar  = nbody->Nstar;
+  diag.Ndead  = 0;
 
   // Zero all diagnostic summation variables
   diag.mtot   = 0.0;
@@ -66,15 +66,15 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   diag.utot   = 0.0;
   diag.ketot  = 0.0;
   diag.gpetot = 0.0;
-  for (k=0; k<ndim; k++) diag.rcom[k] = 0.0;
-  for (k=0; k<ndim; k++) diag.vcom[k] = 0.0;
-  for (k=0; k<ndim; k++) diag.mom[k] = 0.0;
-  for (k=0; k<ndim; k++) diag.force[k] = 0.0;
+  for (k=0; k<ndim; k++) diag.rcom[k]        = 0.0;
+  for (k=0; k<ndim; k++) diag.vcom[k]        = 0.0;
+  for (k=0; k<ndim; k++) diag.mom[k]         = 0.0;
+  for (k=0; k<ndim; k++) diag.force[k]       = 0.0;
   for (k=0; k<ndim; k++) diag.force_hydro[k] = 0.0;
-  for (k=0; k<ndim; k++) diag.force_grav[k] = 0.0;
+  for (k=0; k<ndim; k++) diag.force_grav[k]  = 0.0;
   for (k=0; k<3; k++) diag.angmom[k] = 0.0;
 
-  // Loop over all SPH particles and add contributions to all quantities
+  // Loop over all hydro particles and add contributions to all quantities
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (part.itype == dead) {
@@ -331,14 +331,14 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
   //-----------------------------------------------------------------------------------------------
   if (ic == "spitzer") {
 
-    string filename = run_id + ".ionfront";
-    string solname = run_id + ".spitzer";
+    string filename  = run_id + ".ionfront";
+    string solname   = run_id + ".spitzer";
     FLOAT temp_ion   = simparams->floatparams["temp_ion"]/simunits.temp.outscale;
     FLOAT mu_ion     = simparams->floatparams["mu_ion"];
     FLOAT cion       = sqrtf(temp_ion/mu_ion);
-    FLOAT radius_ion = 0.0;
-    FLOAT m_ion      = 0.0;
-    FLOAT m_if       = 0.0;
+    FLOAT radius_ion = (FLOAT) 0.0;
+    FLOAT m_ion      = (FLOAT) 0.0;
+    FLOAT m_if       = (FLOAT) 0.0;
     FLOAT arecomb    = simparams->floatparams["arecomb"]*
       simunits.t.outscale*simunits.t.outcgs/pow(simunits.r.outscale*simunits.r.outcgs,3);
     FLOAT mcloud     = simparams->floatparams["mcloud"]/simunits.m.outscale;
@@ -350,7 +350,6 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
 
     cout << "RSTROMGREN : " << Rstromgren*simunits.r.outscale << endl;
     cout << "Sound speed of ionised gas : " << cion*simunits.v.outscale*simunits.v.outSI << endl;
-
     cout << "Pressure 1 : " << rhoneutral*temp_ion/mu_ion  << endl;
     cout << "Pressure 2 : " << cion*cion*rhoneutral << endl;
 

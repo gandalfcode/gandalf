@@ -116,18 +116,18 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
     Nneibmaxbuf     = new int[Nthreads];
     Ngravcellmaxbuf = new int[Nthreads];
     activelistbuf   = new int*[Nthreads];
+    levelneibbuf    = new int*[Nthreads];
     activepartbuf   = new ParticleType<ndim>*[Nthreads];
     neibpartbuf     = new ParticleType<ndim>*[Nthreads];
-    levelneibbuf    = new int*[Nthreads];
     cellbuf         = new TreeCell<ndim>*[Nthreads];
 
     for (int ithread=0; ithread<Nthreads; ithread++) {
-      Nneibmaxbuf[ithread]     = max(1,4*Ngather);
-      Ngravcellmaxbuf[ithread] = max(1,4*Ngather);
+      Nneibmaxbuf[ithread]     = max(1, 4*Ngather);
+      Ngravcellmaxbuf[ithread] = max(1, 4*Ngather);
       activelistbuf[ithread]   = new int[Nleafmax];
+      levelneibbuf[ithread]    = new int[Ntotmax];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
       neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
-      levelneibbuf[ithread]    = new int[Ntotmax];
       cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmaxbuf[ithread]];
     }
     allocated_buffer = true;
@@ -219,7 +219,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildTree
     tree->Ntotmaxold = tree->Ntotmax;
     tree->Ntotmax    = max(tree->Ntotmax,tree->Ntot);
     tree->Ntotmax    = max(tree->Ntotmax,hydro->Nhydromax);
-    tree->BuildTree(0, hydro->Nhydro-1, Npart, Npartmax, partdata, timestep);
+    tree->BuildTree(0, hydro->Nhydro-1, Npart, Npartmax, timestep, partdata);
 
     AllocateMemory(hydro->Ngather);
 #ifdef MPI_PARALLEL
@@ -300,7 +300,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostTree
     ghosttree->Ntotmax    = max(ghosttree->Ntotmax, ghosttree->Ntot);
     ghosttree->Ntotmax    = max(ghosttree->Ntotmax, hydro->Nhydromax);
     ghosttree->BuildTree(hydro->Nhydro, hydro->Nhydro + hydro->NPeriodicGhost - 1,
-                         ghosttree->Ntot, ghosttree->Ntotmax, partdata, timestep);
+                         ghosttree->Ntot, ghosttree->Ntotmax, timestep, partdata);
 
   }
 

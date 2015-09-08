@@ -89,7 +89,7 @@ void Parameters::ReadParamsFile
   if (inputfile.is_open()) {
     while ( inputfile.good() ) {
       getline(inputfile, line);
-      ParseLine (line);
+      ParseLine(line);
     }
   }
   else {
@@ -124,29 +124,29 @@ void Parameters::ReadParamsFile
 /// If line begins with a hash charatcer '#', then ignore line as a comment.
 ///================================================================================================
 void Parameters::ParseLine
- (string paramline)                    ///< [in] Line from parameters file to be parsed.
+ (string paramline)                      ///< [in] Line from parameters file to be parsed.
 {
   // First, trim all white space from line
   paramline = TrimWhiteSpace(paramline);
 
-  int colon_pos = paramline.find(':'); // Position of colon in string
-  int equal_pos = paramline.find('='); // Position of equals in string
-  int hash_pos = paramline.find('#');  // Position of hash in string
-  int length = paramline.length();     // Length of string
+  int colon_pos = paramline.find(':');   // Position of colon in string
+  int equal_pos = paramline.find('=');   // Position of equals in string
+  int hash_pos  = paramline.find('#');   // Position of hash in string
+  int length    = paramline.length();    // Length of string
 
   // Ignore line if it is a comment (i.e. begins with a hash character)
-  if (hash_pos == 0) return;
+  if (hash_pos == 0 || length == 0) return;
 
   // If line is not in the correct format (either equals is not present,
   // or equals is before the colon) then skip line and return.
   if (equal_pos >= length || (colon_pos < length && colon_pos > equal_pos)) return;
 
   // Extract variable name and value from line
-  std::string var_name = paramline.substr(colon_pos+1,equal_pos-colon_pos-1);
-  std::string var_value = paramline.substr(equal_pos+1,length-equal_pos-1);
+  std::string var_name = paramline.substr(colon_pos+1, equal_pos-colon_pos-1);
+  std::string var_value = paramline.substr(equal_pos+1, length-equal_pos-1);
 
   // Finally, set parameter value in memory
-  SetParameter(var_name,var_value);
+  SetParameter(var_name, var_value);
 
   return;
 }
@@ -480,8 +480,9 @@ string Parameters::GetParameter
     value << floatparams[key];
     return value.str();
   }
-  else if (stringparams.count(key) == 1)
+  else if (stringparams.count(key) == 1) {
     return stringparams[key];
+  }
   else {
     string msg = "Error: the parameter " + key + " is not recognized ";
     ExceptionHandler::getIstance().raise(msg);
@@ -501,13 +502,18 @@ void Parameters::SetParameter
  (string key,                          ///< [in] Parameter key to be searched
   string value)                        ///< [in] Parameter value if key found
 {
-  if (intparams.count(key) == 1)
+  if (intparams.count(key) == 1) {
     std::stringstream(value) >> intparams[key];
-  else if (floatparams.count(key) == 1)
+  }
+  else if (floatparams.count(key) == 1) {
     std::stringstream(value) >> floatparams[key];
-  else if (stringparams.count(key) == 1)
+  }
+  else if (stringparams.count(key) == 1) {
     stringparams[key] = value;
-  else cout << "Warning: parameter " << key << "was not recognized" << endl;
+  }
+  else {
+    cout << "Warning: parameter " << key << " was not recognized" << endl;
+  }
 
   return;
 }
@@ -590,11 +596,10 @@ void Parameters::RecordParametersToFile(void)
 std::string Parameters::TrimWhiteSpace
  (std::string instr)                   ///< [in] Input string to be trimmed
 {
-  int i;                      // Character counter
   string outstr;                       // Final string without any whitespace
 
   // Loop over all characters and ignore any white-space characters
-  for (i=0; i<instr.length(); i++) {
+  for (unsigned int i=0; i<instr.length(); i++) {
     if (instr[i] != ' ') outstr += instr[i];
   }
 

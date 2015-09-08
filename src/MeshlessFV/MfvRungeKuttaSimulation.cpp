@@ -94,9 +94,9 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     //}
     // Otherwise copy properties from original particles to ghost particles
     /*else {
-      LocalGhosts->CopySphDataToGhosts(simbox, sph);
+      LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
 #ifdef MPI_PARALLEL
-      MpiGhosts->CopySphDataToGhosts(simbox, sph);
+      MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
 #endif
     }*/
 

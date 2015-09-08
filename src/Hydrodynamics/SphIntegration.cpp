@@ -103,12 +103,12 @@ DOUBLE SphIntegration<ndim>::Timestep
   }
 
   // Acceleration condition
-  amag = sqrt(DotProduct(part.a,part.a,ndim));
+  amag = sqrt(DotProduct(part.a, part.a, ndim));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
 
   // Explicit energy integration timestep condition
   if (gas_eos == energy_eqn) {
-    timestep = min(timestep,this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
+    timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
   }
 
   // If stars are included, calculate the timestep due to the jerk
@@ -120,6 +120,8 @@ DOUBLE SphIntegration<ndim>::Timestep
          << part.sound << "    " << part.h*fabs(part.div_v) << endl;
     exit(0);
   }
+  //if (part.iorig == 717) cout << "timestep : " << part.iorig << "   " << timestep << "   " << part.h/part.sound << "   "
+  //     << sqrtf(part.h/sqrtf(amag)) << "   " << amag << "   " << part.h << "    " << part.sinkid << "    " << part.r[0] << endl;
 
   assert(!(isnan(amag)) && !(isinf(amag)));
   assert(!(isnan(timestep)) && !(isinf(timestep)));

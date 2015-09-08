@@ -198,6 +198,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   // Find list of all cells that contain active particles
   celllist = new TreeCell<ndim>[tree->gtot];
   cactive = tree->ComputeActiveCellList(celllist);
+  assert(cactive <= tree->gtot);
 
 
   // Set-up all OMP threads
@@ -209,6 +210,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 #else
     const int ithread = 0;
 #endif
+    assert(ithread < Nthreads);
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
     int i;                                     // Particle id
@@ -224,7 +226,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
     FLOAT hrangesqd;                           // Kernel extent
     FLOAT hmax;                                // Maximum smoothing length
     FLOAT rp[ndim];                            // Local copy of particle position
-    //FLOAT *mu,                                 // Mass times specific internal energy arrays
     FLOAT *mu2 = 0;                            // Trimmed array (dummy for grad-h)
     int Nneibmax = Nneibmaxbuf[ithread];       // Local copy of neighbour buffer size
     int* activelist = activelistbuf[ithread];  // Local array of active particle ids
@@ -247,8 +248,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
       celldone = 1;
       hmax = cell.hmax;
 
-      // Sanity checks
-      //assert(cell.Nactive > 0);
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
@@ -333,11 +332,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,sphdata,"gather");
+          if (neibcheck) this->CheckValidNeighbourList(i, Ntot, Nneib, neiblist, sphdata, "gather");
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
-          okflag = sph->ComputeH(i,Ngather,hmax,m2,mu2,drsqd,gpot,activepart[j],nbody);
+          okflag = sph->ComputeH(i, Ngather, hmax, m2, mu2, drsqd, gpot, activepart[j], nbody);
 
           // If h-computation is invalid, then break from loop and recompute
           // larger neighbour lists
@@ -589,7 +588,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         sphdata[i].dudt     += activepart[j].dudt;
         sphdata[i].dalphadt += activepart[j].dalphadt;
         sphdata[i].div_v    += activepart[j].div_v;
-        levelneib[i]         = max(levelneib[i],activepart[j].levelneib);
+        levelneib[i]        = max(levelneib[i],activepart[j].levelneib);
       }
 
     }
@@ -697,11 +696,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     int Nneibmax     = Nneibmaxbuf[ithread];     // ..
     int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
     int *activelist  = activelistbuf[ithread];   // ..
+    int *levelneib   = levelneibbuf[ithread];    // ..
     int *neiblist    = new int[Nneibmax];        // ..
     int *sphlist     = new int[Nneibmax];        // ..
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
-    int *levelneib        = levelneibbuf[ithread];  // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread]; // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];   // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];       // ..
@@ -732,6 +731,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
         activepart[j].levelneib = 0;
+        activepart[j].dalphadt  = (FLOAT) 0.0;
         activepart[j].div_v     = (FLOAT) 0.0;
         activepart[j].dudt      = (FLOAT) 0.0;
         activepart[j].gpot      = activepart[j].m*activepart[j].invh*sph->kernp->wpot((FLOAT) 0.0);
@@ -838,10 +838,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
         i = activelist[j];
         for (k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].a[k] + activepart[j].agrav[k];
         for (k=0; k<ndim; k++) sphdata[i].agrav[k] += activepart[j].agrav[k];
-        sphdata[i].gpot  += activepart[j].gpot;
-        sphdata[i].dudt  += activepart[j].dudt;
-        sphdata[i].div_v += activepart[j].div_v;
-        levelneib[i]      = max(levelneib[i], activepart[j].levelneib);
+        sphdata[i].gpot     += activepart[j].gpot;
+        sphdata[i].dalphadt += activepart[j].dalphadt;
+        sphdata[i].dudt     += activepart[j].dudt;
+        sphdata[i].div_v    += activepart[j].div_v;
+        levelneib[i]        = max(levelneib[i], activepart[j].levelneib);
       }
 
     }
@@ -852,10 +853,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 #pragma omp critical
     for (i=0; i<sph->Nhydro; i++) {
       sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
-      if (sphdata[i].levelneib > 100) {
-        cout << "MEH?? : " << i << sphdata[i].levelneib << "   " << levelneib[i] << "   " << sphdata[i].level << endl;
-        exit(0);
-      }
     }
 
     // Free-up local memory for OpenMP thread
@@ -955,7 +952,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     int *sphauxlist   = new int[Nneibmax];
     int* directlist   = new int[Nneibmax];
     int* activelist   = activelistbuf[ithread];
-    int* levelneib        = levelneibbuf[ithread];
+    int* levelneib    = levelneibbuf[ithread];
     ParticleType<ndim>* activepart = activepartbuf[ithread];
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];
     TreeCell<ndim>* gravcell       = cellbuf[ithread];

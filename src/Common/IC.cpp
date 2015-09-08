@@ -36,34 +36,35 @@ using namespace std;
 template <int ndim>
 void Ic<ndim>::CheckInitialConditions(void)
 {
-  bool okflag;                      // Flag problem with current particle
-  bool valid_ic = true;             // Valid initial conditions flag
-  int i,k;                          // Particle and dimension counter
-
+  bool okflag;                               // Flag problem with current particle
+  bool valid_ic = true;                      // Valid initial conditions flag
+  int i,k;                                   // Particle and dimension counter
   DomainBox<ndim>& simbox = sim->simbox;
 
 
-  // Check that all particles reside inside any defined boundaries
+  // Loop through all particles performing various checks
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-
     okflag = true;
 
-    if (part.r[0] < simbox.boxmin[0])
-      if (simbox.boundary_lhs[0] == periodicBoundary) okflag = false;
-    if (part.r[0] > simbox.boxmax[0])
-      if (simbox.boundary_rhs[0] == periodicBoundary) okflag = false;
+    // Check that main particle properties are valid floating point numbers
+    if (part.m <= (FLOAT) 0.0 || isnan(part.m) || isinf(part.m)) okflag = false;
+    if (part.u < (FLOAT) 0.0 || isnan(part.u) || isinf(part.u)) okflag = false;
+    for (k=0; k<ndim; k++) {
+      if (isnan(part.r[k]) || isinf(part.r[k])) okflag = false;
+      if (isnan(part.v[k]) || isinf(part.v[k])) okflag = false;
+    }
 
-    if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
-      if (simbox.boundary_lhs[1] == periodicBoundary) okflag = false;
-    if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
-      if (simbox.boundary_rhs[1] == periodicBoundary) okflag = false;
-
-    if (ndim == 3 && part.r[2] < simbox.boxmin[2])
-      if (simbox.boundary_lhs[2] == periodicBoundary) okflag = false;
-    if (ndim == 3 && part.r[2] > simbox.boxmax[2])
-      if (simbox.boundary_rhs[2] == periodicBoundary) okflag = false;
+    // Check that all particles reside inside any defined boundaries
+    for (k=0; k<ndim; k++) {
+      if (part.r[k] < simbox.boxmin[k]) {
+        if (simbox.boundary_lhs[k] == periodicBoundary) okflag = false;
+      }
+      if (part.r[k] > simbox.boxmax[k]) {
+        if (simbox.boundary_rhs[k] == periodicBoundary) okflag = false;
+      }
+    }
 
     // If flag indicates a problem, print error and quit
     if (!okflag) {
@@ -476,7 +477,7 @@ void Ic<ndim>::ShockTube(void)
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
-      LocalGhosts->CopySphDataToGhosts(simbox,sph);
+      LocalGhosts->CopyHydroDataToGhosts(simbox,sph);
       sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
                          hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
       sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
@@ -847,7 +848,7 @@ void Ic<ndim>::ContactDiscontinuity(void)
 
   sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
-  LocalGhosts->CopySphDataToGhosts(simbox,sph);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);

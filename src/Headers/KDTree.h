@@ -1,7 +1,6 @@
 //=================================================================================================
 //  KDTree.h
-//  Header file containing class definitions for constructing and updating
-//  the KD-tree.
+//  Header file containing class definitions for constructing and updating the KD-tree.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -141,7 +140,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  void BuildTree(int, int, int, int, ParticleType<ndim> *, FLOAT);
+  void BuildTree(const int, const int, const int, const int, const FLOAT, ParticleType<ndim> *);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
   void ComputeTreeSize(void);

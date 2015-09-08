@@ -233,7 +233,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // If there are sink particles present, check if the particle is inside one.
   // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
   if (parti.sinkid != -1) {
-    h_lower_bound = nbody->stardata[parti.sinkid].h;  //hmin_sink;
+    h_lower_bound = hmin_sink;
+    //h_lower_bound = nbody->stardata[parti.sinkid].h;  //hmin_sink;
     if (hmax < hmin_sink) return -1;
   }
 
@@ -242,7 +243,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
   assert(hmax > (FLOAT) 0.0);
   assert(parti.itype != dead);
   assert(parti.m > (FLOAT) 0.0);
-
 
 
   // Main smoothing length iteration loop
@@ -327,6 +327,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.div_v     = (FLOAT) 0.0;
   assert(!(isinf(parti.h)) && !(isnan(parti.h)));
+  assert(part.h >= h_lower_bound);
 
   // Calculate the minimum neighbour potential (used later to identify new sinks)
   if (create_sinks == 1) {
@@ -432,6 +433,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
   // Some basic sanity-checking in case of invalid input into routine
+  assert(neibpart_gen != NULL);
   assert(Nneib > 0);
   assert(parti.itype != dead);
 
@@ -445,7 +447,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
 
     for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-    dvdr = DotProduct(neibpart[j].v,draux,ndim) ;
+    dvdr = DotProduct(neibpart[j].v,draux, ndim);
     dvdr -= DotProduct(parti.v,draux,ndim);
 
     // Add contribution to velocity divergence
@@ -463,13 +465,13 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
       // Artificial viscosity term
       if (avisc == mon97) {
-        vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
+        vsignal    = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
         paux       -= alpha_visc*vsignal*dvdr*winvrho;
         parti.dudt -= neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
       }
       else if (avisc == mon97mm97) {
-        alpha_mean  = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
-        vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
+        alpha_mean = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
+        vsignal    = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
         paux       -= alpha_mean*vsignal*dvdr*winvrho;
         parti.dudt -= neibpart[j].m*alpha_mean*vsignal*dvdr*dvdr*winvrho;
       }
@@ -499,8 +501,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   parti.div_v    *= parti.invrho;
   parti.dudt     *= (FLOAT) 0.5;
   parti.dudt     -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
-  parti.dalphadt  = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*parti.invh +
-    max(-parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
+  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*parti.invh +
+    max(-parti.div_v, (FLOAT) 0.0)*(alpha_visc - parti.alpha);
 
 
   return;

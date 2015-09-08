@@ -45,47 +45,6 @@ using namespace std;
 
 
 //=================================================================================================
-//  Tree::Tree
-/// Tree constructor.  Initialises various variables.
-//=================================================================================================
-/*template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-Tree<ndim,ParticleType,TreeCell>::Tree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
-                                           FLOAT kernrangeaux, FLOAT macerroraux,
-                                           string gravity_mac_aux, string multipole_aux):
-  Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                   macerroraux, gravity_mac_aux, multipole_aux)
-{
-  allocated_tree = false;
-  gmax           = 0;
-  gtot           = 0;
-  ifirst         = -1;
-  ilast          = -1;
-  lactive        = 0;
-  lmax           = 0;
-  ltot           = 0;
-  ltot_old       = -1;
-  Ncell          = 0;
-  Ncellmax       = 0;
-  Ntot           = 0;
-  Ntotmax        = 0;
-  Ntotmaxold     = 0;
-  Ntotold        = -1;
-  hmax           = 0.0;
-#if defined _OPENMP
-  Nthreads       = omp_get_max_threads();
-#else
-  Nthreads       = 1;
-#endif
-#if defined MPI_PARALLEL
-  Ncelltot       = 0;
-  Nimportedcell  = 0;
-#endif
-}*/
-
-
-
-
-//=================================================================================================
 //  Tree::ComputeActiveParticleList
 /// Returns the number (Nactive) and list of ids (activelist) of all active
 /// SPH particles in the given cell.
@@ -99,13 +58,13 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
   const int ilast = cell.ilast;        // i.d. of last particle in cell c
   int i = cell.ifirst;                 // Local particle id (set to first ptcl id)
   int Nactive = 0;                     // No. of active particles in cell
-  assert(activelist != NULL);
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
     if (i < Ntot && partdata[i].active && partdata[i].itype != dead) activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
+    assert(i < Ntot);
   };
 
   assert(Nactive <= Nleafmax);
@@ -154,6 +113,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
 {
   int c;                               // Cell counter
   int Nactive = 0;                     // No. of active leaf cells in tree
+  assert(celllist != NULL);
 
   for (c=0; c<Ncell; c++) {
     if (celldata[c].N <= Nleafmax && celldata[c].copen == -1 && celldata[c].Nactive > 0) {
@@ -265,13 +225,15 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   const FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
+  assert(partdata != NULL);
+  assert(neiblist != NULL);
 
 
   //===============================================================================================
   while (cc < Ncell) {
 
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rp[k];
-    drsqd = DotProduct(dr,dr,ndim);
+    drsqd = DotProduct(dr, dr, ndim);
 
 
     // Check if bounding boxes overlap with each other
@@ -279,7 +241,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
     if (drsqd < (rsearch + celldata[cc].rmax)*(rsearch + celldata[cc].rmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      //if (celldata[cc].level != ltot) {
       if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
       }
@@ -318,7 +279,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   };
   //===============================================================================================
 
-
+  assert(Nneib <= Nneibmax);
   return Nneib;
 }
 
@@ -349,11 +310,13 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   FLOAT gatherboxmin[ndim];            // Minimum gather neighbour box
   FLOAT gatherboxmax[ndim];            // Maximum gather neighbour box
   FLOAT rc[ndim];                      // Position of cell
+  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*hmax,2);
+  assert(neiblist != NULL);
+  assert(partdata != NULL);
 
   // Exit immediately if we have overflowed the neighbour list buffer
   if (Nneib == -1) return -1;
 
-  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*hmax,2);
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
   for (k=0; k<ndim; k++) gatherboxmin[k] = cell.bbmin[k] - kernrange*hmax;
   for (k=0; k<ndim; k++) gatherboxmax[k] = cell.bbmax[k] + kernrange*hmax;
@@ -405,15 +368,17 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
 
   // Now, trim the list to remove particles that are definitely not neighbours
+  assert(Ntemp <= Nneibmax);
   for (j=Nneib; j<Ntemp; j++) {
     i = neiblist[j];
     if (partdata[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
+    drsqd = DotProduct(dr, dr, ndim);
+    //cout << "Checking neighbour : " << j << "   " << Nneib << "   " << drsqd << "   " << hrangemaxsqd << endl;
     if (drsqd < hrangemaxsqd) neiblist[Nneib++] = i;
   }
 
-
+  assert(Nneib <= Nneibmax);
   return Nneib;
 }
 
@@ -444,10 +409,11 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
-
-  // Local (const) copies of cell properties
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
   const FLOAT rmax = cell.rmax;
+  assert(neibpart != NULL);
+  assert(partdata != NULL);
+
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Exit immediately if we have overflowed the neighbour list buffer
@@ -504,6 +470,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
 
   // Now, trim the list to remove particles that are definitely not neighbours
+  assert(Ntemp <= Nneibmax);
   for (j=Nneib; j<Ntemp; j++) {
     assert(j < Nneibmax);
     assert(neiblist[j] >= 0);
@@ -520,7 +487,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
     }
   }
 
-
+  assert(Nneib <= Nneibmax);
   return Nneib;
 }
 
@@ -551,10 +518,11 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicNeighbourList
   FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
-
-  // Make local copies of important cell properties
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
   const FLOAT rmax = cell.rmax;
+  assert(neibpart != NULL);
+  assert(partdata != NULL);
+
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Start with root cell and walk through entire tree
@@ -620,6 +588,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicNeighbourList
 
 
   // Now, trim the list to remove particles that are definitely not neighbours
+  assert(Ntemp <= Nneibmax);
   for (j=Nneib; j<Ntemp; j++) {
     assert(j < Nneibmax);
     assert(neiblist[j] >= 0);
@@ -638,7 +607,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicNeighbourList
     }
   }
 
-
+  assert(Nneib <= Nneibmax);
   return Nneib;
 }
 
@@ -678,12 +647,13 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
-
-  // Make local copies of important cell properties
-  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
+  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax, 2);
   const FLOAT rmax = cell.rmax;
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  assert(gravcell != NULL);
+  assert(neibpart != NULL);
+  assert(partdata != NULL);
 
+  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Start with root cell and walk through entire tree
   Nneib      = 0;
@@ -866,6 +836,11 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
+  assert(directlist != NULL);
+  assert(gravcell != NULL);
+  assert(hydroneiblist != NULL);
+  assert(neibpart != NULL);
+  assert(partdata != NULL);
 
   // Make local copies of important cell properties
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
@@ -1022,6 +997,11 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   }
   Nhydroneib = Nhydroneibtemp;
 
+  assert(Nhydroneib <= Nneibmax);
+  assert(Nneib <= Nneibmax);
+  assert(Ndirect <= Nneibmax);
+  assert(Ngravcell <= Ngravcellmax);
+  assert(VerifyUniqueIds(Nneib, Ntot, neiblist));
 
   return 1;
 }
@@ -1058,6 +1038,11 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   FLOAT drsqd;                         // Distance squared
   FLOAT hrangemax;                     // Maximum kernel extent
   FLOAT rs[ndim];                      // Position of star
+  assert(directlist != NULL);
+  assert(gravcell != NULL);
+  assert(neiblist != NULL);
+  assert(partdata != NULL);
+
 
   // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rs[k] = star->r[k];
@@ -1162,6 +1147,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   };
   //===============================================================================================
 
+  assert(Nneib <= Nneibmax);
+  assert(Ndirect <= Nneibmax);
+  assert(Ngravcell <= Ngravcellmax);
+  assert(VerifyUniqueIds(Nneib, Ntot, neiblist));
 
   return 1;
 }

@@ -1,6 +1,6 @@
-//=============================================================================
+//=================================================================================================
 //  TabulatedKernel.cpp
-//  Contains functions for creating tabulated kernels for all required 
+//  Contains functions for creating tabulated kernels for all required
 //  kernel functions and derivatives.
 //
 //  This file is part of GANDALF :
@@ -19,25 +19,28 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include "SmoothingKernel.h"
 
 
-//=============================================================================
+//=================================================================================================
 //  SmoothingKernel::KernelFactory
 /// Create and return new kernel object selected in parameters file.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-SmoothingKernel<ndim>* SmoothingKernel<ndim>::KernelFactory(string KernelName) 
+SmoothingKernel<ndim>* SmoothingKernel<ndim>::KernelFactory(string KernelName)
 {
-  if (KernelName == "m4")
+  if (KernelName == "m4") {
     return new M4Kernel<ndim>(KernelName);
-  else if (KernelName == "quintic")
+  }
+  else if (KernelName == "quintic") {
     return new QuinticKernel<ndim>(KernelName);
-  else if (KernelName == "gaussian")
+  }
+  else if (KernelName == "gaussian") {
     return new GaussianKernel<ndim>(KernelName);
+  }
   else {
     string message = "Unrecognised kernel: " + KernelName;
     ExceptionHandler::getIstance().raise(message);
@@ -47,12 +50,14 @@ SmoothingKernel<ndim>* SmoothingKernel<ndim>::KernelFactory(string KernelName)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  TabulatedKernel::TabulatedKernel
-/// Create and return new kernel object selected in parameters file.
-//=============================================================================
+/// Create new tabulated kernel object from given parameters.
+//================================================================================================
 template <int ndim>
-TabulatedKernel<ndim>::TabulatedKernel(string KernelName, int resaux):
+TabulatedKernel<ndim>::TabulatedKernel
+ (string KernelName,                   ///< [in] Name of kernel
+  int resaux):                         ///< [in] No. of elements in kernel table
   SmoothingKernel<ndim>()
 {
   res = resaux;
@@ -96,31 +101,31 @@ TabulatedKernel<ndim>::TabulatedKernel(string KernelName, int resaux):
 
 
 
-//=============================================================================
+//=================================================================================================
 //  TabulatedKernel::initializeTableLOS
 /// Create and return new kernel object selected in parameters file.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-void TabulatedKernel<ndim>::initializeTableLOS() 
+void TabulatedKernel<ndim>::initializeTableLOS()
 {
-  int i;                                    // Kernel table element counter
-  int j;                                    // Integration step counter
-  FLOAT dist;                               // ..
-  FLOAT impactparametersqd;                 // Kernel impact parameter squared
-  FLOAT intstep;                            // ..
-  FLOAT position;                           // ..
-  FLOAT sum;                                // Integration sum
-  FLOAT s;                                  // Distance from the center
-  const FLOAT step = kernel->kernrange/res; // Step in the tabulated variable
-  const int intsteps = 4000;                // No. of steps per integration
+  int i;                                     // Kernel table element counter
+  int j;                                     // Integration step counter
+  FLOAT dist;                                // Length of integration path through kernel
+  FLOAT impactparametersqd;                  // Kernel impact parameter squared
+  FLOAT intstep;                             // No. of numerical quadruture integration steps
+  FLOAT position;                            // Position in kernel table
+  FLOAT sum;                                 // Integration sum
+  FLOAT s;                                   // Distance from the center
+  const FLOAT step = kernel->kernrange/res;  // Step in the tabulated variable
+  const int intsteps = 4000;                 // No. of steps per integration
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<res; i++) {
     impactparametersqd = pow((FLOAT) i*step,2);
     sum = 0.0;
 
     // Half-length of the integration path
-    dist = sqrt(this->kernrangesqd - impactparametersqd); 
+    dist = sqrt(this->kernrangesqd - impactparametersqd);
     intstep = dist/intsteps;
 
     // Now numerically integrate through kernel
@@ -131,11 +136,11 @@ void TabulatedKernel<ndim>::initializeTableLOS()
       s = sqrt(position*position + impactparametersqd);
       sum += kernel->w0(s)*intstep;
     }
-    
+
     // Multiply by 2 because we integrated only along half of the path
-    tableLOS[i] = 2.0*sum; 
+    tableLOS[i] = (FLOAT) 2.0*sum;
   }
-  //---------------------------------------------------------------------------
+  //----------------------------------------------------------------------------------------------
 
   return;
 }

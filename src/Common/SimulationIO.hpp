@@ -1292,7 +1292,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     Noutlitesnap  = ilpdata[10];
     t             = ddata[0];
     tsnaplast     = ddata[1];
-    hydro->mmean    = ddata[2];
+    hydro->mmean  = ddata[2];
     tlitesnaplast = ddata[10];
   }
 
@@ -2140,18 +2140,18 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   }
 
   // Set important header information
-  idata[0] = hydro->Nhydro;
-  idata[1] = nbody->Nstar;
-  idata[4] = hydro->Nhydro;
-  idata[19] = nunit;
-  idata[20] = ndata;
+  idata[0]   = hydro->Nhydro;
+  idata[1]   = nbody->Nstar;
+  idata[4]   = hydro->Nhydro;
+  idata[19]  = nunit;
+  idata[20]  = ndata;
   ilpdata[0] = Noutsnap;
   ilpdata[1] = Nsteps;
-  rdata[0] = hydro->h_fac;
-  rdata[1] = 0.0;
-  ddata[0] = t*simunits.t.outscale;
-  ddata[1] = tsnaplast*simunits.t.outscale;
-  ddata[2] = hydro->mmean*simunits.m.outscale;
+  rdata[0]   = hydro->h_fac;
+  rdata[1]   = 0.0;
+  ddata[0]   = t*simunits.t.outscale;
+  ddata[1]   = tsnaplast*simunits.t.outscale;
+  ddata[2]   = hydro->mmean*simunits.m.outscale;
 
 
   // Write header information to file
@@ -2293,7 +2293,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
     nbody->stardata[i].m      /= simunits.m.inscale;
     nbody->stardata[i].h      /= simunits.r.inscale;
     nbody->stardata[i].radius /= simunits.r.inscale;
-    nbody->stardata[i].invh    = 1.0/nbody->stardata[i].h;
+    nbody->stardata[i].invh   = 1.0/nbody->stardata[i].h;
   }
 
 

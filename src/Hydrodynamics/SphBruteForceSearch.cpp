@@ -186,6 +186,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
   FLOAT *drmag;                        // Array of neib. distances
   FLOAT *invdrmag;                     // Array of neib. inverse distances
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  const int offset_imported = sph->Nghost;
 
   debug2("[SphBruteForceSearch::UpdateAllSphHydroForces]");
 
@@ -195,7 +196,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
   drmag    = new FLOAT[Ntot];
   invdrmag = new FLOAT[Ntot];
 
-  const int offset_imported = sph->Nghost;
 
   // Compute forces of real and imported particles
   //-----------------------------------------------------------------------------------------------
@@ -267,7 +267,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 
 //=================================================================================================
 //  SphBruteForceSearch::UpdateAllSphForces
-/// Update all SPH forces (both hydro and gravity)
+/// Update all SPH forces (both hydro and gravity).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
@@ -281,13 +281,13 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
   int Nneib;                           // No. of neighbours
   int *neiblist;                       // List of neighbour ids
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  const int offset_imported = sph->Nghost;
 
   debug2("[SphBruteForceSearch::UpdateAllSphForces]");
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
 
-  const int offset_imported = sph->Nghost;
 
   // Compute forces for real and imported particles
   //-----------------------------------------------------------------------------------------------
@@ -336,13 +336,13 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
 
 //=================================================================================================
 //  SphBruteForceSearch::UpdateAllSphGravForces
-/// ...
+/// Update all SPH gravity forces.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
- (int Nhydro,                          ///< [in] ..
-  int Ntot,                            ///< [in] ..
-  SphParticle<ndim> *part_gen,         ///< [in] ..
+ (int Nhydro,                          ///< [in] No. of hydro particles
+  int Ntot,                            ///< [in] Total no. of particles (inc. ghosts)
+  SphParticle<ndim> *part_gen,         ///< [in] Pointer to main SPH particle array
   Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
@@ -378,8 +378,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
     // Add self-contribution to gravitational potential
     partdata[i].gpot += partdata[i].m*partdata[i].invh*kernp->wpot(0.0);
 
-    // Determine interaction list (to ensure we don't compute pair-wise
-    // forces twice)
+    // Determine interaction list (to ensure we don't compute pair-wise forces twice)
     Nneib = 0;
     for (j=0; j<Nhydro; j++) {
       if (i != j && partdata[j].itype != dead) neiblist[Nneib++] = j;
@@ -406,7 +405,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
 //=================================================================================================
 //  SphBruteForceSearch::UpdateAllSphPeriodicForces
-/// ...
+/// Update all SPH forces (both hydro and gravity) for periodic boundary conditions.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
@@ -474,7 +473,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
       partdata[i].gpot += potperiodic;
     }
 
-
     // Compute all star forces
     sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i]);
 
@@ -494,7 +492,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
 
 //=================================================================================================
 //  SphBruteForceSearch::UpdateAllSphPeriodicGravForces
-/// ...
+/// Update all SPH gravity forces, including periodic Ewald corrections.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces

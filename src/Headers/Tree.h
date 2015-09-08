@@ -61,8 +61,8 @@ class Tree
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole):
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
-    invthetamaxsqd(1.0/_thetamaxsqd), kernrange(2.0*_kernrange), macerror(_macerror),
-    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd){};
+    invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
+    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd) {};
 
 
   //-----------------------------------------------------------------------------------------------
@@ -101,7 +101,8 @@ class Tree
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(int, int, int, int, ParticleType<ndim> *, FLOAT) = 0;
+  virtual void BuildTree(const int, const int, const int, const int,
+                         const FLOAT, ParticleType<ndim> *) = 0;
   virtual void AllocateTreeMemory(void) = 0;
   virtual void DeallocateTreeMemory(void) = 0;
   virtual void StockTree(TreeCell<ndim> &, ParticleType<ndim> *) = 0;

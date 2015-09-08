@@ -336,7 +336,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,mfvdata,"gather");
+          if (neibcheck) this->CheckValidNeighbourList(i, Ntot, Nneib, neiblist, mfvdata, "gather");
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i

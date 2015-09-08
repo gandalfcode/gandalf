@@ -1,5 +1,5 @@
 #==================================================================================================
-#  GANDALF v0.1.0 Makefile
+#  GANDALF v0.4.0 Makefile
 #
 #  This file is part of GANDALF :
 #  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -189,7 +189,7 @@ OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
 OBJ += MultipleSourceIonisation.o
 OBJ += KDRadiationTree.o TreeMonteCarlo.o
 OBJ += MonochromaticIonisationMonteCarlo.o
-OBJ += TreeRay.o chealpix.o
+#OBJ += chealpix.o TreeRay.o
 OBJ += EnergyEquation.o EnergyRadws.o
 #OBJ += SimGhostParticles.o
 #OBJ += Render.o

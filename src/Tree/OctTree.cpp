@@ -53,14 +53,20 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
                                    macerroraux, gravity_mac_aux, multipole_aux)
 {
   allocated_tree = false;
-  ltot           = 0;
+  ifirst         = -1;
+  ilast          = -1;
   lmax           = 40;
+  ltot           = 0;
+  ltot_old       = -1;
   Ncell          = 0;
   Ncellmax       = 0;
+  Ncellmaxold    = 0;
   Ntot           = 0;
   Ntotmax        = 0;
   Ntotmaxold     = 0;
-#if defined _OPENMP
+  Ntotold        = -1;
+  hmax           = 0.0;
+  #if defined _OPENMP
   Nthreads       = omp_get_max_threads();
 #else
   Nthreads       = 1;
@@ -95,13 +101,16 @@ void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 {
   debug2("[OctTree::AllocateTreeMemory]");
 
+  assert(Ntot >= 0);
+  assert(lmax >= 0);
+
   if (!allocated_tree || Ntotmax > Ntotmaxold || Ncell > Ncellmax) {
     if (allocated_tree) DeallocateTreeMemory();
-    Ntotmax    = max(Ntotmax,Ntot);
-    Ntotmaxold = Ntotmax;
-    Ncellmax   = max((int) ((FLOAT) 1.5*(FLOAT) Ncellmax), 2*Ntotmax);
-    gmax = Ntotmax;
-    gtot = Ntotmax;
+    Ntotmax     = max(Ntotmax, Ntot);
+    Ntotmaxold  = Ntotmax;
+    Ncellmax    = max((int) ((FLOAT) 2.0*(FLOAT) Ncellmax), 4*Ntotmax);
+    Ncellmaxold = Ncellmax;
+    gtot        = Ntotmax;
 
     firstCell = new int[lmax];
     lastCell  = new int[lmax];
@@ -146,12 +155,12 @@ void OctTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::BuildTree
- (int _ifirst,                         ///< [in] i.d. of first particle
-  int _ilast,                          ///< [in] i.d. of last particle
-  int Npart,                           ///< [in] No. of particles
-  int Npartmax,                        ///< [in] Max. no. of particles
-  ParticleType<ndim> *partdata,        ///< [in] Particle data array
-  FLOAT timestep)                      ///< [in] Smallest physical timestep
+ (const int _ifirst,                   ///< [in] i.d. of first particle
+  const int _ilast,                    ///< [in] i.d. of last particle
+  const int Npart,                     ///< [in] No. of particles
+  const int Npartmax,                  ///< [in] Max. no. of particles
+  const FLOAT timestep,                ///< [in] Smallest physical timestep
+  ParticleType<ndim> *partdata)        ///< [in] Particle data array
 {
   bool allDone = false;                // Are all cell divisions completed?
   int c;                               // Cell counter
@@ -194,22 +203,24 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   if (Ntot == 0) return;
 
   celldata[0].N      = Ntot;
-  celldata[0].ifirst = ifirst;
-  celldata[0].ilast  = ilast;
+  celldata[0].ifirst = _ifirst;
+  celldata[0].ilast  = _ilast;
   celldata[0].level  = 0;
   celldata[0].copen  = -1;
+
 
   // Compute the bounding box of all particles in root cell and the root cell size
   for (k=0; k<ndim; k++) celldata[0].bbmin[k] = +big_number;
   for (k=0; k<ndim; k++) celldata[0].bbmax[k] = -big_number;
-  for (i=ifirst; i<=ilast; i++) {
+  for (i=_ifirst; i<=_ilast; i++) {
     for (k=0; k<ndim; k++) celldata[0].bbmin[k] = min(celldata[0].bbmin[k], partdata[i].r[k]);
     for (k=0; k<ndim; k++) celldata[0].bbmax[k] = max(celldata[0].bbmax[k], partdata[i].r[k]);
   }
   for (k=0; k<ndim; k++) {
     //celldata[0].rcell[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
     celldata[0].r[k] = (FLOAT) 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
-    cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].rcell[k]);
+    //cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].rcell[k]);
+    cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].r[k]);
   }
   rootCellSize = (FLOAT) 2.0*cellSize;
 
@@ -218,11 +229,10 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   //-----------------------------------------------------------------------------------------------
   if (Ntot > 0) {
 
-    celllist = new int[Npartmax];
-
+    celllist     = new int[Npartmax];
     ltot         = 0;
-    Nlist        = 1;
     Ncell        = 1;
+    Nlist        = 1;
     celllist[0]  = 0;
     firstCell[0] = 0;
     lastCell[0]  = 0;
@@ -338,6 +348,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
       ltot++;
       firstCell[ltot] = lastCell[ltot-1] + 1;
       lastCell[ltot] = Ncell - 1;
+      assert(Ncell <= Ncellmax);
 
       // Check if all new cells are children cells
       Nlist = 0;
@@ -348,9 +359,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
           celllist[Nlist++] = c;
         }
       }
-
-      //cout << "Finished creating level : " << ltot << "     allDone : " << allDone
-      //     << "   first/lastCell : " << firstCell[ltot] << "    " << lastCell[ltot] << endl;
 
       // Check we have not reached maximum level
       if (ltot >= lmax) {
@@ -366,7 +374,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   }
   //-----------------------------------------------------------------------------------------------
 
-  //cout << "Finished building oct-tree.  Ncell : " << Ncell << "    " << Ncellmax << endl;
 
   StockTree(celldata[0],partdata);
 #if defined(VERIFY_ALL)
@@ -389,16 +396,16 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   ParticleType<ndim> *partdata)        ///< SPH particle data array
 {
   int c,cc;                            // Cell counters
-  int cend;                            // ..
+  int cend;                            // Last particle in cell
   int i;                               // Particle counter
   int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
-  int l;                               // ..
+  int l;                               // Level counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT mi;                            // Mass of particle i
-  FLOAT p = (FLOAT) 0.0;               // ..
-  FLOAT lambda = (FLOAT) 0.0;          // ..
+  FLOAT p = (FLOAT) 0.0;               // ??
+  FLOAT lambda = (FLOAT) 0.0;          // Quadrupole moment eigenvalue
 
   debug2("[OctTree::StockTree]");
 
@@ -415,7 +422,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
       // Zero all summation variables for all cells
       cell.Nactive  = 0;
-      //cell.N        = 0;
+      cell.N        = 0;
       cell.m        = (FLOAT) 0.0;
       cell.hmax     = (FLOAT) 0.0;
       cell.rmax     = (FLOAT) 0.0;
@@ -423,11 +430,11 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       cell.drmaxdt  = (FLOAT) 0.0;
       cell.mac      = (FLOAT) 0.0;
       cell.cdistsqd = big_number;
-      for (k=0; k<ndim; k++) cell.r[k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) cell.v[k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) cell.bbmin[k] = big_number;
-      for (k=0; k<ndim; k++) cell.bbmax[k] = -big_number;
+      for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) cell.bbmin[k]   = big_number;
+      for (k=0; k<ndim; k++) cell.bbmax[k]   = -big_number;
       for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
       for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
       for (k=0; k<5; k++) cell.q[k] = (FLOAT) 0.0;
@@ -462,7 +469,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           if (partdata[i].itype != dead) {
             cell.N++;
             if (partdata[i].active) cell.Nactive++;
-            cell.hmax = max(cell.hmax,partdata[i].h);
+            cell.hmax = max(cell.hmax, partdata[i].h);
             cell.m += partdata[i].m;
             for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
             for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
@@ -529,14 +536,15 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           TreeCell<ndim> &child = celldata[cc];
 
           if (child.N > 0) {
-            for (k=0; k<ndim; k++) cell.bbmin[k] = min(child.bbmin[k],cell.bbmin[k]);
-            for (k=0; k<ndim; k++) cell.bbmax[k] = max(child.bbmax[k],cell.bbmax[k]);
-            for (k=0; k<ndim; k++) cell.hboxmin[k] = min(child.hboxmin[k],cell.hboxmin[k]);
-            for (k=0; k<ndim; k++) cell.hboxmax[k] = max(child.hboxmax[k],cell.hboxmax[k]);
+            for (k=0; k<ndim; k++) cell.bbmin[k]   = min(child.bbmin[k], cell.bbmin[k]);
+            for (k=0; k<ndim; k++) cell.bbmax[k]   = max(child.bbmax[k], cell.bbmax[k]);
+            for (k=0; k<ndim; k++) cell.hboxmin[k] = min(child.hboxmin[k], cell.hboxmin[k]);
+            for (k=0; k<ndim; k++) cell.hboxmax[k] = max(child.hboxmax[k], cell.hboxmax[k]);
             for (k=0; k<ndim; k++) cell.r[k] += child.m*child.r[k];
             for (k=0; k<ndim; k++) cell.v[k] += child.m*child.v[k];
-            cell.hmax = max(child.hmax,cell.hmax);
+            cell.hmax = max(child.hmax, cell.hmax);
             cell.m += child.m;
+            cell.N += child.N;
           }
 
           cc = child.cnext;
@@ -548,8 +556,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         }
         for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
         for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
-        cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
-        cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+        cell.cdistsqd = max(DotProduct(dr, dr, ndim),cell.hmax*cell.hmax)/thetamaxsqd;
+        cell.rmax = sqrt(DotProduct(dr, dr, ndim));
 #ifdef MPI_PARALLEL
         //cell.worktot = child1.worktot + child2.worktot;
 #endif
@@ -722,7 +730,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
 
   // Loop through all grid cells in turn
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(c,i,ilast) shared(partdata)
   for (c=0; c<Ncell; c++) {
     celldata[c].Nactive = 0;
@@ -739,7 +747,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
     };
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   //timing->EndTimingSection("TREE_UPDATE_COUNTERS");
 
@@ -913,5 +921,5 @@ template class OctTree<1, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<2, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<3, MeshlessFVParticle, OctTreeCell>;
 
-template class OctTree<3, GradhSphParticle, OsTreeRayCell>;
-template class OctTree<3, MeshlessFVParticle, OsTreeRayCell>;
+//template class OctTree<3, GradhSphParticle, OsTreeRayCell>;
+//template class OctTree<3, MeshlessFVParticle, OsTreeRayCell>;

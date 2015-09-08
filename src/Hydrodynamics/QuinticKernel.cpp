@@ -1,6 +1,6 @@
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel.cpp
-//  ..
+//  Quintic Kernel set-up functions
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <math.h>
@@ -29,9 +29,9 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel::QuinticKernel
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 QuinticKernel<ndim>::QuinticKernel(string KernelName):
   SmoothingKernel<ndim>()
@@ -46,9 +46,9 @@ QuinticKernel<ndim>::QuinticKernel(string KernelName):
 
 
 
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel::~QuinticKernel
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 QuinticKernel<ndim>::~QuinticKernel()
 {

@@ -456,7 +456,7 @@ void MfvRungeKutta<ndim, kernelclass>::CopyDataToGhosts
   int itype;                           // Ghost particle type
   int j;                               // Ghost particle counter
 
-  debug2("[MfvRungeKutta::CopySphDataToGhosts]");
+  debug2("[MfvRungeKutta::CopyHydroDataToGhosts]");
 
 
   //---------------------------------------------------------------------------

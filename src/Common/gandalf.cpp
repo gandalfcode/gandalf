@@ -39,28 +39,28 @@ using namespace std;
 //=================================================================================================
 int main(int argc, char** argv)
 {
-  bool restart=false;                                // Flag restart simulation
-  int rank=0;                                        // Local copy of MPI rank
+  bool restart = false;                              // Flag restart simulation
+  int rank = 0;                                      // Local copy of MPI rank
   string paramfile;                                  // Name of parameters file
   stringstream ss;                                   // Stream char to string
   ofstream outfile;                                  // Stream of temp restart file
   CodeTiming* timing = new CodeTiming();             // Timing object
-  SimulationBase* sim;                               // Main simulation object
   Parameters* params = new Parameters();             // Parameters object
+  SimulationBase* sim;                               // Main simulation object
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
-
 
 #ifdef MPI_PARALLEL
   // Initialise all MPI processes (if activated in Makefile)
   int mpi_thread_support;
-  int required_mpi_thread_support=MPI_THREAD_SINGLE;
-#ifdef _OPENMP
-  required_mpi_thread_support=MPI_THREAD_FUNNELED;
-#endif
-  MPI_Init_thread(&argc,&argv,required_mpi_thread_support,&mpi_thread_support);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   int n_mpi_cpus;
-  MPI_Comm_size(MPI_COMM_WORLD,&n_mpi_cpus);
+#ifdef _OPENMP
+  int required_mpi_thread_support = MPI_THREAD_FUNNELED;
+else
+  int required_mpi_thread_support = MPI_THREAD_SINGLE;
+#endif
+  MPI_Init_thread(&argc, &argv, required_mpi_thread_support, &mpi_thread_support);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &n_mpi_cpus);
 
   // Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
@@ -72,12 +72,15 @@ int main(int argc, char** argv)
         "Refer to your system administrator to know how to solve this problem");
   else {
     string message;
-    if (mpi_thread_support == MPI_THREAD_FUNNELED)
-      message="MPI_THREAD_FUNNELED";
-    else if (mpi_thread_support == MPI_THREAD_SERIALIZED)
-      message="MPI_THREAD_SERIALIZED";
-    else if (mpi_thread_support == MPI_THREAD_MULTIPLE)
-      message="MPI_THREAD_MULTIPLE";
+    if (mpi_thread_support == MPI_THREAD_FUNNELED) {
+      message = "MPI_THREAD_FUNNELED";
+    }
+    else if (mpi_thread_support == MPI_THREAD_SERIALIZED) {
+      message = "MPI_THREAD_SERIALIZED";
+    }
+    else if (mpi_thread_support == MPI_THREAD_MULTIPLE) {
+      message = "MPI_THREAD_MULTIPLE";
+    }
     cout << "The level of MPI thread support is " << message << endl;
   }
 #endif
@@ -110,7 +113,7 @@ int main(int argc, char** argv)
 
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"],
-                                          params->stringparams["sim"],params);
+                                          params->stringparams["sim"], params);
   sim->timing = timing;
   sim->restart = restart;
 
@@ -123,7 +126,8 @@ int main(int argc, char** argv)
 #if defined _OPENMP
   cout << "Running with OPENMP, using " << omp_get_max_threads() << " threads" << endl;
 #if defined MPI_PARALLEL
-  cout << "Hybrid OpenMP/MPI parallelization currently in use, for a total of " << n_mpi_cpus*omp_get_max_threads() << " cores" << endl;
+  cout << "Hybrid OpenMP/MPI parallelization currently in use, for a total of "
+       << n_mpi_cpus*omp_get_max_threads() << " cores" << endl;
 #endif
 #endif
 
@@ -139,6 +143,11 @@ int main(int argc, char** argv)
 
   // Compile timing statistics from complete simulation
   timing->ComputeTimingStatistics(sim->run_id);
+
+  // Finally, delete all locally created objects
+  delete sim;
+  delete params;
+  delete timing;
 
   return 0;
 }

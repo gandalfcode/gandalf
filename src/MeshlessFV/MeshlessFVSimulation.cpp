@@ -562,7 +562,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Copy all other data from real SPH particles to ghosts
     mfv->CopyDataToGhosts(simbox, partdata);
-    //LocalGhosts->CopySphDataToGhosts(simbox,sph);
+    //LocalGhosts->CopyHydroDataToGhosts(simbox,sph);
 
     mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                        mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
@@ -582,7 +582,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
     mfv->CopyDataToGhosts(simbox, partdata);
 #ifdef MPI_PARALLEL
-//    MpiGhosts->CopySphDataToGhosts(simbox,sph);
+//    MpiGhosts->CopyHydroDataToGhosts(simbox,sph);
 #endif
 
     // Update the primitive vectors for all particles

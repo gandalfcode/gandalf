@@ -257,11 +257,11 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Radiation transport object
   //-----------------------------------------------------------------------------------------------
   if (gas_radiation == "treeray" && ndim == 3) {
-    radiation = new TreeRay<ndim,1,GradhSphParticle,OsTreeRayCell>
+    /*radiation = new TreeRay<ndim,1,GradhSphParticle,OsTreeRayCell>
       (intparams["on_the_spot"], intparams["nside"], intparams["ilNR"], intparams["ilNTheta"],
        intparams["ilNPhi"], intparams["ilNNS"], intparams["ilFinePix"], floatparams["maxDist"],
        floatparams["rayRadRes"], floatparams["relErr"], stringparams["errControl"],
-       simbox, &simunits, simparams);
+       simbox, &simunits, simparams);*/
   }
   else if (gas_radiation == "ionisation") {
     radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>
@@ -296,7 +296,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     LocalGhosts = new NullGhosts<ndim>();
   }
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhostsSpecific<ndim, GradhSphParticle>(mpicontrol);
+  MpiGhosts = new MpiGhostsSpecific<ndim, GradhSphParticle>(mpicontrol);
 #endif
 
 

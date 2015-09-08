@@ -54,14 +54,6 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
                                            string gravity_mac_aux, string multipole_aux):
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
                                    macerroraux, gravity_mac_aux, multipole_aux)
-  /*gravity_mac(gravity_mac_aux),
-  multipole(multipole_aux),
-  Nleafmax(Nleafmaxaux),
-  invthetamaxsqd(1.0/thetamaxsqdaux),
-  kernrange(kernrangeaux),
-  macerror(macerroraux),
-  theta(sqrt(thetamaxsqdaux)),
-  thetamaxsqd(thetamaxsqdaux)*/
 {
   allocated_tree = false;
   gmax           = 0;
@@ -119,13 +111,13 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 
   if (!allocated_tree || Ntotmax > Ntotmaxold || Ntot > Ntotmax || Ncellmax > Ncellmaxold) {
     if (allocated_tree) DeallocateTreeMemory();
-    Ntotmax = max(Ntotmax, Ntot);
-    Ntotmaxold = Ntotmax;
+    Ntotmax     = max(Ntotmax, Ntot);
+    Ntotmaxold  = Ntotmax;
     Ncellmaxold = Ncellmax;
 
-    g2c = new int[gmax];
-    ids = new int[Ntotmax];
-    inext = new int[Ntotmax];
+    g2c      = new int[gmax];
+    ids      = new int[Ntotmax];
+    inext    = new int[Ntotmax];
     celldata = new struct TreeCell<ndim>[Ncellmax];
 
     allocated_tree = true;
@@ -171,17 +163,17 @@ void KDTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::BuildTree
- (int _ifirst,                         ///< i.d. of first particle
-  int _ilast,                          ///< i.d. of last particle
-  int Npart,                           ///< No. of particles
-  int Npartmax,                        ///< Max. no. of particles
-  ParticleType<ndim> *partdata,        ///< Particle data array
-  FLOAT timestep)                      ///< Smallest physical timestep
+ (const int _ifirst,                   ///< i.d. of first particle
+  const int _ilast,                    ///< i.d. of last particle
+  const int Npart,                     ///< No. of particles
+  const int Npartmax,                  ///< Max. no. of particles
+  const FLOAT timestep,                ///< Smallest physical timestep
+  ParticleType<ndim> *partdata)        ///< Particle data array
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  FLOAT bbmin[ndim];
-  FLOAT bbmax[ndim];
+  FLOAT bbmin[ndim];                   // Minimum extent of local bounding box
+  FLOAT bbmax[ndim];                   // Maximum extent of local bounding box
 
   debug2("[KDTree::BuildTree]");
   //timing->StartTimingSection("BUILD_TREE");

@@ -365,7 +365,7 @@ DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
   // Acceleration condition
   amag = sqrt(DotProduct(star->a,star->a,ndim));
   timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
-  timestep = min(timestep,star->dt_internal);
+  timestep = min(timestep, star->dt_internal);
 
   // Rate of change of acceleration condition
   //adotmag = sqrt(DotProduct(star->adot,star->adot,ndim));

@@ -148,9 +148,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::allocated_tree;
   using Tree<ndim,ParticleType,TreeCell>::celldata;
   using Tree<ndim,ParticleType,TreeCell>::gravity_mac;
-  using Tree<ndim,ParticleType,TreeCell>::gmax;
   using Tree<ndim,ParticleType,TreeCell>::gtot;
-  using Tree<ndim,ParticleType,TreeCell>::g2c;
   using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
@@ -161,6 +159,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::multipole;
   using Tree<ndim,ParticleType,TreeCell>::Ncell;
   using Tree<ndim,ParticleType,TreeCell>::Ncellmax;
+  using Tree<ndim,ParticleType,TreeCell>::Ncellmaxold;
   using Tree<ndim,ParticleType,TreeCell>::Nleafmax;
   using Tree<ndim,ParticleType,TreeCell>::Nthreads;
   using Tree<ndim,ParticleType,TreeCell>::Ntot;
@@ -186,7 +185,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  void BuildTree(int, int, int, int, ParticleType<ndim> *, FLOAT);
+  void BuildTree(const int, const int, const int, const int, const FLOAT, ParticleType<ndim> *);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
   bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);

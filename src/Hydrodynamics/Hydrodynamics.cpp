@@ -100,9 +100,9 @@ void Hydrodynamics<ndim>::ComputeBoundingBox
 //=================================================================================================
 template <int ndim>
 void Hydrodynamics<ndim>::CheckXBoundaryGhostParticle
- (const int i,                         ///< i.d. of particles to check
-  const FLOAT tghost,                  ///< Expected lifetime of ghost
-  const DomainBox<ndim> &simbox)       ///< Simulation domain box
+ (const int i,                         ///< [in] i.d. of particles to check
+  const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
+  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   Particle<ndim>& part = GetParticlePointer(i);
 
@@ -139,9 +139,9 @@ void Hydrodynamics<ndim>::CheckXBoundaryGhostParticle
 //=================================================================================================
 template <int ndim>
 void Hydrodynamics<ndim>::CheckYBoundaryGhostParticle
- (const int i,                         ///< i.d. of particles to check
-  const FLOAT tghost,                  ///< Expected lifetime of ghost
-  const DomainBox<ndim> &simbox)       ///< Simulation domain box
+ (const int i,                         ///< [in] i.d. of particles to check
+  const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
+  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   if (ndim > 1) {
     Particle<ndim>& part = GetParticlePointer(i);
@@ -180,9 +180,9 @@ void Hydrodynamics<ndim>::CheckYBoundaryGhostParticle
 //=================================================================================================
 template <int ndim>
 void Hydrodynamics<ndim>::CheckZBoundaryGhostParticle
- (const int i,                         ///< i.d. of particles to check
-  const FLOAT tghost,                  ///< Expected lifetime of ghost
-  const DomainBox<ndim> &simbox)       ///< Simulation domain box
+ (const int i,                         ///< [in] i.d. of particles to check
+  const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
+  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   if (ndim == 3) {
     Particle<ndim>& part = GetParticlePointer(i);

@@ -75,6 +75,10 @@ void Simulation<ndim>::GenerateIC(void)
       ConvertToCodeUnits();
       return;
     }
+    // If unsuccessful (e.g. restart file doesn't exist), then make restart flag false
+    else {
+      restart = false;
+    }
   }
 
 
@@ -85,7 +89,7 @@ void Simulation<ndim>::GenerateIC(void)
   if (ic == "file") {
     ReadSnapshotFile(simparams->stringparams["in_file"], simparams->stringparams["in_file_form"]);
     rescale_particle_data = true;
-	this->initial_h_provided = false;
+    this->initial_h_provided = false;
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "bb") {

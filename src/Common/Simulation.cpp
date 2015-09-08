@@ -82,40 +82,55 @@ SimulationBase* SimulationBase::SimulationFactory
   // Create and return Simulation object depending on the chosen algorithm
   // and the dimensionality.
   if (ndim == 1) {
-    if (simtype == "gradhsph" || simtype == "sph")
+    if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<1>(params);
-    else if (simtype == "sm2012sph")
+    }
+    else if (simtype == "sm2012sph") {
       return new SM2012SphSimulation<1>(params);
-    else if (simtype == "meshlessfv" || simtype == "mfvmuscl")
+    }
+    else if (simtype == "meshlessfv" || simtype == "mfvmuscl") {
       return new MfvMusclSimulation<1>(params);
-    else if (simtype == "mfvrk")
+    }
+    else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<1>(params);
-    else if (simtype == "nbody")
+    }
+    else if (simtype == "nbody") {
       return new NbodySimulation<1>(params);
+    }
   }
   else if (ndim == 2) {
-    if (simtype == "gradhsph" || simtype == "sph")
+    if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<2>(params);
-    else if (simtype == "sm2012sph")
+    }
+    else if (simtype == "sm2012sph") {
       return new SM2012SphSimulation<2>(params);
-    else if (simtype == "meshlessfv" || simtype == "mfvmuscl")
+    }
+    else if (simtype == "meshlessfv" || simtype == "mfvmuscl") {
       return new MfvMusclSimulation<2>(params);
-    else if (simtype == "mfvrk")
+    }
+    else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<2>(params);
-    else if (simtype == "nbody")
+    }
+    else if (simtype == "nbody") {
       return new NbodySimulation<2>(params);
+    }
   }
   else if (ndim == 3) {
-    if (simtype == "gradhsph" || simtype == "sph")
+    if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<3>(params);
-    else if (simtype == "sm2012sph")
+    }
+    else if (simtype == "sm2012sph") {
       return new SM2012SphSimulation<3>(params);
-    else if (simtype == "meshlessfv" || simtype == "mfvmuscl")
+    }
+    else if (simtype == "meshlessfv" || simtype == "mfvmuscl") {
       return new MfvMusclSimulation<3>(params);
-    else if (simtype == "mfvrk")
+    }
+    else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<3>(params);
-    else if (simtype == "nbody")
+    }
+    else if (simtype == "nbody") {
       return new NbodySimulation<3>(params);
+    }
   }
   return NULL;
 }
@@ -200,11 +215,12 @@ void SimulationBase::SplashScreen(void)
   cout << "*         *****    *    *   *     *   *****    *    *   *****  *             *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*   Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids    *" << endl;
-  cout << "*                        Version 0.3.0 - 31/03/2015                          *" << endl;
+  cout << "*                        Version 0.4.0 - 04/09/2015                          *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*                 Original code : D. A. Hubber & G. Rosotti                  *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*              Contributions by : S. Balfour, F. Dinnbier, O. Lomax,         *" << endl;
+  cout << "*              Contributions by : S. Balfour, F. Dinnbier, S. Heigl,         *" << endl;
+  cout << "*                                 O. Lomax, J. Ngoumou, P. Rohde,            *" << endl;
   cout << "*                                 S. Walch, A. P. Whitworth, R. Wunsch       *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*                  https://github.com/gandalfcode/gandalf                    *" << endl;
@@ -315,11 +331,7 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 void SimulationBase::Run
  (int Nadvance)                        ///< [in] Selected max no. of timesteps (Optional argument)
 {
-  int Ntarget;                // Target step no before finishing main code integration.
-  //string filename;                     // Output snapshot filename
-  //string filename2;                    // ..
-  //stringstream ss;                     // Stream object for preparing filename
-  //ofstream outfile;                    // Stream of restart file
+  int Ntarget;                         // Target step no before finishing main code integration.
 
   debug1("[SimulationBase::Run]");
 
@@ -403,7 +415,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
     if (t >= tsnapnext) CalculateDiagnostics();
 
     // Call output routine
-    filename=Output();
+    filename = Output();
 
     // If we have written a snapshot, create a new snapshot object
     if (filename.length() != 0) {
@@ -439,8 +451,8 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 //=================================================================================================
 string SimulationBase::Output(void)
 {
-  string filename;                  // Output snapshot filename
-  string filename2;                 // ..
+  string filename;                  // 'Lite' output snapshot filename
+  string filename2;                 // Regular output snapshot filename
   string nostring;                  // String of number of snapshots
   string fileend;                   // Name of restart file
   stringstream ss;                  // Stream object for preparing filename
@@ -514,9 +526,7 @@ string SimulationBase::Output(void)
 
     }
 
-
   }
-//if (Noutsnap>4) exit(-3);//MPI_Abort(MPI_COMM_WORLD,-3);
   //-----------------------------------------------------------------------------------------------
 
 
@@ -545,12 +555,13 @@ string SimulationBase::Output(void)
 
 //=================================================================================================
 //  SimulationBase::RestartSnapshot
-/// ...
+/// Write the restart log file (containing the last snapshot i.d.) plus a temporary snapshot
+/// file for future restarting.
 //=================================================================================================
 void SimulationBase::RestartSnapshot(void)
 {
-  string filename;                     // Output snapshot filename
-  string filename2;                    // ..
+  string filename;                     // Temporary output snapshot filename
+  string filename2;                    // Restart log filename
   stringstream ss;                     // Stream object for preparing filename
   ofstream outfile;                    // Stream of restart file
 
@@ -573,10 +584,9 @@ void SimulationBase::RestartSnapshot(void)
 
 
 
-
 //=================================================================================================
 //  SimulationBase::SetupSimulation
-/// Main function for setting up a new SPH simulation.
+/// Main function for setting up a new simulation.
 //=================================================================================================
 void SimulationBase::SetupSimulation(void)
 {
@@ -1005,7 +1015,7 @@ void Simulation<ndim>::AllocateParticleMemory(void)
 
     // If sink particles are employed, allow enough memory for new sinks
     if (sink_particles == 1) {
-      N = max(nbody->Nstar,1024);
+      N = max(nbody->Nstar, 1024);
     }
     else N = nbody->Nstar;
 
@@ -1087,8 +1097,8 @@ void Simulation<ndim>::ImportArrayNbody
 {
   DOUBLE StarParticle<ndim>::*quantityp = 0;            // Pointer to scalar quantity
   DOUBLE (StarParticle<ndim>::*quantitypvec)[ndim] = 0; // Pointer to component of vector quantity
-  int index = 0;                                   // Component index (if quantity is a vector)
-  bool scalar = false;                             // Is the requested quantity a scalar?
+  int index = 0;                                        // Component index (if quantity is vector)
+  bool scalar = false;                                  // Is the requested quantity a scalar?
 
   // Check that the size is correct
   if (size != nbody->Nstar) {
@@ -1330,10 +1340,10 @@ void Simulation<ndim>::ImportArraySph
 //=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ImportArray
- (double* input,                     ///< [in] Input array
-  int size,                          ///< [in] Size of the input array
-  string quantity,                   ///< [in] Which quantity should be set equal to the given array
-  string type)                       ///< [in] Which particle type should be assigned the array
+ (double* input,                       ///< [in] Input array
+  int size,                            ///< [in] Size of the input array
+  string quantity,                     ///< [in] Quantity to be set equal to the given array
+  string type)                         ///< [in] Particle type that should be assigned the array
 {
   debug2("[Simulation::ImportArray]");
 
@@ -1373,7 +1383,7 @@ void Simulation<ndim>::ImportArray
 
 //=================================================================================================
 //  Simulation::SetComFrame
-/// Move all particles to centre-of-mass frame.
+/// Move all particles (both hydro and N-body) to centre-of-mass frame.
 //=================================================================================================
 template<int ndim>
 void Simulation<ndim>::SetComFrame(void)

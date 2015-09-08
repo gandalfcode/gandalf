@@ -165,7 +165,6 @@ class Sph : public Hydrodynamics<ndim>
 
 
 
-
 //=================================================================================================
 //  Class GradhSph
 /// \brief   Class definition for conservative 'grad-h' SPH simulations.
