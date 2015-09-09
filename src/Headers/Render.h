@@ -54,8 +54,8 @@ class RenderBase
 {
 public:
 
-  RenderBase();
-  virtual ~RenderBase();
+  RenderBase() {};
+  virtual ~RenderBase() {};
 
   static RenderBase* RenderFactory(int ndim, SimulationBase* sim);
 
