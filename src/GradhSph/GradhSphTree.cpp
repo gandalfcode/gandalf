@@ -210,7 +210,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 #else
     const int ithread = 0;
 #endif
-    assert(ithread < Nthreads);
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
     int i;                                     // Particle id

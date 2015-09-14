@@ -151,10 +151,12 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
       part.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else if (iteration < 5*iteration_max) {
-      if (part.ndens < small_number || part.ndens*pow(part.h,ndim) > pow(h_fac,ndim))
+      if (part.ndens < small_number || part.ndens*pow(part.h,ndim) > pow(h_fac,ndim)) {
         h_upper_bound = part.h;
-      else
+      }
+      else {
         h_lower_bound = part.h;
+      }
       part.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else {
@@ -217,13 +219,12 @@ void MfvMuscl<ndim, kernelclass>::ComputePsiFactors
   MeshlessFVParticle<ndim> *neibpart)          ///< [inout] Neighbour particle data
 {
   int j;                                       // Neighbour list id
-  int jj;                                      // ..
+  int jj;                                      // Aux. neighbour loop counter
   int k;                                       // Dimension counter
-  FLOAT invdet;                                // Determinant
   FLOAT draux[ndim];                           // Relative position vector
-  FLOAT drsqd;                                 // ..
-  FLOAT E[ndim][ndim];                         // ..
-  const FLOAT invhsqd = part.invh*part.invh;   // ..
+  FLOAT drsqd;                                 // Distance squared
+  FLOAT E[ndim][ndim];                         // E-matrix for computing normalised B-matrix
+  const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
 
   // Zero all matrices
   for (k=0; k<ndim; k++) {
@@ -256,16 +257,16 @@ void MfvMuscl<ndim, kernelclass>::ComputePsiFactors
     part.B[0][0] = 1.0/E[0][0];
   }
   else if (ndim == 2) {
-    invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
+    const FLOAT invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
     part.B[0][0] = invdet*E[1][1];
     part.B[0][1] = -1.0*invdet*E[0][1];
     part.B[1][0] = -1.0*invdet*E[1][0];
     part.B[1][1] = invdet*E[0][0];
   }
   else if (ndim == 3) {
-    invdet = 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
-                  E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
-                  E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
+    const FLOAT invdet = 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
+                              E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
+                              E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
     part.B[0][0] = (E[1][1]*E[2][2] - E[2][1]*E[1][2])*invdet;
     part.B[0][1] = (E[0][2]*E[2][1] - E[0][1]*E[2][2])*invdet;
     part.B[0][2] = (E[0][1]*E[1][2] - E[0][2]*E[1][1])*invdet;
@@ -306,21 +307,21 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
-  int var;                             // ..
+  int var;                             // Particle state vector summation variable
   FLOAT draux[ndim];                   // Relative position vector
-  FLOAT drsqd;                         // ..
-  FLOAT dv[ndim];                      // ..
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT psitilda[ndim];                // ..
-  const FLOAT invhsqd = part.invh*part.invh;   // ..
+  FLOAT psitilda[ndim];                // Normalised gradient psi factor
+  const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
 
 
   // Initialise/zero all variables to be updated in this routine
   part.vsig_max = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) part.vreg[k] = 0.0;
+  for (k=0; k<ndim; k++) part.vreg[k] = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
     for (var=0; var<nvar; var++) {
-      part.grad[var][k] = 0.0;
+      part.grad[var][k] = (FLOAT) 0.0;
     }
   }
   for (var=0; var<nvar; var++) {
@@ -342,7 +343,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
     drsqd = DotProduct(draux, draux, ndim);
 
     // Calculate psitilda values
-    for (k=0; k<ndim; k++) psitilda[k] = 0.0;
+    for (k=0; k<ndim; k++) psitilda[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) {
       for (int kk=0; kk<ndim; kk++) {
         psitilda[k] += part.B[k][kk]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
@@ -379,15 +380,14 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     //drsqd = DotProduct(draux, draux, ndim);
 
-
     // Calculate min and max values of primitives for slope limiters
     for (var=0; var<nvar; var++) {
       part.Wmin[var] = min(part.Wmin[var], neibpart[j].Wprim[var]);
       part.Wmax[var] = max(part.Wmax[var], neibpart[j].Wprim[var]);
-      part.Wmidmin[var] =
-        min(part.Wmidmin[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
-      part.Wmidmax[var] =
-        max(part.Wmidmax[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmin[var] = min(part.Wmidmin[var],
+        part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmax[var] = max(part.Wmidmax[var],
+        part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
       assert(part.Wmidmax[var] >= part.Wmidmin[var]);
       assert(part.Wmax[var] >= part.Wmin[var]);
     }
@@ -403,18 +403,18 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
 
 
 //=================================================================================================
-//  MfvMuscl::ComputeGodunovFlux
+//  MfvMuscl::CopyDataToGhosts
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void MfvMuscl<ndim, kernelclass>::CopyDataToGhosts
  (DomainBox<ndim> &simbox,
-  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Neighbour particle data
+  MeshlessFVParticle<ndim> *partdata)      ///< [inout] Neighbour particle data
 {
-  int i;                               // Particle id
-  int iorig;                           // Original (real) particle id
-  int itype;                           // Ghost particle type
-  int j;                               // Ghost particle counter
+  int i;                                   // Particle id
+  int iorig;                               // Original (real) particle id
+  int itype;                               // Ghost particle type
+  int j;                                   // Ghost particle counter
 
   debug2("[MfvMuscl::CopyDataToGhosts]");
 
@@ -479,13 +479,14 @@ void MfvMuscl<ndim, kernelclass>::CopyDataToGhosts
 
 //=================================================================================================
 //  MfvMuscl::ComputeGodunovFlux
-/// ...
+/// Calculate the Godunov flux between particle i and all neighbours storing all the partial
+/// sums of conserved variables, dQ, between neighbours.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
-  const FLOAT timestep,                ///< ..
+  const FLOAT timestep,                ///< [in] Minimum timestep size
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
   FLOAT *drmag,                        ///< [in] Distances of gather neighbours
   FLOAT *invdrmag,                     ///< [in] Inverse distances of gather neibs
@@ -496,23 +497,23 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
-  int var;                             // ..
-  FLOAT Aij[ndim];                     // ..
+  int var;                             // Particle state vector variable counter
+  FLOAT Aij[ndim];                     // ??
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
   FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
-  FLOAT drsqd;                         // ..
-  FLOAT invdrmagaux;                   // ..
-  FLOAT psitildai[ndim];               // ..
-  FLOAT psitildaj[ndim];               // ..
-  FLOAT rface[ndim];                   // ..
-  FLOAT vface[ndim];                   // ..
-  FLOAT flux[nvar][ndim];              // ..
-  FLOAT Wleft[nvar];                   // ..
-  FLOAT Wright[nvar];                  // ..
-  FLOAT Wdot[nvar];                    // ..
-  FLOAT gradW[nvar][ndim];             // ..
-  FLOAT dW[nvar];                      // ..
-  const FLOAT dt = timestep*(FLOAT) part.nstep;    // ..
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrmagaux;                   // 1 / distance
+  FLOAT psitildai[ndim];               // Normalised gradient psi value for particle i
+  FLOAT psitildaj[ndim];               // Normalised gradient psi value for neighbour j
+  FLOAT rface[ndim];                   // Position of working face (to compute Godunov fluxes)
+  FLOAT vface[ndim];                   // Velocity of working face (to compute Godunov fluxes)
+  FLOAT flux[nvar][ndim];              // Flux tensor
+  FLOAT Wleft[nvar];                   // Primitive vector for LHS of Riemann problem
+  FLOAT Wright[nvar];                  // Primitive vector for RHS of Riemann problem
+  FLOAT Wdot[nvar];                    // Time derivative of primitive vector
+  FLOAT gradW[nvar][ndim];             // Gradient of primitive vector
+  FLOAT dW[nvar];                      // Change in primitive quantities
+  const FLOAT dt = timestep*(FLOAT) part.nstep;    // Timestep of given particle
 
 
   // Initialise all particle flux variables
@@ -527,7 +528,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
     drsqd = DotProduct(draux, draux, ndim);
-    invdrmagaux = 1.0/sqrt(drsqd + small_number);
+    invdrmagaux = (FLOAT) 1.0/sqrt(drsqd + small_number);
     for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
 
     // Calculate psitilda values
@@ -589,7 +590,6 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Calculate Godunov flux using the selected Riemann solver
     riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
-
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {

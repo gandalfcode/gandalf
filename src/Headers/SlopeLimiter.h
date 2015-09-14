@@ -320,4 +320,57 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
   }
 
 };
+
+
+
+//=================================================================================================
+//  Class MinModLimiter
+/// \brief   Null slope limiter.  Extrapolates variables fully without limiting their values.
+/// \details Null slope limiter.  Extrapolates variables fully without limiting their values.
+/// \author  D. A. Hubber
+/// \date    23/03/2015
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class MinModLimiter : public SlopeLimiter<ndim,ParticleType>
+{
+ public:
+
+  MinModLimiter() {};
+  ~MinModLimiter() {};
+
+  //===============================================================================================
+  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
+  {
+    for (int var=0; var<ndim+2; var++) {
+
+      FLOAT dr[ndim], dr_unit[ndim];
+      for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];
+      FLOAT drmag = sqrt(DotProduct(dr, dr, ndim));
+      for (int k=0; k<ndim; k++) dr_unit[k] = dr[k] / drmag;
+
+      FLOAT D = DotProduct(parti.grad[var], dr_unit, ndim);
+
+      if (D == 0.0 && partj.Wprim[var] == parti.Wprim[var]) {
+        dW[var] = 0.0;
+        for (int k=0; k<ndim; k++) gradW[var][k] = 0.0;
+        continue;
+      }
+
+      FLOAT r = (partj.Wprim[var] - parti.Wprim[var]) /
+        (parti.Wprim[var] - partj.Wprim[var] + 2.0*D*drmag);
+      r = max(r, 0.0);
+
+      //FLOAT phi = min(2.0/(1.0 + r), 2.0*r/(1.0 + r));
+      //FLOAT phi = min(1.0, min(4.0/(1.0 + r), 4.0*r/(1.0 + r)));
+      //FLOAT phi = 2.0*r/(r*r + 1.0);
+      FLOAT phi = 4.0*r/pow(r + 1.0, 2);
+
+      dW[var] = 0.5*phi*D*drmag;
+      for (int k=0; k<ndim; k++) gradW[var][k] = dW[var]*dr_unit[k];
+
+    }
+  }
+
+};
 #endif

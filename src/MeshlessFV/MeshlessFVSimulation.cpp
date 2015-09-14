@@ -256,6 +256,9 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   else if (limiter == "gizmo") {
     mfv->limiter = new GizmoLimiter<ndim,MeshlessFVParticle>();
   }
+  else if (limiter == "minmod") {
+    mfv->limiter = new MinModLimiter<ndim,MeshlessFVParticle>();
+  }
   else {
     string message = "Unrecognised parameter : slope_limiter = " + limiter;
     ExceptionHandler::getIstance().raise(message);
@@ -592,6 +595,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       mfv->ConvertPrimitiveToConserved(partdata[i].Wprim, partdata[i].Ucons);
       mfv->ConvertConservedToQ(partdata[i].volume, partdata[i].Ucons, partdata[i].Qcons);
       partdata[i].Utot = partdata[i].u*partdata[i].m;
+      for (k=0; k<ndim+2; k++) partdata[i].dQ[k] = (FLOAT) 0.0;
       //for (k=0; k<ndim; k++) partdata[i].v0[k] = partdata[i].v[k];
     }
 

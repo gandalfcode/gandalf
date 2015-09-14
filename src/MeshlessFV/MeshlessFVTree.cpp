@@ -432,7 +432,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
   if (cactive == 0) return;
 
   // Update ghost tree smoothing length values here
-  //tree->UpdateHmaxValues(tree->celldata[0],mfvdata);
+  tree->UpdateHmaxValues(tree->celldata[0], mfvdata);
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], mfvdata);
 
 

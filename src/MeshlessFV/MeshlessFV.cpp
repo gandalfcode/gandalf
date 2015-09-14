@@ -186,7 +186,7 @@ void MeshlessFV<ndim>::DeleteDeadParticles(void)
 template <int ndim>
 void MeshlessFV<ndim>::ReorderParticles(void)
 {
-  int i;                               // Particle counter
+  int i;                                   // Particle counter
   MeshlessFVParticle<ndim> *hydrodataaux;  // Aux. SPH particle array
 
   hydrodataaux = new MeshlessFVParticle<ndim>[Nhydro];
@@ -207,10 +207,8 @@ void MeshlessFV<ndim>::ReorderParticles(void)
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::ComputeThermalProperties
- (MeshlessFVParticle<ndim> &part)         ///< [inout] Particle i data
+ (MeshlessFVParticle<ndim> &part)          ///< [inout] Particle i data
 {
-  //MeshlessFVParticle<ndim>& part = static_cast<MeshlessFVParticle<ndim> &> (part_gen);
-
   part.u     = eos->SpecificInternalEnergy(part);
   part.sound = eos->SoundSpeed(part);
   part.press = eos->Pressure(part);
@@ -226,7 +224,7 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 
 //=================================================================================================
 //  MeshlessFV<ndim>::Timestep
-/// ...
+/// Compute timestep for particle based on Courant and acceleration conditions.
 //=================================================================================================
 template <int ndim>
 FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
@@ -245,11 +243,11 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
 
 //=================================================================================================
 //  MeshlessFV<ndim>::EndStep
-/// ...
+/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::EndTimestep
- (const int n,                ///< [in] Integer time in block time struct
+ (const int n,                         ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
@@ -284,9 +282,9 @@ void MeshlessFV<ndim>::EndTimestep
 
       // Further update conserved quantities if computing gravitational contributions
       if (self_gravity == 1) {
-        for (k=0; k<ndim; k++) part.Qcons[k] += (FLOAT) 0.5*timestep*
+        for (k=0; k<ndim; k++) part.Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
           (part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
-        part.Qcons[ietot] += (FLOAT) 0.5*timestep*
+        part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
           (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
            part.Qcons[irho]*DotProduct(part.v, part.a, ndim)); //+
              //DotProduct(part.a0, part.rdmdt0, ndim) +
@@ -304,17 +302,19 @@ void MeshlessFV<ndim>::EndTimestep
       part.nlast  = n;
       part.tlast  = t;
       part.active = true;
-      for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
-      for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
-      for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+      for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
       for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
       for (k=0; k<nvar; k++) part.Qcons0[k] = part.Qcons[k];
-      for (k=0; k<nvar; k++) part.dQ[k] = (FLOAT) 0.0;
+      for (k=0; k<nvar; k++) part.dQ[k]     = (FLOAT) 0.0;
+
     }
     //---------------------------------------------------------------------------------------------
     else {
       part.active = false;
     }
+    //---------------------------------------------------------------------------------------------
 
   }
   //-----------------------------------------------------------------------------------------------

@@ -46,7 +46,7 @@ using namespace std;
 template <int ndim>
 class EOS;
 
-static const FLOAT ghost_range = 1.8;
+static const FLOAT ghost_range = 2.5;
 
 
 //=================================================================================================
@@ -121,7 +121,7 @@ public:
   FLOAT kernfacsqd;                    ///< Kernel range neib. fraction squared
   FLOAT kernrange;                     ///< Kernel range
   FLOAT mmean;                         ///< Mean SPH particle mass
-  
+
 
   int *iorder;                         ///< Array containing particle ordering
   EOS<ndim> *eos;                      ///< Equation-of-state
