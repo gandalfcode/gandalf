@@ -23,6 +23,7 @@ import __main__
 import atexit
 import time
 import types
+import defaults
 from multiprocessing import Manager, Queue, Event
 from plotting import PlottingProcess
 from gandalf.analysis.SimBuffer import SimBuffer, BufferException
@@ -34,7 +35,7 @@ manager = Manager()
 
 
 #------------------------------------------------------------------------------
-class Singletons:
+class Singletons_master:
     '''Container class for singletons object. They are:
 queue          : Queue for sending commands to the plotting process
 commands       : List of the commands shared with the plotting process.
@@ -49,6 +50,23 @@ globallimits   : Dict that for each quantity gives the limits
     completedqueue = Queue()
     globallimits = manager.dict()
     free = Event()
+
+class Singletons_serial(Singletons_master):
+    @staticmethod
+    def place_command(objects):
+        Singletons.queue.put(objects)
+        command, data = Singletons.queue.get()
+        command.processCommand(plotting, data)
+
+class Singletons_parallel(Singletons_master):
+    @staticmethod
+    def place_command(objects):
+        Singletons.queue.put(objects)
+
+if defaults.parallel:
+    Singletons=Singletons_parallel
+else:
+    Singletons=Singletons_serial
 
 import commandsource as Commands
 from data_fetcher import CreateUserQuantity, CreateTimeData
@@ -99,6 +117,26 @@ Optional qrguments:
     return SimBuffer.get_current_sim()
 
 
+
+class Plotting:
+    def __init__(self):
+        self.lastid=0
+        import matplotlib.pyplot as plt
+        self.plt=plt
+        self.axesimages = {}
+        self.commands=Singletons.commands
+        self.commandsfigures = {}
+        self.quantitiesfigures = {}
+        self.globallimits = Singletons.globallimits
+
+
+    def command_in_list (self, id):
+        for command in Singletons.commands:
+            if command.id==id:
+                return True
+        return False
+
+
 #------------------------------------------------------------------------------
 def plot(x, y, type="default", snap="current", sim="current",
          overplot=False, autoscale=False, xunit="default", yunit="default",
@@ -144,7 +182,7 @@ Optional arguments:
                                            autoscale, xunit, yunit,
                                            xaxis, yaxis, **kwargs)
     data = command.prepareData(Singletons.globallimits)
-    Singletons.queue.put([command, data])
+    Singletons.place_command([command, data])
     sleep(0.001)
 
 
@@ -197,7 +235,8 @@ Optional arguments:
                                   xunit,yunit,xaxis,yaxis,idx, idy, id,
                                   typex, typey, type, **kwargs)
     data = command.prepareData(Singletons.globallimits)
-    Singletons.queue.put([command, data])
+
+    Singletons.place_command([command, data])
 
 
 #------------------------------------------------------------------------------
@@ -269,7 +308,7 @@ Optional arguments:
                                          coordlimits, zslice, xunit, yunit,
                                          renderunit, res, interpolation,**kwargs)
     data = command.prepareData(Singletons.globallimits)
-    Singletons.queue.put([command, data])
+    Singletons.place_command([command, data])
 
 
 #------------------------------------------------------------------------------
@@ -392,7 +431,7 @@ Optional arguments:
     if window=='all' and subfigure=='current':
         subfigure=='all'
     command = Commands.LimitCommand(quantity, min, max, auto, window, subfigure)
-    Singletons.queue.put([command,None])
+    Singletons.place_command([command,None])
     if window=='global':
         okflag=Singletons.completedqueue.get()
         print okflag
@@ -472,7 +511,7 @@ Required arguments:
         no=int(no)
     command = Commands.WindowCommand(no)
     data = None
-    Singletons.queue.put([command,data])
+    Singletons.place_command([command,data])
 
 
 #------------------------------------------------------------------------------
@@ -490,7 +529,7 @@ Required arguments:
     current = int(current)
     command = Commands.SubfigureCommand(nx, ny, current)
     data = None
-    Singletons.queue.put([command,data])
+    Singletons.place_command([command,data])
 
 
 #------------------------------------------------------------------------------
@@ -579,7 +618,7 @@ because you probably just spotted a bug in the code.
                 updateplot=False
         if updateplot:
             data = command.prepareData(Singletons.globallimits)
-            Singletons.queue.put([command, data])
+            Singletons.place_command([command, data])
 
 
 #------------------------------------------------------------------------------
@@ -593,7 +632,7 @@ Required arguments:
 '''
     command = Commands.SaveFigCommand(name)
     data = None
-    Singletons.queue.put([command,data])
+    Singletons.place_command([command,data])
     time.sleep(1e-3)
 
 
@@ -604,7 +643,7 @@ Useful in scripts where no interaction is required
 '''
     command = Commands.SwitchNonGui()
     data = None
-    Singletons.queue.put([command,data])
+    Singletons.place_command([command,data])
     time.sleep(1e-3)
 
 
@@ -642,8 +681,9 @@ Optional arguments:
     overplot = to_bool(overplot)
     command = Commands.AnalyticalPlotCommand(x, y, ic, snap, simno, overplot,
                                              autoscale, xunit, yunit)
+
     data = command.prepareData(Singletons.globallimits, time)
-    Singletons.queue.put([command, data])
+    Singletons.place_command([command, data])
 
 
 #------------------------------------------------------------------------------
@@ -659,7 +699,7 @@ Optional qrguments:
     subfig     : Sub-figure in window containing plot
 '''
     command = Commands.RescaleCommand(quantity, unitname, window)
-    Singletons.queue.put([command,None])
+    Singletons.place_command([command,None])
     okflag = Singletons.completedqueue.get()
     print okflag
     update()
@@ -760,7 +800,7 @@ def sigint(signum, frame):
 
 #------------------------------------------------------------------------------
 def cleanup():
-    Singletons.queue.put(["STOP",None])
+    Singletons.place_command(["STOP",None])
     print "Waiting for background processes to finish..."
     plottingprocess.join()
     import sys
@@ -769,9 +809,13 @@ def cleanup():
 
 #------------------------------------------------------------------------------
 def init():
-    global plottingprocess
-    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits, Singletons.free)
-    plottingprocess.start()
+    if defaults.parallel:
+        global plottingprocess
+        plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits, Singletons.free)
+        plottingprocess.start()
+    else:
+        global plotting
+        plotting=Plotting()
     CreateUserQuantity('r','sqrt(x^2+y^2+z^2)',scaling_factor='r', label='$r$')
     CreateUserQuantity('R','sqrt(x^2+y^2)',scaling_factor='r', label='$R$')
     CreateUserQuantity('phi','arctan2(y,x)', label='$\\phi$')
@@ -805,10 +849,11 @@ def init():
 #------------------------------------------------------------------------------
 init()
 
-signal.signal(signal.SIGINT, sigint)
-signal.signal(signal.SIGTERM, sigint)
-signal.signal(signal.SIGSEGV, sigint)
-atexit.register(cleanup)
+if defaults.parallel:
+    signal.signal(signal.SIGINT, sigint)
+    signal.signal(signal.SIGTERM, sigint)
+    signal.signal(signal.SIGSEGV, sigint)
+    atexit.register(cleanup)
 
 
 #------------------------------------------------------------------------------
