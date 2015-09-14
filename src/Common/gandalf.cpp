@@ -44,7 +44,6 @@ int main(int argc, char** argv)
   string paramfile;                                  // Name of parameters file
   stringstream ss;                                   // Stream char to string
   ofstream outfile;                                  // Stream of temp restart file
-  CodeTiming* timing = new CodeTiming();             // Timing object
   SimulationBase* sim;                               // Main simulation object
   Parameters* params = new Parameters();             // Parameters object
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
@@ -111,7 +110,8 @@ int main(int argc, char** argv)
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"],
                                           params->stringparams["sim"],params);
-  sim->timing = timing;
+  CodeTiming timing;
+  sim->timing = &timing;
   sim->restart = restart;
 
   // Print out splash screen
@@ -133,12 +133,12 @@ int main(int argc, char** argv)
   // Run entire simulation until specified end-time in parameters file.
   sim->Run();
 
+  // Compile timing statistics from complete simulation
+  timing.ComputeTimingStatistics(sim->run_id);
+
 #ifdef MPI_PARALLEL
   MPI_Finalize();
 #endif
-
-  // Compile timing statistics from complete simulation
-  timing->ComputeTimingStatistics(sim->run_id);
 
   return 0;
 }

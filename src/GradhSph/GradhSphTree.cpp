@@ -1277,7 +1277,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,nbody,sph,sphdata)
+#pragma omp parallel default(none) shared(cactive,celllist,nbody,sph,sphdata, simbox)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
