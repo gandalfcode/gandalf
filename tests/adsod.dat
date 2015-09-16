@@ -73,7 +73,6 @@ Slope limiter                               : slope_limiter = simple
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.2
 SPH acceleration condition multiplier       : accel_mult = 0.4
 SPH energy equation timestep multiplier     : energy_mult = 0.5

@@ -114,7 +114,6 @@ else
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"],
                                           params->stringparams["sim"], params);
-  CodeTiming timing;
   sim->timing = &timing;
   sim->restart = restart;
 
@@ -146,12 +145,11 @@ else
 #endif
 
   // Compile timing statistics from complete simulation
-  timing->ComputeTimingStatistics(sim->run_id);
+  timing.ComputeTimingStatistics(sim->run_id);
 
   // Finally, delete all locally created objects
   delete sim;
   delete params;
-  delete timing;
 
 
   return 0;
