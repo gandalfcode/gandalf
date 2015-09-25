@@ -43,6 +43,7 @@
 #include "Parameters.h"
 #include "KDTree.h"
 #include "OctTree.h"
+#include "Tree.h"
 #if defined MPI_PARALLEL
 #include "MpiExport.h"
 #include "MpiNode.h"
@@ -128,6 +129,11 @@ protected:
   CodeTiming *timing;                  ///< Pointer to code timing object
   DomainBox<ndim> *box;                ///< Pointer to simulation bounding box
   SmoothingKernel<ndim> *kernp;        ///< Pointer to SPH kernel object
+
+  TreeBase<ndim>* _tree;               ///< ..
+#if defined MPI_PARALLEL
+  TreeBase<ndim>** _prunedTree;        ///< ..
+#endif
 
 };
 
@@ -310,19 +316,20 @@ protected:
   int Ntotmaxold;                                  ///< Old value of Ntotmax
   FLOAT hmax;                                      ///< Store hmax in the tree
   FLOAT theta;                                     ///< Geometric opening angle
-  Tree<ndim,ParticleType,TreeCell> *tree;          ///< Pointer to main (local) tree
-  Tree<ndim,ParticleType,TreeCell> *ghosttree;     ///< Pointer to tree containing ghosts
-                                                   ///< on local domain
 
   bool allocated_buffer;                           ///< Is buffer memory allocated?
   int Nthreads;                                    ///< No. of OpenMP threads
   int *Nneibmaxbuf;                                ///< Size of neighbour buffers (for each thread)
   int *Ngravcellmaxbuf;                            ///< Size of tree-cell buffers (for each thread)
   int **activelistbuf;                             ///< Arrays of active particle ids
-  int **levelneibbuf;                     ///< Arrays of neighbour timestep levels
+  int **levelneibbuf;                              ///< Arrays of neighbour timestep levels
   ParticleType<ndim> **neibpartbuf;                ///< Local copy of neighbouring ptcls
   ParticleType<ndim> **activepartbuf;              ///< Local copy of SPH particle
   TreeCell<ndim> **cellbuf;                        ///< Buffers of tree-cell copies
+
+  Tree<ndim,ParticleType,TreeCell> *tree;          ///< Pointer to main (local) tree
+  Tree<ndim,ParticleType,TreeCell> *ghosttree;     ///< Pointer to tree containing ghosts
+                                                   ///< on local domain
 
 #ifdef MPI_PARALLEL
   int Nprunedcellmax;                              ///< Max. number of cells in pruned tree
@@ -333,7 +340,6 @@ protected:
                                                    ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
   Tree<ndim,ParticleType,TreeCell> **sendprunedtree;  ///< 'Pruned' tree for MPI nodes.
-
 #endif
 
 };

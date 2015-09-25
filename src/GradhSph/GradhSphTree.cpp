@@ -1994,3 +1994,6 @@ template class GradhSphTree<3,GradhSphParticle,OctTreeCell>;
 template class GradhSphOctTree<1,GradhSphParticle,OctTreeCell>;
 template class GradhSphOctTree<2,GradhSphParticle,OctTreeCell>;
 template class GradhSphOctTree<3,GradhSphParticle,OctTreeCell>;
+
+template class GradhSphTree<3,GradhSphParticle,TreeRayCell>;
+template class GradhSphOctTree<3,GradhSphParticle,TreeRayCell>;

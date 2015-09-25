@@ -27,10 +27,10 @@
 
 
 #include "Constants.h"
-#include "Precision.h"
-#include "Sph.h"
 #include "EOS.h"
+#include "Hydrodynamics.h"
 #include "Particle.h"
+#include "Precision.h"
 #include "SimUnits.h"
 
 
@@ -85,22 +85,28 @@ class EnergyRadws : public EnergyEquation<ndim>
                       const FLOAT, FLOAT &, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
                           const FLOAT, FLOAT &, FLOAT &);
-
-  int GetIDens(FLOAT);
-  int GetITemp(FLOAT);
-  void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
-  FLOAT GetEnergy(int ,int ,FLOAT ,FLOAT );
-  FLOAT GetMuBar(int, int, FLOAT, FLOAT);
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
-  FLOAT ebalance(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT);
+
+  FLOAT ebalance(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT);
+  int GetIDens(const FLOAT);
+  int GetITemp(const FLOAT);
+  void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
+  FLOAT GetEnergy(const int, const int, const FLOAT, const FLOAT);
+  FLOAT GetMuBar(const int, const int, const FLOAT, const FLOAT);
+
 
   //-----------------------------------------------------------------------------------------------
   int ndens;
   int ntemp;
   FLOAT rad_const;
   FLOAT temp_ambient;
-  FLOAT *eos_dens, *eos_temp ;
-  FLOAT **eos_energy, **eos_mu, **kappa_table, **kappar_table, **kappap_table;
+  FLOAT *eos_dens;
+  FLOAT *eos_temp ;
+  FLOAT **eos_energy;
+  FLOAT **eos_mu;
+  FLOAT **kappa_table;
+  FLOAT **kappar_table;
+  FLOAT **kappap_table;
   EOS<ndim> *eos;
 
 };

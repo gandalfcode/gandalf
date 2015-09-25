@@ -228,8 +228,7 @@ class IonisingRadiation: public EOS<ndim>
 
  public:
 
-  IonisingRadiation(string, FLOAT, FLOAT, FLOAT, FLOAT,
-                    SimUnits *, SphNeighbourSearch<ndim> *);
+  IonisingRadiation(string, FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~IonisingRadiation();
 
   FLOAT Pressure(Particle<ndim> &);

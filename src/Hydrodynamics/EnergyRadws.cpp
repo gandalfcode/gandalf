@@ -1,6 +1,6 @@
 //=================================================================================================
 //  EnergyRadws.cpp
-//  ...
+//  Contains functions for Rad-WS radiation cooling scheme (Stamatellos et al. 2007) class.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -55,7 +55,6 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   SimUnits *simunits, EOS<ndim> *eos_) :
   EnergyEquation<ndim>(energy_mult_)
 {
-
   int i, j, l;
   // int ndens, ntemp; defined in EnergyEquation
   DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_;
@@ -72,16 +71,14 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
 
   temp_ambient = temp_ambient_ / tempunit;
   cout << "Temp_ambient : " << temp_ambient << endl;
-
-  cout << "units=" << num << " "<< denom << " " << tempunit << endl;
-  cout << "u_unit =" << simunits -> u.outscale * simunits ->u.outcgs << endl;
-  cout << "time_unit =" << simunits -> t.outscale * simunits ->t.outcgs << endl;
-  cout << "rad_const=" << rad_const << endl;
-  cout << "stefboltz=" << stefboltz << endl;
-
+  cout << "units     : " << num << " "<< denom << " " << tempunit << endl;
+  cout << "u_unit    : " << simunits->u.outscale * simunits->u.outcgs << endl;
+  cout << "time_unit : " << simunits->t.outscale * simunits->t.outcgs << endl;
+  cout << "rad_const : " << rad_const << endl;
+  cout << "stefboltz : " << stefboltz << endl;
   cout << "rad_constscaled : " << rad_const*(simunits->E.outscale*simunits->E.outSI/
     (pow(simunits->r.outscale*simunits->r.outSI,2)*simunits->t.outscale*simunits->t.outSI*
-     pow(simunits->temp.outscale*simunits->temp.outSI,4)));
+     pow(simunits->temp.outscale*simunits->temp.outSI,4))) << endl;
 
   // check that user wants cm2_g for opacity units
   if (simunits ->kappa.outunit != "cm2_g") {
@@ -91,11 +88,11 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   }
 
   ifstream file;
-  file.open(radws_table.c_str(),ios::in) ;
+  file.open(radws_table.c_str(), ios::in);
   // allocate table entries
 
 
-  cout << "EnergyRadws:" << radws_table << "  "<< file.good() << endl;
+  cout << "EnergyRadws : " << radws_table << "  "<< file.good() << endl;
 
   //-----------------------------------------------------------------------------------------------
   if (file.good()) {
@@ -104,7 +101,7 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
     istringstream istr(line);
     istr >> ndens >> ntemp ;
 
-    cout << "ndens, ntemp= " << ndens << "  "<< ntemp << endl;
+    cout << "ndens, ntemp = " << ndens << "  " << ntemp << endl;
 
     eos_dens     = new FLOAT[ndens];
     eos_temp     = new FLOAT[ntemp];
@@ -205,7 +202,7 @@ EnergyRadws<ndim,ParticleType>::~EnergyRadws()
 //=================================================================================================
 //  EnergyRadws::EnergyIntegration
 /// Integrate internal energy to first order from the beginning of the step to
-/// the current simulation time, i.e. u(t+dt) = u(t) + dudt(t)*dt
+/// the current simulation time, i.e. u(t+dt) = u(t) + dudt(t)*dt .
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EnergyIntegration
@@ -233,21 +230,18 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
     dt = t - part.tlast;
 
     if (part.dt_therm <= small_number) {
-      part.u = part.u0;
+      part.u = part.ueq;
+      //part.u = part.u0;
     }
-    else if (dt < 40.0 *part.dt_therm) {
-      part.u = part.u0*exp(-dt/part.dt_therm) + part.ueq*(1.0 - exp(-dt/part.dt_therm));
+    else if (dt < (FLOAT) 40.0*part.dt_therm) {
+      part.u = part.u0*exp(-dt/part.dt_therm) + part.ueq*((FLOAT) 1.0 - exp(-dt/part.dt_therm));
     }
-    else if (dt >= 40.0*part.dt_therm) {
+    else if (dt >= (FLOAT) 40.0*part.dt_therm) {
       part.u = part.ueq;
     }
 
-    part.u0    = part.u;              //
-    //part.dudt0 = part.dudt;			//
-
-    // Pressure/Sound speed is updated before force calculation...
   }
-  //-------------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   timing->EndTimingSection("ENERGY_RADWS_INTEGRATION");
@@ -282,15 +276,14 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,temp) shared(partdata)
   for (i=0; i<Npart; i++) {
-    ParticleType<ndim>& part = partdata[i];
+    ParticleType<ndim> &part = partdata[i];
     if (part.itype == dead) continue;
     dn = n - part.nlast;
 
     if (dn == part.nstep) {
-      /// Get temperature of particle
       temp = eos->Temperature(part);
 
-      ///Get new ueq and dt_therm
+      // Get new ueq and dt_therm
       EnergyFindEqui(part.rho, temp, part.gpot, part.u, part.dudt,
                      part.ueq, part.dt_therm, part.mu_bar);
       part.u0 = part.u;
@@ -309,45 +302,44 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 
 //=================================================================================================
 //  EnergyRadws::~EnergyFindEqui()
-/// EnergyFindEqui returns equilibrium temperature
+/// Computes the thermal equilibrium state of the particle (i.e. its equilibrium temperature and
+/// internal energy) including the thermal timescale to reach this equilibrium.
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
- (const FLOAT rho,
-  const FLOAT temp,
-  const FLOAT gpot,
-  const FLOAT u,
-  const FLOAT dudt,
-  FLOAT &ueq_p,
-  FLOAT &dt_thermal,
-  FLOAT &mu_bar_equi )
+ (const FLOAT rho,                             ///< [in] ..
+  const FLOAT temp,                            ///< [in] ..
+  const FLOAT gpot,                            ///< [in] ..
+  const FLOAT u,                               ///< [in] ..
+  const FLOAT dudt,                            ///< [in] ..
+  FLOAT &ueq_p,                                ///< [out] ..
+  FLOAT &dt_thermal,                           ///< [out] ..
+  FLOAT &mu_bar_equi)                          ///< [out] ..
 {
-  FLOAT fcolumn2 = 0.010816;
+  const FLOAT fcolumn2 = 0.010816;             // ..
+  const FLOAT col2     = fcolumn2*gpot*rho;    // ..
+  const FLOAT logrho   = log10(rho);           // ..
+  const int idens      = GetIDens(logrho);     // ..
+  int itemp;                                   // ..
+  FLOAT logtemp;                               // ..
+  FLOAT Tequi;                                 // ..
+  FLOAT dudt_eq;                               // ..
+  FLOAT dudt_rad;                              // ..
+  FLOAT dudt_tot;                              // ..
+  FLOAT kappa;                                 // ..
+  FLOAT kappar;                                // ..
+  FLOAT kappap;                                // ..
 
-  int idens, itemp;
-
-  FLOAT col2;
-  FLOAT Tequi;
-  FLOAT logtemp, logrho;
-  FLOAT dudt_eq, dudt_rad, dudt_tot ;
-  FLOAT kappa, kappar, kappap;
-
-
-  col2 = fcolumn2 * gpot * rho;
-  logrho = log10(rho);
   logtemp = log10(temp);
+  itemp   = GetITemp(logtemp);
 
-  idens = GetIDens(logrho);
-  itemp = GetITemp(logtemp);
   assert(idens >= 0 && idens <= ndens - 1);
   assert(itemp >= 0 && itemp <= ntemp - 1);
 
+  GetKappa(idens, itemp, logrho, logtemp, kappa, kappar, kappap);
+  dudt_rad = ebalance((FLOAT) 0.0, temp_ambient, temp, kappa, kappap, col2);
 
-  GetKappa(idens, itemp, logrho, logtemp ,kappa, kappar, kappap);
-  dudt_rad = ebalance((FLOAT)0.0, temp_ambient, temp, kappa, kappap, col2);
-
-  //////////// GET TEQUI
-
+  // Calculate equilibrium temperature using implicit scheme described in Stamatellos et al. (2007)
   EnergyFindEquiTemp(idens, rho, temp, col2, dudt, Tequi, mu_bar_equi);
   //assert(Tequi >= temp_ambient);
 
@@ -367,14 +359,13 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
   /// Thermalization time scale
   if (dudt_tot == 0.0){
     dt_thermal = 1.e30;
-    cout << "Achtung dudt_tot == 0.0"<< endl;
+    cout << "Achtung dudt_tot == 0.0" << endl;
   }
   else {
     dt_thermal = (ueq_p - u)/(dudt + dudt_rad);
     //dt_thermal = (ueq_p - u)/(dudt + dudt_tot);
   }
 
-  ////DONE!!!
   return;
 }
 
@@ -386,13 +377,13 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
- (const int idens,
-  const FLOAT rho,
-  const FLOAT temp,
-  const FLOAT col2,
-  const FLOAT dudt,
-  FLOAT &Tequi,
-  FLOAT &mu_bar_equi)
+ (const int idens,                         ///< ..
+  const FLOAT rho,                         ///< ..
+  const FLOAT temp,                        ///< ..
+  const FLOAT col2,                        ///< ..
+  const FLOAT dudt,                        ///< ..
+  FLOAT &Tequi,                            ///< ..
+  FLOAT &mu_bar_equi)                      ///< ..
 {
   int itemp;
   int itemplow, itemphigh;
@@ -442,14 +433,14 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
       Tequi = pow(10.0, eos_temp[1]);
       return;
     }
-    Tlow_log = eos_temp[itemp-1];
-    Tlow = pow(10.0, Tlow_log);
+    Tlow_log  = eos_temp[itemp-1];
+    Tlow      = pow(10.0, Tlow_log);
     Thigh_log = eos_temp[itemp+1];
-    Thigh = pow(10.0, Thigh_log);
-    itemplow= itemp-1;
+    Thigh     = pow(10.0, Thigh_log);
+    itemplow  = itemp-1;
 
     GetKappa(idens, itemplow, logrho, Tlow_log, kappaLow, kappar, kappapLow);
-    balanceLow = ebalance(dudt, temp_ambient ,Tlow, kappaLow, kappapLow, col2);
+    balanceLow = ebalance(dudt, temp_ambient, Tlow, kappaLow, kappapLow, col2);
 
     itemphigh = itemp;
     GetKappa(idens, itemphigh, logrho, Thigh_log, kappaHigh, kappar, kappapHigh);
@@ -489,10 +480,10 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
       Tequi = pow(10.0, eos_temp[ntemp-2]);
       return;
     }
-    Tlow_log = eos_temp[itemp-1];
-    Tlow = pow(10.0, Tlow_log);
+    Tlow_log  = eos_temp[itemp-1];
+    Tlow      = pow(10.0, Tlow_log);
     Thigh_log = eos_temp[itemp+1];
-    Thigh = pow(10.0, Thigh_log);
+    Thigh     = pow(10.0, Thigh_log);
 
     itemplow = itemp;
     GetKappa(idens, itemplow, logrho, Tlow_log, kappaLow, kappar, kappapLow);
@@ -527,7 +518,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
     dtemp = Thigh - Tlow;
 
   }
-  ///==============================================================================================
+  //-----------------------------------------------------------------------------------------------
 
 
   Tequi = 0.5*(Tlow + Thigh);
@@ -536,10 +527,9 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   //kappa = (kappaHigh + kappaLow)/2;
   //kappap = (kappapHigh + kappapLow)/2;
 
-  ///==============================================================================================
+
   // Refine the search in between Thigh and Tlow
-
-
+  //-----------------------------------------------------------------------------------------------
   while(fabs(2.*dtemp/(Thigh + Tlow)) > accuracy){
 
     GetKappa(idens, itemplow, logrho, Tlow_log, kappaLow, kappar, kappapLow);
@@ -573,6 +563,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
     kappa = (kappaHigh + kappaLow)/2;
     kappap = (kappapHigh + kappapLow)/2;
   }
+  //----------------------------------------------------------------------------------------------
 
   Tequi       = 0.5*(Thigh + Tlow);
   Tequi_log   = log10(Tequi);
@@ -590,7 +581,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
 template <typename BidirectionalIterator, typename T>
 BidirectionalIterator getClosest(BidirectionalIterator first,
                                  BidirectionalIterator last,
-                                 const T & value)
+                                 const T &value)
 {
   BidirectionalIterator before = std::lower_bound(first, last, value);
 
@@ -607,7 +598,7 @@ BidirectionalIterator getClosest(BidirectionalIterator first,
 template <typename BidirectionalIterator, typename T>
 std::size_t getClosestIndex(BidirectionalIterator first,
                             BidirectionalIterator last,
-                            const T & value)
+                            const T &value)
 {
   return std::distance(first, getClosest(first, last, value));
 }
@@ -619,7 +610,8 @@ std::size_t getClosestIndex(BidirectionalIterator first,
 /// GetIDens returns table index for density
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
-int EnergyRadws<ndim,ParticleType>:: GetIDens(FLOAT rho)
+int EnergyRadws<ndim,ParticleType>::GetIDens
+ (const FLOAT rho)
 {
   int idens = getClosestIndex(eos_dens, eos_dens + ndens, rho);
 
@@ -636,7 +628,8 @@ int EnergyRadws<ndim,ParticleType>:: GetIDens(FLOAT rho)
 /// GetITemp returns table index for temperature
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
-int EnergyRadws<ndim,ParticleType>:: GetITemp(FLOAT temp)
+int EnergyRadws<ndim,ParticleType>::GetITemp
+ (const FLOAT temp)
 {
   int itemp = getClosestIndex(eos_temp, eos_temp + ntemp , temp);
 
@@ -649,27 +642,22 @@ int EnergyRadws<ndim,ParticleType>:: GetITemp(FLOAT temp)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  EnergyRadws::GetKappa()
 /// GetKappa returns Kappa  for index of density and temp
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::GetKappa
- (int idens,
-  int itemp,
-  FLOAT logrho,
-  FLOAT logtemp,
+ (const int idens,
+  const int itemp,
+  const FLOAT logrho,
+  const FLOAT logtemp,
   FLOAT &kappa,
   FLOAT &kappar,
   FLOAT &kappap)
 {
-  FLOAT epsilon;
-  FLOAT delta;
-
-
-  epsilon = (logtemp - eos_temp[itemp])/(eos_temp[itemp+1]-eos_temp[itemp]);
-  delta = (logrho - eos_dens[idens])/(eos_dens[idens+1]-eos_dens[idens]);
-
+  const FLOAT epsilon = (logtemp - eos_temp[itemp])/(eos_temp[itemp+1]-eos_temp[itemp]);
+  const FLOAT delta = (logrho - eos_dens[idens])/(eos_dens[idens+1]-eos_dens[idens]);
 
   kappa = kappa_table[idens+1][itemp+1]*epsilon*delta +
     kappa_table[idens+1][itemp]*(1-epsilon)*delta +
@@ -696,21 +684,21 @@ void EnergyRadws<ndim,ParticleType>::GetKappa
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 FLOAT EnergyRadws<ndim,ParticleType>::ebalance
- (FLOAT dudt,
-  FLOAT temp_ex,
-  FLOAT temp,
-  FLOAT kappa,
-  FLOAT kappap,
-  FLOAT col2)
+ (const FLOAT dudt,
+  const FLOAT temp_ex,
+  const FLOAT temp,
+  const FLOAT kappa,
+  const FLOAT kappap,
+  const FLOAT col2)
 {
   return dudt - 4.0*rad_const*(pow(temp,4) - pow(temp_ex,4))/((col2*kappa) + (1.0/kappap));
 }
 
 
-//=============================================================================
+//=================================================================================================
 //  EnergyRadws::GetEnergy()
 /// GetEnergy returns Energy  for index of density and temp
-//=============================================================================
+//=================================================================================================
 
 /*template <int ndim, template <int> class ParticleType>
 FLOAT EnergyRadws<ndim,ParticleType>:: GetEnergy(int idens, int itemp, FLOAT logrho, FLOAT logtemp)
@@ -736,13 +724,13 @@ FLOAT EnergyRadws<ndim,ParticleType>:: GetEnergy(int idens, int itemp, FLOAT log
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 FLOAT EnergyRadws<ndim,ParticleType>::GetMuBar
- (int idens,
-  int itemp,
-  FLOAT logrho,
-  FLOAT logtemp)
+ (const int idens,
+  const int itemp,
+  const FLOAT logrho,
+  const FLOAT logtemp)
 {
-  FLOAT epsilon = (logtemp - eos_temp[itemp])/(eos_temp[itemp+1] - eos_temp[itemp]);
-  FLOAT delta = (logrho - eos_dens[idens])/(eos_dens[idens+1] - eos_dens[idens]);
+  const FLOAT epsilon = (logtemp - eos_temp[itemp])/(eos_temp[itemp+1] - eos_temp[itemp]);
+  const FLOAT delta = (logrho - eos_dens[idens])/(eos_dens[idens+1] - eos_dens[idens]);
 
   return eos_mu[idens+1][itemp+1]*epsilon*delta +
     eos_mu[idens+1][itemp]*(1 - epsilon)*delta +

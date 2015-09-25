@@ -36,7 +36,7 @@ using namespace std;
 //=================================================================================================
 //  Class SimUnit
 /// \brief   Main parent class for each individual unit class.
-/// \details ..
+/// \details Main parent class for each individual unit class.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=================================================================================================
@@ -409,7 +409,7 @@ class SimUnits
 
 
   // Instances of all unit classes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   LengthUnit r;                     ///< Length unit
   MassUnit m;                       ///< Mass unit
   TimeUnit t;                       ///< Time unit

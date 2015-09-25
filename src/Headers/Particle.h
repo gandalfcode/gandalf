@@ -128,6 +128,7 @@ struct Particle
     tlast     = (DOUBLE) 0.0;
     ionfrac   = 0.999;
     Xion      = 0.999;
+    mu_bar    = 1.0;
   }
 
 };

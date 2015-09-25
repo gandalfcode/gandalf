@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  InlineFuncs.h
 //  Contains definitions of any useful small utility functions that can be
 //  templated and/or inlined to improve readability/performance of the code.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _INLINE_FUNCS_H_
@@ -36,11 +36,11 @@
 using namespace std;
 
 
-//=============================================================================
+//=================================================================================================
 //  DotProduct
 //  Calculates the dot product between two vectors, v1 and v2,
 //  of given length 'ndim'
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline T DotProduct(T *v1, T *v2, int ndim)
 {
@@ -54,10 +54,10 @@ static inline T DotProduct(T *v1, T *v2, int ndim)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  PrintArray
 //  Print values of a given array to standard output
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline void PrintArray(string message, int Tsize, T *array)
 {
@@ -69,10 +69,10 @@ static inline void PrintArray(string message, int Tsize, T *array)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  min3
 //  Return minimum of 3 given values.
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline T min3(T v1, T v2, T v3)
 {
@@ -84,10 +84,10 @@ static inline T min3(T v1, T v2, T v3)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  max3
 //  Return maximum of 3 given values.
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline T max3(T v1, T v2, T v3)
 {
@@ -99,10 +99,10 @@ static inline T max3(T v1, T v2, T v3)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  sgn
 //  Sign function.  Returns (a) -1 if T < 0, (b) 0 if T = 0, (c) +1 if T > 0.
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline int sgn(T val)
 {
@@ -111,11 +111,11 @@ static inline int sgn(T val)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Heapsort
 //  Sorts a 1D array of values using the Heapsort algorithm.
 //  (Courtesy of Anthony Whitworth - 18/04/2013)
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline void Heapsort
 (int q_TOT,                         ///< No. of values to be sorted
@@ -177,10 +177,10 @@ static inline void Heapsort
 
 
 
-//=============================================================================
+//=================================================================================================
 //  InsertionSort
 //  Sort list of quantities into ascending order.
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline void InsertionSort
 (int Nsort,                         ///< No. of values to be sorted
@@ -203,10 +203,10 @@ static inline void InsertionSort
 
 
 
-//=============================================================================
+//=================================================================================================
 //  InsertionSortIds
 //  Sort ...
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline void InsertionSortIds
  (int Nsort,                           ///< No. of values to be sorted
@@ -233,10 +233,10 @@ static inline void InsertionSortIds
 
 
 
-//=============================================================================
+//=================================================================================================
 //  EulerAngleRotation
 //  Rotate given vector around specified Euler angles
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline void EulerAngleMatrix
  (T phi,
@@ -259,10 +259,10 @@ static inline void EulerAngleMatrix
 
 
 
-//=============================================================================
+//=================================================================================================
 //  EulerAngleRotation
 //  Rotate given vector around specified Euler angles
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline void EulerAngleRotation
  (T phi,
@@ -291,10 +291,10 @@ static inline void EulerAngleRotation
 
 
 
-//=============================================================================
+//=================================================================================================
 //  EulerAngleArrayRotation
 //  Rotate given array of vectors around specified Euler angles
-//=============================================================================
+//=================================================================================================
 template <typename T>
 static inline void EulerAngleArrayRotation
  (int N,
@@ -324,10 +324,10 @@ static inline void EulerAngleArrayRotation
 
 
 
-//=============================================================================
+//=================================================================================================
 //  clamp
 //  ...
-//=============================================================================
+//=================================================================================================
 static inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
 {
   bool smaller = value < min;
@@ -340,10 +340,10 @@ static inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  BoxOverlap
 /// Check if two bounding boxes overlap.  If yes, then returns true.
-//=============================================================================
+//=================================================================================================
 static inline bool BoxOverlap
  (const int ndim,
   FLOAT *box1min,                      ///< Minimum extent of box 1
@@ -376,10 +376,10 @@ static inline bool BoxOverlap
 
 
 
-//=============================================================================
+//=================================================================================================
 //  BoxOverlap
 /// Check if two bounding boxes overlap.  If yes, then returns true.
-//=============================================================================
+//=================================================================================================
 static inline bool BoxOverlap
  (const int ndim,
   const FLOAT *box1min,                ///< Minimum extent of box 1
@@ -412,10 +412,10 @@ static inline bool BoxOverlap
 
 
 
-//=============================================================================
+//=================================================================================================
 //  FractionalBoxOverlap
 /// Returns what fraction of box 1 overlaps box 2
-//=============================================================================
+//=================================================================================================
 static inline FLOAT FractionalBoxOverlap
  (const int ndim,
   FLOAT *box1min,                      ///< Minimum extent of box 1
@@ -461,21 +461,21 @@ static inline FLOAT FractionalBoxOverlap
 
 
 
-//=============================================================================
+//=================================================================================================
 //  FractionalBoxOverlap
 /// Returns what fraction of box 1 overlaps box 2
-//=============================================================================
+//=================================================================================================
 static inline FLOAT FractionalBoxOverlap
- (const int ndim,
-  const FLOAT *box2min,               ///< Minimum extent of box 1
-  const FLOAT *box2max,               ///< Maximum extent of box 1
-  const FLOAT *box1min,               ///< Minimum extent of box 2
-  const FLOAT *box1max)               ///< Maximum extent of box 2
+ (const int ndim,                      ///< Dimensionality
+  const FLOAT *box2min,                ///< Minimum extent of box 1
+  const FLOAT *box2max,                ///< Maximum extent of box 1
+  const FLOAT *box1min,                ///< Minimum extent of box 2
+  const FLOAT *box1max)                ///< Maximum extent of box 2
 {
-  int k;                             // ..
-  FLOAT area    = (FLOAT) 1.0;       // ..
-  FLOAT overlap = (FLOAT) 1.0;       // ..
-  FLOAT frac    = (FLOAT) 0.0;       // ..
+  int k;                               // Dimension index counter
+  FLOAT area    = (FLOAT) 1.0;         // Area/volume of box 1
+  FLOAT overlap = (FLOAT) 1.0;         // Overlap area/volume of boxes
+  FLOAT frac    = (FLOAT) 0.0;         // Fraction of box1 that is overlapped by box 2
 
   for (k=0; k<ndim; k++) assert(box1min[k] < box1max[k]);
   for (k=0; k<ndim; k++) assert(box2min[k] < box2max[k]);
@@ -510,10 +510,10 @@ static inline FLOAT FractionalBoxOverlap
 
 
 
-//=============================================================================
+//=================================================================================================
 //  ParticleBoxOverlap
 //  ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 static inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
 {
@@ -536,10 +536,10 @@ static inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  ParticleInBox
 //  ..
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class Particle >
 static inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box)
 {
@@ -551,11 +551,11 @@ static inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  compute_displs
 /// Given a vector of counts, compute the displacement of the elements and save it
 /// in displs
-//=============================================================================
+//=================================================================================================
 static inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) {
 
   const int size = displs.size();
@@ -576,10 +576,10 @@ static inline void compute_displs (std::vector<int>& displs, std::vector<int>& c
 
 
 
-//=============================================================================
+//=================================================================================================
 //  VerifyUniqueIds
 /// ...
-//=============================================================================
+//=================================================================================================
 static inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
 {
   int i,j;
@@ -610,13 +610,15 @@ static inline bool VerifyUniqueIds(const int N, const int Nrange, const int *val
 }
 
 
-//=============================================================================
+//=================================================================================================
 //  ComputeTimestepLevel
-/// Check if two bounding boxes overlap.  If yes, then returns true.
-//=============================================================================
+/// Compute the timestep level of dt by a block hierarchy defined by a maximum timestep dt_max.
+/// Also ensure the timestep level is never negative (since all timesteps greater than the
+/// maximum timestep are automatically anchored to the bottom timestep level).
+//=================================================================================================
 static inline int ComputeTimestepLevel
- (const DOUBLE dt,
-  const DOUBLE dt_max)
+ (const DOUBLE dt,                     ///< [in] Timestep to compute level for
+  const DOUBLE dt_max)                 ///< [in] Maximum timestep, corresponding to minimum level
 {
   assert(dt_max > 0.0);
   assert(dt > 0.0);

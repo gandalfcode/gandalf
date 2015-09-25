@@ -84,10 +84,12 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Set-up random number generator object
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["rand_algorithm"] == "xorshift")
+  if (stringparams["rand_algorithm"] == "xorshift") {
     randnumb = new XorshiftRand(intparams["randseed"]);
-  else if (stringparams["rand_algorithm"] == "none")
+  }
+  else if (stringparams["rand_algorithm"] == "none") {
     randnumb = new DefaultSystemRand(intparams["randseed"]);
+  }
   else {
     string message = "Unrecognised parameter : rand_algorithm= " +
       stringparams["rand_algorithm"];
@@ -131,48 +133,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Process all N-body parameters and set-up main N-body objects
   this->ProcessNbodyParameters();
-
-
-  // Thermal physics object.  If energy equation is chosen, also initiate
-  // the energy integration object.
-  //-----------------------------------------------------------------------------------------------
-  if ((gas_eos == "energy_eqn" || gas_eos == "constant_temp" ||
-       gas_eos == "isothermal" || gas_eos == "barotropic" ||
-       gas_eos == "barotropic2") && gas_radiation == "ionisation") {
-    sph->eos = new IonisingRadiation<ndim>
-      (gas_eos, floatparams["temp0"], floatparams["mu_bar"],
-       floatparams["gamma_eos"], floatparams["rho_bary"], &simunits, sphneib);
-  }
-  else if ((gas_eos == "energy_eqn" || gas_eos == "constant_temp" ||
-            gas_eos == "isothermal" || gas_eos == "barotropic" ||
-            gas_eos == "barotropic2") && gas_radiation == "monoionisation") {
-    sph->eos = new MCRadiationEOS<ndim>
-      (gas_eos, floatparams["temp0"], floatparams["temp_ion"], floatparams["mu_bar"],
-       floatparams["mu_ion"], floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
-  }
-  else if (gas_eos == "energy_eqn" || gas_eos == "constant_temp") {
-    sph->eos = new Adiabatic<ndim>
-      (floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
-  }
-  else if (gas_eos == "isothermal") {
-    sph->eos = new Isothermal<ndim>
-      (floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"], &simunits);
-  }
-  else if (gas_eos == "barotropic") {
-    sph->eos = new Barotropic<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                                    floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
-  }
-  else if (gas_eos == "barotropic2") {
-    sph->eos = new Barotropic2<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                                     floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
-  }
-  else if (gas_eos == "rad_ws" || gas_eos == "radws") {
-    sph->eos = new Radws<ndim>(floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
-  }
-  else {
-    string message = "Unrecognised parameter : gas_eos = " + gas_eos;
-    ExceptionHandler::getIstance().raise(message);
-  }
 
 
   // Set external potential field object and set pointers to object
@@ -428,7 +388,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
                             sph->Nhydromax, timestep, sph->GetSphParticleArray(), sph);
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro+sph->NPeriodicGhost, sph, sph->kernp);
-    MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
+    MpiGhosts->SearchGhostParticles(0.0, simbox, sph);
     sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                                sph->Nhydromax, timestep, sph->GetSphParticleArray(), sph);
 #endif
@@ -437,7 +397,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep,
                        sph->Ntot, sph->Nhydromax, timestep, sph->GetSphParticleArray(), sph);
-    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0, simbox, sph);
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                             sph->Nhydromax, timestep, sph->GetSphParticleArray(), sph);
     //sphneib->neibcheck = true;
@@ -498,6 +458,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       part.div_v     = (FLOAT) 0.0;
       part.dudt      = (FLOAT) 0.0;
       part.gpot      = (FLOAT) 0.0;
+      part.mu_bar    = (FLOAT) simparams->floatparams["mu_bar"];
       for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
     }
@@ -607,17 +568,17 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     if (nbody->nbody_softening == 1) {
-      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody,nbody->nbodydata);
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
     }
     else {
-      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
     }
-    nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
+    nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata);
 
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->active) {
-        nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r,nbody->nbodydata[i]->v,
-                                            nbody->nbodydata[i]->a,nbody->nbodydata[i]->adot,
+        nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
+                                            nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
                                             nbody->nbodydata[i]->gpot);
       }
     }
@@ -626,9 +587,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Set particle values for initial step (e.g. r0, v0, a0, u0)
-  uint->EndTimestep(n,sph->Nhydro,t,timestep,sph->GetSphParticleArray());
-  sphint->EndTimestep(n,sph->Nhydro,t,timestep,sph->GetSphParticleArray());
-  nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
+  uint->EndTimestep(n, sph->Nhydro, t, timestep, sph->GetSphParticleArray());
+  sphint->EndTimestep(n, sph->Nhydro, t, timestep, sph->GetSphParticleArray());
+  nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
   this->CalculateDiagnostics();
   this->diag0 = this->diag;
@@ -1645,7 +1606,7 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
 
 
     //=============================================================================================
-#pragma omp default(none) shared(partdata, rreg)
+#pragma omp parallel default(none) shared(partdata, rreg)
     {
       int k;
       FLOAT dr[ndim];

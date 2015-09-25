@@ -28,18 +28,19 @@
 
 #include <assert.h>
 #include <string>
-#include "Precision.h"
 #include "Constants.h"
+#include "DomainBox.h"
+#include "EOS.h"
+#include "ExternalPotential.h"
 #include "Hydrodynamics.h"
 #include "Particle.h"
-#include "SmoothingKernel.h"
 #include "NbodyParticle.h"
 #include "Nbody.h"
 #include "Parameters.h"
-#include "DomainBox.h"
-#include "EOS.h"
+#include "Precision.h"
 #include "RiemannSolver.h"
-#include "ExternalPotential.h"
+#include "SimUnits.h"
+#include "SmoothingKernel.h"
 #if defined _OPENMP
 #include "omp.h"
 #endif
@@ -70,8 +71,8 @@ class Sph : public Hydrodynamics<ndim>
   void* sphdata_unsafe;
 
  public:
-
   using Hydrodynamics<ndim>::allocated;
+  using Hydrodynamics<ndim>::eos;
   using Hydrodynamics<ndim>::h_fac;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
   using Hydrodynamics<ndim>::invndim;
@@ -90,11 +91,13 @@ class Sph : public Hydrodynamics<ndim>
   using Hydrodynamics<ndim>::NPeriodicGhost;
   using Hydrodynamics<ndim>::Ntot;
 
+
   // Constructor
   //-----------------------------------------------------------------------------------------------
   Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
       FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux, acondenum acond_aux,
-      tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName, int size_sph_part);
+      tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName, int size_sph_part,
+      SimUnits &units, Parameters *params);
 
 
   virtual void AllocateMemory(int) = 0;
@@ -133,7 +136,7 @@ class Sph : public Hydrodynamics<ndim>
   // Functions needed to hide some implementation details
   //-----------------------------------------------------------------------------------------------
   SphParticle<ndim>& GetSphParticlePointer(const int i) {
-    return *((SphParticle<ndim>*)((unsigned char*)sphdata_unsafe + i*size_sph_part));
+    return *((SphParticle<ndim>*)((unsigned char*) sphdata_unsafe + i*size_sph_part));
   };
   virtual SphParticle<ndim>* GetSphParticleArray() = 0;
 
@@ -207,7 +210,7 @@ public:
  //public:
 
   GradhSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
-           aviscenum, acondenum, tdaviscenum, string, string);
+           aviscenum, acondenum, tdaviscenum, string, string, SimUnits &, Parameters *);
   ~GradhSph();
 
   virtual Particle<ndim>* GetParticleArray() {return sphdata;};
@@ -277,7 +280,7 @@ class SM2012Sph: public Sph<ndim>
  public:
 
   SM2012Sph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
-            aviscenum, acondenum, tdaviscenum, string, string);
+            aviscenum, acondenum, tdaviscenum, string, string, SimUnits &, Parameters *);
   ~SM2012Sph();
 
   virtual Particle<ndim>* GetParticleArray() {return sphdata;};
@@ -347,10 +350,10 @@ class NullSph: public Sph<ndim>
   NullSph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux,
           FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
           aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
-          string gas_eos_aux, string KernelName, int size_sph_part):
+          string gas_eos_aux, string KernelName, int size_sph_part, SimUnits &units, Parameters *):
     Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux,
               beta_visc_aux, h_fac_aux, h_converge_aux, avisc_aux, acond_aux,
-              tdavisc_aux, gas_eos_aux, KernelName, size_sph_part) {};
+              tdavisc_aux, gas_eos_aux, KernelName, size_sph_part, units) {};
 
   virtual Particle<ndim>* GetParticleArray() {return sphdata;};
   virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};

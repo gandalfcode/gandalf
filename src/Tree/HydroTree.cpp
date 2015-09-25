@@ -2066,3 +2066,5 @@ template class HydroTree<3,MeshlessFVParticle,KDTreeCell>;
 template class HydroTree<1,MeshlessFVParticle,OctTreeCell>;
 template class HydroTree<2,MeshlessFVParticle,OctTreeCell>;
 template class HydroTree<3,MeshlessFVParticle,OctTreeCell>;
+
+template class HydroTree<3,GradhSphParticle,TreeRayCell>;

@@ -93,30 +93,39 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
 
   // Set the enum for artificial conductivity
-  if (stringparams["acond"] == "none")
+  if (stringparams["acond"] == "none") {
     acond = noac;
-  else if (stringparams["acond"] == "wadsley2008")
+  }
+  else if (stringparams["acond"] == "wadsley2008") {
     acond = wadsley2008;
-  else if (stringparams["acond"] == "price2008")
+  }
+  else if (stringparams["acond"] == "price2008") {
     acond = price2008;
+  }
   else {
     string message = "Unrecognised parameter : acond = " + simparams->stringparams["acond"];
     ExceptionHandler::getIstance().raise(message);
   }
 
   // Set gas EOS values
-  if (stringparams["gas_eos"] == "isothermal")
+  if (stringparams["gas_eos"] == "isothermal") {
     eos_type = isothermal;
-  else if (stringparams["gas_eos"] == "barotropic")
+  }
+  else if (stringparams["gas_eos"] == "barotropic") {
     eos_type = barotropic;
-  else if (stringparams["gas_eos"] == "barotropic2")
+  }
+  else if (stringparams["gas_eos"] == "barotropic2") {
     eos_type = barotropic2;
-  else if (stringparams["gas_eos"] == "energy_eqn")
+  }
+  else if (stringparams["gas_eos"] == "energy_eqn") {
     eos_type = energy_eqn;
-  else if (stringparams["gas_eos"] == "constant_temp")
+  }
+  else if (stringparams["gas_eos"] == "constant_temp") {
     eos_type = constant_temp;
-  else if (stringparams["gas_eos"] == "rad_ws" || stringparams["gas_eos"] == "radws")
+  }
+  else if (stringparams["gas_eos"] == "rad_ws" || stringparams["gas_eos"] == "radws") {
     eos_type = radws;
+  }
   else {
     string message = "Unrecognised eos parameter : gas_eos = " + simparams->stringparams["gas_eos"];
     ExceptionHandler::getIstance().raise(message);
@@ -129,7 +138,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sph = new GradhSph<ndim, TabulatedKernel>
       (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
        floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
-       avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+       avisc, acond, tdavisc, stringparams["gas_eos"], KernelName, simunits, simparams);
   }
   else if (intparams["tabulated_kernel"] == 0) {
     // Depending on the kernel, instantiate a different GradSph object
@@ -137,19 +146,19 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       sph = new GradhSph<ndim, M4Kernel>
         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
          floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
-         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName, simunits, simparams);
     }
     else if (KernelName == "quintic") {
       sph = new GradhSph<ndim, QuinticKernel>
         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
          floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
-         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName, simunits, simparams);
     }
     else if (KernelName == "gaussian") {
       sph = new GradhSph<ndim, GaussianKernel>
         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
          floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
-         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName, simunits, simparams);
     }
     else {
       string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
@@ -186,8 +195,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Energy integration object
   //-----------------------------------------------------------------------------------------------
   if (stringparams["energy_integration"] == "Radws" ||
-           stringparams["energy_integration"] == "radws"||
-           stringparams["energy_integration"] == "rad_ws") {
+      stringparams["energy_integration"] == "radws"||
+      stringparams["energy_integration"] == "rad_ws") {
     uint = new EnergyRadws<ndim, GradhSphParticle>
       (floatparams["energy_mult"], stringparams["radws_table"],
        floatparams["temp_ambient"], &simunits, sph->eos);
@@ -201,7 +210,6 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       + simparams->stringparams["energy_integration"];
     ExceptionHandler::getIstance().raise(message);
   }
-
 
 
   //-----------------------------------------------------------------------------------------------
@@ -233,6 +241,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
   }
+  else if (stringparams["neib_search"] == "octtree" && gas_radiation == "treeray" && ndim == 3) {
+    sphneib = new GradhSphOctTree<ndim,GradhSphParticle,TreeRayCell>
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+  }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
@@ -257,18 +271,18 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Radiation transport object
   //-----------------------------------------------------------------------------------------------
   if (gas_radiation == "treeray" && ndim == 3) {
-    /*radiation = new TreeRay<ndim,1,GradhSphParticle,OsTreeRayCell>
+    radiation = new TreeRay<ndim,1,GradhSphParticle,TreeRayCell>
       (intparams["on_the_spot"], intparams["nside"], intparams["ilNR"], intparams["ilNTheta"],
        intparams["ilNPhi"], intparams["ilNNS"], intparams["ilFinePix"], floatparams["maxDist"],
        floatparams["rayRadRes"], floatparams["relErr"], stringparams["errControl"],
-       simbox, &simunits, simparams);*/
+       simbox, &simunits, simparams, sphneib);
   }
   else if (gas_radiation == "ionisation") {
     radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>
       (sphneib, floatparams["mu_bar"], floatparams["mu_ion"], floatparams["temp0"],
        floatparams["temp_ion"], floatparams["Ndotmin"], floatparams["gamma_eos"],
-       pow(simunits.r.outscale*simunits.r.outcgs,3.)/
-       pow(simunits.m.outscale*simunits.m.outcgs,2.),
+       pow(simunits.r.outscale*simunits.r.outcgs, 3.)/
+       pow(simunits.m.outscale*simunits.m.outcgs, 2.),
        simunits.temp.outscale, pow(simunits.r.outscale*simunits.r.outcgs,-4)*
        pow(simunits.t.outscale*simunits.t.outcgs,+2)/simunits.m.outscale*simunits.m.outcgs);
   }
@@ -306,10 +320,10 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
   }
   else if (ndim == 2) {
-    sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+    sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac, 2));
   }
   else if (ndim == 3) {
-    sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
+    sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac, 3)/3.0);
   }
 
 

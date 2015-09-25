@@ -169,8 +169,7 @@ class MultipleSourceIonisation : public Radiation<ndim>
   ~MultipleSourceIonisation();
 
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
-                                    NbodyParticle<ndim> **,
-                                    SinkParticle<ndim> *);
+                                    NbodyParticle<ndim> **, SinkParticle<ndim> *);
 
   void ionisation_intergration(int, int, NbodyParticle<ndim> **,
                                SphParticle<ndim> *, double, double,
@@ -272,7 +271,7 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
   // Variables
   //-----------------------------------------------------------------------------------------------
-  FLOAT Nphotonratio;                    // Ratio of photons to radiation cells
+  FLOAT Nphotonratio;                  // Ratio of photons to radiation cells
   int Nraditerations;                  // No. of iterations of radiation field
   int Nradlevels;                      // No. of tree levels to converge over
   int Nthreads;                        // No. of OpenMP threads

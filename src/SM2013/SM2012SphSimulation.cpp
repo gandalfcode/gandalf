@@ -139,10 +139,9 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["sph"] == "sm2012") {
     if (intparams["tabulated_kernel"] == 1) {
       sph = new SM2012Sph<ndim, TabulatedKernel>
-        (intparams["hydro_forces"], intparams["self_gravity"],
-	 floatparams["alpha_visc"], floatparams["beta_visc"],
-	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
+         floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName, simunits, simparams);
     }
     else if (intparams["tabulated_kernel"] == 0){
       // Depending on the kernel, instantiate a different SM2012 object
@@ -151,21 +150,21 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName, simunits, simparams);
       }
       else if (KernelName == "quintic") {
 	sph = new SM2012Sph<ndim, QuinticKernel>
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName, simunits, simparams);
       }
       else if (KernelName == "gaussian") {
 	sph = new SM2012Sph<ndim, GaussianKernel>
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName, simunits, simparams);
       }
       else {
 	string message = "Unrecognised parameter : kernel = " +

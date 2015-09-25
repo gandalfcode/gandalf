@@ -48,40 +48,14 @@ static const int nfreq=1;
 
 //=================================================================================================
 //  Struct OctTreeCell
-/// KD-tree cell data structure
+/// Octal-tree cell data structure
 //=================================================================================================
 template <int ndim>
-struct OctTreeCell {
-  int copen;                        ///< ..
-  //int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int cnext;                        ///< i.d. of next cell if not opened
-  int id;                           ///< Cell id
-  //int k_divide;                     ///< Dimension along which cell is split
-  int level;                        ///< Level of cell on tree
-  int ifirst;                       ///< i.d. of first particle in cell
-  int ilast;                        ///< i.d. of last particle in cell
-  int N;                            ///< ..
-  int Nactive;                      ///< ..
-  int cexit[2][ndim];               ///< Left and right exit cells (per dim)
-  FLOAT cdistsqd;                   ///< ..
-  FLOAT mac;                        ///< Multipole-opening criterion value
-  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
-  FLOAT hboxmin[ndim];              ///< Minimum extent of bounding box
-  FLOAT hboxmax[ndim];              ///< Maximum extent of bounding box
-  FLOAT rcell[ndim];                ///< ..
-  FLOAT r[ndim];                    ///< Position of cell
-  FLOAT v[ndim];                    ///< Position of cell
-  FLOAT m;                          ///< Mass contained in cell
-  FLOAT rmax;                       ///< Radius of bounding sphere
-  FLOAT hmax;                       ///< Maximum smoothing length inside cell
-  FLOAT drmaxdt;                    ///< Rate of change of bounding sphere
-  FLOAT dhmaxdt;                    ///< Rate of change of maximum h
-  FLOAT q[5];                       ///< Quadrupole moment tensor
+struct OctTreeCell : public TreeCellBase<ndim> {
+  FLOAT rcentre[ndim];                 ///< Centre of cell when creating tree structure
 #ifdef MPI_PARALLEL
-  double worktot;                   ///< Total work in cell
-  int c1;                           /// Added just to make it compile - do it properly!!!!
-  int c2;
+  int c1;                              ///< Added just to make it compile - do it properly!!!!
+  int c2;                              ///< ..
 #endif
 };
 
@@ -94,40 +68,9 @@ struct OctTreeCell {
 template <int ndim>
 struct TreeRayCell : public OctTreeCell<ndim>
 {
-  FLOAT volume;
-};
-/*struct TreeRayCell
-{
-  int copen;                        ///< ..
-  int cnext;                        ///< i.d. of next cell if not opened
-  int id;                           ///< Cell id
-  int level;                        ///< Level of cell on tree
-  int ifirst;                       ///< i.d. of first particle in cell
-  int ilast;                        ///< i.d. of last particle in cell
-  int N;                            ///< ..
-  int Nactive;                      ///< ..
-  int childof[Noctchild];           ///< ..
-  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
-  FLOAT rcell[ndim];                ///< ..
-  FLOAT r[ndim];                    ///< Position of cell
-  FLOAT m;                          ///< Mass contained in cell
-  FLOAT rmax;                       ///< Radius of bounding sphere
-  FLOAT volume;                     ///< Volume of cell
-};*/
-
-
-
-//=================================================================================================
-//  Struct ..
-/// TreeRay cell data structure
-//=================================================================================================
-//template <int ndim, int nfreq>
-template <int ndim>
-struct OsTreeRayCell : public TreeRayCell<ndim>
-{
+  FLOAT volume;                               ///< Volume of cell
   FLOAT srcEUV[nfreq];                        ///< Source function of EUV radiation
-  FLOAT erdEUVold[nfreq];                     ///< ..
+  FLOAT erdEUVold[nfreq];                     ///< Old radiation energy density (for iteration)
   FLOAT erdEUV[nfreq];                        ///< Radiation energy density
 };
 
@@ -204,9 +147,9 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Additional variables for octal tree
   //-----------------------------------------------------------------------------------------------
-  int *firstCell;
-  int *lastCell;
-  FLOAT rootCellSize;
+  int *firstCell;                      ///< Array containing first cells in each tree level
+  int *lastCell;                       ///<   "        "     last       "          "
+  FLOAT rootCellSize;                  ///< Length of side of root cell cube
 
 };
 #endif

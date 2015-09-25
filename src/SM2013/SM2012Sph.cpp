@@ -49,10 +49,10 @@ template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux, int self_gravity_aux,
   FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
   aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
-  string gas_eos_aux, string KernelName):
+  string gas_eos_aux, string KernelName, SimUnits &units, Parameters *params):
   Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
             h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
-            gas_eos_aux, KernelName, sizeof(SM2012SphParticle<ndim>)),
+            gas_eos_aux, KernelName, sizeof(SM2012SphParticle<ndim>), units, params),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;

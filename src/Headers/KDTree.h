@@ -47,40 +47,11 @@ using namespace std;
 /// KD-tree cell data structure
 //=================================================================================================
 template <int ndim>
-struct KDTreeCell {
+struct KDTreeCell : public TreeCellBase<ndim> {
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int cnext;                        ///< i.d. of next cell if not opened
-  int copen;                        ///< i.d. of first child cell
-  int id;                           ///< Cell id
   int k_divide;                     ///< Dimension along which cell is split
-  int level;                        ///< Level of cell on tree
-  int ifirst;                       ///< i.d. of first particle in cell
-  int ilast;                        ///< i.d. of last particle in cell
-  int N;                            ///< No. of particles in cell
-  int Nactive;                      ///< No. of active particles in cell
-  int cexit[2][ndim];               ///< Left and right exit cells (per dim)
-  FLOAT cdistsqd;                   ///< Minimum distance to use COM values
-  FLOAT mac;                        ///< Multipole-opening criterion value
-  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
-  FLOAT hboxmin[ndim];              ///< Minimum extent of bounding box
-  FLOAT hboxmax[ndim];              ///< Maximum extent of bounding box
-  FLOAT vboxmin[ndim];
-  FLOAT vboxmax[ndim];
-  FLOAT rcell[ndim];                ///< Geometric centre of cell bounding box
-  FLOAT r[ndim];                    ///< Position of cell COM
-  FLOAT v[ndim];                    ///< Velocity of cell COM
-  FLOAT m;                          ///< Mass contained in cell
-  FLOAT rmax;                       ///< Radius of bounding sphere
-  FLOAT hmax;                       ///< Maximum smoothing length inside cell
-  FLOAT drmaxdt;                    ///< Rate of change of bounding sphere
-  FLOAT dhmaxdt;                    ///< Rate of change of maximum h
-  FLOAT q[5];                       ///< Quadrupole moment tensor
-#ifdef MPI_PARALLEL
-  double worktot;                   ///< Total work in cell
-#endif
 };
 
 

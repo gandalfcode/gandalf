@@ -105,11 +105,11 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 //=================================================================================================
 //  Tree::ComputeActiveCellList
 /// Returns the number of cells containing active particles, 'Nactive', and
-/// the i.d. list of cells contains active particles, 'celllist'
+/// the i.d. list of cells contains active particles, 'celllist'.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
- (TreeCell<ndim> **celllist)            ///< Array of pointers to cells that will be filled in
+ (TreeCell<ndim> **celllist)           ///< Array of pointers to cells that will be filled in
 {
   int c;                               // Cell counter
   int Nactive = 0;                     // No. of active leaf cells in tree
@@ -1371,7 +1371,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
-int cold = cc;
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
@@ -1433,10 +1432,6 @@ int cold = cc;
       cc = celldata[cc].cnext;
     }
 
-    //cout << "Gravity list;   Ngravcell : " << Ngravcelltemp << "    m : " << celldata[cold].m << "   "
-    //     << cold << "    " << cc <<  "   " << Ncell << endl;
-    assert(celldata[cold].m > 0.0);
-    assert(cold != -1);
     assert(cc != -1);
     assert(cc <= Ncell);
 
@@ -1589,3 +1584,8 @@ template class Tree<3,SM2012SphParticle,OctTreeCell>;
 template class Tree<1,MeshlessFVParticle,OctTreeCell>;
 template class Tree<2,MeshlessFVParticle,OctTreeCell>;
 template class Tree<3,MeshlessFVParticle,OctTreeCell>;
+
+
+template class Tree<3,Particle,TreeRayCell>;
+template class Tree<3,SphParticle,TreeRayCell>;
+template class Tree<3,GradhSphParticle,TreeRayCell>;

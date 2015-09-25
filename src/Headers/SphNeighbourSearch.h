@@ -104,7 +104,7 @@ protected:
   virtual void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                                              Nbody<ndim> *, DomainBox<ndim> &) {};
+                                               Nbody<ndim> *, DomainBox<ndim> &) {};
   virtual void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                           Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,

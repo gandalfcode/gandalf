@@ -218,9 +218,9 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   }
   for (k=0; k<ndim; k++) {
     //celldata[0].rcell[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
-    celldata[0].r[k] = (FLOAT) 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
+    celldata[0].rcentre[k] = (FLOAT) 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
     //cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].rcell[k]);
-    cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].r[k]);
+    cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].rcentre[k]);
   }
   rootCellSize = (FLOAT) 2.0*cellSize;
 
@@ -263,31 +263,31 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
 
           // Assign positions of child cells
           if (k == 0 || k == 2 || k == 4 || k == 6) {
-            celldata[cnew].r[0] = cell.r[0] - cellSize;
-            celldata[cnew].bbmax[0] = cell.r[0];
+            celldata[cnew].rcentre[0] = cell.rcentre[0] - cellSize;
+            celldata[cnew].bbmax[0] = cell.rcentre[0];
           }
           else {
-            celldata[cnew].r[0] = cell.r[0] + cellSize;
-            celldata[cnew].bbmin[0] = cell.r[0];
+            celldata[cnew].rcentre[0] = cell.rcentre[0] + cellSize;
+            celldata[cnew].bbmin[0] = cell.rcentre[0];
           }
           if (ndim > 1) {
             if (k == 0 || k == 1 || k == 4 || k == 5) {
-              celldata[cnew].r[1] = cell.r[1] - cellSize;
-              celldata[cnew].bbmax[1] = cell.r[1];
+              celldata[cnew].rcentre[1] = cell.rcentre[1] - cellSize;
+              celldata[cnew].bbmax[1] = cell.rcentre[1];
             }
             else {
-              celldata[cnew].r[1] = cell.r[1] + cellSize;
-              celldata[cnew].bbmin[1] = cell.r[1];
+              celldata[cnew].rcentre[1] = cell.rcentre[1] + cellSize;
+              celldata[cnew].bbmin[1] = cell.rcentre[1];
             }
           }
           if (ndim == 3) {
             if (k < 4) {
-              celldata[cnew].r[2] = cell.r[2] - cellSize;
-              celldata[cnew].bbmax[2] = cell.r[2];
+              celldata[cnew].rcentre[2] = cell.rcentre[2] - cellSize;
+              celldata[cnew].bbmax[2] = cell.rcentre[2];
             }
             else {
-              celldata[cnew].r[2] = cell.r[2] + cellSize;
-              celldata[cnew].bbmin[2] = cell.r[2];
+              celldata[cnew].rcentre[2] = cell.rcentre[2] + cellSize;
+              celldata[cnew].bbmin[2] = cell.rcentre[2];
             }
           }
 
@@ -304,12 +304,12 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
           ckid = 0;
 
           // Find child cell i.d. (depending on dimensionality)
-          if (partdata[i].r[0] > cell.r[0]) ckid += 1;
+          if (partdata[i].r[0] > cell.rcentre[0]) ckid += 1;
           if (ndim > 1) {
-            if (partdata[i].r[1] > cell.r[1]) ckid += 2;
+            if (partdata[i].r[1] > cell.rcentre[1]) ckid += 2;
           }
           if (ndim == 3) {
-            if (partdata[i].r[2] > cell.r[2]) ckid += 4;
+            if (partdata[i].r[2] > cell.rcentre[2]) ckid += 4;
           }
           assert(ckid >= 0 && ckid < Noctchild);
 
@@ -921,5 +921,5 @@ template class OctTree<1, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<2, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<3, MeshlessFVParticle, OctTreeCell>;
 
-//template class OctTree<3, GradhSphParticle, OsTreeRayCell>;
-//template class OctTree<3, MeshlessFVParticle, OsTreeRayCell>;
+template class OctTree<3, GradhSphParticle, TreeRayCell>;
+//template class OctTree<3, MeshlessFVParticle, TreeRayCell>;

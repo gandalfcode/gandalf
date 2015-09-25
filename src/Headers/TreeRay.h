@@ -1,6 +1,6 @@
 //=================================================================================================
 //  TreeRay.h
-//  ...
+//  Class definition for TreeRay
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -34,58 +34,29 @@
 #include "CodeTiming.h"
 #include "Constants.h"
 #include "Debug.h"
+#include "DomainBox.h"
 #include "EnergyEquation.h"
 #include "EOS.h"
-#include "DomainBox.h"
 #include "KDRadiationTree.h"
 #include "Nbody.h"
+#include "NbodyParticle.h"
+#include "NeighbourSearch.h"
+#include "OctTree.h"
+#include "Parameters.h"
 #include "Particle.h"
 #include "Precision.h"
-#include "Parameters.h"
 #include "Radiation.h"
 #include "RandomNumber.h"
 #include "SimUnits.h"
 #include "Sinks.h"
 #include "SmoothingKernel.h"
 #include "SphNeighbourSearch.h"
-#include "Particle.h"
-#include "NbodyParticle.h"
-#include "OctTree.h"
 using namespace std;
 
 
-/*static const int nfreq=1;
-
 
 //=================================================================================================
-//  Struct TreeRayCell
-/// TreeRay cell data structure
-//=================================================================================================
-template <int ndim>
-struct TreeRayCell : public OctTreeCell<ndim>
-{
-  FLOAT volume;
-};
-
-
-
-//=================================================================================================
-//  Struct ..
-/// TreeRay cell data structure
-//=================================================================================================
-//template <int ndim, int nfreq>
-template <int ndim>
-struct OsTreeRayCell : public TreeRayCell<ndim>
-{
-  FLOAT srcEUV[nfreq];                        ///< Source function of EUV radiation
-  FLOAT erdEUVold[nfreq];                     ///< ..
-  FLOAT erdEUV[nfreq];                        ///< Radiation energy density
-};
-*/
-
-
-//=================================================================================================
-//  Struct ..
+//  Struct Rays
 /// ...
 //=================================================================================================
 //template <int nfreq>
@@ -101,9 +72,49 @@ struct Rays {
 
 
 //=================================================================================================
+//  Class TreeRayPhysics
+/// \brief   Base class for implementing physics modules with the TreeRay algorithm.
+/// \details Base class for implementing physics modules with the TreeRay algorithm.
+/// \author  R. Wunsch & D. A. Hubber
+/// \date    21/09/2015
+//=================================================================================================
+template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
+class TreeRayPhysics
+{
+ public:
+
+  virtual void Init(void) = 0;
+  virtual void FinaliseCell (TreeCell<ndim> &, FLOAT **, FLOAT **) = 0;
+  virtual void IntegrateRay(Rays *, FLOAT *) = 0;
+
+};
+
+
+
+//=================================================================================================
+//  Class TreeRayOnTheSpot
+/// \brief   ...
+/// \details ...
+/// \author  R. Wunsch & D. A. Hubber
+/// \date    21/09/2015
+//=================================================================================================
+template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
+class TreeRayOnTheSpot : public TreeRayPhysics<ndim,nfreq,ParticleType,TreeCell>
+{
+ public:
+
+  virtual void Init(void) {};
+  virtual void FinaliseCell (TreeCell<ndim> &, FLOAT **, FLOAT **) {};
+  virtual void IntegrateRay(Rays *, FLOAT *) {};
+
+};
+
+
+
+//=================================================================================================
 //  Class TreeRay
-/// \brief
-/// \details
+/// \brief   ...
+/// \details ...
 /// \author  R. Wunsch & D. A. Hubber
 /// \date    16/03/2015
 //=================================================================================================
@@ -144,6 +155,7 @@ class TreeRay : public Radiation<ndim>
   FLOAT ilNSSampFacI;                  ///< ..
   FLOAT max_ray_length;                ///< ..
   FLOAT minCellSize;                   ///< ..
+  FLOAT nPo4pi;
 
   int *radNodeMapIndex;                ///< ..
   FLOAT *intersectList;                ///< ..
@@ -152,20 +164,24 @@ class TreeRay : public Radiation<ndim>
   FLOAT *rayR2;                        ///< ..
   FLOAT *rayRi;                        ///< ..
   FLOAT *rayR2i;                       ///< ..
-
-  OctTree<ndim,ParticleType,TreeCell> *tree;   ///< ..
   Rays **rays;                         ///< ..
+
+  OctTree<ndim,ParticleType,TreeCell> *tree;         ///< ..
+#if defined MPI_PARALLEL
+  OctTree<ndim,ParticleType,TreeCell> **prunedTree;  ///< ..
+#endif
 
 
   //-----------------------------------------------------------------------------------------------
   TreeRay(bool, int, int, int, int, int, int, FLOAT, FLOAT, FLOAT, string,
-          DomainBox<ndim> &, SimUnits *, Parameters *);
+          DomainBox<ndim> &, SimUnits *, Parameters *, NeighbourSearch<ndim> *);
   ~TreeRay();
 
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *);
 
   void AddRadiationSource(SinkParticle<ndim> &);
+  void CalculateCellRadiationProperties(TreeCell<ndim> &);
   void FixRay(Rays *ray);
   void FinaliseCell(TreeCell<ndim> &, FLOAT **eflux, FLOAT **cdMaps);
   void FinaliseIteration(void);
@@ -176,7 +192,8 @@ class TreeRay : public Radiation<ndim>
   void NodeContribution(TreeCell<ndim> &targetNode, TreeCell<ndim> &contributingNode,
                         FLOAT dr[ndim], FLOAT drsqd, FLOAT cellSize);
   void RadToGas(TreeCell<ndim> &, ParticleType<ndim> *, FLOAT timestep);
-  void TreeWalk(TreeCell<ndim> &);
+  void StockRadiationTree(TreeCell<ndim> &, ParticleType<ndim> *);
+  void TreeRayWalk(TreeCell<ndim> &, OctTree<ndim,ParticleType,TreeCell> *, FLOAT **);
   bool TreeWalkEnd(void);
 
 };
