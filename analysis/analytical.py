@@ -21,7 +21,7 @@
 #  General Public License (http://www.gnu.org/licenses) for more details.
 #==============================================================================
 import numpy as np
-import shocktub
+from swig_generated.SphSim import ShocktubeSolution
 
 '''This module contains the classes responsible for computing the analytical solution, in the case we know it.
 There is a template empty class, which shows that the class must expose a compute function.
@@ -141,7 +141,7 @@ class shocktube (AnalyticalSolution):
         self.xR     = simfloatparams["boxmax[0]"]
         self.x0     = 0.5*(self.xL + self.xR)
         self.time   = time
-        self.iMAX   = 50000
+        self.iMAX   = 16384
         if sim.simparams.stringparams["gas_eos"] == "isothermal":
             self.gamma = 1.0 + 1e-5
         else:
@@ -152,15 +152,18 @@ class shocktube (AnalyticalSolution):
         Gets passed two strings with the quantities that are needed
         (e.g., \'rho\' and \'pressure\').'''
 
-        # TODO : Needs to be updated; perhaps re-write in C++
-        # Calls the fortran module that computes the state
-        shocktub.shocktub(self.RHOinL, self.RHOinR, self.UinL, self.UinR,
-                          self.PinL, self.PinR, self.xL, self.x0, self.xR,
-                          self.time, self.iMAX, self.gamma)
+        shocktube = ShocktubeSolution(self.RHOinL, self.RHOinR, self.UinL, self.UinR,
+                                      self.PinL, self.PinR, self.xL, self.x0, self.xR,
+                                      self.time, self.iMAX, self.gamma)
 
-        # Reads the data from the text file produced
-        data = np.genfromtxt('sod.out',names=['x','rho','vx','press','u'])
-        return data[x], data[y]
+        xdata = np.zeros(self.iMAX, dtype=np.float32)
+        ydata = np.zeros(self.iMAX, dtype=np.float32)
+
+        xdata = shocktube.ComputeShocktubeSolution(x, self.iMAX)
+        ydata = shocktube.ComputeShocktubeSolution(y, self.iMAX)
+
+        return xdata, ydata
+        
 
 
 #------------------------------------------------------------------------------

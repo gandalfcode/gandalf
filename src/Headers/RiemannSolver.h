@@ -15,6 +15,10 @@
 
 //=================================================================================================
 //  Class RiemannSolver
+/// \brief   Virtual parent class for all Riemann solver classes.
+/// \details Virtual parent class for all Riemann solver classes.
+/// \author  D. A. Hubber, S. Heigl, J. Ngoumou
+/// \date    01/10/2014
 //=================================================================================================
 template <int ndim>
 class RiemannSolver
@@ -44,7 +48,7 @@ class RiemannSolver
 
 
   RiemannSolver(FLOAT, bool);
-  ~RiemannSolver();
+  virtual ~RiemannSolver() {};
 
   virtual void ComputeStarRegion(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
                                  FLOAT, FLOAT, FLOAT &, FLOAT &) {};
@@ -60,6 +64,10 @@ class RiemannSolver
 
 //=================================================================================================
 //  Class ExactRiemannSolver
+/// \brief   Exact Riemann solver solution; based on algorithm presented in Toro (1999).
+/// \details Exact Riemann solver solution; based on algorithm presented in Toro (1999).
+/// \author  D. A. Hubber, S. Heigl, J. Ngoumou
+/// \date    01/10/2014
 //=================================================================================================
 template <int ndim>
 class ExactRiemannSolver: public RiemannSolver<ndim>
@@ -88,7 +96,7 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
  public:
 
   ExactRiemannSolver(FLOAT gamma_aux, bool _zeroMassFlux) : RiemannSolver<ndim>(gamma_aux, _zeroMassFlux) {};
-    //~ExactRiemannSolver() {};
+  virtual ~ExactRiemannSolver() {};
 
   virtual void ComputeStarRegion(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                                  const FLOAT, const FLOAT, const FLOAT, FLOAT &, FLOAT &);
@@ -97,9 +105,6 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
   void SampleExactSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, FLOAT &, FLOAT &, FLOAT &);
-  void SampleExactVacuumSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                                 const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                                 const FLOAT, FLOAT &, FLOAT &, FLOAT &);
   FLOAT Prefun(const FLOAT, const FLOAT, const FLOAT, const FLOAT, FLOAT &);
 
 };
@@ -108,6 +113,10 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
 
 //=================================================================================================
 //  Class HllcRiemannSolver
+/// \brief   HLLC approximate Riemann solver.
+/// \details HLLC approximate Riemann solver.
+/// \author  S. Heigl
+/// \date    01/10/2014
 //=================================================================================================
 template <int ndim>
 class HllcRiemannSolver: public RiemannSolver<ndim>
@@ -136,10 +145,36 @@ class HllcRiemannSolver: public RiemannSolver<ndim>
  public:
 
   HllcRiemannSolver(FLOAT gamma_aux, bool _zeroMassFlux) : RiemannSolver<ndim>(gamma_aux, zeroMassFlux) {};
-    //~HllcRiemannSolver() {};
+  virtual ~HllcRiemannSolver() {};
 
   virtual void ComputeFluxes(const FLOAT [nvar], const FLOAT [nvar],
                              const FLOAT [ndim], FLOAT [ndim], FLOAT [nvar][ndim]);
+
+};
+
+
+
+//=================================================================================================
+//  Class ShocktubeSolution
+/// \brief   Simple wrapper class to communicate Shocktube problem solution to python module.
+/// \details Simple wrapper class to communicate Shocktube problem solution to python module.
+/// \author  D. A. Hubber, S. Heigl, J. Ngoumou
+/// \date    25/09/2015
+//=================================================================================================
+class ShocktubeSolution
+{
+ public:
+  const int nvalues;
+  const FLOAT gamma,pl,pr,rhol,rhor,t,vl,vr,x0,xl,xr;
+  FLOAT pstar,ustar;
+  ExactRiemannSolver<1>* riemann;
+
+  ShocktubeSolution(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+                    FLOAT, FLOAT, FLOAT, FLOAT, int, FLOAT);
+  ~ShocktubeSolution();
+
+  //void ComputeShocktubeSolution(const std::string, int, float *);
+  void ComputeShocktubeSolution(const std::string, float* vals, int N);
 
 };
 #endif

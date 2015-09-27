@@ -133,11 +133,11 @@ void RiemannSolver<ndim>::RotateVector
 //=================================================================================================
 template <int ndim>
 FLOAT ExactRiemannSolver<ndim>::Prefun
- (const FLOAT pk,                      ///< LHS pressure
-  const FLOAT dk,                      ///< LHS density
-  const FLOAT ck,                      ///< LHS sound speed
-  const FLOAT pstar,                   ///< Pressure in the central 'star' region
-  FLOAT &fprime)                       ///< Velocity of intermediate state
+ (const FLOAT pk,                      ///< [in] LHS pressure
+  const FLOAT dk,                      ///< [in] LHS density
+  const FLOAT ck,                      ///< [in] LHS sound speed
+  const FLOAT pstar,                   ///< [in] Pressure in the central 'star' region
+  FLOAT &fprime)                       ///< [out] Velocity of intermediate state
 {
   FLOAT ak, bk, f, pratio, qrt;
 
@@ -302,7 +302,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
 template <int ndim>
 void ExactRiemannSolver<ndim>::SampleExactSolution
  (const FLOAT pstar,                   ///< [in] Pressure of central 'star' region
-  const FLOAT ustar,                   ///< [in] Vecocity in central 'star' region
+  const FLOAT ustar,                   ///< [in] Velocity in central 'star' region
   const FLOAT s,                       ///< [in] Dimensionless position to sample solution at
   const FLOAT pl,                      ///< [in] LHS pressure
   const FLOAT pr,                      ///< [in] RHS pressure
@@ -686,26 +686,20 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
       pf = pr;
       etotf = etotr;
     }
-
+    assert(pf >= 0.0);
+    assert(df >= 0.0);
 
     for (kv=0; kv<ndim; kv++) Wface[kv] = 0.0;
     Wface[irho]   = df;
     Wface[ivx]    = uf;
     Wface[ipress] = pf;
 
-    //cout << "p : " << p << endl;
-    assert(pf >= 0.0);
-    assert(df >= 0.0);
-
 
     if (zeroMassFlux) {
-
       Wface[ivx] = 0.0;
       for (k=0; k<ndim; k++) vface[k] += uf*runit[k];
-
     }
     else {
-
       // Calculate transverse velocity fluxes from upwind direction
       if (uf > 0.0) {
         for (k=1; k<ndim; k++) Wface[k] = uleft[k];
@@ -754,6 +748,70 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
   }
   //-----------------------------------------------------------------------------------------------
 
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  ShocktubeSolution::ShocktubeSolution
+/// Constructor for RiemannSolver class.
+//=================================================================================================
+ShocktubeSolution::ShocktubeSolution
+ (FLOAT _rhol, FLOAT _rhor, FLOAT _vl, FLOAT _vr, FLOAT _pl, FLOAT _pr,
+  FLOAT _xl, FLOAT _x0, FLOAT _xr, FLOAT _t, int _nvalues, FLOAT _gamma) :
+  rhol(_rhol), rhor(_rhor), vl(_vl), vr(_vr), pl(_pl), pr(_pr),
+  xl(_xl), x0(_x0), xr(_xr), t(_t), nvalues(_nvalues), gamma(_gamma)
+{
+  const FLOAT cl = sqrt(gamma*pl/rhol);        // LHS sound speed
+  const FLOAT cr = sqrt(gamma*pr/rhor);        // RHS sound speed
+
+  riemann = new ExactRiemannSolver<1>(_gamma, false);
+  riemann->ComputeStarRegion(pl, pr, rhol, rhor, cl, cr, vl, vr, pstar, ustar);
+}
+
+
+
+//=================================================================================================
+//  ShocktubeSolution::ShocktubeSolution
+/// Destructor for RiemannSolver class.
+//=================================================================================================
+ShocktubeSolution::~ShocktubeSolution()
+{
+  delete riemann;
+}
+
+
+
+//=================================================================================================
+//  ShocktubeSolution::ComputeShocktubeSolution
+/// Destructor for RiemannSolver class.
+//=================================================================================================
+void ShocktubeSolution::ComputeShocktubeSolution
+  (const std::string quantity,                  ///< [in] ..
+//  (char *quantity,                              ///< [in]
+   float* vals,                                ///< [out] ..
+   int N)                                      ///< [in] ..
+{
+  const FLOAT cl = sqrt(gamma*pl/rhol);        // LHS sound speed
+  const FLOAT cr = sqrt(gamma*pr/rhor);        // RHS sound speed
+  FLOAT d,p,s,u,x;
+
+  //-----------------------------------------------------------------------------------------------
+  for (int i=0; i<N; i++) {
+    x = xl + (xr - xl)*((FLOAT) i) / (FLOAT) (N - 1);
+    s = (x - x0)/t;
+    riemann->SampleExactSolution(pstar, ustar, s, pl, pr, rhol, rhor, cl, cr, vl, vr, p, d, u);
+
+    if (quantity == "x") vals[i] = x;
+    else if (quantity == "rho") vals[i] = (float) d;
+    else if (quantity == "vx") vals[i] = (float)u;
+    else if (quantity == "press") vals[i] = (float)p;
+    else if (quantity == "u") vals[i] = (float) (p/d/(gamma - 1.0));
+    else vals[i] = 0.0f;
+  }
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }

@@ -22,6 +22,7 @@
 
 
 %module SphSim
+%include <std_string.i>
 %include "std_string.i"
 %include "std_map.i"
 %include "std_list.i"
@@ -35,6 +36,7 @@
 #include "Exception.h"
 #include "Simulation.h"
 #include "Parameters.h"
+#include "RiemannSolver.h"
 #include "SimUnits.h"
 #include "Sph.h"
 #include "SphSnapshot.h"
@@ -199,6 +201,7 @@ ExceptionHandler::makeExceptionHandler(python);
  /* Applies Numpy black magic */
  %apply (float** ARGOUTVIEW_ARRAY1, int *DIM1) {(float** out_array, int* size_array)}
  %apply (float* INPLACE_ARRAY1, int DIM1) {(float* values, int Ngrid)}
+ %apply (float* ARGOUT_ARRAY1, int DIM1) {(float* vals, int N)}
  %apply (double* IN_ARRAY1, int DIM1) {(double* input, int size)}
 
  %apply float& OUTPUT { float& scaling_factor };
@@ -206,6 +209,7 @@ ExceptionHandler::makeExceptionHandler(python);
  %include "HeaderInfo.h"
 
 %include "Precision.h"
+%include "RiemannSolver.h"
 %include "Simulation.h"
 %include "Parameters.h"
 %include "SimUnits.h"
