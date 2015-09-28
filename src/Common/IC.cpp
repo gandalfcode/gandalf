@@ -1491,10 +1491,10 @@ void Ic<ndim>::TurbulentCore(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart,r,rcentre,radius);
+    AddRandomSphere(Npart, r, rcentre, radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -3361,8 +3361,8 @@ int Ic<ndim>::AddLatticeSphere
   int Naux;                            // Aux. particle number
   int Nlattice[3];                     // Lattice size
   FLOAT theta;                         // Euler angle for random rotation of lattice
-  FLOAT phi;                           // ""
-  FLOAT psi;                           // ""
+  FLOAT phi;                           //        "                      "
+  FLOAT psi;                           //        "                      "
   FLOAT *raux;                         // Temp. array to hold particle positions
   DomainBox<ndim> box1;                // Bounding box
 
@@ -3391,6 +3391,7 @@ int Ic<ndim>::AddLatticeSphere
   // Now cut-out sphere from lattice containing exact number of particles
   // (unless lattice structure prevents this).
   Naux = CutSphere(Npart, Naux, raux, box1, false);
+  assert(Naux <= Npart);
 
   // Rotate sphere through random Euler angles (to prevent alignment problems
   // during tree construction)
@@ -4024,7 +4025,7 @@ void Ic<ndim>::ComputeBondiSolution
 
 //=================================================================================================
 //  Ic::GenerateTurbulentVelocityField
-/// ..
+/// Generates turbulent velocity field using FFTW library.
 /// Based on original code by A. McLeod.
 //=================================================================================================
 template <int ndim>
@@ -4070,8 +4071,8 @@ void Ic<ndim>::GenerateTurbulentVelocityField
     kmin = -(gridsize/2 - 1);
     kmax = gridsize/2;
     krange = kmax - kmin + 1;
-    cout << "kmin : " << kmin << "    kmax : " << kmax << "    krange : "
-         << krange << "    gridsize : " << gridsize << endl;
+//    cout << "kmin : " << kmin << "    kmax : " << kmax << "    krange : "
+//         << krange << "    gridsize : " << gridsize << endl;
     if (krange != gridsize) exit(0);
 
     power = new DOUBLE*[3];  phase = new DOUBLE*[3];
@@ -4242,12 +4243,13 @@ void Ic<ndim>::GenerateTurbulentVelocityField
 
     fftw_destroy_plan(plan);
 
+    for (d=0; d<3; d++) delete[] phase[d];
+    for (d=0; d<3; d++) delete[] power[d];
+    delete[] phase;
+    delete[] power;
+    fftw_free(outcomplexfield);
+    fftw_free(incomplexfield);
 
-    //delete[] complexfield;
-    //delete[] power;
-    //delete[] phase;
-    //delete[] dummy2;
-    //delete[] dummy1;
 
   }
   //-----------------------------------------------------------------------------------------------

@@ -102,6 +102,10 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
     sphdata_unsafe = sphdata;
   }
 
+  assert(Nhydromax > Nhydro);
+  assert(iorder);
+  assert(sphdata);
+
   return;
 }
 
