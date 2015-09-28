@@ -1495,6 +1495,7 @@ void Ic<ndim>::TurbulentCore(void)
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    assert(Nsphere <= Npart);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -1511,12 +1512,18 @@ void Ic<ndim>::TurbulentCore(void)
   mp = mcloud / (FLOAT) Npart;
   rho = (FLOAT) 3.0*mcloud / ((FLOAT) 4.0*pi*pow(radius,3));
 
+  for (int i=0; i<hydro->Nhydromax; i++) {
+    Particle<ndim> &part = hydro->GetParticlePointer(i);
+    FLOAT rp = r[ndim*i + k];
+    part.r[0] = rp;
+    part.r[0] = r[ndim*i + k];
+  }
 
   // Record particle properties in main memory
   for (i=0; i<Npart; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
-    for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
+    for (k=0; k<ndim; k++) part.v[k] = 0.0;
     part.m = mp;
     part.h = hydro->h_fac*pow(part.m/rho,invndim);
     part.u = temp0/gammaone/mu_bar;

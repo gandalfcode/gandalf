@@ -115,8 +115,9 @@ ifeq ($(FFTW),1)
 CFLAGS += -DFFTW_TURBULENCE
 #OPT += -I/Users/davidhubber/astro/code/gandalf/src -L/Users/davidhubber/astro/code/gandalf/src -lm -lfftw3f
 #OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
-INCLUDE += -I/sw/include
-LIB +=-L/sw/lib -lfftw3
+#INCLUDE += -I/sw/include
+LIB += -lfftw3
+#LIB +=-L/sw/lib -lfftw3
 #OPT += $(FFTW_LIB) $(FFTW_INC)
 endif
 
