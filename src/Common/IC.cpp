@@ -1480,7 +1480,7 @@ void Ic<ndim>::TurbulentCore(void)
   radius /= simunits.r.outscale;
   temp0  /= simunits.temp.outscale;
 
-  // Calculate gravitational potential energy of uniform cloud
+  // Calculate gravitational potential energy of uniform density spherical cloud
   gpecloud = (FLOAT) 0.6*mcloud*mcloud/radius;
 
   r = new FLOAT[ndim*Npart];
@@ -1491,10 +1491,10 @@ void Ic<ndim>::TurbulentCore(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart,r,rcentre,radius);
+    AddRandomSphere(Npart, r, rcentre, radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
     assert(Nsphere <= Npart);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
@@ -3323,7 +3323,7 @@ template <int ndim>
 void Ic<ndim>::AddRandomSphere
  (int Npart,                           ///< [in] No. of particles in sphere
   FLOAT *r,                            ///< [out] Positions of particles in sphere
-  FLOAT *rcentre,                      ///< [in] Position of sphere centre
+  FLOAT rcentre[ndim],                 ///< [in] Position of sphere centre
   FLOAT radius)                        ///< [in] Radius of sphere
 {
   int i,k;                             // Particle and dimension counters
@@ -3360,7 +3360,7 @@ template <int ndim>
 int Ic<ndim>::AddLatticeSphere
  (int Npart,                           ///< [in] No. of particles in sphere
   FLOAT *r,                            ///< [out] Positions of particles in sphere
-  FLOAT *rcentre,                      ///< [in] Position of sphere centre
+  FLOAT rcentre[ndim],                 ///< [in] Position of sphere centre
   FLOAT radius,                        ///< [in] Radius of sphere
   string particle_dist)                ///< [in] String of lattice type
 {
@@ -3368,12 +3368,14 @@ int Ic<ndim>::AddLatticeSphere
   int Naux;                            // Aux. particle number
   int Nlattice[3];                     // Lattice size
   FLOAT theta;                         // Euler angle for random rotation of lattice
-  FLOAT phi;                           // ""
-  FLOAT psi;                           // ""
+  FLOAT phi;                           //        "                      "
+  FLOAT psi;                           //        "                      "
   FLOAT *raux;                         // Temp. array to hold particle positions
   DomainBox<ndim> box1;                // Bounding box
 
   debug2("[Ic::AddLatticeSphere]");
+
+  assert(r);
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
@@ -3398,6 +3400,7 @@ int Ic<ndim>::AddLatticeSphere
   // Now cut-out sphere from lattice containing exact number of particles
   // (unless lattice structure prevents this).
   Naux = CutSphere(Npart, Naux, raux, box1, false);
+  assert(Naux <= Npart);
 
   // Rotate sphere through random Euler angles (to prevent alignment problems
   // during tree construction)
@@ -3560,6 +3563,8 @@ void Ic<ndim>::AddHexagonalLattice
   FLOAT rad[ndim];                     // 'Radius' of particle in lattice
 
   debug2("[Ic::AddHexagonalLattice]");
+
+  assert(r);
 
   // If normalised, ensure equal spacing between all particles.
   // Otherwise set spacing to fit bounding box.
@@ -4031,7 +4036,7 @@ void Ic<ndim>::ComputeBondiSolution
 
 //=================================================================================================
 //  Ic::GenerateTurbulentVelocityField
-/// ..
+/// Generates turbulent velocity field using FFTW library.
 /// Based on original code by A. McLeod.
 //=================================================================================================
 template <int ndim>
@@ -4077,8 +4082,8 @@ void Ic<ndim>::GenerateTurbulentVelocityField
     kmin = -(gridsize/2 - 1);
     kmax = gridsize/2;
     krange = kmax - kmin + 1;
-    cout << "kmin : " << kmin << "    kmax : " << kmax << "    krange : "
-         << krange << "    gridsize : " << gridsize << endl;
+//    cout << "kmin : " << kmin << "    kmax : " << kmax << "    krange : "
+//         << krange << "    gridsize : " << gridsize << endl;
     if (krange != gridsize) exit(0);
 
     power = new DOUBLE*[3];  phase = new DOUBLE*[3];
@@ -4249,12 +4254,13 @@ void Ic<ndim>::GenerateTurbulentVelocityField
 
     fftw_destroy_plan(plan);
 
+    for (d=0; d<3; d++) delete[] phase[d];
+    for (d=0; d<3; d++) delete[] power[d];
+    delete[] phase;
+    delete[] power;
+    fftw_free(outcomplexfield);
+    fftw_free(incomplexfield);
 
-    //delete[] complexfield;
-    //delete[] power;
-    //delete[] phase;
-    //delete[] dummy2;
-    //delete[] dummy1;
 
   }
   //-----------------------------------------------------------------------------------------------
