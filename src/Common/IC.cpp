@@ -1480,7 +1480,7 @@ void Ic<ndim>::TurbulentCore(void)
   radius /= simunits.r.outscale;
   temp0  /= simunits.temp.outscale;
 
-  // Calculate gravitational potential energy of uniform cloud
+  // Calculate gravitational potential energy of uniform density spherical cloud
   gpecloud = (FLOAT) 0.6*mcloud*mcloud/radius;
 
   r = new FLOAT[ndim*Npart];
@@ -3316,7 +3316,7 @@ template <int ndim>
 void Ic<ndim>::AddRandomSphere
  (int Npart,                           ///< [in] No. of particles in sphere
   FLOAT *r,                            ///< [out] Positions of particles in sphere
-  FLOAT *rcentre,                      ///< [in] Position of sphere centre
+  FLOAT rcentre[ndim],                 ///< [in] Position of sphere centre
   FLOAT radius)                        ///< [in] Radius of sphere
 {
   int i,k;                             // Particle and dimension counters
@@ -3353,7 +3353,7 @@ template <int ndim>
 int Ic<ndim>::AddLatticeSphere
  (int Npart,                           ///< [in] No. of particles in sphere
   FLOAT *r,                            ///< [out] Positions of particles in sphere
-  FLOAT *rcentre,                      ///< [in] Position of sphere centre
+  FLOAT rcentre[ndim],                 ///< [in] Position of sphere centre
   FLOAT radius,                        ///< [in] Radius of sphere
   string particle_dist)                ///< [in] String of lattice type
 {
@@ -3367,6 +3367,8 @@ int Ic<ndim>::AddLatticeSphere
   DomainBox<ndim> box1;                // Bounding box
 
   debug2("[Ic::AddLatticeSphere]");
+
+  assert(r);
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
@@ -3554,6 +3556,8 @@ void Ic<ndim>::AddHexagonalLattice
   FLOAT rad[ndim];                     // 'Radius' of particle in lattice
 
   debug2("[Ic::AddHexagonalLattice]");
+
+  assert(r);
 
   // If normalised, ensure equal spacing between all particles.
   // Otherwise set spacing to fit bounding box.
