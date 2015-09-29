@@ -200,16 +200,16 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
   FLOAT ptr;                           // ..
 
   // Compute guess from Primitive Variable RS
-  cup  = 0.25*(dl + dr)*(cl + cr);
-  ppv  = 0.5*(pl + pr) + 0.5*(ul - ur)*cup;
-  ppv  = max(0.0,ppv);
-  pmin = min(pl,pr);
-  pmax = max(pl,pr);
+  cup  = (FLOAT) 0.25*(dl + dr)*(cl + cr);
+  ppv  = (FLOAT) 0.5*(pl + pr) + 0.5*(ul - ur)*cup;
+  ppv  = max((FLOAT) 0.0, ppv);
+  pmin = min(pl, pr);
+  pmax = max(pl, pr);
 
   // Check for vacuum condition
-  if (cl + cr - g7*(ur - ul) <= 0.0) {
-    pstar = 0.0;
-    ustar = 0.0;
+  if (cl + cr - g7*(ur - ul) <= (FLOAT) 0.0) {
+    pstar = (FLOAT) 0.0;
+    ustar = (FLOAT) 0.0;
     return;
   }
 

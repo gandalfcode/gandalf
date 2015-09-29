@@ -224,7 +224,7 @@ int MfvRungeKutta<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  part.h         = max(h_fac*pow(part.volume,MeshlessFV<ndim>::invndim), h_lower_bound);
+  part.h         = max(h_fac*powf(part.volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
   part.invh      = (FLOAT) 1.0/part.h;
   part.hfactor   = pow(part.invh, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
@@ -402,7 +402,7 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
 
     // Calculate maximum signal velocity
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
-                                       min((FLOAT) 0.0, dvdr/(sqrt(drsqd) + small_number)));
+                                       min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -421,8 +421,8 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
     for (var=0; var<nvar; var++) {
       part.Wmin[var] = min(part.Wmin[var], neibpart[j].Wprim[var]);
       part.Wmax[var] = max(part.Wmax[var], neibpart[j].Wprim[var]);
-      part.Wmidmin[var] = min(part.Wmidmin[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
-      part.Wmidmax[var] = max(part.Wmidmax[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmin[var] = min(part.Wmidmin[var], part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmax[var] = max(part.Wmidmax[var], part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
       assert(part.Wmidmax[var] >= part.Wmidmin[var]);
       assert(part.Wmax[var] >= part.Wmin[var]);
     }

@@ -48,7 +48,7 @@ class ExternalPotential
   ExternalPotential() {};
   ~ExternalPotential() {};
 
-  virtual void AddExternalPotential(FLOAT *, FLOAT *, FLOAT *, FLOAT *, FLOAT &) = 0;
+  virtual void AddExternalPotential(DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE &) = 0;
 
 };
 
@@ -103,9 +103,9 @@ class VerticalPotential : public ExternalPotential<ndim>
     DOUBLE adotp[ndim],                ///< 'Jerk' of particle
     DOUBLE &potp)                      ///< Potential of particle
   {
-    ap[kgrav]    += (FLOAT) avert;
+    ap[kgrav]    += avert;
     adotp[kgrav] += 0.0;
-    potp         += (rp[kgrav] - (FLOAT) rzero)*(FLOAT) avert;
+    potp         += (rp[kgrav] - rzero)* avert;
 
     return;
   }

@@ -89,7 +89,9 @@ public:
   // Functions needed to hide some implementation details
   //-----------------------------------------------------------------------------------------------
   Particle<ndim>& GetParticlePointer(const int i) {
-    return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + i*size_hydro_part));
+    long int numBytes = (long int) i * (long int) size_hydro_part;
+    return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + numBytes));
+    //return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + i*size_hydro_part));
   };
   virtual Particle<ndim>* GetParticleArray() = 0;
 

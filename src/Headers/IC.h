@@ -59,22 +59,23 @@ private:
 
   // Helper routines
   //-----------------------------------------------------------------------------------------------
-  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
+  void AddAzimuthalDensityPerturbation(const int, const int, const FLOAT, const FLOAT *, FLOAT *);
   void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
                      DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
                      NbodyParticle<ndim> &, NbodyParticle<ndim> &);
-  void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
-  void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
-  int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
-  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
-  void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
-  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
+  void AddCubicLattice(const int, const int *, const DomainBox<ndim>, const bool, FLOAT *);
+  void AddHexagonalLattice(const int, const int *, const DomainBox<ndim>, const bool, FLOAT *);
+  int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *);
+  void AddRotationalVelocityField(const int, const FLOAT, const FLOAT *, const FLOAT *, FLOAT *);
+  void AddRandomBox(const int, const DomainBox<ndim>, FLOAT *);
+  void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *);
   void Addr2Sphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
-  int CutSphere(int, int, FLOAT *, DomainBox<ndim>, bool);
+  int CutSphere(const int, const int, const DomainBox<ndim>, const bool, FLOAT *);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
-  void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
-  void InterpolateVelocityField(int, int, FLOAT, FLOAT, FLOAT *, FLOAT *,FLOAT *);
+  void GenerateTurbulentVelocityField(const int, const int, const DOUBLE, DOUBLE *);
+  void InterpolateVelocityField(const int, const int, const FLOAT, const FLOAT, 
+                                const FLOAT *, const FLOAT *, FLOAT *);
 
 
 public:

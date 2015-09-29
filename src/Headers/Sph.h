@@ -136,7 +136,9 @@ class Sph : public Hydrodynamics<ndim>
   // Functions needed to hide some implementation details
   //-----------------------------------------------------------------------------------------------
   SphParticle<ndim>& GetSphParticlePointer(const int i) {
-    return *((SphParticle<ndim>*)((unsigned char*) sphdata_unsafe + i*size_sph_part));
+    long int numBytes = (long int) i * (long int) size_sph_part;
+    return *((SphParticle<ndim>*)((unsigned char*) sphdata_unsafe + numBytes));
+    //return *((SphParticle<ndim>*)((unsigned char*) sphdata_unsafe + i*size_sph_part));
   };
   virtual SphParticle<ndim>* GetSphParticleArray() = 0;
 

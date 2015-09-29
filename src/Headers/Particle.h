@@ -53,6 +53,7 @@ enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
 template <int ndim>
 struct Particle
 {
+  FLOAT CRAP[16];
   bool active;                      ///< Flag if active (i.e. recompute step)
   bool potmin;                      ///< Is particle at a potential minima?
   int iorig;                        ///< Original particle i.d.

@@ -22,10 +22,9 @@
 
 CPP                = g++
 PYTHON             = python
-F2PY               = f2py
 FFTW               = 1
 GSL                = 0
-COMPILER_MODE      = DEBUG
+COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 1
 OUTPUT_LEVEL       = 1

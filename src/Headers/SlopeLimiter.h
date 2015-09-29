@@ -141,12 +141,12 @@ class Springel2009Limiter : public SlopeLimiter<ndim,ParticleType>
       dW[var] = DotProduct(parti.grad[var], draux, ndim);
       if (dW[var] > 0.0) alpha = (parti.Wmax[var] - parti.Wprim[var])/dW[var];
       else if (dW[var] < 0.0) alpha = (parti.Wmin[var] - parti.Wprim[var])/dW[var];
-      else alpha = 1.0;
-      alpha = min(1.0, alpha);
-      //alpha = 0.0;
+      else alpha = (FLOAT) 1.0;
+      alpha = min((FLOAT) 1.0, alpha);
+      //alpha = (FLOAT) 0.0;
       dW[var] = alpha*dW[var];
       for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
-      assert(alpha >= 0.0);
+      assert(alpha >= (FLOAT) 0.0);
     }
   }
 
@@ -175,18 +175,18 @@ class TESS2011Limiter : public SlopeLimiter<ndim,ParticleType>
   {
     int var;
     FLOAT alpha;
-    const FLOAT theta = 0.5;
+    const FLOAT theta = (FLOAT) 0.5;
 
     for (var=0; var<ndim+2; var++) {
       dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      if (dW[var] > 0.0) alpha = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], 0.0);
-      else if (dW[var] < 0.0) alpha = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], 0.0);
-      else alpha = 1.0;
-      alpha = min(1.0, alpha);
+      if (dW[var] > (FLOAT) 0.0) alpha = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], (FLOAT) 0.0);
+      else if (dW[var] < 0.0) alpha = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], (FLOAT) 0.0);
+      else alpha = (FLOAT) 1.0;
+      alpha = min((FLOAT) 1.0, alpha);
       //alpha = 0.0;
       dW[var] = alpha*dW[var];
       for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
-      assert(alpha >= 0.0);
+      assert(alpha >= (FLOAT) 0.0);
     }
   }
 
@@ -214,20 +214,20 @@ class Balsara2004Limiter : public SlopeLimiter<ndim,ParticleType>
                             FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
   {
     int var;
-    FLOAT alpha = 0.0;
-    const FLOAT beta = 1.0;
+    FLOAT alpha = (FLOAT) 0.0;
+    const FLOAT beta = (FLOAT) 1.0;
 
     for (var=0; var<ndim+2; var++) {
 
       dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      alpha = min(1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
-                                (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
-      alpha = max(0.0, alpha);
+      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
+                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
+      alpha = max((FLOAT) 0.0, alpha);
 
       dW[var] = alpha*dW[var];
       for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
 
-      assert(alpha >= 0.0 && alpha <= 1.0);
+      assert(alpha >= (FLOAT) 0.0 && alpha <= (FLOAT) 1.0);
     }
   }
 
@@ -255,22 +255,22 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
                             FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
   {
     int var;
-    FLOAT alpha = 0.0;
+    FLOAT alpha = (FLOAT) 0.0;
     FLOAT dr[ndim];
     FLOAT phiminus;
     FLOAT phiplus;
     FLOAT phimid;
-    const FLOAT beta = 1.0;
-    const FLOAT psi1 = 0.5;
-    const FLOAT psi2 = 0.375;  //0.25;
+    const FLOAT beta = (FLOAT) 1.0;
+    const FLOAT psi1 = (FLOAT) 0.5;
+    const FLOAT psi2 = (FLOAT) 0.375;  //0.25;
 
     //---------------------------------------------------------------------------------------------
     for (var=0; var<ndim+2; var++) {
 
       dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      alpha = min(1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
-                                (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
-      alpha = max(0.0, alpha);
+      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
+                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
+      alpha = max((FLOAT) 0.0, alpha);
 
       dW[var] = alpha*dW[var];
       for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
@@ -291,14 +291,14 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
         phiminus = phimin - delta1;
       }
       else {
-        phiminus = phimin / (1.0 + delta1/fabs(phimin));
+        phiminus = phimin / ((FLOAT) 1.0 + delta1/fabs(phimin));
       }
 
       if (sgn(phimax + delta1) == sgn(phimax)) {
         phiplus = phimax + delta1;
       }
       else {
-        phiplus = phimax / (1.0 + delta1/fabs(phimax));
+        phiplus = phimax / ((FLOAT) 1.0 + delta1/fabs(phimax));
       }
 
       if (parti.Wprim[var] < partj.Wprim[var]) {
@@ -351,22 +351,22 @@ class MinModLimiter : public SlopeLimiter<ndim,ParticleType>
 
       FLOAT D = DotProduct(parti.grad[var], dr_unit, ndim);
 
-      if (D == 0.0 && partj.Wprim[var] == parti.Wprim[var]) {
-        dW[var] = 0.0;
-        for (int k=0; k<ndim; k++) gradW[var][k] = 0.0;
+      if (D == (FLOAT) 0.0 && partj.Wprim[var] == parti.Wprim[var]) {
+        dW[var] = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) gradW[var][k] = (FLOAT) 0.0;
         continue;
       }
 
       FLOAT r = (partj.Wprim[var] - parti.Wprim[var]) /
         (parti.Wprim[var] - partj.Wprim[var] + 2.0*D*drmag);
-      r = max(r, 0.0);
+      r = max(r, (FLOAT) 0.0);
 
       //FLOAT phi = min(2.0/(1.0 + r), 2.0*r/(1.0 + r));
       //FLOAT phi = min(1.0, min(4.0/(1.0 + r), 4.0*r/(1.0 + r)));
       //FLOAT phi = 2.0*r/(r*r + 1.0);
-      FLOAT phi = 4.0*r/pow(r + 1.0, 2);
+      FLOAT phi = (FLOAT) 4.0*r/pow(r + (FLOAT) 1.0, 2);
 
-      dW[var] = 0.5*phi*D*drmag;
+      dW[var] = (FLOAT) 0.5*phi*D*drmag;
       for (int k=0; k<ndim; k++) gradW[var][k] = dW[var]*dr_unit[k];
 
     }

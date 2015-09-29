@@ -211,13 +211,13 @@ void Ic<ndim>::BinaryAccretion(void)
     if (Nbox1 > 0) {
       r1 = new FLOAT[ndim*Nbox1];
       if (part_dist == "random") {
-        AddRandomBox(Nbox1,r1,box1);
+        AddRandomBox(Nbox1, box1, r1);
       }
       else if (part_dist == "cubic_lattice") {
-        AddCubicLattice(Nbox1,Nlattice1,r1,box1,true);
+        AddCubicLattice(Nbox1, Nlattice1, box1, true, r1);
       }
       else if (part_dist == "hexagonal_lattice") {
-        AddHexagonalLattice(Nbox1,Nlattice1,r1,box1,true);
+        AddHexagonalLattice(Nbox1, Nlattice1, box1, true, r1);
       }
       else {
         string message = "Invalid particle distribution option";
@@ -245,13 +245,13 @@ void Ic<ndim>::BinaryAccretion(void)
     if (Nbox2 > 0) {
       r2 = new FLOAT[ndim*Nbox2];
       if (part_dist == "random") {
-        AddRandomBox(Nbox2,r2,box2);
+        AddRandomBox(Nbox2, box2, r2);
       }
       else if (part_dist == "cubic_lattice") {
-        AddCubicLattice(Nbox2,Nlattice2,r2,box2,true);
+        AddCubicLattice(Nbox2, Nlattice2, box2, true, r2);
       }
       else if (part_dist == "hexagonal_lattice") {
-        AddHexagonalLattice(Nbox2,Nlattice2,r2,box2,true);
+        AddHexagonalLattice(Nbox2, Nlattice2, box2, true, r2);
       }
       else {
         string message = "Invalid particle distribution option";
@@ -416,7 +416,7 @@ void Ic<ndim>::ShockTube(void)
     // Add particles for LHS of the shocktube
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
-      AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
+      AddCubicLattice(Nbox1, Nlattice1, box1, false, r);
 
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -433,7 +433,7 @@ void Ic<ndim>::ShockTube(void)
     // Add particles for RHS of the shocktube
     //---------------------------------------------------------------------------------------------
     if (Nbox2 > 0) {
-      AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
+      AddCubicLattice(Nbox2, Nlattice2, box2, false, r);
 
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
@@ -584,17 +584,17 @@ void Ic<ndim>::UniformBox(void)
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
     r = new FLOAT[ndim*Npart];
-    AddRandomBox(Npart,r,simbox);
+    AddRandomBox(Npart, simbox, r);
   }
   else if (particle_dist == "cubic_lattice") {
     Npart = Nbox;
     r = new FLOAT[ndim*Npart];
-    AddCubicLattice(Npart,Nlattice,r,simbox,true);
+    AddCubicLattice(Npart, Nlattice, simbox, true, r);
   }
   else if (particle_dist == "hexagonal_lattice") {
     Npart = Nbox;
     r = new FLOAT[ndim*Npart];
-    AddHexagonalLattice(Npart,Nlattice,r,simbox,true);
+    AddHexagonalLattice(Npart, Nlattice, simbox, true, r);
   }
   else {
     string message = "Invalid particle distribution option";
@@ -665,10 +665,10 @@ void Ic<ndim>::UniformSphere(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, r, rcentre, radius);
+    AddRandomSphere(Npart, rcentre, radius, r);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
     if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -773,7 +773,7 @@ void Ic<ndim>::ContactDiscontinuity(void)
 
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
-      AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
+      AddCubicLattice(Nbox1, Nlattice1, box1, false, r);
       volume = box1.boxmax[0] - box1.boxmin[0];
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -793,7 +793,7 @@ void Ic<ndim>::ContactDiscontinuity(void)
 
     //---------------------------------------------------------------------------------------------
     if (Nbox2 > 0) {
-      AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
+      AddCubicLattice(Nbox2, Nlattice2, box2, false, r);
       volume = box2.boxmax[0] - box2.boxmin[0];
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
@@ -901,7 +901,7 @@ void Ic<ndim>::GreshoVortex(void)
     hydro->Nhydro = Nbox;
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
-    AddCubicLattice(Nbox, Nlattice, r, simbox, false);
+    AddCubicLattice(Nbox, Nlattice, simbox, false, r);
 
     for (i=0; i<Nbox; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -1013,7 +1013,7 @@ void Ic<ndim>::KHI(void)
     // Add particles for LHS of the shocktube
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
-      AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
+      AddCubicLattice(Nbox1, Nlattice1, box1, false, r);
 
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -1031,7 +1031,7 @@ void Ic<ndim>::KHI(void)
     // Add particles for RHS of the shocktube
     //-----------------------------------------------------------------------------------------------
     if (Nbox2 > 0) {
-      AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
+      AddCubicLattice(Nbox2, Nlattice2, box2, false, r);
 
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
@@ -1134,10 +1134,10 @@ void Ic<ndim>::NohProblem(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart,r,rcentre,radius);
+    AddRandomSphere(Npart, rcentre, radius, r);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
     if (Nsphere != Npart) cout << "Warning! Unable to converge to required "
                                << "no. of ptcls due to lattice symmetry" << endl;
     Npart = Nsphere;
@@ -1240,7 +1240,7 @@ void Ic<ndim>::RTI(void)
     // Add particles for LHS of the shocktube
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
-      AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
+      AddCubicLattice(Nbox1, Nlattice1, box1, false, r);
 
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -1260,7 +1260,7 @@ void Ic<ndim>::RTI(void)
     // Add particles for RHS of the shocktube
     //-----------------------------------------------------------------------------------------------
     if (Nbox2 > 0) {
-      AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
+      AddCubicLattice(Nbox2, Nlattice2, box2, false, r);
 
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
@@ -1378,10 +1378,10 @@ void Ic<ndim>::BossBodenheimer(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart,r,rcentre,radius);
+    AddRandomSphere(Npart, rcentre, radius, r);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
     if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -1400,13 +1400,13 @@ void Ic<ndim>::BossBodenheimer(void)
   rho = (FLOAT) 3.0*mcloud / ((FLOAT)4.0*pi*pow(radius,3));
 
   // Perturb positions of particles in cloud
-  AddAzimuthalDensityPerturbation(Npart,2,amp,rcentre,r);
+  AddAzimuthalDensityPerturbation(Npart, 2, amp, rcentre, r);
 
   // Add solid-body rotational velocity field
-  AddRotationalVelocityField(Npart,angvel,rcentre,r,v);
+  AddRotationalVelocityField(Npart, angvel, rcentre, r, v);
 
   // Record particle properties in main memory
-#pragma omp parallel for default(none) shared(gammaone,Npart,mp,mu_bar,r,rho,temp0,v) private(i,k)
+  //#pragma omp parallel for default(none) shared(gammaone,Npart,mp,mu_bar,r,rho,temp0,v) private(i,k)
   for (i=0; i<Npart; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
@@ -1424,6 +1424,7 @@ void Ic<ndim>::BossBodenheimer(void)
 
   delete[] v;
   delete[] r;
+
 
   return;
 }
@@ -1491,10 +1492,10 @@ void Ic<ndim>::TurbulentCore(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, r, rcentre, radius);
+    AddRandomSphere(Npart, rcentre, radius, r);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
     assert(Nsphere <= Npart);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
@@ -1512,21 +1513,16 @@ void Ic<ndim>::TurbulentCore(void)
   mp = mcloud / (FLOAT) Npart;
   rho = (FLOAT) 3.0*mcloud / ((FLOAT) 4.0*pi*pow(radius,3));
 
-  for (int i=0; i<hydro->Nhydromax; i++) {
-    Particle<ndim> &part = hydro->GetParticlePointer(i);
-    FLOAT rp = r[ndim*i + k];
-    part.r[0] = rp;
-    part.r[0] = r[ndim*i + k];
-  }
 
   // Record particle properties in main memory
-  for (i=0; i<Npart; i++) {
+  for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) part.v[k] = 0.0;
     part.m = mp;
-    part.h = hydro->h_fac*pow(part.m/rho,invndim);
+    part.h = hydro->h_fac*powf(mp/rho,invndim);
     part.u = temp0/gammaone/mu_bar;
+    part.itype = gas;
   }
 
   sim->initial_h_provided = true;
@@ -1540,24 +1536,24 @@ void Ic<ndim>::TurbulentCore(void)
   for (k=0; k<ndim; k++) rmax[k] = -big_number;
   for (i=0; i<Npart; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],part.r[k] - hydro->kernrange*part.h);
-    for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],part.r[k] + hydro->kernrange*part.h);
+    for (k=0; k<ndim; k++) rmin[k] = min(rmin[k], part.r[k] - hydro->kernrange*part.h);
+    for (k=0; k<ndim; k++) rmax[k] = max(rmax[k], part.r[k] + hydro->kernrange*part.h);
   }
 
   xmin = (FLOAT) 9.9e20;
   dxgrid = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
-    xmin = min(xmin,rmin[k]);
-    dxgrid = max(dxgrid,(rmax[k] - rmin[k])/(FLOAT) (gridsize - 1));
+    xmin = min(xmin, rmin[k]);
+    dxgrid = max(dxgrid, (rmax[k] - rmin[k])/(FLOAT) (gridsize - 1));
     //xmin = min(xmin,rmin[k]);
   }
-  dxgrid = max(dxgrid,2.0*fabs(xmin)/(FLOAT) (gridsize - 1));
+  dxgrid = max(dxgrid, 2.0*fabs(xmin)/(FLOAT) (gridsize - 1));
 
   // Generate gridded velocity field
-  GenerateTurbulentVelocityField(field_type,gridsize,power_turb,vfield);
+  GenerateTurbulentVelocityField(field_type, gridsize, power_turb, vfield);
 
   // Now interpolate generated field onto particle positions
-  InterpolateVelocityField(hydro->Nhydro,gridsize,xmin,dxgrid,r,vfield,v);
+  InterpolateVelocityField(hydro->Nhydro, gridsize, xmin, dxgrid, r, vfield, v);
 
   // Finally, copy velocities to main SPH particle array
   for (i=0; i<hydro->Nhydro; i++) {
@@ -1572,7 +1568,7 @@ void Ic<ndim>::TurbulentCore(void)
   keturb = (FLOAT) 0.0;
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    keturb += part.m*DotProduct(part.v,part.v,ndim);
+    keturb += part.m*DotProduct(part.v, part.v, ndim);
   }
   keturb *= (FLOAT) 0.5;
 
@@ -1651,10 +1647,10 @@ void Ic<ndim>::BondiAccretion(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart,r,rcentre,radius);
+    AddRandomSphere(Npart, rcentre, radius, r);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -1677,7 +1673,7 @@ void Ic<ndim>::BondiAccretion(void)
   x = new FLOAT[Ntablemax];
   y = new FLOAT[Ntablemax];
   z = new FLOAT[Ntablemax];
-  ComputeBondiSolution(Ntablemax,w,x,y,z);
+  ComputeBondiSolution(Ntablemax, w, x, y, z);
 
   // First check that mass of cloud is not greater than that provided by the table
   if (mcloud > z[Ntablemax-1]) {
@@ -1714,7 +1710,7 @@ void Ic<ndim>::BondiAccretion(void)
   for (i=0; i<Npart; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
-    FLOAT drmag = sqrtf(DotProduct(dr,dr,ndim)) + small_number;
+    FLOAT drmag = sqrtf(DotProduct(dr, dr, ndim)) + small_number;
     FLOAT mint = mcloud*powf(drmag,3);
     for (int j=0; j<Ntablemax; j++) {
       iradius = j;
@@ -1751,7 +1747,7 @@ void Ic<ndim>::BondiAccretion(void)
   for (i=0; i<Npart; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - rcentre[k];
-    drsqd = DotProduct(dr,dr,ndim);
+    drsqd = DotProduct(dr, dr, ndim);
     if (drsqd > rsink*rsink) continue;
     sinks.sink[0].mmax += part.m;
   }
@@ -1799,12 +1795,12 @@ void Ic<ndim>::EwaldDensity(void)
     Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
     Nlattice1[1]    = simparams->intparams["Nlattice1[1]"];
     Nlattice1[2]    = simparams->intparams["Nlattice1[2]"];
-    string x_boundary_lhs   = simparams->stringparams["boundary_lhs[0]"];
-    string x_boundary_rhs   = simparams->stringparams["boundary_rhs[0]"];
-    string y_boundary_lhs   = simparams->stringparams["boundary_lhs[1]"];
-    string y_boundary_rhs   = simparams->stringparams["boundary_rhs[1]"];
-    string z_boundary_lhs   = simparams->stringparams["boundary_lhs[2]"];
-    string z_boundary_rhs   = simparams->stringparams["boundary_rhs[2]"];
+    string x_boundary_lhs = simparams->stringparams["boundary_lhs[0]"];
+    string x_boundary_rhs = simparams->stringparams["boundary_rhs[0]"];
+    string y_boundary_lhs = simparams->stringparams["boundary_lhs[1]"];
+    string y_boundary_rhs = simparams->stringparams["boundary_rhs[1]"];
+    string z_boundary_lhs = simparams->stringparams["boundary_lhs[2]"];
+    string z_boundary_rhs = simparams->stringparams["boundary_rhs[2]"];
     string ic       = simparams->stringparams["ic"];
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
     FLOAT press1    = simparams->floatparams["press1"];
@@ -1847,13 +1843,13 @@ void Ic<ndim>::EwaldDensity(void)
     // of the cylinder)
     periodicity = 0;
     if (x_boundary_lhs == "periodic" && x_boundary_rhs == "periodic") {
-       periodicity+=1;
+      periodicity += 1;
     }
     if (y_boundary_lhs == "periodic" && y_boundary_rhs == "periodic") {
-      periodicity+=2;
+      periodicity += 2;
     }
     if (z_boundary_lhs == "periodic" && z_boundary_rhs == "periodic") {
-      periodicity+=4;
+      periodicity += 4;
     }
 
 
@@ -1866,11 +1862,11 @@ void Ic<ndim>::EwaldDensity(void)
       //omegawave = twopi*csound/lambda;
 
       // Add regular distribution of SPH particles
-      AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+      AddCubicLattice(Npart, Nlattice1, simbox, false, r);
       //AddRandomBox(Npart,r,simbox);
 
       // Add sinusoidal density perturbation to particle distribution
-      AddSinusoidalDensityPerturbation(Npart,amp,lambda,r);
+      AddSinusoidalDensityPerturbation(Npart, amp, lambda, r);
 
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
@@ -1898,7 +1894,7 @@ void Ic<ndim>::EwaldDensity(void)
       kwave = twopi/lambda;
 
       // Add regular distribution of SPH particles
-      AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+      AddCubicLattice(Npart, Nlattice1, simbox, false, r);
 
       volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
       FLOAT volp = volume/(FLOAT) Npart;
@@ -1935,7 +1931,7 @@ void Ic<ndim>::EwaldDensity(void)
       h0 = csound/sqrtf(twopi*rhofluid1);
 
       // Add regular distribution of SPH particles
-      AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+      AddCubicLattice(Npart, Nlattice1, simbox, false, r);
 
       volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
       FLOAT volp = volume/(FLOAT) Npart;
@@ -1986,7 +1982,7 @@ void Ic<ndim>::EwaldDensity(void)
       a2inv = pi*rhofluid1*0.5/pow(csound,2);
 
       // Add regular distribution of SPH particles
-      AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+      AddCubicLattice(Npart, Nlattice1, simbox, false, r);
 
       volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
       FLOAT volp = volume/(FLOAT) Npart;
@@ -2257,13 +2253,13 @@ void Ic<ndim>::BlastWave(void)
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
-    AddRandomBox(Nbox, r, simbox);
+    AddRandomBox(Nbox, simbox, r);
   }
   else if (particle_dist == "cubic_lattice") {
-    AddCubicLattice(Nbox, Nlattice, r, simbox, true);
+    AddCubicLattice(Nbox, Nlattice, simbox, true, r);
   }
   else if (particle_dist == "hexagonal_lattice") {
-    AddHexagonalLattice(Nbox, Nlattice, r, simbox, true);
+    AddHexagonalLattice(Nbox, Nlattice, simbox, true, r);
   }
   else {
     string message = "Invalid particle distribution option";
@@ -2373,7 +2369,7 @@ void Ic<ndim>::SedovBlastWave(void)
   ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);
   Ncold = 0;
   Nhot  = 0;
-  r_hot = hydro->h_fac*hydro->kernrange*simbox.boxsize[0]/Nlattice[0];  //powf(powf((FLOAT) 4.0,ndim)/(FLOAT) Nbox,hydro->invndim);
+  r_hot = hydro->h_fac*hydro->kernrange*simbox.boxsize[0]/Nlattice[0];
 
   // Allocate local and main particle memory
   hydro->Nhydro = Nbox;
@@ -2384,13 +2380,13 @@ void Ic<ndim>::SedovBlastWave(void)
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
-    AddRandomBox(Nbox,r,simbox);
+    AddRandomBox(Nbox, simbox, r);
   }
   else if (particle_dist == "cubic_lattice") {
-    AddCubicLattice(Nbox,Nlattice,r,simbox,true);
+    AddCubicLattice(Nbox, Nlattice, simbox, true, r);
   }
   else if (particle_dist == "hexagonal_lattice") {
-    AddHexagonalLattice(Nbox,Nlattice,r,simbox,true);
+    AddHexagonalLattice(Nbox, Nlattice, simbox, true, r);
   }
   else {
     string message = "Invalid particle distribution option";
@@ -2525,7 +2521,7 @@ void Ic<ndim>::ShearFlow(void)
 
     // Add particles from cubic lattice
     if (Nbox > 0) {
-      AddCubicLattice(Nbox,Nlattice1,r,simbox,false);
+      AddCubicLattice(Nbox, Nlattice1, simbox, false, r);
       //AddHexagonalLattice(Nbox,Nlattice1,r,simbox,false);
 
       for (i=0; i<Nbox; i++) {
@@ -2609,10 +2605,10 @@ void Ic<ndim>::SoundWave(void)
   r = new FLOAT[ndim*hydro->Nhydro];
 
   // Add regular distribution of SPH particles
-  AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+  AddCubicLattice(Npart, Nlattice1, simbox, false, r);
 
   // Add sinusoidal density perturbation to particle distribution
-  AddSinusoidalDensityPerturbation(Npart,amp,lambda,r);
+  AddSinusoidalDensityPerturbation(Npart, amp, lambda, r);
 
   // Set all other particle quantities
   //----------------------------------------------------------------------------------------------
@@ -2676,10 +2672,10 @@ void Ic<ndim>::SpitzerExpansion(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, r, rcentre, radius);
+    AddRandomSphere(Npart, rcentre, radius, r);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
     if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -3298,11 +3294,12 @@ void Ic<ndim>::AddBinaryStar
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddRandomBox
- (int Npart,                           ///< [in] No. of particles
-  FLOAT *r,                            ///< [out] Positions of particles
-  DomainBox<ndim> box)                 ///< [in] Bounding box containing particles
+ (const int Npart,                     ///< [in] No. of particles
+  const DomainBox<ndim> box,           ///< [in] Bounding box containing particles
+  FLOAT *r)                            ///< [out] Positions of particles
 {
   debug2("[Ic::AddRandomBox]");
+  assert(r);
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
@@ -3321,16 +3318,17 @@ void Ic<ndim>::AddRandomBox
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddRandomSphere
- (int Npart,                           ///< [in] No. of particles in sphere
-  FLOAT *r,                            ///< [out] Positions of particles in sphere
-  FLOAT rcentre[ndim],                 ///< [in] Position of sphere centre
-  FLOAT radius)                        ///< [in] Radius of sphere
+ (const int Npart,                     ///< [in] No. of particles in sphere
+  const FLOAT rcentre[ndim],           ///< [in] Position of sphere centre
+  const FLOAT radius,                  ///< [in] Radius of sphere
+  FLOAT *r)                            ///< [out] Positions of particles in sphere
 {
   int i,k;                             // Particle and dimension counters
   FLOAT rad;                           // Radius of particle
   FLOAT rpos[ndim];                    // Random position of new particle
 
   debug2("[Ic::AddRandomSphere]");
+  assert(r);
 
   // Loop over all required particles
   //-----------------------------------------------------------------------------------------------
@@ -3358,11 +3356,11 @@ void Ic<ndim>::AddRandomSphere
 //=================================================================================================
 template <int ndim>
 int Ic<ndim>::AddLatticeSphere
- (int Npart,                           ///< [in] No. of particles in sphere
-  FLOAT *r,                            ///< [out] Positions of particles in sphere
-  FLOAT rcentre[ndim],                 ///< [in] Position of sphere centre
-  FLOAT radius,                        ///< [in] Radius of sphere
-  string particle_dist)                ///< [in] String of lattice type
+ (const int Npart,                     ///< [in] Desired/maximum no. of particles in sphere
+  const FLOAT rcentre[ndim],           ///< [in] Position of sphere centre
+  const FLOAT radius,                  ///< [in] Radius of sphere
+  const string particle_dist,          ///< [in] String of lattice type
+  FLOAT *r)                            ///< [out] Positions of particles in sphere
 {
   int i,k;                             // Particle and dimension counters
   int Naux;                            // Aux. particle number
@@ -3374,12 +3372,12 @@ int Ic<ndim>::AddLatticeSphere
   DomainBox<ndim> box1;                // Bounding box
 
   debug2("[Ic::AddLatticeSphere]");
-
   assert(r);
+
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
-  for (k=0; k<ndim; k++) Nlattice[k] = 3*(int) powf((FLOAT) Npart, invndim);
+  for (k=0; k<ndim; k++) Nlattice[k] = (int) (1.5*powf((FLOAT) Npart, invndim));
   for (k=0; k<ndim; k++) box1.boxmin[k] = -2.0;
   for (k=0; k<ndim; k++) box1.boxmax[k] = 2.0;
   Naux = Nlattice[0]*Nlattice[1]*Nlattice[2];
@@ -3387,10 +3385,10 @@ int Ic<ndim>::AddLatticeSphere
 
   // Create a bounding box to hold lattice sphere
   if (particle_dist == "cubic_lattice") {
-    AddCubicLattice(Naux, Nlattice, raux, box1, true);
+    AddCubicLattice(Naux, Nlattice, box1, true, raux);
   }
   else if (particle_dist == "hexagonal_lattice") {
-    AddHexagonalLattice(Naux, Nlattice, raux, box1, true);
+    AddHexagonalLattice(Naux, Nlattice, box1, true, raux);
   }
   else {
     string message = "Invalid particle distribution option";
@@ -3399,7 +3397,7 @@ int Ic<ndim>::AddLatticeSphere
 
   // Now cut-out sphere from lattice containing exact number of particles
   // (unless lattice structure prevents this).
-  Naux = CutSphere(Npart, Naux, raux, box1, false);
+  Naux = CutSphere(Npart, Naux, box1, false, raux);
   assert(Naux <= Npart);
 
   // Rotate sphere through random Euler angles (to prevent alignment problems
@@ -3417,7 +3415,7 @@ int Ic<ndim>::AddLatticeSphere
     theta = acos(sqrtf(sim->randnumb->floatrand()));
     phi   = twopi*sim->randnumb->floatrand();
     psi   = twopi*sim->randnumb->floatrand();
-    EulerAngleArrayRotation(Naux,phi,theta,psi,raux);
+    EulerAngleArrayRotation(Naux, phi, theta, psi, raux);
   }
 
   // Copy particle positions to main position array to be returned
@@ -3441,7 +3439,7 @@ template <int ndim>
 void Ic<ndim>::Addr2Sphere
  (int Npart,                           ///< [in] No. of particles in sphere
   FLOAT *r,                            ///< [out] Positions of particles in sphere
-  FLOAT *rcentre,                      ///< [in] Position of sphere centre
+  FLOAT rcentre[ndim],                 ///< [in] Position of sphere centre
   FLOAT radius)                        ///< [in] Radius of sphere
 {
   int i;                               // Particle counter
@@ -3452,6 +3450,7 @@ void Ic<ndim>::Addr2Sphere
   FLOAT rpart;                         // ..
 
   debug2("[Ic::Addr2Sphere]");
+  assert(r);
 
   // Loop over all required particles
   //-----------------------------------------------------------------------------------------------
@@ -3481,17 +3480,18 @@ void Ic<ndim>::Addr2Sphere
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddCubicLattice
- (int Npart,                           ///< [in] No. of particles in lattice
-  int Nlattice[ndim],                  ///< [in] Ptcls per dimension in lattice
-  FLOAT *r,                            ///< [out] Positions of particles
-  DomainBox<ndim> box,                 ///< [in] Bounding box of particles
-  bool normalise)                      ///< [in] Normalise lattice shape and size
+ (const int Npart,                     ///< [in] No. of particles in lattice
+  const int Nlattice[ndim],            ///< [in] Ptcls per dimension in lattice
+  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
+  const bool normalise,                ///< [in] Normalise lattice shape and size
+  FLOAT *r)                            ///< [out] Positions of particles
 {
   int i,k;                             // Particle and dimension counters
   int ii,jj,kk;                        // Aux. lattice counters
   FLOAT spacing[ndim];                 // Lattice spacing in each direction
 
   debug2("[Ic::AddCubicLattice]");
+  assert(r);
 
   // If normalised, ensure equal spacing between all lattice layers.
   // Otherwise set spacing to fit bounding box
@@ -3527,7 +3527,7 @@ void Ic<ndim>::AddCubicLattice
   }
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(box,Nlattice,r,spacing) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(Nlattice,r,spacing) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
@@ -3552,18 +3552,17 @@ void Ic<ndim>::AddCubicLattice
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddHexagonalLattice
- (int Npart,                           ///< [in] No. of particles in lattice
-  int Nlattice[ndim],                  ///< [in] Ptcls per dimension in lattice
-  FLOAT *r,                            ///< [out] Positions of particles
-  DomainBox<ndim> box,                 ///< [in] Bounding box of particles
-  bool normalise)                      ///< [in] Normalise lattice shape and size
+ (const int Npart,                     ///< [in] No. of particles in lattice
+  const int Nlattice[ndim],            ///< [in] Ptcls per dimension in lattice
+  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
+  const bool normalise,                ///< [in] Normalise lattice shape and size
+  FLOAT *r)                            ///< [out] Positions of particles
 {
   int i,k;                             // Particle and dimension counters
   int ii,jj,kk;                        // Aux. lattice counters
   FLOAT rad[ndim];                     // 'Radius' of particle in lattice
 
   debug2("[Ic::AddHexagonalLattice]");
-
   assert(r);
 
   // If normalised, ensure equal spacing between all particles.
@@ -3600,7 +3599,7 @@ void Ic<ndim>::AddHexagonalLattice
 
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(box,Nlattice,r,rad) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(Nlattice,r,rad) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
@@ -3627,11 +3626,11 @@ void Ic<ndim>::AddHexagonalLattice
 //=================================================================================================
 template <int ndim>
 int Ic<ndim>::CutSphere
- (int Nsphere,                         ///< [in] Desired np of particles in sphere
-  int Npart,                           ///< [in] No. of particles in cube
-  FLOAT *r,                            ///< [inout] Positions of particles
-  DomainBox<ndim> box,                 ///< [in] Bounding box of particles
-  bool exact)                          ///< [in] ??
+ (const int Nsphere,                   ///< [in] Desired no. of particles in sphere
+  const int Naux,                      ///< [in] No. of input particles
+  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
+  const bool exact,                    ///< [in] Flag if we require exact numbers (not used)
+  FLOAT *r)                            ///< [inout] Positions of particles
 {
   int i,k;                             // Particle and dimension counters
   int Ninterior = 0;                   // No. of particle
@@ -3644,11 +3643,13 @@ int Ic<ndim>::CutSphere
 
   debug2("[Ic::CutSphere]");
 
+  assert(r);
+
   // Find centre and shortest edge-length of bounding box
   r_high = (FLOAT) big_number;
   for (k=0; k<ndim; k++) {
     rcentre[k] = (FLOAT) 0.5*(box.boxmin[k] + box.boxmax[k]);
-    r_high = min(r_high,(FLOAT) 0.5*(box.boxmax[k] - box.boxmin[k]));
+    r_high = min(r_high, (FLOAT) 0.5*(box.boxmax[k] - box.boxmin[k]));
   }
 
   // Bisection iteration to determine the radius containing the desired
@@ -3659,7 +3660,7 @@ int Ic<ndim>::CutSphere
     Ninterior = 0;
 
     // Count how many particles lie inside current radius
-    for (i=0; i<Npart; i++) {
+    for (i=0; i<Naux; i++) {
       for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd <= radius*radius) Ninterior++;
@@ -3681,7 +3682,7 @@ int Ic<ndim>::CutSphere
   // record only the particles inside the sphere.
   //-----------------------------------------------------------------------------------------------
   Ninterior = 0;
-  for (i=0; i<Npart; i++) {
+  for (i=0; i<Naux; i++) {
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd <= radius*radius) {
@@ -3701,30 +3702,30 @@ int Ic<ndim>::CutSphere
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddAzimuthalDensityPerturbation
- (int Npart,                           ///< [in] No. of particles in sphere
-  int mpert,                           ///< [in] Perturbation mode
-  FLOAT amp,                           ///< [in] Amplitude of perturbation
-  FLOAT *rcentre,                      ///< [in] Position of sphere centre
-  FLOAT *r)                            ///< [inout] Positions of particles
+ (const int Npart,                       ///< [in] No. of particles in sphere
+  const int mpert,                       ///< [in] Perturbation mode
+  const FLOAT amp,                       ///< [in] Amplitude of perturbation
+  const FLOAT rcentre[ndim],             ///< [in] Position of sphere centre
+  FLOAT *r)                              ///< [inout] Positions of particles
 {
   if (ndim > 1) {
     int i,k;                             // Particle and dimension counters
     int j;                               // Aux. counter
-    int tabtot;                          // No of elements in tables
     FLOAT phi,phi1,phi2,phiprime;        // Aux. azimuthal angle variables
     FLOAT Rsqd;                          // Radial distance (from z-axis) squared
     FLOAT Rmag;                          // Radial distance (from z-axis)
     FLOAT rpos[2];                       // Random position of new particle
-    FLOAT spacing;                       // Table spacing
+    const int tabtot = 2048;             // No of elements in tables
+    const FLOAT invmpert = (FLOAT) 1.0/(FLOAT) mpert;  // 1 / mpert
+    const FLOAT spacing = twopi/(FLOAT)(tabtot - 1);   // Table angular spacing
 
     debug2("[Ic::AddAzimuthalDensityPerturbation]");
+    assert(r);
 
-    tabtot = 10000;
-    spacing = twopi/(FLOAT)(tabtot - 1);
 
     // Loop over all required particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(amp,mpert,Npart,r,rcentre,spacing,tabtot)\
+#pragma omp parallel for default(none) shared(r,rcentre)\
   private(i,j,k,phi,phiprime,phi1,phi2,rpos,Rmag,Rsqd)
     for (i=0; i<Npart; i++) {
       for (k=0; k<2; k++) rpos[k] = r[ndim*i + k] - rcentre[k];
@@ -3743,15 +3744,15 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
       else if (rpos[0] > (FLOAT) 0.0 && rpos[1] < (FLOAT) 0.0) phi = twopi - phi;
 
       // Wrap angle to fit between 0 and two*pi
-      if (phi < amp/(FLOAT) mpert) phi = phi + twopi;
+      if (phi < amp*invmpert) phi = phi + twopi;
 
       // Numerically find new phi angle for perturbation.  Search through grid of values,
       // find upper and lower bounds, then use linear interpolation to find new value of phi.
       for (j=1; j<tabtot; j++) {
         phi1 = spacing*(FLOAT) (j - 1);
         phi2 = spacing*(FLOAT) j;
-        phi1 = phi1 + amp*cos((FLOAT) mpert*phi1)/(FLOAT) mpert;
-        phi2 = phi2 + amp*cos((FLOAT) mpert*phi2)/(FLOAT) mpert;
+        phi1 = phi1 + amp*cos((FLOAT) mpert*phi1)*invmpert;
+        phi2 = phi2 + amp*cos((FLOAT) mpert*phi2)*invmpert;
 
         if (phi2 >= phi && phi1 < phi) {
           phiprime = spacing*(FLOAT)(j - 1) + spacing*(phi - phi1) / (phi2 - phi1);
@@ -3781,9 +3782,9 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddSinusoidalDensityPerturbation
- (int Npart,                           ///< [in] No. of particles in sphere
-  FLOAT amp,                           ///< [in] Amplitude of perturbation
-  FLOAT lambda,                        ///< [in] Wave number of perturbation
+ (const int Npart,                     ///< [in] No. of particles in sphere
+  const FLOAT amp,                     ///< [in] Amplitude of perturbation
+  const FLOAT lambda,                  ///< [in] Wave number of perturbation
   FLOAT *r)                            ///< [inout] Positions of particles
 {
   int i;                               // Particle counter
@@ -3793,11 +3794,12 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
   FLOAT kwave = twopi/lambda;          // Sine wave-number
 
   debug2("[Ic::AddSinusoidalDensityPerturbation]");
+  assert(r);
 
 
   // Loop over all required particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(amp,kwave,lambda,Npart,r) private(diff,i,xnew,xold)
+#pragma omp parallel for default(none) shared(kwave,r) private(diff,i,xnew,xold)
   for (i=0; i<Npart; i++) {
     xnew = r[ndim*i];
 
@@ -3827,10 +3829,10 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddRotationalVelocityField
- (int Npart,                           ///< [in] No. of particles in sphere
-  FLOAT angvelaux,                     ///< [in] Angular velocity of cloud
-  FLOAT *rcentre,                      ///< [in] Position of sphere centre
-  FLOAT *r,                            ///< [in] Positions of particles
+ (const int Npart,                     ///< [in] No. of particles in sphere
+  const FLOAT angvelaux,               ///< [in] Angular velocity of cloud
+  const FLOAT rcentre[ndim],           ///< [in] Position of sphere centre
+  const FLOAT *r,                      ///< [in] Positions of particles
   FLOAT *v)                            ///< [out] Velocities of particles
 {
   // Only compile for 2 or 3 dimensions
@@ -3842,13 +3844,14 @@ void Ic<ndim>::AddRotationalVelocityField
     FLOAT Rsqd;                        // Distance squared from z-axis
     FLOAT dr[3];                       // Relative position vector
 
-    debug2("[Ic::AddAzimuthalDensityPerturbation]");
+    debug2("[Ic::AddRotationalVelocityField]");
+    assert(r);
+    assert(v);
 
 
     // Loop over all required particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none)\
-  shared(angvelaux,Npart,r,rcentre,v) private(dr,i,k,Rmag,Rsqd)
+#pragma omp parallel for default(none) shared(r,rcentre,v) private(dr,i,k,Rmag,Rsqd)
     for (i=0; i<Npart; i++) {
       for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
       for (k=0; k<ndim; k++) v[ndim*i + k] = (FLOAT) 0.0;
@@ -4041,10 +4044,10 @@ void Ic<ndim>::ComputeBondiSolution
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::GenerateTurbulentVelocityField
- (int field_type,                      ///< Type of turbulent velocity field
-  int gridsize,                        ///< Size of velocity grid
-  DOUBLE power_turb,                   ///< Power spectrum index
-  DOUBLE *vfield)                      ///< Array containing velocity field grid
+ (const int field_type,                ///< [in] Type of turbulent velocity field
+  const int gridsize,                  ///< [in] Size of velocity grid
+  const DOUBLE power_turb,             ///< [in] Power spectrum index
+  DOUBLE *vfield)                      ///< [out] Array containing velocity field grid
 {
 #if defined(FFTW_TURBULENCE)
 
@@ -4278,13 +4281,13 @@ void Ic<ndim>::GenerateTurbulentVelocityField
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::InterpolateVelocityField
- (int Npart,                           ///< [in] No of particles
-  int Ngrid,                           ///< [in] Size (per dim) of velocity grid
-  FLOAT xmin,                          ///< [in] Minimum position
-  FLOAT dxgrid,                        ///< [in] Grid size
-  FLOAT *r,                            ///< [in] Positions of particles
-  FLOAT *vfield,                       ///< [in] Tabulated velocity field
-  FLOAT *v)                            ///< [out] Interpolated particle velocity
+ (const int Npart,                       ///< [in] No of particles
+  const int Ngrid,                       ///< [in] Size (per dim) of velocity grid
+  const FLOAT xmin,                      ///< [in] Minimum position
+  const FLOAT dxgrid,                    ///< [in] Grid size
+  const FLOAT *r,                        ///< [in] Positions of particles
+  const FLOAT *vfield,                   ///< [in] Tabulated velocity field
+  FLOAT *v)                              ///< [out] Interpolated particle velocity
 {
 
   // Only compile routine for 3 dimensions
@@ -4301,7 +4304,7 @@ void Ic<ndim>::InterpolateVelocityField
     // Now interpolate velocity field onto particle positions
     //---------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dx,i,j,k,kk,p,vint) \
-    shared(cout,dxgrid,Ngrid,Npart,r,v,vfield,xmin)
+    shared(cout,r,v,vfield)
     for (p=0; p<Npart; p++) {
       for (kk=0; kk<ndim; kk++) dx[kk] = (r[ndim*p + kk] - xmin)/dxgrid;
 

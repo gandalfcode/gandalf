@@ -177,14 +177,14 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  part.h         = max(h_fac*pow(part.volume,MeshlessFV<ndim>::invndim), h_lower_bound);
+  part.h         = max(h_fac*powf(part.volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
   part.invh      = (FLOAT) 1.0/part.h;
   part.hfactor   = pow(part.invh, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
-  part.invomega  = (FLOAT) 1.0 + MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
+  part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
   part.invomega  = (FLOAT) 1.0/part.invomega;
-  part.zeta      = -MeshlessFV<ndim>::invndim*part.h*part.zeta*part.invomega/part.ndens;
+  part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.h*part.zeta*part.invomega/part.ndens;
 
 
   // Set important thermal variables here
@@ -359,7 +359,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
 
     // Calculate maximum signal velocity
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
-                                       min((FLOAT) 0.0, dvdr/(sqrt(drsqd) + small_number)));
+                                       min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
 
     for (k=0; k<ndim; k++) part.vreg[k] -= draux[k]*kern.w0_s2(drsqd*invhsqd);
 
