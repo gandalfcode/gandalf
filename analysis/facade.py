@@ -69,7 +69,7 @@ else:
     Singletons=Singletons_serial
 
 import commandsource as Commands
-from data_fetcher import CreateUserQuantity, CreateTimeData
+from data_fetcher import CreateUserQuantity, CreateTimeData, UserQuantity
 import signal
 from time import sleep
 from statistics import structure_function
@@ -184,6 +184,7 @@ Optional arguments:
     data = command.prepareData(Singletons.globallimits)
     Singletons.place_command([command, data])
     sleep(0.001)
+    return data
 
 
 #------------------------------------------------------------------------------
@@ -237,6 +238,7 @@ Optional arguments:
     data = command.prepareData(Singletons.globallimits)
 
     Singletons.place_command([command, data])
+    return data
 
 
 #------------------------------------------------------------------------------
@@ -309,6 +311,7 @@ Optional arguments:
                                          renderunit, res, interpolation,**kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.place_command([command, data])
+    return data
 
 
 #------------------------------------------------------------------------------
@@ -324,7 +327,8 @@ Required arguments:
 Optional arguments:
     See render function optional arguments
 '''
-    render(x, y, renderq, zslice=zslice, **kwargs)
+    data=render(x, y, renderq, zslice=zslice, **kwargs)
+    return data
 
 
 #------------------------------------------------------------------------------
@@ -345,7 +349,8 @@ Optional arguments:
         kwargs['autoscale']
     except KeyError:
         kwargs['autoscale']=False
-    render(x, y, renderq, zslice=zslice, overplot=True, **kwargs)
+    data=render(x, y, renderq, zslice=zslice, overplot=True, **kwargs)
+    return data
 
 
 #------------------------------------------------------------------------------
@@ -365,7 +370,8 @@ Optional arguments:
         kwargs['autoscale']
     except KeyError:
         kwargs['autoscale']=False
-    render(x, y, renderq, overplot=True, **kwargs)
+    data=render(x, y, renderq, overplot=True, **kwargs)
+    return data
 
 
 
@@ -454,7 +460,8 @@ Optional arguments:
         kwargs['autoscale']
     except KeyError:
         kwargs['autoscale']=False
-    plot(x, y, overplot=True, **kwargs)
+    data=plot(x, y, overplot=True, **kwargs)
+    return data
 
 
 #------------------------------------------------------------------------------
@@ -494,8 +501,8 @@ Required arguments:
         snapshot=SimBuffer.set_current_snapshot_number(no)
     except BufferException as e:
         handle(e)
-
-    update("current")
+    if snapshot is not None:
+        update("current")
     return snapshot
 
 
@@ -684,6 +691,7 @@ Optional arguments:
 
     data = command.prepareData(Singletons.globallimits, time)
     Singletons.place_command([command, data])
+    return data
 
 
 #------------------------------------------------------------------------------
@@ -760,6 +768,76 @@ Required argument:
     else:
         simno = int(sim)
     return simno
+
+def get_data(quantity, type="default",sim="current",snap="current",unit="default" ):
+    '''Returns the array with the data for the given quantity.
+    The data is returned scaled to the specified unit
+    
+    Required argument:
+        quantity        :The quantity required. Must be a string
+        
+    Optional arguments:
+        type            :The type of the particles (e.g. 'star')
+        snap            :Number of the snapshot. Defaults to 'current'
+        sim             :Number of the simulation. Defaults to 'current'
+        unit            :Specifies the unit to use to return the data
+    '''
+    simno = get_sim_no(sim)
+    sim = SimBuffer.get_sim_no(simno)
+    snapobject = SimBuffer.get_snapshot_extended(sim, snap)
+    nspecies = snapobject.GetNTypes()
+    if type=="all":
+        raise Exception("You requested all particle types to get_data, but we can return only one array!")
+    fetcher=UserQuantity(quantity)
+    unitinfo,data,scaling,label=fetcher.fetch(type=type,snap=snapobject,unit=unit)
+    return data*scaling
+
+def get_render_data(x,y,quantity, sim="current",snap="current",
+                    renderunit="default",
+                    res=64,zslice=None,coordlimits=None):
+    '''Return the rendered data for the given quantity. Useful when one needs
+    to grid SPH data. The result is scaled to the specified unit. The options are 
+    a subset of the options available to the 'render' function.
+    
+    Required arguments:
+        x        : Quantity on the x-axis. Must be a string
+        y        : Quantity on the y-axis. Must be a string
+        quantity : Quantity to render.
+        
+    Optional arguments:
+        snap     : Number of the snapshot to plot. Defaults to 'current'.
+        sim      : Number of the simulation to plot. Defaults to 'current'
+        renderunit: Unit to use for the rendered quantity
+        res      : Resolution
+        zslice   : z-coordinate of the slice when doing a slice rendering.
+                   Default is None, which produces a column-integrated plot.
+                   If you set this variable, a slice rendering will be
+                   done instead.
+        coordlimits: Limits of the coordinates on x and y. See documentation
+                     of render.
+                     
+    Return:
+        data     : The rendered data, scaled to the requested unit.
+        
+    
+    '''
+    if zslice is not None:
+        zslice = float(zslice)
+    simno=get_sim_no(sim)
+    if coordlimits is not None and isinstance(coordlimits, types.StringTypes):
+        coordlimits = to_list (coordlimits, float)
+    if isinstance(res, types.StringTypes):
+        if res[0]=='[' or res[0]=='(':
+            res = to_list(res,int)
+        else:
+            res = int(res)
+    command = Commands.RenderPlotCommand(x, y, quantity, snap, simno, True,
+                                         True, True,
+                                         coordlimits, zslice, "default", "default",
+                                         renderunit, res, "nearest")
+    data = command.prepareData(Singletons.globallimits)
+    return data.render_data   
+    
 
 
 #------------------------------------------------------------------------------

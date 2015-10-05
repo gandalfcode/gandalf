@@ -57,8 +57,6 @@ In order to use all features in GANDALF, the following programs and libraries mu
 \item matplotlib compatible with python 2.7
 \item numpy
 \item scipy
-\item f2py compatible with python 2.7 (normally included in numpy)
-\item Fortran compiler
 \end{itemize}
 
 If you are not interested in the Python library, you need only a C++ compiler. To reduce the number of needed libraries, we ship together with GANDALF the following packages:
@@ -74,7 +72,7 @@ We thank the authors for writing this software and releasing them under the MIT 
 All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers (e.g. apt-get, yum, pacman).
 
 \subsection{Mac OS X}
-For Mac users, all programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly. Other options for installation are the Anaconda or Enthought Python distributions. A good reference which compares the available possibilities is the \href{http://python4astronomers.github.io/installation/recommended_options.html}{Python4Astronomers website}.
+For Mac users, all programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all are downloaded with just the one package manager in order to ensure they are compatible and function together correctly. Other options for installation are the Anaconda or Enthought Python distributions. A good reference which compares the available possibilities is the \href{http://python4astronomers.github.io/installation/recommended_options.html}{Python4Astronomers website}.
 
 
 
@@ -110,7 +108,7 @@ To compile all code elements including the python components, then complete the 
 
 \noindent to your relevant shell configuration file. Remember that you have to close and reopen the shell for this change to take effect, or to \var{source} the shell configuration file.
 
-\item Set the required version of python and f2py in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  These are set using the \var{PYTHON} and \var{F2PY} variables in the Makefile.
+\item Set the required version of python in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  This is set using the \var{PYTHON} variable in the Makefile.
 
 Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically (see description of Makefile options).  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.
 
@@ -204,8 +202,6 @@ clang & : CLANG compiler (Mac OS X only)
 \end{tabular}
 
 \item PYTHON : name of python command-line executable (e.g. python, python2.7)
-
-\item F2PY : f2py executable name (e.g. f2py,f2py2.7)
 
 \item FFTW : Include FFTW (Fast Fourier transform) library for initial conditions (0 or 1)
 
