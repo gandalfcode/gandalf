@@ -55,21 +55,21 @@ struct NNTreeCell {
   int Ncomp;                                  ///< No. of components in node
   int Nstar;                                  ///< No. of stars in node
   int Nchildlist;                             ///< No. of systems in list
-  DOUBLE radius;                              ///< Radius of bounding sphere of node
-  DOUBLE rsqdnearest;                         ///< Distance squared to nearest node
-  DOUBLE r[ndim];                             ///< Position of centre of mass
-  DOUBLE rpos[ndim];                          ///< Centre of position of node
-  DOUBLE v[ndim];                             ///< Velocity of centre of mass
-  DOUBLE a[ndim];                             ///< Acceleration of centre of mass
-  DOUBLE adot[ndim];                          ///< Jerk of node
-  DOUBLE a2dot[ndim];                         ///< 2nd derivative of node
-  DOUBLE a3dot[ndim];                         ///< 3rd derivative of node
-  DOUBLE m;                                   ///< Mass contained in node
-  DOUBLE h;                                   ///< Smoothing length of node
-  DOUBLE gpot;                                ///< Gravitational potential at node centre
-  DOUBLE gpe;                                 ///< Total gpe of node components
-  DOUBLE gpe_internal;                        ///< Total internal gpe of node components
-  DOUBLE tcross;                              ///< Crossing time of node components
+  FLOAT radius;                              ///< Radius of bounding sphere of node
+  FLOAT rsqdnearest;                         ///< Distance squared to nearest node
+  FLOAT r[ndim];                             ///< Position of centre of mass
+  FLOAT rpos[ndim];                          ///< Centre of position of node
+  FLOAT v[ndim];                             ///< Velocity of centre of mass
+  FLOAT a[ndim];                             ///< Acceleration of centre of mass
+  FLOAT adot[ndim];                          ///< Jerk of node
+  FLOAT a2dot[ndim];                         ///< 2nd derivative of node
+  FLOAT a3dot[ndim];                         ///< 3rd derivative of node
+  FLOAT m;                                   ///< Mass contained in node
+  FLOAT h;                                   ///< Smoothing length of node
+  FLOAT gpot;                                ///< Gravitational potential at node centre
+  FLOAT gpe;                                 ///< Total gpe of node components
+  FLOAT gpe_internal;                        ///< Total internal gpe of node components
+  FLOAT tcross;                              ///< Crossing time of node components
   NbodyParticle<ndim>* childlist[Ncompmax];   ///< List of child components
 };
 
@@ -102,7 +102,7 @@ class NbodySystemTree
   void ComputeNewBinaryOrbit(const int, const int, const int, NNTreeCell<ndim> &,
                              NNTreeCell<ndim> &, NNTreeCell<ndim> &);
   void CreateNbodySystemTree(Nbody<ndim> *);
-  void BuildSubSystems(int, int, DOUBLE, Nbody<ndim> *);
+  void BuildSubSystems(int, int, FLOAT, Nbody<ndim> *);
   void FindBinarySystems(Nbody<ndim> *);
   void FindPerturberLists(Nbody<ndim> *);
   void OutputBinaryProperties(Nbody<ndim> *);
@@ -119,8 +119,8 @@ class NbodySystemTree
   int Norbitmax;                    ///< Max. no. of binary orbits
   int Nquadruple;                   ///< No. of quadruple systems
   int Ntriple;                      ///< No. of triple systems
-  DOUBLE gpehard;                   ///< Grav. energy limit hard sub-systems
-  DOUBLE gpesoft;                   ///< Grav. energy limit soft sub-systems
+  FLOAT gpehard;                   ///< Grav. energy limit hard sub-systems
+  FLOAT gpesoft;                   ///< Grav. energy limit soft sub-systems
   struct NNTreeCell<ndim> *NNtree;  ///< Main NN-tree array
   struct BinaryOrbit *orbit;        ///< Main binary star array
 

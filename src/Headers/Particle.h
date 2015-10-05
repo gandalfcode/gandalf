@@ -95,7 +95,6 @@ struct Particle
   int ionstate;                     ///< States current ionisation state of the particle
                                     ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
-
   Particle() {
     active = false;
     iorig = -1;
@@ -127,9 +126,9 @@ struct Particle
     gpot      = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
-    ionfrac   = 0.999;
-    Xion      = 0.999;
-    mu_bar    = 1.0;
+    ionfrac   = (FLOAT) 0.999;
+    Xion      = (FLOAT) 0.999;
+    mu_bar    = (FLOAT) 1.0;
   }
 
 };

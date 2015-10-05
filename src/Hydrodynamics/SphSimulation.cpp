@@ -185,22 +185,23 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Sink particles
   //-----------------------------------------------------------------------------------------------
+  sinks = new Sinks<ndim>(sphneib);
   sink_particles            = intparams["sink_particles"];
-  sinks.sink_particles      = intparams["sink_particles"];
-  sinks.create_sinks        = intparams["create_sinks"];
-  sinks.smooth_accretion    = intparams["smooth_accretion"];
-  sinks.alpha_ss            = floatparams["alpha_ss"];
-  sinks.smooth_accrete_frac = floatparams["smooth_accrete_frac"];
-  sinks.smooth_accrete_dt   = floatparams["smooth_accrete_dt"];
-  sinks.sink_radius_mode    = stringparams["sink_radius_mode"];
-  sinks.rho_sink            = floatparams["rho_sink"];
-  sinks.rho_sink            /= simunits.rho.outscale/simunits.rho.outcgs;
+  sinks->sink_particles      = intparams["sink_particles"];
+  sinks->create_sinks        = intparams["create_sinks"];
+  sinks->smooth_accretion    = intparams["smooth_accretion"];
+  sinks->alpha_ss            = floatparams["alpha_ss"];
+  sinks->smooth_accrete_frac = floatparams["smooth_accrete_frac"];
+  sinks->smooth_accrete_dt   = floatparams["smooth_accrete_dt"];
+  sinks->sink_radius_mode    = stringparams["sink_radius_mode"];
+  sinks->rho_sink            = floatparams["rho_sink"];
+  sinks->rho_sink            /= simunits.rho.outscale/simunits.rho.outcgs;
 
-  if (sinks.sink_radius_mode == "fixed") {
-    sinks.sink_radius = floatparams["sink_radius"]/simunits.r.outscale;
+  if (sinks->sink_radius_mode == "fixed") {
+    sinks->sink_radius = floatparams["sink_radius"]/simunits.r.outscale;
   }
   else {
-    sinks.sink_radius = floatparams["sink_radius"];
+    sinks->sink_radius = floatparams["sink_radius"];
   }
 
   // Sanity-check for various sink particle values
@@ -241,7 +242,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // Set pointers to timing object
   nbody->timing   = timing;
   if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph") {
-    sinks.timing    = timing;
+    sinks->timing    = timing;
     sphint->timing  = timing;
     sphneib->timing = timing;
     uint->timing    = timing;
@@ -318,8 +319,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Compute minimum smoothing length of sinks
     sph->hmin_sink = big_number;
-    for (i=0; i<sinks.Nsink; i++) {
-      sph->hmin_sink = min(sph->hmin_sink, (FLOAT) sinks.sink[i].star->h);
+    for (i=0; i<sinks->Nsink; i++) {
+      sph->hmin_sink = min(sph->hmin_sink, (FLOAT) sinks->sink[i].star->h);
     }
 
     // If the smoothing lengths have not been provided beforehand, then
@@ -497,8 +498,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
     // Update the radiation field
     for (int jj=0; jj<10; jj++) {
-      radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks.Nsink,
-                                      partdata, nbody->nbodydata, sinks.sink);
+      radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
+                                      partdata, nbody->nbodydata, sinks->sink);
     }
 
 
@@ -727,8 +728,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Update the radiation field
       if (Nsteps%nradstep == 0 || recomputeRadiation) {
-        radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks.Nsink,
-                                        partdata, nbody->nbodydata, sinks.sink);
+        radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
+                                        partdata, nbody->nbodydata, sinks->sink);
         for (i=0; i<sph->Nhydro; i++) {
           SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
           sph->ComputeThermalProperties(part);
@@ -847,9 +848,9 @@ void SphSimulation<ndim>::MainLoop(void)
         }
       }
       if (sink_particles == 1) {
-        for (i=0; i<sinks.Nsink; i++) {
-          if (sinks.sink[i].star->active) {
-            for (k=0; k<ndim; k++) sinks.sink[i].fhydro[k] = 0.0;
+        for (i=0; i<sinks->Nsink; i++) {
+          if (sinks->sink[i].star->active) {
+            for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = 0.0;
           }
         }
       }
@@ -905,24 +906,24 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Search for new sink particles (if activated) and accrete to existing sinks
   if (sink_particles == 1) {
-    if (sinks.create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
-      sinks.SearchForNewSinkParticles(n, t ,sph, nbody);
+    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
+      sinks->SearchForNewSinkParticles(n, t ,sph, nbody);
     }
-    if (sinks.Nsink > 0) {
+    if (sinks->Nsink > 0) {
       sph->mmean = (FLOAT) 0.0;
       for (i=0; i<sph->Nhydro; i++) sph->mmean += sph->GetSphParticlePointer(i).m;
       sph->mmean /= (FLOAT) sph->Nhydro;
       sph->hmin_sink = big_number;
-      for (i=0; i<sinks.Nsink; i++) {
-        sph->hmin_sink = min(sph->hmin_sink, (FLOAT) sinks.sink[i].star->h);
+      for (i=0; i<sinks->Nsink; i++) {
+        sph->hmin_sink = min(sph->hmin_sink, (FLOAT) sinks->sink[i].star->h);
       }
 
-      sinks.AccreteMassToSinks(n, timestep, sph, nbody);
+      sinks->AccreteMassToSinks(n, timestep, sph->GetSphParticleArray(), sph, nbody);
       nbody->UpdateStellarProperties();
       if (extra_sink_output) WriteExtraSinkOutput();
     }
     // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-    if ((t >= tsnapnext && sinks.Nsink > 0) || n == nresync || kill_simulation ||
+    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
          timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
       sph->DeleteDeadParticles();
       rebuild_tree = true;
@@ -1113,7 +1114,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     dt = dt_min_hydro;
     MPI_Allreduce(&dt, &dt_min_hydro, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     dt = dt_min_nbody;
-	MPI_Allreduce(&dt, &dt_min_nbody, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    MPI_Allreduce(&dt, &dt_min_nbody, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 #endif
 
 
@@ -1141,9 +1142,9 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.sinkid != -1) {
-        if (sinks.sink[part.sinkid].star->level - part.level > level_diff_max) {
-          part.level     = sinks.sink[part.sinkid].star->level - level_diff_max;
-          part.levelneib = sinks.sink[part.sinkid].star->level;
+        if (sinks->sink[part.sinkid].star->level - part.level > level_diff_max) {
+          part.level     = sinks->sink[part.sinkid].star->level - level_diff_max;
+          part.levelneib = sinks->sink[part.sinkid].star->level;
           level_max_sph  = max(level_max_sph, part.level);
         }
       }
@@ -1341,8 +1342,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         if (part.itype == dead || part.nlast != n) continue;
         if (part.sinkid != -1) {
-          if (sinks.sink[part.sinkid].star->level - part.level > level_diff_max) {
-            part.level = sinks.sink[part.sinkid].star->level - level_diff_max;
+          if (sinks->sink[part.sinkid].star->level - part.level > level_diff_max) {
+            part.level = sinks->sink[part.sinkid].star->level - level_diff_max;
           }
         }
       }*/
@@ -1539,9 +1540,9 @@ void SphSimulation<ndim>::WriteExtraSinkOutput(void)
 
 
   //-----------------------------------------------------------------------------------------------
-  for (s=0; s<sinks.Nsink; s++) {
+  for (s=0; s<sinks->Nsink; s++) {
 
-    SinkParticle<ndim> &sink = sinks.sink[s];
+    SinkParticle<ndim> &sink = sinks->sink[s];
     nostring = "";
     ss << setfill('0') << setw(5) << s;
     nostring = ss.str();

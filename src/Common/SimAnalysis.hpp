@@ -149,13 +149,13 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   // Add internal angular momentum (due to sink accretion) and subtract
   // accreted hydro momentum to maintain conservation of individual impulses.
-  for (i=0; i<sinks.Nsink; i++) {
+  for (i=0; i<sinks->Nsink; i++) {
 #if defined MPI_PARALLEL
-	if (!ParticleInBox(nbody->stardata[sinks.sink[i].istar], mydomain )  ) continue;
+	if (!ParticleInBox(nbody->stardata[sinks->sink[i].istar], mydomain )  ) continue;
 #endif
-    for (k=0; k<3; k++) diag.angmom[k]      += sinks.sink[i].angmom[k];
-    for (k=0; k<ndim; k++) diag.force_grav[k]  -= sinks.sink[i].fhydro[k];
-    for (k=0; k<ndim; k++) diag.force_hydro[k] += sinks.sink[i].fhydro[k];
+    for (k=0; k<3; k++) diag.angmom[k]         += sinks->sink[i].angmom[k];
+    for (k=0; k<ndim; k++) diag.force_grav[k]  -= sinks->sink[i].fhydro[k];
+    for (k=0; k<ndim; k++) diag.force_hydro[k] += sinks->sink[i].fhydro[k];
   }
 
   // Normalise all quantities and sum all contributions to total energy

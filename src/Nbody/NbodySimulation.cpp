@@ -502,7 +502,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
     // Calculate new block timestep levels
     level_max = Nlevels - 1;
     level_step = level_max + integration_step - 1;
-    dt_max = timestep*powf(2.0,level_max);
+    dt_max = timestep*powf(2.0, level_max);
 
     // Calculate the maximum level occupied by all SPH particles
     level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, level_max);
@@ -514,18 +514,18 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
       nbody->nbodydata[i]->nlast = n;
       if (nbody->nbodydata[i]->Ncomp > 1) {
         nbody->nbodydata[i]->level = level_max;
-        nbody->nbodydata[i]->nstep = pow(2,level_step - level_max);
+        nbody->nbodydata[i]->nstep = pow(2, level_step - level_max);
       }
       else {
         dt = nbody->nbodydata[i]->dt;
         level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
         level = max(level, 0);
         nbody->nbodydata[i]->level = level;
-        nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
+        nbody->nbodydata[i]->nstep = pow(2, level_step - nbody->nbodydata[i]->level);
       }
     }
 
-    nresync = pow(2u, level_step);
+    nresync = pow(2, level_step);
     timestep = dt_max / (DOUBLE) nresync;
 
   }
@@ -641,7 +641,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
           pow(2,level_step - nbody->nbodydata[i]->level);
       }
 
-      nresync = pow(2,level_step);
+      nresync = pow(2, level_step);
       timestep = dt_max / (DOUBLE) nresync;
 
     }

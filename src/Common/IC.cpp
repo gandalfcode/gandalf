@@ -121,7 +121,7 @@ void Ic<ndim>::BinaryAccretion(void)
     DomainBox<ndim> box1;                // Bounding box for fluid 1
     DomainBox<ndim> box2;                // Bounding box for fluid 2
     Nbody<ndim>* nbody = sim->nbody;     // Pointer to Nbody object
-    Sinks<ndim>& sinks = sim->sinks;     // Point to Sinks object
+    Sinks<ndim>* sinks = sim->sinks;     // Point to Sinks object
 
     // Create local copies of initial conditions parameters
     int Nstar        = simparams->intparams["Nstar"];
@@ -312,10 +312,10 @@ void Ic<ndim>::BinaryAccretion(void)
       nbody->stardata[0].m = m1 + m2;
       nbody->stardata[0].h = hsink;
       nbody->stardata[0].radius = rsink;
-      sinks.sink[0].star = &(nbody->stardata[0]);
-      sinks.sink[0].radius = rsink;
-      sinks.sink[0].mmax = mmax;
-      sinks.Nsink = Nstar;
+      sinks->sink[0].star = &(nbody->stardata[0]);
+      sinks->sink[0].radius = rsink;
+      sinks->sink[0].mmax = mmax;
+      sinks->Nsink = Nstar;
     }
     else if (Nstar == 2) {
       for (k=0; k<ndim; k++) rbinary[k] = (FLOAT) 0.0;
@@ -329,13 +329,13 @@ void Ic<ndim>::BinaryAccretion(void)
       vbinary[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
       AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,phirot,thetarot,psirot,0.0,
                     rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
-      sinks.sink[0].star = &(nbody->stardata[0]);
-      sinks.sink[1].star = &(nbody->stardata[1]);
-      sinks.sink[0].radius = rsink;
-      sinks.sink[1].radius = rsink;
-      sinks.sink[0].mmax = mmax;
-      sinks.sink[1].mmax = mmax;
-      sinks.Nsink = Nstar;
+      sinks->sink[0].star = &(nbody->stardata[0]);
+      sinks->sink[1].star = &(nbody->stardata[1]);
+      sinks->sink[0].radius = rsink;
+      sinks->sink[1].radius = rsink;
+      sinks->sink[0].mmax = mmax;
+      sinks->sink[1].mmax = mmax;
+      sinks->Nsink = Nstar;
     }
     else {
       string message = "Invalid number of star particles";
@@ -1547,7 +1547,7 @@ void Ic<ndim>::TurbulentCore(void)
     dxgrid = max(dxgrid, (rmax[k] - rmin[k])/(FLOAT) (gridsize - 1));
     //xmin = min(xmin,rmin[k]);
   }
-  dxgrid = max(dxgrid, 2.0*fabs(xmin)/(FLOAT) (gridsize - 1));
+  dxgrid = max(dxgrid, (FLOAT) 2.0*fabs(xmin)/(FLOAT) (gridsize - 1));
 
   // Generate gridded velocity field
   GenerateTurbulentVelocityField(field_type, gridsize, power_turb, vfield);
@@ -1614,7 +1614,7 @@ void Ic<ndim>::BondiAccretion(void)
   FLOAT *w,*x,*y,*z;                // Arrays for numerical Bondi solution
 
   Nbody<ndim>* nbody = sim->nbody;
-  Sinks<ndim>& sinks = sim->sinks;
+  Sinks<ndim>* sinks = sim->sinks;
 
   // Create local copies of initial conditions parameters
   int Npart     = simparams->intparams["Nhydro"];
@@ -1729,18 +1729,18 @@ void Ic<ndim>::BondiAccretion(void)
   // Now add star/sink particle
   rsink *= rsonic;
   nbody->Nstar = 1;
-  sinks.Nsink = 1;
+  sinks->Nsink = 1;
   for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
   for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
   nbody->stardata[0].m      = msink;
   nbody->stardata[0].radius = rsink;
   nbody->stardata[0].h      = nbody->kernp->invkernrange*nbody->stardata[0].radius;
   nbody->stardata[0].invh   = 1.0/nbody->stardata[0].h;
-  sinks.sink[0].star        = &(nbody->stardata[0]);
-  sinks.sink[0].radius      = rsink;
-  sinks.sink[0].racc        = rsink;
-  sinks.sink[0].mmax        = 0.0;
-  sinks.sink[0].menc        = 0.0;
+  sinks->sink[0].star        = &(nbody->stardata[0]);
+  sinks->sink[0].radius      = rsink;
+  sinks->sink[0].racc        = rsink;
+  sinks->sink[0].mmax        = 0.0;
+  sinks->sink[0].menc        = 0.0;
 
 
   // Find total mass inside sink and set to mmax
@@ -1749,10 +1749,10 @@ void Ic<ndim>::BondiAccretion(void)
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - rcentre[k];
     drsqd = DotProduct(dr, dr, ndim);
     if (drsqd > rsink*rsink) continue;
-    sinks.sink[0].mmax += part.m;
+    sinks->sink[0].mmax += part.m;
   }
 
-  cout << "mmax : " << sinks.sink[0].mmax << "    " << sinks.sink[0].mmax/mp << endl;
+  cout << "mmax : " << sinks->sink[0].mmax << "    " << sinks->sink[0].mmax/mp << endl;
   cout << "rsink : " << rsink << "     rsink/rsonic : " << rsink/rsonic << endl;
   //exit(0);
 
@@ -3033,8 +3033,8 @@ template <int ndim>
 void Ic<ndim>::BinaryStar(void)
 {
   int k;                               // Dimension counter
-  DOUBLE rbinary[ndim];                // Position of binary COM
-  DOUBLE vbinary[ndim];                // Velocity of binary COM
+  FLOAT rbinary[ndim];                // Position of binary COM
+  FLOAT vbinary[ndim];                // Velocity of binary COM
 
   // Binary star parameters
   FLOAT abin     = simparams->floatparams["abin"];
@@ -3079,8 +3079,8 @@ template <int ndim>
 void Ic<ndim>::TripleStar(void)
 {
   int k;                               // Dimension counter
-  DOUBLE rbinary[ndim];                // Position of binary COM
-  DOUBLE vbinary[ndim];                // Velocity of binary COM
+  FLOAT rbinary[ndim];                // Position of binary COM
+  FLOAT vbinary[ndim];                // Velocity of binary COM
   NbodyParticle<ndim> b1;              // Inner binary COM particle
 
   // Triple star parameters
@@ -3133,8 +3133,8 @@ template <int ndim>
 void Ic<ndim>::QuadrupleStar(void)
 {
   int k;                               // Dimension counter
-  DOUBLE rbinary[ndim];                // Position of binary COM
-  DOUBLE vbinary[ndim];                // Velocity of binary COM
+  FLOAT rbinary[ndim];                // Position of binary COM
+  FLOAT vbinary[ndim];                // Velocity of binary COM
   NbodyParticle<ndim> b1;              // Star/binary 1
   NbodyParticle<ndim> b2;              // Star/binary 2
 
@@ -3190,18 +3190,18 @@ void Ic<ndim>::QuadrupleStar(void)
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddBinaryStar
- (DOUBLE sma,                          ///< Semi-major axis
-  DOUBLE eccent,                       ///< Orbital eccentricity
-  DOUBLE m1,                           ///< Mass of star 1
-  DOUBLE m2,                           ///< Mass of star 2
-  DOUBLE h1,                           ///< Smoothing length of star 1
-  DOUBLE h2,                           ///< Smoothing length of star 2
-  DOUBLE phirot,                       ///< 'phi' Euler rotation angle
-  DOUBLE thetarot,                     ///< 'theta' Euler rotation angle
-  DOUBLE phase,                        ///< Phase angle
-  DOUBLE psirot,                       ///< 'tpsi' rotation angle
-  DOUBLE *rbinary,                     ///< Position of COM of binary
-  DOUBLE *vbinary,                     ///< Velocity of COM of binary
+ (FLOAT sma,                          ///< Semi-major axis
+  FLOAT eccent,                       ///< Orbital eccentricity
+  FLOAT m1,                           ///< Mass of star 1
+  FLOAT m2,                           ///< Mass of star 2
+  FLOAT h1,                           ///< Smoothing length of star 1
+  FLOAT h2,                           ///< Smoothing length of star 2
+  FLOAT phirot,                       ///< 'phi' Euler rotation angle
+  FLOAT thetarot,                     ///< 'theta' Euler rotation angle
+  FLOAT phase,                        ///< Phase angle
+  FLOAT psirot,                       ///< 'tpsi' rotation angle
+  FLOAT *rbinary,                     ///< Position of COM of binary
+  FLOAT *vbinary,                     ///< Velocity of COM of binary
   NbodyParticle<ndim> &s1,             ///< Star 1
   NbodyParticle<ndim> &s2)             ///< Star 2
 {
@@ -3937,7 +3937,7 @@ void Ic<ndim>::ComputeBondiSolution
   do {
     disc = (FLOAT) 100.0*log10(x1) + (FLOAT) isonic - (FLOAT) i;
     if (disc > (FLOAT) 0.0) {
-      lx[i]   = (FLOAT) 0.01*(double)(i - isonic);
+      lx[i]   = (FLOAT) 0.01*(FLOAT)(i - isonic);
       x[i]    = powf((FLOAT) 10.0,lx[i]);
       dlnx[i] = (x[i] - x1)/x1;
       w[i]    = w1 + f5*(x[i] - x1);
@@ -4286,7 +4286,7 @@ void Ic<ndim>::InterpolateVelocityField
   const FLOAT xmin,                      ///< [in] Minimum position
   const FLOAT dxgrid,                    ///< [in] Grid size
   const FLOAT *r,                        ///< [in] Positions of particles
-  const FLOAT *vfield,                   ///< [in] Tabulated velocity field
+  const DOUBLE *vfield,                   ///< [in] Tabulated velocity field
   FLOAT *v)                              ///< [out] Interpolated particle velocity
 {
 

@@ -975,7 +975,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
       // Compute average/maximum term for computing gravity MAC
       if (gravity_mac == "eigenmac") {
-        for (j=0; j<Nactive; j++) macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
+        for (j=0; j<Nactive; j++)
+          macfactor = max(macfactor, pow((FLOAT) 1.0/activepart[j].gpot, twothirds));
       }
 
       // Zero/initialise all summation variables for active particles

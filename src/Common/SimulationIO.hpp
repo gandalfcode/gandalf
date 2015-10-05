@@ -1,7 +1,6 @@
 //=================================================================================================
 //  SimulationIO.hpp
-//  Contains all functions for reading and writing simulation data
-//  to/from snapshot files.
+//  Contains all functions for reading and writing simulation data to/from snapshot files.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -151,8 +150,8 @@ HeaderInfo SimulationBase::ReadHeaderSnapshotFile
 //=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ReadColumnHeaderFile
- (ifstream& infile,                    ///< Reference to input file stream object
-  HeaderInfo& info)                    ///< Header data structure
+ (ifstream& infile,                    ///< [in] Reference to input file stream object
+  HeaderInfo& info)                    ///< [out] Header data structure
 {
   debug2("[Simulation::ReadColumnHeaderFile]");
 
@@ -184,7 +183,7 @@ template <int ndim>
 bool Simulation<ndim>::ReadColumnSnapshotFile
  (string filename)                     ///< Filename of column data snapshot file
 {
-  int i;                               // ..
+  int i;                               // Particle counter
   FLOAT raux;                          // ..
   ifstream infile;                     // ..
   HeaderInfo info;                     // ..
@@ -221,9 +220,9 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
 
 
   nbody->Nstar = info.Nstar;
-  sinks.Nsink = info.Nstar;
+  sinks->Nsink = info.Nstar;
   nbody->AllocateMemory(nbody->Nstar);
-  sinks.AllocateMemory(nbody->Nstar);
+  sinks->AllocateMemory(nbody->Nstar);
   i = 0;
 
   // Read in data depending on dimensionality
@@ -243,8 +242,8 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
              >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] >> nbody->stardata[i].v[2]
              >> nbody->stardata[i].m >> nbody->stardata[i].h >> raux >> raux;
     }
-    sinks.sink[i].radius = nbody->kernp->kernrange*nbody->stardata[i].h;
-    sinks.sink[i].star = &(nbody->stardata[i]);
+    sinks->sink[i].radius = nbody->kernp->kernrange*nbody->stardata[i].h;
+    sinks->sink[i].star = &(nbody->stardata[i]);
     i++;
   }
 
@@ -259,7 +258,7 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
 #ifdef MPI_PARALLEL
 //=================================================================================================
 //  Simulation::WriteColumnSnapshotFile
-/// Write SPH and N-body particle data to column data snapshot file (MPI parallelised version)
+/// Write hydro and N-body particle data to column data snapshot file (MPI parallelised version)
 //=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
@@ -292,7 +291,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
     outfile << t*simunits.t.outscale << endl;
   }
 
-  // Write data for SPH particles
+  // Write data for hydro particles
   //---------------------------------------------------------------------------
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -407,7 +406,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
     if (rank == 0) offset = 0;
     MPI_Offset offset_mpi = offset;
 
-    //Offset the position by the end of the sph information
+    //Offset the position by the end of the hydro information
     offset_mpi += end_sph_mpi;
     MPI_File_seek(file, offset_mpi, MPI_SEEK_SET);
     //Now we can do the actual writing. Extract information from the string and pass it to MPI
@@ -428,7 +427,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 #else
 //=================================================================================================
 //  Simulation::WriteColumnSnapshotFile
-/// Write SPH and N-body particle data to column data snapshot file.
+/// Write hydro and N-body particle data to column data snapshot file.
 //=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
@@ -447,7 +446,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   outfile << ndim << endl;
   outfile << t*simunits.t.outscale << endl;
 
-  // Write data for SPH particles
+  // Write data for hydro particles
   //---------------------------------------------------------------------------
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -596,7 +595,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   int sink_data_length;        // Length of float array for sink data
   int idata[50];               // Integer data array
   int ilpdata[50];             // Long data array
-  int typedata[50][5];         // SPH Particle data array information
+  int typedata[50][5];         // Hydro Particle data array information
   FLOAT rdata[50];             // Real data array
   FLOAT rtemp;                 // Dummy float variable
   DOUBLE ddata[50];            // Double float data array
@@ -652,7 +651,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
   hydro->Nhydro      = idata[0];
   nbody->Nstar   = idata[1];
-  sinks.Nsink    = idata[1];
+  sinks->Nsink    = idata[1];
   //dmdt_range_aux = idata[29];
   nunit          = idata[19];
   ndata          = idata[20];
@@ -669,7 +668,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   }
 
   //hydro->h_fac = rdata[0];
-  //sphptr->tlastsnap = ddata[1];
+  //hydroptr->tlastsnap = ddata[1];
   //hydro->mgas_orig = ddata[2];
 
   // Read in unit data
@@ -845,8 +844,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
           nbody->stardata[i].h = sdata[2+2*ndim];
           nbody->stardata[i].radius = sdata[3+2*ndim];
           nbody->nbodydata[i] = &(nbody->stardata[i]);
-          sinks.sink[i].star = &(nbody->stardata[i]);
-          sinks.sink[i].radius = sdata[3+2*ndim];
+          sinks->sink[i].star = &(nbody->stardata[i]);
+          sinks->sink[i].radius = sdata[3+2*ndim];
         }
       }
     }
@@ -873,10 +872,11 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
 //=================================================================================================
 //  Simulation::WriteSerenFormSnapshotFile
-/// Write SPH and N-body particle data to snapshot file in Seren format.
+/// Write hydro and N-body particle data to snapshot file in Seren format.
 //=================================================================================================
 template <int ndim>
-bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
+bool Simulation<ndim>::WriteSerenFormSnapshotFile
+ (string filename)                     ///< [in] Filename to write new snapshot to
 {
   //int dmdt_range_aux;          // Accretion history array size
   int i;                       // Aux. counter
@@ -888,7 +888,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   int nunit;                   // No. of unit strings
   int idata[50];               // Integer data array
   int ilpdata[50];             // Long integer data array
-  int typedata[50][5];         // SPH Particle data array information
+  int typedata[50][5];         // Hydro particle data array information
   FLOAT rdata[50];             // Real data array
   DOUBLE ddata[50];            // Double float data array
   string format_id;            // File format (for verification)
@@ -903,12 +903,12 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   cout << "Writing snapshot file : " << filename << endl;
 
   outfile.open(filename.c_str());
-  outfile.setf (std::ios::scientific,std::ios::floatfield);
+  outfile.setf (std::ios::scientific, std::ios::floatfield);
   formatted_output outfile_format(outfile, 18, 2, 10);
 
   for (i=0; i<50; i++) idata[i] = 0;
   for (i=0; i<50; i++) ilpdata[i] = 0;
-  for (i=0; i<50; i++) rdata[i] = 0.0;
+  for (i=0; i<50; i++) rdata[i] = (FLOAT) 0.0;
   for (i=0; i<50; i++) ddata[i] = 0.0;
   nunit = 0;
   ndata = 0;
@@ -940,43 +940,43 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   }
 
 
-  // Set array ids and array information data if there are any SPH particles
+  // Set array ids and array information data if there are any hydro particles
   //-----------------------------------------------------------------------------------------------
   if (hydro->Nhydro > 0) {
     data_id[ndata] = "porig";
-    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
     typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 2;
-    typedata[ndata][4] = 0;          ndata++;
+    typedata[ndata][4] = 0;              ndata++;
 
     data_id[ndata] = "r";
-    typedata[ndata][0] = ndim;       typedata[ndata][1] = 1;
+    typedata[ndata][0] = ndim;           typedata[ndata][1] = 1;
     typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1;          ndata++;
+    typedata[ndata][4] = 1;              ndata++;
 
     data_id[ndata] = "m";
-    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
     typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
-    typedata[ndata][4] = 2;          ndata++;
+    typedata[ndata][4] = 2;              ndata++;
 
     data_id[ndata] = "h";
-    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
     typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1;          ndata++;
+    typedata[ndata][4] = 1;              ndata++;
 
     data_id[ndata] = "v";
-    typedata[ndata][0] = ndim;       typedata[ndata][1] = 1;
+    typedata[ndata][0] = ndim;           typedata[ndata][1] = 1;
     typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
-    typedata[ndata][4] = 4;          ndata++;
+    typedata[ndata][4] = 4;              ndata++;
 
     data_id[ndata] = "rho";
-    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
     typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
-    typedata[ndata][4] = 6;          ndata++;
+    typedata[ndata][4] = 6;              ndata++;
 
     data_id[ndata] = "u";
-    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
     typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
-    typedata[ndata][4] = 20;         ndata++;
+    typedata[ndata][4] = 20;             ndata++;
   }
 
   if (nbody->Nstar > 0) {
@@ -1027,7 +1027,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     }
   }
 
-  // Write arrays for SPH particles
+  // Write arrays for hydro particles
   //-----------------------------------------------------------------------------------------------
   if (hydro->Nhydro > 0) {
 
@@ -1067,14 +1067,12 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
       outfile_format << part.m*simunits.m.outscale << endl;
     }
 
-
     // Smoothing lengths
     //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       outfile_format << part.h*simunits.r.outscale << endl;
     }
-
 
     // Velocities
     //---------------------------------------------------------------------------------------------
@@ -1107,7 +1105,6 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
       outfile_format << part.rho*simunits.rho.outscale << endl;;
     }
 
-
     // Specific internal energies
     //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
@@ -1115,8 +1112,9 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
       outfile_format << part.ionfrac << endl; //part.u*simunits.u.outscale << endl;
     }
 
-
   }
+  //-----------------------------------------------------------------------------------------------
+
 
   // Sinks/stars
   //-----------------------------------------------------------------------------------------------
@@ -1166,22 +1164,22 @@ void Simulation<ndim>::ReadSerenUnformHeaderFile
   // Skip the first bits (tag + the 4)
   int id_length = 20; //binary_tag.size();
   infile.seekg(id_length);
-  infile.seekg(4,ios_base::cur);
+  infile.seekg(4, ios_base::cur);
 
   // Read number of dimensions
   reader.read_value(info.ndim);
 
   // Skip the following two integers...
-  infile.seekg(8,ios_base::cur);
+  infile.seekg(8, ios_base::cur);
 
-  // Read number of SPH particles
+  // Read number of hydro particles
   reader.read_value(info.Nhydro);
 
   // Read number of star particles
   reader.read_value(info.Nstar);
 
   // Skip the remaining 48 idata, ilpdata and rdata
-  infile.seekg(48*sizeof(int)+50*sizeof(long)+50*sizeof(FLOAT),ios_base::cur);
+  infile.seekg(48*sizeof(int) + 50*sizeof(long) + 50*sizeof(FLOAT), ios_base::cur);
 
   // Read time and convert to code units
   reader.read_value(info.t);
@@ -1191,7 +1189,7 @@ void Simulation<ndim>::ReadSerenUnformHeaderFile
   if (info.ndim != ndim) {
     std::ostringstream stream;
     stream << "Incorrect no. of dimensions in file : "
-     << info.ndim << "  [ndim : " << ndim << "]" << endl;
+           << info.ndim << "  [ndim : " << ndim << "]" << endl;
     ExceptionHandler::getIstance().raise(stream.str());
   }
 
@@ -1266,9 +1264,9 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   // Read infile header integer data
   {
     for (int i=0; i<50; i++) reader.read_value(idata[i]);
-    hydro->Nhydro      = idata[0];
+    hydro->Nhydro  = idata[0];
     nbody->Nstar   = idata[1];
-    sinks.Nsink    = idata[1];
+    sinks->Nsink    = idata[1];
     //dmdt_range_aux = idata[29];
     nunit          = idata[19];
     ndata          = idata[20];
@@ -1398,7 +1396,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // Skip 1-D redundant information
     //---------------------------------------------------------------------------------------------
     else if(data_id[j] == "temp") {
-      infile.seekg(sizeof(FLOAT)*hydro->Nhydro,ios_base::cur);
+      infile.seekg(sizeof(FLOAT)*hydro->Nhydro, ios_base::cur);
     }
 
     // Sinks/stars
@@ -1423,8 +1421,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
           nbody->stardata[i].m = sdata[1+2*ndim];
           nbody->stardata[i].h = sdata[2+2*ndim];
           nbody->stardata[i].radius = sdata[3+2*ndim];
-          sinks.sink[i].radius = sdata[3+2*ndim];
-          sinks.sink[i].star = &(nbody->stardata[i]);
+          sinks->sink[i].radius = sdata[3+2*ndim];
+          sinks->sink[i].star = &(nbody->stardata[i]);
           nbody->nbodydata[i] = &(nbody->stardata[i]);
           assert(nbody->stardata[i].m > 0.0);
         }
@@ -1449,10 +1447,10 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::WriteSerenUnformSnapshotFile
-/// Write SPH and N-body particle data to snapshot file in Seren binary format.
-//=============================================================================
+/// Write hydro and N-body particle data to snapshot file in Seren binary format.
+//=================================================================================================
 #ifdef MPI_PARALLEL
 template <int ndim>
 bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
@@ -1461,7 +1459,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   int idata[50];                    // Integer data array
   int ii;                           // Aux. counter
   int k;                            // Aux. loop counter
-  int typedata[50][5];              // SPH Particle data array information
+  int typedata[50][5];              // Hydro particle data array information
   int ndata;                        // No. of data arrays written
   int nunit;                        // No. of unit strings
   int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
@@ -1515,7 +1513,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     nunit = 21;
   }
 
-  // Set array ids and array information data if there are any SPH particles
+  // Set array ids and array information data if there are any hydro particles
   //---------------------------------------------------------------------------
   if (Ntot_hydro > 0) {
     data_id[ndata] = "porig";
@@ -1614,13 +1612,13 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
                 << data_id[i];
       outfile << stream.str();
     }
-    for (i=0; i<ndata; i++)
+    for (i=0; i<ndata; i++) {
       for (int j=0; j< 5; j++) writer.write_value(typedata[i][j]);
-
+    }
   }
 
 
-  // Write arrays for SPH particles
+  // Write arrays for hydro particles
   //---------------------------------------------------------------------------
   if (Ntot_hydro > 0) {
 
@@ -1796,7 +1794,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   int idata[50];                    // Integer data array
   int ii;                           // Aux. counter
   int k;                            // Aux. loop counter
-  int typedata[50][5];              // SPH Particle data array information
+  int typedata[50][5];              // Hydro particle data array information
   int ndata;                        // No. of data arrays written
   int nunit;                        // No. of unit strings
   int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
@@ -1848,7 +1846,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     nunit = 21;
   }
 
-  // Set array ids and array information data if there are any SPH particles
+  // Set array ids and array information data if there are any hydro particles
   //---------------------------------------------------------------------------
   if (hydro->Nhydro > 0) {
     data_id[ndata] = "porig";
@@ -1945,10 +1943,11 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
               << data_id[i];
     outfile << stream.str();
   }
-  for (i=0; i<ndata; i++)
+  for (i=0; i<ndata; i++) {
     for (int j=0; j< 5; j++) writer.write_value(typedata[i][j]);
+  }
 
-  // Write arrays for SPH particles
+  // Write arrays for hydro particles
   //---------------------------------------------------------------------------
   if (hydro->Nhydro > 0) {
 
@@ -2037,11 +2036,11 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 #endif
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::WriteSerenLiteSnapshotFile
-/// Write SPH and N-body particle data to snapshot file in Seren 'lite' format
+/// Write hydro and N-body particle data to snapshot file in Seren 'lite' format
 /// (i.e. stripped down, low-memory data for basic visualisation and movies).
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 {
@@ -2049,7 +2048,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   int idata[50];                    // Integer data array
   int ii;                           // Aux. counter
   int k;                            // Aux. loop counter
-  int typedata[50][5];              // SPH Particle data array information
+  int typedata[50][5];              // Hydro particle data array information
   int ndata;                        // No. of data arrays written
   int nunit;                        // No. of unit strings
   int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
@@ -2102,7 +2101,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
     nunit = 21;
   }
 
-  // Set array ids and array information data if there are any SPH particles
+  // Set array ids and array information data if there are any hydro particles
   //---------------------------------------------------------------------------
   if (hydro->Nhydro > 0) {
 
@@ -2181,11 +2180,12 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
     stream << std::left << std::setw(string_length) << std::setfill(' ') << data_id[i];
     outfile << stream.str();
   }
-  for (i=0; i<ndata; i++)
+  for (i=0; i<ndata; i++) {
     for (int j=0; j< 5; j++) writer.write_value(typedata[i][j]);
+  }
 
 
-  // Write arrays for SPH particles
+  // Write arrays for hydro particles
   //---------------------------------------------------------------------------
   if (hydro->Nhydro > 0) {
 
@@ -2271,7 +2271,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
 
   debug2("[Simulation::ConvertToCodeUnits]");
 
-  // Rescale all SPH particles
+  // Rescale all hydro particles
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -2299,8 +2299,8 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
 
   // Rescale all sink information
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sinks.Nsink; i++) {
-    sinks.sink[i].radius /= simunits.r.inscale;
+  for (i=0; i<sinks->Nsink; i++) {
+    sinks->sink[i].radius /= simunits.r.inscale;
   }
 
 

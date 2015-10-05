@@ -42,38 +42,38 @@ class NbodyParticle
 {
  public:
 
-  bool active;                      ///< Flag if active (i.e. recompute step)
-  int istar;                        ///< Internal i.d.
-  int Ncomp;                        ///< No. of internal components
-  int level;               ///< Current timestep level
-  int nstep;               ///< Integer step-size of particle
-  int nlast;               ///< Integer time at beginning of step
-  DOUBLE r[ndim];                   ///< Position
-  DOUBLE v[ndim];                   ///< Velocity
-  DOUBLE a[ndim];                   ///< Acceleration
-  DOUBLE adot[ndim];                ///< Time derivative of acceleration (jerk)
-  DOUBLE a2dot[ndim];               ///< 2nd time derivative of acceleration
-  DOUBLE a3dot[ndim];               ///< 3rd time derivative of acceleration
-  DOUBLE r0[ndim];                  ///< Position at beginning of step
-  DOUBLE v0[ndim];                  ///< Velocity at beginning of step
-  DOUBLE a0[ndim];                  ///< Acceleration at beginning of step
-  DOUBLE adot0[ndim];               ///< Jerk at beginning of step
-  DOUBLE a2dot0[ndim];              ///< ..
-  DOUBLE apert[ndim];               ///< Acceleration due to perturbers
-  DOUBLE adotpert[ndim];            ///< Jerk due to perturbers
-  DOUBLE m;                         ///< Star mass
-  DOUBLE h;                         ///< Smoothing length
-  DOUBLE invh;                      ///< 1 / h
-  DOUBLE radius;                    ///< Softening/sink radius of particle
-  //DOUBLE hfactor;                   ///< invh^(ndim + 1)
-  DOUBLE gpot;                      ///< Gravitational potential
-  DOUBLE gpe;                       ///< Gravitational potential energy
-  DOUBLE gpe_internal;              ///< Internal grav. potential energy
-  DOUBLE gpe_pert;                  ///< Perturber grav. potential energy
-  DOUBLE dt;                        ///< Particle timestep
-  DOUBLE dt_internal;               ///< Internal timestep (e.g. due to sub-systems)
-  DOUBLE tlast;                     ///< Time at beginning of last step
-  DOUBLE NLyC;                      ///< No. of ionising photons per second
+  bool active;                         ///< Flag if active (i.e. recompute step)
+  int istar;                           ///< Internal i.d.
+  int Ncomp;                           ///< No. of internal components
+  int level;                           ///< Current timestep level
+  int nstep;                           ///< Integer step-size of particle
+  int nlast;                           ///< Integer time at beginning of step
+  FLOAT r[ndim];                       ///< Position
+  FLOAT v[ndim];                       ///< Velocity
+  FLOAT a[ndim];                       ///< Acceleration
+  FLOAT adot[ndim];                    ///< Time derivative of acceleration (jerk)
+  FLOAT a2dot[ndim];                   ///< 2nd time derivative of acceleration
+  FLOAT a3dot[ndim];                   ///< 3rd time derivative of acceleration
+  FLOAT r0[ndim];                      ///< Position at beginning of step
+  FLOAT v0[ndim];                      ///< Velocity at beginning of step
+  FLOAT a0[ndim];                      ///< Acceleration at beginning of step
+  FLOAT adot0[ndim];                   ///< Jerk at beginning of step
+  FLOAT a2dot0[ndim];                  ///< 2nd time derivative at beginning of step
+  FLOAT apert[ndim];                   ///< Acceleration due to perturbers
+  FLOAT adotpert[ndim];                ///< Jerk due to perturbers
+  FLOAT m;                             ///< Star mass
+  FLOAT h;                             ///< Smoothing length
+  FLOAT invh;                          ///< 1 / h
+  FLOAT radius;                        ///< Softening/sink radius of particle
+  //FLOAT hfactor;                       ///< invh^(ndim + 1)
+  FLOAT gpot;                          ///< Gravitational potential
+  FLOAT gpe;                           ///< Gravitational potential energy
+  FLOAT gpe_internal;                  ///< Internal grav. potential energy
+  FLOAT gpe_pert;                      ///< Perturber grav. potential energy
+  DOUBLE dt;                           ///< Particle timestep
+  DOUBLE dt_internal;                  ///< Internal timestep (e.g. due to sub-systems)
+  DOUBLE tlast;                        ///< Time at beginning of last step
+  DOUBLE NLyC;                         ///< No. of ionising photons per second
 
 
   // Star particle constructor to initialise all values
@@ -81,30 +81,30 @@ class NbodyParticle
   NbodyParticle()
   {
     active = false;
-    level = 0;
-    nstep = 0;
-    nlast = 0;
-    Ncomp = 1;
-    for (int k=0; k<ndim; k++) r[k] = 0.0;
-    for (int k=0; k<ndim; k++) v[k] = 0.0;
-    for (int k=0; k<ndim; k++) a[k] = 0.0;
-    for (int k=0; k<ndim; k++) adot[k] = 0.0;
-    for (int k=0; k<ndim; k++) a2dot[k] = 0.0;
-    for (int k=0; k<ndim; k++) a3dot[k] = 0.0;
-    for (int k=0; k<ndim; k++) r0[k] = 0.0;
-    for (int k=0; k<ndim; k++) v0[k] = 0.0;
-    for (int k=0; k<ndim; k++) a0[k] = 0.0;
-    for (int k=0; k<ndim; k++) adot0[k] = 0.0;
-    for (int k=0; k<ndim; k++) apert[k] = 0.0;
-    for (int k=0; k<ndim; k++) adotpert[k] = 0.0;
+    level  = 0;
+    nstep  = 0;
+    nlast  = 0;
+    Ncomp  = 1;
+    for (int k=0; k<ndim; k++) r[k]        = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) v[k]        = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) a[k]        = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) adot[k]     = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) a2dot[k]    = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) a3dot[k]    = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) r0[k]       = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) v0[k]       = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) a0[k]       = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) adot0[k]    = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) apert[k]    = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) adotpert[k] = (FLOAT) 0.0;
     m            = 0;
     h            = 0;
-    invh         = 0.0;
-    //hfactor      = 0.0;
-    gpot         = 0.0;
-    gpe          = 0.0;
-    gpe_internal = 0.0;
-    gpe_pert     = 0.0;
+    invh         = (FLOAT) 0.0;
+    //hfactor      = (FLOAT) 0.0;
+    gpot         = (FLOAT) 0.0;
+    gpe          = (FLOAT) 0.0;
+    gpe_internal = (FLOAT) 0.0;
+    gpe_pert     = (FLOAT) 0.0;
     dt           = 0.0;
     dt_internal  = big_number;
     tlast        = 0.0;

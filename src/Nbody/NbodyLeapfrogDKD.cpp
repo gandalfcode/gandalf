@@ -76,19 +76,19 @@ NbodyLeapfrogDKD<ndim, kernelclass>::~NbodyLeapfrogDKD()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
-(int N,                             ///< Number of stars
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+ (int N,                               ///< [in] Number of stars
+  NbodyParticle<ndim> **star)          ///< [inout] Array of stars/systems
 {
-  int i,j,k;                        // Star and dimension counters
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drdt;                      // Rate of change of distance
-  DOUBLE drmag;                     // ..
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE dv[ndim];                  // Relative velocity vector
-  DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE invhmean;                  // ..
-  DOUBLE paux;                      // ..
-  DOUBLE wmean;                     // ..
+  int i,j,k;                           // Star and dimension counters
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT invhmean;                      // 1 / mean smoothing length
+  FLOAT paux;                          // Constant in accel. expression
+  FLOAT wmean;                         // Kernel using mean smoothing length
 
   debug2("[NbodyLeapfrogDKD::CalculateDirectSmoothedGravForces]");
 
@@ -104,11 +104,11 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
       for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
       for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-      drsqd = DotProduct(dr,dr,ndim);
+      drsqd = DotProduct(dr, dr, ndim);
       drmag = sqrt(drsqd);
-      invdrmag = 1.0/sqrt(drsqd);
-      invhmean = 2.0/(star[i]->h + star[j]->h);
-      drdt = DotProduct(dv,dr,ndim)*invdrmag;
+      invdrmag = (FLOAT) 1.0/sqrt(drsqd);
+      invhmean = (FLOAT) 2.0/(star[i]->h + star[j]->h);
+      drdt = DotProduct(dv, dr, ndim)*invdrmag;
       paux = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
       wmean = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
 
@@ -116,7 +116,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
       for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
       for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
-        3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
 
     }
     //---------------------------------------------------------------------------------------------
@@ -144,12 +144,12 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
   Hydrodynamics<ndim> *hydro)          ///< [in] Array of SPH particles
 {
   int j,jj,k;                          // Star and dimension counters
-  DOUBLE dr[ndim];                     // Relative position vector
-  DOUBLE drmag;                        // Distance
-  DOUBLE drsqd;                        // Distance squared
-  DOUBLE invhmean;                     // 1 / hmean
-  DOUBLE invdrmag;                     // 1 / drmag
-  DOUBLE paux;                         // Aux. force variable
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invhmean;                      // 1 / hmean
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT paux;                          // Aux. force variable
 
   debug2("[NbodyLeapfrogDKD::CalculateDirectHydroForces]");
 
@@ -218,15 +218,15 @@ template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- DOUBLE t,                          ///< Current time
- DOUBLE timestep,                   ///< Smallest timestep value
+ FLOAT t,                          ///< Current time
+ FLOAT timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
-  DOUBLE dt;                        // Timestep since start of step
+  FLOAT dt;                        // Timestep since start of step
 
   debug2("[NbodyLeapfrogDKD::AdvanceParticles]");
 
@@ -271,8 +271,8 @@ template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::EndTimestep
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- DOUBLE t,                          ///< Current time
- DOUBLE timestep,                   ///< Smallest timestep value
+ FLOAT t,                          ///< Current time
+ FLOAT timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
   int dn;                           // Integer time since beginning of step
@@ -319,7 +319,7 @@ DOUBLE NbodyLeapfrogDKD<ndim, kernelclass>::Timestep
   //DOUBLE adotmag;                   // Magnitude of star jerk
 
   // Acceleration condition
-  amag = sqrt(DotProduct(star->a,star->a,ndim));
+  amag = sqrt(DotProduct(star->a, star->a, ndim));
   timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
   timestep = min(timestep,star->dt_internal);
 

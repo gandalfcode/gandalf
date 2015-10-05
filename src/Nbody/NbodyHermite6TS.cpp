@@ -79,17 +79,17 @@ void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
  NbodyParticle<ndim> **star)        ///< Array of stars/systems
 {
   int i,j,k;                        // Star and dimension counters
-  DOUBLE a[ndim];                   // Acceleration
-  DOUBLE adot[ndim];                // 1st time derivative of accel (jerk)
-  DOUBLE afac,bfac;                 // Aux. summation variables
-  DOUBLE da[ndim];                  // Relative acceleration
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drdt;                      // Rate of change of distance
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE dv[ndim];                  // Relative velocity vector
-  DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE invdrsqd;                  // 1 / drsqd
-  DOUBLE dvsqd;                     // Velocity squared
+  FLOAT a[ndim];                   // Acceleration
+  FLOAT adot[ndim];                // 1st time derivative of accel (jerk)
+  FLOAT afac,bfac;                 // Aux. summation variables
+  FLOAT da[ndim];                  // Relative acceleration
+  FLOAT dr[ndim];                  // Relative position vector
+  FLOAT drdt;                      // Rate of change of distance
+  FLOAT drsqd;                     // Distance squared
+  FLOAT dv[ndim];                  // Relative velocity vector
+  FLOAT invdrmag;                  // 1 / drmag
+  FLOAT invdrsqd;                  // 1 / drsqd
+  FLOAT dvsqd;                     // Velocity squared
 
   debug2("[NbodyHermite6TS::CalculateDirectGravForces]");
 
@@ -173,15 +173,15 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
  NbodyParticle<ndim> **star)        ///< [inout] Array of stars/systems
 {
   int i,j,k;                        // Star and dimension counters
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drdt;                      // Rate of change of distance
-  DOUBLE drmag;                     // Distance
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE dv[ndim];                  // Relative velocity vector
-  DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE invhmean;                  // 1 / mean of star smoothing lengths
-  DOUBLE paux;                      // Common force factor
-  DOUBLE wmean;                     // Mean-h kernel factor
+  FLOAT dr[ndim];                  // Relative position vector
+  FLOAT drdt;                      // Rate of change of distance
+  FLOAT drmag;                     // Distance
+  FLOAT drsqd;                     // Distance squared
+  FLOAT dv[ndim];                  // Relative velocity vector
+  FLOAT invdrmag;                  // 1 / drmag
+  FLOAT invhmean;                  // 1 / mean of star smoothing lengths
+  FLOAT paux;                      // Common force factor
+  FLOAT wmean;                     // Mean-h kernel factor
 
   debug2("[NbodyHermite6TS::CalculateDirectSmoothedGravForces]");
 
@@ -236,15 +236,15 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
   Hydrodynamics<ndim> *hydro)          ///< [in] Hydrodynamics object
 {
   int j,jj,k;                       // Star and dimension counters
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drmag;                     // Distance
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE drdt;                      // Rate of change of distance
-  DOUBLE dv[ndim];                  // Relative velocity vector
-  DOUBLE invhmean;                  // 1 / hmean
-  DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE paux;                      // Aux. force variable
-  DOUBLE wkern;                     // SPH kernel value
+  FLOAT dr[ndim];                  // Relative position vector
+  FLOAT drmag;                     // Distance
+  FLOAT drsqd;                     // Distance squared
+  FLOAT drdt;                      // Rate of change of distance
+  FLOAT dv[ndim];                  // Relative velocity vector
+  FLOAT invhmean;                  // 1 / hmean
+  FLOAT invdrmag;                  // 1 / drmag
+  FLOAT paux;                      // Aux. force variable
+  FLOAT wkern;                     // SPH kernel value
 
   debug2("[NbodyHermite6TS::CalculateDirectHydroForces]");
 
@@ -318,19 +318,19 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
  NbodyParticle<ndim> **star)        ///< Array of stars/systems
 {
   int i,j,k;                        // Star and dimension counters
-  DOUBLE a[ndim];                   // Acceleration
-  DOUBLE adot[ndim];                // 1st time derivative of accel (jerk)
-  DOUBLE a2dot[ndim];               // 2nd time deriivative of acceleration
-  DOUBLE afac,bfac,cfac;            // Aux. summation variables
-  DOUBLE da[ndim];                  // Relative acceleration
-  DOUBLE dadot[ndim];               // Relative jerk
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drdt;                      // Rate of change of distance
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE dv[ndim];                  // Relative velocity vector
-  DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE invdrsqd;                  // 1 / drsqd
-  DOUBLE dvsqd;                     // Velocity squared
+  FLOAT a[ndim];                   // Acceleration
+  FLOAT adot[ndim];                // 1st time derivative of accel (jerk)
+  FLOAT a2dot[ndim];               // 2nd time deriivative of acceleration
+  FLOAT afac,bfac,cfac;            // Aux. summation variables
+  FLOAT da[ndim];                  // Relative acceleration
+  FLOAT dadot[ndim];               // Relative jerk
+  FLOAT dr[ndim];                  // Relative position vector
+  FLOAT drdt;                      // Rate of change of distance
+  FLOAT drsqd;                     // Distance squared
+  FLOAT dv[ndim];                  // Relative velocity vector
+  FLOAT invdrmag;                  // 1 / drmag
+  FLOAT invdrsqd;                  // 1 / drsqd
+  FLOAT dvsqd;                     // Velocity squared
 
   debug2("[NbodyHermite6TS::CalculateAllStartupQuantities]");
 
@@ -396,16 +396,16 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::AdvanceParticles
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- DOUBLE t,                          ///< Current time
- DOUBLE timestep,                   ///< Smallest timestep value
+ FLOAT t,                          ///< Current time
+ FLOAT timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
-  DOUBLE dt;                        // Timestep since start of step
-  DOUBLE dt2;                       // dt*dt
+  FLOAT dt;                        // Timestep since start of step
+  FLOAT dt2;                       // dt*dt
 
   debug2("[NbodyHermite6TS::AdvanceParticles]");
 
@@ -447,18 +447,18 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::CorrectionTerms
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- DOUBLE t,                          ///< Current time
- DOUBLE timestep,                   ///< Smallest timestep value
+ FLOAT t,                          ///< Current time
+ FLOAT timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
-  DOUBLE dt;                        // Physical time step size
-  DOUBLE dt3;                       // dt*dt*dt
-  DOUBLE invdt;                     // 1 / dt
-  static const DOUBLE one120 = 1.0/120.0;  // 1/120
+  FLOAT dt;                        // Physical time step size
+  FLOAT dt3;                       // dt*dt*dt
+  FLOAT invdt;                     // 1 / dt
+  static const FLOAT one120 = 1.0/120.0;  // 1/120
 
   debug2("[NbodyHermite6TS::CorrectionTerms]");
 
@@ -469,7 +469,7 @@ void NbodyHermite6TS<ndim, kernelclass>::CorrectionTerms
     nstep = star[i]->nstep;
 
     if (dn == nstep) {
-      //dt = timestep*(DOUBLE) nstep;
+      //dt = timestep*(FLOAT) nstep;
       dt = t - star[i]->tlast;
       dt3 = powf(dt,3);
       invdt = 1.0 / dt;
@@ -506,8 +506,8 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::PerturberCorrectionTerms
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- DOUBLE t,                          ///< Current time
- DOUBLE timestep,                   ///< Smallest timestep value
+ FLOAT t,                          ///< Current time
+ FLOAT timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
   return;
@@ -524,8 +524,8 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::EndTimestep
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- DOUBLE t,                          ///< Current time
- DOUBLE timestep,                   ///< Smallest timestep value
+ FLOAT t,                          ///< Current time
+ FLOAT timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
   int dn;                           // Integer time since beginning of step

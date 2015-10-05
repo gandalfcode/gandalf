@@ -60,9 +60,8 @@ private:
   // Helper routines
   //-----------------------------------------------------------------------------------------------
   void AddAzimuthalDensityPerturbation(const int, const int, const FLOAT, const FLOAT *, FLOAT *);
-  void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
-                     DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
-                     NbodyParticle<ndim> &, NbodyParticle<ndim> &);
+  void AddBinaryStar(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+                     FLOAT *, FLOAT *, NbodyParticle<ndim> &, NbodyParticle<ndim> &);
   void AddCubicLattice(const int, const int *, const DomainBox<ndim>, const bool, FLOAT *);
   void AddHexagonalLattice(const int, const int *, const DomainBox<ndim>, const bool, FLOAT *);
   int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *);
@@ -74,8 +73,8 @@ private:
   int CutSphere(const int, const int, const DomainBox<ndim>, const bool, FLOAT *);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   void GenerateTurbulentVelocityField(const int, const int, const DOUBLE, DOUBLE *);
-  void InterpolateVelocityField(const int, const int, const FLOAT, const FLOAT, 
-                                const FLOAT *, const FLOAT *, FLOAT *);
+  void InterpolateVelocityField(const int, const int, const FLOAT, const FLOAT,
+                                const FLOAT *, const DOUBLE *, FLOAT *);
 
 
 public:

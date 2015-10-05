@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  BinaryIO.h
 //  Helper classes to write and read from binary files
 //
@@ -18,18 +18,19 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
-//=============================================================================
+//=================================================================================================
 //  Class BinaryWriter
 /// \brief  Helper class to write to binary files
 /// \author G. Rosotti
 /// \date   13/02/2014
-//=============================================================================
+//=================================================================================================
 class BinaryWriter {
 private:
   std::ofstream& output_file;
+
 public:
   BinaryWriter(std::ofstream& _output_file) :
     output_file(_output_file) {}
@@ -45,29 +46,30 @@ public:
 
   template <class TypeToWrite>
   void write_value(const TypeToWrite& value) {
-    output_file.write((char*)&value,sizeof(value));
+    output_file.write((char*) &value, sizeof(value));
   }
-
 
 };
 
-//=============================================================================
+
+
+//=================================================================================================
 //  Class BinaryReader
 /// \brief  Helper class for reading from binary files
 /// \author G. Rosotti
 /// \date   13/02/2014
-//=============================================================================
+//=================================================================================================
 class BinaryReader {
 private:
   std::ifstream& input_file;
+
 public:
   BinaryReader(std::ifstream& _input_file) :
     input_file (_input_file) {}
 
   template <class TypeToRead>
-  void read_value (TypeToRead& result) {
-    input_file.read((char*)&result,sizeof(TypeToRead));
+  void read_value(TypeToRead& result) {
+    input_file.read((char*) &result, sizeof(TypeToRead));
   }
 
 };
-

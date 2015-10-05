@@ -77,20 +77,20 @@ class Nbody
 
   // Other functions
   //-----------------------------------------------------------------------------------------------
-  virtual void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) = 0;
+  virtual void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **) = 0;
   virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                           int *, int *, Hydrodynamics<ndim> *) = 0;
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-                                        NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
-  virtual void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) = 0;
-  virtual void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) = 0;
+                                        NbodyParticle<ndim> *, FLOAT *, FLOAT *);
+  virtual void PerturberCorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **) = 0;
+  virtual void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **) = 0;
   virtual void UpdateChildStars(SystemParticle<ndim> *);
-  virtual void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) = 0;
+  virtual void EndTimestep(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
   virtual void IntegrateInternalMotion(SystemParticle<ndim>* system, const int,
-                                       const DOUBLE, const DOUBLE);
+                                       const FLOAT, const FLOAT);
 
 
   // N-body counters and main data arrays
@@ -111,7 +111,7 @@ class Nbody
   const DOUBLE nbody_mult;              ///< N-body timestep multiplier
   static const int vdim=ndim;           ///< Local copy of vdim
   //static const DOUBLE invndim=1.0/ndim; ///< Copy of 1/ndim
-  static const DOUBLE invndim;
+  static const FLOAT invndim;
 
   NbodyParticle<ndim> **nbodydata;      ///< Generic N-body array of ptrs
   StarParticle<ndim> *stardata;         ///< Main star particle data array
@@ -141,7 +141,7 @@ class Nbody
 
 // Declare invndim constant here (prevents warnings with some compilers)
 template <int ndim>
-const DOUBLE Nbody<ndim>::invndim = 1.0/ndim;
+const FLOAT Nbody<ndim>::invndim = 1.0/ndim;
 
 
 
@@ -166,18 +166,18 @@ public:
   NbodyLeapfrogKDK(int, int, int, DOUBLE, string);
   ~NbodyLeapfrogKDK();
 
-  void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
+  void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) {};
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                   int *, int *, Hydrodynamics<ndim> *);
-  void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
-  void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
-  void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
+  void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
+  void EndTimestep(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
+  void PerturberCorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;             ///< Local copy of vdim
-  //static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  //static const FLOAT invndim=1.0/ndim;   ///< Copy of 1/ndim
   kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
@@ -204,18 +204,18 @@ public:
   NbodyLeapfrogDKD(int, int, int, DOUBLE, string);
   ~NbodyLeapfrogDKD();
 
-  void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
+  void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) {};
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                   int *, int *, Hydrodynamics<ndim> *);
-  void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) {};
-  void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
-  void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) {};
+  void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **) {};
+  void EndTimestep(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
+  void PerturberCorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **) {};
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;             ///< Local copy of vdim
-  //static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  //static const FLOAT invndim=1.0/ndim;   ///< Copy of 1/ndim
   kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
@@ -244,18 +244,18 @@ public:
   NbodyHermite4(int, int, int, DOUBLE, string, int Npec=1);
   ~NbodyHermite4();
 
-  void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
+  void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                   int *, int *, Hydrodynamics<ndim> *);
-  void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
-  void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
-  void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
+  void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
+  void EndTimestep(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
+  void PerturberCorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;             ///< Local copy of vdim
-  //static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  //static const FLOAT invndim=1.0/ndim;   ///< Copy of 1/ndim
   kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
@@ -288,8 +288,8 @@ public:
   NbodyHermite4TS(int, int, int, DOUBLE, string, int);
   ~NbodyHermite4TS();
 
-  void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
-  //void IntegrateInternalMotion(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE);
+  void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
+  //void IntegrateInternalMotion(SystemParticle<ndim>* system, int, FLOAT, FLOAT);
 
 };
 
@@ -318,18 +318,18 @@ public:
   ~NbodyHermite6TS();
 
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
-  void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
+  void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                   int *, int *, Hydrodynamics<ndim> *);
-  void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
-  void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
-  void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
+  void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
+  void EndTimestep(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
+  void PerturberCorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;             ///< Local copy of vdim
-  //static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  //static const FLOAT invndim=1.0/ndim;   ///< Copy of 1/ndim
   kernelclass<ndim> kern;                 ///< SPH kernel
 
 };

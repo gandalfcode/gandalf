@@ -222,9 +222,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       }
     }
     if (sink_particles == 1) {
-      for (i=0; i<sinks.Nsink; i++) {
-        if (sinks.sink[i].star->active) {
-          for (k=0; k<ndim; k++) sinks.sink[i].fhydro[k] = 0.0;
+      for (i=0; i<sinks->Nsink; i++) {
+        if (sinks->sink[i].star->active) {
+          for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = 0.0;
         }
       }
     }
@@ -269,16 +269,16 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // Search for new sink particles (if activated) and accrete to existing sinks
   if (sink_particles == 1) {
-    if (sinks.create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
-      sinks.SearchForNewSinkParticles(n, t, mfv, nbody);
+    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
+      sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
     }
-    if (sinks.Nsink > 0) {
-      sinks.AccreteMassToSinks(n, timestep, mfv, nbody);
+    if (sinks->Nsink > 0) {
+      sinks->AccreteMassToSinks(n, timestep, partdata, mfv, nbody);
       nbody->UpdateStellarProperties();
       //if (extra_sink_output) WriteExtraSinkOutput();
     }
     // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-    if ((t >= tsnapnext && sinks.Nsink > 0) || n == nresync || kill_simulation ||
+    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
          timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
       hydro->DeleteDeadParticles();
       rebuild_tree = true;

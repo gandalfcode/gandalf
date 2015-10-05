@@ -48,7 +48,7 @@ class ExternalPotential
   ExternalPotential() {};
   ~ExternalPotential() {};
 
-  virtual void AddExternalPotential(DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE &) = 0;
+  virtual void AddExternalPotential(FLOAT *, FLOAT *, FLOAT *, FLOAT *, FLOAT &) = 0;
 
 };
 
@@ -69,7 +69,7 @@ class NullPotential : public ExternalPotential<ndim>
   NullPotential() {};
   ~NullPotential() {};
 
-  void AddExternalPotential(DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE &) {}
+  void AddExternalPotential(FLOAT *, FLOAT *, FLOAT *, FLOAT *, FLOAT &) {}
 
 };
 
@@ -87,25 +87,25 @@ class VerticalPotential : public ExternalPotential<ndim>
 {
  public:
 
-  VerticalPotential(int _kgrav, DOUBLE _avert, DOUBLE _rzero) :
+  VerticalPotential(int _kgrav, FLOAT _avert, FLOAT _rzero) :
     kgrav(_kgrav), avert(_avert), rzero(_rzero) {}
   ~VerticalPotential();
 
   const int kgrav;                     ///< ..
-  const DOUBLE avert;                  ///< ..
-  const DOUBLE rzero;                  ///< ..
+  const FLOAT avert;                  ///< ..
+  const FLOAT rzero;                  ///< ..
 
 
   void AddExternalPotential
-   (DOUBLE rp[ndim],                   ///< Position of particle
-    DOUBLE vp[ndim],                   ///< Velocity of particle
-    DOUBLE ap[ndim],                   ///< Acceleration of particle
-    DOUBLE adotp[ndim],                ///< 'Jerk' of particle
-    DOUBLE &potp)                      ///< Potential of particle
+   (FLOAT rp[ndim],                   ///< Position of particle
+    FLOAT vp[ndim],                   ///< Velocity of particle
+    FLOAT ap[ndim],                   ///< Acceleration of particle
+    FLOAT adotp[ndim],                ///< 'Jerk' of particle
+    FLOAT &potp)                      ///< Potential of particle
   {
     ap[kgrav]    += avert;
-    adotp[kgrav] += 0.0;
-    potp         += (rp[kgrav] - rzero)* avert;
+    adotp[kgrav] += (FLOAT) 0.0;
+    potp         += (rp[kgrav] - rzero)*avert;
 
     return;
   }
@@ -126,32 +126,33 @@ class PlummerPotential : public ExternalPotential<ndim>
 {
  public:
 
-  PlummerPotential(DOUBLE mplummeraux, DOUBLE rplummeraux) :
+  PlummerPotential(FLOAT mplummeraux, FLOAT rplummeraux) :
     mplummer(mplummeraux), rplummer(rplummeraux) {}
   ~PlummerPotential();
 
 
-  const DOUBLE mplummer;               ///< Mass of Plummer sphere
-  const DOUBLE rplummer;               ///< Core radius of Plummer sphere
+  const FLOAT mplummer;               ///< Mass of Plummer sphere
+  const FLOAT rplummer;               ///< Core radius of Plummer sphere
 
 
   void AddExternalPotential
-   (DOUBLE rp[ndim],                   ///< Position of particle
-    DOUBLE vp[ndim],                   ///< Velocity of particle
-    DOUBLE ap[ndim],                   ///< Acceleration of particle
-    DOUBLE adotp[ndim],                ///< 'Jerk' of particle
-    DOUBLE &potp)                      ///< Potential of particle
+   (FLOAT rp[ndim],                   ///< Position of particle
+    FLOAT vp[ndim],                   ///< Velocity of particle
+    FLOAT ap[ndim],                   ///< Acceleration of particle
+    FLOAT adotp[ndim],                ///< 'Jerk' of particle
+    FLOAT &potp)                      ///< Potential of particle
   {
     int k;                             // Dimension counter
-    DOUBLE drsqd;                      // Distance squared
-    DOUBLE dvdr;                       // Dot product of velocity and position
+    FLOAT drsqd;                      // Distance squared
+    FLOAT dvdr;                       // Dot product of velocity and position
 
     drsqd = DotProduct(rp,rp,ndim);
     dvdr = DotProduct(rp,vp,ndim);
-    for (k=0; k<ndim; k++) ap[k] -= mplummer*rp[k]*pow(drsqd + rplummer*rplummer,-1.5);
-    for (k=0; k<ndim; k++) adotp[k] += 3.0*mplummer*pow(drsqd + rplummer*rplummer,-2.5)*dvdr*rp[k]
-      - mplummer*pow(drsqd + rplummer*rplummer,-1.5)*vp[k];
-    potp += 2.0*mplummer*pow(drsqd + rplummer*rplummer,-0.5);
+    for (k=0; k<ndim; k++) ap[k] -= mplummer*rp[k]*pow(drsqd + rplummer*rplummer,-(FLOAT) 1.5);
+    for (k=0; k<ndim; k++) adotp[k] += (FLOAT) 3.0*mplummer*
+      pow(drsqd + rplummer*rplummer, -(FLOAT) 2.5)*dvdr*rp[k]
+      - mplummer*pow(drsqd + rplummer*rplummer, -(FLOAT) 1.5)*vp[k];
+    potp += (FLOAT) 2.0*mplummer*pow(drsqd + rplummer*rplummer, -(FLOAT) 0.5);
 
     return;
   }

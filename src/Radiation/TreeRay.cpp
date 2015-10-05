@@ -242,13 +242,13 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateIntersectList(void)
   FLOAT ilNSSampFacI = 1.0/ilNSSampFac;        // ..
   FLOAT max_dotprod;                           // ..
   FLOAT nshalf;                                // ..
-  FLOAT phfpix;                                // ..
   FLOAT phi;                                   // ..
   FLOAT r[ndim];                               // ..
   FLOAT rad;                                   // ..
   FLOAT rnode[ndim];                           // ..
   FLOAT theta;                                 // ..
-  FLOAT thfpix;                                // ..
+  double phfpix;                               // ..
+  double thfpix;                               // ..
 
   debug2("[TreeRay::GenerateIntersectList]");
 
@@ -806,7 +806,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeContribution
   }
 
   // Node angular position
-  zor   = max(-1.0, min(1.0, dr[2]*invdrmag));
+  zor   = max(-(FLOAT) 1.0, min((FLOAT) 1.0, dr[2]*invdrmag));
   theta = acos(zor);
   phi   = fmod(atan2(dr[1], dr[0]) + twopi, twopi);
   ith   = (int) (theta*ilNTheta/pi + 0.5);
@@ -1041,7 +1041,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::IntegrateRay
           // eFluxSrc includes values for ir+1 point
           recombContribSrc = recombContrib*min(1.0, eFluxSrc[is]/(eflux_ray[ir+1] + 1.0e-99));
           recombSrc[is] = tr_osAlphaStar*nH_av*nH_av*dV*recombContribSrc;
-          eRadFluxSrc[is] = max(0.0, eRadFluxSrc[is] - recombSrc[is]);
+          eRadFluxSrc[is] = max((FLOAT) 0.0, eRadFluxSrc[is] - recombSrc[is]);
           //eFluxSrc[is] = eRadFluxSrc[is]/(tr_bhRayR(is)-tr_bhRayR(ir))**2    DAVID : tr_bhRayR
           eflux_ray[ir] = eflux_ray[ir] + eFluxSrc[is];
         }

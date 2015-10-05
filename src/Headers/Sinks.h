@@ -32,6 +32,7 @@
 #include "Hydrodynamics.h"
 #include "Nbody.h"
 #include "NbodyParticle.h"
+#include "NeighbourSearch.h"
 #include "Parameters.h"
 #include "Particle.h"
 #include "SmoothingKernel.h"
@@ -60,23 +61,23 @@ class SinkParticle
   StarParticle<ndim> *star;            ///< Pointer to connected star particle
   int istar;                           ///< i.d. of connected star particle
   int Ngas;                            ///< No. of gas particles inside sink
-  DOUBLE macctot;                      ///< Total accreted mass
-  DOUBLE radius;                       ///< Softening/sink radius of particle
-  DOUBLE dt;                           ///< Particle timestep
-  DOUBLE dmdt;                         ///< Accretion rate
-  DOUBLE menc;                         ///< Gas mass enclosed within sink radius
-  DOUBLE mmax;                         ///< Max. mass before increasing dmdt
-  DOUBLE racc;                         ///< Accretion radius
-  DOUBLE ketot;                        ///< Internal kinetic energy
-  DOUBLE gpetot;                       ///< Internal grav. pot. energy
-  DOUBLE rotketot;                     ///< Internal rotational kinetic energy
-  DOUBLE utot;                         ///< Internal energy accrted by sink
-  DOUBLE taccrete;                     ///< Accretion timescale
-  DOUBLE trad;                         ///< Radial accretion timescale
-  DOUBLE trot;                         ///< Rotational period at sink radius
-  DOUBLE tvisc;                        ///< Viscous accretion timescale
-  DOUBLE angmom[3];                    ///< Internal sink angular momentum
-  DOUBLE fhydro[ndim];                 ///< Hydro force (from accreted ptcls)
+  FLOAT macctot;                      ///< Total accreted mass
+  FLOAT radius;                       ///< Softening/sink radius of particle
+  FLOAT dt;                           ///< Particle timestep
+  FLOAT dmdt;                         ///< Accretion rate
+  FLOAT menc;                         ///< Gas mass enclosed within sink radius
+  FLOAT mmax;                         ///< Max. mass before increasing dmdt
+  FLOAT racc;                         ///< Accretion radius
+  FLOAT ketot;                        ///< Internal kinetic energy
+  FLOAT gpetot;                       ///< Internal grav. pot. energy
+  FLOAT rotketot;                     ///< Internal rotational kinetic energy
+  FLOAT utot;                         ///< Internal energy accrted by sink
+  FLOAT taccrete;                     ///< Accretion timescale
+  FLOAT trad;                         ///< Radial accretion timescale
+  FLOAT trot;                         ///< Rotational period at sink radius
+  FLOAT tvisc;                        ///< Viscous accretion timescale
+  FLOAT angmom[3];                    ///< Internal sink angular momentum
+  FLOAT fhydro[ndim];                 ///< Hydro force (from accreted ptcls)
 
 
   // Star particle constructor to initialise all values
@@ -127,7 +128,7 @@ class Sinks
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  Sinks();
+  Sinks(NeighbourSearch<ndim> *);
   ~Sinks();
 
 #if defined MPI_PARALLEL
@@ -142,7 +143,8 @@ class Sinks
                                  Hydrodynamics<ndim> *, Nbody<ndim> *);
   void CreateNewSinkParticle(const int, const FLOAT, Particle<ndim>&,
                              Hydrodynamics<ndim> *, Nbody<ndim> *);
-  void AccreteMassToSinks(const int, const DOUBLE, Hydrodynamics<ndim> *, Nbody<ndim> *);
+  void AccreteMassToSinks(const int, const FLOAT, Particle<ndim> *,
+                          Hydrodynamics<ndim> *, Nbody<ndim> *);
 
 
   // Local class variables
@@ -161,7 +163,8 @@ class Sinks
   string sink_radius_mode;             ///< Sink radius mode
 
   SinkParticle<ndim> *sink;            ///< Main sink particle array
-  CodeTiming *timing;                  ///< Pointer to code timing objectx
+  CodeTiming *timing;                  ///< Pointer to code timing object
+  NeighbourSearch<ndim> *neibsearch;   ///< Pointer to neighbour search object
 
 };
 #endif

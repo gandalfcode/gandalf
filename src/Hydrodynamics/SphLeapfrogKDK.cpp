@@ -42,12 +42,10 @@ using namespace std;
 /// SphLeapfrogKDK class constructor
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
-SphLeapfrogKDK<ndim, ParticleType>::SphLeapfrogKDK(DOUBLE accel_mult_aux,
-                                                   DOUBLE courant_mult_aux,
-                                                   DOUBLE energy_mult_aux,
-                                                   eosenum gas_eos_aux,
-                                                   tdaviscenum tdavisc_aux) :
-  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux, energy_mult_aux, gas_eos_aux, tdavisc_aux)
+SphLeapfrogKDK<ndim, ParticleType>::SphLeapfrogKDK
+ (DOUBLE _accel_mult, DOUBLE _courant_mult, DOUBLE _energy_mult,
+  eosenum _gas_eos, tdaviscenum _tdavisc) :
+  SphIntegration<ndim>(_accel_mult, _courant_mult, _energy_mult, _gas_eos, _tdavisc)
 {
 }
 

@@ -80,10 +80,10 @@ void NbodySystemTree<ndim>::AllocateMemory(int N)
 
   if (2*N > Nnodemax || !allocated_tree) {
     if (allocated_tree) DeallocateMemory();
-    Nnodemax = 2*N;
-    Norbitmax = N;
-    NNtree = new NNTreeCell<ndim>[Nnodemax];
-    orbit = new BinaryOrbit[Norbitmax];
+    Nnodemax       = 2*N;
+    Norbitmax      = N;
+    NNtree         = new NNTreeCell<ndim>[Nnodemax];
+    orbit          = new BinaryOrbit[Norbitmax];
     allocated_tree = true;
   }
 
@@ -119,14 +119,14 @@ void NbodySystemTree<ndim>::DeallocateMemory(void)
 //=================================================================================================
 template <int ndim>
 void NbodySystemTree<ndim>::CreateNbodySystemTree
-(Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
+ (Nbody<ndim> *nbody)                  ///< [in] Nbody object containing stars
 {
-  int i,ii,j,jj;                    // Node ids and counters
-  int k;                            // Dimension counter
-  int Nfreenode;                    // No. of free (i.e. unattached) nodes
-  int *nodelist;                    // List of unattached nodes
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drsqd;                     // Distance squared
+  int i,ii,j,jj;                       // Node ids and counters
+  int k;                               // Dimension counter
+  int Nfreenode;                       // No. of free (i.e. unattached) nodes
+  int *nodelist;                       // List of unattached nodes
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
 
   debug2("[NbodySystemTree::CreateNbodySystemTree]");
 
@@ -146,9 +146,9 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
     NNtree[i].Ncomp        = 0;
     NNtree[i].Nstar        = 0;
     NNtree[i].Nchildlist   = 0;
-    NNtree[i].gpe          = 0.0;
-    NNtree[i].gpe_internal = 0.0;
-    NNtree[i].radius       = 0.0;
+    NNtree[i].gpe          = (FLOAT) 0.0;
+    NNtree[i].gpe_internal = (FLOAT) 0.0;
+    NNtree[i].radius       = (FLOAT) 0.0;
     NNtree[i].rsqdnearest  = big_number_dp;
   }
 
@@ -209,7 +209,7 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
         // If each node is the others nearest neighbour, then create a new
         // parent node with the two original nodes as child nodes
         if (NNtree[i].inearest == j && NNtree[j].inearest == i) {
-          for (k=0; k<ndim; k++) NNtree[Nnode].rpos[k] = 0.5*(NNtree[i].r[k] + NNtree[j].r[k]);
+          for (k=0; k<ndim; k++) NNtree[Nnode].rpos[k] = (FLOAT) 0.5*(NNtree[i].r[k] + NNtree[j].r[k]);
           for (k=0; k<ndim; k++) dr[k] = NNtree[Nnode].rpos[k] - NNtree[i].rpos[k];
           drsqd = DotProduct(dr,dr,ndim);
           NNtree[Nnode].radius  = sqrt(drsqd);
@@ -253,23 +253,23 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
 //=================================================================================================
 template <int ndim>
 void NbodySystemTree<ndim>::BuildSubSystems
-(int n,                             ///< [in] Current integer step
- int level_max,                     ///< [in] Current no. of timestep levels
- DOUBLE t,                          ///< [in] Current physical time
- Nbody<ndim> *nbody)                ///< [inout] Nbody object containing stars
+ (int n,                               ///< [in] Current integer step
+  int level_max,                       ///< [in] Current no. of timestep levels
+  FLOAT t,                             ///< [in] Current physical time
+  Nbody<ndim> *nbody)                  ///< [inout] Nbody object containing stars
 {
-  int c,c1,c2;                      // Cell counter
-  int i,j;                          // Star and system particle counters
-  int k;                            // Dimension counter
-  int Nsystem;                      // No. of systems
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE dv[ndim];                  // Relative velocity vector
-  DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE ketot = 0.0;               // Kinetic energy
-  DOUBLE vmean;                     // Average speed of stars in sub-cluster
-  NbodyParticle<ndim> *si;          // Pointer to star/system i
-  NbodyParticle<ndim> *sj;          // Pointer to star/system j
+  int c,c1,c2;                         // Cell counter
+  int i,j;                             // Star and system particle counters
+  int k;                               // Dimension counter
+  int Nsystem;                         // No. of systems
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT ketot = (FLOAT) 0.0;           // Kinetic energy
+  FLOAT vmean;                         // Average speed of stars in sub-cluster
+  NbodyParticle<ndim> *si;             // Pointer to star/system i
+  NbodyParticle<ndim> *sj;             // Pointer to star/system j
 
   debug2("[NbodySystemTree::BuildSubSystems]");
 
@@ -297,8 +297,8 @@ void NbodySystemTree<ndim>::BuildSubSystems
       i = c;
       NNtree[c].m            = nbody->stardata[i].m;
       NNtree[c].h            = nbody->stardata[i].h;
-      NNtree[c].gpe          = 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
-      NNtree[c].gpe_internal = 0.0;
+      NNtree[c].gpe          = (FLOAT) 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
+      NNtree[c].gpe_internal = (FLOAT) 0.0;
       NNtree[c].tcross       = big_number;
       NNtree[c].Nchildlist   = 1;
       NNtree[c].childlist[0] = &(nbody->stardata[i]);
@@ -320,9 +320,9 @@ void NbodySystemTree<ndim>::BuildSubSystems
       NNtree[c].m     = NNtree[c1].m + NNtree[c2].m;
       NNtree[c].h     = max(NNtree[c1].h,NNtree[c2].h);
       NNtree[c].gpe   = NNtree[c1].gpe + NNtree[c2].gpe;
-      NNtree[c].gpe_internal = 0.0;
+      NNtree[c].gpe_internal = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) {
-        NNtree[c].rpos[k] = 0.5*(NNtree[c1].rpos[k] + NNtree[c2].rpos[k]);
+        NNtree[c].rpos[k] = (FLOAT) 0.5*(NNtree[c1].rpos[k] + NNtree[c2].rpos[k]);
         NNtree[c].r[k] = (NNtree[c1].m*NNtree[c1].r[k] + NNtree[c2].m*NNtree[c2].r[k])/NNtree[c].m;
         NNtree[c].v[k] = (NNtree[c1].m*NNtree[c1].v[k] + NNtree[c2].m*NNtree[c2].v[k])/NNtree[c].m;
         NNtree[c].a[k] = (NNtree[c1].m*NNtree[c1].a[k] + NNtree[c2].m*NNtree[c2].a[k])/NNtree[c].m;
@@ -361,13 +361,13 @@ void NbodySystemTree<ndim>::BuildSubSystems
 
         // Compute internal kinetic energy (relative to local centre-of-mass) and the
         // velocity dispersion, vmean.
-        ketot = 0.0;
+        ketot = (FLOAT) 0.0;
         for (i=0; i<NNtree[c].Nchildlist; i++) {
           si = NNtree[c].childlist[i];
           for (k=0; k<ndim; k++) dv[k] = si->v[k] - NNtree[c].v[k];
-          ketot += 0.5*si->m*DotProduct(dv,dv,ndim);
+          ketot += (FLOAT) 0.5*si->m*DotProduct(dv,dv,ndim);
         }
-        vmean = sqrt(2.0*ketot/NNtree[c].m);
+        vmean = sqrt((FLOAT) 2.0*ketot/NNtree[c].m);
 
         // Compute internal gravitational potential energy
         // (N.B. counting all pairs once so no need for factor of 1/2)
@@ -377,7 +377,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
             sj = NNtree[c].childlist[j];
             for (k=0; k<ndim; k++) dr[k] = sj->r[k] - si->r[k];
             drsqd = DotProduct(dr,dr,ndim);
-            invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+            invdrmag = (FLOAT) 1.0 / (sqrt(drsqd) + small_number_dp);
             NNtree[c].gpe_internal += si->m*sj->m*invdrmag;
           }
         }
@@ -435,9 +435,9 @@ void NbodySystemTree<ndim>::BuildSubSystems
 
           // Copy list of contained N-body particles (either systems or stars)
           // to system object, and also total no. of stars/components
-          nbody->system[Nsystem].Ncomp = NNtree[c].Ncomp;
+          nbody->system[Nsystem].Ncomp     = NNtree[c].Ncomp;
           nbody->system[Nsystem].Nchildren = 0;
-          nbody->system[Nsystem].Npert = 0;
+          nbody->system[Nsystem].Npert     = 0;
           for (i=0; i<NNtree[c].Nchildlist; i++) {
             nbody->system[Nsystem].children[nbody->system[Nsystem].Nchildren++]
               = NNtree[c].childlist[i];
@@ -455,7 +455,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
           NNtree[c].Nchildlist   = 1;
           NNtree[c].childlist[0] = &(nbody->system[Nsystem]);
           NNtree[c].gpe          = NNtree[c].gpe - NNtree[c].gpe_internal;
-          NNtree[c].gpe_internal = 0.0;
+          NNtree[c].gpe_internal = (FLOAT) 0.0;
           Nsystem++;
 
         }
@@ -521,16 +521,16 @@ void NbodySystemTree<ndim>::BuildSubSystems
 //=================================================================================================
 template <int ndim>
 void NbodySystemTree<ndim>::RestockTreeNodes
-(Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
+ (Nbody<ndim> *nbody)                  ///< [in] Nbody object containing stars
 {
-  //bool validtrue = true;            // Flag if tree is still valid or not
-  int c;                            // Node counter
-  int c1;                           // Child cell 1 id
-  int c2;                           // Child cell 2 id
-  int i;                            // Counter
-  int k;                            // Dimension counter
-  //FLOAT dr[ndim];                   // Relative position vector
-  //FLOAT drsqd;                      // Distance squared
+  //bool validtrue = true;               // Flag if tree is still valid or not
+  int c;                               // Node counter
+  int c1;                              // Child cell 1 id
+  int c2;                              // Child cell 2 id
+  int i;                               // Counter
+  int k;                               // Dimension counter
+  //FLOAT dr[ndim];                      // Relative position vector
+  //FLOAT drsqd;                         // Distance squared
 
   debug2("[NbodySystemTree::RestockTreeNodes]");
 
@@ -545,9 +545,9 @@ void NbodySystemTree<ndim>::RestockTreeNodes
       i = c;
       NNtree[c].m            = nbody->stardata[i].m;
       NNtree[c].h            = nbody->stardata[i].h;
-      NNtree[c].radius       = 0.0;
-      NNtree[c].gpe          = 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
-      NNtree[c].gpe_internal = 0.0;
+      NNtree[c].radius       = (FLOAT) 0.0;
+      NNtree[c].gpe          = (FLOAT) 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
+      NNtree[c].gpe_internal = (FLOAT) 0.0;
       NNtree[c].tcross       = big_number;
       NNtree[c].Nchildlist   = 1;
       NNtree[c].childlist[0] = &(nbody->stardata[i]);
@@ -572,7 +572,7 @@ void NbodySystemTree<ndim>::RestockTreeNodes
       NNtree[c].h = max(NNtree[c1].h,NNtree[c2].h);
       NNtree[c].gpe = NNtree[c1].gpe + NNtree[c2].gpe;
       for (k=0; k<ndim; k++) {
-        NNtree[c].rpos[k] = 0.5*(NNtree[c1].rpos[k] + NNtree[c2].rpos[k]);
+        NNtree[c].rpos[k] = (FLOAT) 0.5*(NNtree[c1].rpos[k] + NNtree[c2].rpos[k]);
         NNtree[c].r[k] = (NNtree[c1].m*NNtree[c1].r[k] + NNtree[c2].m*NNtree[c2].r[k])/NNtree[c].m;
         NNtree[c].v[k] = (NNtree[c1].m*NNtree[c1].v[k] + NNtree[c2].m*NNtree[c2].v[k])/NNtree[c].m;
         NNtree[c].a[k] = (NNtree[c1].m*NNtree[c1].a[k] + NNtree[c2].m*NNtree[c2].a[k])/NNtree[c].m;
@@ -586,7 +586,7 @@ void NbodySystemTree<ndim>::RestockTreeNodes
       }
       //drsqd = DotProduct(dr,dr,ndim);
 
-      NNtree[c].gpe_internal = 0.0;
+      NNtree[c].gpe_internal = (FLOAT) 0.0;
 
     }
     //---------------------------------------------------------------------------------------------
@@ -607,20 +607,20 @@ void NbodySystemTree<ndim>::RestockTreeNodes
 //=================================================================================================
 template <int ndim>
 void NbodySystemTree<ndim>::ComputeNewBinaryOrbit
-(const int c1,                      ///< [in] ..
- const int c2,                      ///< [in] ..
- const int Nstar,                   ///< [in] ..
- NNTreeCell<ndim> &cell,            ///< [in] ..
- NNTreeCell<ndim> &cell1,           ///< [in] ..
- NNTreeCell<ndim> &cell2)           ///< [in] ..
+ (const int c1,                        ///< [in] ..
+  const int c2,                        ///< [in] ..
+  const int Nstar,                     ///< [in] ..
+  NNTreeCell<ndim> &cell,              ///< [in] ..
+  NNTreeCell<ndim> &cell1,             ///< [in] ..
+  NNTreeCell<ndim> &cell2)             ///< [in] ..
 {
-  int k;                            // Dimension counter
-  DOUBLE angmomsqd = 0.0;           // Angular momentum squared
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE dv[ndim];                  // Relative velocity vector
-  DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE mu;                        // Reduced mass of binary system
+  int k;                               // Dimension counter
+  FLOAT angmomsqd = (FLOAT) 0.0;       // Angular momentum squared
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT mu;                            // Reduced mass of binary system
 
   // Compute properties of binary relative to the system COM using reduced mass
   mu = cell1.m*cell2.m/cell.m;
@@ -637,22 +637,22 @@ void NbodySystemTree<ndim>::ComputeNewBinaryOrbit
     angmomsqd = DotProduct(orbit[Norbit].angmom,orbit[Norbit].angmom,ndim);
   }
   drsqd = DotProduct(dr,dr,ndim);
-  invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+  invdrmag = (FLOAT) 1.0 / (sqrt(drsqd) + small_number_dp);
   orbit[Norbit].ichild1 = c1;
   orbit[Norbit].ichild2 = c2;
   orbit[Norbit].m = cell.m;
   for (k=0; k<ndim; k++) orbit[Norbit].r[k] = cell.r[k];
   for (k=0; k<ndim; k++) orbit[Norbit].v[k] = cell.v[k];
-  orbit[Norbit].binen = 0.5*DotProduct(dv,dv,ndim) - cell.m*invdrmag;
+  orbit[Norbit].binen = (FLOAT) 0.5*DotProduct(dv,dv,ndim) - cell.m*invdrmag;
 
   // If system is unbound, skip recording orbit
-  if (orbit[Norbit].binen >= 0.0) return;
+  if (orbit[Norbit].binen >= (FLOAT) 0.0) return;
 
   // Compute orbital properties
-  orbit[Norbit].sma    = -0.5*cell.m/orbit[Norbit].binen;
+  orbit[Norbit].sma    = -(FLOAT) 0.5*cell.m/orbit[Norbit].binen;
   orbit[Norbit].period = twopi*sqrt(pow(orbit[Norbit].sma,3)/orbit[Norbit].m);
-  orbit[Norbit].ecc    = 1.0 - angmomsqd/(orbit[Norbit].m*orbit[Norbit].sma*mu*mu);
-  orbit[Norbit].ecc    = sqrt(max(0.0,orbit[Norbit].ecc));
+  orbit[Norbit].ecc    = (FLOAT) 1.0 - angmomsqd/(orbit[Norbit].m*orbit[Norbit].sma*mu*mu);
+  orbit[Norbit].ecc    = sqrt(max((FLOAT) 0.0, orbit[Norbit].ecc));
   if (cell1.m > cell2.m) orbit[Norbit].q = cell2.m/cell1.m;
   else orbit[Norbit].q = cell1.m/cell2.m;
 
@@ -683,14 +683,14 @@ void NbodySystemTree<ndim>::ComputeNewBinaryOrbit
 //=================================================================================================
 template <int ndim>
 void NbodySystemTree<ndim>::FindBinarySystems
-(Nbody<ndim> *nbody)                ///< [inout] Nbody object containing stars
+ (Nbody<ndim> *nbody)                  ///< [inout] Nbody object containing stars
 {
-  int c,c1,c2;                      // Cell counter
-  int i;                            // Star and system particle counters
-  int k;                            // Dimension counter
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE invdrmag;                  // 1 / drmag
+  int c,c1,c2;                         // Cell counter
+  int i;                               // Star and system particle counters
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrmag;                      // 1 / drmag
 
   debug2("[NbodySystemTree::FindBinarySystems]");
 
@@ -715,8 +715,8 @@ void NbodySystemTree<ndim>::FindBinarySystems
       for (k=0; k<ndim; k++) NNtree[c].v[k] = nbody->stardata[i].v[k];
       for (k=0; k<ndim; k++) NNtree[c].a[k] = nbody->stardata[i].a[k];
       for (k=0; k<ndim; k++) NNtree[c].adot[k] = nbody->stardata[i].adot[k];
-      NNtree[c].gpe = 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
-      NNtree[c].gpe_internal = 0.0;
+      NNtree[c].gpe = (FLOAT) 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
+      NNtree[c].gpe_internal = (FLOAT) 0.0;
 
     }
 
@@ -730,7 +730,7 @@ void NbodySystemTree<ndim>::FindBinarySystems
       NNtree[c].m            = NNtree[c1].m + NNtree[c2].m;
       NNtree[c].h            = max(NNtree[c1].h,NNtree[c2].h);
       NNtree[c].gpe          = NNtree[c1].gpe + NNtree[c2].gpe;
-      NNtree[c].gpe_internal = 0.0;
+      NNtree[c].gpe_internal = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) {
         NNtree[c].r[k] = (NNtree[c1].m*NNtree[c1].r[k] + NNtree[c2].m*NNtree[c2].r[k])/NNtree[c].m;
         NNtree[c].v[k] = (NNtree[c1].m*NNtree[c1].v[k] + NNtree[c2].m*NNtree[c2].v[k])/NNtree[c].m;
@@ -748,7 +748,7 @@ void NbodySystemTree<ndim>::FindBinarySystems
         // Compute internal gravitational potential energy
         for (k=0; k<ndim; k++) dr[k] = NNtree[c1].r[k] - NNtree[c2].r[k];
         drsqd = DotProduct(dr,dr,ndim);
-        invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+        invdrmag = (FLOAT) 1.0 / (sqrt(drsqd) + small_number_dp);
         NNtree[c].gpe_internal += NNtree[c1].m*NNtree[c2].m*invdrmag;
 
         // Now check energies and decide if we should create a new sub-system
@@ -765,7 +765,7 @@ void NbodySystemTree<ndim>::FindBinarySystems
           // Also, zero internal energy to allow detection of hierarchical systems.
           NNtree[c].Ncomp = 1;
           NNtree[c].gpe = NNtree[c].gpe - NNtree[c].gpe_internal;
-          NNtree[c].gpe_internal = 0.0;
+          NNtree[c].gpe_internal = (FLOAT) 0.0;
 
         }
         //-----------------------------------------------------------------------------------------
@@ -791,21 +791,21 @@ void NbodySystemTree<ndim>::FindBinarySystems
 //=================================================================================================
 template <int ndim>
 void NbodySystemTree<ndim>::FindPerturberLists
-(Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
+ (Nbody<ndim> *nbody)                  ///< [in] Nbody object containing stars
 {
-  int c;                            // Node id
-  int caux;                         // Aux. node id
-  int k;                            // Dimension counter
-  int Nstack;                       // No. of unprocessed nodes on stack
-  int s;                            // System counter
-  int *cellstack;                   // ids of unprocessed nodes
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE gpeaux;                    // Grav. potential energy
-  DOUBLE gpe_internal;              // Internal gpe
-  DOUBLE ms;                        // Mass of system
-  DOUBLE rs[ndim];                  // Position of system
-  SystemParticle<ndim> *s1;         // Pointer to system particle
+  int c;                               // Node id
+  int caux;                            // Aux. node id
+  int k;                               // Dimension counter
+  int Nstack;                          // No. of unprocessed nodes on stack
+  int s;                               // System counter
+  int *cellstack;                      // ids of unprocessed nodes
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT gpeaux;                        // Grav. potential energy
+  FLOAT gpe_internal;                  // Internal gpe
+  FLOAT ms;                            // Mass of system
+  FLOAT rs[ndim];                      // Position of system
+  SystemParticle<ndim> *s1;            // Pointer to system particle
 
   debug2("[NbodySystemTree::FindPerturberLists]");
 
@@ -855,7 +855,7 @@ void NbodySystemTree<ndim>::FindPerturberLists
 
         // Check if node may contain potential perturbers or not
         for (k=0; k<ndim; k++) dr[k] = rs[k] - NNtree[caux].r[k];
-        drsqd = DotProduct(dr,dr,ndim);
+        drsqd = DotProduct(dr, dr, ndim);
         gpeaux = ms*NNtree[caux].m/sqrt(drsqd);
 
         //cout << "Checking perturber;  s : " << s << "    c : " << c << "    caux : "
@@ -904,9 +904,9 @@ void NbodySystemTree<ndim>::FindPerturberLists
 //=================================================================================================
 template <int ndim>
 void NbodySystemTree<ndim>::OutputBinaryProperties
-(Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
+ (Nbody<ndim> *nbody)                  ///< [in] Nbody object containing stars
 {
-  int i;                            // Binary counter
+  int i;                               // Binary counter
 
   debug2("[NbodySystemTree::OutputBinaryProperties]");
 

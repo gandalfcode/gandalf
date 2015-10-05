@@ -295,7 +295,7 @@ class Simulation : public SimulationBase
   NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
   Radiation<ndim> *radiation;         ///< Radiation field object
   RandomNumber *randnumb;             ///< Random number object (pointer)
-  Sinks<ndim> sinks;                  ///< Sink particle object
+  Sinks<ndim> *sinks;                 ///< Sink particle object
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
