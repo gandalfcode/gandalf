@@ -1239,6 +1239,16 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
   // Precision
   reader.read_value(dummy);
+#if defined GANDALF_DOUBLE_PRECISION
+  if (dummy != 8) {
+#else
+  if (dummy !=4) {
+#endif
+    std::ostringstream stream;
+    stream << "Incorrect precision of snapshot file " << filename << ": " << dummy <<
+        " but the code was compiled with a FLOAT size of " << sizeof(FLOAT) << endl;
+    ExceptionHandler::getIstance().raise(stream.str());
+  }
 
   // Dimensions
   int ndim_file;
@@ -1962,14 +1972,14 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      for (int k=0; k<ndim; k++) writer.write_value(part.r[k]*simunits.r.outscale);
+      for (int k=0; k<ndim; k++) writer.write_value((FLOAT)(part.r[k]*simunits.r.outscale));
     }
 
     // Masses
     //-------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value(part.m*simunits.m.outscale);
+      writer.write_value((FLOAT)(part.m*simunits.m.outscale));
       assert(part.m > 0.0);
     }
 
@@ -1977,7 +1987,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value(part.h*simunits.r.outscale);
+      writer.write_value((FLOAT)(part.h*simunits.r.outscale));
     }
 
     // Velocities
@@ -1985,21 +1995,21 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (int k=0; k<ndim; k++)
-        writer.write_value(part.v[k]*simunits.v.outscale);
+        writer.write_value((FLOAT)(part.v[k]*simunits.v.outscale));
     }
 
     // Densities
     //-------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value(part.rho*simunits.rho.outscale);
+      writer.write_value((FLOAT)(part.rho*simunits.rho.outscale));
     }
 
     // Specific internal energies
     //-------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value(part.u*simunits.u.outscale);
+      writer.write_value((FLOAT)(part.u*simunits.u.outscale));
     }
 
   }
