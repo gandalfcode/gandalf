@@ -41,19 +41,17 @@ class formatted_output
           return *this;
         }
 
-        formatted_output& operator<<(const FLOAT& output)
+        formatted_output& operator<<(const float& output)
         {
           stream_obj << setw(width_float) << setprecision(precision) << output;
           return *this;
         }
 
-#if FLOAT != DOUBLE
-        formatted_output& operator<<(const DOUBLE& output)
+        formatted_output& operator<<(const double& output)
         {
            stream_obj << setw(width_float) << setprecision(precision) << output;
            return *this;
         }
-#endif
 
         formatted_output& operator<<(const bool& output)
         {
