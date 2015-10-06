@@ -132,7 +132,7 @@ protected:
 
   TreeBase<ndim>* _tree;               ///< ..
 #if defined MPI_PARALLEL
-  TreeBase<ndim>** _prunedTree;        ///< ..
+  TreeBase<ndim>** _prunedtree;        ///< ..
 #endif
 
 };

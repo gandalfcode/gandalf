@@ -349,6 +349,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
 #ifdef MPI_PARALLEL
   Box<ndim> mydomain = mpicontrol->MyDomain();
+  list<int> ghosts_accreted;
 #endif
 
 
@@ -670,7 +671,7 @@ void Sinks<ndim>::AccreteMassToSinks
           assert(part.m > (FLOAT) 0.0);
         }
 #if defined MPI_PARALLEL
-        if (i > sph->Nhydro) {
+        if (i > hydro->Nhydro) {
           // We are accreting a MPI ghost, so we need to record that to transmit it to the owner
 #pragma omp critical (ghost_accreted)
           ghosts_accreted.push_back(i);
@@ -716,7 +717,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
 #if defined MPI_PARALLEL
-  mpicontrol->UpdateMpiGhostParents(ghosts_accreted, sph);
+  mpicontrol->UpdateMpiGhostParents(ghosts_accreted, hydro);
   mpicontrol->UpdateSinksAfterAccretion(this);
 #endif
 

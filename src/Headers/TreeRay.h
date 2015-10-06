@@ -35,7 +35,6 @@
 #include "Constants.h"
 #include "Debug.h"
 #include "DomainBox.h"
-#include "EnergyEquation.h"
 #include "EOS.h"
 #include "KDRadiationTree.h"
 #include "Nbody.h"
@@ -50,8 +49,13 @@
 #include "SimUnits.h"
 #include "Sinks.h"
 #include "SmoothingKernel.h"
-#include "SphNeighbourSearch.h"
 using namespace std;
+
+
+
+#define IIL(i,iNS,iPhi,iTheta) (i + iNS*ilNI + iPhi*ilNI*ilNNS + iTheta*ilNI*ilNNS*(ilNPhi + 1))
+#define IRNM(iR,iFR,iL) (iR + iFR*bhNR + iL*bhNR*bhNR*nFineR)
+#define NINT(a) ((a) >= 0.0 ? (int)((a)+0.5) : (int)((a)-0.5))
 
 
 
@@ -78,13 +82,17 @@ struct Rays {
 /// \author  R. Wunsch & D. A. Hubber
 /// \date    21/09/2015
 //=================================================================================================
-template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
+template <int ndim, int nfreq, template<int> class TreeCell>
 class TreeRayPhysics
 {
  public:
 
-  virtual void Init(void) = 0;
-  virtual void FinaliseCell (TreeCell<ndim> &, FLOAT **, FLOAT **) = 0;
+  TreeRayPhysics() {};
+  ~TreeRayPhysics() {};
+
+  //virtual void Init(void) = 0;
+  virtual void FinaliseCell (TreeCell<ndim> &, FLOAT *, FLOAT **, FLOAT **) = 0;
+  //virtual void NodeContribution() = 0;
   virtual void IntegrateRay(Rays *, FLOAT *) = 0;
 
 };
@@ -98,14 +106,39 @@ class TreeRayPhysics
 /// \author  R. Wunsch & D. A. Hubber
 /// \date    21/09/2015
 //=================================================================================================
-template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
-class TreeRayOnTheSpot : public TreeRayPhysics<ndim,nfreq,ParticleType,TreeCell>
+template <int ndim, int nfreq, template<int> class TreeCell>
+class TreeRayOnTheSpot : public TreeRayPhysics<ndim,nfreq,TreeCell>
 {
  public:
 
-  virtual void Init(void) {};
-  virtual void FinaliseCell (TreeCell<ndim> &, FLOAT **, FLOAT **) {};
-  virtual void IntegrateRay(Rays *, FLOAT *) {};
+  const int bhNR;
+  FLOAT bhLocRelErr;
+
+  FLOAT TH2ToEint;
+  FLOAT boltz;
+  FLOAT TH2;
+  FLOAT AbarH2;
+  FLOAT AbarHp;
+  FLOAT tr_mH;
+  FLOAT GammaH2;
+  FLOAT THpToEint;
+  FLOAT THp;
+  FLOAT GammaHp;
+  FLOAT recombConst;
+  FLOAT AlphaStar;
+  FLOAT eflx2Erad;
+  FLOAT lightSpeed;
+  FLOAT UVPhotonE;
+  FLOAT Xhydro;
+  FLOAT erad2Eflx;
+
+  TreeRayOnTheSpot(int);
+  ~TreeRayOnTheSpot();
+
+  //virtual void Init(void) {};
+  virtual void FinaliseCell (TreeCell<ndim> &, FLOAT *, FLOAT **, FLOAT **);
+  //virtual void NodeContribution();
+  virtual void IntegrateRay(Rays *, FLOAT *);
 
 };
 
@@ -123,15 +156,13 @@ class TreeRay : public Radiation<ndim>
 {
  public:
 
-#define IIL(i,iNS,iPhi,iTheta) (i + iNS*ilNI + iPhi*ilNI*ilNNS + iTheta*ilNI*ilNNS*(ilNPhi + 1))
-#define IRNM(iR,iFR,iL) (iR + iFR*bhNR + iL*bhNR*bhNR*nFineR)
-#define NINT(a) ((a) >= 0.0 ? (int)((a)+0.5) : (int)((a)-0.5))
 
   static const int nFineR = 10;        // Richard's MAGIC number!!
   static const int NL = 40;            // No. of levels in tree (replace later)
 
   // Constant parameters
   const bool onTheSpot;                ///< 'On the spot' approximation
+  const int Nmpi;                      ///< No. of MPI processes
   const int nSide;                     ///< HEALPix nside
   const int ilNR;                      ///< Intersection list no. of points along ray
   const int ilNTheta;                  ///< No. of points along theta direction
@@ -145,6 +176,7 @@ class TreeRay : public Radiation<ndim>
 
   int bhNR;                            ///< ..
   int ilNI;                            ///< ..
+  int nEB;                             ///< Number of energy/frequency bands
   int NTBLevels;                       ///< ..
   long int nPix;                       ///< ..
   FLOAT bhLocRelErr;                   ///< ..
@@ -166,14 +198,18 @@ class TreeRay : public Radiation<ndim>
   FLOAT *rayR2i;                       ///< ..
   Rays **rays;                         ///< ..
 
-  OctTree<ndim,ParticleType,TreeCell> *tree;         ///< ..
+  TreeRayOnTheSpot<ndim,nfreq,TreeCell> *os;         ///< 'On-the-spot' physics module
+
+  OctTree<ndim,ParticleType,TreeCell> *tree;         ///< Pointer to main tree
 #if defined MPI_PARALLEL
-  OctTree<ndim,ParticleType,TreeCell> **prunedTree;  ///< ..
+  OctTree<ndim,ParticleType,TreeCell> **prunedtree;  ///< Pointers to pruned trees
 #endif
 
 
+
+
   //-----------------------------------------------------------------------------------------------
-  TreeRay(bool, int, int, int, int, int, int, FLOAT, FLOAT, FLOAT, string,
+  TreeRay(bool, int, int, int, int, int, int, int, FLOAT, FLOAT, FLOAT, string,
           DomainBox<ndim> &, SimUnits *, Parameters *, NeighbourSearch<ndim> *);
   ~TreeRay();
 

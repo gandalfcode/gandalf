@@ -33,11 +33,12 @@
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
 TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
- (bool _ots, int _nSide, int _ilNR, int _ilNTheta, int _ilNPhi, int _ilNNS, int _ilFinePix,
-  FLOAT _maxDist, FLOAT _rayRadRes, FLOAT _relErr, string _errControl, DomainBox<ndim> &simbox,
-  SimUnits *units, Parameters *params, NeighbourSearch<ndim> *neib):
+ (bool _ots, int _Nmpi, int _nSide, int _ilNR, int _ilNTheta, int _ilNPhi, int _ilNNS,
+  int _ilFinePix, FLOAT _maxDist, FLOAT _rayRadRes, FLOAT _relErr, string _errControl,
+  DomainBox<ndim> &simbox, SimUnits *units, Parameters *params, NeighbourSearch<ndim> *neib):
   Radiation<ndim>(),
   onTheSpot(_ots),
+  Nmpi(_Nmpi),
   nSide(_nSide),
   ilNR(_ilNR),
   ilNTheta(_ilNTheta),
@@ -54,50 +55,26 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
   // Set pointers to reference the tree (and pruned tree) objets in the Neighbour Search class
   tree = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->_tree);
 #if defined MPI_PARALLEL
-  prunedtree = new OctTree<ndim,ParticleType,TreeCell>*[neib->Nmpi];
+  prunedtree = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
   for (int i=0; i<Nmpi; i++) {
-    prunedtree[i] = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->prunedtree[i]);
+    prunedtree[i] = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->_prunedtree[i]);
   }
 #endif
 
 
   // Set important variables
+  nEB         = 0;
   NTBLevels   = tree->lmax + 1;
   nPix        = 12*nSide*nSide;
   ilNI        = nPix;
   nPo4pi      = (FLOAT) nPix / (4.0*pi);
-  ilNSSampFac = (FLOAT) 1.6;        // Accounts for diagonal rays across the tree.
-                                    // Can cause problems.  Maybe increase to 2.0??
+  ilNSSampFac = (FLOAT) 1.6;                 // Accounts for diagonal rays across the tree.
+                                             // Can cause problems.  Maybe increase to 2.0??
+
 
 
   // Generate intersection list tables
   GenerateIntersectList();
-
-
-  // Initialise On-the-spot variables
-  //-----------------------------------------------------------------------------------------------
-  if (onTheSpot) {
-
-    // conversion between eint and T
-    /*tr_osTH2ToEint = tr_boltz*tr_osTH2 / (tr_osAbarH2*tr_mH*(tr_osGammaH2-1.0))
-    tr_osTHpToEint = tr_boltz*tr_osTHp / (tr_osAbarHp*tr_mH*(tr_osGammaHp-1.0))
-
-    // recombination constant
-    tr_osRecombConst = tr_osAlphaStar * (tr_osXhydro / tr_mH)**2 / 3.0
-
-    // constant for converting photon flux to  energy density
-    tr_osEflx2Erad = tr_osUVPhotonE / (tr_lightSpeed)
-    tr_osErad2Eflx = 1.0 / tr_osEflx2Erad*/
-
-    // DAVID : More things in tr_isInit such as reading in sources.  Ask Richard
-
-
-    // Counts up the number of energy bands.  Check this is consistent with nfreq.
-    //tr_nEb = tr_nEb + 1
-    //  tr_iEbEUV = tr_nEb
-    //  tr_mapEbSoln(tr_nEb) = EUVE_VAR
-
-  }
 
 
   // Allocate arrays for rays
@@ -131,6 +108,18 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
   // ..
   GenerateRadNodeMapping();
 
+
+
+  // Create "on-the-spot" physics object
+  //-----------------------------------------------------------------------------------------------
+  if (onTheSpot) {
+    os = new TreeRayOnTheSpot<ndim,nfreq,TreeCell>(bhNR);
+    nEB++;
+  }
+
+  // Some sanity-checking
+  assert(nEB <= nfreq);
+
 }
 
 
@@ -149,6 +138,8 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::~TreeRay()
 
   for (int i=nPix-1; i>= 0; i--) delete[] rays[i];
   delete[] rays;
+
+  if (onTheSpot) delete os;
 }
 
 
@@ -162,7 +153,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
  (int Nhydro,                          ///< [in] No. of SPH particle
   int Nnbody,                          ///< [in] No. of N-body particles
   int Nsink,                           ///< [in] No. of sink particles
-  SphParticle<ndim> *part_gen,          ///< [in] Generic SPH particle data array
+  SphParticle<ndim> *part_gen,         ///< [in] Generic SPH particle data array
   NbodyParticle<ndim> **nbodydata,     ///< [in] N-body data array
   SinkParticle<ndim> *sinkdata)        ///< [in] Sink data array
 {
@@ -869,10 +860,8 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeContribution
 
 
   // Sum all contributions for on-the-spot approximation
-  //-----------------------------------------------------------------------------------------------
   if (onTheSpot) {
-
-    // DAVID : What are these?
+    //os->NodeContribution();
     FLOAT node_srcf = 0.0;
     FLOAT node_erad = 0.0;
 
@@ -892,9 +881,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeContribution
         rays[ipix][ir].Erad[0] += node_erad*weight*radNodeMapValue[IRNM(j,irf,iNodeSize)];
       }
     }
-
   }
-  //-----------------------------------------------------------------------------------------------
 
 
   return;
@@ -986,76 +973,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::IntegrateRay
   FLOAT eflux[nfreq])                  ///< ..
 {
 
-  //===============================================================================================
-  if (onTheSpot) {
-
-    int i;                               // ..
-    int ir;                              // ..
-    int is;                              // ..
-    FLOAT Nphotons;                      // ..
-    FLOAT Nrecomb;                       // ..
-    FLOAT rho_2mean;                     // ..
-    FLOAT dV;                            // ..
-    FLOAT nH_av;                         // ..
-    FLOAT recombContrib;                 // ..
-    FLOAT recombContribSrc;              // ..
-    FLOAT eflux_ray[bhNR+1];             // ..
-    FLOAT eRadFluxSrc[bhNR+1];           // ..
-    FLOAT eFluxSrc[bhNR+1];              // ..
-    FLOAT recombSrc[bhNR+1];             // ..
-    //real,dimension(0:tr_bhNR) :: eflux_ray, eRadFluxSrc, eFluxSrc, recombSrc
-
-    FLOAT tr_osEflx2Erad = 1.0;  // DAVID : What are these?
-    FLOAT tr_osAlphaStar = 1.0;
-
-    // Radiant flux of energy of a source: energy (# of photons) per unit space angle,
-    // in the direction of the point-of-calulation, for each source at a given point on the ray
-    // initially, fill with fluxes of sources
-    for (i=0; i<bhNR+1; i++) eRadFluxSrc[i] = ray[i].srcF[0]/(4.0*pi);
-
-    // Energy (# of photons) per unit area, in the direction of the point-of-calulation,
-    // from all sources added together, at each point along the ray
-    for (i=0; i<bhNR+1; i++) eflux_ray[i] = 0.0;
-
-
-    //---------------------------------------------------------------------------------------------
-    for (ir=bhNR-1; ir>=0; ir--) {
-
-      // Average particle density between point ir and ir+1
-      // DAVID : Add physical constants later (osXhydro/mH)
-      nH_av = 0.5*(ray[ir+1].rho + ray[ir].rho);
-      //nH_av = (0.5*tr_osXhydro/tr_mH)*(rho_ray(ir+1) + rho_ray(ir))
-
-      // Contribution to recombination for this ray
-      recombContrib = min(2.0, eflux_ray[ir+1]*tr_osEflx2Erad / (ray[ir+1].erad[0] + 1.0E-99));
-
-      // Calculate recombination rates belonging to sources
-      //-------------------------------------------------------------------------------------------
-      for (is=ir+1; is<bhNR+1; is++) {
-
-        // DAVID : What is tr_bhRayR??
-        // volume of the element between point ir and ir+1, on the cone coming from source "is"
-        //dV = ((tr_bhRayR(is)-tr_bhRayR(ir))**3 - (tr_bhRayR(is)-tr_bhRayR(ir+1))**3)/3.0
-
-        if (eRadFluxSrc[is] > 0.0) {
-          // eFluxSrc includes values for ir+1 point
-          recombContribSrc = recombContrib*min(1.0, eFluxSrc[is]/(eflux_ray[ir+1] + 1.0e-99));
-          recombSrc[is] = tr_osAlphaStar*nH_av*nH_av*dV*recombContribSrc;
-          eRadFluxSrc[is] = max((FLOAT) 0.0, eRadFluxSrc[is] - recombSrc[is]);
-          //eFluxSrc[is] = eRadFluxSrc[is]/(tr_bhRayR(is)-tr_bhRayR(ir))**2    DAVID : tr_bhRayR
-          eflux_ray[ir] = eflux_ray[ir] + eFluxSrc[is];
-        }
-
-      }
-      //-------------------------------------------------------------------------------------------
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-    eflux[0] = 0.5*(eflux_ray[0] + eflux_ray[1]);
-
-  }
-  //===============================================================================================
+  if (onTheSpot) os->IntegrateRay(ray, eflux);
 
   return;
 }
@@ -1081,21 +999,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::FinaliseCell
     }
   }
 
-
-  //-----------------------------------------------------------------------------------------------
-  if (onTheSpot) {
-    //cell.erdEUV[0] = Eflx2Erad*phFluxInt[0];
-
-    // DAVID : Forgot what these are
-    /*tr_bhLocEradTot = tr_bhLocEradTot + solnPoint(EUVE_VAR)
-    tr_bhLocMionTot = tr_bhLocMionTot + solnPoint(DENS_VAR)*solnPoint(IHP_SPEC)*vol_poc
-    EradErr = 2.0*abs(solnPoint(EUVE_VAR) - solnPoint(EUVO_VAR)) /
-      (solnPoint(EUVE_VAR) + solnPoint(EUVO_VAR) + 1d-99)*/
-
-    //if (EradErr > tr_bhLocRelErr) tr_bhLocRelErr = EradErr;
-  }
-  //-----------------------------------------------------------------------------------------------
-
+  if (onTheSpot) os->FinaliseCell(cell, phFluxInt, eflux, cdMaps);
 
   return;
 }

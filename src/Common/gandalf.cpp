@@ -53,10 +53,9 @@ int main(int argc, char** argv)
   // Initialise all MPI processes (if activated in Makefile)
   int mpi_thread_support;
   int n_mpi_cpus;
-#ifdef _OPENMP
-  int required_mpi_thread_support = MPI_THREAD_FUNNELED;
-else
   int required_mpi_thread_support = MPI_THREAD_SINGLE;
+#ifdef _OPENMP
+  required_mpi_thread_support = MPI_THREAD_FUNNELED;
 #endif
   MPI_Init_thread(&argc, &argv, required_mpi_thread_support, &mpi_thread_support);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

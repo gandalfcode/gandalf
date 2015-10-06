@@ -1308,7 +1308,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
     mpighosttree->Ntotmax    = max(mpighosttree->Ntotmax,hydro->Nhydromax);
     mpighosttree->BuildTree(hydro->Nhydro + hydro->NPeriodicGhost,
                             hydro->Nhydro + hydro->NPeriodicGhost + hydro->Nmpighost - 1,
-                            mpighosttree->Ntot, mpighosttree->Ntotmax, partdata, timestep);
+                            mpighosttree->Ntot, mpighosttree->Ntotmax, timestep, partdata);
 
   }
 

@@ -46,6 +46,7 @@ static const DOUBLE day             = 8.64E4;
 static const DOUBLE amu             = 1.660538782E-27;
 static const DOUBLE m_hydrogen      = 1.66054E-27;
 static const DOUBLE invm_hydrogen   = 6.02217E+26;
+static const DOUBLE c_light         = 2.99792458E8;
 static const DOUBLE G_const         = 6.67384E-11;
 static const DOUBLE k_boltzmann     = 1.3806503E-23;
 static const DOUBLE stefboltz       = 5.67037321E-8;

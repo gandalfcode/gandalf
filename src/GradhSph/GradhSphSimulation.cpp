@@ -225,7 +225,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   mpicontrol->timing = timing;
   rank = mpicontrol->rank;
   Nmpi = mpicontrol->Nmpi;
-  sinks.SetMpiControl(mpicontrol);
+  sinks->SetMpiControl(mpicontrol);
 #endif
 
 
@@ -272,7 +272,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //-----------------------------------------------------------------------------------------------
   if (gas_radiation == "treeray" && ndim == 3) {
     radiation = new TreeRay<ndim,1,GradhSphParticle,TreeRayCell>
-      (intparams["on_the_spot"], intparams["nside"], intparams["ilNR"], intparams["ilNTheta"],
+      (Nmpi, intparams["on_the_spot"], intparams["nside"], intparams["ilNR"], intparams["ilNTheta"],
        intparams["ilNPhi"], intparams["ilNNS"], intparams["ilFinePix"], floatparams["maxDist"],
        floatparams["rayRadRes"], floatparams["relErr"], stringparams["errControl"],
        simbox, &simunits, simparams, sphneib);
