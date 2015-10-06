@@ -113,12 +113,16 @@ endif
 #--------------------------------------------------------------------------------------------------
 ifeq ($(FFTW),1)
 CFLAGS += -DFFTW_TURBULENCE
-#OPT += -I/Users/davidhubber/astro/code/gandalf/src -L/Users/davidhubber/astro/code/gandalf/src -lm -lfftw3f
-#OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
-#INCLUDE += -I/sw/include
+ifeq ($(FFTW_INCLUDE),)
+INCLUDE += -I/sw/include
+else
+INCLUDE += $(FFTW_INCLUDE)
+endif
+ifeq ($(FFTW_LIBRARY),)
 LIB += -lfftw3
-#LIB +=-L/sw/lib -lfftw3
-#OPT += $(FFTW_LIB) $(FFTW_INC)
+else
+LIB += $(FFTW_LIBRARY)
+endif
 endif
 
 
@@ -126,8 +130,16 @@ endif
 #--------------------------------------------------------------------------------------------------
 ifeq ($(GSL),1)
 CFLAGS += -DGANDALF_GSL
+ifeq ($(GSL_INCLUDE),)
 INCLUDE += -I/usr/local/include
+else
+INCLUDE += $(GSL_INCLUDE)
+endif
+ifeq ($(GSL_LIBRARY),)
 LIB += -L/usr/local/lib -lgsl -lgslcblas
+else
+LIB += $(GSL_LIBRARY)
+endif
 endif
 
 
@@ -154,9 +166,9 @@ endif
 
 
 # Reorder particles flag
-ifeq ($(REORDER_PARTICLES),1)
-CFLAGS += -DREORDER_PARTICLES
-endif
+#ifeq ($(REORDER_PARTICLES),1)
+#CFLAGS += -DREORDER_PARTICLES
+#endif
 
 
 #CFLAGS += -DVERIFY_BINARY_TREE

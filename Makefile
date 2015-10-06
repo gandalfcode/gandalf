@@ -22,14 +22,25 @@
 
 CPP                = g++
 PYTHON             = python
-FFTW               = 1
-GSL                = 0
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
-OPENMP             = 1
+OPENMP             = 0
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
-REORDER_PARTICLES  = 0
+
+
+# FFTW libary flags and paths.  If paths are empty, tries standard default linux paths.
+#--------------------------------------------------------------------------------------------------
+FFTW               = 0
+FFTW_INCLUDE       =
+FFTW_LIBRARY       =
+
+
+# GNU Scientific library flags and paths.  If paths are empty, tries standard default linux paths.
+#--------------------------------------------------------------------------------------------------
+GSL                = 0
+GSL_INCLUDE        =
+GSL_LIBRARY        =
 
 
 # Select location of python and numpy libraries.  If blank, make will try to
@@ -40,6 +51,8 @@ REORDER_PARTICLES  = 0
 PYLIB =
 NUMPY =
 GTEST = $(GTEST_DIR)
+
+
 
 
 # Don't delete this command! Makes sure that defined variables here are passed
