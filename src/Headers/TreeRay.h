@@ -216,7 +216,7 @@ class TreeRay : public Radiation<ndim>
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *);
 
-  void AddRadiationSource(SinkParticle<ndim> &);
+  void AddRadiationPointSource(SinkParticle<ndim> &);
   void CalculateCellRadiationProperties(TreeCell<ndim> &);
   void FixRay(Rays *ray);
   void FinaliseCell(TreeCell<ndim> &, FLOAT **eflux, FLOAT **cdMaps);

@@ -151,6 +151,7 @@ class Tree : public TreeBase<ndim>
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
                                         TreeCell<ndim> *, ParticleType<ndim> *);
+  int FindLeafCell(const FLOAT *);
 #ifdef MPI_PARALLEL
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeCell<ndim> *);

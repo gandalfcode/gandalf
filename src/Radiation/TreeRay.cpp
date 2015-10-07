@@ -61,7 +61,6 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
   }
 #endif
 
-
   // Set important variables
   nEB         = 0;
   NTBLevels   = tree->lmax + 1;
@@ -71,11 +70,8 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
   ilNSSampFac = (FLOAT) 1.6;                 // Accounts for diagonal rays across the tree.
                                              // Can cause problems.  Maybe increase to 2.0??
 
-
-
   // Generate intersection list tables
   GenerateIntersectList();
-
 
   // Allocate arrays for rays
   minCellSize = (FLOAT) 0.0;
@@ -164,9 +160,14 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
 
   debug2("[TreeRay::UpdateRadiationField]");
 
+  // Zero all source terms in the tree
+  for (c=0; c<tree->Ncell; c++) {
+    for (int k=0; k<nfreq; k++) tree->celldata[c].srcEUV[k] = (FLOAT) 0.0;
+  }
 
-  // Add sink particles to the tree
-  for (int i=0; i<Nsink; i++) AddRadiationSource(sinkdata[i]);
+  // Now add all point sources to the tree
+  for (int i=0; i<Nsink; i++) AddRadiationPointSource(sinkdata[i]);
+
 
   // Now compute all tree cell properties, including point sources (i.e. sinks)
   StockRadiationTree(tree->celldata[0], partdata);
@@ -498,15 +499,19 @@ FLOAT TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeKernel
 /// ...
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
-void TreeRay<ndim,nfreq,ParticleType,TreeCell>::AddRadiationSource
+void TreeRay<ndim,nfreq,ParticleType,TreeCell>::AddRadiationPointSource
  (SinkParticle<ndim> &sink)
   //const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
 {
-  // Write code to find leaf cell containing sink
+  int cleaf;
 
+  // Find leaf cell containing sink point source
+  cleaf = tree->FindLeafCell(sink.star->r);
 
+  // Return without adding sink if leaf cell i.d. is invalid (e.g. sink belongs to other MPI node)
+  if (cleaf == -1) return;
 
-
+  tree->celldata[cleaf].srcEUV[0] = 0.0;
 
   return;
 }
@@ -539,27 +544,16 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::StockRadiationTree
     for (c=tree->firstCell[l]; c<=tree->lastCell[l]; c++) {
       TreeCell<ndim> &cell = tree->celldata[c];
 
-      // Zero all summation variables for all cells
-      cell.hmax = 0.0;
-      for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
-      for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
 
-      // If this is a leaf cell, sum over all particles
+      // If this is a leaf cell, sum over all particles and compute the radiation properties of
+      // the cell.
       //-------------------------------------------------------------------------------------------
       if (cell.copen == -1) {
         i = cell.ifirst;
 
         // Loop over all particles in cell summing their contributions
         while (i != -1) {
-          cell.hmax = max(cell.hmax,partdata[i].h);
-          for (k=0; k<ndim; k++) {
-            if (partdata[i].r[k] - tree->kernrange*partdata[i].h < cell.hboxmin[k]) {
-              cell.hboxmin[k] = partdata[i].r[k] - tree->kernrange*partdata[i].h;
-            }
-            if (partdata[i].r[k] + tree->kernrange*partdata[i].h > cell.hboxmax[k]) {
-              cell.hboxmax[k] = partdata[i].r[k] + tree->kernrange*partdata[i].h;
-            }
-          }
+          for (k=0; k<nfreq; k++) cell.srcEUV[k] += (FLOAT) 0.0;
           if (i == cell.ilast) break;
           i = tree->inext[i];
         };
@@ -579,9 +573,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::StockRadiationTree
           TreeCell<ndim> &child = tree->celldata[cc];
 
           if (child.N > 0) {
-            for (k=0; k<ndim; k++) cell.hboxmin[k] = min(child.hboxmin[k], cell.hboxmin[k]);
-            for (k=0; k<ndim; k++) cell.hboxmax[k] = max(child.hboxmax[k], cell.hboxmax[k]);
-            cell.hmax = max(child.hmax,cell.hmax);
+            for (k=0; k<nfreq; k++) cell.srcEUV[k] += (FLOAT) 0.0;
           }
 
           cc = child.cnext;

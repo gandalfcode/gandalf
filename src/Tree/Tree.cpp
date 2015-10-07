@@ -1157,6 +1157,57 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 
 
 
+//=================================================================================================
+//  Tree::FindLeafCell
+/// Finds the leaf cell i.d. containing the given point
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
+ (const FLOAT rp[ndim])
+{
+  int cc = 0;                          // Cell counter (start at root cell)
+
+
+  //===============================================================================================
+  while (cc < Ncell) {
+
+    // Check if bounding boxes overlap with each other
+    //---------------------------------------------------------------------------------------------
+    if (BoxOverlap(rp, rp, celldata[cc].bbmin, celldata[cc].bbmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (celldata[cc].copen != -1) {
+        cc = celldata[cc].copen;
+      }
+
+      // Ignore any empty cells
+      else if (celldata[cc].N == 0) {
+        cc = celldata[cc].cnext;
+      }
+
+      // If leaf-cell, add particles to list
+      else if (celldata[cc].copen == -1) {
+        return cc;
+      }
+
+    }
+
+    // If not in range, then open next cell
+    //---------------------------------------------------------------------------------------------
+    else {
+      cc = celldata[cc].cnext;
+    }
+
+  };
+  //===============================================================================================
+
+  // If we've somehow not found a leaf cell (e.g. if particle is outside tree domain), then
+  // return error code, -1
+  return -1;
+}
+
+
+
 #ifdef MPI_PARALLEL
 //=================================================================================================
 //  Tree::ComputePrunedTreeForMpiNode
