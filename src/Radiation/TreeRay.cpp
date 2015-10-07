@@ -1006,3 +1006,5 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::FinaliseCell
 
 
 template class TreeRay<3, 1, GradhSphParticle, TreeRayCell>;
+template class TreeRay<2, 1, GradhSphParticle, TreeRayCell>;
+template class TreeRay<1, 1, GradhSphParticle, TreeRayCell>;

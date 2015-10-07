@@ -921,5 +921,7 @@ template class OctTree<1, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<2, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<3, MeshlessFVParticle, OctTreeCell>;
 
+template class OctTree<1, GradhSphParticle, TreeRayCell>;
+template class OctTree<2, GradhSphParticle, TreeRayCell>;
 template class OctTree<3, GradhSphParticle, TreeRayCell>;
 //template class OctTree<3, MeshlessFVParticle, TreeRayCell>;
