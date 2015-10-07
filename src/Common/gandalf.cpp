@@ -44,7 +44,6 @@ int main(int argc, char** argv)
   string paramfile;                                  // Name of parameters file
   stringstream ss;                                   // Stream char to string
   ofstream outfile;                                  // Stream of temp restart file
-  CodeTiming timing;                                 // Timing object
   Parameters* params = new Parameters();             // Parameters object
   SimulationBase* sim;                               // Main simulation object
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
@@ -84,6 +83,8 @@ int main(int argc, char** argv)
   }
 #endif
 #endif
+
+  CodeTiming timing;                                 // Timing object
 
 
   // Parse and process all command-line arguments.
