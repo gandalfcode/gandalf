@@ -212,6 +212,9 @@ void SphSimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+#if defined MPI_PARALLEL
+  sinks->SetMpiControl(mpicontrol);
+#endif
 
   // Set other important simulation variables
   dt_litesnap         = floatparams["dt_litesnap"]/simunits.t.outscale;
