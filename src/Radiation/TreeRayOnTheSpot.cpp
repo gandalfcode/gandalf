@@ -207,5 +207,6 @@ void TreeRayOnTheSpot<ndim,nfreq,TreeCell>::FinaliseCell
 }
 
 
-
+template class TreeRayOnTheSpot<1, 1, TreeRayCell>;
+template class TreeRayOnTheSpot<2, 1, TreeRayCell>;
 template class TreeRayOnTheSpot<3, 1, TreeRayCell>;

@@ -1585,7 +1585,12 @@ template class Tree<1,MeshlessFVParticle,OctTreeCell>;
 template class Tree<2,MeshlessFVParticle,OctTreeCell>;
 template class Tree<3,MeshlessFVParticle,OctTreeCell>;
 
-
+template class Tree<1,Particle,TreeRayCell>;
+template class Tree<1,SphParticle,TreeRayCell>;
+template class Tree<1,GradhSphParticle,TreeRayCell>;
+template class Tree<2,Particle,TreeRayCell>;
+template class Tree<2,SphParticle,TreeRayCell>;
+template class Tree<2,GradhSphParticle,TreeRayCell>;
 template class Tree<3,Particle,TreeRayCell>;
 template class Tree<3,SphParticle,TreeRayCell>;
 template class Tree<3,GradhSphParticle,TreeRayCell>;
