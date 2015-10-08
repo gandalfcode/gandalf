@@ -903,22 +903,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int cactive;                         // No. of active cells
-  int cc;                              // Aux. cell counter
-  int i;                               // Particle id
-  int ithread;                         // OpenMP thread i.d.
-  int j;                               // Aux. particle counter
-  int k;                               // Dimension counter
-  int Nactive;                         // No. of active particles in current cell
-  int Ngravcell=0;                     // No. of gravity cells
-  int Ngravcellmax;                    // Max. size of gravity cell pointer array
-  int Ngravcelltemp;                   // Aux. gravity cell counter
-  FLOAT macfactor;                     // Gravity MAC factor for cell
-
-  int *activelist;                     // List of active particles
-  TreeCell<ndim> *cellptr;             // Pointer to binary tree cell
   TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
-  TreeCell<ndim> *gravcelllist;        // List of pointers to grav. cells
-  ParticleType<ndim> *activepart;      // Local copies of active particles
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[GradhHydroTree::UpdateGravityExportForces]");
@@ -930,7 +915,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   cactive = tree->ComputeActiveCellPointers(celllist);
 
   // Reset all export lists
-  for (j=0; j<Nmpi; j++) {
+  for (int j=0; j<Nmpi; j++) {
     Ncellexport[j] = 0;
     Npartexport[j] = 0;
   }
@@ -938,31 +923,35 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,hydro,partdata,cout) \
-  private(activepart,activelist,cc,cellptr,gravcelllist,i)\
-  private(ithread,j,k,macfactor,Nactive)\
-  private(Ngravcell,Ngravcellmax, Ngravcelltemp) \
-  shared(rank)
+#pragma omp parallel default(none) shared(celllist,cactive,cout,hydro,partdata,rand)
   {
 #if defined _OPENMP
-    ithread = omp_get_thread_num();
+    const int ithread = omp_get_thread_num();
 #else
-    ithread = 0;
+    const int ithread = 0;
 #endif
-
+    int cc;                              // Aux. cell counter
+    int i;                               // Particle id
+    int j;                               // Aux. particle counter
+    int k;                               // Dimension counter
+    int Nactive;                         // No. of active particles in current cell
+    int Ngravcell=0;                     // No. of gravity cells
+    int Ngravcellmax;                    // Max. size of gravity cell pointer array
+    int Ngravcelltemp;                   // Aux. gravity cell counter
+    FLOAT macfactor;                     // Gravity MAC factor for cell
     Ngravcellmax = Nprunedcellmax;
-    activelist   = activelistbuf[ithread];
-    activepart   = activepartbuf[ithread];
-    gravcelllist = new TreeCell<ndim>[Ngravcellmax];
+    int *activelist                = activelistbuf[ithread];
+    ParticleType<ndim> *activepart = activepartbuf[ithread];
+    TreeCell<ndim> *gravcelllist   = new TreeCell<ndim>[Ngravcellmax];
 
 
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      cellptr = celllist[cc];
+      TreeCell<ndim>* cellptr = celllist[cc];
       TreeCell<ndim>& cell = *cellptr;
-      macfactor = 0.0;
+      macfactor = (FLOAT) 0.0;
       Ngravcell = 0;
 
       // Find list of active particles in current cell
@@ -973,13 +962,14 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
       // Compute average/maximum term for computing gravity MAC
       if (gravity_mac == "eigenmac") {
-        for (j=0; j<Nactive; j++)
-          macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
+        for (j=0; j<Nactive; j++) {
+          macfactor = max(macfactor, pow((FLOAT) 1.0/activepart[j].gpot, twothirds));
+        }
       }
 
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
-        activepart[j].gpot = activepart[j].m*activepart[j].invh*hydro->kernp->wpot(0.0);
+        activepart[j].gpot = activepart[j].m*activepart[j].invh*hydro->kernp->wpot((FLOAT) 0.0);
       }
 
 
@@ -1004,7 +994,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 #pragma omp atomic
           Npartexport[j] += Nactive;
         }
-        else Ngravcell = Ngravcelltemp;
+        else {
+          Ngravcell = Ngravcelltemp;
+        }
 
       }
       //-------------------------------------------------------------------------------------------
@@ -1031,7 +1023,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
-        this->ComputeFastMonopoleForces(Nactive,Ngravcell,gravcelllist,cell,activepart);
+        this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcelllist, cell, activepart);
       }
 
       // Add all active particles contributions to main array
@@ -1043,9 +1035,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       }
 
     }
-
     //=============================================================================================
-
 
     // Free-up local memory for OpenMP thread
     delete[] gravcelllist;
@@ -1076,14 +1066,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
-  bool overlapflag;                    // Flag if cells overlap
   int cactive;                         // No. of active cells
-  int cc;                              // Aux. cell counter
-  int ithread;                         // OpenMP thread i.d.
-  int j;                               // Aux. particle counter
-  TreeCell<ndim> *cellptr;             // Pointer to binary tree cell
   TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
-  int *activelist;                     // List of active particles
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[HydroTree::UpdateHydroExportList]");
@@ -1094,9 +1078,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   celllist = new TreeCell<ndim>*[2*tree->gtot];
   cactive = tree->ComputeActiveCellPointers(celllist);
 
-
   // Reset all export lists
-  for (j=0; j<Nmpi; j++) {
+  for (int j=0; j<Nmpi; j++) {
     Ncellexport[j] = 0;
     Npartexport[j] = 0;
   }
@@ -1104,21 +1087,23 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,cout,rank,partdata) \
-  private(activelist,cc,cellptr,ithread,j,overlapflag)
+#pragma omp parallel default(none) shared(celllist,cactive,cout,rank,partdata)
   {
 #if defined _OPENMP
-    ithread = omp_get_thread_num();
+    const int ithread = omp_get_thread_num();
 #else
-    ithread = 0;
+    const int ithread = 0;
 #endif
-    activelist = activelistbuf[ithread];
+    bool overlapflag;                          // Flag if cells overlap
+    int cc;                                    // Aux. cell counter
+    int j;                                     // Aux. particle counter
+    int *activelist = activelistbuf[ithread];
 
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      cellptr = celllist[cc];
+      TreeCell<ndim> *cellptr = celllist[cc];
       TreeCell<ndim>& cell = *cellptr;
 
       // Loop over all distant pruned trees and compute list of cells.
@@ -1188,10 +1173,11 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   const MpiNode<ndim> *mpinode,        ///< [in] Pointer to MPI node array
   Particle<ndim> *hydro_gen)           ///< [inout] Pointer to Hydrodynamics ptcl array
 {
-  bool localNode;                      // Is this pruned tree for the local node?
-  int c;                               // Cell counter
-  int i;                               // Particle counter
-  //int k;                               // Dimension counter
+  bool localNode;                              // Is this pruned tree for the local node?
+  int c;                                       // Cell counter
+  int i;                                       // Particle counter
+  Tree<ndim,ParticleType,TreeCell> *treeptr;   // ..
+  //int k;                                       // Dimension counter
 
   debug2("[HydroTree::BuildPrunedTree]");
   timing->StartTimingSection("BUILD_PRUNED_TREE");
@@ -1208,56 +1194,62 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nmpi; i++) {
 
-    if (i == rank) localNode = true;
-    else localNode = false;
+    // If creating pruned tree for local node, then set pointer to correct array.
+    // Otherwise, set pointer so send buffer is filled with pruned tree
+    if (i == rank) {
+      localNode = true;
+      treeptr = prunedtree[i];
+    }
+    else {
+      localNode = false;
+      treeptr = sendprunedtree[i];
+    }
 
-    sendprunedtree[i]->ltot     = pruning_level_max;
-    sendprunedtree[i]->Ntot     = 0;
-    sendprunedtree[i]->gmax     = 0;
-    sendprunedtree[i]->Ncellmax = max(sendprunedtree[i]->Ncellmax,
-                                      sendprunedtree[i]->GetMaxCellNumber(pruning_level_min));
-    assert(sendprunedtree[i]->Ncellmax > 0);
-    sendprunedtree[i]->AllocateTreeMemory();
+    treeptr->ltot     = pruning_level_max;
+    treeptr->Ntot     = 0;
+    treeptr->gmax     = 0;
+    treeptr->Ncellmax = max(treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_min));
+    assert(treeptr->Ncellmax > 0);
+    treeptr->AllocateTreeMemory();
 
-    sendprunedtree[i]->Ncell = tree->CreatePrunedTreeForMpiNode
-      (mpinode[i], simbox, 0.0, localNode, pruning_level_min, pruning_level_max,
-       sendprunedtree[i]->Ncellmax, sendprunedtree[i]->celldata);
+    treeptr->Ncell = tree->CreatePrunedTreeForMpiNode
+      (mpinode[i], simbox, (FLOAT) 0.0, localNode, pruning_level_min, pruning_level_max,
+       treeptr->Ncellmax, treeptr->celldata);
 
-
+    // If insufficient memory was allocated, then re-allocate larger array and repeat.
     //---------------------------------------------------------------------------------------------
-    while (sendprunedtree[i]->Ncell == -1) {
+    while (treeptr->Ncell == -1) {
 
-      sendprunedtree[i]->Ncellmax = max(2*sendprunedtree[i]->Ncellmax,
-                                        sendprunedtree[i]->GetMaxCellNumber(pruning_level_min));
+      treeptr->Ncellmax = max(2*treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_min));
 
-      assert(sendprunedtree[i]->Ncellmax > 0);
+      assert(treeptr->Ncellmax > 0);
       cout << "MEMORY FOR PRUNED TREE FOR NODE : " << i << "    Ncellmax : "
-           << sendprunedtree[i]->Ncellmax << "   " << tree->Ncellmax <<  "    "
-           << 2*sendprunedtree[i]->Ncellmax << "    "
-           << sendprunedtree[i]->GetMaxCellNumber(pruning_level_min) << "   "
-           << max(2*sendprunedtree[i]->Ncellmax,
-                  sendprunedtree[i]->GetMaxCellNumber(pruning_level_min)) << endl;
+           << treeptr->Ncellmax << "   " << tree->Ncellmax <<  "    "
+           << 2*treeptr->Ncellmax << "    "
+           << treeptr->GetMaxCellNumber(pruning_level_min) << "   "
+           << max(2*treeptr->Ncellmax,
+                  treeptr->GetMaxCellNumber(pruning_level_min)) << endl;
 
-      sendprunedtree[i]->AllocateTreeMemory();
+      treeptr->AllocateTreeMemory();
 
-      sendprunedtree[i]->Ncell = tree->CreatePrunedTreeForMpiNode
-        (mpinode[i], simbox, 0.0, localNode, pruning_level_min, pruning_level_max,
-         sendprunedtree[i]->Ncellmax, sendprunedtree[i]->celldata);
+      treeptr->Ncell = tree->CreatePrunedTreeForMpiNode
+        (mpinode[i], simbox, (FLOAT) 0.0, localNode, pruning_level_min, pruning_level_max,
+         treeptr->Ncellmax, treeptr->celldata);
 
     }
     //---------------------------------------------------------------------------------------------
 
     // Allocate (or reallocate if needed) all tree memory
-    Nprunedcellmax += sendprunedtree[i]->Ncell;
+    Nprunedcellmax += treeptr->Ncell;
 
     cout << "BUILDING PRUNED TREE FOR DOMAIN " << rank << " TO SEND TO NODE " << i << endl;
-    cout << "NO OF CELLS IN PRUNED TREE : " << sendprunedtree[i]->Ncell << endl;
+    cout << "NO OF CELLS IN PRUNED TREE : " << treeptr->Ncell << endl;
 
 
   }
   //-----------------------------------------------------------------------------------------------
 
-  //cin >> i;
+
   MPI_Barrier(MPI_COMM_WORLD);
   timing->EndTimingSection("BUILD_PRUNED_TREE");
   return;
@@ -1517,12 +1509,13 @@ FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
   FLOAT workleft;                      // Work computed on LHS of division
   FLOAT workright;                     // Work computed on RHS of division
   FLOAT workfrac;                      // Fraction of work on LHS
-  FLOAT worktol = (FLOAT) 0.001;       // Work balance tolerance for iteration
-  FLOAT boxleftmin[ndim];              // ..
-  FLOAT boxleftmax[ndim];              // ..
-  FLOAT boxrightmin[ndim];             // ..
-  FLOAT boxrightmax[ndim];             // ..
+  FLOAT worktol = (FLOAT) 0.001;        // Work balance tolerance for iteration
+  FLOAT boxleftmin[ndim];              // Min. extent of left-box division
+  FLOAT boxleftmax[ndim];              // Max. extent of left-box division
+  FLOAT boxrightmin[ndim];             // Min. extent of right-box division
+  FLOAT boxrightmax[ndim];             // Max. extent of right-box division
 
+  // Set box extents from MPI tree node extent
   for (k=0; k<ndim; k++) {
     boxleftmin[k] = boxmin[k];
     boxleftmax[k] = boxmax[k];
@@ -1549,9 +1542,9 @@ FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
       workright += prunedtree[i]->ComputeWorkInBox(boxrightmin, boxrightmax);
     }
 
-    //cout << "workleft : " << workleft << "     workright : " << workright
-    //     << "       workfrac : " << workleft / (workleft + workright)
-    //     << "    rold : " << r_old << "     r_new : " << r_divide << endl;
+    cout << "workleft : " << workleft << "     workright : " << workright
+         << "       workfrac : " << workleft / (workleft + workright)
+         << "    rold : " << r_old << "     r_new : " << r_divide << endl;
 
     // If fraction of work on either side of division is too inbalanced, calculate new position
     // of division and perform another iteration.  Otherwise exit iteration loop.
@@ -1587,12 +1580,12 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
   int cactive = Ncellexport[iproc];
   int Nactive = Npartexport[iproc];
   int activelist[Nleafmax];
-  int exported_particles   = 0;
-  const int size_header    = 2*sizeof(int);
-  const int size_particles = Nactive*sizeof(ParticleType<ndim>);
-  const int size_cells     = cactive*sizeof(TreeCell<ndim>);
-  const int old_size       = send_buffer.size();
-  int offset               = size_header + old_size;
+  int exported_particles    = 0;
+  const int size_header     = 2*sizeof(int);
+  const int size_particles  = Nactive*sizeof(ParticleType<ndim>);
+  const int size_cells      = cactive*sizeof(TreeCell<ndim>);
+  const int old_size        = send_buffer.size();
+  int offset                = size_header + old_size;
   TreeCell<ndim>** celllist = cellexportlist[iproc];
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
@@ -1918,15 +1911,16 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
 
   MPI_Barrier(MPI_COMM_WORLD);
   for (int i=0; i<Nmpi; i++) {
-    if (i == rank) continue;
+    //if (i == rank) continue;
     cout << "Writing pruned tree " << i << " for process " << rank << endl;
-    cout << "Ncell : " << sendprunedtree[i]->Ncell << endl;
-    cout << "r : " << sendprunedtree[i]->celldata[0].r[0]
-         << "   box : " << sendprunedtree[i]->celldata[0].bbmin[0]
-         << "   " << sendprunedtree[i]->celldata[0].bbmax[0]
-         << "   worktot : " << sendprunedtree[i]->celldata[0].worktot << endl;
+    cout << "Ncell : " << prunedtree[i]->Ncell << endl;
+    cout << "r : " << prunedtree[i]->celldata[0].r[0]
+         << "   box : " << prunedtree[i]->celldata[0].bbmin[0]
+         << "   " << prunedtree[i]->celldata[0].bbmax[0]
+         << "   worktot : " << prunedtree[i]->celldata[0].worktot << endl;
   }
 
+  return;
 }
 
 
@@ -1961,7 +1955,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
   ParticleType<ndim> *partdata,        ///< [in] Array of particle data
   string neibtype)                     ///< [in] Neighbour search type
 {
-  bool invalid_flag = false;           // ..
+  bool invalid_flag = false;           // Flag if neighbour list is invalid
   int count;                           // Valid neighbour counter
   int j;                               // Neighbour particle counter
   int k;                               // Dimension counter

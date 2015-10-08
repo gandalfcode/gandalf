@@ -438,7 +438,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
   // Some basic sanity-checking in case of invalid input into routine
   assert(neibpart_gen != NULL);
-  assert(Nneib > 0);
   assert(parti.itype != dead);
 
   // Loop over all potential neighbours in the list

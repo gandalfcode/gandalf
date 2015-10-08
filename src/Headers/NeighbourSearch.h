@@ -97,7 +97,7 @@ protected:
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual void CommunicatePrunedTrees(vector<int>&, int) {};
-  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) {return (FLOAT) 0.0;};
+  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) = 0;
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*) {};
   virtual void GetBackExportInfo(vector<char >& received_array,

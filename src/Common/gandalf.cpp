@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 #endif
 
   // Compile timing statistics from complete simulation
-  timing.ComputeTimingStatistics(sim->run_id);
+  //timing.ComputeTimingStatistics(sim->run_id);
 
   // Finally, delete all locally created objects
   delete sim;
