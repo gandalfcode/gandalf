@@ -77,7 +77,7 @@ struct TimingBlock
 //  Class CodeTiming
 /// \brief   Internal timing control class
 /// \details Internal timing control class
-/// \author  D. A. Hubber
+/// \author  D. A. Hubber, G. Rosotti
 /// \date    12/02/2014
 //=================================================================================================
 class CodeTiming
@@ -107,7 +107,6 @@ class CodeTiming
   static const int Nlevelmax=8;            ///< Max. no. of timing levels
   int level;                               ///< Current timing level
   int Nlevel;                              ///< No. of timing levels
-  //int Nblock;                              ///< No. of timing blocks
   double tstart_wall;                      ///< Start of wall clock timing
   double tend_wall;                        ///< End of wall clock timing
   DOUBLE ttot;                             ///< Total time
@@ -115,7 +114,7 @@ class CodeTiming
   clock_t tstart;                          ///< Start of integer clock
   clock_t tend;                            ///< End of integer clock
 
-  int Nblock[Nlevelmax];                   ///< ..
+  int Nblock[Nlevelmax];                   ///< No. of timing blocks on a given level
   int timingOrder[Nlevelmax][Nblockmax];   ///< Order (longest to shortest) of timing blocks
   map<string,int> blockmap[Nlevelmax];     ///< Map of timing block names
   TimingBlock block[Nlevelmax][Nblockmax]; ///< Array of timing blocks

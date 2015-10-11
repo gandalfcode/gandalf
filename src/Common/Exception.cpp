@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Exception.cpp
 //  ..
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include "Exception.h"
@@ -30,21 +30,25 @@
 ExceptionHandler * ExceptionHandler::istance;
 
 
-//=============================================================================
+//=================================================================================================
 //  ExceptionHandler::makeExceptionHandler
-/// ...
-//=============================================================================
-void ExceptionHandler::makeExceptionHandler (RunType runtypeaux) {
+/// Create an exception handler for the given simulation run type.
+//=================================================================================================
+void ExceptionHandler::makeExceptionHandler
+ (RunType runtypeaux)
+{
   istance = new ExceptionHandler(runtypeaux);
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  ExceptionHandler::raise
-/// ...
-//=============================================================================
-void ExceptionHandler::raise(string msg) {
+/// Raise an exception with the given error message.
+//=================================================================================================
+void ExceptionHandler::raise
+ (string msg)
+{
   switch (runtype){
   case cplusplus:
     cout << msg << endl;

@@ -54,7 +54,7 @@ CodeTiming::CodeTiming()
   tstart_wall = WallClockTime();
 #if defined MPI_PARALLEL
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   CPU_Master = rank==0 ? true : false;
 #endif
 }
@@ -127,10 +127,11 @@ void CodeTiming::EndTimingSection
   // If block not in list, then print error message and return
   if (blockmap[level].find(s1) == blockmap[level].end()) {
     string message = "Error : looking for incorrect timing block : " + s1;
-    for (map<string, int>::iterator it = blockmap[level].begin(); it != blockmap[level].end(); it++) {
+    for (map<string, int>::iterator it = blockmap[level].begin();
+         it != blockmap[level].end(); it++) {
       cout << it->first << " ";
     }
-    cout <<endl;
+    cout << endl;
     ExceptionHandler::getIstance().raise(message);
   }
   // Else, look-up existing timing block
@@ -157,7 +158,7 @@ void CodeTiming::EndTimingSection
 /// external file 'run_id.timing'.
 //=================================================================================================
 void CodeTiming::ComputeTimingStatistics
- (string run_id)                       ///< String i.d. of current simulation
+ (string run_id)                       ///< [in] String i.d. of current simulation
 {
   int iblock;                          // Timing block counter
   int l;                               // Timing block level
@@ -167,18 +168,20 @@ void CodeTiming::ComputeTimingStatistics
   string fileend = "timing";           // Filename ending
   ofstream outfile;                    // Output file stream object
 
-  filename = run_id + "." + fileend;
-
+  filename  = run_id + "." + fileend;
   tend      = clock();
   tend_wall = WallClockTime();
   ttot      = (double) (tend - tstart) / (double) CLOCKS_PER_SEC;
+
 #if defined MPI_PARALLEL
   // In this case, clock measures the cpu time on the local processor. We need to sum
   // the cpu time of ALL processors to get the cpu time of the simulation
-  if (CPU_Master)
-    MPI_Reduce(MPI_IN_PLACE,&ttot,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-  else
-    MPI_Reduce(&ttot,&ttot,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  if (CPU_Master) {
+    MPI_Reduce(MPI_IN_PLACE, &ttot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  }
+  else {
+    MPI_Reduce(&ttot, &ttot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  }
 
   // Now we do the same for all the blocks. Saves the ttot of each single block
   // inside the temporary array ttot_temp (so that we call MPI_Reduce only once)
@@ -196,10 +199,12 @@ void CodeTiming::ComputeTimingStatistics
     }
   }
 
-  if (CPU_Master)
-    MPI_Reduce(MPI_IN_PLACE,&ttot_temp[0],Nblocks,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-  else
-    MPI_Reduce(&ttot_temp[0],&ttot_temp[0],Nblocks,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  if (CPU_Master) {
+    MPI_Reduce(MPI_IN_PLACE, &ttot_temp[0], Nblocks, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  }
+  else {
+    MPI_Reduce(&ttot_temp[0], &ttot_temp[0], Nblocks, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  }
 
   if (!CPU_Master) return;
 
