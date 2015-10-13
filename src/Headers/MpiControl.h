@@ -50,6 +50,7 @@ static const int tag_bal = 3;
 template <int ndim>
 class Sinks;
 
+
 //=================================================================================================
 //  Class MpiControl
 /// \brief   Main MPI control class for managing MPI simulations.
@@ -87,14 +88,24 @@ class MpiControl
 
  public:
 
+  // MPI control variables
+  //-----------------------------------------------------------------------------------------------
+  char hostname[MPI_MAX_PROCESSOR_NAME];   ///< ..
+  bool allocated_mpi;                      ///< Flag if memory has been allocated.
+  int balance_level;                       ///< MPI tree level to do load balancing
+  int rank;                                ///< MPI rank of process
+  int Nmpi;                                ///< No. of MPI processes
+  int Nloadbalance;                        ///< No. of steps between load-balancing
+  DomainBox<ndim> mpibox;                  ///< Full domain box known to all MPI processes
+  MpiNode<ndim> *mpinode;                  ///< Data for all MPI nodes
+  CodeTiming *timing;                      ///< Simulation timing object (pointer)
+
+
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
   MpiControl();
   ~MpiControl();
 
-
-  // Other functions
-  //-----------------------------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
   void SetNeibSearch(NeighbourSearch<ndim>* _neibsearch) {neibsearch = _neibsearch;}
@@ -113,19 +124,6 @@ class MpiControl
   void UpdateSinksAfterAccretion(Sinks<ndim>* sink);
 
   Box<ndim> MyDomain();
-
-
-  // MPI control variables
-  //-----------------------------------------------------------------------------------------------
-  char hostname[MPI_MAX_PROCESSOR_NAME];   ///< ..
-  bool allocated_mpi;                      ///< Flag if memory has been allocated.
-  int balance_level;                       ///< MPI tree level to do load balancing
-  int rank;                                ///< MPI rank of process
-  int Nmpi;                                ///< No. of MPI processes
-  int Nloadbalance;                        ///< No. of steps between load-balancing
-  DomainBox<ndim> mpibox;                  ///< ..
-  MpiNode<ndim> *mpinode;                  ///< Data for all MPI nodes
-  CodeTiming *timing;                      ///< Simulation timing object (pointer)
 
 };
 
@@ -163,19 +161,20 @@ public:
 
 
   // Buffers needed to send and receive particles
+  //-----------------------------------------------------------------------------------------------
   vector<vector<ParticleType<ndim>* > > particles_to_export_per_node;  ///< ..
-  vector<ParticleType<ndim> > particles_to_export;     ///< ..
-  vector<ParticleType<ndim> > particles_receive;       ///< ..
-  vector<ParticleType<ndim> > sendbuffer;              ///< Used by the SendParticles routine
-  MPI_Datatype particle_type;                          ///< Datatype for the particles
-  BruteForceSearch<ndim,ParticleType>* bruteforce;     ///< Temp bruteforce object (REMOVE?)
+  vector<ParticleType<ndim> > particles_to_export;   ///< Particles to be exported to other nodes
+  vector<ParticleType<ndim> > particles_receive;     ///< Particles to be received from other nodes
+  vector<ParticleType<ndim> > sendbuffer;            ///< Used by the SendParticles routine
+  MPI_Datatype particle_type;                        ///< Datatype for the particles
 
 
+  //-----------------------------------------------------------------------------------------------
   MpiControlType();
-  ~MpiControlType() {delete bruteforce;};
+  ~MpiControlType() {};
 
-  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *, Parameters*,
-                                                DomainBox<ndim>, bool&) = 0;
+  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
+                                                Parameters*, DomainBox<ndim>, bool&) = 0;
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual void ExportParticlesBeforeForceLoop (Hydrodynamics<ndim> *);
   virtual void GetExportedParticlesAccelerations (Hydrodynamics<ndim> *);
@@ -241,17 +240,18 @@ public:
   using MpiControlType<ndim,ParticleType>::particles_receive;
   using MpiControlType<ndim,ParticleType>::sendbuffer;
   using MpiControlType<ndim,ParticleType>::particle_type;
-  using MpiControlType<ndim,ParticleType>::bruteforce;
-
+  
 
   MpiTree<ndim,ParticleType> *mpitree;                 ///< Main MPI load balancing tree
 
 
+  //-----------------------------------------------------------------------------------------------
   MpiKDTreeDecomposition();
   //virtual ~MpiKDTreeDecomposition();
 
-  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *, Parameters*,
-                                                DomainBox<ndim>, bool&);
+  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
+                                                Parameters*, DomainBox<ndim>, bool&);
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *);
+
 };
 #endif

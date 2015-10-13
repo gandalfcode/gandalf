@@ -411,42 +411,6 @@ void BruteForceSearch<ndim,ParticleType>::FindMpiTransferParticles
 
 
 //=================================================================================================
-//  BruteForceSearch::FindGhostParticlesToExport
-/// Compute on behalf of the MpiControl class the ghost particles we need to export to other nodes.
-//=================================================================================================
-/*template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport
- (Hydrodynamics<ndim> *hydro,                                ///< [in] Pointer to sph class
-  vector<vector<ParticleType<ndim>*> >& ptcl_export_buffers, ///< [inout] Buffers with ptcls to
-                                                             ///<         export to each node
-  const vector<int>& overlapping_nodes,                      ///< [in] Vector containing which
-                                                             ///<      nodes overlap our hbox
-  MpiNode<ndim>* mpinodes)                                   ///< [in] Array of other mpi nodes
-{
-  int i;                                                     // ..
-  int inode;                                                 // ..
-  int node_number;                                           // ..
-  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>*> (hydro->GetParticleArray());
-
-  // Loop over particles and prepare the ones to export
-  for (i=0; i<hydro->Ntot; i++) {
-    ParticleType<ndim>& part = partdata[i];
-
-    // Loop over potential domains and find particles to export to them
-    for (inode=0; inode<overlapping_nodes.size(); inode++) {
-      node_number = overlapping_nodes[inode];
-      if (ParticleBoxOverlap(part,mpinodes[node_number].hbox)) {
-        ptcl_export_buffers[node_number].push_back(&part);
-      }
-    }
-  }
-
-  return;
-}*/
-
-
-
-//=================================================================================================
 //  BruteForceSearch::FindParticlesToTransfer
 /// Compute on behalf of the MpiControl class the particles that are outside
 /// the domain after a load balancing and need to be transferred to other nodes

@@ -132,11 +132,5 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void ValidateTree(ParticleType<ndim> *);
 #endif
 
-
-  // Additional KD-tree variables
-  //-----------------------------------------------------------------------------------------------
-  int gactive;                         ///< No. of active leaf/grid cells
-  int lactive;                         ///< Chosen level for computing active particle loops
-
 };
 #endif

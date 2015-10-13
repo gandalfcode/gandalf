@@ -60,7 +60,6 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
   gtot           = 0;
   ifirst         = -1;
   ilast          = -1;
-  lactive        = 0;
   lmax           = 0;
   ltot           = 0;
   ltot_old       = -1;
@@ -193,12 +192,12 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory();
 
-  CreateTreeStructure();
 
   // If the number of levels in the tree has changed (due to destruction or
   // creation of new particles) then re-create tree data structure
   // including linked lists and cell pointers
-  if (ltot != ltot_old) CreateTreeStructure();
+  CreateTreeStructure();
+  //if (ltot != ltot_old) CreateTreeStructure();
 
   // Create bounding box of SPH particles
   for (k=0; k<ndim; k++) bbmin[k] = big_number;
@@ -267,13 +266,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
   Ncellmax = 2*gmax - 1;
 
   // Calculate level of tree that can contain all current particles
-  lactive = 0;
-  while (Nleafmax*pow(2,lactive) < Ntot) {
-    lactive++;
-  };
-  gactive = pow(2,lactive);
-
-  // Calculate level of tree that can contain all current particles
   ltot = 0;
   while (Nleafmax*pow(2,ltot) < Ntot) {
     ltot++;
@@ -286,7 +278,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
 #if defined(VERIFY_ALL)
   cout << "No. of ptcls in tree  : " << Ntot << "   " << Ntotmax << endl;
   cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
-  cout << "No. of levels on tree : " << ltot << "   " << lmax << "    " << lactive << endl;
+  cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
   cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl;
 #endif
 
@@ -349,10 +341,6 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
       celldata[c].c2g = g;                                     // Record leaf id
       assert (g<gmax);
       g2c[g++] = c;                                            // Record inverse id
-    }
-    else if (celldata[c].level == lactive) {
-      celldata[c].c2g = g;                                           // Record leaf id
-      g2c[g++] = c;                                                  // Record inverse id
     }
     else {
       celldata[c+1].level            = celldata[c].level + 1;        // Level of 1st child
@@ -1114,8 +1102,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
   for (c=0; c<Ncell; c++) {
     celldata[c].Nactive = 0;
 
-    //if (celldata[c].level != ltot) continue;
-    if (celldata[c].level != lactive) continue;
+    if (celldata[c].level != ltot) continue;
     i = celldata[c].ifirst;
     ilast = celldata[c].ilast;
 
@@ -1178,7 +1165,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters
 
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
-  if (cell.level != ltot) {
+  if (cell.level == ltot) {
     cell.worktot = (FLOAT) 0.0;
     cc = cell.c1;
     ccc = cell.c2;
