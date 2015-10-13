@@ -610,9 +610,8 @@ PhotonPacket<ndim> MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,Cel
 
 
 #ifdef OUTPUT_ALL
-  cout << "Emitting photon " << iphoton << " with direction "
-       << photon.eray[0] << "   " << photon.eray[1] << "   "
-       << photon.eray[2] << endl;
+  cout << "Emitting photon with direction " << photon.eray[0] << "   "
+       << photon.eray[1] << "   " << photon.eray[2] << endl;
 #endif
 
 

@@ -1408,8 +1408,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   rmax = cellptr->rmax;
 
 
-  // Walk through all cells in tree to determine particle and cell
-  // interaction lists
+  // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
 
@@ -1438,7 +1437,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
     }
 
-    // Check if cell is far enough away to use the COM approximation
+    // Check if cell is far enough away to use the COM approximation.
+    // If so, then make copy of cell and move to next cell.
     //---------------------------------------------------------------------------------------------
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
              celldata[cc].N > 0) {
@@ -1522,7 +1522,6 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 
       // If cell is overlapping with any leaf, then flag overlap on return
       else if (celldata[cc].copen == -1 && celldata[cc].N > 0) {
-        //cout << "Found overlap for cell " << cellptr->bbmin[0] << "   " << cellptr->bbmax[0] << endl;
         return true;
       }
 

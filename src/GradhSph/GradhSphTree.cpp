@@ -1141,119 +1141,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
 
 //=================================================================================================
-//  GradhSphTree::UpdateAllStarGasForces
-/// Calculate the gravitational acceleration on all star particles due to
-/// all gas particles via the tree.
-//=================================================================================================
-/*template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
-  Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
-{
-  int Nactive;                         // No. of active particles in cell
-  int *activelist;                     // List of active particle ids
-  NbodyParticle<ndim> *star;           // Pointer to star particle
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
-
-
-  debug2("[GradhSphTree::UpdateAllStarGasForces]");
-  //timing->StartTimingSection("STAR_GAS_GRAV_FORCES");
-
-  // Make list of all active stars
-  Nactive = 0;
-  activelist = new int[nbody->Nstar];
-  for (int i=0; i<nbody->Nstar; i++) {
-    if (nbody->nbodydata[i]->active) activelist[Nactive++] = i;
-  }
-
-
-  // Set-up all OMP threads
-  //===============================================================================================
-#pragma omp parallel default(none) private(star)\
-  shared(activelist,Nactive,Ntot,nbody,sph,sphdata,cout)
-  {
-#if defined _OPENMP
-    const int ithread = omp_get_thread_num();
-#else
-    const int ithread = 0;
-#endif
-    int i;                                       // Particle id
-    int j;                                       // Aux. particle counter
-    int okflag;                                  // Flag if h-rho iteration is valid
-    int Ndirect;                                 // No. of direct-sum gravity particles
-    int Ngravcell;                               // No. of gravity cells
-    int Nneib;                                   // No. of neighbours
-    int Nneibmax = Ntot; //Nneibmaxbuf[ithread];
-    int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
-    FLOAT macfactor;                             // Gravity MAC factor
-    int* neiblist = new int[Nneibmax];           // ..
-    int* directlist = new int[Nneibmax];         // ..
-    TreeCell<ndim>* gravcell = new TreeCell<ndim>[Ngravcellmax];   // ..
-
-
-    // Loop over all active cells
-    //=============================================================================================
-#pragma omp for schedule(dynamic)
-    for (j=0; j<Nactive; j++) {
-      i = activelist[j];
-      star = nbody->nbodydata[i];
-
-      // Compute average/maximum term for computing gravity MAC
-      if (gravity_mac == "eigenmac") macfactor = pow((FLOAT) 1.0/star->gpot,twothirds);
-      else macfactor = (FLOAT) 0.0;
-
-      // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputeStarGravityInteractionList
-        (star, macfactor, Nneibmax, Nneibmax, Ngravcellmax, Nneib,
-         Ndirect, Ngravcell, neiblist, directlist, gravcell, sphdata);
-
-      // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
-      while (okflag == -1) {
-        delete[] gravcell;
-        Ngravcellmax = 2*Ngravcellmax;
-        gravcell = new TreeCell<ndim>[Ngravcellmax];
-        okflag = tree->ComputeStarGravityInteractionList
-          (star, macfactor, Nneibmax, Nneibmax, Ngravcellmax, Nneib,
-           Ndirect, Ngravcell, neiblist, directlist, gravcell, sphdata);
-      };
-
-      // Compute contributions to star force from nearby SPH particles
-      nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, sph);
-
-      // Compute gravitational force due to distant cells
-      if (multipole == "monopole" || multipole == "fast_monopole") {
-        this->ComputeCellMonopoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
-      }
-      else if (multipole == "quadrupole") {
-        this->ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
-      }
-
-
-    }
-    //=============================================================================================
-
-
-    // Free-up local memory for OpenMP thread
-    delete[] gravcell;
-    delete[] directlist;
-    delete[] neiblist;
-
-  }
-  //===============================================================================================
-
-  delete[] activelist;
-
-  //timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
-
-  return;
-}*/
-
-
-
-//=================================================================================================
 //  GradhSphTree::UpdateAllSphPeriodicHydroForces
 /// Compute hydro forces for all active SPH particles.
 //=================================================================================================
@@ -1381,8 +1268,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
           (cell, sphdata, simbox, Nneibmax, Nneib, neiblist, neibpart);
         //Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
       };
-
-      //for (j=0; j<Nneib; j++) neibpart[j] = sphdata[neiblist[j]];
 
 
       // Loop over all active particles in the cell

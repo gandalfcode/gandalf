@@ -84,7 +84,8 @@ int main(int argc, char** argv)
 #endif
 #endif
 
-  CodeTiming timing;                                 // Timing object
+  // Create timing object here (constructor need to be called after MPI is initialised)
+  CodeTiming timing;
 
 
   // Parse and process all command-line arguments.

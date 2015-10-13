@@ -50,11 +50,11 @@ using namespace std;
 template <int ndim>
 void Simulation<ndim>::GenerateIC(void)
 {
-  ifstream f;                       // Stream of input file
-  string in_file;                   // Restart snapshot filename
-  string in_file_form;              // Restart snapshot file format
-  string filename;                  // Simulation '.restart' filename
-  string ic = simparams->stringparams["ic"];
+  ifstream f;                                  // Stream of input file
+  string in_file;                              // Restart snapshot filename
+  string in_file_form;                         // Restart snapshot file format
+  string filename;                             // Simulation '.restart' filename
+  string ic = simparams->stringparams["ic"];   // Local copy of initial conditions string
 
   debug2("[Simulation::GenerateIC]");
 
@@ -113,7 +113,8 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "cdiscontinuity") {
     icGenerator.ContactDiscontinuity();
   }
-  else if (ic == "ewaldsine" || ic == "ewaldsine2" || ic == "ewaldslab" ||  ic == "ewaldcylinder") {
+  else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
+           ic == "ewaldslab" ||  ic == "ewaldcylinder") {
     icGenerator.EwaldDensity();
   }
   else if (ic == "gresho") {

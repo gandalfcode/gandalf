@@ -73,10 +73,10 @@ Parameters::Parameters(const Parameters& other)
 /// file does not contain a simulation run id, then quit program here.
 //=================================================================================================
 void Parameters::ReadParamsFile
-(string filename)                   ///< [in] Parameters file to be read
+ (string filename)                     ///< [in] Parameters file to be read
 {
-  ifstream inputfile;               // Input file stream
-  std::string line;                 // Parameter file line
+  ifstream inputfile;                  // Input file stream
+  std::string line;                    // Parameter file line
 
   debug1("[Parameters::ReadParamsFile]");
 
