@@ -38,6 +38,12 @@ using namespace std;
 
 
 
+// Declare invndim constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT Hydrodynamics<ndim>::invndim = 1.0/ndim;
+
+
+
 //=================================================================================================
 //  Hydrodynamics::Hydrodynamics
 /// Constructor for parent Hydrodynamics class.  Initialises important variables and
@@ -59,6 +65,26 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   NImportedParticles = 0;
   Nmpighost          = 0;
   NPeriodicGhost     = 0;
+
+  // Set flags for gas particle type
+  //-----------------------------------------------------------------------------------------------
+  types[gas].hydro_forces   = true;
+  types[gas].self_gravity   = true;
+  for (int k=0; k<Nhydrotypes; k++) types[gas].hmask[k] = true;
+  for (int k=0; k<Nhydrotypes; k++) types[gas].hydromask[k] = true;
+  types[gas].hmask[gas]     = true;
+  types[gas].hmask[cdm]     = true;
+  types[gas].hydromask[gas] = true;
+  types[gas].gravmask[gas]  = true;
+  types[gas].gravmask[cdm]  = true;
+
+  // Set flags for cdm particle type
+  //-----------------------------------------------------------------------------------------------
+  types[cdm].self_gravity  = true;
+  types[cdm].hmask[gas]    = true;
+  types[cdm].hmask[cdm]    = true;
+  types[cdm].gravmask[gas] = true;
+  types[cdm].gravmask[cdm] = true;
 
 }
 

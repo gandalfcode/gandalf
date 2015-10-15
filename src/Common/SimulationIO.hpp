@@ -1116,7 +1116,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
     //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.ionfrac << endl; //part.u*simunits.u.outscale << endl;
+      outfile_format << part.u*simunits.u.outscale << endl;
     }
 
   }

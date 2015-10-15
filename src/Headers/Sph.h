@@ -90,6 +90,7 @@ class Sph : public Hydrodynamics<ndim>
   using Hydrodynamics<ndim>::Nmpighost;
   using Hydrodynamics<ndim>::NPeriodicGhost;
   using Hydrodynamics<ndim>::Ntot;
+  using Hydrodynamics<ndim>::types;
 
 
   // Constructor
@@ -138,7 +139,6 @@ class Sph : public Hydrodynamics<ndim>
   SphParticle<ndim>& GetSphParticlePointer(const int i) {
     long int numBytes = (long int) i * (long int) size_sph_part;
     return *((SphParticle<ndim>*)((unsigned char*) sphdata_unsafe + numBytes));
-    //return *((SphParticle<ndim>*)((unsigned char*) sphdata_unsafe + i*size_sph_part));
   };
   virtual SphParticle<ndim>* GetSphParticleArray() = 0;
 
@@ -164,7 +164,6 @@ class Sph : public Hydrodynamics<ndim>
   FLOAT hmin_sink;                     ///< Minimum smoothing length of sinks
   string riemann_solver;               ///< Selected Riemann solver
   string slope_limiter;                ///< Selected slope limiter
-  SphType sphtype[Nhydrotypes];        ///< Array of SPH types
 
 };
 
