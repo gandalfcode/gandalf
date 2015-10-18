@@ -44,8 +44,8 @@ RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
 # Simulation time variables
 #-------------------------
 Simulation end time                         : tend = 1.59
-Regular snapshot output frequency           : dt_snap = 0.05
-Time of first snapshot                      : tsnapfirst = 2.0
+Regular snapshot output frequency           : dt_snap = 0.5
+Time of first snapshot                      : tsnapfirst =0.09 
 Screen output frequency (in no. of steps)   : noutputstep = 32
 Diagnostic output frequency                 : ndiagstep = 128
 Output snapshot format                      : out_file_form = su
