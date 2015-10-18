@@ -36,9 +36,9 @@ RHS position of boundary in z-dimension     : boxmax[2] = 1.0
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.9
-Time of first snapshot                      : tsnapfirst = 1.0
-Regular snapshot output frequency           : dt_snap = 1.0
+Simulation end time                         : tend = 1.0
+Time of first snapshot                      : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.5
 Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
@@ -81,7 +81,7 @@ No. of block timestep levels                : Nlevels = 4
 #---------------------
 # Tree options
 #---------------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 
 
 #--------------
