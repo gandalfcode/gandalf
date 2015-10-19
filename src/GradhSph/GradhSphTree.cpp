@@ -698,7 +698,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     FLOAT drsqd;                                 // Distance squared
     FLOAT hrangesqdi;                            // Kernel gather extent
     FLOAT rp[ndim];                              // ..
-    Typemask gravmask;                           // Mask for computing hydro forces
+    Typemask gravmask;                           // Mask for computing gravitational forces
     Typemask hydromask;                          // Mask for computing hydro forces
     int Nneibmax     = Nneibmaxbuf[ithread];     // ..
     int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
@@ -1221,6 +1221,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
     FLOAT drsqd;                                   // Distance squared
     FLOAT hrangesqdi;                              // Kernel gather extent
     FLOAT rp[ndim];                                // Local copy of particle position
+    Typemask hydromask;                            // Mask for computing hydro forces
     int Nneibmax      = Nneibmaxbuf[ithread];      // ..
     int* activelist   = activelistbuf[ithread];    // ..
     int* levelneib    = levelneibbuf[ithread];     // ..
@@ -1295,6 +1296,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
         i = activelist[j];
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+        for (k=0; k<Nhydrotypes; k++) hydromask[k] = sph->types[activepart[j].itype].hydromask[k];
         hrangesqdi = activepart[j].hrangesqd;
         Nhydroaux = 0;
 
@@ -1311,7 +1313,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
         for (jj=0; jj<Nneib; jj++) {
 
           // Skip current active particle
-          if (neiblist[jj] == i) continue;
+          //if (neiblist[jj] == i) continue;
+          if (neiblist[jj] == i || hydromask[neibpart[jj].itype] == false) continue;
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux, draux, ndim) + small_number;
@@ -1338,11 +1341,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
 
 
       // Compute all star forces for active particles
-      /*if (nbody->Nnbody > 0) {
-        for (j=0; j<Nactive; j++)
-          if (activelist[j] < sph->Nhydro)
-          sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
-      }*/
+      if (nbody->Nnbody > 0) {
+        for (j=0; j<Nactive; j++) {
+          if (activelist[j] < sph->Nhydro) {
+            sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
+          }
+        }
+      }
 
 
       // Add all active particles contributions to main array

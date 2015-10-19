@@ -280,7 +280,6 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   stringparams["riemann_solver"] = "exact";
   stringparams["slope_limiter"] = "springel2009";
-  intparams["riemann_order"] = 1;
   intparams["zero_mass_flux"] = 0;
   intparams["static_particles"] = 0;
 
@@ -343,7 +342,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["temp_ion"] = 1e4;
   floatparams["arecomb"] = 2.7e-13;
   floatparams["Ndotmin"] = 1e47;
-  floatparams["NLyC"] = 1e49;
+  floatparams["NLyC"] = 1e47;
 
   // TreeRay algorithm parameters
   //-----------------------------------------------------------------------------------------------
@@ -424,6 +423,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["mplummer"] = 1.0;
   floatparams["rplummer"] = 1.0;
   floatparams["rstar"] = 0.1;
+  floatparams["cdmfrac"] = 0.0;
   floatparams["gasfrac"] = 0.0;
   floatparams["starfrac"] = 1.0;
   floatparams["m1"] = 0.5;

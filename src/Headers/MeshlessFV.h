@@ -165,7 +165,6 @@ public:
   //-----------------------------------------------------------------------------------------------
   int create_sinks;                    ///< Create new sink particles?
   int fixed_sink_mass;                 ///< Fix masses of sink particles
-  int riemann_order;                   ///< Order of Riemann solver
   FLOAT msink_fixed;                   ///< Fixed sink mass value
   FLOAT hmin_sink;                     ///< Minimum smoothing length of sinks
   string riemann_solver;               ///< Selected Riemann solver

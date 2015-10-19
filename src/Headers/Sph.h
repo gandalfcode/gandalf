@@ -158,7 +158,6 @@ class Sph : public Hydrodynamics<ndim>
   int create_sinks;                    ///< Create new sink particles?
   int fixed_sink_mass;                 ///< Fix masses of sink particles
   //int Ngather;                         ///< Average no. of gather neighbours
-  int riemann_order;                   ///< Order of Riemann solver
   FLOAT alpha_visc_min;                ///< Min. time-dependent viscosity alpha
   FLOAT msink_fixed;                   ///< Fixed sink mass value
   FLOAT hmin_sink;                     ///< Minimum smoothing length of sinks
