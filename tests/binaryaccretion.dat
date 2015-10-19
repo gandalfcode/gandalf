@@ -121,7 +121,6 @@ Output binary statistics                    : binary_stats = 1
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
 SPH energy equation timestep multiplier     : energy_mult = 0.5
