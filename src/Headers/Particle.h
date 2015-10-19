@@ -34,13 +34,46 @@
 #endif
 
 
-enum ptype{gas, icm, boundary, cdm, dead,
+enum ptype{gas, icm, boundary, cdm, dust, dead,
            x_lhs_periodic, x_lhs_mirror, x_rhs_periodic, x_rhs_mirror,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
            Nhydrotypes};
+
+
 enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
              constant_temp, radws, Nhydroeos};
+
+
+typedef bool Typemask[Nhydrotypes];
+
+//static Typemask truemask = {true};
+
+
+//=================================================================================================
+//  Structure ParticleType
+/// \brief  Structure containing particle type information
+/// \author D. A. Hubber
+/// \date   14/10/2015
+//=================================================================================================
+struct ParticleType
+{
+  int N;                               ///< Current no. of particles
+  bool hydro_forces;                   ///< Does particle experience hydro forces?
+  bool self_gravity;                   ///< Does particle experience gravitational forces?
+  Typemask hmask;                      ///< Neighbour mask for computing smoothing lengths
+  Typemask hydromask;                  ///< Neighbour mask for computing hydro forces
+  Typemask gravmask;                   ///< Neighbour mask for computing gravitational forces
+
+  ParticleType() {
+    N = 0;
+    hydro_forces = false;
+    self_gravity = false;
+    for (int k=0; k<Nhydrotypes; k++) hmask[k] = false;
+    for (int k=0; k<Nhydrotypes; k++) hydromask[k] = false;
+    for (int k=0; k<Nhydrotypes; k++) gravmask[k] = false;
+  }
+};
 
 
 
@@ -53,7 +86,6 @@ enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
 template <int ndim>
 struct Particle
 {
-  FLOAT CRAP[16];
   bool active;                      ///< Flag if active (i.e. recompute step)
   bool potmin;                      ///< Is particle at a potential minima?
   int iorig;                        ///< Original particle i.d.
@@ -70,7 +102,6 @@ struct Particle
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
   FLOAT agrav[ndim];                ///< Gravitational acceleration
-  //FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
@@ -293,18 +324,5 @@ struct MeshlessFVParticle : public Particle<ndim>
     zeta      = (FLOAT) 0.0;
   }
 
-};
-
-
-
-//=================================================================================================
-//  Structure SphType
-/// \brief  ..
-/// \author D. A. Hubber, G. Rosotti
-/// \date   10/02/2014
-//=================================================================================================
-struct SphType
-{
-  eosenum eos;
 };
 #endif

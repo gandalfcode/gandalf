@@ -149,6 +149,8 @@ class SphBruteForceSearch : public SphNeighbourSearch<ndim>, public BruteForceSe
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
+  void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                       Nbody<ndim> *, DomainBox<ndim> &);
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                       Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
