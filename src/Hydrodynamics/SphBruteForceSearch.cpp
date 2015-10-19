@@ -561,7 +561,8 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicHydroForces
         neiblist[Nneib] = j;
         for (k=0; k<ndim; k++) draux[k] = neibdata[j].r[k] - partdata[i].r[k];
         NearestPeriodicVector(simbox, draux, dr_corr);
-        for (k=0; k<ndim; k++) neibdata[j].r[k] = partdata[i].r[k] + dr[k];
+        for (k=0; k<ndim; k++) neibdata[j].r[k] += dr_corr[k];
+        drsqd = DotProduct(draux, draux, ndim);
         drmag[Nneib] = sqrt(drsqd + small_number);
         invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
         for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
