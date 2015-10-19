@@ -33,7 +33,7 @@ RHS position of boundary in x-dimension     : boxmax[0] = 64.0
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 1.0
-Regular snapshot output frequency           : dt_snap = 1.2
+Regular snapshot output frequency           : dt_snap = 0.1
 Screen output frequency (in no. of steps)   : noutputstep = 128
 #asas : Nstepsmax = 48
 

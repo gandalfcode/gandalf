@@ -13,7 +13,7 @@ Select shocktube initial conditions         : ic = bb
 Input file format                           : in_file_form = su
 Output file format                          : out_file_form = su
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nhydro = 10000000
+No. of SPH particles                        : Nhydro = 10000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037
@@ -39,9 +39,9 @@ Angular velocity unit                       : angveloutunit = rad_s
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.05
-Regular snapshot output frequency           : dt_snap = 0.0002
-Time of first snapshot                      : tsnapfirst = 0.01
+Simulation end time                         : tend = 0.025
+Regular snapshot output frequency           : dt_snap = 0.005
+Time of first snapshot                      : tsnapfirst = 0.00
 Screen output frequency (in no. of steps)   : noutputstep = 16
 Diagnostic output frequency                 : ndiagstep = 32
 

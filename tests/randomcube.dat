@@ -38,8 +38,8 @@ RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 10.0
-Time for first snapshot                     : tsnapfirst = 15.0
-Regular snapshot output frequency           : dt_snap = 15.0
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 10.0
 Screen output frequency (in no. of steps)   : noutputstep = 256
 
 
@@ -82,7 +82,7 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 1
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 
 
 #--------------
