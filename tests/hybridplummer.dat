@@ -27,7 +27,7 @@ Change to COM frame                         : com_frame = 1
 #--------------------------
 Simulation end time                         : tend = 0.1
 Time of first snapshot                      : tsnapfirst = 0.0
-Regular snapshot output frequency           : dt_snap = 1.0
+Regular snapshot output frequency           : dt_snap = 0.05
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
@@ -73,7 +73,6 @@ Sub-system integration scheme               : sub_system_integration = hermite4t
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.3
@@ -86,6 +85,6 @@ No. of block timestep levels                : Nlevels = 5
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = bruteforce
+SPH neighbour search algorithm              : neib_search = kdtree
 No. of particles in leaf cell               : Nleafmax = 16
 Tree opening angle (squared)                : thetamaxsqd = 0.1
