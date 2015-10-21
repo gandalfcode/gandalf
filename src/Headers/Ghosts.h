@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Ghosts.h
 //  Contains definitions for ghost particle class.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _GHOSTS_H_
@@ -43,21 +43,20 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class Ghosts
 /// \brief   Main ghost particle class.
-/// \details Class for creating and updating ghost particles for periodic
-///          boundary conditions.
+/// \details Class for creating and updating ghost particles for periodic boundary conditions.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class Ghosts
 {
  public:
 
   // Main ghost particle functions
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
   virtual void CopyHydroDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
   virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
@@ -69,20 +68,14 @@ class Ghosts
 
 };
 
-// Declare ghost_range constant here (prevents warnings with some compilers)
-template <int ndim>
-const FLOAT Ghosts<ndim>::ghost_range = 1.6;
 
 
-
-
-//=============================================================================
+//=================================================================================================
 //  Class PeriodicGhosts
 /// \brief   ..
-/// \details ..
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class PeriodicGhosts : public Ghosts<ndim>
 {
@@ -92,16 +85,32 @@ public:
   virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *);
 };
 
+
+
+//=================================================================================================
+//  Class PeriodicGhostsSpecific
+/// \brief   ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 class PeriodicGhostsSpecific : public PeriodicGhosts<ndim>
 {
 public:
   using Ghosts<ndim>::ghost_range;
+  
   virtual void CopyHydroDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *);
   virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *) {};
 };
 
 
+
+//=================================================================================================
+//  Class NullGhosts
+/// \brief   ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=================================================================================================
 template <int ndim>
 class NullGhosts : public Ghosts<ndim>
 {
@@ -113,7 +122,15 @@ public:
   virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *);
 };
 
+
+
 #if defined MPI_PARALLEL
+//=================================================================================================
+//  Class MpiGhosts
+/// \brief   ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=================================================================================================
 template <int ndim>
 class MpiGhosts : public Ghosts<ndim>
 {
@@ -127,11 +144,19 @@ public:
 };
 
 
+
+//=================================================================================================
+//  Class MpiGhostsSpecific
+/// \brief   ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 class MpiGhostsSpecific : public MpiGhosts<ndim> {
 
   MpiControlType<ndim,ParticleType>* mpicontrol;
   //using MpiGhosts<ndim>::mpicontrol;
+
 public:
   virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *);
   virtual void CopyHydroDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *);
@@ -139,7 +164,6 @@ public:
   MpiGhostsSpecific(MpiControl<ndim>* mpicontrol_aux): mpicontrol(static_cast<MpiControlType<ndim,ParticleType> *> (mpicontrol_aux)) {};
 
 };
-
 #endif
 
 #endif

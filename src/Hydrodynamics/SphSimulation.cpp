@@ -474,6 +474,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                             sph->Nhydromax, timestep, partdata, sph);
+#ifdef MPI_PARALLEL
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
+    MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
+    sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
+                               sph->Nhydromax, timestep, partdata, sph);
+#endif
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
@@ -565,8 +571,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     if (sph->self_gravity == 1 && sph->Nhydro > 0) {
       sphneib->UpdateAllStarGasForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
 #if defined MPI_PARALLEL
-        // We need to sum up the contributions from the different domains
-        mpicontrol->ComputeTotalStarGasForces(nbody);
+      // We need to sum up the contributions from the different domains
+      mpicontrol->ComputeTotalStarGasForces(nbody);
 #endif
     }
 

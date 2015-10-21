@@ -107,8 +107,8 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
     if (partdata[i].itype == dead) continue;
     neiblist[Nneib] = i;
     gpot[Nneib] = partdata[i].gpot;
-    m[Nneib] = partdata[i].m;
-    mu[Nneib] = partdata[i].m*partdata[i].u;
+    m[Nneib]    = partdata[i].m;
+    mu[Nneib]   = partdata[i].m*partdata[i].u;
     Nneib++;
   }
 
@@ -135,7 +135,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
         for (k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - rp[k];
-        drsqd[jj] = DotProduct(dr,dr,ndim) + small_number;
+        drsqd[jj] = DotProduct(dr, dr, ndim) + small_number;
       }
       //-------------------------------------------------------------------------------------------
 

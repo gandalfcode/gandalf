@@ -1418,6 +1418,56 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
   //-----------------------------------------------------------------------------------------------
 
 
+
+  // Start from root-cell of tree and walk all cells
+  //-----------------------------------------------------------------------------------------------
+  while (c < ghosttree->Ncell) {
+    cellptr = &(ghosttree->celldata[c]);
+
+    // Construct maximum cell bounding box depending on particle velocities
+    for (k=0; k<ndim; k++) {
+      scattermin[k] = cellptr->bbmin[k] + min(0.0,cellptr->v[k]*tghost) - grange*cellptr->hmax;
+      scattermax[k] = cellptr->bbmax[k] + max(0.0,cellptr->v[k]*tghost) + grange*cellptr->hmax;
+    }
+
+
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    //---------------------------------------------------------------------------------------------
+    if (BoxOverlap(ndim, scattermin, scattermax, mpibox.boxmin, mpibox.boxmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (cellptr->level != ghosttree->ltot) {
+        c++;
+      }
+
+      else if (cellptr->N == 0) {
+        c = cellptr->cnext;
+      }
+
+      // If leaf-cell, check through particles in turn to find ghosts and
+      // add to list to be exported
+      else if (cellptr->level == ghosttree->ltot) {
+        i = cellptr->ifirst;
+        while (i != -1) {
+          export_list.push_back(i);
+          Nexport++;
+          if (i == cellptr->ilast) break;
+          i = ghosttree->inext[i];
+        };
+        c = cellptr->cnext;
+      }
+    }
+
+    // If not in range, then open next cell
+    //---------------------------------------------------------------------------------------------
+    else {
+      c = cellptr->cnext;
+    }
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
   return Nexport;
 }
 

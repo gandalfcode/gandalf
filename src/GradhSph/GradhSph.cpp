@@ -92,7 +92,7 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
     // Set conservative estimate for maximum number of particles, assuming
     // extra space required for periodic ghost particles
     if (Nhydromax < N) {
-      Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 8.0*kernp->kernrange,ndim);
+      Nhydromax = 4*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 8.0*kernp->kernrange,ndim);
     }
 
     iorder    = new int[Nhydromax];

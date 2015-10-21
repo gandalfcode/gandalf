@@ -293,7 +293,8 @@ int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
 
   // Loop over particles and prepare the ones to export
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<hydro->Nhydro; i++) {
+  //for (i=0; i<hydro->Nhydro; i++) {
+  for (i=0; i<hydro->Nhydro+hydro->NPeriodicGhost; i++) {
     ParticleType<ndim>& part = partdata[i];
 
     // Construct maximum cell bounding box depending on particle velocities
@@ -303,7 +304,7 @@ int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
     }
 
     // If maximum cell scatter box overlaps MPI domain, open cell
-    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
+    if (BoxOverlap(ndim, scattermin, scattermax, mpibox.boxmin, mpibox.boxmax)) {
       export_list.push_back(i);
       Nexport++;
     }
@@ -313,50 +314,6 @@ int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
 
   return Nexport;
 }
-
-
-
-//=================================================================================================
-//  BruteForceSearch::SearchHydroExportParticles
-/// Compute on behalf of the MpiControl class the ghost particles we need to export to other nodes.
-//=================================================================================================
-/*template <int ndim, template<int> class ParticleType>
-int BruteForceSearch<ndim,ParticleType>::SearchHydroExportParticles
- (const Box<ndim> &mpibox,             ///< [in] Bounding box of MPI domain
-  Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
-  vector<int> &export_list)            ///< [out] List of particle ids
-{
-  int i;                               // ..
-  int k;                               // ..
-  int Nexport = 0;                     // No. of MPI ghosts to export
-  FLOAT scattermin[ndim];              // ..
-  FLOAT scattermax[ndim];              // ..
-  const FLOAT grange = ghost_range*kernrange;
-  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
-
-  // Loop over particles and prepare the ones to export
-  //-----------------------------------------------------------------------------------------------
-  for (i=0; i<hydro->Nhydro; i++) {
-    ParticleType<ndim>& part = partdata[i];
-
-    // Construct maximum cell bounding box depending on particle velocities
-    for (k=0; k<ndim; k++) {
-      scattermin[k] = part.r[k] - grange*part.h;
-      scattermax[k] = part.r[k] + grange*part.h;
-    }
-
-    // If maximum cell scatter box overlaps MPI domain, open cell
-    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax) &&
-        part.active) {
-      export_list.push_back(i);
-      Nexport++;
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return Nexport;
-}*/
 
 
 
