@@ -180,7 +180,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   // Set pointers to timing object
   nbody->timing   = timing;
 
-  sinks = new Sinks<ndim>(nullptr);
+  sinks = new Sinks<ndim>(0);
 
 
   // Flag that we've processed all parameters already
