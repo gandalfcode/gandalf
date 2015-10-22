@@ -1807,6 +1807,11 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
       // Now copy the received particles inside the hydro particle main arrays
       for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
         copy(&partdata[particle_index], &received_array[offset]);
+        partdata[particle_index].gpot=0;
+        for (int k=0; k<ndim; k++) {
+          partdata[particle_index].a[k]=0;
+          partdata[particle_index].agrav[k]=0;
+        }
         tree->inext[particle_index] = particle_index + 1;
         particle_index++;
         offset += sizeof(ParticleType<ndim>);
