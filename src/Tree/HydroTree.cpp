@@ -1421,6 +1421,7 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
   // Start from root-cell of tree and walk all cells
   //-----------------------------------------------------------------------------------------------
+  c=0;
   while (c < ghosttree->Ncell) {
     cellptr = &(ghosttree->celldata[c]);
 
