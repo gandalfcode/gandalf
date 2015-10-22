@@ -1979,7 +1979,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
 
       if (send_turn) {
         Tree<ndim,ParticleType,TreeCell>* treeptr = sendprunedtree[inode];
-        MPI_Send(&(treeptr->Ncell), sizeof(int), MPI_INT, inode, 3, MPI_COMM_WORLD);
+        MPI_Send(&(treeptr->Ncell), 1, MPI_INT, inode, 3, MPI_COMM_WORLD);
         MPI_Send(treeptr->celldata, treeptr->Ncell*sizeof(TreeCell<ndim>),
                  MPI_CHAR, inode, 3, MPI_COMM_WORLD);
         send_turn = false;
@@ -1987,7 +1987,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
       else {
         Tree<ndim,ParticleType,TreeCell>* treeptr = prunedtree[inode];
         MPI_Status status;
-        MPI_Recv(&(treeptr->Ncell), sizeof(int), MPI_INT, inode, 3, MPI_COMM_WORLD, &status);
+        MPI_Recv(&(treeptr->Ncell), 1, MPI_INT, inode, 3, MPI_COMM_WORLD, &status);
         treeptr->Ncellmax = max(treeptr->Ncellmax, treeptr->Ncell);
         treeptr->AllocateTreeMemory();
         MPI_Recv(treeptr->celldata, treeptr->Ncell*sizeof(TreeCell<ndim>),
