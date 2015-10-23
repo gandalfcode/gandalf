@@ -164,6 +164,11 @@ throw StopError("CTRL-C received");
     	PyErr_SetString(PyExc_KeyboardInterrupt,e.msg.c_str());
     	return NULL;
     }
+    catch (GandalfError &e) {
+    	PyEval_RestoreThread(_save);
+		PyErr_SetString(PyExc_Exception,e.msg.c_str());
+		return NULL;
+	}    
 }
 
 %exception RenderBase::CreateSliceRenderingGrid {
@@ -179,6 +184,11 @@ throw StopError("CTRL-C received");
     	PyErr_SetString(PyExc_KeyboardInterrupt,e.msg.c_str());
     	return NULL;
     }
+    catch (GandalfError &e) {
+    	PyEval_RestoreThread(_save);
+		PyErr_SetString(PyExc_Exception,e.msg.c_str());
+		return NULL;
+	}
 }
 
 %include "numpy.i"
