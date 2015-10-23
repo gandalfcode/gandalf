@@ -25,6 +25,8 @@ from data_fetcher import UserQuantity, TimeData
 from facade import SimBuffer
 import numpy as np
 from swig_generated.SphSim import RenderBase, UnitInfo
+from distutils.version import LooseVersion
+
 
 '''This module contains all the source code for the commands that are used to
 make the main process communicate with the plotting process.  Most of them
@@ -594,7 +596,10 @@ class RenderPlotCommand (PlotCommand):
             except KeyError:
                 pass
 
-        self.autolimits(ax)
+        if LooseVersion(matplotlib.__version__)<LooseVersion('1.3'):
+            self.autolimits(ax)
+        else:
+            ax.autoscale_view()
         colorbar = fig.colorbar(im)
         products = (im, colorbar)
         plotting.axesimages[ax]=products
