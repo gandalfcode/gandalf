@@ -1421,6 +1421,7 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
   // Start from root-cell of tree and walk all cells
   //-----------------------------------------------------------------------------------------------
+  c=0;
   while (c < ghosttree->Ncell) {
     cellptr = &(ghosttree->celldata[c]);
 
@@ -1806,6 +1807,11 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
       // Now copy the received particles inside the hydro particle main arrays
       for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
         copy(&partdata[particle_index], &received_array[offset]);
+        partdata[particle_index].gpot=0;
+        for (int k=0; k<ndim; k++) {
+          partdata[particle_index].a[k]=0;
+          partdata[particle_index].agrav[k]=0;
+        }
         tree->inext[particle_index] = particle_index + 1;
         particle_index++;
         offset += sizeof(ParticleType<ndim>);
@@ -1979,7 +1985,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
 
       if (send_turn) {
         Tree<ndim,ParticleType,TreeCell>* treeptr = sendprunedtree[inode];
-        MPI_Send(&(treeptr->Ncell), sizeof(int), MPI_INT, inode, 3, MPI_COMM_WORLD);
+        MPI_Send(&(treeptr->Ncell), 1, MPI_INT, inode, 3, MPI_COMM_WORLD);
         MPI_Send(treeptr->celldata, treeptr->Ncell*sizeof(TreeCell<ndim>),
                  MPI_CHAR, inode, 3, MPI_COMM_WORLD);
         send_turn = false;
@@ -1987,7 +1993,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
       else {
         Tree<ndim,ParticleType,TreeCell>* treeptr = prunedtree[inode];
         MPI_Status status;
-        MPI_Recv(&(treeptr->Ncell), sizeof(int), MPI_INT, inode, 3, MPI_COMM_WORLD, &status);
+        MPI_Recv(&(treeptr->Ncell), 1, MPI_INT, inode, 3, MPI_COMM_WORLD, &status);
         treeptr->Ncellmax = max(treeptr->Ncellmax, treeptr->Ncell);
         treeptr->AllocateTreeMemory();
         MPI_Recv(treeptr->celldata, treeptr->Ncell*sizeof(TreeCell<ndim>),
