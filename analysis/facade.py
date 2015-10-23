@@ -773,7 +773,7 @@ Required argument:
         simno = int(sim)
     return simno
 
-def get_data(quantity, type="default",sim="current",snap="current",unit="default" ):
+def get_data(quantity, snap="current",type="default",sim="current",unit="default" ):
     '''Returns the array with the data for the given quantity.
     The data is returned scaled to the specified unit
     

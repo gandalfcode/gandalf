@@ -29,11 +29,12 @@ direct = ['x', 'y', 'z', 'vx', 'vy', 'vz', 'ax', 'ay', 'az',
 time_fetchers={}
 
 derived_fetchers = {}
+function_fetchers = {}
 
 #------------------------------------------------------------------------------
 def _KnownQuantities():
   '''Return the list of the quantities that we know'''
-  return derived_fetchers.keys()+direct
+  return derived_fetchers.keys()+direct+function_fetchers.keys()
 
 #------------------------------------------------------------------------------
 def UserQuantity(quantity):
@@ -42,6 +43,8 @@ def UserQuantity(quantity):
         return DirectDataFetcher(quantity)
     elif quantity in derived_fetchers:
         return derived_fetchers[quantity]
+    elif quantity in function_fetchers:
+        return function_fetchers[quantity]
     else:
         raise Exception("UserQuantity: we don't know how to compute " + quantity)
     
@@ -62,8 +65,12 @@ build your own unit passing a numerical value for the scaling_factor,
 a unitname and a latex label.  In this case, however, no rescaling is possible, 
 as the unit system does not know how to rescale your unit.    
 '''
-    fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor, label)
-    derived_fetchers[name] = fetcher
+    if isinstance(formula, basestring):
+        fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor, label)
+        derived_fetchers[name]=fetcher
+    else:
+        fetcher = FunctionFetcher(name,formula,unitlabel,unitname,scaling_factor,label)
+        function_fetchers[name] = fetcher
     return fetcher
 
   
@@ -123,6 +130,8 @@ def check_requested_quantity(quantity, snap):
         return "direct"
     elif quantity in derived_fetchers:
         return "derived"
+    elif quantity in function_fetchers:
+        return "function"
     else:
         raise Exception("We don't know how to compute " + quantity)
     
@@ -215,6 +224,45 @@ class FunctionTimeDataFetcher:
         values = np.asarray(results_zipped[1])
         
         return results_zipped[0][0], values, results_zipped[2][0], results_zipped[3][0]
+    
+class FunctionFetcher:
+    
+    def __init__(self, name, function, unitlabel='', unitname='',scaling_factor=1,label='', **kwargs):
+        self._name=name
+        self._function = function
+        self.unitlabel = unitlabel
+        self.unitname = unitname
+        self.scaling_factor = scaling_factor
+        self.label = label
+        self._kwargs = kwargs
+        self.unitinfo = UnitInfo()
+        
+    def fetch(self,type="default", snap="current", unit="default"):
+        
+        if snap=="current":
+            snap=SimBuffer.get_current_snapshot()
+            
+        data=self._function(snap,type=type,unit=unit,**self._kwargs)
+        
+        if isinstance(data,list):
+            return data
+        else:
+            if isinstance(self.scaling_factor,basestring):
+                try:
+                    unitobj=getattr(snap.sim.simunits, self.scaling_factor)
+                    if unit=="default":
+                        unit=unitobj.outunit
+                    scaling_factor=unitobj.OutputScale(unit)
+                    self.unitinfo.name=unit
+                    self.unitinfo.label=unitobj.LatexLabel(unit)
+                except AttributeError:
+                    raise AttributeError("Sorry, we do not know the unit " + self.scaling_factor)
+            else:
+                scaling_factor=float(self.scaling_factor)
+                self.unitinfo.label=self.unitlabel
+                self.unitinfo.name=self.unitname
+        
+        return self.unitinfo, data, scaling_factor, self.label
 
 def get_time_snapshot(snap, type=None, unit="default"):
     '''Return the time of a given snapshot (plus all the needed information about units and labels)'''
