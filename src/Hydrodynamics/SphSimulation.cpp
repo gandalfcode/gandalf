@@ -487,10 +487,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 #ifdef MPI_PARALLEL
     if (sph->self_gravity == 1) {
-      sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+      sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
     }
     else {
-      sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+      sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
     }
 
     mpicontrol->ExportParticlesBeforeForceLoop(sph);
@@ -753,10 +753,10 @@ void SphSimulation<ndim>::MainLoop(void)
       // if too close to the domain boundaries
 #ifdef MPI_PARALLEL
       if (sph->self_gravity == 1) {
-        sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+        sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
       }
       else {
-        sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+        sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
       }
 
       // If active particles need forces from other domains, export particles

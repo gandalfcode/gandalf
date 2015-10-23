@@ -237,42 +237,6 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 
 #if defined MPI_PARALLEL
 //=================================================================================================
-//  BruteForceSearch::UpdateGravityExportList
-/// ..
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::UpdateGravityExportList
- (int rank,                            ///< [in] ..
-  int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  Particle<ndim> *part_gen,            ///< [inout] Pointer to hydro ptcl array
-  Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
-{
-  return;
-}
-
-
-
-//=================================================================================================
-//  BruteForceSearch::UpdateHydroExportList
-/// ..
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::UpdateHydroExportList
- (int rank,                            ///< [in] ..
-  int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  Particle<ndim> *part_gen,            ///< [inout] Pointer to hydro ptcl array
-  Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
-{
-  return;
-}
-
-
-
-//=================================================================================================
 //  BruteForceSearch::SearchMpiGhostParticles
 /// Compute on behalf of the MpiControl class the ghost particles we need to export to other nodes.
 //=================================================================================================

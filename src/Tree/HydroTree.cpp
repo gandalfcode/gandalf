@@ -900,7 +900,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   int Ntot,                            ///< [in] No. of hydro + ghost particles
   Particle<ndim> *part_gen,            ///< [inout] Pointer to Hydrodynamics ptcl array
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
+  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   int cactive;                         // No. of active cells
   TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
@@ -987,7 +988,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         if (j == rank) continue;
 
         Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
-          (cellptr, macfactor, Ngravcellmax, Ngravcell, gravcelllist);
+          (cellptr, simbox, macfactor, Ngravcellmax, Ngravcell, gravcelllist);
 
         // If pruned tree is too close to be used (flagged by -1), then record cell id
         // for exporting those particles to other MPI processes
@@ -1078,7 +1079,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   int Ntot,                            ///< [in] No. of hydro + ghost particles
   Particle<ndim> *part_gen,            ///< [inout] Pointer to Hydrodynamics ptcl array
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
+  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   int cactive;                         // No. of active cells
   TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
@@ -1127,7 +1129,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
       for (j=0; j<Nmpi; j++) {
         if (j == rank) continue;
 
-        overlapflag = prunedtree[j]->ComputeHydroTreeCellOverlap(cellptr);
+        overlapflag = prunedtree[j]->ComputeHydroTreeCellOverlap(cellptr, simbox);
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes

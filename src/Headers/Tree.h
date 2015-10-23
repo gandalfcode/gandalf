@@ -155,9 +155,9 @@ class Tree : public TreeBase<ndim>
 #ifdef MPI_PARALLEL
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeCell<ndim> *);
-  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
-                                           const int, int, TreeCell<ndim> *);
-  bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
+  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const DomainBox<ndim> &,
+                                           const FLOAT, const int, int, TreeCell<ndim> *);
+  bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *, const DomainBox<ndim> &);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
 #endif
 

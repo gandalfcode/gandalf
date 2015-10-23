@@ -110,10 +110,10 @@ protected:
                                       Hydrodynamics<ndim> *, vector<int> &) {return 0;};
   virtual void UnpackExported(vector<char >& arrays, vector<int>& N_received_particles_from_proc,
                               Hydrodynamics<ndim> *) = 0;
-  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *,
-                                       Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
-  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *,
-                                     Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                       Nbody<ndim> *, const DomainBox<ndim> &) = 0;
+  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                     Nbody<ndim> *, const DomainBox<ndim> &) = 0;
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
                                         vector<int>& recv_displs, Hydrodynamics<ndim>* hydro,
                                         int rank) = 0;
@@ -201,10 +201,10 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
                                       Hydrodynamics<ndim> *, vector<int> &);
   virtual void UnpackExported(vector<char>& arrays, vector<int>& N_received_particles_from_proc,
                               Hydrodynamics<ndim> *);
-  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *,
-                                       Hydrodynamics<ndim> *, Nbody<ndim> *);
-  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *,
-                                     Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                       Nbody<ndim> *, const DomainBox<ndim> &) {};
+  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                     Nbody<ndim> *, const DomainBox<ndim> &) {};
   virtual void UnpackReturnedExportInfo(vector<char> &, vector<int> &, Hydrodynamics<ndim> *, int);
   virtual void FindParticlesToTransfer(Hydrodynamics<ndim> *, vector<vector<int> >& ,
                                        vector<int> &, const vector<int> &, MpiNode<ndim> *);
@@ -273,10 +273,10 @@ protected:
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
   virtual void UnpackExported(vector<char> &, vector<int> &, Hydrodynamics<ndim> *);
-  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *,
-                                       Hydrodynamics<ndim> *, Nbody<ndim> *);
-  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *,
-                                     Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                       Nbody<ndim> *, const DomainBox<ndim> &);
+  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                     Nbody<ndim> *, const DomainBox<ndim> &);
   virtual void UnpackReturnedExportInfo(vector<char > &, vector<int> &,
                                         Hydrodynamics<ndim> *, int);
   virtual void FindParticlesToTransfer(Hydrodynamics<ndim> *, vector<vector<int> >& ,
