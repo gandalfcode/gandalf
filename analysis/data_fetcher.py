@@ -205,10 +205,14 @@ class FormulaDataFetcher:
 #------------------------------------------------------------------------------
 class FunctionTimeDataFetcher:
     
-    def __init__(self, function, *args, **kwargs):
+    def __init__(self, function, unitlabel="", unitname="",scaling_factor =1,label='',**kwargs):
         self._function = function
-        self._args = args
         self._kwargs = kwargs
+        self.unitlabel=unitlabel
+        self.unitname=unitname
+        self.unitinfo=UnitInfo()
+        self.scaling_factor=scaling_factor
+        self.label=label
     
     def fetch(self, sim="current", type="default", unit="default"):
         
@@ -218,12 +222,33 @@ class FunctionTimeDataFetcher:
             sim=SimBuffer.get_sim_no(sim)
         
         iterator = SimBuffer.get_sim_iterator(sim)
-        results = map(lambda snap: self._function(snap,*self._args,type=type,unit=unit,**self._kwargs),iterator)
-        results_zipped = zip(*results)
+        results = map(lambda snap: self._function(snap,type=type,unit=unit,**self._kwargs),iterator)
+        if isinstance(results[0],list) or isinstance(results[0],tuple):
+            results_zipped = zip(*results)
         
-        values = np.asarray(results_zipped[1])
+            values = np.asarray(results_zipped[1])
         
-        return results_zipped[0][0], values, results_zipped[2][0], results_zipped[3][0]
+            return results_zipped[0][0], values, results_zipped[2][0], results_zipped[3][0]
+        
+        else:
+            values=np.asarray(results)
+            if isinstance(self.scaling_factor,basestring):
+                try:
+                    unitobj=getattr(sim.simunits, self.scaling_factor)
+                    if unit=="default":
+                        unit=unitobj.outunit
+                    scaling_factor=unitobj.OutputScale(unit)
+                    self.unitinfo.name=unit
+                    self.unitinfo.label=unitobj.LatexLabel(unit)
+                except AttributeError:
+                    raise AttributeError("Sorry, we do not know the unit " + self.scaling_factor)
+            else:
+                scaling_factor=float(self.scaling_factor)
+                self.unitinfo.label=self.unitlabel
+                self.unitinfo.name=self.unitname
+                
+        return self.unitinfo, values, scaling_factor, self.label
+            
     
 class FunctionFetcher:
     
@@ -243,8 +268,8 @@ class FunctionFetcher:
             snap=SimBuffer.get_current_snapshot()
             
         data=self._function(snap,type=type,unit=unit,**self._kwargs)
-        
-        if isinstance(data,list):
+        print data
+        if isinstance(data,list) or isinstance(data,tuple):
             return data
         else:
             if isinstance(self.scaling_factor,basestring):
