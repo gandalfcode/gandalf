@@ -245,7 +245,7 @@ Optional arguments:
 def render(x, y, render, snap="current", sim="current", overplot=False,
            autoscale=False, autoscalerender=False, coordlimits=None,
            zslice=None, xunit="default", yunit="default",
-           renderunit="default", res=64, interpolation='nearest',**kwargs):
+           renderunit="default", res=64, interpolation='nearest',lognorm=False,**kwargs):
     '''Create a rendered plot from selected particle data.
 
 Required arguments:
@@ -292,6 +292,10 @@ Optional arguments:
                     wants to smooth the image, bilinear or bicubic could be
                     used. See pyplot documentation for the full list of
                     possible values.
+    lognorm    : Boolean flag specifying wheter the colour scale should be
+                 logarithmic (default: linear). If you want to customise the
+                 limits, use the vmin and vmax flags which are passed to
+                 matplotlib
 '''
     if zslice is not None:
         zslice = float(zslice)
@@ -308,7 +312,7 @@ Optional arguments:
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot,
                                          autoscale, autoscalerender,
                                          coordlimits, zslice, xunit, yunit,
-                                         renderunit, res, interpolation,**kwargs)
+                                         renderunit, res, interpolation,lognorm,**kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.place_command([command, data])
     return data

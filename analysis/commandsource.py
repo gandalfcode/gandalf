@@ -531,7 +531,7 @@ class RenderPlotCommand (PlotCommand):
     def __init__(self, xquantity, yquantity, renderquantity, snap, simno,
                  overplot, autoscale, autoscalerender, coordlimits,
                  zslice=None, xunit="default", yunit="default",
-                 renderunit="default", res=64, interpolation='nearest',**kwargs):
+                 renderunit="default", res=64, interpolation='nearest',lognorm=False,**kwargs):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno,
                              overplot, autoscale, xunit, yunit)
         self.renderquantity = renderquantity
@@ -544,6 +544,7 @@ class RenderPlotCommand (PlotCommand):
         self.renderunitname = ""
         self.res = res
         self.interpolation = interpolation
+        self.lognorm=lognorm
 	self._kwargs = kwargs
 
     #--------------------------------------------------------------------------
@@ -573,7 +574,13 @@ class RenderPlotCommand (PlotCommand):
 
     #--------------------------------------------------------------------------
     def execute(self, plotting, fig, ax, data):
-        im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation, **self._kwargs)
+        import matplotlib
+        from matplotlib.colors import LogNorm, Normalize
+        if self.lognorm:
+            norm=LogNorm()
+        else:
+            norm=Normalize()
+        im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation, norm=norm,**self._kwargs)
 
         # Set limits
         if not self.autoscalerender:
