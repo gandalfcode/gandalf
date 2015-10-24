@@ -1771,8 +1771,6 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
   // Sinks/stars
   //---------------------------------------------------------------------------
-  if (rank==0)
-	cout << "about to write stars, nstar: " << nbody->Nstar << endl;
   if (rank==0 && nbody->Nstar > 0) {
 
     ofstream outfile(filename.c_str(),ios::binary|ios::app);

@@ -45,8 +45,8 @@ using namespace std;
 
 
 //=================================================================================================
-//  MpiKDTreeDecomposition::
-/// ...
+//  MpiKDTreeDecomposition::MpiKDTreeDecomposition
+/// MpiKDTreeDecomposition constructor (currently only calls base MpiControlType constructor)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 MpiKDTreeDecomposition<ndim, ParticleType>::MpiKDTreeDecomposition() :
@@ -109,10 +109,12 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
   }
   //mpitree->box = &mpibox;
 
+#ifdef OUTPUT_ALL
   cout << "Simulation bounding box" << endl;
   for (k=0; k<ndim; k++) {
     cout << "r[" << k << "]  :  " << mpibox.boxmin[k] << "   " << mpibox.boxmax[k] << endl;
   }
+#endif
 
 
   // For main process, create load balancing tree, transmit information to all
@@ -331,11 +333,13 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   int k;                               // Dimension counter
   int l;                               // MPI tree level counter
   int lbalance = 0;                    // Load balance level (always top level for now)
+  FLOAT rold;                          // Position of previous load balancing division
   DOUBLE worktot = 0.0;                // Total work on all nodes
 
   // If running on only one MPI node, return immediately
   if (Nmpi == 1) return;
   debug2("[MpiKDTreeDecomposition::LoadBalancing]");
+  timing->StartTimingSection("MPI_LOAD_BALANCING");
 
   //Get pointer to sph particles and cast it to the right type
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
@@ -352,12 +356,10 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
     // Loop over all MPI tree cells on current balancing level
     for (c=0; c<mpitree->Ncell; c++) {
-      continue;
       if (mpitree->tree[c].level != l) continue;
-      c2 = mpitree->tree[c].c2;
-      k = mpitree->tree[c].k_divide;
-
-      FLOAT rold = mpitree->tree[c].r_divide;
+      c2   = mpitree->tree[c].c2;
+      k    = mpitree->tree[c].k_divide;
+      rold = mpitree->tree[c].r_divide;
 
 #ifdef OUTPUT_ALL
       cout << "Previous load balancing division for " << c << "    rold : " << rold
@@ -402,7 +404,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   //-----------------------------------------------------------------------------------------------
 
   // Write out 'final' mpinode bounding boxes
-#ifdef VERIFY_ALL
+#ifdef OUTPUT_ALL
   for (int inode=0; inode<Nmpi; inode++) {
     cout << "Node " << inode << "     box : " << mpinode[inode].domain.boxmin[0] << "     "
          << mpinode[inode].domain.boxmax[0] << endl;
@@ -414,9 +416,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp);
 
 
-
   // Prepare lists of particles that now occupy other processor domains that need to be transfered
-
   // First construct the list of nodes that we might be sending particles to
   vector<int> potential_nodes;
   potential_nodes.reserve(Nmpi);
@@ -431,7 +431,6 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   vector<int> all_particles_to_export;
   // Send and receive particles from/to all other nodes
   vector<ParticleType<ndim> > sendbuffer, recvbuffer;
-
   neibsearch->FindParticlesToTransfer(hydro, particles_to_transfer, all_particles_to_export,
                                       potential_nodes, mpinode);
 
@@ -441,8 +440,6 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
     int inode = my_matches[iturn];
 
     int N_to_transfer = particles_to_transfer[inode].size();
-    //cout << "Transfer!!  Rank : " << rank << "    N_to_transfer : "
-    //     << N_to_transfer << "    dest : " << inode << endl;
     sendbuffer.clear();
     sendbuffer.resize(N_to_transfer);
     recvbuffer.clear();
@@ -507,6 +504,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
     partdata[all_particles_to_export[i]].itype = dead;
   }
   hydro->DeleteDeadParticles();
+
+  timing->EndTimingSection("MPI_LOAD_BALANCING");
 
   return;
 }

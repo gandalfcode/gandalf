@@ -1288,11 +1288,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     }
     drsqd = DotProduct(dr, dr, ndim);
 
-    /*cout << "Checking distances : " << drsqd << "   " << "   "
-         << pow(celldata[c].rmax + kernrange*celldata[c].hmax,2) << endl;
-    cout << "Other data : " << celldata[c].level << "   " << pruning_level_min << "   "
-         << pruning_level_max << "   " << celldata[c].N << "    cnext : "
-         << celldata[c].cnext << "    copen : " << celldata[c].copen << endl;*/
 
     // Special case if creating pruned tree for local node to prevent pruned tree from being
     // deeper than the minimum pruning level
@@ -1331,7 +1326,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
       c = celldata[c].cnext;
     }
 
-    //cout << "Now moving to cell : " << c << "   " << Ncell << "   " << Ncellmax << endl;
     Nprunedcell++;
 
   };
@@ -1356,22 +1350,16 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
 
-
   // If selected, verify that pruned tree pointers are correctly set-up
-//#ifdef VERIFY_ALL
   assert(Nprunedcell <= Nprunedcellmax);
   for (c=0; c<Nprunedcell; c++) {
     if (prunedcells[c].copen != -1) cnext = prunedcells[c].copen;
     else cnext = prunedcells[c].cnext;
-
-    //cout << "checking? : " << c << "   " << cnext << "  " << prunedcells[c].copen
-    //     << "   " << prunedcells[c].cnext << "   " << Ncell << "   " << Ncellmax << endl;
     assert(cnext == c + 1 || cnext == Ncell || cnext == Ncellmax);
     assert(prunedcells[c].level <= pruning_level_max);
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
-//#endif
 
 
   delete[] newCellIds;

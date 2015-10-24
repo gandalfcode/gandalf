@@ -976,11 +976,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       }
 
 
-            // Sanity check here!!
-            FLOAT mpruned = 0.0;
-            FLOAT mcells = 0.0;
-
-
       // Loop over all distant pruned trees and compute list of cells.
       // If pruned tree is too close, record cell id for exporting
       //-------------------------------------------------------------------------------------------
@@ -1004,7 +999,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         else {
           Ngravcell = Ngravcelltemp;
           assert(Ngravcell <= Ngravcellmax);
-          mpruned += prunedtree[j]->celldata[0].m;
         }
 
       }
@@ -1040,14 +1034,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         for (k=0; k<ndim; k++) partdata[i].agrav[k] += activepart[j].agrav[k];
         partdata[i].gpot += activepart[j].gpot;
       }
-
-
-      for (j=0; j<Ngravcell; j++) {
-        mcells += gravcelllist[j].m;
-      }
-      cout << "MPRUNED : " << mpruned << "     MCELLS : " << mcells << "    Ngravcell : "
-           << Ngravcell << "    gpot : " << activepart[0].gpot << endl;
-
 
     }
     //=============================================================================================
@@ -1227,6 +1213,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
     treeptr->gmax     = 0;
     treeptr->Ncellmax = max(treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_min));
     treeptr->AllocateTreeMemory();
+
     treeptr->Ncell = tree->CreatePrunedTreeForMpiNode
       (mpinode[i], simbox, (FLOAT) 0.0, localNode, pruning_level_min, pruning_level_max,
        treeptr->Ncellmax, treeptr->celldata);
@@ -1237,14 +1224,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
     while (treeptr->Ncell == -1) {
 
       treeptr->Ncellmax = max(2*treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_min));
-#if defined(OUTPUT_ALL)
-      cout << "MEMORY FOR PRUNED TREE FOR NODE : " << i << "    Ncellmax : "
-           << treeptr->Ncellmax << "   " << tree->Ncellmax <<  "    "
-           << 2*treeptr->Ncellmax << "    "
-           << treeptr->GetMaxCellNumber(pruning_level_min) << "   "
-           << max(2*treeptr->Ncellmax,
-                  treeptr->GetMaxCellNumber(pruning_level_min)) << endl;
-#endif
       treeptr->AllocateTreeMemory();
       treeptr->Ncell = tree->CreatePrunedTreeForMpiNode
         (mpinode[i], simbox, (FLOAT) 0.0, localNode, pruning_level_min, pruning_level_max,
@@ -1258,16 +1237,13 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 
     // Allocate (or reallocate if needed) all tree memory
     Nprunedcellmax += treeptr->Ncell;
-#if defined(OUTPUT_ALL)
-    cout << "BUILDING PRUNED TREE FOR DOMAIN " << rank << " TO SEND TO NODE " << i << endl;
-    cout << "NO OF CELLS IN PRUNED TREE : " << treeptr->Ncell << endl;
-#endif
 
   }
   //-----------------------------------------------------------------------------------------------
 
-  MPI_Barrier(MPI_COMM_WORLD);
   timing->EndTimingSection("BUILD_PRUNED_TREE");
+  MPI_Barrier(MPI_COMM_WORLD);
+
   return;
 }
 
@@ -1304,7 +1280,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
   omp_set_nested(1);
 #endif
 
+#ifdef OUTPUT_ALL
   cout << "BUILDING TREE WITH " << hydro->Nmpighost << " MPI GHOSTS!!" << endl;
+#endif
 
   // For tree rebuild steps
   //-----------------------------------------------------------------------------------------------
@@ -1378,8 +1356,10 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
     // Construct maximum cell bounding box depending on particle velocities
     for (k=0; k<ndim; k++) {
-      scattermin[k] = cellptr->bbmin[k] + min(0.0,cellptr->v[k]*tghost) - grange*cellptr->hmax;
-      scattermax[k] = cellptr->bbmax[k] + max(0.0,cellptr->v[k]*tghost) + grange*cellptr->hmax;
+      scattermin[k] = cellptr->bbmin[k] +
+        min((FLOAT) 0.0, cellptr->v[k]*tghost) - grange*cellptr->hmax;
+      scattermax[k] = cellptr->bbmax[k] +
+        max((FLOAT) 0.0, cellptr->v[k]*tghost) + grange*cellptr->hmax;
     }
 
 
@@ -1423,14 +1403,16 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
   // Start from root-cell of tree and walk all cells
   //-----------------------------------------------------------------------------------------------
-  c=0;
+  c = 0;
   while (c < ghosttree->Ncell) {
     cellptr = &(ghosttree->celldata[c]);
 
     // Construct maximum cell bounding box depending on particle velocities
     for (k=0; k<ndim; k++) {
-      scattermin[k] = cellptr->bbmin[k] + min(0.0,cellptr->v[k]*tghost) - grange*cellptr->hmax;
-      scattermax[k] = cellptr->bbmax[k] + max(0.0,cellptr->v[k]*tghost) + grange*cellptr->hmax;
+      scattermin[k] = cellptr->bbmin[k] +
+        min((FLOAT) 0.0, cellptr->v[k]*tghost) - grange*cellptr->hmax;
+      scattermax[k] = cellptr->bbmax[k] +
+        max((FLOAT) 0.0, cellptr->v[k]*tghost) + grange*cellptr->hmax;
     }
 
 

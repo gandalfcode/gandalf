@@ -377,7 +377,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
   delete[] celllist;
@@ -622,7 +624,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
 
@@ -1389,7 +1393,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
 
