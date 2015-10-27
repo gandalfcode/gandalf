@@ -1187,7 +1187,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
   debug2("[GradhSphTree::UpdateAllSphPeriodicHydroForces]");
   timing->StartTimingSection("SPH_PERIODIC_HYDRO_FORCES");
 
-
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
   celllist = new TreeCell<ndim>[tree->Ncellmax];
@@ -1197,7 +1196,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) return;
+  //if (cactive == 0) return;
 
   // Update ghost tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0],sphdata);
