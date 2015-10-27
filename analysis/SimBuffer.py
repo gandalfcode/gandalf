@@ -433,8 +433,11 @@ this reason, all of its methods are static.
             snap = SimBuffer.get_current_snapshot_by_sim(sim_obj)
         elif snapno == "live":
             snap = SimBuffer.get_live_snapshot_sim(sim_obj)
-        else:
+        elif isinstance(snapno,int) or isinstance(snapno, basestring):
             snap = SimBuffer.get_snapshot_number_sim(sim_obj, snapno)
+        elif isinstance(snapno,SphSnapshotBase):
+            snap = snapno
+            
         return snap
 
 

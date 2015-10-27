@@ -127,7 +127,7 @@ Max. timestep level difference              : level_diff_max = 2
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 No. of particles in leaf cell               : Nleafmax = 8
 Tree opening angle (squared)                : thetamaxsqd = 0.15
 Multipole option                            : multipole = monopole

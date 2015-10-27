@@ -17,8 +17,8 @@ Pressure of LHS fluid                       : press1 = 1.0
 Pressure of RHS fluid                       : press2 = 0.2
 Density of LHS fluid                        : rhofluid1 = 1.0
 Density of RHS fluid                        : rhofluid2 = 0.5
-No. of particles in LHS fluid               : Nlattice1[0] = 200
-No. of particles in RHS fluid               : Nlattice2[0] = 100
+No. of particles in LHS fluid               : Nlattice1[0] = 512
+No. of particles in RHS fluid               : Nlattice2[0] = 256
 Dimensionless units                         : dimensionless = 1
 
 
@@ -27,19 +27,18 @@ Dimensionless units                         : dimensionless = 1
 #------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = -2.0
 RHS position of boundary in x-dimension     : boxmax[0] = 2.0
-LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
-RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in x-dimension            : boundary_lhs[0] = open
+RHS boundary type in x-dimension            : boundary_rhs[0] = open
 
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.5
+Simulation end time                         : tend = 0.3
 Regular snapshot output frequency           : dt_snap = 0.1
-Time for first snapshot                     : tsnapfirst = 0.1
-Screen output frequency (in no. of steps)   : noutputstep = 64
-Diagnostic output frequency                 : ndiagstep = 1024
-Output file format                          : out_file_form = sf
+Time for first snapshot                     : tsnapfirst = 0.0
+Screen output frequency (in no. of steps)   : noutputstep = 32
+Output file format                          : out_file_form = su
 
 
 #------------------------
@@ -53,7 +52,6 @@ Ratio of specific heats of gas              : gamma_eos = 1.4
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
-SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
 
@@ -71,7 +69,6 @@ Artificial viscosity beta value             : beta_visc = 2.0
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.2
 SPH acceleration condition multiplier       : accel_mult = 0.4
 SPH energy equation timestep multiplier     : energy_mult = 0.5
@@ -82,7 +79,7 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = bruteforce
+SPH neighbour search algorithm              : neib_search = kdtree
 Build tree every step                       : ntreebuildstep = 1
 Stock tree every step                       : ntreestockstep = 1
 
@@ -90,3 +87,4 @@ Stock tree every step                       : ntreestockstep = 1
 # Misc. options
 #--------------
 Switch-off self-gravity of gas              : self_gravity = 0
+:Nhydromax=10000

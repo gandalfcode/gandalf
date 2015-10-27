@@ -87,7 +87,7 @@ No. of block timestep levels                : Nlevels = 1
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 
 
 #---------------------

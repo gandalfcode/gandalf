@@ -895,6 +895,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::nrestartstep;
   using Simulation<ndim>::dt_max;
+  using Simulation<ndim>::sinks;
 
 public:
 

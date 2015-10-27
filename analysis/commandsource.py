@@ -25,6 +25,8 @@ from data_fetcher import UserQuantity, TimeData
 from facade import SimBuffer
 import numpy as np
 from swig_generated.SphSim import RenderBase, UnitInfo
+from distutils.version import LooseVersion
+
 
 '''This module contains all the source code for the commands that are used to
 make the main process communicate with the plotting process.  Most of them
@@ -531,7 +533,7 @@ class RenderPlotCommand (PlotCommand):
     def __init__(self, xquantity, yquantity, renderquantity, snap, simno,
                  overplot, autoscale, autoscalerender, coordlimits,
                  zslice=None, xunit="default", yunit="default",
-                 renderunit="default", res=64, interpolation='nearest',**kwargs):
+                 renderunit="default", res=64, interpolation='nearest',lognorm=False,**kwargs):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno,
                              overplot, autoscale, xunit, yunit)
         self.renderquantity = renderquantity
@@ -544,6 +546,7 @@ class RenderPlotCommand (PlotCommand):
         self.renderunitname = ""
         self.res = res
         self.interpolation = interpolation
+        self.lognorm=lognorm
 	self._kwargs = kwargs
 
     #--------------------------------------------------------------------------
@@ -573,7 +576,13 @@ class RenderPlotCommand (PlotCommand):
 
     #--------------------------------------------------------------------------
     def execute(self, plotting, fig, ax, data):
-        im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation, **self._kwargs)
+        import matplotlib
+        from matplotlib.colors import LogNorm, Normalize
+        if self.lognorm:
+            norm=LogNorm()
+        else:
+            norm=Normalize()
+        im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation, norm=norm,**self._kwargs)
 
         # Set limits
         if not self.autoscalerender:
@@ -587,7 +596,10 @@ class RenderPlotCommand (PlotCommand):
             except KeyError:
                 pass
 
-        self.autolimits(ax)
+        if LooseVersion(matplotlib.__version__)<LooseVersion('1.3'):
+            self.autolimits(ax)
+        else:
+            ax.autoscale_view()
         colorbar = fig.colorbar(im)
         products = (im, colorbar)
         plotting.axesimages[ax]=products
