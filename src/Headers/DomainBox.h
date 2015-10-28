@@ -81,6 +81,7 @@ struct DomainBox {
   FLOAT boxmax[3];                     ///< Maximum bounding box extent
   FLOAT boxsize[3];                    ///< Side-lengths of bounding box
   FLOAT boxhalf[3];                    ///< Half side-lengths of bounding box
+  bool PeriodicGravity ;               ///< Whether the domain is using periodic gravity.
 };
 
 
@@ -114,6 +115,40 @@ bool IsAnyBoundarySpecial(const DomainBox<ndim>& box)
   return false;
 }
 
+//=================================================================================================
+/// \brief  Helper function to find if any of the boundaries is periodic
+/// \author R. A. Booth
+/// \date   28/10/2015
+/// \return A boolean saying whether any periodic boundary was found
+//=================================================================================================
+template <int ndim>
+bool IsAnyBoundaryPeriodic(const DomainBox<ndim>& box)
+{
+  for (int k=0; k < ndim; k++){
+	if(box.boundary_lhs[k] == periodicBoundary || box.boundary_rhs[k] == periodicBoundary)
+		return true ;
+  }
+
+  return false;
+}
+
+
+//=================================================================================================
+/// \brief  Helper function to find if any of the boundaries is periodic
+/// \author R. A. Booth
+/// \date   28/10/2015
+/// \return A boolean saying whether any periodic boundary was found
+//=================================================================================================
+template <int ndim>
+bool IsAnyBoundaryReflecting(const DomainBox<ndim>& box)
+{
+  for (int k=0; k < ndim; k++){
+	if(box.boundary_lhs[k] == mirrorBoundary || box.boundary_rhs[k] == mirrorBoundary)
+		return true ;
+  }
+
+  return false;
+}
 
 
 //=================================================================================================
@@ -440,6 +475,130 @@ public:
 		  }
 	    }
 	    // Update to the new total number of images
+	    Nghost = nc ;
+	  }
+	  return Nghost ;
+	}
+
+	//=================================================================================================
+	/// \brief Construct the centres and reflection signs of a cell. This list will include the
+	///        original cell or the periodic neighbour of the original cell.
+	/// \author R. A. Booth
+	/// \date   27/10/2015
+	/// \return The number of neighbours found
+	//===============================================================================================
+	template<template <int> class Particle>
+	int ConstructGhostsScatterGather(const Particle<ndim>& p, Particle<ndim>* ngbs) const
+	{
+	  // First find the nearest periodic mirror
+	  ngbs[0] = p ;
+	  if (_any_periodic){
+	    FLOAT dr[ndim] ;
+
+	    for (int k=0; k <ndim; k++){
+		  dr[k] = p.r[k] - _centre[k] ;
+	    }
+
+	    NearestPeriodicVector(dr) ;
+	    for (int k=0; k <ndim; k++){
+		  ngbs[0].r[k] = _centre[k] + dr[k];
+	    }
+	  }
+
+	  // Number of Ghost cells
+	  int Nghost = 1 ;
+
+	  // Now recursively reflect the cells
+	  if (_need_mirrors){
+	    int nc = Nghost ;
+	    // Loop over the possible directions for reflections
+	    for (int k = 0; k < ndim; k++){
+	      // Save the current number of images
+		  Nghost = nc ;
+
+		  // Do reflections on the left edge
+		  if (_mirror_bound[k][0]){
+			if ((2*_domain.boxmin[k] - (p.r[k] - p.h)) < _cell.boxmin[k]){
+			  for (int n=0; n < Nghost; n++){
+			    ngbs[nc] = ngbs[n] ;
+			    ngbs[nc].r[k] = 2*_domain.boxmin[k] - ngbs[n].r[k] ;
+			    ngbs[nc].v[k] *= -1 ;
+			    nc++ ;
+			 }
+		   }
+		 }
+		 // Do reflections on the right edge
+	     if (_mirror_bound[k][1]){
+		   if ((2*_domain.boxmax[k] - (p.r[k] + p.h)) < _cell.boxmax[k]){
+		     for (int n=0; n < Nghost; n++){
+		       ngbs[nc] = ngbs[n] ;
+			   ngbs[nc].r[k] = 2*_domain.boxmax[k] - ngbs[n].r[k] ;
+			   ngbs[nc].v[k] *= -1 ;
+			   nc++ ;
+		      }
+		    }
+		  }
+	    }
+	    // Update to the new total number of images
+	    Nghost = nc ;
+	  }
+	  return Nghost ;
+	}
+
+    //=================================================================================================
+	/// \brief Construct the centres and reflection signs of a cell. This list will include the
+	///        original cell or the periodic neighbour of the original cell.
+	/// \author R. A. Booth
+	/// \date   27/10/2015
+	/// \return The number of neighbours found
+	//===============================================================================================
+	template<template <int> class Particle>
+	int ConstructGhostsGather(const Particle<ndim>& p, Particle<ndim>* ngbs) const
+	{
+	  // First find the nearest periodic mirror
+	  ngbs[0] = p ;
+	  if (_any_periodic){
+	    FLOAT dr[ndim] ;
+
+	    for (int k=0; k <ndim; k++){
+		  dr[k] = p.r[k] - _centre[k] ;
+	    }
+
+	    NearestPeriodicVector(dr) ;
+	    for (int k=0; k <ndim; k++){
+		  ngbs[0].r[k] = _centre[k] + dr[k];
+	    }
+	  }
+
+	  // Number of Ghost cells
+	  int Nghost = 1 ;
+	  // Now recursively reflect the cells
+	  if (_need_mirrors){
+	    int nc = Nghost ;
+	    // Loop over the possible directions for reflections
+	    for (int k = 0; k < ndim; k++){
+	      // Save the current number of images
+		  Nghost = nc ;
+		  // Do reflections on the left edge
+		  if (_need_mirror[k][0]){
+			for (int n=0; n < Nghost; n++){
+			   ngbs[nc] = ngbs[n] ;
+			   ngbs[nc].r[k] = 2*_domain.boxmin[k] - ngbs[n].r[k] ;
+			   ngbs[nc].v[k] *= -1 ;
+			   nc++ ;
+			}
+		  }
+		 // Do reflections on the right edge
+	     if (_need_mirror[k][1]){
+		   for (int n=0; n < Nghost; n++){
+		     ngbs[nc] = ngbs[n] ;
+			 ngbs[nc].r[k] = 2*_domain.boxmax[k] - ngbs[n].r[k] ;
+			 ngbs[nc].v[k] *= -1 ;
+			 nc++ ;
+		    }
+		  }
+	    }
+       // Update to the new total number of images
 	    Nghost = nc ;
 	  }
 	  return Nghost ;

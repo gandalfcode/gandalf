@@ -28,8 +28,9 @@ run()
 block()
 
 # After pressing return, re-plot last snapshot but in new specified units (au).
+window(1)
 plot("x","y",xunit="au",yunit="au")
-window()
+window(2)
 render("x","y","rho",res=256,#norm=LogNorm(),
        interpolation='bicubic')
 limit("x",-0.007,0.007)

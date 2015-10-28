@@ -30,25 +30,6 @@
 #include "Precision.h"
 #include "Tree.h"
 
-
-//=================================================================================================
-//  Class NullDust
-/// \brief   NullDust class definition.
-/// \details  No-op drag force class for when dust is not present
-/// \author  R. A. Booth
-/// \date    17/10/2015
-//=================================================================================================
-template<int ndim>
-class NullDust
-: public DustBase<ndim>
-{
-public:
-	NullDust() { } ;
-	void UpdateAllDragForces(int ,int, Particle<ndim> *) { } ;
-};
-
-
-
 //=================================================================================================
 //  Class DustSphNgbFinder
 /// \brief   DustSphNgbFinder class definition.
@@ -122,7 +103,6 @@ class DustInterpolant
 	DustTestPartInterp() { } ;
 	DustTestPartInterp(const ParticleType<ndim>& p){
 	  cs = p.sound ;
-	  itype = p.ptype ;
 	  for (int k=0; k < ndim; ++k){
 		  v[k] = p.v[k] ;
 		  a[k] = p.a[k] ;
@@ -132,7 +112,6 @@ class DustInterpolant
 	FLOAT cs;
 	FLOAT v[ndim] ;
 	FLOAT a[ndim] ;
-	int itype ;
   };
 public:
 
@@ -861,13 +840,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   parti.div_v = sqrt(DotProduct(dv,dv, ndim)) / parti.h ;
 
   assert(parti.h_dust > 0) ;
-  if (parti.sound <= 0)
-  {
-	  cout << parti.iorig << " " << hmax << " " << Nneib << endl ;
-	  for (int l(0); l < Nneib; l++)
-		  cout << "\t" << m[l] << " " << d[l].cs << " " << d[l].itype << endl ;
-  }
-  assert(parti.sound > 0) ;
+  assert(parti.sound > 0)  ;
   assert(parti.div_v >= 0) ;
 
 
@@ -1020,7 +993,7 @@ TreeBase<ndim>* mpi_tree)
 	string DragLaw = stringparams["drag_law"];
 
 	if (stringparams["dust_forces"] == "none")
-		return new NullDust<ndim> ;
+		return NULL ;
 
 	// Depending on the kernel, instantiate a different GradSph object
 	if (DragLaw == "fixed") {

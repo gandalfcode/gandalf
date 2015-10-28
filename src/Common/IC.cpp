@@ -4389,6 +4389,34 @@ void Ic<ndim>::InterpolateVelocityField
 
   return;
 }
+template<int ndim>
+void Ic<ndim>::EvrardCollapse()
+{
+	cout << "EvrardTest" << endl ;
+/*
+	int i;                               // Particle counter
+	int k;                               // Dimension counter
+	int Nsphere;                         // Actual number of particles in sphere
+	FLOAT mp;                            // Mass of one particle
+	FLOAT rcentre[ndim];                 // Position of sphere centre
+	FLOAT rho;                           // Fluid density
+	FLOAT *r;                            // Positions of all particles
+	FLOAT *v;                            // Velocities of all particles
+
+	// Create local copies of initial conditions parameters
+	int Npart      = simparams->intparams["Nhydro"];
+	FLOAT amp      = simparams->floatparams["amp"];
+	FLOAT angvel   = simparams->floatparams["angvel"];
+	FLOAT mcloud   = simparams->floatparams["mcloud"];
+	FLOAT mu_bar   = simparams->floatparams["mu_bar"];
+	FLOAT press    = simparams->floatparams["press1"];
+	FLOAT radius   = simparams->floatparams["radius"];
+	FLOAT temp0    = simparams->floatparams["temp0"];
+	FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+	string particle_dist = simparams->stringparams["particle_distribution"];
+	AddLatticeSphere(Npart, rcente, radius, particle_dist, r) ;
+	*/
+}
 
 
 template class Ic<1>;

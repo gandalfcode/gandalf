@@ -1637,22 +1637,24 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
          }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
-          for (jj=0; jj<Nneib; jj++) {
+          if (simbox.PeriodicGravity){
+            for (jj=0; jj<Nneib; jj++) {
 
-        	if (!gravmask[neibpart[jj].ptype]) continue ;
+        	  if (!gravmask[neibpart[jj].ptype]) continue ;
 
-            for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
-            ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-            for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-            activepart[j].gpot += potperiodic;
-          }
+              for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
+              ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
+              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              activepart[j].gpot += potperiodic;
+            }
 
-          // Now add the periodic correction force for all cell COMs
-          for (jj=0; jj<Ngravcell; jj++) {
-            for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
-            ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-            for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-            activepart[j].gpot += potperiodic;
+            // Now add the periodic correction force for all cell COMs
+            for (jj=0; jj<Ngravcell; jj++) {
+              for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
+              ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
+              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              activepart[j].gpot += potperiodic;
+            }
           }
         }
 
@@ -1901,21 +1903,22 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
           }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
-          for (jj=0; jj<Nneib; jj++) {
-            for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
-            ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-            for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-            activepart[j].gpot += potperiodic;
-          }
+          if (simbox.PeriodicGravity){
+            for (jj=0; jj<Nneib; jj++) {
+              for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
+              ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
+              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              activepart[j].gpot += potperiodic;
+            }
 
-          // Now add the periodic correction force for all cell COMs
-          for (jj=0; jj<Ngravcell; jj++) {
-            for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
-            ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-            for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-            activepart[j].gpot += potperiodic;
+            // Now add the periodic correction force for all cell COMs
+            for (jj=0; jj<Ngravcell; jj++) {
+              for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
+              ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
+              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              activepart[j].gpot += potperiodic;
+            }
           }
-
         }
       }
       //-------------------------------------------------------------------------------------------

@@ -501,7 +501,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 }
 
 
-
 //=================================================================================================
 //  Tree::ComputePeriodicGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), including lists of ids, from the
@@ -542,8 +541,11 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicNeighbourList
   MirrorNeighbourFinder<ndim> NgbFinder(simbox) ;
   NgbFinder.SetTargetCell(cell) ;
 
-  FLOAT r_ghost[(1 << ndim)] ;
-  int sign[(1 << ndim)] ;
+  std::vector<FLOAT> _r_ghost(ndim *pow(3,ndim)) ;
+  std::vector<int>   _sign(ndim *pow(3,ndim)) ;
+
+  FLOAT *r_ghost = &(_r_ghost[0]) ;
+  int   *sign    = &(_sign[0]) ;
 
   // Start with root cell and walk through entire tree
   Nneib = 0;
@@ -673,8 +675,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   assert(gravcell != NULL);
   assert(neibpart != NULL);
   assert(partdata != NULL);
-
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Start with root cell and walk through entire tree
   Nneib      = 0;
@@ -865,6 +865,15 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   assert(neibpart != NULL);
   assert(partdata != NULL);
 
+  MirrorNeighbourFinder<ndim> NgbFinder(simbox) ;
+  NgbFinder.SetTargetCell(cell) ;
+
+  FLOAT r_ghost[ndim] ;
+  int   sign[ndim] ;
+
+  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+
+
   // Make local copies of important cell properties
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
   const FLOAT rmax = cell.rmax;
@@ -883,7 +892,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
 
     // Calculate closest periodic replica of cell
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    NearestPeriodicVector(simbox, dr, dr_corr);
+    NgbFinder.NearestPeriodicVector(dr);
     drsqd = DotProduct(dr, dr, ndim);
 
     // Check if bounding spheres overlap with each other (for potential SPH neibs)
@@ -903,14 +912,19 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
+
+    	int NumMirrors = NgbFinder.ConstructGhostVectorsScatterGather(celldata[cc], r_ghost, sign) ;
+    	assert(NumMirrors == 1) ;
+
         i = celldata[cc].ifirst;
         while (i != -1) {
           hydroneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
           neibpart[Nneib] = partdata[i];
-          for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
-          NearestPeriodicVector(simbox, dr, dr_corr);
-          for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
+
+          NgbFinder.CorrectGhostParticlePosition(celldata[cc],
+        		                                 r_ghost, sign,
+        		                                 neibpart[Nneib]) ;
           Nneib++;
           if (i == celldata[cc].ilast) break;
           i = inext[i];

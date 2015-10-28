@@ -98,5 +98,5 @@ Switch-off self-gravity of gas              : self_gravity = 0
 #--------------
 Dust force type                             : dust_forces = test_particle
 Drag force law                              : drag_law = fixed
-Drag coefficient                            : drag_coeff = 400
+Drag coefficient                            : drag_coeff = 4
 Dust to gas ratio                           : dust_mass_factor = 1.0
