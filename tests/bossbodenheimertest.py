@@ -3,8 +3,8 @@
 # Run the Boss-Bodenheimer test using initial conditions specified in the 
 # file 'bossbodenheimer.dat'.
 #==============================================================================
-from gandalf.analysis.facade import *
-from gandalf.analysis.data_fetcher import *
+from gandalf_dust.analysis.facade import *
+from gandalf_dust.analysis.data_fetcher import *
 import time
 from matplotlib.colors import LogNorm
 

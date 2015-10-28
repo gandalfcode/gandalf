@@ -40,8 +40,14 @@ enum ptype{gas, icm, boundary, cdm, dust, dead,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
            Nhydrotypes};
 
+enum parttype{gas_type, cdm_type, dust_type, Ntypes} ;
 
-typedef bool Typemask[Nhydrotypes];
+
+enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
+             constant_temp, radws, Nhydroeos};
+
+
+typedef bool Typemask[Ntypes];
 
 //static Typemask truemask = {true};
 
@@ -65,9 +71,9 @@ struct ParticleType
     N = 0;
     hydro_forces = false;
     self_gravity = false;
-    for (int k=0; k<Nhydrotypes; k++) hmask[k] = false;
-    for (int k=0; k<Nhydrotypes; k++) hydromask[k] = false;
-    for (int k=0; k<Nhydrotypes; k++) gravmask[k] = false;
+    for (int k=0; k<Ntypes; k++) hmask[k] = false;
+    for (int k=0; k<Ntypes; k++) hydromask[k] = false;
+    for (int k=0; k<Ntypes; k++) gravmask[k] = false;
   }
 };
 
@@ -85,7 +91,8 @@ struct Particle
   bool active;                      ///< Flag if active (i.e. recompute step)
   bool potmin;                      ///< Is particle at a potential minima?
   int iorig;                        ///< Original particle i.d.
-  int itype;                        ///< SPH particle type
+  int itype;                        ///< SPH particle type (eg boundary/dead)
+  int ptype;                        ///< SPH particle type (gas/cdm/dust)
   int sinkid;                       ///< i.d. of sink particle
   int levelneib;                    ///< Min. timestep level of neighbours
   int nstep;                        ///< Integer step-size of particle
@@ -98,8 +105,10 @@ struct Particle
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
   FLOAT agrav[ndim];                ///< Gravitational acceleration
+  FLOAT a_dust[ndim];                ///< Gravitational acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
+  FLOAT h_dust ;                    ///< Gas Smoothing length for dust
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
   FLOAT invh;                       ///< 1 / h
   FLOAT hfactor;                    ///< invh^(ndim + 1)
@@ -126,6 +135,7 @@ struct Particle
     active = false;
     iorig = -1;
     itype = gas;
+    ptype = gas_type;
     level = 0;
     nstep = 0;
     nlast = 0;
@@ -137,9 +147,10 @@ struct Particle
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
-    //for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) a_dust[k] = (FLOAT) 0.0;
     m         = (FLOAT) 0.0;
     h         = (FLOAT) 0.0;
+    h_dust    = (FLOAT) 0.0;
     hrangesqd = (FLOAT) 0.0;
     invh      = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;

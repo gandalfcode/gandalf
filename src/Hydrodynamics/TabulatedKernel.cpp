@@ -64,12 +64,12 @@ TabulatedKernel<ndim>::TabulatedKernel
 
   kernel = SmoothingKernel<ndim>::KernelFactory (KernelName);
 
-  this->kernrange    = kernel->kernrange;
-  this->kernrangesqd = kernel->kernrangesqd;
-  this->invkernrange = kernel->invkernrange;
-  this->kernnorm     = kernel->kernnorm;
-  resinvkernrange    = res/this->kernrange;
-  resinvkernrangesqd = res/this->kernrangesqd;
+  kernrange    = kernel->kernrange;
+  kernrangesqd = kernel->kernrangesqd;
+  invkernrange = kernel->invkernrange;
+  kernnorm     = kernel->kernnorm;
+  resinvkernrange    = res/kernrange;
+  resinvkernrangesqd = res/kernrangesqd;
 
   // Allocate memory
   tableW0        = new FLOAT[res];
@@ -82,6 +82,7 @@ TabulatedKernel<ndim>::TabulatedKernel
   tableWomega_s2 = new FLOAT[res];
   tableWzeta_s2  = new FLOAT[res];
   tableLOS       = new FLOAT[res];
+  tableWdrag     = new FLOAT[res];
 
   // Initialize the tables
   initializeTable(tableW0,&SmoothingKernel<ndim>::w0);
@@ -90,6 +91,8 @@ TabulatedKernel<ndim>::TabulatedKernel
   initializeTable(tableWzeta,&SmoothingKernel<ndim>::wzeta);
   initializeTable(tableWgrav,&SmoothingKernel<ndim>::wgrav);
   initializeTable(tableWpot,&SmoothingKernel<ndim>::wpot);
+  initializeTable(tableWdrag,&SmoothingKernel<ndim>::wdrag);
+  //initializeTable(tableLOS,&SmoothingKernel<ndim>::wLOS);
   initializeTableSqd(tableW0_s2,&SmoothingKernel<ndim>::w0);
   initializeTableSqd(tableWomega_s2,&SmoothingKernel<ndim>::womega);
   initializeTableSqd(tableWzeta_s2,&SmoothingKernel<ndim>::wzeta);
@@ -125,7 +128,7 @@ void TabulatedKernel<ndim>::initializeTableLOS()
     sum = 0.0;
 
     // Half-length of the integration path
-    dist = sqrt(this->kernrangesqd - impactparametersqd);
+    dist = sqrt(kernrangesqd - impactparametersqd);
     intstep = dist/intsteps;
 
     // Now numerically integrate through kernel

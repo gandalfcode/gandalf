@@ -38,6 +38,7 @@
 #include "CodeTiming.h"
 #include "Diagnostics.h"
 #include "DomainBox.h"
+#include "Dust.h"
 #include "Ewald.h"
 #include "ExternalPotential.h"
 #include "Hydrodynamics.h"
@@ -394,7 +395,11 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::MpiGhosts;
 #endif
 
-  SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+  SphSimulation (Parameters* parameters)
+  : Simulation<ndim>(parameters), sph(NULL), sphdust(NULL)
+  {};
+  virtual ~SphSimulation() {} ;
+
   virtual void ProcessSphParameters(void)=0;
   virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
@@ -406,7 +411,7 @@ class SphSimulation : public Simulation<ndim>
   virtual void SmoothParticleQuantity(const int, FLOAT *);
 
   Sph<ndim> *sph;                      ///< SPH algorithm pointer
-
+  DustBase<ndim>* sphdust ;               ///< Dust algorithm pointer
 };
 
 
@@ -473,12 +478,14 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::sph;
   using SphSimulation<ndim>::sphneib;
   using SphSimulation<ndim>::tmax_wallclock;
+  using SphSimulation<ndim>::sphdust ;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
 #endif
 
   GradhSphSimulation (Parameters* parameters): SphSimulation<ndim>(parameters) {};
+  virtual ~GradhSphSimulation() { } ;
   virtual void ProcessSphParameters(void);
 
 };
@@ -552,6 +559,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 #endif
 
   SM2012SphSimulation (Parameters* parameters): SphSimulation<ndim>(parameters) {};
+  virtual ~SM2012SphSimulation() {} ;
   virtual void ProcessSphParameters(void);
 
 };

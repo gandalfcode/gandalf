@@ -234,7 +234,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
     FLOAT* drsqd  = new FLOAT[Nneibmax];       // Local array of distances (squared)
     FLOAT* m      = new FLOAT[Nneibmax];       // Local array of particle masses
     FLOAT* m2     = new FLOAT[Nneibmax];       // Local reduced array of neighbour masses
-    FLOAT* r      = new FLOAT[Nneibmax*ndim];                  // Local array of particle positions
+    FLOAT* r      = new FLOAT[Nneibmax*ndim];  // Local array of particle positions
+    int* ptype    = new int[Nneibmax];         // Local array of particle types
+
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
     //ParticleType<ndim>* activepart = new ParticleType<ndim>[Nleafmax];
 
@@ -277,6 +279,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
           delete[] gpot2;
           delete[] gpot;
           delete[] neiblist;
+          delete[] ptype;
           Nneibmax = 2*Nneibmax;
           neiblist = new int[Nneibmax];
           gpot     = new FLOAT[Nneibmax];
@@ -285,6 +288,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
           m        = new FLOAT[Nneibmax];
           m2       = new FLOAT[Nneibmax];
           r        = new FLOAT[Nneibmax*ndim];
+          ptype    = new int[Nneibmax];
           Nneib = 0;
           Nneib = tree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
           Nneib = ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
@@ -300,6 +304,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
           gpot[jj] = sphdata[j].gpot;
           m[jj]    = sphdata[j].m;
           for (k=0; k<ndim; k++) r[ndim*jj + k] = sphdata[j].r[k];
+          ptype[jj] = sphdata[j].ptype;
         }
 
         // Loop over all active particles in the cell
@@ -315,6 +320,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
           // Compute distance (squared) to all
           //---------------------------------------------------------------------------------------
           for (jj=0; jj<Nneib; jj++) {
+        	// Only include particles of appropriate types in density calculation
+        	if (!sph->types[activepart[j].ptype].hmask[ptype[jj]]) continue ;
+
             for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
             drsqdaux = DotProduct(draux,draux,ndim) + small_number;
 
@@ -365,6 +373,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
     delete[] gpot2;
     delete[] gpot;
     delete[] neiblist;
+    delete[] ptype;
 
   }
   //===============================================================================================
@@ -532,46 +541,50 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
-        for (k=0; k<Nhydrotypes; k++) hydromask[k] = sph->types[activepart[j].itype].hydromask[k];
-        hrangesqdi = activepart[j].hrangesqd;
-        Nhydroaux = 0;
+        // Require hydro forces for this particle
+        if (sph->types[activepart[j].ptype].hydro_forces) {
 
-        // Validate that gather neighbour list is correct
+          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+          for (k=0; k<Ntypes; k++) hydromask[k] = sph->types[activepart[j].ptype].hydromask[k];
+          hrangesqdi = activepart[j].hrangesqd;
+          Nhydroaux = 0;
+
+          // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-        if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
-                                                     Nneib, neiblist, sphdata, "all");
+          if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
+                                                       Nneib, neiblist, sphdata, "all");
 #endif
 
-        // Compute distances and the inverse between the current particle and all neighbours here,
-        // for both gather and inactive scatter neibs.  Only consider particles with j > i to
-        // compute pair forces once unless particle j is inactive.
-        //-----------------------------------------------------------------------------------------
-        for (jj=0; jj<Nneib; jj++) {
+          // Compute distances and the inverse between the current particle and all neighbours here,
+          // for both gather and inactive scatter neibs.  Only consider particles with j > i to
+          // compute pair forces once unless particle j is inactive.
+          //-----------------------------------------------------------------------------------------
+          for (jj=0; jj<Nneib; jj++) {
 
-          // Skip current active particle or if neighbour type is not active for hydro forces
-          if (neiblist[jj] == i || hydromask[neibpart[jj].itype] == false) continue;
+            // Skip current active particle or if neighbour type is not active for hydro forces
+            if (neiblist[jj] == i || hydromask[neibpart[jj].ptype] == false) continue;
 
-          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-          drsqd = DotProduct(draux, draux, ndim) + small_number;
+            for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
+            drsqd = DotProduct(draux, draux, ndim) + small_number;
 
-          // Compute relative position and distance quantities for pair
-          if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
-            drmag[Nhydroaux] = sqrt(drsqd);
-            invdrmag[Nhydroaux] = (FLOAT) 1.0/drmag[Nhydroaux];
-            for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k]*invdrmag[Nhydroaux];
-            levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
-            sphlist[Nhydroaux] = jj;
-            Nhydroaux++;
+            // Compute relative position and distance quantities for pair
+            if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
+              drmag[Nhydroaux] = sqrt(drsqd);
+              invdrmag[Nhydroaux] = (FLOAT) 1.0/drmag[Nhydroaux];
+              for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k]*invdrmag[Nhydroaux];
+              levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
+              sphlist[Nhydroaux] = jj;
+              Nhydroaux++;
+            }
+
           }
+          //-----------------------------------------------------------------------------------------
+
+          // Compute all neighbour contributions to hydro forces
+          sph->ComputeSphHydroForces(i,Nhydroaux,sphlist,drmag,invdrmag,dr,activepart[j],neibpart);
 
         }
-        //-----------------------------------------------------------------------------------------
-
-        // Compute all neighbour contributions to hydro forces
-        sph->ComputeSphHydroForces(i,Nhydroaux,sphlist,drmag,invdrmag,dr,activepart[j],neibpart);
-
-      }
+      } // need hydro forces?
       //-------------------------------------------------------------------------------------------
 
 
@@ -788,10 +801,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       //-------------------------------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
+        bool do_hydro = sph->types[activepart[j].ptype].hydro_forces ;
+        bool do_grav  = sph->types[activepart[j].ptype].self_gravity ;
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
-        for (k=0; k<Nhydrotypes; k++) gravmask[k] = sph->types[activepart[j].itype].gravmask[k];
-        for (k=0; k<Nhydrotypes; k++) hydromask[k] = sph->types[activepart[j].itype].hydromask[k];
+        for (k=0; k<Ntypes; k++) gravmask[k] = sph->types[activepart[j].ptype].gravmask[k];
+        for (k=0; k<Ntypes; k++) hydromask[k] = sph->types[activepart[j].ptype].hydromask[k];
         hrangesqdi = activepart[j].hrangesqd;
         Nhydroaux = 0;
         Ngravaux = 0;
@@ -808,14 +823,16 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
           // Record if neighbour is direct-sum or and SPH neighbour.
           // If SPH neighbour, also record max. timestep level for neighbour
-          if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
-            directlist[Ndirectaux++] = ii;
+          if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd && do_grav) {
+        	  if (gravmask[neibpart[ii].ptype] == true) {
+                directlist[Ndirectaux++] = ii;
+        	  }
           }
-          else if (neiblist[ii] != i && hydromask[neibpart[jj].itype] == true) {
+          else if (neiblist[ii] != i && hydromask[neibpart[jj].ptype] == true && do_hydro) {
             sphauxlist[Nhydroaux++] = ii;
             levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
           }
-          else if (neiblist[ii] != i && gravmask[neibpart[jj].itype] == true) {
+          else if (neiblist[ii] != i && gravmask[neibpart[jj].ptype] == true && do_grav) {
             gravauxlist[Ngravaux++] = ii;
             levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
           }
@@ -824,7 +841,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
 
         // Compute forces between SPH neighbours (hydro and gravity)
-        sph->ComputeSphHydroGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
+        if (Nhydroaux > 0)
+           sph->ComputeSphHydroGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
 
         // Compute smoothed gravitational forces between SPH neighbours
         sph->ComputeSphGravForces(i, Ngravaux, gravauxlist, activepart[j], neibpart);
@@ -1298,47 +1316,48 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
-        for (k=0; k<Nhydrotypes; k++) hydromask[k] = sph->types[activepart[j].itype].hydromask[k];
-        hrangesqdi = activepart[j].hrangesqd;
-        Nhydroaux = 0;
+        bool do_hydro   = sph->types[activepart[j].ptype].hydro_forces ;
+        if (do_hydro){
+	  Typemask hmask ;
+	  for (k=0; k<Ntypes; k++) hmask[k] = sph->types[activepart[j].ptype].hmask[k] ;
 
-        // Validate that gather neighbour list is correct
+          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+          hrangesqdi = activepart[j].hrangesqd;
+          Nhydroaux = 0;
+
+          // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-        if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
-                                                     Nneib, neiblist, sphdata, "all");
+          if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
+                                                       Nneib, neiblist, sphdata, "all");
 #endif
 
-        // Compute distances and the inverse between the current particle and all neighbours here,
-        // for both gather and inactive scatter neibs.  Only consider particles with j > i to
-        // compute pair forces once unless particle j is inactive.
-        //-----------------------------------------------------------------------------------------
-        for (jj=0; jj<Nneib; jj++) {
+          // Compute distances and the inverse between the current particle and all neighbours here,
+          // for both gather and inactive scatter neibs.  Only consider particles with j > i to
+          // compute pair forces once unless particle j is inactive.
+          //-----------------------------------------------------------------------------------------
+          for (jj=0; jj<Nneib; jj++) {
 
-          // Skip current active particle
-          //if (neiblist[jj] == i) continue;
-          if (neiblist[jj] == i || hydromask[neibpart[jj].itype] == false) continue;
+            // Skip current active particle
+            if (neiblist[jj] == i || hmask[neibpart[jj].ptype] == false) continue;
 
-          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-          drsqd = DotProduct(draux, draux, ndim) + small_number;
+            for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
+            drsqd = DotProduct(draux, draux, ndim) + small_number;
 
-          // Compute relative position and distance quantities for pair
-          if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
-            drmag[Nhydroaux] = sqrt(drsqd);
-            invdrmag[Nhydroaux] = (FLOAT) 1.0/drmag[Nhydroaux];
-            for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k]*invdrmag[Nhydroaux];
-            levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
-            sphlist[Nhydroaux] = jj;
-            Nhydroaux++;
+            // Compute relative position and distance quantities for pair
+            if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
+              drmag[Nhydroaux] = sqrt(drsqd);
+              invdrmag[Nhydroaux] = (FLOAT) 1.0/drmag[Nhydroaux];
+              for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k]*invdrmag[Nhydroaux];
+              levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
+              sphlist[Nhydroaux] = jj;
+              Nhydroaux++;
+            }
           }
+          //-----------------------------------------------------------------------------------------
 
+          // Compute all neighbour contributions to hydro forces
+          sph->ComputeSphHydroForces(i,Nhydroaux,sphlist,drmag,invdrmag,dr,activepart[j],neibpart);
         }
-        //-----------------------------------------------------------------------------------------
-
-
-        // Compute all neighbour contributions to hydro forces
-        sph->ComputeSphHydroForces(i,Nhydroaux,sphlist,drmag,invdrmag,dr,activepart[j],neibpart);
-
       }
       //-------------------------------------------------------------------------------------------
 
@@ -1458,6 +1477,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
     int Nactive;                                 // ..
     int Ndirect;                                 // ..
     int Ndirectaux;                              // ..
+    int Ngrav;
     int Ngravcell;                               // No. of gravity cells
     int Nneib;                                   // No. of neighbours
     int Nhydroaux;                               // ..
@@ -1476,6 +1496,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
     int *sphlist     = new int[Nneibmax];        // ..
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
+    int *gravlist    = new int[Nneibmax];
     int *levelneib        = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
@@ -1527,6 +1548,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
         delete[] sphauxlist;
         delete[] sphlist;
         delete[] neiblist;
+        delete[] gravlist;
         Nneibmax                 = 2*Nneibmax;
         Ngravcellmax             = 2*Ngravcellmax;
         Nneibmaxbuf[ithread]     = Nneibmax;
@@ -1535,6 +1557,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
         sphlist                  = new int[Nneibmax];
         sphauxlist               = new int[Nneibmax];
         directlist               = new int[Nneibmax];
+        gravlist                 = new int[Nneibmax];
         neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmax];
         cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
         neibpart                 = neibpartbuf[ithread];
@@ -1550,8 +1573,18 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
+        bool do_hydro = sph->types[activepart[j].ptype].hydro_forces ;
+        bool do_grav  = sph->types[activepart[j].ptype].self_gravity ;
+
+        Typemask hydromask, gravmask ;
+        for (k=0; k< Ntypes; ++k){
+        	hydromask[k] = sph->types[activepart[j].ptype].hydromask[k] ;
+        	gravmask[k] = sph->types[activepart[j].ptype].gravmask[k] ;
+        }
+
         Nhydroaux = 0;
         Ndirectaux = Ndirect;
+        Ngrav = 0;
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
 
@@ -1565,47 +1598,62 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
 
           // Record if neighbour is direct-sum or and SPH neighbour.
           // If SPH neighbour, also record max. timestep level for neighbour
-          if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
+          if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd && do_grav) {
             directlist[Ndirectaux++] = ii;
           }
           else if (neiblist[ii] != i) {
-            sphauxlist[Nhydroaux++] = ii;
-            levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
+        	  if (hydromask[neibpart[ii].ptype]){
+                sphauxlist[Nhydroaux++] = ii;
+                levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
+        	  }
+        	  else if (gravmask[neibpart[ii].ptype] && do_grav){
+        		  gravlist[Ngrav++] = ii;
+        	  }
           }
         }
         //-----------------------------------------------------------------------------------------
 
 
         // Compute forces between SPH neighbours (hydro and gravity)
-        sph->ComputeSphHydroGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
+        if (Nhydroaux > 0)
+          sph->ComputeSphHydroGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
 
-        // Compute direct gravity forces between distant particles
-        sph->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
+        if (do_grav){
+          // Compute soften grav forces between non-SPH neighbours (hydro and gravity)
+          sph->ComputeSphGravForces(i, Ngrav, gravlist, activepart[j], neibpart);
 
-        // Compute gravitational force due to distant cells
-        if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
+
+          // Compute direct gravity forces between distant particles
+          sph->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
+
+          // Compute gravitational force due to distant cells
+          if (multipole == "monopole") {
+            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
                                           activepart[j].r, Ngravcell, gravcell);
-        }
-        else if (multipole == "quadrupole") {
-          this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+          }
+          else if (multipole == "quadrupole") {
+            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
                                             activepart[j].r, Ngravcell, gravcell);
-        }
+         }
 
-        // Add the periodic correction force for SPH and direct-sum neighbours
-        for (jj=0; jj<Nneib; jj++) {
-          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
-          ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-          for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-          activepart[j].gpot += potperiodic;
-        }
+          // Add the periodic correction force for SPH and direct-sum neighbours
+          for (jj=0; jj<Nneib; jj++) {
 
-        // Now add the periodic correction force for all cell COMs
-        for (jj=0; jj<Ngravcell; jj++) {
-          for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
-          ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-          for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-          activepart[j].gpot += potperiodic;
+        	if (!gravmask[neibpart[jj].ptype]) continue ;
+
+            for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
+            ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
+            for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+            activepart[j].gpot += potperiodic;
+          }
+
+          // Now add the periodic correction force for all cell COMs
+          for (jj=0; jj<Ngravcell; jj++) {
+            for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
+            ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
+            for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+            activepart[j].gpot += potperiodic;
+          }
         }
 
       }
@@ -1716,6 +1764,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
     int Nneib;                                   // No. of neighbours
     int Nhydroaux;                               // ..
     int Nhydroneib;                              // ..
+    int Ngrav ;                                  // --
     FLOAT aperiodic[ndim];                       // ..
     FLOAT macfactor;                             // Gravity MAC factor
     FLOAT draux[ndim];                           // Aux. relative position vector
@@ -1730,6 +1779,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
     int *sphlist     = new int[Nneibmax];        // ..
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
+    int	*gravlist    = new int[Nneibmax];        // ..
     int *levelneib        = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
@@ -1781,6 +1831,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
         delete[] sphauxlist;
         delete[] sphlist;
         delete[] neiblist;
+        delete[] gravlist;
         Nneibmax                 = 2*Nneibmax;
         Ngravcellmax             = 2*Ngravcellmax;
         Nneibmaxbuf[ithread]     = Nneibmax;
@@ -1789,6 +1840,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
         sphlist                  = new int[Nneibmax];
         sphauxlist               = new int[Nneibmax];
         directlist               = new int[Nneibmax];
+        gravlist                 = new int[Nneibmax];
         neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmax];
         cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
         neibpart                 = neibpartbuf[ithread];
@@ -1803,64 +1855,68 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        Nhydroaux = 0;
-        Ndirectaux = Ndirect;
-        for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
-        hrangesqdi = activepart[j].hrangesqd;
+        if (sph->types[activepart[j].ptype].self_gravity){
 
-        //-----------------------------------------------------------------------------------------
-        for (jj=0; jj<Nhydroneib; jj++) {
-          int ii = sphlist[jj];
+          Nhydroaux = 0;
+          Ndirectaux = Ndirect;
+          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+          hrangesqdi = activepart[j].hrangesqd;
 
-          // Compute relative position and distance quantities for pair
-          for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
-          drsqd = DotProduct(draux, draux, ndim) + small_number;
+          //-----------------------------------------------------------------------------------------
+          for (jj=0; jj<Nhydroneib; jj++) {
+            int ii = sphlist[jj];
 
-          // Record if neighbour is direct-sum or and SPH neighbour.
-          // If SPH neighbour, also record max. timestep level for neighbour
-          if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
-            directlist[Ndirectaux++] = ii;
+            // Compute relative position and distance quantities for pair
+            for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
+            drsqd = DotProduct(draux, draux, ndim) + small_number;
+
+            // Record if neighbour is direct-sum or and SPH neighbour.
+            // If SPH neighbour, also record max. timestep level for neighbour
+            if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
+              directlist[Ndirectaux++] = ii;
+           }
+            else if (neiblist[ii] != i) {
+              sphauxlist[Nhydroaux++] = ii;
+              levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
+            }
           }
-          else if (neiblist[ii] != i) {
-            sphauxlist[Nhydroaux++] = ii;
-            levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
-          }
-        }
-        //-----------------------------------------------------------------------------------------
+
+          //-----------------------------------------------------------------------------------------
 
 
-        // Compute forces between SPH neighbours (hydro and gravity)
-        sph->ComputeSphGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
+          // Compute forces between SPH neighbours (hydro and gravity)
+          sph->ComputeSphGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
 
-        // Compute direct gravity forces between distant particles
-        sph->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
+          // Compute direct gravity forces between distant particles
+          sph->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
 
-        // Compute gravitational force due to distant cells
-        if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
-                                          activepart[j].r, Ngravcell, gravcell);
-        }
-        else if (multipole == "quadrupole") {
-          this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+          // Compute gravitational force due to distant cells
+          if (multipole == "monopole") {
+            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
                                             activepart[j].r, Ngravcell, gravcell);
-        }
+          }
+          else if (multipole == "quadrupole") {
+            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+                                              activepart[j].r, Ngravcell, gravcell);
+          }
 
-        // Add the periodic correction force for SPH and direct-sum neighbours
-        for (jj=0; jj<Nneib; jj++) {
-          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
-          ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-          for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-          activepart[j].gpot += potperiodic;
-        }
+          // Add the periodic correction force for SPH and direct-sum neighbours
+          for (jj=0; jj<Nneib; jj++) {
+            for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
+            ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
+            for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+            activepart[j].gpot += potperiodic;
+          }
 
-        // Now add the periodic correction force for all cell COMs
-        for (jj=0; jj<Ngravcell; jj++) {
-          for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
-          ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-          for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-          activepart[j].gpot += potperiodic;
-        }
+          // Now add the periodic correction force for all cell COMs
+          for (jj=0; jj<Ngravcell; jj++) {
+            for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
+            ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
+            for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+            activepart[j].gpot += potperiodic;
+          }
 
+        }
       }
       //-------------------------------------------------------------------------------------------
 

@@ -408,6 +408,10 @@ void Ic<ndim>::ShockTube(void)
     Nbox2 = Nlattice2[0];
     hydro->Nhydro = Nbox1 + Nbox2;
 
+    bool dusty_shock = simparams->stringparams["dust_forces"] != "none" ;
+    if (dusty_shock)
+    	hydro->Nhydro *= 2 ;
+
     // Allocate local and main particle memory
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
@@ -448,6 +452,24 @@ void Ic<ndim>::ShockTube(void)
         if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
         else part.u = press2/rhofluid2/gammaone;
       }
+    }
+
+
+    // Add a slightly offset dust lattice
+    if (dusty_shock){
+    	int Ngas = Nbox1 + Nbox2 ;
+    	FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+    	for (j = 0; j < Ngas; ++j){
+    		Particle<ndim>& pg = hydro->GetParticlePointer(j) ;
+    		Particle<ndim>& pd = hydro->GetParticlePointer(j+Ngas) ;
+    		pd = pg ;
+    		pg.ptype = gas_type ;
+    		pd.ptype = dust_type ;
+    		pd.r[0] += 0.01 * pd.h ;
+    		pd.m *= d2g ;
+    		pd.u = 0 ;
+    		pd.h_dust = pd.h ;
+    	}
     }
 
     sim->initial_h_provided = true;

@@ -3,7 +3,7 @@
 //  Contains all main functions controlling grad-h SPH simulation work-flow.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
+//  Graphical Astrophysics code for N-body statics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
@@ -228,8 +228,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #endif
 
 
+
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
+  // Here I do a horrible hack to get at the underlying tree, needed for the dust.
+   TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
+
   if (stringparams["neib_search"] == "bruteforce") {
     sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
      (sph->kernp->kernrange, &simbox, sph->kernp, timing);
@@ -239,18 +243,39 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+
+    typedef GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell> TreeType ;
+    TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
+    t = pTree->tree ; gt = pTree->ghosttree ;
+#ifdef MPI_PARALLEL
+    mpit = pTree->mpighosttree ;
+#endif
   }
   else if (stringparams["neib_search"] == "octtree" && gas_radiation == "treeray" && ndim == 3) {
     sphneib = new GradhSphOctTree<ndim,GradhSphParticle,TreeRayCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+
+    typedef GradhSphOctTree<ndim,GradhSphParticle,TreeRayCell> TreeType ;
+    TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
+    t = pTree->tree ; gt = pTree->ghosttree ;
+#ifdef MPI_PARALLEL
+    mpit = pTree->mpighosttree ;
+#endif
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+
+    typedef GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell> TreeType ;
+    TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
+    t = pTree->tree ; gt = pTree->ghosttree ;
+#ifdef MPI_PARALLEL
+    mpit = pTree->mpighosttree ;
+#endif
   }
   else {
     string message = "Unrecognised parameter : neib_search = "
@@ -325,6 +350,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac, 3)/3.0);
   }
 
+  // Setup the dust force object
+  //-----------------------------------------------------------------------------------------------
+  sphdust = DustFactory<ndim, GradhSphParticle>::ProcessParameters(simparams, t, gt, mpit) ;
 
   return;
 }

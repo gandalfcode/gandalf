@@ -85,6 +85,7 @@ DOUBLE SphIntegration<ndim>::Timestep
   //DOUBLE adotmag;                      // Magnitude of particle jerk
   DOUBLE amag;                         // Magnitude of particle acceleration
 
+
   // Courant condition.  If hydro forces are not used, compute the
   // timescale using only div_v, i.e. the compression timescale.
   if (sph->hydro_forces == 1 && sph->avisc == mon97 && part.sinkid != -1) {
@@ -102,14 +103,24 @@ DOUBLE SphIntegration<ndim>::Timestep
     timestep = courant_mult*part.h/(part.h*fabs(part.div_v) + small_number_dp);
   }
 
+  //cout << part.iorig << " " << part.ptype << ", "
+//		  << part.h << " " <<part.h_dust << " " << part.sound << " " << part.div_v << endl ;
+
+// cout << timestep << " " ;
   // Acceleration condition
   amag = sqrt(DotProduct(part.a, part.a, ndim));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
 
+// cout << timestep << " " ;
+
+
   // Explicit energy integration timestep condition
   if (gas_eos == energy_eqn) {
-    timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
+	  if (part.ptype == gas_type)
+        timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
   }
+
+ //cout << timestep << endl;
 
   // If stars are included, calculate the timestep due to the jerk
   //adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));

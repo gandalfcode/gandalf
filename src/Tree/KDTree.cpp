@@ -961,7 +961,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
- (FLOAT dt)                            ///< Smallest timestep size
+ (const FLOAT dt)                            ///< Smallest timestep size
 {
   int c;                               // Cell counter
   int k;                               // Dimension counter

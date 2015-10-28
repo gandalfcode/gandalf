@@ -33,6 +33,8 @@
 #include "Constants.h"
 #include "DomainBox.h"
 #include "Hydrodynamics.h"
+#include "InlineFuncs.h"
+
 #include "Nbody.h"
 #include "Parameters.h"
 #include "Particle.h"
@@ -90,15 +92,63 @@ struct TreeCellBase {
 /// \details Tree base class.
 /// \author  D. A. Hubber
 /// \date    21/09/2015
+/// \modified: 21/10/2015, Richard Booth
+///            Added the interface implemented by Tree class, where straightforward.
+///            Gravity and ActiveCells need doing.
 //=================================================================================================
 template <int ndim>
 class TreeBase
 {
  public:
+	TreeBase() {};
+	virtual ~TreeBase() { } ;
 
-  TreeBase() {};
+	virtual int MaxNumPartInLeafCell() const = 0 ;
+	virtual FLOAT MaxKernelRange() const = 0 ;
+	virtual int MaxNumCells() const = 0 ;
 
-  TreeCellBase<ndim>* _celldata;        ///< Main tree cell data array
+	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
+	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
+	virtual int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist) = 0 ;
+	virtual int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
+	                                       const FLOAT, const int, int &, int *) = 0 ;
+	virtual int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+	                                       const FLOAT, const int, int &, int *) = 0 ;
+	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
+	virtual int ComputePeriodicNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+	                                         const DomainBox<ndim> &, const int, int &,
+	                                         int *, Particle<ndim> *) = 0 ;
+
+	/* TODO: Members that need more work to be part of a common interface
+	 * 		 Fix: Use a proxy class to hold multipole data, rather than returning the cells.
+	 *
+	virtual int ComputeActiveCellList(TreeCell<ndim> *) ;
+	virtual int ComputeGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
+	                                    const FLOAT, const int, const int, int &, int &, int &, int &,
+	                                    int *, int *, int *, TreeCell<ndim> *, Particle<ndim> *);
+	virtual  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
+	                                            const DomainBox<ndim> &, const FLOAT, const int,
+	                                            const int, int &, int &, int &, int &, int *, int *,
+	                                            int *, TreeCell<ndim> *, Particle<ndim> *);
+	virtual  int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
+												   const int, const int, int &, int &, int &, int *, int *,
+	                                               TreeCell<ndim> *, Particle<ndim> *);
+	*/
+
+	virtual int FindLeafCell(const FLOAT *) = 0;
+
+	//-----------------------------------------------------------------------------------------------
+	// virtual void BuildTree(const int, const int, const int, const int,
+	//                        const FLOAT, ParticleType<ndim> *) = 0;
+	virtual void AllocateTreeMemory(void) = 0;
+	virtual void DeallocateTreeMemory(void) = 0;
+	//virtual void UpdateAllHmaxValues(Particle<ndim> *) = 0;
+	//virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
+
+#if defined(VERIFY_ALL)
+    virtual void ValidateTree(Particle<ndim> *) = 0;
+#endif
 
 };
 
@@ -119,39 +169,54 @@ class Tree : public TreeBase<ndim>
 {
  public:
 
+
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole) :
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd) {};
 
+  virtual ~Tree() { } ;
 
   //-----------------------------------------------------------------------------------------------
-  void ExtrapolateCellProperties(const FLOAT);
-  bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
-  int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
+  int MaxNumPartInLeafCell() const
+  { return Nleafmax ; }
+  virtual FLOAT MaxKernelRange() const
+  { return kernrange ; }
+  virtual int MaxNumCells() const
+  { return gtot ; }
+
+  virtual void ExtrapolateCellProperties(const FLOAT);
+  bool BoxOverlap(const FLOAT box1min[ndim], const FLOAT box1max[ndim],
+		          const FLOAT box2min[ndim], const FLOAT box2max[ndim])
+  {
+    using ::BoxOverlap ;
+    return BoxOverlap(ndim, box1min, box1max, box2min, box2max) ;
+  }
+
+  int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
   int ComputeActiveCellList(TreeCell<ndim> *);
-  int ComputeActiveCellPointers(TreeCell<ndim> **celllist);
-  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
+  int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
+  int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int &, int *);
-  int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+  int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                                  const FLOAT, const int, int &, int *);
-  int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                           const int, int &, int *, ParticleType<ndim> *);
-  int ComputePeriodicNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+  int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+                           const int, int &, int *, Particle<ndim> *);
+  int ComputePeriodicNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                                    const DomainBox<ndim> &, const int, int &,
-                                   int *, ParticleType<ndim> *);
-  int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                   int *, Particle<ndim> *);
+  int ComputeGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
                                     const FLOAT, const int, const int, int &, int &, int &, int &,
-                                    int *, int *, int *, TreeCell<ndim> *, ParticleType<ndim> *);
-  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                    int *, int *, int *, TreeCell<ndim> *, Particle<ndim> *);
+  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
                                             const DomainBox<ndim> &, const FLOAT, const int,
                                             const int, int &, int &, int &, int &, int *, int *,
-                                            int *, TreeCell<ndim> *, ParticleType<ndim> *);
+                                            int *, TreeCell<ndim> *, Particle<ndim> *);
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
-                                        TreeCell<ndim> *, ParticleType<ndim> *);
-  int FindLeafCell(const FLOAT *);
+                                        TreeCell<ndim> *, Particle<ndim> *);
+  virtual int FindLeafCell(const FLOAT *);
 #ifdef MPI_PARALLEL
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeCell<ndim> *);
@@ -163,19 +228,18 @@ class Tree : public TreeBase<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
+
   virtual void BuildTree(const int, const int, const int, const int,
                          const FLOAT, ParticleType<ndim> *) = 0;
-  virtual void AllocateTreeMemory(void) = 0;
-  virtual void DeallocateTreeMemory(void) = 0;
-  virtual void StockTree(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
+  void UpdateAllHmaxValues(ParticleType<ndim>* sphdata)
+  { UpdateHmaxValues(celldata[0], sphdata) ; }
   virtual void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
+  virtual void StockTree(TreeCell<ndim> &, ParticleType<ndim> *) = 0 ;
   virtual void UpdateActiveParticleCounters(ParticleType<ndim> *) = 0;
+
 #ifdef MPI_PARALLEL
   virtual void UpdateWorkCounters(TreeCell<ndim> &) = 0;
   virtual int GetMaxCellNumber(const int) = 0;
-#endif
-#if defined(VERIFY_ALL)
-  virtual void ValidateTree(ParticleType<ndim> *) = 0;
 #endif
 
 
