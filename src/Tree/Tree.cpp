@@ -29,10 +29,10 @@
 #include "Precision.h"
 #include "Exception.h"
 #include "DomainBox.h"
+#include "Hydrodynamics.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Particle.h"
-#include "Sph.h"
 #include "Tree.h"
 #include "KDTree.h"
 #include "OctTree.h"
@@ -1058,10 +1058,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   while (cc < Ncell) {
 
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rs[k];
-    drsqd = DotProduct(dr,dr,ndim);
+    drsqd = DotProduct(dr, dr, ndim);
 
 
-    // Check if cells contain SPH neighbours
+    // Check if cells contain neighbours
     //---------------------------------------------------------------------------------------------
     if (drsqd < pow((FLOAT) 0.5*hrangemax +
         celldata[cc].rmax + (FLOAT) 0.5*kernrange*celldata[cc].hmax,2)) {
@@ -1157,41 +1157,90 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 
 
 
+//=================================================================================================
+//  Tree::FindLeafCell
+/// Finds and returns the leaf cell i.d. containing the given point, rp.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
+ (const FLOAT rp[ndim])
+{
+  int cc = 0;                          // Cell counter (start at root cell)
+
+
+  //===============================================================================================
+  while (cc < Ncell) {
+
+    // Check if bounding boxes overlap with each other
+    //---------------------------------------------------------------------------------------------
+    if (BoxOverlap(rp, rp, celldata[cc].bbmin, celldata[cc].bbmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (celldata[cc].copen != -1) {
+        cc = celldata[cc].copen;
+      }
+
+      // Ignore any empty cells
+      else if (celldata[cc].N == 0) {
+        cc = celldata[cc].cnext;
+      }
+
+      // If leaf-cell, add particles to list
+      else if (celldata[cc].copen == -1) {
+        return cc;
+      }
+
+    }
+
+    // If not in range, then open next cell
+    //---------------------------------------------------------------------------------------------
+    else {
+      cc = celldata[cc].cnext;
+    }
+
+  };
+  //===============================================================================================
+
+  // If we've somehow not found a leaf cell (e.g. if particle is outside tree domain), then
+  // return error code, -1
+  return -1;
+}
+
+
+
 #ifdef MPI_PARALLEL
 //=================================================================================================
-//  Tree::ComputePrunedTreeForMpiNode
-/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
-/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
-/// the gravity tree walk for active particles inside cell c.
-/// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
-/// overflow, return with error code (-1) to reallocate more memory.
+//  Tree::CreatePrunedTreeForMpiNode
+/// Walks through the main local tree and constructs a pruned tree for the given MPI node.
+/// If the MPI node is actually the local node, then simply build the pruned tree to the minimum
+/// pruning depth.  Otherwise, creates a pruned tree designed to allow gravity to be walked on the
+/// given node without requiring transfer of particles (unless very close to the node boundary).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
- (const MpiNode<ndim> &mpinode,        ///< [in] ..
+ (const MpiNode<ndim> &mpinode,        ///< [in] MPI node to create pruned tree for
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
-  const bool localNode,                ///< [in]
-  const int pruning_level_min,         ///< [in] ..
-  const int pruning_level_max,         ///< [in] ..
+  const bool localNode,                ///< [in] Flag if MPI node is actually the local node
+  const int pruning_level_min,         ///< [in] Minimum pruning level
+  const int pruning_level_max,         ///< [in] Maximum pruning level
   const int Nprunedcellmax,            ///< [in] Max. no. of cell interactions
-  TreeCell<ndim> *prunedcells)         ///< [out] List of cell ids
+  TreeCell<ndim> *prunedcells)         ///< [out] List of cell pointers in pruned tree
 {
   int c;                               // Cell counter
-  int cnext;                           // ..
+  int cnext;                           // id of next cell in tree
   int i;                               // Particle id
   int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
-  int Nprunedcell = 0;                 // ..
+  int Nprunedcell = 0;                 // No. of cells in newly created pruned tree
   int *newCellIds;                     // New cell ids in pruned tree
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rnode[ndim];                   // Position of cell
-  FLOAT rmin[ndim];
-  FLOAT rmax[ndim];
-  FLOAT rsize[ndim];
+  FLOAT rmin[ndim];                    // Minimum extent of MPI node
+  FLOAT rmax[ndim];                    // Maximum extent of MPI node
+  FLOAT rsize[ndim];                   // Size of MPI node
 
   newCellIds = new int[Ncellmax + 1];
   for (c=0; c<Ncellmax+1; c++) newCellIds[c] = -1;
@@ -1239,11 +1288,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     }
     drsqd = DotProduct(dr, dr, ndim);
 
-    /*cout << "Checking distances : " << drsqd << "   " << "   "
-         << pow(celldata[c].rmax + kernrange*celldata[c].hmax,2) << endl;
-    cout << "Other data : " << celldata[c].level << "   " << pruning_level_min << "   "
-         << pruning_level_max << "   " << celldata[c].N << "    cnext : "
-         << celldata[c].cnext << "    copen : " << celldata[c].copen << endl;*/
 
     // Special case if creating pruned tree for local node to prevent pruned tree from being
     // deeper than the minimum pruning level
@@ -1282,7 +1326,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
       c = celldata[c].cnext;
     }
 
-    //cout << "Now moving to cell : " << c << "   " << Ncell << "   " << Ncellmax << endl;
     Nprunedcell++;
 
   };
@@ -1301,28 +1344,22 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
       cout << "Problem with new pointers : " << c << "    " << Nprunedcell << "   "
            << "    " << Nprunedcellmax << "    copen : " << prunedcells[c].copen
            << "    cnext : " << prunedcells[c].cnext << endl;
-           exit(0);
+      exit(0);
     }
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
 
-
   // If selected, verify that pruned tree pointers are correctly set-up
-//#ifdef VERIFY_ALL
   assert(Nprunedcell <= Nprunedcellmax);
   for (c=0; c<Nprunedcell; c++) {
     if (prunedcells[c].copen != -1) cnext = prunedcells[c].copen;
     else cnext = prunedcells[c].cnext;
-
-    //cout << "checking? : " << c << "   " << cnext << "  " << prunedcells[c].copen
-    //     << "   " << prunedcells[c].cnext << "   " << Ncell << "   " << Ncellmax << endl;
     assert(cnext == c + 1 || cnext == Ncell || cnext == Ncellmax);
     assert(prunedcells[c].level <= pruning_level_max);
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
-//#endif
 
 
   delete[] newCellIds;
@@ -1334,16 +1371,13 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
 
 //=================================================================================================
 //  Tree::ComputeDistantGravityInteractionList
-/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
-/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
-/// the gravity tree walk for active particles inside cell c.
-/// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
-/// overflow, return with error code (-1) to reallocate more memory.
+/// Compute the list of cells to compute distant gravitational forces for particles in the given
+/// cell.  If the cell is too close, then return -1 to signal that the cell must be exported.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
  (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+  const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int Ngravcell,                       ///< [in] Current no. of cells in array
@@ -1353,9 +1387,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   int k;                               // Dimension counter
   int Ngravcelltemp = Ngravcell;       // Aux. cell counter
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Correction displacement for periodic boundaries
   FLOAT drsqd;                         // Distance squared
-  FLOAT rc[ndim];                      // Position of cell
   FLOAT hrangemax;                     // Maximum kernel extent
+  FLOAT rc[ndim];                      // Position of cell
   FLOAT rmax;                          // Radius of sphere containing particles
 
   // Make local copies of important cell properties
@@ -1364,18 +1399,19 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   rmax = cellptr->rmax;
 
 
-  // Walk through all cells in tree to determine particle and cell
-  // interaction lists
+  // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
 
+    // Calculate closest periodic replica of cell
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
+    NearestPeriodicVector(simbox, dr, dr_corr);
+    drsqd = DotProduct(dr, dr, ndim);
 
-    // Check if bounding boxes overlap with each other
+    // Check if bounding spheres overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cellptr->bbmin, cellptr->bbmax, celldata[cc].hboxmin, celldata[cc].hboxmax) ||
-        BoxOverlap(cellptr->hboxmin, cellptr->hboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
+    if (drsqd <= pow(celldata[cc].rmax + cellptr->rmax + kernrange*cellptr->hmax,2) ||
+        drsqd <= pow(cellptr->rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1387,14 +1423,15 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
         cc = celldata[cc].cnext;
       }
 
-      // If leaf-cell, add particles to list
+      // If leaf-cell, then pruned tree is invalid so return -1 error code to export cell
       else if (celldata[cc].copen == -1 || celldata[cc].N <= Nleafmax) {
         return -1;
       }
 
     }
 
-    // Check if cell is far enough away to use the COM approximation
+    // Check if cell is far enough away to use the COM approximation.
+    // If so, then make copy of cell and move to next cell.
     //---------------------------------------------------------------------------------------------
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
              celldata[cc].N > 0) {
@@ -1445,24 +1482,39 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
 //=================================================================================================
 //  Tree::ComputeHydroTreeCellOverlap
-/// ...
+/// Computes if a given cell overlaps with any of the tree's lowest level cells (either leaf
+/// cells or lowest level cells in the case of a pruned tree).  Used to decide if a cell should
+/// be exported to another MPI node for local hydro forces computations.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
- (const TreeCell<ndim> *cellptr)       ///< [in] Pointer to cell
+ (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box object
 {
   int cc = 0;                          // Cell counter
+  int k;                               // Neighbour counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic correction vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT rc[ndim];                      // Position of cell
+
+  // Make local copies of important cell properties
+  for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
 
+    // Calculate closest periodic replica of cell
+    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    NearestPeriodicVector(simbox, dr, dr_corr);
+    drsqd = DotProduct(dr, dr, ndim);
 
-    // Check if bounding boxes overlap with each other
+    // Check if bounding spheres overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cellptr->bbmin, cellptr->bbmax, celldata[cc].hboxmin, celldata[cc].hboxmax) ||
-        BoxOverlap(cellptr->hboxmin, cellptr->hboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
+    if (drsqd <= pow(celldata[cc].rmax + cellptr->rmax + kernrange*cellptr->hmax,2) ||
+        drsqd <= pow(cellptr->rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1470,11 +1522,12 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
       }
 
       // If cell contains no particle (dead leaf?) then move to next cell
-      //else if (celldata[cc].N == 0) cc = celldata[cc].cnext;
+      else if (celldata[cc].N == 0) {
+        cc = celldata[cc].cnext;
+      }
 
       // If cell is overlapping with any leaf, then flag overlap on return
       else if (celldata[cc].copen == -1 && celldata[cc].N > 0) {
-        //cout << "Found overlap for cell " << cellptr->bbmin[0] << "   " << cellptr->bbmax[0] << endl;
         return true;
       }
 
@@ -1489,7 +1542,6 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
   };
   //===============================================================================================
 
-  //cout << "No overlap found" << endl;
 
   // If we've walked the entire tree wihout any leaf overlaps, return flag for no overlap
   return false;
@@ -1521,7 +1573,7 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
       (ndim, boxmin, boxmax, celldata[c].hboxmin, celldata[c].hboxmax);
 
     // If there is zero or full overlap, record the value and move to the next cell
-    if (fracoverlap < small_number || fracoverlap > (FLOAT) 1.0 - small_number) {
+    if (fracoverlap < small_number || fracoverlap > (FLOAT) 0.999999999999999999) {
       worktot += fracoverlap*celldata[c].worktot;
       c = celldata[c].cnext;
     }

@@ -46,6 +46,10 @@
 using namespace std;
 
 
+// Declare invndim constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT Simulation<ndim>::invndim = 1.0/ndim;
+
 
 //=================================================================================================
 //  SimulationBase::SimulationFactory

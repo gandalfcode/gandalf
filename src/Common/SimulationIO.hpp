@@ -268,23 +268,24 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 
   debug2("[Simulation::WriteColumnSnapshotFileMPI]");
 
-  if (rank == 0)
-    cout << "Writing current data to snapshot file : " << filename << endl;
+  if (rank == 0) cout << "Writing current data to snapshot file : " << filename << endl;
 
   // Open file
   MPI_File file;
   char* filename_str = new char[strlen(filename.c_str())+1];
   strcpy(filename_str,filename.c_str());
-  MPI_File_open(MPI_COMM_WORLD, filename_str, MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL, &file);
+  MPI_File_open(MPI_COMM_WORLD, filename_str, MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
   MPI_File_set_size(file,0);
   delete[] filename_str;
-  //Collect total number of particles
+
+  // Collect total number of particles
   int Ntotsph;
-  MPI_Allreduce(&hydro->Nhydro,&Ntotsph,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce(&hydro->Nhydro, &Ntotsph, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   int Ntotstar;
-  MPI_Allreduce(&nbody->Nstar,&Ntotstar,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
-  //Root node writes header
-  if (rank==0) {
+  MPI_Allreduce(&nbody->Nstar, &Ntotstar, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  // Root node writes header
+  if (rank == 0) {
     outfile << Ntotsph << endl;
     outfile << Ntotstar << endl;
     outfile << ndim << endl;
@@ -292,7 +293,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   }
 
   // Write data for hydro particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (ndim == 1)
@@ -333,7 +334,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
     std::string content = outfile.str();
     int offset;
     int length_char = content.length();
-    MPI_Exscan(&length_char,&offset,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Exscan(&length_char, &offset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     if (rank==0) {
       offset = 0;
     }
@@ -354,13 +355,14 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   //We need to know where the last process got to seek to that point
   MPI_Offset end_sph_mpi; int end_sph;
   if (rank==Nmpi-1) {
-    MPI_File_get_position(file,&end_sph_mpi);
+    MPI_File_get_position(file, &end_sph_mpi);
     end_sph = end_sph_mpi;
   }
-  MPI_Bcast(&end_sph,1,MPI_INT,Nmpi-1,MPI_COMM_WORLD);
+  MPI_Bcast(&end_sph, 1, MPI_INT, Nmpi-1, MPI_COMM_WORLD);
+
 
   // Write data for Nbody particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<nbody->Nstar; i++) {
     if (ndim == 1)
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
@@ -395,8 +397,8 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   }
 
 
-  //Now all nodes write to the file their portion
-  //To do that, we need to know the offset of each node, summing up the length of each bit
+  // Now all nodes write to the file their portion
+  // To do that, we need to know the offset of each node, summing up the length of each bit
   {
     std::string content = outfile.str();
     int offset;
@@ -409,11 +411,10 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
     //Offset the position by the end of the hydro information
     offset_mpi += end_sph_mpi;
     MPI_File_seek(file, offset_mpi, MPI_SEEK_SET);
-    //Now we can do the actual writing. Extract information from the string and pass it to MPI
+
+    // Now we can do the actual writing. Extract information from the string and pass it to MPI
     char* data = new char[strlen(content.c_str())+1];
     strcpy(data, content.c_str());
-//    MPI_Status status;
-//    MPI_File_write(file, data, length_char, MPI_CHAR, &status);
     delete[] data;
   }
 
@@ -447,74 +448,80 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   outfile << t*simunits.t.outscale << endl;
 
   // Write data for hydro particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    if (ndim == 1)
+    if (ndim == 1) {
       outfile << part.r[0]*simunits.r.outscale << "   "
-	      << part.v[0]*simunits.v.outscale << "   "
-	      << part.m*simunits.m.outscale << "   "
-	      << part.h*simunits.r.outscale << "   "
-	      << part.rho*simunits.rho.outscale << "   "
-	      << part.u*simunits.u.outscale << "   "
-	      << endl;
-    else if (ndim == 2)
+              << part.v[0]*simunits.v.outscale << "   "
+              << part.m*simunits.m.outscale << "   "
+              << part.h*simunits.r.outscale << "   "
+              << part.rho*simunits.rho.outscale << "   "
+              << part.u*simunits.u.outscale << "   "
+              << endl;
+    }
+    else if (ndim == 2) {
       outfile << part.r[0]*simunits.r.outscale << "   "
-	      << part.r[1]*simunits.r.outscale << "   "
-	      << part.v[0]*simunits.v.outscale << "   "
-	      << part.v[1]*simunits.v.outscale << "   "
-	      << part.m*simunits.m.outscale << "   "
-	      << part.h*simunits.r.outscale << "   "
-	      << part.rho*simunits.rho.outscale << "   "
-	      << part.u*simunits.u.outscale
-	      << endl;
-    else if (ndim == 3)
+              << part.r[1]*simunits.r.outscale << "   "
+              << part.v[0]*simunits.v.outscale << "   "
+              << part.v[1]*simunits.v.outscale << "   "
+              << part.m*simunits.m.outscale << "   "
+              << part.h*simunits.r.outscale << "   "
+              << part.rho*simunits.rho.outscale << "   "
+              << part.u*simunits.u.outscale
+              << endl;
+    }
+    else if (ndim == 3) {
       outfile << part.r[0]*simunits.r.outscale << "   "
-	      << part.r[1]*simunits.r.outscale << "   "
-	      << part.r[2]*simunits.r.outscale << "   "
-	      << part.v[0]*simunits.v.outscale << "   "
-	      << part.v[1]*simunits.v.outscale << "   "
-	      << part.v[2]*simunits.v.outscale << "   "
-	      << part.m*simunits.m.outscale << "   "
-	      << part.h*simunits.r.outscale << "   "
-	      << part.rho*simunits.rho.outscale << "   "
-	      << part.u*simunits.u.outscale
-	      << endl;
+              << part.r[1]*simunits.r.outscale << "   "
+              << part.r[2]*simunits.r.outscale << "   "
+              << part.v[0]*simunits.v.outscale << "   "
+              << part.v[1]*simunits.v.outscale << "   "
+              << part.v[2]*simunits.v.outscale << "   "
+              << part.m*simunits.m.outscale << "   "
+              << part.h*simunits.r.outscale << "   "
+              << part.rho*simunits.rho.outscale << "   "
+              << part.u*simunits.u.outscale
+              << endl;
+    }
   }
 
   // Write data for N-body particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<nbody->Nstar; i++) {
-    if (ndim == 1)
+    if (ndim == 1) {
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
-	      << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
-	      << nbody->stardata[i].m*simunits.m.outscale << "   "
-	      << nbody->stardata[i].h*simunits.r.outscale << "   "
-	      << 0.0 << "   "
-	      << 0.0
-	      << endl;
-    else if (ndim == 2)
+              << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
+              << nbody->stardata[i].m*simunits.m.outscale << "   "
+              << nbody->stardata[i].h*simunits.r.outscale << "   "
+              << 0.0 << "   "
+              << 0.0
+              << endl;
+    }
+    else if (ndim == 2) {
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
-	      << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
-	      << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
-	      << nbody->stardata[i].v[1]*simunits.v.outscale << "   "
-	      << nbody->stardata[i].m*simunits.m.outscale << "   "
-	      << nbody->stardata[i].h*simunits.r.outscale << "   "
-	      << 0.0 << "   "
-	      << 0.0
-	      << endl;
-    else if (ndim == 3)
+              << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
+              << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
+              << nbody->stardata[i].v[1]*simunits.v.outscale << "   "
+              << nbody->stardata[i].m*simunits.m.outscale << "   "
+              << nbody->stardata[i].h*simunits.r.outscale << "   "
+              << 0.0 << "   "
+              << 0.0
+              << endl;
+    }
+    else if (ndim == 3) {
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
-	      << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
-	      << nbody->stardata[i].r[2]*simunits.r.outscale << "   "
-	      << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
-	      << nbody->stardata[i].v[1]*simunits.v.outscale << "   "
-	      << nbody->stardata[i].v[2]*simunits.v.outscale << "   "
-	      << nbody->stardata[i].m*simunits.m.outscale << "   "
-	      << nbody->stardata[i].h*simunits.r.outscale << "   "
-	      << 0.0 << "   "
-	      << 0.0
-	      << endl;
+              << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
+              << nbody->stardata[i].r[2]*simunits.r.outscale << "   "
+              << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
+              << nbody->stardata[i].v[1]*simunits.v.outscale << "   "
+              << nbody->stardata[i].v[2]*simunits.v.outscale << "   "
+              << nbody->stardata[i].m*simunits.m.outscale << "   "
+              << nbody->stardata[i].h*simunits.r.outscale << "   "
+              << 0.0 << "   "
+              << 0.0
+              << endl;
+    }
   }
 
   outfile.close();
@@ -535,12 +542,12 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
  (ifstream& infile,                    ///< [in] Input file stream
   HeaderInfo& info)                    ///< [out] Header info data structure
 {
-  int i;                           // Aux. counter
-  int idata[50];                   // Integer data array
-  int ilpdata[50];                 // Long integer data array
-  FLOAT rdata[50];                 // Real data array
-  DOUBLE ddata[50];                // Double precision data array
-  string dummy;                    // Dummy string variable
+  int i;                               // Aux. counter
+  int idata[50];                       // Integer data array
+  int ilpdata[50];                     // Long integer data array
+  FLOAT rdata[50];                     // Real data array
+  DOUBLE ddata[50];                    // Double precision data array
+  string dummy;                        // Dummy string variable
 
   // Read information identifying format and precision of file.
   // Then check if each value corresponds to the current values.
@@ -557,10 +564,10 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
   for (i=0; i<50; i++) infile >> rdata[i];
   for (i=0; i<50; i++) infile >> ddata[i];
 
-  info.Nhydro  = idata[0];
-  info.Nstar = idata[1];
-  info.t     = ddata[0];
-  info.t     /= simunits.t.inscale;
+  info.Nhydro = idata[0];
+  info.Nstar  = idata[1];
+  info.t      = ddata[0];
+  info.t      /= simunits.t.inscale;
 
   // Check dimensionality matches if using fixed dimensions
   if (info.ndim != ndim) {
@@ -788,13 +795,13 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
       else if (ndim == 2) {
         for (i=0; i<hydro->Nhydro; i++) {
           Particle<ndim>& part = hydro->GetParticlePointer(i);
-          infile >> part.v[0] >> part.r[1];
+          infile >> part.v[0] >> part.v[1];
         }
       }
       else if (ndim == 3) {
         for (i=0; i<hydro->Nhydro; i++) {
           Particle<ndim>& part = hydro->GetParticlePointer(i);
-          infile >> part.v[0] >> part.r[1] >> part.r[2];
+          infile >> part.v[0] >> part.v[1] >> part.v[2];
         }
       }
     }
@@ -1109,7 +1116,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
     //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.ionfrac << endl; //part.u*simunits.u.outscale << endl;
+      outfile_format << part.u*simunits.u.outscale << endl;
     }
 
   }
@@ -1764,8 +1771,6 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
   // Sinks/stars
   //---------------------------------------------------------------------------
-  if (rank==0)
-	cout << "about to write stars, nstar: " << nbody->Nstar << endl;
   if (rank==0 && nbody->Nstar > 0) {
 
     ofstream outfile(filename.c_str(),ios::binary|ios::app);

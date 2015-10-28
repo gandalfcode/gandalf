@@ -1004,13 +1004,13 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindAdjacentCell
 #ifdef OUTPUT_ALL
   cout << "Looking for cell containing : "
        << rp[0] << "  " << rp[1] << "  " << rp[2] << endl;
-  cout << "Cell x-range : " << radtree->radcell[c].bbmin[0]
-       << "   " << radtree->radcell[c].bbmax[0] << endl;
-  cout << "Cell y-range : " << radtree->radcell[c].bbmin[1]
-       << "   " << radtree->radcell[c].bbmax[1] << endl;
-  cout << "Cell z-range : " << radtree->radcell[c].bbmin[2]
-       << "   " << radtree->radcell[c].bbmax[2] << endl;
-  cout << "Cell level : " << radtree->radcell[c].level << endl;
+  cout << "Cell x-range : " << radcell[c].bbmin[0]
+       << "   " << radcell[c].bbmax[0] << endl;
+  cout << "Cell y-range : " << radcell[c].bbmin[1]
+       << "   " << radcell[c].bbmax[1] << endl;
+  cout << "Cell z-range : " << radcell[c].bbmin[2]
+       << "   " << radcell[c].bbmax[2] << endl;
+  cout << "Cell level : " << radcell[c].level << endl;
 #endif
 
   return c;

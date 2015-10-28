@@ -377,7 +377,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
   delete[] celllist;
@@ -456,6 +458,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     FLOAT drsqd;                                 // Distance squared
     FLOAT hrangesqdi;                            // Kernel gather extent
     FLOAT rp[ndim];                              // Local copy of particle position
+    Typemask hydromask;                          // Mask for computing hydro forces
     int Nneibmax    = Nneibmaxbuf[ithread];      // ..
     int* activelist = activelistbuf[ithread];    // ..
     int* levelneib  = levelneibbuf[ithread];     // ..
@@ -530,12 +533,14 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         i = activelist[j];
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+        for (k=0; k<Nhydrotypes; k++) hydromask[k] = sph->types[activepart[j].itype].hydromask[k];
         hrangesqdi = activepart[j].hrangesqd;
         Nhydroaux = 0;
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-        if (neibcheck) this->CheckValidNeighbourList(i,sph->Nhydro+sph->NPeriodicGhost,Nneib,neiblist,sphdata,"all");
+        if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
+                                                     Nneib, neiblist, sphdata, "all");
 #endif
 
         // Compute distances and the inverse between the current particle and all neighbours here,
@@ -544,11 +549,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         //-----------------------------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-          // Skip current active particle
-          if (neiblist[jj] == i) continue;
+          // Skip current active particle or if neighbour type is not active for hydro forces
+          if (neiblist[jj] == i || hydromask[neibpart[jj].itype] == false) continue;
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-          drsqd = DotProduct(draux,draux,ndim) + small_number;
+          drsqd = DotProduct(draux, draux, ndim) + small_number;
 
           // Compute relative position and distance quantities for pair
           if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
@@ -572,9 +577,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
       // Compute all star forces for active particles
       if (nbody->Nnbody > 0) {
-        for (j=0; j<Nactive; j++)
-          if ( activelist[j] < sph->Nhydro )
-          sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
+        for (j=0; j<Nactive; j++) {
+          if (activelist[j] < sph->Nhydro) {
+            sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+          }
+        }
       }
 
 
@@ -617,7 +624,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
 
@@ -683,6 +692,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     int Nactive;                                 // ..
     int Ndirect;                                 // ..
     int Ndirectaux;                              // ..
+    int Ngravaux;                                // ..
     int Ngravcell;                               // No. of gravity cells
     int Nneib;                                   // No. of neighbours
     int Nhydroaux;                               // ..
@@ -692,6 +702,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     FLOAT drsqd;                                 // Distance squared
     FLOAT hrangesqdi;                            // Kernel gather extent
     FLOAT rp[ndim];                              // ..
+    Typemask gravmask;                           // Mask for computing gravitational forces
+    Typemask hydromask;                          // Mask for computing hydro forces
     int Nneibmax     = Nneibmaxbuf[ithread];     // ..
     int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
     int *activelist  = activelistbuf[ithread];   // ..
@@ -700,6 +712,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     int *sphlist     = new int[Nneibmax];        // ..
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
+    int *gravauxlist = new int[Nneibmax];        // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread]; // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];   // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];       // ..
@@ -724,7 +737,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       // Compute average/maximum term for computing gravity MAC
       if (gravity_mac == "eigenmac") {
         for (j=0; j<Nactive; j++) macfactor =
-          max(macfactor,pow((FLOAT) 1.0/activepart[j].gpot,twothirds));
+          max(macfactor, pow((FLOAT) 1.0/activepart[j].gpot, twothirds));
       }
 
       // Zero/initialise all summation variables for active particles
@@ -747,6 +760,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       while (okflag < 0 || Nneib > Nneibmax) {
         delete[] neibpartbuf[ithread];
         delete[] cellbuf[ithread];
+        delete[] gravauxlist;
         delete[] directlist;
         delete[] sphauxlist;
         delete[] sphlist;
@@ -759,6 +773,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
         sphlist                  = new int[Nneibmax];
         sphauxlist               = new int[Nneibmax];
         directlist               = new int[Nneibmax];
+        gravauxlist              = new int[Nneibmax];
         neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmax];
         cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
         neibpart                 = neibpartbuf[ithread];
@@ -774,11 +789,15 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        Nhydroaux = 0;
-        Ndirectaux = Ndirect;
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+        for (k=0; k<Nhydrotypes; k++) gravmask[k] = sph->types[activepart[j].itype].gravmask[k];
+        for (k=0; k<Nhydrotypes; k++) hydromask[k] = sph->types[activepart[j].itype].hydromask[k];
         hrangesqdi = activepart[j].hrangesqd;
+        Nhydroaux = 0;
+        Ngravaux = 0;
+        Ndirectaux = Ndirect;
 
+        // Set lists for direct gravity, smoothed gravity and smoothed gravity + hydro loops
         //-----------------------------------------------------------------------------------------
         for (jj=0; jj<Nhydroneib; jj++) {
           int ii = sphlist[jj];
@@ -792,8 +811,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
           if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
             directlist[Ndirectaux++] = ii;
           }
-          else if (neiblist[ii] != i) {
+          else if (neiblist[ii] != i && hydromask[neibpart[jj].itype] == true) {
             sphauxlist[Nhydroaux++] = ii;
+            levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
+          }
+          else if (neiblist[ii] != i && gravmask[neibpart[jj].itype] == true) {
+            gravauxlist[Ngravaux++] = ii;
             levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
           }
         }
@@ -803,7 +826,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
         // Compute forces between SPH neighbours (hydro and gravity)
         sph->ComputeSphHydroGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
 
-        // Compute direct gravity forces between distant particles
+        // Compute smoothed gravitational forces between SPH neighbours
+        sph->ComputeSphGravForces(i, Ngravaux, gravauxlist, activepart[j], neibpart);
+
+        // Compute direct gravitational forces between distant particles
         sph->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
 
         // Compute gravitational force due to distant cells
@@ -901,6 +927,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   int cactive;                         // No. of active cells
   TreeCell<ndim> *celllist;            // List of active tree cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+#ifdef MPI_PARALLEL
+  int Nactivetot = 0;                      // Total number of active particles
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
   timing->StartTimingSection("SPH_GRAV_FORCES");
@@ -926,35 +956,35 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 #else
     int ithread = 0;
 #endif
-    int cc;                              // Aux. cell counter
-    int i;                               // Particle id
-    int j;                               // Aux. particle counter
-    int jj;                              // Aux. particle counter
-    int k;                               // Dimension counter
-    int okflag;                          // Flag if h-rho iteration is valid
-    int Nactive;
-    int Ndirect;
-    int Ndirectaux;
-    int Nneib;                           // No. of neighbours
-    int Nhydroaux;
-    int Nhydroneib;
-    int Ngravcell;                       // No. of gravity cells
-    FLOAT draux[ndim];                   // Aux. relative position vector
-    FLOAT drsqd;                         // Distance squared
-    FLOAT hrangesqdi;                    // Kernel gather extent
-    FLOAT macfactor;                     // Gravity MAC factor
-    FLOAT rp[ndim];                      // ..
-    int Nneibmax      = Nneibmaxbuf[ithread];
-    int Ngravcellmax  = Ngravcellmaxbuf[ithread];
-    int* neiblist     = new int[Nneibmax];
-    int* sphlist      = new int[Nneibmax];
-    int *sphauxlist   = new int[Nneibmax];
-    int* directlist   = new int[Nneibmax];
-    int* activelist   = activelistbuf[ithread];
-    int* levelneib    = levelneibbuf[ithread];
-    ParticleType<ndim>* activepart = activepartbuf[ithread];
-    ParticleType<ndim>* neibpart   = neibpartbuf[ithread];
-    TreeCell<ndim>* gravcell       = cellbuf[ithread];
+    int cc;                                      // Aux. cell counter
+    int i;                                       // Particle id
+    int j;                                       // Aux. particle counter
+    int jj;                                      // Aux. particle counter
+    int k;                                       // Dimension counter
+    int okflag;                                  // Flag if h-rho iteration is valid
+    int Nactive;                                 // ..
+    int Ndirect;                                 // ..
+    int Ndirectaux;                              // ..
+    int Ngravcell;                               // No. of gravity cells
+    int Nneib;                                   // No. of neighbours
+    int Nhydroaux;                               // ..
+    int Nhydroneib;                              // ..
+    FLOAT macfactor;                             // Gravity MAC factor
+    FLOAT draux[ndim];                           // Aux. relative position vector
+    FLOAT drsqd;                                 // Distance squared
+    FLOAT hrangesqdi;                            // Kernel gather extent
+    FLOAT rp[ndim];                              // ..
+    int Nneibmax     = Nneibmaxbuf[ithread];     // ..
+    int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
+    int *activelist  = activelistbuf[ithread];   // ..
+    int *levelneib   = levelneibbuf[ithread];    // ..
+    int *neiblist    = new int[Nneibmax];        // ..
+    int *sphlist     = new int[Nneibmax];        // ..
+    int *sphauxlist  = new int[Nneibmax];        // ..
+    int *directlist  = new int[Nneibmax];        // ..
+    ParticleType<ndim>* activepart = activepartbuf[ithread]; // ..
+    ParticleType<ndim>* neibpart   = neibpartbuf[ithread];   // ..
+    TreeCell<ndim>* gravcell       = cellbuf[ithread];       // ..
 
     // Zero timestep level array
     for (i=0; i<sph->Nhydro; i++) levelneib[i] = 0;
@@ -990,14 +1020,15 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
       }
 
       // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputeGravityInteractionList(cell,sphdata,macfactor,Nneibmax,Ngravcellmax,
-                                                   Nneib,Nhydroneib,Ndirect,Ngravcell,neiblist,
-                                                   sphlist,directlist,gravcell,neibpart);
+     okflag = tree->ComputeGravityInteractionList
+      (cell, sphdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib, Ndirect,
+       Ngravcell, neiblist, sphlist, directlist, gravcell, neibpart);
+
 
       // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
       while (okflag < 0 || Nneib > Nneibmax) {
-        delete[] neibpart;
-        delete[] gravcell;
+        delete[] neibpartbuf[ithread];
+        delete[] cellbuf[ithread];
         delete[] directlist;
         delete[] sphauxlist;
         delete[] sphlist;
@@ -1014,13 +1045,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
         cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
         neibpart                 = neibpartbuf[ithread];
         gravcell                 = cellbuf[ithread];
-        okflag = tree->ComputeGravityInteractionList(cell,sphdata,macfactor,Nneibmax,
-                                                     Ngravcellmax,Nneib,Nhydroneib,Ndirect,Ngravcell,
-                                                     sphlist,neiblist,directlist,gravcell,neibpart);
+        okflag = tree->ComputeGravityInteractionList
+         (cell, sphdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib, Ndirect,
+          Ngravcell, neiblist, sphlist, directlist, gravcell, neibpart);
       };
-
-      // Make local copies of all potential neighbours
-      for (j=0; j<Nneib; j++) neibpart[j] = sphdata[neiblist[j]];
 
 
       // Loop over all active particles in the cell
@@ -1062,12 +1090,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
         // Compute gravitational force due to distant cells
         if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot,activepart[j].agrav,
-                                    activepart[j].r,Ngravcell,gravcell);
+          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
+                                          activepart[j].r, Ngravcell, gravcell);
         }
         else if (multipole == "quadrupole") {
-          this->ComputeCellQuadrupoleForces(activepart[j].gpot,activepart[j].agrav,
-                                      activepart[j].r,Ngravcell,gravcell);
+          this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+                                            activepart[j].r, Ngravcell, gravcell);
         }
 
       }
@@ -1076,13 +1104,14 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
-        this->ComputeFastMonopoleForces(Nactive,Ngravcell,gravcell,cell,activepart);
+        this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
       }
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {
-        if ( activelist[j] < sph->Nhydro )
-        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
+        if (activelist[j] < sph->Nhydro) {
+          sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+        }
       }
 
       // Add all active particles contributions to main array
@@ -1103,7 +1132,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     // Finally, add all contributions from distant pair-wise forces to arrays
 #pragma omp critical
     for (i=0; i<sph->Nhydro; i++) {
-      sphdata[i].levelneib = max(sphdata[i].levelneib,levelneib[i]);
+      sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
     }
 
     // Free-up local memory for OpenMP thread
@@ -1115,125 +1144,22 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   }
   //===============================================================================================
 
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  for (int cc=0; cc<cactive; cc++) {
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) celllist[cc].Nactive / (DOUBLE) Nactivetot;
+  }
+#endif
+
   delete[] celllist;
 
   timing->EndTimingSection("SPH_GRAV_FORCES");
 
   return;
 }
-
-
-
-//=================================================================================================
-//  GradhSphTree::UpdateAllStarGasForces
-/// Calculate the gravitational acceleration on all star particles due to
-/// all gas particles via the tree.
-//=================================================================================================
-/*template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
-  Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
-{
-  int Nactive;                         // No. of active particles in cell
-  int *activelist;                     // List of active particle ids
-  NbodyParticle<ndim> *star;           // Pointer to star particle
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
-
-
-  debug2("[GradhSphTree::UpdateAllStarGasForces]");
-  //timing->StartTimingSection("STAR_GAS_GRAV_FORCES");
-
-  // Make list of all active stars
-  Nactive = 0;
-  activelist = new int[nbody->Nstar];
-  for (int i=0; i<nbody->Nstar; i++) {
-    if (nbody->nbodydata[i]->active) activelist[Nactive++] = i;
-  }
-
-
-  // Set-up all OMP threads
-  //===============================================================================================
-#pragma omp parallel default(none) private(star)\
-  shared(activelist,Nactive,Ntot,nbody,sph,sphdata,cout)
-  {
-#if defined _OPENMP
-    const int ithread = omp_get_thread_num();
-#else
-    const int ithread = 0;
-#endif
-    int i;                                       // Particle id
-    int j;                                       // Aux. particle counter
-    int okflag;                                  // Flag if h-rho iteration is valid
-    int Ndirect;                                 // No. of direct-sum gravity particles
-    int Ngravcell;                               // No. of gravity cells
-    int Nneib;                                   // No. of neighbours
-    int Nneibmax = Ntot; //Nneibmaxbuf[ithread];
-    int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
-    FLOAT macfactor;                             // Gravity MAC factor
-    int* neiblist = new int[Nneibmax];           // ..
-    int* directlist = new int[Nneibmax];         // ..
-    TreeCell<ndim>* gravcell = new TreeCell<ndim>[Ngravcellmax];   // ..
-
-
-    // Loop over all active cells
-    //=============================================================================================
-#pragma omp for schedule(dynamic)
-    for (j=0; j<Nactive; j++) {
-      i = activelist[j];
-      star = nbody->nbodydata[i];
-
-      // Compute average/maximum term for computing gravity MAC
-      if (gravity_mac == "eigenmac") macfactor = pow((FLOAT) 1.0/star->gpot,twothirds);
-      else macfactor = (FLOAT) 0.0;
-
-      // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputeStarGravityInteractionList
-        (star, macfactor, Nneibmax, Nneibmax, Ngravcellmax, Nneib,
-         Ndirect, Ngravcell, neiblist, directlist, gravcell, sphdata);
-
-      // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
-      while (okflag == -1) {
-        delete[] gravcell;
-        Ngravcellmax = 2*Ngravcellmax;
-        gravcell = new TreeCell<ndim>[Ngravcellmax];
-        okflag = tree->ComputeStarGravityInteractionList
-          (star, macfactor, Nneibmax, Nneibmax, Ngravcellmax, Nneib,
-           Ndirect, Ngravcell, neiblist, directlist, gravcell, sphdata);
-      };
-
-      // Compute contributions to star force from nearby SPH particles
-      nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, sph);
-
-      // Compute gravitational force due to distant cells
-      if (multipole == "monopole" || multipole == "fast_monopole") {
-        this->ComputeCellMonopoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
-      }
-      else if (multipole == "quadrupole") {
-        this->ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
-      }
-
-
-    }
-    //=============================================================================================
-
-
-    // Free-up local memory for OpenMP thread
-    delete[] gravcell;
-    delete[] directlist;
-    delete[] neiblist;
-
-  }
-  //===============================================================================================
-
-  delete[] activelist;
-
-  //timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
-
-  return;
-}*/
 
 
 
@@ -1261,7 +1187,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
   debug2("[GradhSphTree::UpdateAllSphPeriodicHydroForces]");
   timing->StartTimingSection("SPH_PERIODIC_HYDRO_FORCES");
 
-
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
   celllist = new TreeCell<ndim>[tree->Ncellmax];
@@ -1271,7 +1196,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) return;
+  //if (cactive == 0) return;
 
   // Update ghost tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0],sphdata);
@@ -1299,6 +1224,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
     FLOAT drsqd;                                   // Distance squared
     FLOAT hrangesqdi;                              // Kernel gather extent
     FLOAT rp[ndim];                                // Local copy of particle position
+    Typemask hydromask;                            // Mask for computing hydro forces
     int Nneibmax      = Nneibmaxbuf[ithread];      // ..
     int* activelist   = activelistbuf[ithread];    // ..
     int* levelneib    = levelneibbuf[ithread];     // ..
@@ -1366,8 +1292,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
         //Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
       };
 
-      //for (j=0; j<Nneib; j++) neibpart[j] = sphdata[neiblist[j]];
-
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
@@ -1375,12 +1299,14 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
         i = activelist[j];
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+        for (k=0; k<Nhydrotypes; k++) hydromask[k] = sph->types[activepart[j].itype].hydromask[k];
         hrangesqdi = activepart[j].hrangesqd;
         Nhydroaux = 0;
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-        if (neibcheck) this->CheckValidNeighbourList(i,sph->Nhydro+sph->NPeriodicGhost,Nneib,neiblist,sphdata,"all");
+        if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
+                                                     Nneib, neiblist, sphdata, "all");
 #endif
 
         // Compute distances and the inverse between the current particle and all neighbours here,
@@ -1390,10 +1316,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
         for (jj=0; jj<Nneib; jj++) {
 
           // Skip current active particle
-          if (neiblist[jj] == i) continue;
+          //if (neiblist[jj] == i) continue;
+          if (neiblist[jj] == i || hydromask[neibpart[jj].itype] == false) continue;
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-          drsqd = DotProduct(draux,draux,ndim) + small_number;
+          drsqd = DotProduct(draux, draux, ndim) + small_number;
 
           // Compute relative position and distance quantities for pair
           if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
@@ -1408,6 +1335,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
         }
         //-----------------------------------------------------------------------------------------
 
+
         // Compute all neighbour contributions to hydro forces
         sph->ComputeSphHydroForces(i,Nhydroaux,sphlist,drmag,invdrmag,dr,activepart[j],neibpart);
 
@@ -1416,11 +1344,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
 
 
       // Compute all star forces for active particles
-      /*if (nbody->Nnbody > 0) {
-        for (j=0; j<Nactive; j++)
-          if (activelist[j] < sph->Nhydro)
-          sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
-      }*/
+      if (nbody->Nnbody > 0) {
+        for (j=0; j<Nactive; j++) {
+          if (activelist[j] < sph->Nhydro) {
+            sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
+          }
+        }
+      }
 
 
       // Add all active particles contributions to main array
@@ -1432,7 +1362,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
         sphdata[i].dudt     += activepart[j].dudt;
         sphdata[i].dalphadt += activepart[j].dalphadt;
         sphdata[i].div_v    += activepart[j].div_v;
-        levelneib[i]         = max(levelneib[i],activepart[j].levelneib);
+        levelneib[i]        = max(levelneib[i], activepart[j].levelneib);
       }
 
     }
@@ -1462,7 +1392,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
 

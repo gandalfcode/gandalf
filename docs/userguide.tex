@@ -7,7 +7,7 @@
 \usepackage{array}
 \usepackage[colorlinks,final]{hyperref}
 
-\newcommand{\VERNO}{0.3.0 }
+\newcommand{\VERNO}{0.4.0 }
 \newcommand{\var}[1]{\texttt{#1}}
 \newcommand{\singlecommand}[1]{\\ \newline \indent \var{#1} \\ \newline \noindent}
 
@@ -41,7 +41,7 @@ GANDALF is a new SPH and N-body code written in C++ and Python.  Although partly
 \begin{itemize}
 \item GANDALF has been written with a fully object-oriented philosophy in C++.  This is to improve the maintainability of the code and also to allow the code to be easily extended in the future with as little disruption to the original code-base as possible.
 \item GANDALF can be run in three different modes; as a standard C++ executable run from the command line, run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run on-the-fly.
-\item GANDALF contains a variety of SPH algorithms such as conservative 'grad-h' SPH (Springel \& Hernquist 2002, Price \& Monaghan 2004), Saitoh \& Makino (2013) SPH and Godunov SPH (Inutsuka 2002).
+\item GANDALF contains a variety of SPH algorithms such as conservative 'grad-h' SPH (Springel \& Hernquist 2002, Price \& Monaghan 2004) and Saitoh \& Makino (2013).
 \item The N-body component of GANDALF contains a variety of common integration schemes such as 4th/6th-order Hermite with time-symmetric integration.
 \item GANDALF can generate initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori to running the simulation.  The initial conditions may either be hard-coded into the C++ code, or set-up via a python script using numpy arrays.
 \item GANDALF uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.  Therefore, GANDALF need not be re-compiled everytime a different setting is required.
@@ -208,10 +208,6 @@ clang & : CLANG compiler (Mac OS X only)
 
 \item PYTHON : name of python command-line executable (e.g. python, python2.7)
 
-\item FFTW : Include FFTW (Fast Fourier transform) library for initial conditions (0 or 1)
-
-\item GSL : Include GSL (GNU Scientific library) for Ewald forces (0 or 1)
-
 \item COMPILER\_MODE : Set compiler flags for production or debug runs \\
 \begin{tabular}{ll}
 DEBUG & : Set all debug compiler options, including flags to use gdb debugger and full warning output (-Wall) \\
@@ -240,6 +236,10 @@ DOUBLE & : 64-bit precision floating point variables
 1 & : Activate assert debug statements in code \\
 2 & : Activate extra (expensive) debugging computations in code
 \end{tabular}
+
+\item FFTW : Include FFTW (Fast Fourier transform) library for initial conditions (0 or 1).  The FFTW\_LIBRARY and FFTW\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
+
+\item GSL : Include GSL (GNU Scientific library) which is required for Ewald forces (0 or 1). The GSL\_LIBRARY and GSL\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
 
 \item PYLIB : Path to directory that includes prefered python libraries.  If left blank, {\var make} will use python routines to locate the libraries automatically.
 
@@ -271,7 +271,9 @@ DOUBLE & : 64-bit precision floating point variables
 sph               & = SPH (+ N-body) algorithm (default : `grad-h' SPH) \\
 gradhsph          & = `grad-h' SPH simulation (+ N-body) \\
 sm2012sph         & = Saitoh \& Makino (2012) SPH (+ N-body) \\
-godunov\_sph      & = Godunov SPH simulation (Inutsuka 2002) \\
+meshlessfv        & = Meshless Finite-Volume algorithm (default : `mfvmuscl') \\
+mfvmuscl          & = Meshless FV MUSCL integration simulation \\
+mfvrk             & = Meshless FV Runge-Kutta integration \\
 nbody             & = N-body only simulation
 \end{tabular}
 
@@ -289,12 +291,14 @@ file              & = Load initial conditions from external file \\
 bb                & = Boss-Bodenheimer (1979) test \\
 binary            & = Simple binary star test \\
 binaryacc         & = Binary accretion test \\
+blastwave         & = Blastwave test \\
 bondi             & = Spherically symmetric Bondi accretion test \\
 box               & = Create a uniform box of gas \\
 cdiscontinuity    & = Contact discontinuity test \\
 ewaldcylinder     & = Cylinder for 1D Ewald gravity test \\
 ewaldsine         & = Sinusoidal density for 3D Ewald gravity test \\
 ewaldslab         & = Slab for 2D Ewald gravity test \\
+gresho            & = Gresho-Chan vortex test \\
 khi               & = Kelvin-Helmholtz instability test \\
 noh               & = Noh problem initial conditions \\
 plummer           & = Plummer sphere test \\
@@ -410,7 +414,7 @@ kg\_m2      & = kilogrammes per meter squared
 \item \var{pressoutunit} : Pressure unit \\
 \begin{tabular}{ll}
 Pa    & = pascals/newtons per square metre \\
-bar   & = ???
+bar   & = bars
 \end{tabular}
 
 \item \var{foutunit} : Force unit \\
@@ -535,6 +539,52 @@ K & = Kelvin
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Hydrodynamical parameters}
+
+\begin{itemize}
+\item \var{hydro\_forces} : Compute hydro forces?  ($1$ or $0$)
+
+\item \var{gas\_eos} : Gas particles equation-of-state \\
+\begin{tabular}{ll}
+energy\_eqn & = Solve energy equation \\
+isothermal  & = Isothermal EOS \\
+barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase during protostellar collapse) \\
+barotropic2  & = Similar to barotropic, but using discrete power laws rather than smooth change \\
+rad\_ws     & = EOS relating to Stamatellos et al. (2007) cooling method 
+\end{tabular}
+
+
+\item \var{energy\_integration} : Energy integration scheme (only applicable if solving the energy equation) \\
+\begin{tabular}{ll}
+null        & = Energy equation not integrated separately \\
+rad\_ws     & = Integrate energy terms using Stamatellos et al. (2007) method
+\end{tabular}
+
+\item \var{energy\_mult} : Explicit energy integration timestep multiplier
+
+\item \var{gamma\_eos} : Ratio of specific heats for gas
+
+\item \var{temp0} : (Isothermal) temperature (isothermal or barotropic EOS)
+
+\item \var{mu\_bar}    : Mean gas particle mass (in units of hydrogen mass)
+
+\item \var{rho\_bary} : Adiabatic density turnover in barotropic EOS (in g/cm\^3)
+
+\item \var{eta\_eos}   : Polytropic exponent (for barotropic EOS)
+
+\item \var{radws\_table} : Name of EOS file for Stamatellos et al. (2007) cooling method
+
+\item \var{temp\_ambient} : Ambient temperature (for rad\_ws method)
+
+
+%\item \var{Acool} : Simple cooling rate factor
+
+%\item \var{u\_eq} : Equilibrium internal energy (for simple cooling law)
+
+\end{itemize}
+
+
+
 \subsection{SPH parameters}
 
 \begin{itemize}
@@ -561,56 +611,7 @@ gaussian  & = Gaussian kernel (truncated at 3h)
 \end{itemize}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Hydrodynamical parameters}
 
-\begin{itemize}
-\item \var{hydro\_forces} : Compute hydro forces?  ($1$ or $0$)
-
-\item \var{gas\_eos} : Gas particles equation-of-state \\
-\begin{tabular}{ll}
-energy\_eqn & = Solve energy equation \\
-isothermal  & = Isothermal EOS \\
-barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase during protostellar collapse) \\
-barotropic2  & = Similar to barotropic, but using discrete power laws rather than smooth change \\
-rad\_ws     & = EOS relating to Stamatellos et al. (2007) cooling method (to be used with rad\_ws option in energy equation)
-\end{tabular}
-
-%\item \var{cooling\_law} : Cooling law for gas particles (only applicable if solving the energy equation) \\
-%\begin{tabular}{ll}
-%none    & = No cooling \\
-%linear1 & = Simple linear cooling law
-%\end{tabular}
-
-\item \var{energy\_integration} : Energy integration scheme (only applicable if solving the energy equation) \\
-\begin{tabular}{ll}
-null        & = Energy equation not integrated separately \\
-PEC         & = Explicit integration using predict-correct-evaluate scheme \\
-rad\_ws     & = Integrate energy terms using Stamatellos et al. (2007) method
-\end{tabular}
-
-\item \var{energy\_mult} : Explicit energy integration timestep multiplier
-
-\item \var{gamma\_eos} : Ratio of specific heats for gas
-
-\item \var{temp0} : (Isothermal) temperature (isothermal or barotropic EOS)
-
-\item \var{mu\_bar}    : Mean gas particle mass (in units of hydrogen mass)
-
-\item \var{rho\_bary} : Adiabatic density turnover in barotropic EOS (in g/cm\^3)
-
-\item \var{eta\_eos}   : Polytropic exponent (for barotropic EOS)
-
-\item \var{radws\_table} : Name of EOS file for Stamatellos et al. (2007) cooling method
-
-\item \var{temp\_ambient} : Ambient temperature (for rad\_ws method)
-
-
-%\item \var{Acool} : Simple cooling rate factor
-
-%\item \var{u\_eq} : Equilibrium internal energy (for simple cooling law)
-
-\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -640,24 +641,34 @@ wadsley2008 & = Wadsley et al. (2008) conductivity
 \item \var{beta\_visc} : Value of beta viscosity as a multiple of alpha
 
 
-%\item \var{riemann\_solver} : Riemann solver to be used in Godunov SPH \\
-%\begin{tabular}{ll}
-%exact  & = Exact Riemann solver (Toro 19??) \\
-%hllc   & = HLLC approximate Riemann Solver (????)
-%\end{tabular}
+\end{itemize}
 
-%\item \var{riemann\_order} : Order of Riemann solver \\
-%\begin{tabular}{ll}
-%1  & = 1st-order Riemann solver (i.e. Godunov's original method) \\
-%2  & = 2nd-order Riemann solver (i.e. 2nd-order MUSCL-type reconstruction)
-%\end{tabular}
 
-%\item \var{slope\_limiter} : Slope limiter for second-order Riemann solver \\
 
-%\begin{tabular}{ll}
-%????     & = ???? \\
-%\end{tabular}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Meshless finite-volume parameters}
 
+\begin{itemize}
+
+\item \var{riemann\_solver} : Riemann solver in FV scheme \\
+\begin{tabular}{ll}
+exact  & = Exact Riemann solver (e.g. Toro 1999) \\
+hllc & = HLLC approximate Riemann solver
+\end{tabular}
+
+\item \var{slope\_limiter} : Slope limiter for TVD condition \\
+\begin{tabular}{ll}
+null          & = No limiting \\
+zeroslope     & = Set all slopes to zero (effectively 1st order Godunov) \\
+balsara2004   & = Balsara (2004) slope-limiter \\
+springel2009  & = Original AREPO (Springel 2009) slope limiter \\
+tess2011      & = TESS slope limtier \\
+gizmo         & = Original GIZMO paper (Hopkins 2015) slope limiter \\
+minmod        & = simplified implementation of minmod slope limiter
+\end{tabular}
+
+\item \var{zero\_mass\_flux} : Use Meshless-Finite Mass scheme to prevent mass-flux between particles?   ($1$ or $0$)
+\item \var{static\_particles} : Use static particles (Eulerian approach)?  ($1$ or $0$)
 
 \end{itemize}
 
@@ -670,6 +681,8 @@ wadsley2008 & = Wadsley et al. (2008) conductivity
 
 \item \var{self\_gravity} : Compute gravitational forces?   ($1$ or $0$)
 
+\item \var{kgrav} : Direction of (external) gravitational acceleration ($0$, $1$ or $2$)
+
 \item \var{grav\_kernel} : Form of gravitational softening \\
 \begin{tabular}{ll}
 mean\_h   & = Mean smoothing length softening
@@ -677,9 +690,12 @@ mean\_h   & = Mean smoothing length softening
 
 \item \var{external\_potential} : External gravitational potential \\
 \begin{tabular}{ll}
-none    & = No external potential \\
-plummer & = Plummer background potential
+none     & = No external potential \\
+vertical & = Constant gravitational field \\
+plummer  & = Plummer background potential
 \end{tabular}
+
+\item \var{avert} : Veritcal (constant) gravitational acceleration
 
 \item \var{rplummer\_extpot} : Background Plummer potential radius
 
@@ -698,7 +714,7 @@ plummer & = Plummer background potential
 \begin{tabular}{ll}
 bruteforce & = Brute-force (i.e. summation over all particles) \\
 kdtree     & = Balanced kd-binary tree \\
-octtree    & = Barnes-Hut Octal tree (partially working)
+octtree    & = Barnes-Hut octal tree
 \end{tabular}
 
 \item \var{gravity\_mac} : Gravity-tree cell-opening criteria (N.B. always defulats to geometric for now) \vspace{0.1cm} \\
@@ -793,7 +809,8 @@ hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 
 \item \var{sink\_radius\_mode} : How to calculate new sink radius \\
 \begin{tabular}{ll}
-hmult   &= sink radius a multiple of SPH particle smoothing length
+hmult   & = sink radius a multiple of SPH particle smoothing length \\
+fixed   & = sink radius is fixed for all new sinks \\
 \end{tabular}
 
 
@@ -809,13 +826,13 @@ hmult   &= sink radius a multiple of SPH particle smoothing length
 \item \var{radiation} : Main radiation algorithm used \\
 \begin{tabular}{ll}
 none            &= No radiation field \\
-ionisation      &= Multiple source ionising radiation \\
-monoionisation  &= Monte-Carlo radiation transport using a kd-tree
+ionisation      &= Multiple source ionising radiation
 \end{tabular}
 
 \item \var{Nphoton}   : No. of photon packets (for Monte-Carlo radiation transport)
 \item \var{mu\_ion}   : Mean-gas particle mass for ionised gas
 \item \var{temp\_ion} : Temperature of ionised gas
+\item \var{arecomb}   : Recombination coefficient (in cgs units)
 \item \var{Ndotmin}   : No. of ionising photons per second
 \item \var{NLyC}      : No. of ionising photons per second
 
@@ -869,7 +886,10 @@ hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed 
 
 \item \var{smooth\_ic} : Smooth any particle quantities around discontinuities
 \item \var{com\_frame} : Translate ICs to COM frame before starting simulation
-%\item \var{field\_type} : ..
+\item \var{regularise\_particle\_ics} : Regularise particle initial conditions before main simulation
+\item \var{Nreg}         : No. of regularisation iterations
+%\item \var{field\_type}  : ..
+%\item \var{gridsize}     : ..
 \item \var{Nhydro}       : No. of hydrodynamical particles
 \item \var{Nhydromax}    : Maximum no. of hysrodynamical particles
 \item \var{Nstar}        : No. of star particles
@@ -908,7 +928,7 @@ hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed 
 
 \item \var{rstar}        : (Softening) radius of star particles
 
-%\item \var{cdmfrac}   : Fraction of mass in cdm particles
+\item \var{cdmfrac}      : Fraction of mass in cdm particles
 \item \var{gasfrac}      : Fraction of mass in gas particles
 \item \var{starfrac}     : Fraction of mass in star particles
 
@@ -961,7 +981,12 @@ xorshift & = Xorshift generator (see Numerical recipes, Ed 3, Chapter 7 for deta
 
 \begin{itemize}
 
-\item \var{pruning\_level} : Level to prune exported trees down to
+\item \var{mpi\_decomposition}  : Mode of MPI decomposition \\
+\begin{tabular}{ll}
+kdtree & = Use simple KD-tree decomposition
+\end{tabular}
+\item \var{pruning\_level\_min} : Minimum level to prune exported trees
+\item \var{pruning\_level\_max} : Maximum level to prune exported trees
 
 \end{itemize}
 

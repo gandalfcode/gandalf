@@ -44,7 +44,6 @@ int main(int argc, char** argv)
   string paramfile;                                  // Name of parameters file
   stringstream ss;                                   // Stream char to string
   ofstream outfile;                                  // Stream of temp restart file
-  CodeTiming timing;                                 // Timing object
   Parameters* params = new Parameters();             // Parameters object
   SimulationBase* sim;                               // Main simulation object
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
@@ -84,6 +83,9 @@ int main(int argc, char** argv)
   }
 #endif
 #endif
+
+  // Create timing object here (constructor need to be called after MPI is initialised)
+  CodeTiming timing;
 
 
   // Parse and process all command-line arguments.
@@ -144,7 +146,7 @@ int main(int argc, char** argv)
 #endif
 
   // Compile timing statistics from complete simulation
-  timing.ComputeTimingStatistics(sim->run_id);
+  //timing.ComputeTimingStatistics(sim->run_id);
 
   // Finally, delete all locally created objects
   delete sim;

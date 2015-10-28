@@ -141,74 +141,74 @@ class SimulationBase
 
   // Variables
   //-----------------------------------------------------------------------------------------------
-  bool ewaldGravity;                ///< Flag if periodic graivty is being used
-  bool extra_sink_output;           ///< Create extra output files for sink particles
-  bool initial_h_provided;          ///< Have initial h values been calculated?
-  bool kill_simulation;             ///< Kill simulation flag
-  bool ParametersProcessed;         ///< Flag if params are already processed
-  bool periodicBoundaries;          ///< Flag if periodic boundaries are being used
-  bool rebuild_tree;                ///< Flag to rebuild neighbour tree
-  bool recomputeRadiation;          ///< Flag to recompute radiation field from all sources
-  bool rescale_particle_data;       ///< Flag to scale data to code units
-  bool restart;                     ///< Flag to restart from last snapshot
-  bool setup;                       ///< Flag if simulation is setup
-  int integration_step;             ///< Steps per complete integration step
-  int litesnap;                     ///< Activate lite snapshots (for movies)
-  int nbody_single_timestep;        ///< Flag if stars use same timestep
-  int ndims;                        ///< Aux. dimensionality variable.
-                                    ///< Required for python routines.
-  int Nmpi;                         ///< No. of MPI processes
-  int Noutsnap;                     ///< No. of output snapshots
-  int Noutlitesnap;                 ///< No. of lite output snapshots
-  int Nthreads;                     ///< Max no. of (OpenMP) threads
-  int pruning_level_min;            ///< Min. level of pruned trees for MPI
-  int pruning_level_max;            ///< Max. level of pruned trees for MPI
-  int rank;                         ///< Process i.d. (for MPI simulations)
-  int sink_particles;               ///< Switch on sink particles
-  int sph_single_timestep;          ///< Flag if SPH ptcls use same step
-  int level_diff_max;      ///< Max. allowed neib timestep level diff
-  int level_max;           ///< Maximum timestep level
-  int level_step;          ///< Level of smallest timestep unit
-  int n;                   ///< Integer time counter
-  int ndiagstep;           ///< Diagnostic output frequency (in units
-                                    ///< of full block timestep steps)
-  int nlastrestart;        ///< Integer time of last restart snapshot
-  int noutputstep;         ///< Output frequency
-  int nradstep;            ///< Integer time between computing radiation field
-  int nrestartstep;        ///< Integer time between creating temp restart files
-  int nresync;             ///< Integer time for resynchronisation
-  int nsystembuildstep;    ///< Integer time between rebuilding N-body system tree
-  int ntreebuildstep;      ///< Integer time between rebuilding tree
-  int ntreestockstep;      ///< Integer time between restocking tree
-  int Nblocksteps;         ///< No. of full block timestep steps
-  int Nlevels;             ///< No. of timestep levels
-  int Nfullsteps;          ///< No. of full steps in simulation
-  int Nstepsmax;           ///< Max. allowed no. of steps
-  int Nsteps;              ///< Total no. of steps in simulation
-  DOUBLE dt_litesnap;               ///< Lite-snapshot time interval
-  DOUBLE dt_max;                    ///< Value of maximum timestep level
-  DOUBLE dt_min_nbody;              ///< Minimum timestep of all N-body particles
-  DOUBLE dt_min_hydro;                ///< Minimum timestep of all SPH particles
-  DOUBLE dt_python;                 ///< Python window update time interval
-  DOUBLE dt_snap;                   ///< Snapshot time interval
-  DOUBLE dt_snap_wall;              ///< Wallclock time between snapshots
-  DOUBLE t;                         ///< Current simulation time
-  DOUBLE tmax_wallclock;            ///< Max. wall-clock time for sim (in s)
-  DOUBLE tend;                      ///< End time of simulation
-  DOUBLE timestep;                  ///< Current timestep
-  DOUBLE tsnapfirst;                ///< Time of first snapshot
-  DOUBLE tsnaplast;                 ///< (Expected) time of last snaphsot
-  DOUBLE tlitesnaplast;             ///< Time of last lite-snapshot
-  DOUBLE tlitesnapnext;             ///< Time of next lite-snapshot
-  DOUBLE tsnapnext;                 ///< Time of next snapshot
-  DOUBLE tsnap_wallclock;           ///< Wallclock time of last snapshot
-  string out_file_form;             ///< Output snapshot file format
-  string paramfile;                 ///< Name of parameters file
-  string run_id;                    ///< Simulation id string
+  bool ewaldGravity;                   ///< Flag if periodic graivty is being used
+  bool extra_sink_output;              ///< Create extra output files for sink particles
+  bool initial_h_provided;             ///< Have initial h values been calculated?
+  bool kill_simulation;                ///< Kill simulation flag
+  bool ParametersProcessed;            ///< Flag if params are already processed
+  bool periodicBoundaries;             ///< Flag if periodic boundaries are being used
+  bool rebuild_tree;                   ///< Flag to rebuild neighbour tree
+  bool recomputeRadiation;             ///< Flag to recompute radiation field from all sources
+  bool rescale_particle_data;          ///< Flag to scale data to code units
+  bool restart;                        ///< Flag to restart from last snapshot
+  bool setup;                          ///< Flag if simulation is setup
+  int integration_step;                ///< Steps per complete integration step
+  int litesnap;                        ///< Activate lite snapshots (for movies)
+  int nbody_single_timestep;           ///< Flag if stars use same timestep
+  int ndims;                           ///< Aux. dimensionality variable.
+                                       ///< Required for python routines.
+  int Nmpi;                            ///< No. of MPI processes
+  int Noutsnap;                        ///< No. of output snapshots
+  int Noutlitesnap;                    ///< No. of lite output snapshots
+  int Nthreads;                        ///< Max no. of (OpenMP) threads
+  int pruning_level_min;               ///< Min. level of pruned trees for MPI
+  int pruning_level_max;               ///< Max. level of pruned trees for MPI
+  int rank;                            ///< Process i.d. (for MPI simulations)
+  int sink_particles;                  ///< Switch on sink particles
+  int sph_single_timestep;             ///< Flag if SPH ptcls use same step
+  int level_diff_max;                  ///< Max. allowed neib timestep level diff
+  int level_max;                       ///< Maximum timestep level
+  int level_step;                      ///< Level of smallest timestep unit
+  int n;                               ///< Integer time counter
+  int ndiagstep;                       ///< Diagnostic output frequency (in units
+                                       ///< of full block timestep steps)
+  int nlastrestart;                    ///< Integer time of last restart snapshot
+  int noutputstep;                     ///< Output frequency
+  int nradstep;                        ///< Integer time between computing radiation field
+  int nrestartstep;                    ///< Integer time between creating temp restart files
+  int nresync;                         ///< Integer time for resynchronisation
+  int nsystembuildstep;                ///< Integer time between rebuilding N-body system tree
+  int ntreebuildstep;                  ///< Integer time between rebuilding tree
+  int ntreestockstep;                  ///< Integer time between restocking tree
+  int Nblocksteps;                     ///< No. of full block timestep steps
+  int Nlevels;                         ///< No. of timestep levels
+  int Nfullsteps;                      ///< No. of full steps in simulation
+  int Nstepsmax;                       ///< Max. allowed no. of steps
+  int Nsteps;                          ///< Total no. of steps in simulation
+  DOUBLE dt_litesnap;                  ///< Lite-snapshot time interval
+  DOUBLE dt_max;                       ///< Value of maximum timestep level
+  DOUBLE dt_min_nbody;                 ///< Minimum timestep of all N-body particles
+  DOUBLE dt_min_hydro;                 ///< Minimum timestep of all SPH particles
+  DOUBLE dt_python;                    ///< Python window update time interval
+  DOUBLE dt_snap;                      ///< Snapshot time interval
+  DOUBLE dt_snap_wall;                 ///< Wallclock time between snapshots
+  DOUBLE t;                            ///< Current simulation time
+  DOUBLE tmax_wallclock;               ///< Max. wall-clock time for sim (in s)
+  DOUBLE tend;                         ///< End time of simulation
+  DOUBLE timestep;                     ///< Current timestep
+  DOUBLE tsnapfirst;                   ///< Time of first snapshot
+  DOUBLE tsnaplast;                    ///< (Expected) time of last snaphsot
+  DOUBLE tlitesnaplast;                ///< Time of last lite-snapshot
+  DOUBLE tlitesnapnext;                ///< Time of next lite-snapshot
+  DOUBLE tsnapnext;                    ///< Time of next snapshot
+  DOUBLE tsnap_wallclock;              ///< Wallclock time of last snapshot
+  string out_file_form;                ///< Output snapshot file format
+  string paramfile;                    ///< Name of parameters file
+  string run_id;                       ///< Simulation id string
 
-  Parameters* simparams;            ///< Simulation parameters object (pointer)
-  SimUnits simunits;                ///< Simulation units object
-  CodeTiming *timing;               ///< Simulation timing object (pointer)
+  Parameters* simparams;               ///< Simulation parameters object (pointer)
+  SimUnits simunits;                   ///< Simulation units object
+  CodeTiming *timing;                  ///< Simulation timing object (pointer)
 
 };
 
@@ -279,37 +279,36 @@ class Simulation : public SimulationBase
 
   // Variables
   //-----------------------------------------------------------------------------------------------
-  static const int vdim=ndim;
-  static const FLOAT invndim; //=1.0/ndim;
+  static const int vdim=ndim;          ///< Velocity vector dimensionality (same as ndim)
+  static const FLOAT invndim;          ///< Local copy of 1/ndim
 
-  DomainBox<ndim> simbox;             ///< Simulation boundary data
-  Diagnostics<ndim> diag0;            ///< Initial diagnostic state
-  Diagnostics<ndim> diag;             ///< Current diagnostic state
-  EnergyEquation<ndim> *uint;         ///< Energy equation pointer
-  ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
-  Ewald<ndim> *ewald;                 ///< Ewald periodic gravity object
-  Ghosts<ndim>* LocalGhosts;          ///< Periodic ghost particle object
-  Hydrodynamics<ndim> *hydro;         ///< Hydrodynamics algorithm pointer
-  Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
-  Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
-  NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
-  Radiation<ndim> *radiation;         ///< Radiation field object
-  RandomNumber *randnumb;             ///< Random number object (pointer)
-  Sinks<ndim> *sinks;                 ///< Sink particle object
-  SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
-  SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
+  DomainBox<ndim> simbox;              ///< Simulation boundary data
+  Diagnostics<ndim> diag0;             ///< Initial diagnostic state
+  Diagnostics<ndim> diag;              ///< Current diagnostic state
+  EnergyEquation<ndim> *uint;          ///< Energy equation pointer
+  ExternalPotential<ndim> *extpot;     ///< Pointer to external potential object
+  Ewald<ndim> *ewald;                  ///< Ewald periodic gravity object
+  Ghosts<ndim>* LocalGhosts;           ///< Periodic ghost particle object
+  Hydrodynamics<ndim> *hydro;          ///< Hydrodynamics algorithm pointer
+  Nbody<ndim> *nbody;                  ///< N-body algorithm pointer
+  Nbody<ndim> *subsystem;              ///< N-body object for sub-systems
+  NbodySystemTree<ndim> nbodytree;     ///< N-body tree to create sub-systems
+  Radiation<ndim> *radiation;          ///< Radiation field object
+  RandomNumber *randnumb;              ///< Random number object (pointer)
+  Sinks<ndim> *sinks;                  ///< Sink particle object
+  SphIntegration<ndim> *sphint;        ///< SPH Integration scheme pointer
+  SphNeighbourSearch<ndim> *sphneib;   ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
-  MpiControl<ndim>* mpicontrol;       ///< MPI control object
-  Ghosts<ndim>* MpiGhosts;            ///< MPI ghost particle object
+  MpiControl<ndim>* mpicontrol;        ///< MPI control object
+  Ghosts<ndim>* MpiGhosts;             ///< MPI ghost particle object
 #endif
 
 };
 
 
 // Declare invndim constant here (prevents warnings with some compilers)
-template <int ndim>
-const FLOAT Simulation<ndim>::invndim = 1.0/ndim;
-
+//template <int ndim>
+//const FLOAT Simulation<ndim>::invndim = 1.0/ndim;
 
 
 
@@ -406,7 +405,7 @@ class SphSimulation : public Simulation<ndim>
   virtual void RegulariseParticleDistribution(const int);
   virtual void SmoothParticleQuantity(const int, FLOAT *);
 
-  Sph<ndim> *sph;                     ///< SPH algorithm pointer
+  Sph<ndim> *sph;                      ///< SPH algorithm pointer
 
 };
 
@@ -563,8 +562,8 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 //  Class MeshlessFVSimulation
 /// \brief   Main MeshlessFV Simulation class.
 /// \details ...
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    17/04/2015
+/// \author  D. A. Hubber, J. Ngoumou, S. Heigl
+/// \date    27/04/2015
 //=================================================================================================
 template <int ndim>
 class MeshlessFVSimulation : public Simulation<ndim>
@@ -647,7 +646,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   virtual void FinaliseSimulation(void);
 
   MeshlessFV<ndim> *mfv;                       ///< Meshless FV hydrodynamics algorithm pointer
-  MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< ..
+  MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< Meshless FV neighbour search object pointer
 
 };
 
@@ -752,7 +751,7 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
 //  Class MfvRungeKutta
 /// \brief   Meshless Finite-volume simulation class using TVD Runge-Kutta integration
 /// \details Meshless Finite-volume simulation class using TVD Runge-Kutta integration
-/// \author  D. A. Hubber, J. Ngoumou
+/// \author  D. A. Hubber, J. Ngoumou, S. Heigl
 /// \date    27/04/2015
 //=================================================================================================
 template <int ndim>

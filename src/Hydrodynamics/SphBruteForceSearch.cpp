@@ -107,8 +107,8 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
     if (partdata[i].itype == dead) continue;
     neiblist[Nneib] = i;
     gpot[Nneib] = partdata[i].gpot;
-    m[Nneib] = partdata[i].m;
-    mu[Nneib] = partdata[i].m*partdata[i].u;
+    m[Nneib]    = partdata[i].m;
+    mu[Nneib]   = partdata[i].m*partdata[i].u;
     Nneib++;
   }
 
@@ -135,7 +135,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
         for (k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - rp[k];
-        drsqd[jj] = DotProduct(dr,dr,ndim) + small_number;
+        drsqd[jj] = DotProduct(dr, dr, ndim) + small_number;
       }
       //-------------------------------------------------------------------------------------------
 
@@ -484,6 +484,112 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
 
   delete[] neibdata;
   delete[] neiblist;
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  SphBruteForceSearch::UpdateAllSphPeriodicHydroForces
+/// Routine for computing SPH properties (smoothing lengths, densities and
+/// forces) for all active SPH particle using neighbour lists generated
+/// using brute force (i.e. direct summation).
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicHydroForces
+ (int Nhydro,                          ///< [in] No. of SPH particles
+  int Ntot,                            ///< [in] No. of SPH + ghost particles
+  SphParticle<ndim> *part_gen,         ///< [inout] Pointer to SPH ptcl array
+  Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox)             ///< [in] Simulation box with periodic information
+{
+  int i,j,k;                           // Particle and dimension counters
+  int Nneib;                           // No. of neighbours
+  int *neiblist;                       // List of neighbour ids
+  FLOAT draux[ndim];                   // Relative distance vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dr_corr[ndim];                 // Periodic correction vector
+  FLOAT hrangesqdi;                    // Gather kernel extent (squared)
+  FLOAT hrangesqdj;                    // Scatter kernel extent (squared)
+  FLOAT rp[ndim];                      // Position of current particle
+  FLOAT *dr;                           // Array of neib. position vectors
+  FLOAT *drmag;                        // Array of neib. distances
+  FLOAT *invdrmag;                     // Array of neib. inverse distances
+  ParticleType<ndim>* neibdata;        // Local copy of neighbouring particles
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  const int offset_imported = sph->Nghost;
+
+  debug2("[SphBruteForceSearch::UpdateAllSphPeriodicHydroForces]");
+
+  // Allocate memory for storing neighbour ids and position data
+  neibdata = new ParticleType<ndim>[Ntot];
+  neiblist = new int[Ntot];
+  dr       = new FLOAT[ndim*Ntot];
+  drmag    = new FLOAT[Ntot];
+  invdrmag = new FLOAT[Ntot];
+
+
+  // Compute forces of real and imported particles
+  //-----------------------------------------------------------------------------------------------
+  for (int ipart=0; ipart<Nhydro+sph->NImportedParticles; ipart++) {
+
+    if (ipart < Nhydro) i = ipart;
+    else i = ipart + offset_imported;
+
+    // Skip over inactive particles
+    if (!partdata[i].active || partdata[i].itype == dead) continue;
+
+    // Zero all arrays to be updated
+    for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
+    partdata[i].gpot      = (FLOAT) 0.0;
+    partdata[i].dudt      = (FLOAT) 0.0;
+    partdata[i].levelneib = 0;
+
+    for (k=0; k<ndim; k++) rp[k] = partdata[i].r[k];
+    hrangesqdi = partdata[i].hrangesqd;
+
+
+    // Determine interaction list (to ensure we don't compute pair-wise forces twice).
+    // Also make sure that only the closest periodic replica is considered.
+    Nneib = 0;
+    for (j=0; j<Nhydro; j++) {
+      neibdata[j] = partdata[j];
+      if (i != j && partdata[j].itype != dead) {
+        neiblist[Nneib] = j;
+        for (k=0; k<ndim; k++) draux[k] = neibdata[j].r[k] - partdata[i].r[k];
+        NearestPeriodicVector(simbox, draux, dr_corr);
+        for (k=0; k<ndim; k++) neibdata[j].r[k] += dr_corr[k];
+        drsqd = DotProduct(draux, draux, ndim);
+        drmag[Nneib] = sqrt(drsqd + small_number);
+        invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
+        for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+        Nneib++;
+      };
+    }
+
+    // Compute all SPH hydro forces
+    sph->ComputeSphHydroForces(i, Nneib, neiblist, drmag, invdrmag, dr, partdata[i], partdata);
+
+    // Compute all star forces
+    if (ipart < Nhydro) {
+      sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, partdata[i]);
+    }
+
+    partdata[i].active = false;
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  // Free all allocated memory
+  delete[] invdrmag;
+  delete[] drmag;
+  delete[] dr;
+  delete[] neiblist;
+  delete[] neibdata;
 
   return;
 }

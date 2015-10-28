@@ -43,7 +43,7 @@ Diagnostic output frequency                 : ndiagstep = 16
 #------------------------
 # Thermal physics options
 #------------------------
-Switch-on hydrodynamical forces             : hydro_forces = 1
+Switch-on hydrodynamical forces             : hydro_forces = 0
 Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
@@ -60,15 +60,6 @@ Switch-off self-gravity of gas              : self_gravity = 1
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
 Tabulate SPH kernel                         : tabulated_kernel = 1
-
-
-#---------------------------------
-# SPH artificial viscosity options
-#---------------------------------
-Artificial viscosity choice                 : avisc = mon97
-Artificial conductivity choice              : acond = none
-Artificial viscosity alpha value            : alpha_visc = 1.0
-Artificial viscosity beta value             : beta_visc = 2.0
 
 
 #-------------------------

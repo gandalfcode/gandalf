@@ -313,11 +313,11 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 PhotonPacket<ndim> TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNewPhotonPacket
-(RadiationSource<ndim> &source)
+ (RadiationSource<ndim> &source)       ///< [in] Source for generating new packet
 {
-  int k;                            // Dimension counter
-  FLOAT theta;                      // Random angle for photon direction
-  PhotonPacket<ndim> photon;        // Photon packet type
+  int k;                               // Dimension counter
+  FLOAT theta;                         // Random angle for photon direction
+  PhotonPacket<ndim> photon;           // Photon packet type
 
 
   // Initialise new photon packet from chosen source
@@ -359,9 +359,8 @@ PhotonPacket<ndim> TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNew
 
 
 #ifdef OUTPUT_ALL
-  cout << "Emitting photon " << iphoton << " with direction "
-       << photon.eray[0] << "   " << photon.eray[1] << "   "
-       << photon.eray[2] << endl;
+  cout << "Emitting photon with direction " << photon.eray[0] << "   "
+       << photon.eray[1] << "   " << photon.eray[2] << endl;
 #endif
 
 

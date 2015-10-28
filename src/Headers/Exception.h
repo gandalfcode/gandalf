@@ -1,6 +1,6 @@
-//=============================================================================
+//=================================================================================================
 //  Exception.h
-//  ..
+//  Definitions of classes for throwing exceptions in GANDALF.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _EXCEPTION_H_
@@ -32,13 +32,28 @@ using namespace std;
 
 enum RunType {cplusplus, python};
 
+
+//=================================================================================================
+//  Class GandalfError
+/// \brief   Base GANDALF exception class.
+/// \author  G. Rosotti
+/// \date    12/02/2014
+//=================================================================================================
 class GandalfError {
 public:
-    GandalfError(std::string msgaux){msg = msgaux;}
-    ~GandalfError() {}
-    std::string msg;
+  GandalfError(std::string msgaux){msg = msgaux;}
+  ~GandalfError() {}
+  std::string msg;
 };
 
+
+
+//=================================================================================================
+//  Class StopError
+/// \brief   Class to throw exception to stop the execution of the code.
+/// \author  G. Rosotti
+/// \date    12/02/2014
+//=================================================================================================
 class StopError: public GandalfError {
 public:
   StopError(std::string msgaux):
@@ -46,12 +61,22 @@ public:
     {};
 };
 
-class ExceptionHandler {
+
+
+//=================================================================================================
+//  Class ExceptionHandler
+/// \brief   Handler class to manage and throw exceptions when sent.
+/// \author  G. Rosotti
+/// \date    12/02/2014
+//=================================================================================================
+class ExceptionHandler
+{
 private:
   ExceptionHandler(RunType runtypeaux) : runtype(runtypeaux), mpi(0) {}
   static ExceptionHandler * istance;
   const RunType runtype;
   int mpi;
+
 public:
   void raise(string msg);
   static void makeExceptionHandler (RunType runtypeaux);

@@ -486,8 +486,6 @@ void Sinks<ndim>::AccreteMassToSinks
           rsqdlist[Nneib] = drsqd;  //*part.m;
           Nneib++;
           part.levelneib = max(part.levelneib, sink[s].star->level);
-          assert(drsqd <= sink[s].radius*sink[s].radius);
-          assert(part.m > (FLOAT) 0.0);
         }
 
       }
@@ -668,7 +666,6 @@ void Sinks<ndim>::AccreteMassToSinks
         }
         else {
           part.m -= mtemp;
-          assert(part.m > (FLOAT) 0.0);
         }
 #if defined MPI_PARALLEL
         if (i > hydro->Nhydro) {

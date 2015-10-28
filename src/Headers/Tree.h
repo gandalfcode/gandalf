@@ -86,8 +86,8 @@ struct TreeCellBase {
 
 //=================================================================================================
 //  Class TreeBase
-/// \brief   ...
-/// \details ...
+/// \brief   Tree base class.
+/// \details Tree base class.
 /// \author  D. A. Hubber
 /// \date    21/09/2015
 //=================================================================================================
@@ -151,12 +151,13 @@ class Tree : public TreeBase<ndim>
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
                                         TreeCell<ndim> *, ParticleType<ndim> *);
+  int FindLeafCell(const FLOAT *);
 #ifdef MPI_PARALLEL
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeCell<ndim> *);
-  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
-                                           const int, int, TreeCell<ndim> *);
-  bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
+  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const DomainBox<ndim> &,
+                                           const FLOAT, const int, int, TreeCell<ndim> *);
+  bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *, const DomainBox<ndim> &);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
 #endif
 
@@ -196,7 +197,6 @@ class Tree : public TreeBase<ndim>
   int gtot;                            ///< Total number of grid/leaf cells
   int ifirst;                          ///< i.d. of first particle in tree
   int ilast;                           ///< i.d. of last particle in tree
-  int lactive;                         ///< ..
   int lmax;                            ///< Max. no. of levels
   int ltot;                            ///< Total number of levels in tree
   int ltot_old;                        ///< Prev. value of ltot

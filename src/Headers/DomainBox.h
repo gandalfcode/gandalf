@@ -117,7 +117,7 @@ bool IsAnyBoundarySpecial(const DomainBox<ndim>& box)
 
 
 //=================================================================================================
-///  ...
+/// \brief  Helper function to set the boundary type enum from the string parameter.
 //=================================================================================================
 inline boundaryEnum setBoundaryType(string boundaryString)
 {
@@ -189,47 +189,8 @@ static inline void NearestPeriodicVector
     }
   }
   for (int k=0; k<ndim; k++) dr[k] += dr_corr[k];
-  /*if (ndim == 2 || ndim == 3) {
-    if (box.boundary_lhs[1] == periodicBoundary && box.boundary_rhs[1] == periodicBoundary) {
-      if (dr[1] > box.boxhalf[1]) dr_corr[1] = -box.boxsize[1];
-      else if (dr[1] < -box.boxhalf[1]) dr_corr[1] = box.boxsize[1];
-    }
-  }
-  if (ndim == 3) {
-    if (box.boundary_lhs[2] == periodicBoundary && box.boundary_rhs[2] == periodicBoundary) {
-      if (dr[2] > box.boxhalf[2]) dr_corr[2] = -box.boxsize[2];
-      else if (dr[2] < -box.boxhalf[2]) dr_corr[2] = box.boxsize[2];
-    }
-  }*/
 
   return;
-}
-
-
-
-//=================================================================================================
-/// \brief  Helper function to find if two boxes overlap
-/// \author D. A. Hubber, G. Rosotti
-/// \date   12/11/2013
-/// \return A boolean saying whether the boxes overlap
-//=================================================================================================
-template <int ndim>
-inline bool FractionalBoxOverlap
- (Box<ndim> &box1,                     ///< ..
-  Box<ndim> &box2,                     ///< ..
-  DomainBox<ndim> &simbox,             ///< ..
-  FLOAT &overlapfrac)                  ///< ..
-{
-  int k;
-  FLOAT dr[ndim];
-
-  // First, calculate relative position vector between boxes
-  for (k=0; k<ndim; k++) dr[k] = box2.r[k] - box1.r[k];
-
-  // Calculate closest position vector to nearest
-
-
-  return false;
 }
 
 

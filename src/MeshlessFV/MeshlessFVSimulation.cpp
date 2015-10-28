@@ -411,6 +411,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
     radiation->timing = timing;
   }*/
 
+  sinks = new Sinks<ndim>(mfvneib);
+
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;

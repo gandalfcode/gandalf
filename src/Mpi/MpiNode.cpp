@@ -127,9 +127,11 @@ void MpiNode<ndim>::UpdateBoundingBoxData
     }
   }
 
+#ifdef OUTPUT_ALL
   cout << "RBOX : " << rbox.boxmin[0] << "    " << rbox.boxmax[0] << endl;
   cout << "HBOX : " << hbox.boxmin[0] << "    " << hbox.boxmax[0] << endl;
   cout << "DOMAIN : " << domain.boxmin[0] << "    " << domain.boxmax[0] << endl;
+#endif
 
   return;
 }

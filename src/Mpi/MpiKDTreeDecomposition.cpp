@@ -45,8 +45,8 @@ using namespace std;
 
 
 //=================================================================================================
-//  MpiKDTreeDecomposition::
-/// ...
+//  MpiKDTreeDecomposition::MpiKDTreeDecomposition
+/// MpiKDTreeDecomposition constructor (currently only calls base MpiControlType constructor)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 MpiKDTreeDecomposition<ndim, ParticleType>::MpiKDTreeDecomposition() :
@@ -109,10 +109,12 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
   }
   //mpitree->box = &mpibox;
 
+#ifdef OUTPUT_ALL
   cout << "Simulation bounding box" << endl;
   for (k=0; k<ndim; k++) {
     cout << "r[" << k << "]  :  " << mpibox.boxmin[k] << "   " << mpibox.boxmax[k] << endl;
   }
+#endif
 
 
   // For main process, create load balancing tree, transmit information to all
@@ -153,7 +155,9 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     // Recursively divide tree up until we've reached bottom level
     mpitree->DivideTreeCell(0, mpitree->Ntot-1, partdata, mpitree->tree[0]);
 
+#ifdef OUTPUT_ALL
     cout << "Tree[" << rank << "] : " << mpitree->ltot << "   " << mpitree->Ncell << endl;
+#endif
 
     // Broadcast MPI tree to all other nodes
     MPI_Bcast(&mpitree->Nhydro, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -172,8 +176,10 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
       for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].boxmin[k];
       for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].boxmax[k];
 
+#ifdef OUTPUT_ALL
       cout << "CHECKING MPITREE : " << inode << "   " << icell << "   "
            << &mpitree->tree[icell] << endl;
+#endif
 
       // Copy particle ids to node lists
       mpinode[inode].Nhydro = 0;
@@ -186,20 +192,28 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
       };
       mpinode[inode].Ntot = mpinode[inode].Nhydro;
 
+#ifdef OUTPUT_ALL
       cout << "MPIDOMAIN : " << inode << "   Nhydro : " << mpinode[inode].Nhydro << "    box : "
            << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
+#endif
 
     }
     //---------------------------------------------------------------------------------------------
 
+#ifdef OUTPUT_ALL
     cout << "CHECKING SENDPARTICLES : " << mpinode[inode].ids << "   " << partdata << endl;
+#endif
 
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
       this->SendParticles(inode, mpinode[inode].Nhydro, mpinode[inode].ids, partdata);
+#ifdef OUTPUT_ALL
       cout << "Sent " << mpinode[inode].Nhydro << " particles to node " << inode << endl;
+#endif
     }
+#ifdef OUTPUT_ALL
     cout << "Sent all particles to other processes" << endl;
+#endif
 
     // Delete all other particles from local domain
     hydro->Nhydro = mpinode[0].Nhydro;
@@ -207,7 +221,9 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     for (i=0; i<hydro->Nhydro; i++) partbuffer[i] = partdata[mpinode[0].ids[i]];
     for (i=0; i<hydro->Nhydro; i++) partdata[i] = partbuffer[i];
     delete[] partbuffer;
+#ifdef OUTPUT_ALL
     cout << "Deleted all other particles from root node" << endl;
+#endif
 
   }
 
@@ -226,7 +242,9 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     mpitree->AllocateMemory();
     mpitree->CreateTreeStructure(mpinode);
 
+#ifdef OUTPUT_ALL
     cout << "Tree[" << rank << "] : " << mpitree->ltot << "    " << mpitree->Ncell << endl;
+#endif
 
     // Now receive all data from tree nodes
     MPI_Bcast(mpitree->tree, mpitree->Ncell*sizeof(MpiTreeCell<ndim>), MPI_BYTE, 0, MPI_COMM_WORLD);
@@ -240,8 +258,10 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
       for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].boxmax[k]; //bbmax[k];
     }
 
+#ifdef OUTPUT_ALL
     //cout << "CHECKING SENDPARTICLES : " << mpinode[inode].ids << "   " << partdata << endl;
     cout << "Memory allocated?    Nhydromax : " << hydro->Nhydromax << endl;
+#endif
 
     // Now, receive particles form main process and copy to local main array
     this->ReceiveParticles(0, (hydro->Nhydro), &partbuffer);
@@ -254,25 +274,25 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
 
 
     // Update all MPI node bounding boxes
+#ifdef OUTPUT_ALL
     //---------------------------------------------------------------------------------------------
     for (inode=0; inode<Nmpi; inode++) {
       int icell = mpitree->g2c[inode];
-
       cout << "CHECKING MPITREE : " << inode << "   " << icell << "   "
            << &mpitree->tree[icell] << "    N : " << mpitree->tree[icell].N << endl;
-
       cout << "MPIDOMAIN : " << inode << "   Nhydro : " << mpinode[inode].Nhydro << "    box : "
            << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
-
     }
     //---------------------------------------------------------------------------------------------
 
-
     cout << "Received particles on node " << rank << "   Nhydro : " << hydro->Nhydro << endl;
+#endif
 
     for (i=0; i<hydro->Nhydro; i++) partdata[i] = partbuffer[i];
     delete[] partbuffer;
+#ifdef OUTPUT_ALL
     cout << "Deallocated partbuffer" << endl;
+#endif
 
   }
   //===============================================================================================
@@ -281,14 +301,13 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
   // Update all bounding boxes
   this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp);
 
-
   // Share the stars with all other domains
-  MPI_Bcast(&(nbody->Nstar),1,MPI_INT,0,MPI_COMM_WORLD);
-
+  MPI_Bcast(&(nbody->Nstar), 1, MPI_INT, 0, MPI_COMM_WORLD);
   nbody->AllocateMemory(nbody->Nstar);
 
   if (nbody->Nstar > 0) {
-    MPI_Bcast(nbody->stardata,sizeof(StarParticle<ndim>)*nbody->Nstar,MPI_BYTE,0,MPI_COMM_WORLD);
+    MPI_Bcast(nbody->stardata, sizeof(StarParticle<ndim>)*nbody->Nstar,
+              MPI_BYTE, 0, MPI_COMM_WORLD);
   }
 
   return;
@@ -314,11 +333,13 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   int k;                               // Dimension counter
   int l;                               // MPI tree level counter
   int lbalance = 0;                    // Load balance level (always top level for now)
+  FLOAT rold;                          // Position of previous load balancing division
   DOUBLE worktot = 0.0;                // Total work on all nodes
 
   // If running on only one MPI node, return immediately
   if (Nmpi == 1) return;
   debug2("[MpiKDTreeDecomposition::LoadBalancing]");
+  timing->StartTimingSection("MPI_LOAD_BALANCING");
 
   //Get pointer to sph particles and cast it to the right type
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
@@ -336,17 +357,35 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
     // Loop over all MPI tree cells on current balancing level
     for (c=0; c<mpitree->Ncell; c++) {
       if (mpitree->tree[c].level != l) continue;
-      c2 = mpitree->tree[c].c2;
+      c2   = mpitree->tree[c].c2;
+      k    = mpitree->tree[c].k_divide;
+      rold = mpitree->tree[c].r_divide;
 
-      FLOAT rold = mpitree->tree[c].r_divide;
+#ifdef OUTPUT_ALL
+      cout << "Previous load balancing division for " << c << "    rold : " << rold
+           << "     bb : " << mpitree->tree[c].boxmin[k]<< "   "
+           << mpitree->tree[c].boxmax[k] << "   k_divide : " << k << endl;
+#endif
+
+      // In case of extreme movement of the load balancing positions (perhaps due to latency or
+      // large movement of active particles between nodes), then set some arbitary position of
+      // the first division guess in order to search for correct division
+      if (mpitree->tree[c].boxmin[k] > mpitree->tree[c].r_divide ||
+          mpitree->tree[c].boxmax[k] < mpitree->tree[c].r_divide) {
+        mpitree->tree[c].r_divide = 0.5*(mpitree->tree[c].boxmin[k] + mpitree->tree[c].boxmax[k]);
+      }
+      assert(mpitree->tree[c].boxmin[k] < mpitree->tree[c].r_divide);
+      assert(mpitree->tree[c].boxmax[k] > mpitree->tree[c].r_divide);
 
       // Now find new division between child cells that is load-balanced
       mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
         (mpitree->tree[c].k_divide, mpitree->tree[c].r_divide,
          mpitree->tree[c].boxmin, mpitree->tree[c].boxmax);
+#ifdef OUTPUT_ALL
       cout << "Moved load balancing division for " << c << "    rold : " << rold
            << "     rnew : " << mpitree->tree[c].r_divide << "    k_divide : "
            << mpitree->tree[c].k_divide << endl;
+#endif
     }
 
     // Update all cell bounding boxes now new divisions have been computed
@@ -365,7 +404,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   //-----------------------------------------------------------------------------------------------
 
   // Write out 'final' mpinode bounding boxes
-#ifdef VERIFY_ALL
+#ifdef OUTPUT_ALL
   for (int inode=0; inode<Nmpi; inode++) {
     cout << "Node " << inode << "     box : " << mpinode[inode].domain.boxmin[0] << "     "
          << mpinode[inode].domain.boxmax[0] << endl;
@@ -377,9 +416,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp);
 
 
-
   // Prepare lists of particles that now occupy other processor domains that need to be transfered
-
   // First construct the list of nodes that we might be sending particles to
   vector<int> potential_nodes;
   potential_nodes.reserve(Nmpi);
@@ -392,20 +429,17 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   // Find the ptcls that need to be transferred - delegate to NeighbourSearch
   vector<vector<int> > particles_to_transfer(Nmpi);
   vector<int> all_particles_to_export;
-  BruteForceSearch<ndim,ParticleType> bruteforce(hydro->kernp->kernrange, &mpibox, hydro->kernp, timing);
-  bruteforce.FindParticlesToTransfer(hydro, particles_to_transfer, all_particles_to_export,
-                                     potential_nodes, mpinode);
-
   // Send and receive particles from/to all other nodes
   vector<ParticleType<ndim> > sendbuffer, recvbuffer;
+  neibsearch->FindParticlesToTransfer(hydro, particles_to_transfer, all_particles_to_export,
+                                      potential_nodes, mpinode);
+
 
   //-----------------------------------------------------------------------------------------------
   for (int iturn = 0; iturn<my_matches.size(); iturn++) {
     int inode = my_matches[iturn];
 
     int N_to_transfer = particles_to_transfer[inode].size();
-    //cout << "Transfer!!  Rank : " << rank << "    N_to_transfer : "
-    //     << N_to_transfer << "    dest : " << inode << endl;
     sendbuffer.clear();
     sendbuffer.resize(N_to_transfer);
     recvbuffer.clear();
@@ -416,24 +450,20 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
       sendbuffer[ipart] = partdata[index];
     }
 
-    // Do the actual send and receive
-
-    //Decide if we have to send or receive first
+    // Decide if we have to send or receive first
     bool send_turn;
-    if (rank < inode) {
-      send_turn=true;
-    }
-    else {
-      send_turn=false;
-    }
+    if (rank < inode) send_turn = true;
+    else send_turn = false;
 
-    //Do the actual communication, sending and receiving in the right order
+    // Do the actual communication, sending and receiving in the right order
     for (int i=0; i<2; i++) {
       if (send_turn) {
         //cout << "Sending " << N_to_transfer << " from " << rank << " to " << inode << endl;
         MPI_Send(&sendbuffer[0], N_to_transfer, particle_type, inode, tag_bal, MPI_COMM_WORLD);
         send_turn = false;
+#ifdef OUTPUT_ALL
         cout << "TRANSFERING " << N_to_transfer << " particles from " << rank << " to node " << inode << endl;
+#endif
       }
       else {
         int N_to_receive;
@@ -441,7 +471,9 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
         MPI_Probe(inode, tag_bal, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, particle_type, &N_to_receive);
         recvbuffer.resize(N_to_receive);
-        //cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
+#ifdef OUTPUT_ALL
+        cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
+#endif
         if (hydro->Nhydro + N_to_receive > hydro->Nhydromax) {
           cout << "Memory problem : " << rank << " " << hydro->Nhydro
                << " " << N_to_receive << " " << hydro->Nhydromax <<endl;
@@ -472,6 +504,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
     partdata[all_particles_to_export[i]].itype = dead;
   }
   hydro->DeleteDeadParticles();
+
+  timing->EndTimingSection("MPI_LOAD_BALANCING");
 
   return;
 }

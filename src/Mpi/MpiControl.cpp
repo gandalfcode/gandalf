@@ -59,9 +59,9 @@ MpiControl<ndim>::MpiControl()
   balance_level = 0;
 
   // Find local processor rank, total no. of processors and host processor name
-  MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Get_processor_name(hostname,&len);
+  MPI_Comm_size(MPI_COMM_WORLD, &Nmpi);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Get_processor_name(hostname, &len);
 
   // Verify that number of processes is even
   if (!Nmpi%2) {
@@ -131,7 +131,7 @@ MpiControl<ndim>::MpiControl()
 
 //=================================================================================================
 //  MpiControl::~MpiControl()
-/// ...
+/// MpiControl destructor.
 //=================================================================================================
 template <int ndim>
 MpiControl<ndim>::~MpiControl()
@@ -145,8 +145,8 @@ MpiControl<ndim>::~MpiControl()
 
 
 //=================================================================================================
-//  MpiControlType::~MpiControlType()
-/// ...
+//  MpiControlType::MpiControlType()
+/// MpiControlType constructor.  Does additional work for specific particle types.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 MpiControlType<ndim, ParticleType>::MpiControlType() : MpiControl<ndim>()
@@ -157,8 +157,6 @@ MpiControlType<ndim, ParticleType>::MpiControlType() : MpiControl<ndim>()
   // Create and commit the particle datatype
   particle_type = ParticleType<ndim>::CreateMpiDataType();
   MPI_Type_commit(&particle_type);
-
-  bruteforce = NULL;
 }
 
 
@@ -554,7 +552,8 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
     const int index = *it;
 
     // Find to which processor we should send the particle
-    const int proc = std::upper_bound(i_start_ghost.begin(), i_start_ghost.end(), index) - i_start_ghost.begin();
+    const int proc = std::upper_bound(i_start_ghost.begin(),
+                                      i_start_ghost.end(), index) - i_start_ghost.begin();
     N_updates_per_proc[proc]++;
     assert(N_updates_per_proc[proc]<=Nreceive_per_node[proc]);
     buffer_proc[proc].push_back(partdata[index].m);
@@ -767,7 +766,9 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
       i = ghost_export_list[j];
       particles_to_export_per_node[inode].push_back(&partdata[i]);
     }
+#ifdef OUTPUT_ALL
     cout << "Nexport : " << Nexport << "     size : " << ghost_export_list.size() << endl;
+#endif
     assert(Nexport == ghost_export_list.size());
   }
 
@@ -802,7 +803,9 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   particles_receive.clear();
   particles_receive.resize(Nreceive_tot);
 
+#if defined(OUTPUT_ALL)
   cout << "TOT_PARTICLES_TO_EXPORT : " << Nexport << endl;
+#endif
 
   // Create vector containing all particles to export
   particles_to_export.resize(Nexport);
@@ -896,7 +899,9 @@ void MpiControlType<ndim, ParticleType>::SendParticles
 
   MPI_Send(&sendbuffer[0], Nparticles, particle_type, Node, tag_srpart, MPI_COMM_WORLD);
 
+#ifdef OUTPUT_ALL
   cout << "SENDING : " << Nparticles << "   to " << Node << endl;
+#endif
 
   return;
 }
@@ -924,7 +929,9 @@ void MpiControlType<ndim, ParticleType>::ReceiveParticles
   // Get the number of elements
   MPI_Get_count(&status, particle_type, &Nparticles);
 
+#ifdef OUTPUT_ALL
   cout << "RECEIVING NPARTICLES : " << Nparticles << "   node : " << Node << endl;
+#endif
 
   // Allocate enough memory to hold the particles
   *array = new ParticleType<ndim> [Nparticles];
@@ -945,10 +952,10 @@ template <int ndim>
 void MpiControl<ndim>::CollateDiagnosticsData
  (Diagnostics<ndim> &diag)             ///< Main diagnostics object
 {
-  int inode;                           // ..
-  int k;                               // ..
-  Diagnostics<ndim> diagaux;           // ..
-  MPI_Status status;                   // ..
+  int inode;                           // MPI node counter
+  int k;                               // Dimension counter
+  Diagnostics<ndim> diagaux;           // Aux. diagnostics struct
+  MPI_Status status;                   // MPI communication status message
 
   //-----------------------------------------------------------------------------------------------
   if (rank == 0) {

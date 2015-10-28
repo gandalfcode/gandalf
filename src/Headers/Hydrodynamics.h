@@ -62,8 +62,8 @@ template <int ndim>
 class Hydrodynamics
 {
 protected:
-  const int size_hydro_part;
-  void* hydrodata_unsafe;
+  const int size_hydro_part;           ///< Size (in bytes) of hydro particle data type
+  void* hydrodata_unsafe;              ///< Pointer to beginning of main hydro array
 
 public:
 
@@ -91,7 +91,6 @@ public:
   Particle<ndim>& GetParticlePointer(const int i) {
     long int numBytes = (long int) i * (long int) size_hydro_part;
     return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + numBytes));
-    //return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + i*size_hydro_part));
   };
   virtual Particle<ndim>* GetParticleArray() = 0;
 
@@ -123,7 +122,7 @@ public:
   FLOAT kernfacsqd;                    ///< Kernel range neib. fraction squared
   FLOAT kernrange;                     ///< Kernel range
   FLOAT mmean;                         ///< Mean SPH particle mass
-
+  ParticleType types[Nhydrotypes];     ///< Array of particle types
 
   int *iorder;                         ///< Array containing particle ordering
   EOS<ndim> *eos;                      ///< Equation-of-state
@@ -133,11 +132,6 @@ public:
   ExternalPotential<ndim> *extpot;     ///< Pointer to external potential object
 
 };
-
-
-// Declare invndim constant here (prevents warnings with some compilers)
-template <int ndim>
-const FLOAT Hydrodynamics<ndim>::invndim = 1.0/ndim;
 
 
 

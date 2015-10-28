@@ -38,6 +38,10 @@
 using namespace std;
 
 
+// Declare ghost_range constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT Ghosts<ndim>::ghost_range = 1.6;
+
 
 //=================================================================================================
 //  Ghosts::CheckBoundaries
@@ -244,7 +248,7 @@ void MpiGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
   int i;
   int j;
   ParticleType<ndim>* ghost_array;
-  int Nmpighosts = mpicontrol->SendReceiveGhosts(tghost,hydro,&ghost_array);
+  int Nmpighosts = mpicontrol->SendReceiveGhosts(tghost, hydro, &ghost_array);
 
   if (hydro->Ntot + Nmpighosts > hydro->Nhydromax) {
     cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts

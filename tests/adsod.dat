@@ -52,8 +52,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.4
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
-SPH algorithm choice                        : sph = gradh
-SPH smoothing kernel choice                 : kernel = gaussian
+SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
 
 
@@ -64,9 +63,6 @@ Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
-Riemann solver                              : riemann_solver = exact
-Order of Riemann solver                     : riemann_order = 2
-Slope limiter                               : slope_limiter = simple
 
 
 #-------------------------
