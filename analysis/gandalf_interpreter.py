@@ -11,7 +11,8 @@ import types
 
 toexcludefunctions = ['Manager', 'Queue', 'handle', 'init', 
                       'sigint', 'cleanup', 'get_sim_no',
-                      'to_list','to_bool']
+                      'to_list','to_bool','Event','_load',
+                      '_relative_load']
 
 '''This module contains the implementation of the interpreter of our special
 mini-language'''

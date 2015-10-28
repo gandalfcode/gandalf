@@ -70,6 +70,7 @@ else:
 
 import commandsource as Commands
 from data_fetcher import CreateUserQuantity, CreateTimeData, UserQuantity
+from data_fetcher import _KnownQuantities as KnownQuantities
 import signal
 from time import sleep
 from statistics import structure_function
@@ -888,6 +889,15 @@ def cleanup():
     import sys
     sys.exit()
 
+def ListFunctions():
+    '''List the available functions defined in facade'''
+    import gandalf_interpreter
+    toexcludefunctions=gandalf_interpreter.toexcludefunctions
+    functions = inspect.getmembers(facade, inspect.isfunction)
+    functions=filter(lambda function: function not in toexcludefunctions, functions)
+    print "The available functions in facade are: "
+    for function in functions:
+        print function.__name__
 
 #------------------------------------------------------------------------------
 def init():
