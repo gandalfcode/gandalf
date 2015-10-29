@@ -80,7 +80,9 @@ void CodeTiming::StartTimingSection
  (const string newblock)               ///< [in] String of new/existing timing block
 {
   int iblock;                          // Integer id of existing timing block
-
+#ifdef MPI_PARALLEL
+  return;
+#endif
   // If block string not in list, then create new entry to timing block
   if (blockmap[level].find(newblock) == blockmap[level].end()) {
     iblock                            = Nblock[level];
@@ -117,7 +119,9 @@ void CodeTiming::EndTimingSection
  (const string s1)                     ///< [in] String identifying block-end
 {
   int iblock;                          // Integer i.d. of timing block in arrays
-
+#ifdef MPI_PARALLEL
+  return;
+#endif
   // Check level is valid
   if (level <= 0) {
     ExceptionHandler::getIstance().raise("Error with timing levels");
