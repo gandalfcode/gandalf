@@ -1514,15 +1514,15 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 #ifdef MPI_PARALLEL
 
 template<int ndim, class T>
-void WriteSerenFromArrayScalar_MPI(MPI_File & file, int Nbefore, Hydrodyanmics<ndim>* hydro
-								   T* Particle::*data, T* buffer,
-								   int ptype, int Ntot_type)
+void WriteSerenFormArrayScalar_MPI(MPI_File & file, int Nbefore, Hydrodynamics<ndim>* hydro,
+								   T Particle<ndim>::*data, T* buffer,
+								   int ptype, int Ntot_type, T unit=1)
 {
   int n = 0 ;
   for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (part.ptype == ptype)
-      buffer[n++] = part.*data ;
+      buffer[n++] = part.*data * unit ;
   }
   MPI_Offset offset ;
   MPI_File_get_position(file, &offset) ;
@@ -1530,34 +1530,34 @@ void WriteSerenFromArrayScalar_MPI(MPI_File & file, int Nbefore, Hydrodyanmics<n
   MPI_File_seek(file, sizeof(T)*Nbefore, MPI_SEEK_CUR);
   // Write data
   MPI_Status status;
-  MPI_File_write_all (file, buffer, n, MPI_INT, &status);
+  MPI_File_write_all (file, buffer, n*sizeof(T), MPI_BYTE, &status);
   // Seek at the end of the porig section
-  MPIR_Offset end_write = offset + sizeof(T)*Ntot_type;
+  MPI_Offset end_write = offset + sizeof(T)*Ntot_type;
   MPI_File_seek(file, end_write, MPI_SEEK_SET);
 }
 
-plate<int ndim, class T>
-void WriteSerenFromArrayVector_MPI(MPI_File& file, int Nbefore, Hydrodyanmics<ndim>* hydro
-								   T** Particle::*data, T* buffer,
-								   int ptype, int Ntot_type)
+template<int ndim, class T>
+void WriteSerenFormArrayVector_MPI(MPI_File& file, int Nbefore, Hydrodynamics<ndim>* hydro,
+								   T (Particle<ndim>::*data)[ndim], T* buffer,
+								   int ptype, int Ntot_type, T unit=1)
 {
-	int  n =0 ;
+	int n = 0 ;
 	for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (part.ptype == ptype)
     	for (int k=0; k < ndim; k++)
-    	  buffer[n++] = part.*data[k] ;
+    	  buffer[n++] = (part.*data)[k] * unit ;
   }
 
   MPI_Offset offset ;
   MPI_File_get_position(file, &offset) ;
   // Seek at the right position in the file
-  MPI_File_seek(file, sizeof(T)*Nbefore, MPI_SEEK_CUR);
+  MPI_File_seek(file, sizeof(T)*Nbefore*ndim, MPI_SEEK_CUR);
   // Write data
   MPI_Status status;
-  MPI_File_write_all (file, buffer, n, MPI_INT, &status);
+  MPI_File_write_all (file, buffer, n*sizeof(T), MPI_BYTE, &status);
   // Seek at the end of the porig section
-  MPIR_Offset end_write = offset + sizeof(T)*Ntot_type;
+  MPI_Offset end_write = offset + sizeof(T)*Ntot_type*ndim;
   MPI_File_seek(file, end_write, MPI_SEEK_SET);
 }
 
@@ -1764,101 +1764,66 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
     // porig
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      int* buffer_int = (int*) buffer;
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      buffer_int[i] = part.iorig;
-    }
-    // Seek at the right position in the file
-    MPI_File_seek(file, sizeof(int)*Nhydro_before  ,MPI_SEEK_CUR);
-    // Write date
-    MPI_Status status;
-    MPI_File_write_all (file, buffer, hydro->Nhydro, MPI_INT, &status);
-    // Seek at the end of the porig section
-    end_previous_write = end_header+sizeof(int)*Ntot_hydro;
-    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+     WriteSerenFormArrayScalar_MPI<ndim, int>(file, Nhydro_before, hydro,
+    		                                 &Particle<ndim>::iorig,
+    							             reinterpret_cast<int*>(buffer),
+    							             gas_type, Ntot_hydro);
 
     // Positions
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      FLOAT* buffer_float = (FLOAT*) buffer;
-      for (int k=0; k<ndim; k++) buffer_float[ndim*i+k] = part.r[k]*simunits.r.outscale;
-    }
-    MPI_File_seek(file, sizeof(FLOAT)*ndim*Nhydro_before,MPI_SEEK_CUR);
-    MPI_File_write_all (file, buffer, ndim*hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
-    end_previous_write += sizeof(FLOAT)*ndim*Ntot_hydro;
-    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
-
+    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+        		                               &Particle<ndim>::r,
+        							           reinterpret_cast<FLOAT*>(buffer),
+        							           gas_type, Ntot_hydro,
+        							           simunits.r.outscale);
 
     // Masses
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      FLOAT* buffer_float = (FLOAT*) buffer;
-      buffer_float[i] = part.m*simunits.m.outscale;
-      assert(part.m > 0.0);
-    }
-    MPI_File_seek(file, sizeof(FLOAT)*Nhydro_before,MPI_SEEK_CUR);
-    MPI_File_write_all (file, buffer, hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
-    end_previous_write += sizeof(FLOAT)*Ntot_hydro;
-    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+        		                               &Particle<ndim>::m,
+        							           reinterpret_cast<FLOAT*>(buffer),
+        							           gas_type, Ntot_hydro,
+        							           simunits.m.outscale);
 
     // Smoothing lengths
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      FLOAT* buffer_float = (FLOAT*) buffer;
-      buffer_float[i] = part.h*simunits.r.outscale;
-    }
-    MPI_File_seek(file, sizeof(FLOAT)*Nhydro_before,MPI_SEEK_CUR);
-    MPI_File_write_all (file, buffer, hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
-    end_previous_write += sizeof(FLOAT)*Ntot_hydro;
-    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+         		                               &Particle<ndim>::h,
+         							           reinterpret_cast<FLOAT*>(buffer),
+         							           gas_type, Ntot_hydro,
+         							           simunits.r.outscale);
+
 
     // Velocities
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      FLOAT* buffer_float = (FLOAT*) buffer;
-      for (int k=0; k<ndim; k++)
-        buffer_float[ndim*i+k] = part.v[k]*simunits.v.outscale;
-    }
-    MPI_File_seek(file, sizeof(FLOAT)*ndim*Nhydro_before,MPI_SEEK_CUR);
-    MPI_File_write_all (file, buffer, ndim*hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
-    end_previous_write += sizeof(FLOAT)*ndim*Ntot_hydro;
-    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+            		                           &Particle<ndim>::v,
+            							       reinterpret_cast<FLOAT*>(buffer),
+            							       gas_type, Ntot_hydro,
+            							       simunits.v.outscale);
 
     // Densities
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      FLOAT* buffer_float = (FLOAT*) buffer;
-      buffer_float[i] = part.rho*simunits.rho.outscale;
-    }
-    MPI_File_seek(file, sizeof(FLOAT)*Nhydro_before,MPI_SEEK_CUR);
-    MPI_File_write_all (file, buffer, hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
-    end_previous_write += sizeof(FLOAT)*Ntot_hydro;
-    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+         		                               &Particle<ndim>::rho,
+         							           reinterpret_cast<FLOAT*>(buffer),
+         							           gas_type, Ntot_hydro,
+         							           simunits.rho.outscale);
 
     // Specific internal energies
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      FLOAT* buffer_float = (FLOAT*) buffer;
-      buffer_float[i] = part.u*simunits.u.outscale;
-    }
-    MPI_File_seek(file, sizeof(FLOAT)*Nhydro_before,MPI_SEEK_CUR);
-    MPI_File_write_all (file, buffer, hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
-    end_previous_write += sizeof(FLOAT)*Ntot_hydro;
-    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
-
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+         		                               &Particle<ndim>::u,
+         							           reinterpret_cast<FLOAT*>(buffer),
+         							           gas_type, Ntot_hydro,
+         							           simunits.u.outscale);
     free(buffer);
 
+    /*
     MPI_Offset end_file;
     MPI_File_get_position(file, &end_file);
     assert(end_file == end_header+(sizeof(FLOAT)*ndim*2+sizeof(FLOAT)*4+sizeof(int)*1 ) *Ntot_hydro );
-
+    */
     MPI_File_close(&file);
 
 
