@@ -751,7 +751,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
     for (k=0; k<ndim; k++)
     	dv[k] = da[k] = 0 ;
 
-    FLOAT invh = 1/h ;
+    FLOAT invh = 1./h ;
     FLOAT hfactor = pow(invh, ndim) ;
     FLOAT invhsqd = invh*invh ;
 
@@ -804,7 +804,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
       h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else if (iteration < 5*iteration_max) {
-      if (n < small_number || n*pow(h,ndim) > pow(h_fac,ndim)) {
+      if (n*pow(h,ndim) > pow(h_fac,ndim)) {
         h_upper_bound = h;
       }
       else {
@@ -847,6 +847,11 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   //===============================================================================================
   // Compute the drag acceleration
   FLOAT t_s = t_stop(grho, 0, gsound) ;
+  if (t_s == 0){
+	  cout << grho << " " << gsound << " " << h << " " << n << " " << endl ;
+	  for (int kk(0); kk < Nneib; kk++)
+		  cout << "\t" << d[kk].cs << " "<< m[kk] <<" " << drsqd[kk] <<  endl ;
+  }
 
   assert(t_s != 0) ;
 
@@ -899,7 +904,7 @@ DustBase<ndim>* ProcessParameters(Parameters* simparams,
 	{
 		typedef  DustTestParticle<ndim, ParticleType, StoppingTime, Kernel> dust ;
 		typename dust::DI interp(StoppingTime(K_D), Kernel(KernelName),
-				                              floatparams["h_fac"], floatparams["h_converge"]) ;
+				                 floatparams["h_fac"], floatparams["h_converge"]) ;
 
 	    DustBase<ndim>* d =
 	    		new DustTestParticle<ndim,ParticleType, StoppingTime, Kernel>(interp, t, ghost) ;
@@ -994,6 +999,12 @@ TreeBase<ndim>* mpi_tree)
 
 	if (stringparams["dust_forces"] == "none")
 		return NULL ;
+
+	if (stringparams["neib_searhch"] == "bruteforce"){
+	  ExceptionHandler::getIstance().raise("Dust forces are not compatible with brute force "
+			                               "neighbour finding") ;
+	}
+
 
 	// Depending on the kernel, instantiate a different GradSph object
 	if (DragLaw == "fixed") {

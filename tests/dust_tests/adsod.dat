@@ -28,8 +28,8 @@ Dimensionless units                         : dimensionless = 1
 LHS position of boundary in x-dimension     : boxmin[0] = -2.0
 RHS position of boundary in x-dimension     : boxmax[0] = 2.0
 
-LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
-RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in x-dimension            : boundary_lhs[0] = mirror
+RHS boundary type in x-dimension            : boundary_rhs[0] = mirror
 
 #--------------------------
 # Simulation time variables
@@ -98,5 +98,5 @@ Switch-off self-gravity of gas              : self_gravity = 0
 #--------------
 Dust force type                             : dust_forces = test_particle
 Drag force law                              : drag_law = fixed
-Drag coefficient                            : drag_coeff = 4
+Drag coefficient                            : drag_coeff = 400
 Dust to gas ratio                           : dust_mass_factor = 1.0

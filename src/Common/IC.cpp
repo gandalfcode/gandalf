@@ -2395,11 +2395,18 @@ void Ic<ndim>::SedovBlastWave(void)
   Nhot  = 0;
   r_hot = hydro->h_fac*hydro->kernrange*simbox.boxsize[0]/Nlattice[0];
 
+
   // Allocate local and main particle memory
   hydro->Nhydro = Nbox;
+
+  bool dusty_shock = simparams->stringparams["dust_forces"] != "none" ;
+  if (dusty_shock)
+  	hydro->Nhydro *= 2 ;
+
+
   sim->AllocateParticleMemory();
-  r = new FLOAT[ndim*hydro->Nhydro];
-  hotlist = new int[hydro->Nhydro];
+  r = new FLOAT[ndim*Nbox];
+  hotlist = new int[Nbox];
 
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
@@ -2453,11 +2460,13 @@ void Ic<ndim>::SedovBlastWave(void)
   // Calculate all SPH properties
   //sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
+
+
   // Now calculate which particles are hot
   //-----------------------------------------------------------------------------------------------
   umax = (FLOAT) 0.0;
   utot = (FLOAT) 0.0;
-  for (i=0; i<hydro->Nhydro; i++) {
+  for (i=0; i<Nbox; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     drsqd = DotProduct(part.r,part.r,ndim);
     if (drsqd < r_hot*r_hot) {
@@ -2476,7 +2485,7 @@ void Ic<ndim>::SedovBlastWave(void)
 
   // Normalise the energies
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<hydro->Nhydro; i++) {
+  for (i=0; i<Nbox; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (hotlist[i] == 1) {
       drmag = sqrt(DotProduct(part.r,part.r,ndim));
@@ -2491,6 +2500,25 @@ void Ic<ndim>::SedovBlastWave(void)
       //for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
     }
   }
+
+
+  // Add a slightly offset dust lattice
+  if (dusty_shock){
+  	FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+  	for (int j = 0; j < Nbox; ++j){
+  		Particle<ndim>& pg = hydro->GetParticlePointer(j) ;
+  		Particle<ndim>& pd = hydro->GetParticlePointer(j+Nbox) ;
+  		pd = pg ;
+  		pg.ptype = gas_type ;
+  		pd.ptype = dust_type ;
+  		pd.r[0] += 0.01 * pd.h ;
+  		pd.m *= d2g ;
+  		pd.u = 0 ;
+  		pd.h_dust = pd.h ;
+  	}
+  }
+
+  sim->initial_h_provided = true;
 
   delete[] hotlist;
   delete[] r;

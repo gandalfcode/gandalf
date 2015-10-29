@@ -27,6 +27,7 @@
 #include <iostream>
 #include <math.h>
 #include <numeric>
+#include "MirrorNeighbours.hpp"
 #include "NeighbourSearch.h"
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
@@ -481,10 +482,8 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
 
   FLOAT r_ghost[ndim] ;
   int   sign[ndim] ;
-  int NumMirrors =
-    NgbFinder.ConstructGhostVectorsScatterGather(DomainCellProxy<ndim>(simbox), r_ghost, sign) ;
 
-  assert(NumMirrors == 1) ;
+  assert(NgbFinder.MaxNumMirrors() == 1) ;
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
@@ -696,9 +695,8 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
 
   FLOAT r_ghost[ndim] ;
   int   sign[ndim] ;
-  int NumMirrors = NgbFinder.ConstructGhostVectorsScatterGather(DomainCellProxy<ndim>(simbox), r_ghost, sign) ;
 
-  assert(NumMirrors == 1) ;
+  assert(NgbFinder.MaxNumMirrors() == 1) ;
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];

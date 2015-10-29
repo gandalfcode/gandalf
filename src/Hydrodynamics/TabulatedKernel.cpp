@@ -68,6 +68,7 @@ TabulatedKernel<ndim>::TabulatedKernel
   kernrangesqd = kernel->kernrangesqd;
   invkernrange = kernel->invkernrange;
   kernnorm     = kernel->kernnorm;
+  kernnormdrag = kernel->kernnormdrag;
   resinvkernrange    = res/kernrange;
   resinvkernrangesqd = res/kernrangesqd;
 
@@ -102,7 +103,38 @@ TabulatedKernel<ndim>::TabulatedKernel
   delete kernel;
 }
 
+//=================================================================================================
+//  TabulatedKernel::TabulatedKernel
+/// Copy Constructor
+//================================================================================================
+template<int ndim>
+TabulatedKernel<ndim>::TabulatedKernel
+(const TabulatedKernel<ndim>& o_kernel)  ///< [in] Kernel to copy
+: SmoothingKernel<ndim>(o_kernel),
+  res(o_kernel.res),
+  resinvkernrange(o_kernel.resinvkernrange),
+  resinvkernrangesqd(o_kernel.resinvkernrangesqd)
+{
+  kernrange          = o_kernel.kernrange;
+  kernrangesqd       = o_kernel.kernrangesqd;
+  invkernrange       = o_kernel.invkernrange;
+  kernnorm           = o_kernel.kernnorm;
+  resinvkernrange    = o_kernel.resinvkernrange;
+  resinvkernrangesqd = o_kernel.resinvkernrangesqd;
 
+
+  tableW0        = duplicateTable(o_kernel.tableW0) ;
+  tableW1        = duplicateTable(o_kernel.tableW1) ;
+  tableWomega    = duplicateTable(o_kernel.tableWomega) ;
+  tableWzeta     = duplicateTable(o_kernel.tableWzeta) ;
+  tableWgrav     = duplicateTable(o_kernel.tableWgrav) ;
+  tableWpot      = duplicateTable(o_kernel.tableWpot) ;
+  tableW0_s2     = duplicateTable(o_kernel.tableW0_s2) ;
+  tableWomega_s2 = duplicateTable(o_kernel.tableWomega_s2) ;
+  tableWzeta_s2  = duplicateTable(o_kernel.tableWzeta_s2) ;
+  tableLOS       = duplicateTable(o_kernel.tableLOS) ;
+  tableWdrag     = duplicateTable(o_kernel.tableWdrag) ;
+}
 
 //=================================================================================================
 //  TabulatedKernel::initializeTableLOS

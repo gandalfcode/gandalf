@@ -77,7 +77,7 @@ public:
 	: _K_d(DragCoeff)
 	{ } ;
 	FLOAT operator()(FLOAT grho, FLOAT drho, FLOAT gsound) const
-		{ return 1 / ((grho + drho) * gsound * _K_d) ; }
+		{ return 1. / ((grho + drho) * gsound * _K_d) ; }
 private:
 	FLOAT _K_d ;
 };

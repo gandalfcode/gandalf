@@ -587,6 +587,18 @@ public:
     }
   }
 
+  //===============================================================================================
+  //  TabulatedKernel<ndim>::duplicateTable
+  /// Create a copy of a given table
+  //===============================================================================================
+  FLOAT* duplicateTable(FLOAT* table) const
+  {
+	  FLOAT * newtable = new FLOAT[res] ;
+	  for (int i=0; i<res; i++){
+		 newtable[i] = table[i] ;
+	  }
+	  return newtable ;
+  }
 
   //===============================================================================================
   //  TabulatedKernel<ndim>::initializeTable
@@ -654,6 +666,7 @@ public:
 
  public:
   TabulatedKernel(string KernelName, int resaux=1000);
+  TabulatedKernel(const TabulatedKernel<ndim>&);
 
   ~TabulatedKernel() {
     delete[] tableW0;

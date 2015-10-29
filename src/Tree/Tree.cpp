@@ -30,8 +30,9 @@
 #include "Exception.h"
 #include "DomainBox.h"
 #include "Hydrodynamics.h"
-#include "Parameters.h"
 #include "InlineFuncs.h"
+#include "MirrorNeighbours.hpp"
+#include "Parameters.h"
 #include "Particle.h"
 #include "Tree.h"
 #include "KDTree.h"
@@ -541,6 +542,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicNeighbourList
   MirrorNeighbourFinder<ndim> NgbFinder(simbox) ;
   NgbFinder.SetTargetCell(cell) ;
 
+  int MaxMirrors = NgbFinder.MaxNumMirrors() ;
+
   std::vector<FLOAT> _r_ghost(ndim *pow(3,ndim)) ;
   std::vector<int>   _sign(ndim *pow(3,ndim)) ;
 
@@ -549,6 +552,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicNeighbourList
 
   // Start with root cell and walk through entire tree
   Nneib = 0;
+  Ntemp = 0;
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -577,36 +581,31 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicNeighbourList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1){
-    	// Compute the number of mirrors needed. The first one is just the 'periodic' copy
-    	int NumMirrors = NgbFinder.ConstructGhostVectorsScatterGather(celldata[cc], r_ghost, sign) ;
+    	i = celldata[cc].ifirst;
+        while (i != -1) {
+          if (Ntemp + MaxMirrors >= Nneibmax){ // Check that we have enough memory
+            return -1 ;
+          } else {
+            int NumMirrors = NgbFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Ntemp) ;
 
-    	for (int n=0; n < NumMirrors; n++){
-    	  if (Ntemp + Nleafmax >= Nneibmax){ // Check that we have enough memory
-    	    return -1 ;
-    	  } else {
-            i = celldata[cc].ifirst;
-            while (i != -1) {
-              neiblist[Ntemp] = i;
+            for (int n(0); n < NumMirrors; ++n){
+              for (k=0; k<ndim; k++) dr[k] = neibpart[Ntemp].r[k] - rc[k];
 
-              neibpart[Ntemp] = partdata[i];
-              NgbFinder.CorrectGhostParticlePosition(celldata[cc],
-            		                                 r_ghost+n*ndim, sign+n*ndim,
-            		                                 neibpart[Ntemp]) ;
-
-              for (k=0; k<ndim; k++) {
-            	dr[k] = neibpart[Ntemp].r[k] - rc[k];
-              }
               drsqd = DotProduct(dr, dr, ndim);
               FLOAT h2 = rmax + kernrange*neibpart[Ntemp].h ;
               if (drsqd < hrangemaxsqd || drsqd < h2*h2){
+                neiblist[Ntemp] = i ;
                 Ntemp++ ;
-              }
+              } else if (NumMirrors > 1){
+            	neibpart[Ntemp] = neibpart[Ntemp+NumMirrors-1] ;
+            	NumMirrors-- ;
+            	}
+              } // Loop over mirrors
 
-              if (i == celldata[cc].ilast) break;
-              i = inext[i];
-            };
+            }
+          if (i == celldata[cc].ilast) break;
+          i = inext[i];
     	  }
-    	} // Loop over mirrors
         cc = celldata[cc].cnext;
       }
 
@@ -868,6 +867,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   MirrorNeighbourFinder<ndim> NgbFinder(simbox) ;
   NgbFinder.SetTargetCell(cell) ;
 
+  assert(NgbFinder.MaxNumMirrors() == 1) ;
+
   FLOAT r_ghost[ndim] ;
   int   sign[ndim] ;
 
@@ -913,18 +914,13 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
 
-    	int NumMirrors = NgbFinder.ConstructGhostVectorsScatterGather(celldata[cc], r_ghost, sign) ;
-    	assert(NumMirrors == 1) ;
-
         i = celldata[cc].ifirst;
         while (i != -1) {
           hydroneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
-          neibpart[Nneib] = partdata[i];
 
-          NgbFinder.CorrectGhostParticlePosition(celldata[cc],
-        		                                 r_ghost, sign,
-        		                                 neibpart[Nneib]) ;
+          NgbFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
+
           Nneib++;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
@@ -952,8 +948,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
         neiblist[Nneib] = i;
         neibpart[Nneib] = partdata[i];
         for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
-        NearestPeriodicVector(simbox, dr, dr_corr);
-        for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
+        NgbFinder.NearestPeriodicVector(dr);
+        for (k=0; k<ndim; k++) neibpart[Nneib].r[k] = rc[k] + dr[k] ;
         Nneib++;
       }
       else if (Ngravcell < Ngravcellmax) {
@@ -988,8 +984,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
           neiblist[Nneib] = i;
           neibpart[Nneib] = partdata[i];
           for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
-          NearestPeriodicVector(simbox,dr,dr_corr);
-          for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
+          NgbFinder.NearestPeriodicVector(dr);
+          for (k=0; k<ndim; k++) neibpart[Nneib].r[k] = rc[k] + dr[k] ;
           Nneib++;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
