@@ -48,6 +48,11 @@ public:
 	{ } ;
 	virtual ~DustSphNgbFinder() { } ;
 
+#ifdef MPI_PARALLEL
+	void set_mpi_tree(TreeBase<ndim>* t)
+	{ mpighosttree = t ; }
+#endif
+
 protected:
 	template<class Interp>
 	void FindNeibAndDoInterp(int ,int, ParticleType<ndim> *,Typemask, Interp&) ;
@@ -291,7 +296,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
           Nneib = _ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,
         												 &(neiblist[0]));
 #ifdef MPI_PARALLEL
-          Nneib = _mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,
+          Nneib = mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,
         				                                   &(neiblist[0]));
 #endif
 
@@ -906,10 +911,10 @@ DustBase<ndim>* ProcessParameters(Parameters* simparams,
 		typename dust::DI interp(StoppingTime(K_D), Kernel(KernelName),
 				                 floatparams["h_fac"], floatparams["h_converge"]) ;
 
-	    DustBase<ndim>* d =
+		DustSphNgbFinder<ndim, ParticleType>* d =
 	    		new DustTestParticle<ndim,ParticleType, StoppingTime, Kernel>(interp, t, ghost) ;
 #ifdef MPI_PARALLEL
-		d._mpi_ghosts = mpi_tree ;
+		d->set_mpi_tree(mpi_tree) ;
 #endif
 	    return d ;
 	}

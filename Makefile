@@ -20,16 +20,16 @@
 #==================================================================================================
 
 
+
 CPP                = 
-CPP                = g++ -g
 PYTHON             = python
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
 OUTPUT_LEVEL       = 1
-DEBUG_LEVEL        = 0
+DEBUG_LEVEL        = 1
 BUILD_DEPENDENCIES = 1
-
+OPT = -g
 
 # FFTW libary flags and paths.  If paths are empty, tries standard default linux paths.
 #--------------------------------------------------------------------------------------------------

@@ -892,7 +892,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 		  }
 
 	  for (int k=0; k < ntype; k++) {
-		Particle<ndim>& p =  *(hydro->GetParticlePointer(n)) ;
+		Particle<ndim>& p = hydro->GetParticlePointer(n) ;
 		p.ptype = ptype ;
 		p.itype = gas ;
 		n++;
@@ -1029,7 +1029,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
   idata[1]    = nbody->Nstar;
 
   for (int n=0; n < hydro->Nhydro; n++){
-	  int itype = hydro->GetParticlePointer(n)->ptype ;
+	  int itype = hydro->GetParticlePointer(n).ptype ;
 	  itype = parttype_converter[itype] ;
 	  switch (itype){
 	    case icm:
@@ -1511,13 +1511,60 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
 }
 
+#ifdef MPI_PARALLEL
 
+template<int ndim, class T>
+void WriteSerenFromArrayScalar_MPI(MPI_File & file, int Nbefore, Hydrodyanmics<ndim>* hydro
+								   T* Particle::*data, T* buffer,
+								   int ptype, int Ntot_type)
+{
+  int n = 0 ;
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (part.ptype == ptype)
+      buffer[n++] = part.*data ;
+  }
+  MPI_Offset offset ;
+  MPI_File_get_position(file, &offset) ;
+  // Seek at the right position in the file
+  MPI_File_seek(file, sizeof(T)*Nbefore, MPI_SEEK_CUR);
+  // Write data
+  MPI_Status status;
+  MPI_File_write_all (file, buffer, n, MPI_INT, &status);
+  // Seek at the end of the porig section
+  MPIR_Offset end_write = offset + sizeof(T)*Ntot_type;
+  MPI_File_seek(file, end_write, MPI_SEEK_SET);
+}
+
+plate<int ndim, class T>
+void WriteSerenFromArrayVector_MPI(MPI_File& file, int Nbefore, Hydrodyanmics<ndim>* hydro
+								   T** Particle::*data, T* buffer,
+								   int ptype, int Ntot_type)
+{
+	int  n =0 ;
+	for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (part.ptype == ptype)
+    	for (int k=0; k < ndim; k++)
+    	  buffer[n++] = part.*data[k] ;
+  }
+
+  MPI_Offset offset ;
+  MPI_File_get_position(file, &offset) ;
+  // Seek at the right position in the file
+  MPI_File_seek(file, sizeof(T)*Nbefore, MPI_SEEK_CUR);
+  // Write data
+  MPI_Status status;
+  MPI_File_write_all (file, buffer, n, MPI_INT, &status);
+  // Seek at the end of the porig section
+  MPIR_Offset end_write = offset + sizeof(T)*Ntot_type;
+  MPI_File_seek(file, end_write, MPI_SEEK_SET);
+}
 
 //=================================================================================================
 //  Simulation::WriteSerenUnformSnapshotFile
 /// Write hydro and N-body particle data to snapshot file in Seren binary format.
 //=================================================================================================
-#ifdef MPI_PARALLEL
 template <int ndim>
 bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 {
@@ -1960,7 +2007,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   idata[0]    = hydro->Nhydro;
   idata[1]    = nbody->Nstar;
   for (int n=0; n < hydro->Nhydro; n++){
-    int itype = hydro->GetParticlePointer(n)->ptype ;
+    int itype = hydro->GetParticlePointer(n).ptype ;
     itype = parttype_converter[itype] ;
     switch (itype){
       case icm:
@@ -2222,7 +2269,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   idata[0]   = hydro->Nhydro;
   idata[1]   = nbody->Nstar;
   for (int n=0; n < hydro->Nhydro; n++){
-    int itype = hydro->GetParticlePointer(n)->ptype ;
+    int itype = hydro->GetParticlePointer(n).ptype ;
     itype = parttype_converter[itype] ;
     switch (itype){
       case icm:

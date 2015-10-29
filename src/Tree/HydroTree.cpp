@@ -904,7 +904,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   int cactive;                         // No. of active cells
-  TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
+  TreeCellBase<ndim> **celllist;           // List of pointers to binary tree cells
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[GradhHydroTree::UpdateGravityExportForces]");
@@ -912,7 +912,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCell<ndim>*[2*tree->gtot];
+  celllist = new TreeCellBase<ndim>*[2*tree->gtot];
   cactive = tree->ComputeActiveCellPointers(celllist);
 
   // Reset all export lists
@@ -950,7 +950,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>* cellptr = celllist[cc];
+      TreeCell<ndim>* cellptr = reinterpret_cast<TreeCell<ndim>*>(celllist[cc]);
       TreeCell<ndim>& cell = *cellptr;
       macfactor = (FLOAT) 0.0;
       Ngravcell = 0;
@@ -1069,7 +1069,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   int cactive;                         // No. of active cells
-  TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
+  TreeCellBase<ndim> **celllist;           // List of pointers to binary tree cells
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[HydroTree::UpdateHydroExportList]");
@@ -1077,7 +1077,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCell<ndim>*[2*tree->gtot];
+  celllist = new TreeCellBase<ndim>*[2*tree->gtot];
   cactive = tree->ComputeActiveCellPointers(celllist);
 
   // Reset all export lists
@@ -1106,7 +1106,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim> *cellptr = celllist[cc];
+      TreeCell<ndim> *cellptr = reinterpret_cast<TreeCell<ndim>*>(celllist[cc]);
       TreeCell<ndim>& cell = *cellptr;
 
       // Loop over all distant pruned trees and compute list of cells.
