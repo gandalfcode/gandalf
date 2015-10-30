@@ -72,6 +72,7 @@ ICCOPT   += -openmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
 
+<<<<<<< HEAD
 
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
@@ -302,6 +303,8 @@ CPP_TGT := $(patsubst %.o,  %.cpp, $(OBJ))
 CPP_TGT := $(patsubst chealpix.cpp, chealpix.c, $(CPP_TGT)) 
 REL_DEPS := $(patsubst %.cpp,  %.d, $(CPP_TGT)) 
 REL_DEPS := $(patsubst %.c,  %.d, $(REL_DEPS)) 
+
+
 
 %.o : %.d
 

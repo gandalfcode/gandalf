@@ -1819,11 +1819,6 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
          							           simunits.u.outscale);
     free(buffer);
 
-    /*
-    MPI_Offset end_file;
-    MPI_File_get_position(file, &end_file);
-    assert(end_file == end_header+(sizeof(FLOAT)*ndim*2+sizeof(FLOAT)*4+sizeof(int)*1 ) *Ntot_hydro );
-    */
     MPI_File_close(&file);
 
 
