@@ -282,6 +282,17 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).iorig = i;
   }
 
+  if (simparams->intparams["sink_particles"]==1) {
+    //Copy information from the stars to the sinks
+    sinks->Nsink = nbody->Nstar;
+    sinks->AllocateMemory(sinks->Nsink);
+    for (int i=0; i<sinks->Nsink; i++) {
+      sinks->sink[i].star=&(nbody->stardata[i]);
+      sinks->sink[i].istar=i;
+      sinks->sink[i].radius=simparams->floatparams["sink_radius"];
+    }
+  }
+
 
   // Perform initial MPI decomposition
   //-----------------------------------------------------------------------------------------------

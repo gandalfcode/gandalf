@@ -356,6 +356,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
     // Loop over all MPI tree cells on current balancing level
     for (c=0; c<mpitree->Ncell; c++) {
+      continue;
       if (mpitree->tree[c].level != l) continue;
       c2   = mpitree->tree[c].c2;
       k    = mpitree->tree[c].k_divide;

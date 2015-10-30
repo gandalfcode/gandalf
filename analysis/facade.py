@@ -400,7 +400,8 @@ def make_movie(filename, snapshots='all', window_no=0, fps=24):
             savefig(tmpfile)
 
     # Wait until all plotting processes have finished before making mp4 file
-    Singletons.free.wait()
+    if defaults.parallel:
+        Singletons.free.wait()
 
     # Now join all temporary files together with ffmpeg
     subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "tmp.%05d.png", \
