@@ -79,6 +79,16 @@ void Ic<ndim>::CheckInitialConditions(void)
   }
   //-----------------------------------------------------------------------------------------------
 
+  //Check particles are sorted in type order
+  int ptype =  hydro->GetParticlePointer(0).ptype;
+  for (i=1; i<hydro->Nhydro; i++) {
+	  Particle<ndim>& part = hydro->GetParticlePointer(i);
+	  if (part.ptype < ptype){
+	    ExceptionHandler::getIstance().raise("Error Particles must be ordered by ptype");
+	  }
+	  ptype = part.ptype ;
+  }
+
   if (!valid_ic) {
     string message = "Invalid initial conditions for SPH particles";
     ExceptionHandler::getIstance().raise(message);
