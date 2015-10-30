@@ -40,11 +40,11 @@ enum ptype{gas, icm, boundary, cdm, dust, dead,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
            Nhydrotypes};
 
-enum parttype{gas_type, cdm_type, dust_type, Ntypes} ;
+enum parttype{gas_type, icm_type, cdm_type, dust_type, Ntypes} ;
 
-static const int parttype_converter[] = { gas, cdm, dust } ;
+static const int parttype_converter[] = { gas, icm, cdm, dust } ;
 static const int parttype_reverse_converter[] =
-{ gas_type, gas_type, gas_type, cdm_type, dust_type} ;
+{ gas_type, icm_type, gas_type, cdm_type, dust_type} ;
 
 enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
              constant_temp, radws, Nhydroeos};

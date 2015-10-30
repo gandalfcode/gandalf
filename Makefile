@@ -21,7 +21,7 @@
 
 
 
-CPP                = 
+CPP                = g++
 PYTHON             = python
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE

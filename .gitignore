@@ -1,6 +1,7 @@
 *.diag
 *.mod
 *.o
+*.d
 *.param
 *.pyc
 *.cxx

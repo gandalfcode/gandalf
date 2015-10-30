@@ -1513,52 +1513,80 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
 #ifdef MPI_PARALLEL
 
-template<int ndim, class T>
-void WriteSerenFormArrayScalar_MPI(MPI_File & file, int Nbefore, Hydrodynamics<ndim>* hydro,
-								   T Particle<ndim>::*data, T* buffer,
-								   int ptype, int Ntot_type, T unit=1)
+struct MPI_Ptype_info
 {
-  int n = 0 ;
-  for (int i=0; i<hydro->Nhydro; i++) {
-    Particle<ndim>& part = hydro->GetParticlePointer(i);
-    if (part.ptype == ptype)
-      buffer[n++] = part.*data * unit ;
+	MPI_Ptype_info()
+	 : ptype(-1), Nbefore(0), Ntot_type(0)
+	{ } ;
+
+	int ptype ;
+	int Nbefore ;
+	int Ntot_type ;
+};
+
+template<int ndim, class T>
+void WriteSerenFormArrayScalar_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
+								   T Particle<ndim>::*data, T* buffer,
+								   const std::vector<MPI_Ptype_info>& types,
+								   T unit=1)
+{
+  for (int itype=0; itype < types.size(); ++itype){
+	int ptype     = types[itype].ptype ;
+	int Nbefore   = types[itype].Nbefore ;
+	int Ntot_type = types[itype].Ntot_type ;
+
+	int n = 0 ;
+	for (int i=0; i<hydro->Nhydro; i++) {
+	  Particle<ndim>& part = hydro->GetParticlePointer(i);
+	  if (part.ptype == ptype)
+        buffer[n++] = part.*data * unit ;
+	}
+	assert(n <= (Ntot_type - Nbefore)) ;
+
+	MPI_Offset offset ;
+	MPI_File_get_position(file, &offset) ;
+	// Seek at the right position in the file
+	MPI_File_seek(file, sizeof(T)*Nbefore, MPI_SEEK_CUR);
+	// Write data
+	MPI_Status status;
+	MPI_File_write_all (file, buffer, n*sizeof(T), MPI_BYTE, &status);
+	// Seek at the end of the porig section
+	MPI_Offset end_write = offset + sizeof(T)*Ntot_type;
+	MPI_File_seek(file, end_write, MPI_SEEK_SET);
   }
-  MPI_Offset offset ;
-  MPI_File_get_position(file, &offset) ;
-  // Seek at the right position in the file
-  MPI_File_seek(file, sizeof(T)*Nbefore, MPI_SEEK_CUR);
-  // Write data
-  MPI_Status status;
-  MPI_File_write_all (file, buffer, n*sizeof(T), MPI_BYTE, &status);
-  // Seek at the end of the porig section
-  MPI_Offset end_write = offset + sizeof(T)*Ntot_type;
-  MPI_File_seek(file, end_write, MPI_SEEK_SET);
 }
 
 template<int ndim, class T>
-void WriteSerenFormArrayVector_MPI(MPI_File& file, int Nbefore, Hydrodynamics<ndim>* hydro,
+void WriteSerenFormArrayVector_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 								   T (Particle<ndim>::*data)[ndim], T* buffer,
-								   int ptype, int Ntot_type, T unit=1)
+								   const std::vector<MPI_Ptype_info>& types,
+								   T unit=1)
 {
+  for (int itype=0; itype < types.size(); ++itype){
+	int ptype     = types[itype].ptype ;
+	int Nbefore   = types[itype].Nbefore ;
+	int Ntot_type = types[itype].Ntot_type ;
+
 	int n = 0 ;
 	for (int i=0; i<hydro->Nhydro; i++) {
-    Particle<ndim>& part = hydro->GetParticlePointer(i);
-    if (part.ptype == ptype)
-    	for (int k=0; k < ndim; k++)
-    	  buffer[n++] = (part.*data)[k] * unit ;
-  }
+	  Particle<ndim>& part = hydro->GetParticlePointer(i);
+	  if (part.ptype == ptype)
+		  for (int k=0; k < ndim; k++)
+			  buffer[n++] = (part.*data)[k] * unit ;
+	}
+	assert(n <= ndim*(Ntot_type - Nbefore)) ;
 
-  MPI_Offset offset ;
-  MPI_File_get_position(file, &offset) ;
-  // Seek at the right position in the file
-  MPI_File_seek(file, sizeof(T)*Nbefore*ndim, MPI_SEEK_CUR);
-  // Write data
-  MPI_Status status;
-  MPI_File_write_all (file, buffer, n*sizeof(T), MPI_BYTE, &status);
-  // Seek at the end of the porig section
-  MPI_Offset end_write = offset + sizeof(T)*Ntot_type*ndim;
-  MPI_File_seek(file, end_write, MPI_SEEK_SET);
+	MPI_Offset offset ;
+	MPI_File_get_position(file, &offset) ;
+	// Seek at the right position in the file
+	MPI_File_seek(file, sizeof(T)*Nbefore*ndim, MPI_SEEK_CUR);
+	// Write data
+	MPI_Status status;
+	MPI_File_write_all (file, buffer, sizeof(T)*n, MPI_BYTE, &status);
+	// Seek at the end of the porig section
+	MPI_Offset end_write = offset + sizeof(T)*Ntot_type*ndim;
+	MPI_File_seek(file, end_write, MPI_SEEK_SET);
+  }
 }
 
 //=================================================================================================
@@ -1672,10 +1700,49 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     typedata[ndata][4] = 0; ndata++;
   }
 
+  // Collect the number of particles of each type
+  std::vector<MPI_Ptype_info> types(4) ;
+  types[0].ptype = icm_type ;
+  types[1].ptype = gas_type ;
+  types[2].ptype = cdm_type ;
+  types[3].ptype = dust_type;
+
+  for (int n=0; n < hydro->Nhydro; n++){
+    int itype = hydro->GetParticlePointer(n).ptype ;
+ 	itype = parttype_converter[itype] ;
+ 	switch (itype) {
+ 	  case icm:
+ 		types[0].Ntot_type++ ; break ;
+ 	  case gas:
+ 	    types[1].Ntot_type++ ; break ;
+ 	  case cdm:
+ 	    types[2].Ntot_type++ ; break ;
+ 	  case dust:
+ 	    types[3].Ntot_type++ ; break ;
+ 	  default:
+       ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
+ 	}
+  }
+
+  int Nsum = 0 ;
+  for (int n=0; n < 4; n++){
+	MPI_Exscan(&(types[n].Ntot_type), &(types[n].Nbefore),1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    if (rank==0) {
+      types[n].Nbefore = 0;
+    }
+    MPI_Allreduce(MPI_IN_PLACE, &(types[n].Ntot_type),1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    Nsum += types[n].Ntot_type ;
+  }
+
+  assert(Nsum == Ntot_hydro) ;
+
+
   // Set important header information
   idata[0]    = Ntot_hydro;
   idata[1]    = nbody->Nstar;
-  idata[4]    = Ntot_hydro;
+  for (int n=0; n< 4; n++){
+	idata[3+n] = types[n].Ntot_type ;
+  }
   idata[19]   = nunit;
   idata[20]   = ndata;
   ilpdata[0]  = Noutsnap;
@@ -1748,75 +1815,61 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     MPI_File_get_size(file,&end_header);
     MPI_File_seek(file,end_header,MPI_SEEK_SET);
 
-    // We need to know how much to seek to start writing -
-    // need to know the cumulative number of particles
-    int Nhydro_before;
-    MPI_Exscan(&hydro->Nhydro,&Nhydro_before,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
-    if (rank==0) {
-      Nhydro_before = 0;
-    }
-
-    // Starting point - let's remember it
-    MPI_Offset end_previous_write;
-
     // Buffer
     void* buffer = malloc(sizeof(FLOAT)*ndim*hydro->Nhydro);
 
     // porig
     //-------------------------------------------------------------------------
-     WriteSerenFormArrayScalar_MPI<ndim, int>(file, Nhydro_before, hydro,
+     WriteSerenFormArrayScalar_MPI<ndim, int>(file,  hydro,
     		                                 &Particle<ndim>::iorig,
     							             reinterpret_cast<int*>(buffer),
-    							             gas_type, Ntot_hydro);
-
+    							             types) ;
     // Positions
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, hydro,
         		                               &Particle<ndim>::r,
         							           reinterpret_cast<FLOAT*>(buffer),
-        							           gas_type, Ntot_hydro,
+        							           types,
         							           simunits.r.outscale);
-
     // Masses
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro,
         		                               &Particle<ndim>::m,
         							           reinterpret_cast<FLOAT*>(buffer),
-        							           gas_type, Ntot_hydro,
+        							           types,
         							           simunits.m.outscale);
-
     // Smoothing lengths
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro,
          		                               &Particle<ndim>::h,
          							           reinterpret_cast<FLOAT*>(buffer),
-         							           gas_type, Ntot_hydro,
+         							           types,
          							           simunits.r.outscale);
-
-
     // Velocities
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, hydro,
             		                           &Particle<ndim>::v,
             							       reinterpret_cast<FLOAT*>(buffer),
-            							       gas_type, Ntot_hydro,
+            							       types,
             							       simunits.v.outscale);
-
     // Densities
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro,
          		                               &Particle<ndim>::rho,
          							           reinterpret_cast<FLOAT*>(buffer),
-         							           gas_type, Ntot_hydro,
+         							           types,
          							           simunits.rho.outscale);
-
     // Specific internal energies
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, Nhydro_before, hydro,
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro,
          		                               &Particle<ndim>::u,
          							           reinterpret_cast<FLOAT*>(buffer),
-         							           gas_type, Ntot_hydro,
+         							           types,
          							           simunits.u.outscale);
+    MPI_Offset end;
+    MPI_File_get_position(file,&end);
+    assert(end == (end_header + ((2*ndim + 4)*sizeof(FLOAT) + sizeof(int))*Ntot_hydro));
+
     free(buffer);
 
     MPI_File_close(&file);
