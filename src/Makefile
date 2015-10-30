@@ -282,3 +282,33 @@ clean ::
 	\rm -f ../analysis/swig_generated/*.so
 	\rm -f *.pyc
 	\rm -f ../analysis/swig_generated/SphSim.py
+	\rm -f $(PWD)/src/*.d
+
+
+# Handle the dependencies using black magic
+get_dir_str 	= $(patsubst %/,%,$(dir $1))
+WHICH_GPP = which g++
+ifeq ($(findstring g++,$(WHICH_GPP)),g++)
+BUILD_DEPS = @set -e; g++ -M -MG $< |\
+	 sed 's;\($*\)\.o[ :]*;$(call get_dir_str, $@)/\1.o $@ : ;g' > $@ 
+else
+BUILD_DEPS = 
+endif
+
+CPP_TGT := $(patsubst %.o,  %.cpp, $(OBJ)) 
+CPP_TGT := $(patsubst chealpix.cpp, , $(CPP_TGT)) 
+REL_DEPS := $(patsubst %.cpp,  %.d, $(CPP_TGT)) 
+
+#VPATH += $(PWD)/src/depends
+
+%.o : %.d
+
+.PHONY : depends tidy
+
+depends: $(REL_DEPS)
+	@echo "Building Dependencies..."
+
+%.d: %.cpp
+	$(BUILD_DEPS)
+
+-include $(REL_DEPS)
