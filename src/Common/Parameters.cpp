@@ -442,6 +442,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["power_turb"] = -4.0;
   floatparams["asound"] = 1.0;
   floatparams["zmax"] = 1.0;
+  floatparams["thermal_energy"] = 1.0;
 
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------

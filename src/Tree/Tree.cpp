@@ -954,7 +954,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
       }
       else if (Ngravcell < Ngravcellmax) {
         gravcell[Ngravcell] = celldata[cc];
-        for (k=0; k<ndim; k++) gravcell[Ngravcell].r[k] += dr_corr[k];
+        for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k] ;
+        NgbFinder.PeriodicDistanceCorrection(dr, dr_corr);
+        for (k=0; k<ndim; k++) gravcell[Ngravcell].r[k] += dr_corr[k] ;
         for (k=0; k<ndim; k++) gravcell[Ngravcell].rcell[k] += dr_corr[k];
         Ngravcell++;
       }
@@ -986,6 +988,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
           for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
           NgbFinder.NearestPeriodicVector(dr);
           for (k=0; k<ndim; k++) neibpart[Nneib].r[k] = rc[k] + dr[k] ;
+
           Nneib++;
           if (i == celldata[cc].ilast) break;
           i = inext[i];

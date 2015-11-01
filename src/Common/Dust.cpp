@@ -764,7 +764,8 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       w = kern.w0_s2(drsqd[j]*invhsqd);
-
+      cout << drsqd[j] << " " << invhsqd << " " << drsqd[j]*invhsqd
+    		  << "," << w << "\n" ;
       n      += w ;
       grho   += m[j]*w ;
       gsound += m[j]*w*d[j].cs ;
@@ -853,9 +854,10 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   // Compute the drag acceleration
   FLOAT t_s = t_stop(grho, 0, gsound) ;
   if (t_s == 0){
+	  cout << iteration << " " << hmax << endl ;
 	  cout << grho << " " << gsound << " " << h << " " << n << " " << endl ;
-	  for (int kk(0); kk < Nneib; kk++)
-		  cout << "\t" << d[kk].cs << " "<< m[kk] <<" " << drsqd[kk] <<  endl ;
+	  //for (int kk(0); kk < Nneib; kk++)
+	 //	  cout << "\t" << d[kk].cs << " "<< m[kk] <<" " << drsqd[kk] <<  endl ;
   }
 
   assert(t_s != 0) ;

@@ -66,6 +66,9 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   Nmpighost          = 0;
   NPeriodicGhost     = 0;
 
+  for (int itype = 0; itype < Ntypes; ++itype)
+	  types[itype] = ParticleType() ;
+
   // Set flags for gas particle type
   //-----------------------------------------------------------------------------------------------
   types[gas_type].hydro_forces   = true;
@@ -82,20 +85,20 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
 
   // Set flags for cdm particle type
   //-----------------------------------------------------------------------------------------------
-  types[cdm_type].self_gravity  = true;
-  types[cdm_type].hmask[gas_type]    = true;
-  types[cdm_type].hmask[cdm_type]    = true;
-  types[cdm_type].gravmask[gas_type] = true;
-  types[cdm_type].gravmask[cdm_type] = true;
+  types[cdm_type].self_gravity        = true;
+  types[cdm_type].hmask[gas_type]     = true;
+  types[cdm_type].hmask[cdm_type]     = true;
+  types[cdm_type].gravmask[gas_type]  = true;
+  types[cdm_type].gravmask[cdm_type]  = true;
   types[cdm_type].gravmask[dust_type] = true;
 
 
   // Set flags for dust particle type
   //-----------------------------------------------------------------------------------------------
-  types[dust_type].self_gravity  = true;
-  types[dust_type].hmask[dust_type]   = true;
-  types[dust_type].gravmask[gas_type] = true;
-  types[dust_type].gravmask[cdm_type] = true;
+  types[dust_type].self_gravity        = true;
+  types[dust_type].hmask[dust_type]    = true;
+  types[dust_type].gravmask[gas_type]  = true;
+  types[dust_type].gravmask[cdm_type]  = true;
   types[dust_type].gravmask[dust_type] = true;
 
 }

@@ -573,8 +573,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     // Compute the dust forces if present.
-    if (sphdust != NULL)
-  	  sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
+    if (sphdust != NULL){
+         // Copy properties from original particles to ghost particles
+         LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+#ifdef MPI_PARALLEL
+         MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+#endif
+   	  sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
+     }
 
     // Set initial accelerations
     for (i=0; i<sph->Nhydro; i++) {
@@ -793,18 +799,18 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Calculate SPH gravity and hydro forces, depending on which are activated
-      if (ewaldGravity && sph->hydro_forces == 1 && sph->self_gravity == 1) {
+      if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
         sphneib->UpdateAllSphPeriodicForces(sph->Nhydro, sph->Ntot, partdata,
                                             sph, nbody, simbox, ewald);
       }
-      else if (ewaldGravity && sph->self_gravity == 1) {
+      else if (sph->self_gravity == 1) {
         sphneib->UpdateAllSphPeriodicGravForces(sph->Nhydro, sph->Ntot, partdata,
                                                 sph, nbody, simbox, ewald);
       }
-      else if (periodicBoundaries && sph->hydro_forces == 1) {
+      else if (sph->hydro_forces == 1) {
         sphneib->UpdateAllSphPeriodicHydroForces(sph->Nhydro, sph->Ntot,
                                                  partdata, sph, nbody, simbox);
-      }
+      }/*
       else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
         sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
       }
@@ -813,7 +819,7 @@ void SphSimulation<ndim>::MainLoop(void)
       }
       else if (sph->self_gravity == 1) {
         sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-      }
+      }*/
 
       // Add external potential for all active SPH particles
       for (i=0; i<sph->Nhydro; i++) {

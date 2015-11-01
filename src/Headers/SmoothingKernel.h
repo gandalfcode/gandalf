@@ -747,7 +747,7 @@ inline FLOAT TabulatedKernel<ndim>::wpot (const FLOAT s) {
 
 template <int ndim>
 inline FLOAT TabulatedKernel<ndim>::wdrag (const FLOAT s) {
-  return GravPotTableLookup(tableWdrag, s);
+  return tableLookup(tableWdrag, s);
 }
 
 template <int ndim>

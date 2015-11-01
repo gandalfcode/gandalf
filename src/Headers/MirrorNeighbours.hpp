@@ -102,6 +102,29 @@ public:
 	}
 
 	//=================================================================================================
+	/// \brief  Find 'periodic' correction vector.
+	/// \author D. A. Hubber, G. Rosotti
+	/// \date   12/11/2013
+	/// \return A boolean saying whether the boxes overlap
+	//=================================================================================================
+	void PeriodicDistanceCorrection(const FLOAT dr[ndim], FLOAT dr_corr[ndim]) const
+	{
+	  if (_any_periodic)
+		{
+	   	  for (int k=0; k<ndim; k++) {
+	   	    if (_periodic_bound[k]) {
+	   	      if (dr[k] > _domain.boxhalf[k])
+	   	        dr_corr[k] =- _domain.boxsize[k];
+	   	      else if (dr[k] < -_domain.boxhalf[k])
+	   	        dr_corr[k] = _domain.boxsize[k];
+	   	      else
+	   	    	dr_corr[k] = 0 ;
+	   	    }
+	   	  }
+		}
+	}
+
+	//=================================================================================================
 	/// \brief  Find the maximum number of mirrors required
 	/// \author D. A. Hubber, G. Rosotti
 	/// \date   28/10/2015
