@@ -742,7 +742,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 
   // Use a guess to prevent against unknown initial smoothing length
   if (h == 0)
-	  h = hmax ;
+	  h = 0.5 * hmax ;
 
   // Main smoothing length iteration loop
   //===============================================================================================
@@ -764,8 +764,6 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       w = kern.w0_s2(drsqd[j]*invhsqd);
-      cout << drsqd[j] << " " << invhsqd << " " << drsqd[j]*invhsqd
-    		  << "," << w << "\n" ;
       n      += w ;
       grho   += m[j]*w ;
       gsound += m[j]*w*d[j].cs ;
@@ -790,7 +788,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
      }
 
     // If h changes below some fixed tolerance, exit iteration loop
-    if (grho > (FLOAT) 0.0 && h > h_lower_bound &&
+    if (n > (FLOAT) 0.0 && h > h_lower_bound &&
         fabs(h - h_fac*pow(n,-1./ndim)) < h_converge) break;
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
@@ -849,6 +847,11 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   assert(parti.sound > 0)  ;
   assert(parti.div_v >= 0) ;
 
+  // Scale these so h rather than h dust can be used in the time-step calculation
+  parti.div_v *= parti.h / parti.h_dust ;
+  parti.sound *= parti.h / parti.h_dust ;
+
+
 
   //===============================================================================================
   // Compute the drag acceleration
@@ -856,6 +859,10 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   if (t_s == 0){
 	  cout << iteration << " " << hmax << endl ;
 	  cout << grho << " " << gsound << " " << h << " " << n << " " << endl ;
+	  for (k=0;k<ndim;k++) cout << parti.r[k] << " " ;
+	  cout <<endl;
+	  for (k=0;k<ndim;k++) cout << parti.a_dust[k] << " " ;
+	  cout <<endl;
 	  //for (int kk(0); kk < Nneib; kk++)
 	 //	  cout << "\t" << d[kk].cs << " "<< m[kk] <<" " << drsqd[kk] <<  endl ;
   }
@@ -863,14 +870,15 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   assert(t_s != 0) ;
 
   FLOAT Xi, Lambda ;
-  if (parti.dt > 1e-3*t_s) {
-    Xi      = (1 - exp(- parti.dt/t_s)) / parti.dt ;
-    Lambda  = (parti.dt + t_s) * Xi  - 1 ;
+  FLOAT tau = parti.dt / t_s ;
+  if (tau > 1e-3) {
+    Xi      = (1 - exp(- tau)) / parti.dt ;
+    Lambda  = (parti.dt + t_s) * Xi - 1;
   }
   else {
-    FLOAT tau = parti.dt / t_s ;
-	Xi = (1 - 0.5 * tau * (1 - tau/3.)) / t_s ;
-	Lambda = (parti.dt + t_s) * Xi - 1 ;
+	Xi = (1 - 0.5 * tau * (1 - tau/3.)) ;
+	Lambda = (1 + tau) * Xi - 1;
+	Xi /= t_s ;
   }
  // Xi = 1/t_s ;
  // Lambda = 0 ;

@@ -1,0 +1,95 @@
+#------------------------------------------------------------------
+# Sound wave test
+# Generates and propagates a small linear density perturbation as a 
+# sound-wave along a uniform density gas.
+#------------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = SOUNDWAVE1
+Select SPH simulation                       : sim = sph
+Select shocktube initial conditions         : ic = soundwave
+1D shocktube test                           : ndim = 1
+Pressure of LHS fluid                       : press1 = 1.0
+Density of LHS fluid                        : rhofluid1 = 1.0
+Sound wave amplitude                        : amp = 0.001
+No. of particles in wave                    : Nhydro = 256
+Use dimensionless units                     : dimensionless = 1
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = 0.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 2.0
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.5
+Screen output frequency (in no. of steps)   : noutputstep = 1024
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = isothermal
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = gaussian
+SPH smoothing length iteration tolerance    : h_converge = 0.000000001
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = none
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 0.01
+Artificial viscosity beta value             : beta_visc = 0.02
+Riemann solver                              : riemann_solver = exact
+Order of Riemann solver                     : riemann_order = 2
+Slope limiter                               : slope_limiter = mine
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.025
+SPH acceleration condition multiplier       : accel_mult = 0.05
+No. of block timestep levels                : Nlevels = 1
+
+
+#--------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 0
+SPH neighbour search algorithm              : neib_search = kdtree
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0
+
+#--------------
+# Misc. options
+#--------------
+Dust force type                             : dust_forces = test_particle
+Drag force law                              : drag_law = fixed
+Drag coefficient                            : drag_coeff = 20
+Dust to gas ratio                           : dust_mass_factor = 1

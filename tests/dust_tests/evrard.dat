@@ -1,0 +1,110 @@
+#-------------------------------------------------------------
+# Boss-Bodenheimer test
+# Boss & Bodenheimer (1979) rotating core collapse test
+#-------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = EVRARD
+Run SPH simulation                          : sim = sph
+Select shocktube initial conditions         : ic = evrard
+Output file format                          : out_file_form = su
+Dimensionality of cube                      : ndim = 3
+No. of SPH particles                        : Nhydro = 30976
+Local arrangement of particles              : particle_distribution = hexagonal_lattice
+Mass  		                            : mcloud = 1.0
+Radius of cloud                             : radius = 1.0
+Thermal energy factor			    : thermal_energy = 0.05
+
+#---------------------------
+# Simulation units variables
+#---------------------------
+Use physical units                          : dimensionless = 1
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 2.0
+Regular snapshot output frequency           : dt_snap = 0.2
+Time of first snapshot                      : tsnapfirst = 0.00
+Screen output frequency (in no. of steps)   : noutputstep = 32
+Diagnostic output frequency                 : ndiagstep = 128
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666666
+
+
+
+#----------------
+# Gravity options
+#----------------
+Switch-on self-gravity of gas               : self_gravity = 1
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#----------------------
+# Sink particle options
+#----------------------
+Use leapfrog N-body integration scheme      : nbody = lfkdk
+Activate sink particles in code             : sink_particles = 0
+Allow creation of new sink particles        : create_sinks = 0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.15
+SPH acceleration condition multiplier       : accel_mult = 0.3
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+N-body timestep multiplier                  : nbody_mult = 0.2
+No. of block timestep levels                : Nlevels = 5
+Max. timestep level difference              : level_diff_max = 2
+
+
+#-------------
+# Tree options
+#-------------
+SPH neighbour search algorithm              : neib_search = kdtree
+Tree re-build frequency                     : ntreebuildstep = 1
+No. of particles in leaf cell               : Nleafmax = 6
+Tree opening angle (squared)                : thetamaxsqd = 0.15
+Multipole option                            : multipole = fast_monopole
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 1
+
+
+#--------------
+# Misc. options
+#--------------
+Dust force type                             : dust_forces = test_particle
+Drag force law                              : drag_law = epstein
+Drag coefficient                            : drag_coeff = 100
+Dust to gas ratio                           : dust_mass_factor = 1e-4

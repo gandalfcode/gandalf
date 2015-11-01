@@ -1429,7 +1429,16 @@ void Ic<ndim>::BossBodenheimer(void)
 
   // Allocate local and main particle memory
   hydro->Nhydro = Npart;
+
+  bool dusty_collapse =
+  	    simparams->stringparams["dust_forces"] != "none" ;
+
+  if (dusty_collapse)
+    hydro->Nhydro *= 2 ;
+
   sim->AllocateParticleMemory();
+
+
   mp = mcloud / (FLOAT) Npart;
   rho = (FLOAT) 3.0*mcloud / ((FLOAT)4.0*pi*pow(radius,3));
 
@@ -1453,6 +1462,29 @@ void Ic<ndim>::BossBodenheimer(void)
     //else
     //  part.u = press/rho/gammaone;
   }
+
+
+	if (dusty_collapse){
+		FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+		for (i = 0; i < Npart; ++i){
+		  Particle<ndim>& Pg = hydro->GetParticlePointer(i) ;
+		  Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart) ;
+		  Pd = Pg ;
+		  Pd.m *= d2g ;
+
+
+		  for (k=0; k < ndim; k++)
+			Pd.r[k] += 0.01 * Pd.h ;
+
+
+		  Pd.h_dust = Pd.h ;
+		  Pd.u = 0 ;
+
+		  Pg.ptype = gas_type ;
+		  Pd.ptype = dust_type ;
+		}
+	}
+
 
   sim->initial_h_provided = true;
 
@@ -2662,9 +2694,15 @@ void Ic<ndim>::SoundWave(void)
   // Allocate local and main particle memory
   for (k=0; k<ndim; k++) Nlattice1[k] = 1;
   Nlattice1[0] = Npart;
+
   hydro->Nhydro = Npart;
+  bool dusty_wave =
+	    simparams->stringparams["dust_forces"] != "none" ;
+  if (dusty_wave)
+	  hydro->Nhydro *= 2 ;
+
   sim->AllocateParticleMemory();
-  r = new FLOAT[ndim*hydro->Nhydro];
+  r = new FLOAT[ndim*Npart];
 
   // Add regular distribution of SPH particles
   AddCubicLattice(Npart, Nlattice1, simbox, false, r);
@@ -2691,6 +2729,22 @@ void Ic<ndim>::SoundWave(void)
     }
   }
   //-----------------------------------------------------------------------------------------------
+
+  if (dusty_wave){
+	FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+	for (i = 0; i < Npart; ++i){
+	  Particle<ndim>& Pg = hydro->GetParticlePointer(i) ;
+	  Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart) ;
+	  Pd = Pg ;
+	  Pd.m *= d2g ;
+	  Pd.h_dust = Pd.h ;
+	  Pd.u = 0 ;
+
+	  Pg.ptype = gas_type ;
+	  Pd.ptype = dust_type ;
+	}
+  }
+
 
   sim->initial_h_provided = true;
   delete[] r;
@@ -4486,16 +4540,16 @@ void Ic<ndim>::EvrardCollapse()
 
 		FLOAT* ri = pos + ndim * i ;
 
-		FLOAT r = sqrt(DotProduct(ri, ri, ndim)) ;
+		FLOAT r = sqrt(DotProduct(ri, ri, ndim) + small_number) ;
 		FLOAT rnew = radius * r * sqrt(r) ;
 		for (k=0; k < ndim; k++){
-			P.r[k] = ri[k] * rnew / (r + small_number) ;
+			P.r[k] = ri[k] * rnew / r ;
 			P.v[k] = 0 ;
 		}
 		P.m = Mtot / Npart ;
 		P.u = U_fac * Mtot / radius ;
 		P.rho = (Mtot/ (2*pi * pow(radius, ndim))) * (radius/rnew) ;
-		P.h = pow(P.m/P.rho, -1./ndim) ;
+		P.h = pow(P.m/P.rho, 1./ndim) ;
 	}
 
 	if (dusty_collapse){
@@ -4506,8 +4560,10 @@ void Ic<ndim>::EvrardCollapse()
 		  Pd = Pg ;
 		  Pd.m *= d2g ;
 
+
 		  for (k=0; k < ndim; k++)
 			Pd.r[k] += 0.01 * Pd.h ;
+
 
 		  Pd.h_dust = Pd.h ;
 		  Pd.u = 0 ;
