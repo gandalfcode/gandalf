@@ -268,7 +268,7 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   // If there's enough memory, create ghost particle in arrays
   ghostpart        = origpart;
   ghostpart.r[k]   = rk;
-  ghostpart.v[k]   = rk;
+  ghostpart.v[k]   = vk;
   ghostpart.active = false;
   ghostpart.itype  = ghosttype;
   ghostpart.iorig  = i;
