@@ -285,21 +285,30 @@ clean ::
 	\rm -f $(PWD)/src/*.d
 
 
+
+ifeq ($(BUILD_DEPENDENCIES), 1)
 # Handle the dependencies using black magic
-get_dir_str 	= $(patsubst %/,%,$(dir $1))
-WHICH_GPP = which g++
+get_dir_str = $(patsubst %/,%,$(dir $1))
+WHICH_GPP   = which g++
+
 ifeq ($(findstring g++,$(WHICH_GPP)),g++)
-BUILD_DEPS = @set -e; g++ -M -MG $< |\
+BUILD_DEPS = @set -e; g++ -MM -MG $< |\
 	 sed 's;\($*\)\.o[ :]*;$(call get_dir_str, $@)/\1.o $@ : ;g' > $@ 
 else
-BUILD_DEPS = 
+BUILD_DEPS = @echo "Warning: Cannot build dependencies for $(notdir $<)"
 endif
 
-CPP_TGT := $(patsubst %.o,  %.cpp, $(OBJ)) 
-CPP_TGT := $(patsubst chealpix.cpp, , $(CPP_TGT)) 
-REL_DEPS := $(patsubst %.cpp,  %.d, $(CPP_TGT)) 
+else
+# Ignore dependencies
+BUILD_DEPS =
+endif
 
-#VPATH += $(PWD)/src/depends
+# Compute the list of .cpp files from the OBJ files
+#    Note: chealpix is a .c file, so handle the special case
+CPP_TGT := $(patsubst %.o,  %.cpp, $(OBJ)) 
+CPP_TGT := $(patsubst chealpix.cpp, chealpix.c, $(CPP_TGT)) 
+REL_DEPS := $(patsubst %.cpp,  %.d, $(CPP_TGT)) 
+REL_DEPS := $(patsubst %.c,  %.d, $(REL_DEPS)) 
 
 %.o : %.d
 
@@ -310,5 +319,9 @@ depends: $(REL_DEPS)
 
 %.d: %.cpp
 	$(BUILD_DEPS)
+
+%.d: %.c
+	$(BUILD_DEPS)
+
 
 -include $(REL_DEPS)
