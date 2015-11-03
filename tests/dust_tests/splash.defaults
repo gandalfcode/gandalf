@@ -32,8 +32,8 @@
  NACROSS=          1,
  NDOWN=          1,
  INTERACTIVE=T,
- IADAPT=F,
- IADAPTCOORDS=F,
+ IADAPT=T,
+ IADAPTCOORDS=T,
  NSTEPSPERPAGE=          1,
  ICOLOUREACHSTEP=T,
  ICHANGESTYLES=F,
@@ -730,7 +730,7 @@
  SHAPE(32)%TEXT='                                                                                                                        ',
  /
 &CALCOPTS
- CALCSTRING='sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)                                         ','(gamma-1)*density*internalenergy                                                ','sqrt(vx**2 + vy**2 + vz**2)                                                     ', 32*'                                                                                ',
+ CALCSTRING='sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)                                         ','2*density*internalenergy/3                                                      ','sqrt(vx**2 + vy**2 + vz**2)                                                     ', 32*'                                                                                ',
  CALCLABEL='r                                                                               ','pressure                                                                        ','|v|                                                                             ', 32*'                                                                                ',
  CALCUNITSLABEL= 35*'                                        ',
  /
@@ -754,10 +754,8 @@
  XMAXCOLEND=  0.00000000    ,
  XSECPOS_NOMULTI_END=  0.00000000    ,
  /
-EVRARD.su.00001
-EVRARD.su.00002
-EVRARD.su.00003
-EVRARD.su.00004
-EVRARD.su.00005
-EVRARD.su.00006
-EVRARD.su.tmp
+ADSOD1.su.00001
+ADSOD1.su.00002
+ADSOD1.su.00003
+ADSOD1.su.00004
+ADSOD1.su.tmp

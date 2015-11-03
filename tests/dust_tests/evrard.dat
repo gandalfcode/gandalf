@@ -106,5 +106,5 @@ Tabulate SPH kernel                         : tabulated_kernel = 1
 #--------------
 Dust force type                             : dust_forces = test_particle
 Drag force law                              : drag_law = epstein
-Drag coefficient                            : drag_coeff = 100
+Drag coefficient                            : drag_coeff = 1e-2
 Dust to gas ratio                           : dust_mass_factor = 1e-4

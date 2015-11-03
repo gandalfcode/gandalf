@@ -126,9 +126,9 @@ public:
 
 	//=================================================================================================
 	/// \brief  Find the maximum number of mirrors required
-	/// \author D. A. Hubber, G. Rosotti
+	/// \author R. A. Booth
 	/// \date   28/10/2015
-	/// \return A boolean saying whether the boxes overlap
+	/// \return An integer specifying the max number of neighbours (>=1)
 	//=================================================================================================
 	int MaxNumMirrors() const
 	{
@@ -320,7 +320,7 @@ public:
 	  int Nghost = 1 ;
 
 	  // Now recursively reflect the cells
-	  if (_need_mirrors){
+	  if (_any_mirror){
 	    int nc = Nghost ;
 	    // Loop over the possible directions for reflections
 	    for (int k = 0; k < ndim; k++){

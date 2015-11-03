@@ -222,8 +222,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sphdata) private()
-  {
+#pragma omp parallel default(none) shared(cactive,celllist,cout,sphdata, mask, Interp)
+ {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
 #else

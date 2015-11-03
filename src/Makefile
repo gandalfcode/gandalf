@@ -72,8 +72,6 @@ ICCOPT   += -openmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
 
-<<<<<<< HEAD
-
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
 ifeq ($(findstring g++,$(CPP)),g++)

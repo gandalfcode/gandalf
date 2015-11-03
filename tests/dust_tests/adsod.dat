@@ -28,8 +28,8 @@ Dimensionless units                         : dimensionless = 1
 LHS position of boundary in x-dimension     : boxmin[0] = -2.0
 RHS position of boundary in x-dimension     : boxmax[0] = 2.0
 
-LHS boundary type in x-dimension            : boundary_lhs[0] = mirror
-RHS boundary type in x-dimension            : boundary_rhs[0] = mirror
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
 
 #--------------------------
 # Simulation time variables
