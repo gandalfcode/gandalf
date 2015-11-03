@@ -561,11 +561,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
           //-----------------------------------------------------------------------------------------
           for (jj=0; jj<Nneib; jj++) {
 
-            // Skip current active particle or if neighbour type is not active for hydro forces
-            if (neiblist[jj] == i || hydromask[neibpart[jj].ptype] == false) continue;
+            // Skip if neighbour type is not active for hydro forces
+        	if (hydromask[neibpart[jj].ptype] == false) continue;
 
             for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
             drsqd = DotProduct(draux, draux, ndim) + small_number;
+
+            if (drsqd <= small_number) continue ;
 
             // Compute relative position and distance quantities for pair
             if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
@@ -820,6 +822,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
           // Compute relative position and distance quantities for pair
           for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim) + small_number;
+
+          if (drsqd <= small_number) continue ;
 
           // Record if neighbour is direct-sum or and SPH neighbour.
           // If SPH neighbour, also record max. timestep level for neighbour
@@ -1087,6 +1091,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
           for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim) + small_number;
 
+          if (drsqd <= small_number) continue ;
+
           // Record if neighbour is direct-sum or and SPH neighbour.
           // If SPH neighbour, also record max. timestep level for neighbour
           if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
@@ -1337,11 +1343,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
           //-----------------------------------------------------------------------------------------
           for (jj=0; jj<Nneib; jj++) {
 
-            // Skip current active particle
-            if (neiblist[jj] == i || hmask[neibpart[jj].ptype] == false) continue;
+            // Skip non-hydro particles and the current active particle.
+        	if (hmask[neibpart[jj].ptype] == false) continue;
 
             for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
             drsqd = DotProduct(draux, draux, ndim) + small_number;
+
+            if (drsqd <= small_number) continue ;
 
             // Compute relative position and distance quantities for pair
             if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
@@ -1589,26 +1597,30 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
         hrangesqdi = activepart[j].hrangesqd;
 
         //-----------------------------------------------------------------------------------------
-        for (jj=0; jj<Nhydroneib; jj++) {
+        for (jj=0; jj < Nhydroneib; jj++) {
           int ii = sphlist[jj];
 
           // Compute relative position and distance quantities for pair
           for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim) + small_number;
 
+          if (drsqd <= small_number) continue ;
+
           // Record if neighbour is direct-sum or and SPH neighbour.
           // If SPH neighbour, also record max. timestep level for neighbour
           if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd && do_grav) {
-            directlist[Ndirectaux++] = ii;
+        	if (gravmask[neibpart[ii].ptype]){
+              directlist[Ndirectaux++] = ii;
+        	}
           }
-          else if (neiblist[ii] != i) {
-        	  if (hydromask[neibpart[ii].ptype]){
-                sphauxlist[Nhydroaux++] = ii;
-                levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
-        	  }
-        	  else if (gravmask[neibpart[ii].ptype] && do_grav){
-        		  gravlist[Ngrav++] = ii;
-        	  }
+          else {
+        	if (hydromask[neibpart[ii].ptype]){
+              sphauxlist[Nhydroaux++] = ii;
+              levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
+        	}
+        	else if (gravmask[neibpart[ii].ptype] && do_grav){
+        	  gravlist[Ngrav++] = ii;
+        	}
           }
         }
         //-----------------------------------------------------------------------------------------
@@ -1859,6 +1871,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
 
         if (sph->types[activepart[j].ptype].self_gravity){
 
+          Typemask gravmask ;
+          for (k=0; k < Ntypes; k++)
+        	gravmask[k] = sph->types[activepart[j].ptype].gravmask[k] ;
+
           Nhydroaux = 0;
           Ndirectaux = Ndirect;
           for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
@@ -1868,16 +1884,21 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
           for (jj=0; jj<Nhydroneib; jj++) {
             int ii = sphlist[jj];
 
+            // Skip non-gravitating particles and the current active particle.
+            if (gravmask[neibpart[jj].ptype] == false) continue ;
+
             // Compute relative position and distance quantities for pair
             for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
             drsqd = DotProduct(draux, draux, ndim) + small_number;
+
+            if (drsqd <= small_number) continue ;
 
             // Record if neighbour is direct-sum or and SPH neighbour.
             // If SPH neighbour, also record max. timestep level for neighbour
             if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
               directlist[Ndirectaux++] = ii;
            }
-            else if (neiblist[ii] != i) {
+            else {
               sphauxlist[Nhydroaux++] = ii;
               levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
             }

@@ -38,7 +38,7 @@ Simulation end time                         : tend = 0.75
 Regular snapshot output frequency           : dt_snap = 0.25
 Time for first snapshot                     : tsnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
-Output file format                          : out_file_form = column
+Output file format                          : out_file_form = su
 
 
 #------------------------
