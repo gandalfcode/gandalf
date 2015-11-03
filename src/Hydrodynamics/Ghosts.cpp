@@ -160,9 +160,11 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     }
     else if (itype == x_lhs_mirror) {
       sphdata[i].r[0] = 2.0*simbox.boxmin[0] - sphdata[i].r[0];
+      sphdata[i].v[0] *= -1 ;
     }
     else if (itype == x_rhs_mirror) {
       sphdata[i].r[0] = 2.0*simbox.boxmax[0] - sphdata[i].r[0];
+      sphdata[i].v[0] *= -1 ;
     }
     else if (ndim > 1 && itype == y_lhs_periodic) {
       sphdata[i].r[1] += simbox.boxsize[1];
@@ -172,9 +174,12 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     }
     else if (ndim > 1 && itype == y_lhs_mirror) {
       sphdata[i].r[1] = 2.0*simbox.boxmin[1] - sphdata[i].r[1];
+      sphdata[i].v[1] *= -1 ;
     }
     else if (ndim > 1 && itype == y_rhs_mirror) {
       sphdata[i].r[1] = 2.0*simbox.boxmax[1] - sphdata[i].r[1];
+      sphdata[i].v[1] *= -1 ;
+
     }
     else if (ndim == 3 && itype == z_lhs_periodic) {
       sphdata[i].r[2] += simbox.boxsize[2];
@@ -184,9 +189,11 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     }
     else if (ndim == 3 && itype == z_lhs_mirror) {
       sphdata[i].r[2] = 2.0*simbox.boxmin[2] - sphdata[i].r[2];
+      sphdata[i].v[2] *= -1 ;
     }
     else if (ndim == 3 && itype == z_rhs_mirror) {
       sphdata[i].r[2] = 2.0*simbox.boxmax[2] - sphdata[i].r[2];
+      sphdata[i].v[2] *= -1 ;
     }
 
   }
