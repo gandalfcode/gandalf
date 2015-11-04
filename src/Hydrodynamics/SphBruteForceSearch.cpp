@@ -159,7 +159,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
   return;
 }
 
-
+/*
 
 //=================================================================================================
 //  SphBruteForceSearch::UpdateAllSphHydroForces
@@ -401,7 +401,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
   return;
 }
-
+*/
 
 //=================================================================================================
 //  ParticleCellProxy
@@ -454,7 +454,7 @@ struct DomainCellProxy
 /// Update all SPH forces (both hydro and gravity) for periodic boundary conditions.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
+void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] Total no. of particles
   SphParticle<ndim> *part_gen,         ///< [in] Pointer to SPH particle array
@@ -557,7 +557,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
 /// using brute force (i.e. direct summation).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicHydroForces
+void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *part_gen,         ///< [inout] Pointer to SPH ptcl array
@@ -668,7 +668,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicHydroForces
 /// Update all SPH gravity forces, including periodic Ewald corrections.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
+void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] Total no. of particles
   SphParticle<ndim> *part_gen,         ///< [in] Pointer to SPH particle array

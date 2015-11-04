@@ -536,15 +536,15 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-      sphneib->UpdateAllSphPeriodicForces(sph->Nhydro, sph->Ntot, partdata,
+      sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
                                           sph, nbody, simbox, ewald);
     }
     else if (sph->self_gravity == 1) {
-      sphneib->UpdateAllSphPeriodicGravForces(sph->Nhydro, sph->Ntot, partdata,
+      sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
                                               sph, nbody, simbox, ewald);
     }
     else if (sph->hydro_forces == 1) {
-      sphneib->UpdateAllSphPeriodicHydroForces(sph->Nhydro, sph->Ntot,
+      sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
                                                partdata, sph, nbody, simbox);
     }
     /*
@@ -800,15 +800,15 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Calculate SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-        sphneib->UpdateAllSphPeriodicForces(sph->Nhydro, sph->Ntot, partdata,
+        sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
                                             sph, nbody, simbox, ewald);
       }
       else if (sph->self_gravity == 1) {
-        sphneib->UpdateAllSphPeriodicGravForces(sph->Nhydro, sph->Ntot, partdata,
+        sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
                                                 sph, nbody, simbox, ewald);
       }
       else if (sph->hydro_forces == 1) {
-        sphneib->UpdateAllSphPeriodicHydroForces(sph->Nhydro, sph->Ntot,
+        sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
                                                  partdata, sph, nbody, simbox);
       }/*
       else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
