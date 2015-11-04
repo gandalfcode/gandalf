@@ -123,7 +123,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  OctTree(int, FLOAT, FLOAT, FLOAT, string, string);
+  OctTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&);
   ~OctTree();
 
 

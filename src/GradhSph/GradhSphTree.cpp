@@ -58,16 +58,16 @@ GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
 {
   // Set-up main tree object
   tree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                _macerror, _gravity_mac, _multipole);
+                                                _macerror, _gravity_mac, _multipole, *_box);
 
   // Set-up ghost-particle tree object
   ghosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                     _macerror, _gravity_mac, _multipole);
+                                                     _macerror, _gravity_mac, _multipole, *_box);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
   mpighosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                        _macerror, _gravity_mac, _multipole);
+                                                        _macerror, _gravity_mac, _multipole, *_box);
 
   // Set-up multiple pruned trees, one for each MPI process
   KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
@@ -77,11 +77,11 @@ GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
 
   for (int i=0; i<Nmpi; i++) {
     prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
   }
   for (int i=0; i<Nmpi; i++) {
     sendprunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
   }
 #endif
 }
@@ -104,16 +104,16 @@ GradhSphOctTree<ndim,ParticleType,TreeCell>::GradhSphOctTree
 {
   // Set-up main tree object
   tree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                 _macerror, _gravity_mac, _multipole);
+                                                 _macerror, _gravity_mac, _multipole, *_box);
 
   // Set-up ghost-particle tree object
   ghosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                      _macerror, _gravity_mac, _multipole);
+                                                      _macerror, _gravity_mac, _multipole, *_box);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
   mpighosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                         _macerror, _gravity_mac, _multipole);
+                                                         _macerror, _gravity_mac, _multipole, *_box);
 
   // Set-up multiple pruned trees, one for each MPI process
   //*(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
@@ -125,11 +125,11 @@ GradhSphOctTree<ndim,ParticleType,TreeCell>::GradhSphOctTree
 
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
   }
   for (int i=0; i<Nmpi; i++) {
     sendprunedtree[i] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
   }
 #endif
 }
@@ -404,7 +404,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 
 
 //=================================================================================================
-//  GradhSphTree::UpdateAllSphPeriodicHydroForces
+//  GradhSphTree::UpdateAllSphHydroForces
 /// Compute hydro forces for all active SPH particles.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
@@ -424,8 +424,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
-  debug2("[GradhSphTree::UpdateAllSphPeriodicHydroForces]");
-  timing->StartTimingSection("SPH_PERIODIC_HYDRO_FORCES");
+  debug2("[GradhSphTree::UpdateAllSphHydroForces]");
+  timing->StartTimingSection("SPH_HYDRO_FORCES");
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
@@ -503,8 +503,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
       // Compute neighbour list for cell from real and periodic ghost particles
       Nneib = 0;
-      Nneib = tree->ComputePeriodicNeighbourList
-        (cell, sphdata, simbox, Nneibmax, Nneib, neiblist, neibpart);
+      Nneib = tree->ComputeNeighbourAndGhostList
+        (cell, sphdata, Nneibmax, Nneib, neiblist, neibpart);
       //Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
 
       // If there are too many neighbours, reallocate the arrays and
@@ -527,9 +527,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         neibpartbuf[ithread]      = new ParticleType<ndim>[Nneibmax];
         neibpart                  = neibpartbuf[ithread];
         Nneib = 0;
-        Nneib = tree->ComputePeriodicNeighbourList
-          (cell, sphdata, simbox, Nneibmax, Nneib, neiblist, neibpart);
-        //Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
+        Nneib = tree->ComputeNeighbourAndGhostList
+          (cell, sphdata, Nneibmax, Nneib, neiblist, neibpart);
       };
 
 
@@ -643,7 +642,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
   delete[] celllist;
 
-  timing->EndTimingSection("SPH_PERIODIC_HYDRO_FORCES");
+  timing->EndTimingSection("SPH_HYDRO_FORCES");
 
   return;
 }
@@ -651,7 +650,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
 
 //=================================================================================================
-//  GradhSphTree::UpdateAllSphPeriodicForces
+//  GradhSphTree::UpdateAllSphForces
 /// Compute all forces on active SPH particles (hydro + gravity) for periodic boundary conditions.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
@@ -669,7 +668,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
-  timing->StartTimingSection("SPH_ALL_PERIODIC_FORCES");
+  timing->StartTimingSection("SPH_ALL_FORCES");
 
   // Update ghost tree smoothing length values here
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], sphdata);
@@ -760,8 +759,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       }
 
       // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputePeriodicGravityInteractionList
-        (cell, sphdata, simbox, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
+      okflag = tree->ComputeGravityInteractionAndGhostList
+        (cell, sphdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
          Ndirect, Ngravcell, neiblist, sphlist, directlist, gravcell, neibpart);
 
       // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
@@ -786,8 +785,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
         cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
         neibpart                 = neibpartbuf[ithread];
         gravcell                 = cellbuf[ithread];
-        okflag = tree->ComputePeriodicGravityInteractionList
-          (cell, sphdata, simbox, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
+        okflag = tree->ComputeGravityInteractionAndGhostList
+          (cell, sphdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
            Ndirect, Ngravcell, neiblist, sphlist, directlist, gravcell, neibpart);
       };
 
@@ -940,7 +939,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
 
 //=================================================================================================
-//  GradhSphTree::UpdateAllSphPeriodicGravForces
+//  GradhSphTree::UpdateAllSphGravForces
 /// Compute all gravitational forces on active SPH particles for periodic boundary conditions.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
@@ -958,7 +957,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
-  timing->StartTimingSection("SPH_ALL_PERIODIC_FORCES");
+  timing->StartTimingSection("SPH_ALL_FORCES");
 
   // Update ghost tree smoothing length values here
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
@@ -1049,8 +1048,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
       }
 
       // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputePeriodicGravityInteractionList
-        (cell, sphdata, simbox, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
+      okflag = tree->ComputeGravityInteractionAndGhostList
+        (cell, sphdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
          Ndirect, Ngravcell, neiblist, sphlist, directlist, gravcell, neibpart);
 
       // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
@@ -1075,8 +1074,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
         cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
         neibpart                 = neibpartbuf[ithread];
         gravcell                 = cellbuf[ithread];
-        okflag = tree->ComputePeriodicGravityInteractionList
-          (cell, sphdata, simbox, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
+        okflag = tree->ComputeGravityInteractionAndGhostList
+          (cell, sphdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
            Ndirect, Ngravcell, neiblist, sphlist, directlist, gravcell, neibpart);
       };
 

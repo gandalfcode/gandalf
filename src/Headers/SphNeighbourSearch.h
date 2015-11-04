@@ -32,6 +32,7 @@
 #include "Precision.h"
 #include "Constants.h"
 #include "CodeTiming.h"
+#include "GhostNeighbours.hpp"
 #include "InlineFuncs.h"
 #include "Nbody.h"
 #include "NeighbourSearch.h"
@@ -147,6 +148,9 @@ class SphBruteForceSearch : public SphNeighbourSearch<ndim>, public BruteForceSe
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                               Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+
+
+  GhostNeighbourFinder<ndim> GhostFinder; ///< Creates ghosts on the fly
 
 /*#ifdef MPI_PARALLEL
   using NeighbourSearch<ndim>::ids_active_particles;

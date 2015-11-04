@@ -51,9 +51,10 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                            FLOAT kernrangeaux, FLOAT macerroraux,
-                                           string gravity_mac_aux, string multipole_aux):
+                                           string gravity_mac_aux, string multipole_aux,
+                                           const DomainBox<ndim>& domain):
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                   macerroraux, gravity_mac_aux, multipole_aux)
+                                   macerroraux, gravity_mac_aux, multipole_aux, domain)
 {
   allocated_tree = false;
   gmax           = 0;

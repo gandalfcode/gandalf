@@ -42,6 +42,7 @@ template<int ndim, template<int> class ParticleType >
 class DustSphNgbFinder
 : public DustBase<ndim>
 {
+	using DustBase<ndim>::timing ;
 public:
 	DustSphNgbFinder(TreeBase<ndim> * t,TreeBase<ndim> * gt=NULL)
 	: _tree(t), _ghosttree(gt)
@@ -207,12 +208,11 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
   TreeCellBase<ndim> **celllist;           // List of active tree cells
 
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
-  //double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
   debug2("[DustSphNgbFinder::FindNeibAndDoInterp]");
-  //timing->StartTimingSection("DUST_GAS_INTERPOLATE");
+  timing->StartTimingSection("DUST_GAS_INTERPOLATE_FORCES");
 
   // Find list of all cells that contain active particles
   celllist = new TreeCellBase<ndim>*[_tree->MaxNumCells()];
@@ -391,19 +391,21 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
   //===============================================================================================
 
   // Compute time spent in routine and in each cell for load balancing
-  /*
+
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  int Nactivetot = 0 ;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc]->Nactive;
   for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+    celllist[cc]->worktot +=  celllist[cc]->Nactive * twork /  Nactivetot ;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing dust smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
-*/
+#endif
 
-  //timing->EndTimingSection("DUST_GAS_INTERPOLATE");
+
+  timing->EndTimingSection("DUST_GAS_INTERPOLATE_FORCES");
 
   return;
 }
@@ -1003,6 +1005,7 @@ DustBase<ndim>* ProcessParameters(Parameters * simparams,
 template<int ndim, template<int> class ParticleType>
 DustBase<ndim>* DustFactory<ndim, ParticleType>::ProcessParameters
 (Parameters * simparams,
+CodeTiming * timing,
 TreeBase<ndim>* t,
 TreeBase<ndim>* ghost,
 TreeBase<ndim>* mpi_tree)
@@ -1020,25 +1023,28 @@ TreeBase<ndim>* mpi_tree)
 			                               "neighbour finding") ;
 	}
 
+	DustBase<ndim> * dust_forces ;
 
 	// Depending on the kernel, instantiate a different GradSph object
 	if (DragLaw == "fixed") {
 		_DustFactoryStop<ndim, ParticleType, FixedDrag> DF ;
-		return DF.ProcessParameters(simparams, t, ghost, mpi_tree) ;
+		dust_forces = DF.ProcessParameters(simparams, t, ghost, mpi_tree) ;
 	}
 	else if (DragLaw == "density") {
 		_DustFactoryStop<ndim, ParticleType, DensityDrag> DF ;
-		return DF.ProcessParameters(simparams, t, ghost, mpi_tree) ;
+		dust_forces = DF.ProcessParameters(simparams, t, ghost, mpi_tree) ;
 	}
 	else if (DragLaw == "epstein") {
 		_DustFactoryStop<ndim, ParticleType, EpsteinDrag> DF ;
-		return DF.ProcessParameters(simparams, t, ghost, mpi_tree) ;	}
+		dust_forces = DF.ProcessParameters(simparams, t, ghost, mpi_tree) ;	}
 
 	else {
 		string message = "Unrecognised parameter : drag_law = " + simparams->stringparams["drag_law"];
 		ExceptionHandler::getIstance().raise(message);
 	}
-	return NULL ;
+
+	dust_forces->timing = timing ;
+	return dust_forces ;
 }
 
 template class DustFactory<1, GradhSphParticle> ;

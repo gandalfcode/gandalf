@@ -1,5 +1,5 @@
 //=================================================================================================
-//  MirrorNeighbours.hpp
+//  GhostNeighbours.hpp
 //  Contains the definitions of a class used for constructing periodic and mirror ghosts
 //
 //  This file is part of GANDALF :
@@ -20,8 +20,8 @@
 //  General Public License (http://www.gnu.org/licenses) for more details.
 //=================================================================================================
 
-#ifndef _MIRROR_NEIGHBOURS_H_
-#define _MIRROR_NEIGHBOURS_H_
+#ifndef _GHOST_NEIGHBOURS_H_
+#define _GHOST_NEIGHBOURS_H_
 
 #include "DomainBox.h"
 #include "Precision.h"
@@ -33,10 +33,10 @@
 /// \return The number of neighbours found
 //=================================================================================================
 template<int ndim>
-class MirrorNeighbourFinder
+class GhostNeighbourFinder
 {
 public:
-	MirrorNeighbourFinder(const DomainBox<ndim>& simbox)
+	GhostNeighbourFinder(const DomainBox<ndim>& simbox)
 	: _domain(simbox),
 	  _any_periodic(false), _any_mirror(false), _need_mirrors(false), _any_special(false)
 	{
@@ -130,15 +130,15 @@ public:
 	/// \date   28/10/2015
 	/// \return An integer specifying the max number of neighbours (>=1)
 	//=================================================================================================
-	int MaxNumMirrors() const
+	int MaxNumGhosts() const
 	{
-	  int NumMirrors = 1;
+	  int NumGhosts = 1;
 		if (_any_mirror){
 		  for (int k=0; k < ndim; k++){
-			NumMirrors *= 1 + _mirror_bound[k][0] + _mirror_bound[k][1] ;
+			NumGhosts *= 1 + _mirror_bound[k][0] + _mirror_bound[k][1] ;
 		}
 	  }
-	  return NumMirrors ;
+	  return NumGhosts ;
 	}
 	/*
 	//=================================================================================================
@@ -431,7 +431,7 @@ public:
 	}
 
 private:
-	DomainBox<ndim> _domain ;
+	const DomainBox<ndim>& _domain ;
 	Box<ndim> _cell ;
 	FLOAT _centre[ndim] ;
 	bool _mirror_bound[ndim][2] ;
@@ -442,5 +442,5 @@ private:
 
 
 
-#endif//_MIRROR_NEIGHBOURS_H_
+#endif//_GHOST_NEIGHBOURS_H_
 

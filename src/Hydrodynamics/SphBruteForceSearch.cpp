@@ -27,7 +27,7 @@
 #include <iostream>
 #include <math.h>
 #include <numeric>
-#include "MirrorNeighbours.hpp"
+#include "GhostNeighbours.hpp"
 #include "NeighbourSearch.h"
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
@@ -40,6 +40,52 @@
 #include "MpiNode.h"
 #endif
 using namespace std;
+
+
+//=================================================================================================
+//  ParticleCellProxy
+/// Proxy class that we can use to create the Ghosts for the brute force search
+//=================================================================================================
+template<int ndim>
+struct ParticleCellProxy
+{
+	ParticleCellProxy(const Particle<ndim>& p)
+	{
+		FLOAT dr = 0.5 * sqrt(p.hrangesqd) ;
+		for (int k=0; k<ndim;k++)
+		{
+			rcell[k] = p.r[k] ;
+
+			hboxmax[k] = rcell[k] + dr ;
+			hboxmax[k] = rcell[k] - dr ;
+		}
+	}
+	FLOAT hboxmin[ndim], hboxmax[ndim] ;
+	FLOAT rcell[ndim] ;
+} ;
+
+
+//=================================================================================================
+//  DomainCellProxy
+/// Proxy class that we can use to create the Ghosts for the brute force search
+//=================================================================================================
+template<int ndim>
+struct DomainCellProxy
+{
+	DomainCellProxy(const DomainBox<ndim>& box)
+	{
+		for (int k=0; k<ndim;k++)
+		{
+			rcell[k] = 0.5 * (box.boxmax[k] + box.boxmin[k]) ;
+			FLOAT dr = 0.6 * (box.boxmax[k] - box.boxmin[k]) ;
+
+			hboxmax[k] = rcell[k] + dr ;
+			hboxmax[k] = rcell[k] - dr ;
+		}
+	}
+	FLOAT hboxmin[ndim], hboxmax[ndim] ;
+	FLOAT rcell[ndim] ;
+} ;
 
 
 
@@ -55,8 +101,10 @@ SphBruteForceSearch<ndim,ParticleType>::SphBruteForceSearch
   CodeTiming *timingaux):
   NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
   SphNeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
-  BruteForceSearch<ndim,ParticleType>(kernrangeaux, boxaux, kernaux, timingaux)
+  BruteForceSearch<ndim,ParticleType>(kernrangeaux, boxaux, kernaux, timingaux),
+  GhostFinder(*boxaux)
 {
+	GhostFinder.SetTargetCell(DomainCellProxy<ndim>(*boxaux));
 }
 
 
@@ -403,51 +451,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 }
 */
 
-//=================================================================================================
-//  ParticleCellProxy
-/// Proxy class that we can use to create the mirrors for the brute force search
-//=================================================================================================
-template<int ndim>
-struct ParticleCellProxy
-{
-	ParticleCellProxy(const Particle<ndim>& p)
-	{
-		FLOAT dr = 0.5 * sqrt(p.hrangesqd) ;
-		for (int k=0; k<ndim;k++)
-		{
-			rcell[k] = p.r[k] ;
-
-			hboxmax[k] = rcell[k] + dr ;
-			hboxmax[k] = rcell[k] - dr ;
-		}
-	}
-	FLOAT hboxmin[ndim], hboxmax[ndim] ;
-	FLOAT rcell[ndim] ;
-} ;
-
-
-//=================================================================================================
-//  DomainCellProxy
-/// Proxy class that we can use to create the mirrors for the brute force search
-//=================================================================================================
-template<int ndim>
-struct DomainCellProxy
-{
-	DomainCellProxy(const DomainBox<ndim>& box)
-	{
-		for (int k=0; k<ndim;k++)
-		{
-			rcell[k] = 0.5 * (box.boxmax[k] + box.boxmin[k]) ;
-			FLOAT dr = 0.6 * (box.boxmax[k] - box.boxmin[k]) ;
-
-			hboxmax[k] = rcell[k] + dr ;
-			hboxmax[k] = rcell[k] - dr ;
-		}
-	}
-	FLOAT hboxmin[ndim], hboxmax[ndim] ;
-	FLOAT rcell[ndim] ;
-} ;
-
 
 //=================================================================================================
 //  SphBruteForceSearch::UpdateAllSphPeriodicForces
@@ -476,14 +479,11 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
 
   debug2("[SphBruteForceSearch::UpdateAllSphPeriodicForces]");
 
-  // Construct the mirrors
-  MirrorNeighbourFinder<ndim> NgbFinder(simbox) ;
-  NgbFinder.SetTargetCell(DomainCellProxy<ndim>(simbox)) ;
 
   FLOAT r_ghost[ndim] ;
   int   sign[ndim] ;
 
-  assert(NgbFinder.MaxNumMirrors() == 1) ;
+  assert(GhostFinder.MaxNumGhosts() == 1) ;
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
@@ -514,7 +514,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
       if (i != j && partdata[j].itype != dead) {
         neiblist[Nneib++] = j;
         for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
-        NgbFinder.NearestPeriodicVector(dr);
+        GhostFinder.NearestPeriodicVector(dr);
         for (k=0; k<ndim; k++) neibdata[j].r[k] = partdata[i].r[k] + dr[k];
       };
     }
@@ -583,9 +583,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 
   debug2("[SphBruteForceSearch::UpdateAllSphPeriodicHydroForces]");
 
-  // Construct the mirrors
-  MirrorNeighbourFinder<ndim> NgbFinder(simbox) ;
-  NgbFinder.SetTargetCell(DomainCellProxy<ndim>(simbox)) ;
 
   // Allocate memory for storing neighbour ids and position data
   neibdata = new ParticleType<ndim>[Ntot];
@@ -615,7 +612,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
     for (k=0; k<ndim; k++) rp[k] = partdata[i].r[k];
     hrangesqdi = partdata[i].hrangesqd;
 
-    NgbFinder.SetTargetCell(ParticleCellProxy<ndim>(partdata[i])) ;
+    GhostFinder.SetTargetCell(ParticleCellProxy<ndim>(partdata[i])) ;
 
     // Determine interaction list (to ensure we don't compute pair-wise forces twice).
     // Also make sure that only the closest periodic replica is considered.
@@ -624,9 +621,9 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
       if (i != j && partdata[j].itype != dead) {
         neiblist[Nneib] = j;
 
-        int NumMirrors = NgbFinder.ConstructGhostsScatterGather(partdata[j], neibdata + Nneib) ;
+        int NumGhosts = GhostFinder.ConstructGhostsScatterGather(partdata[j], neibdata + Nneib) ;
 
-        for (int n=0; n < NumMirrors; n++){
+        for (int n=0; n < NumGhosts; n++){
           for (k=0; k < ndim; k++) draux[k] = neibdata[Nneib].r[k] - partdata[i].r[k] ;
           drsqd = DotProduct(draux, draux, ndim);
           drmag[Nneib] = sqrt(drsqd + small_number);
@@ -689,14 +686,11 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
   debug2("[SphBruteForceSearch::UpdateAllSphPeriodicGravForces]");
 
-  // Construct the mirrors
-  MirrorNeighbourFinder<ndim> NgbFinder(simbox) ;
-  NgbFinder.SetTargetCell(DomainCellProxy<ndim>(simbox)) ;
 
   FLOAT r_ghost[ndim] ;
   int   sign[ndim] ;
 
-  assert(NgbFinder.MaxNumMirrors() == 1) ;
+  assert(GhostFinder.MaxNumGhosts() == 1) ;
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
@@ -727,7 +721,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
       if (i != j && partdata[j].itype != dead) {
         neiblist[Nneib++] = j;
         for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
-        NgbFinder.NearestPeriodicVector(dr);
+        GhostFinder.NearestPeriodicVector(dr);
         for (k=0; k<ndim; k++) neibdata[j].r[k] = partdata[i].r[k] + dr[k];
       };
     }

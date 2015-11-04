@@ -352,7 +352,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Setup the dust force object
   //-----------------------------------------------------------------------------------------------
-  sphdust = DustFactory<ndim, GradhSphParticle>::ProcessParameters(simparams, t, gt, mpit) ;
+  sphdust = DustFactory<ndim, GradhSphParticle>::ProcessParameters(simparams, timing, t, gt, mpit) ;
 
   return;
 }

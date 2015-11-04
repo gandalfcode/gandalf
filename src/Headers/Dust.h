@@ -49,6 +49,7 @@ protected:
 public:
 	virtual ~DustBase() {} ;
 	virtual void UpdateAllDragForces(int , int, Particle<ndim> *) = 0 ;
+	CodeTiming * timing;
 };
 
 //=================================================================================================
@@ -62,7 +63,7 @@ template<int ndim, template<int> class ParticleType>
 class DustFactory
 {
 public:
-  static DustBase<ndim>* ProcessParameters(Parameters * params,
+  static DustBase<ndim>* ProcessParameters(Parameters * params, CodeTiming * timing,
 							               TreeBase<ndim>* t, TreeBase<ndim>* ghost,
 							               TreeBase<ndim>* mpi_tree)  ;
 } ;

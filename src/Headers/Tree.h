@@ -34,7 +34,6 @@
 #include "DomainBox.h"
 #include "Hydrodynamics.h"
 #include "InlineFuncs.h"
-
 #include "Nbody.h"
 #include "Parameters.h"
 #include "Particle.h"
@@ -113,12 +112,11 @@ class TreeBase
 	virtual int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
 	                                       const FLOAT, const int, int &, int *) = 0 ;
 	virtual int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-	                                       const FLOAT, const int, int &, int *) = 0 ;
+			                               const FLOAT, const int, int &, int *) = 0 ;
 	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
-	virtual int ComputePeriodicNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-	                                         const DomainBox<ndim> &, const int, int &,
-	                                         int *, Particle<ndim> *) = 0 ;
+	virtual int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+	                                         const int, int &, int *, Particle<ndim> *) = 0 ;
 
 	/* TODO: Members that need more work to be part of a common interface
 	 * 		 Fix: Use a proxy class to hold multipole data, rather than returning the cells.
@@ -127,7 +125,7 @@ class TreeBase
 	virtual int ComputeGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
 	                                    const FLOAT, const int, const int, int &, int &, int &, int &,
 	                                    int *, int *, int *, TreeCell<ndim> *, Particle<ndim> *);
-	virtual  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
+	virtual  int ComputeGravityInteractionAndGhostList(const TreeCell<ndim> &, const Particle<ndim> *,
 	                                            const DomainBox<ndim> &, const FLOAT, const int,
 	                                            const int, int &, int &, int &, int &, int *, int *,
 	                                            int *, TreeCell<ndim> *, Particle<ndim> *);
@@ -148,6 +146,10 @@ class TreeBase
 
 #if defined(VERIFY_ALL)
     virtual void ValidateTree(Particle<ndim> *) = 0;
+#endif
+
+#if defined(MPI_PARALLEL)
+   // virtual void AddWorkCostForCell() ;
 #endif
 
 };
@@ -171,10 +173,11 @@ class Tree : public TreeBase<ndim>
 
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-       string _gravity_mac, string _multipole) :
+       string _gravity_mac, string _multipole, const DomainBox<ndim>& domain) :
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
-    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd) {};
+    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd), _domain(domain)
+    {};
 
   virtual ~Tree() { } ;
 
@@ -203,14 +206,13 @@ class Tree : public TreeBase<ndim>
                                  const FLOAT, const int, int &, int *);
   int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                            const int, int &, int *, Particle<ndim> *);
-  int ComputePeriodicNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-                                   const DomainBox<ndim> &, const int, int &,
-                                   int *, Particle<ndim> *);
+  int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+                                   const int, int &, int *, Particle<ndim> *);
   int ComputeGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
                                     const FLOAT, const int, const int, int &, int &, int &, int &,
                                     int *, int *, int *, TreeCell<ndim> *, Particle<ndim> *);
-  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
-                                            const DomainBox<ndim> &, const FLOAT, const int,
+  int ComputeGravityInteractionAndGhostList(const TreeCell<ndim> &, const Particle<ndim> *,
+		                                    const FLOAT, const int,
                                             const int, int &, int &, int &, int &, int *, int *,
                                             int *, TreeCell<ndim> *, Particle<ndim> *);
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
@@ -277,10 +279,11 @@ class Tree : public TreeBase<ndim>
   int *ids;                            ///< Particle ids
   int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
+  const DomainBox<ndim>& _domain ;     ///< Whole simulation domain
 
 #if defined MPI_PARALLEL
-  int Nimportedcell;                   ///< No. of imported cells
-  int Ncelltot;                        ///< Total number of cells
+  int Nimportedcell;                      ///< No. of imported cells
+  int Ncelltot;                           ///< Total number of cells
 #endif
 
 };
