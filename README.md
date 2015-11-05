@@ -12,7 +12,7 @@ The code is open-source and can be downloaded anonimously. Users are encouraged 
 Webpage
 ---------
 
-The webpage for the code can be found at http://gandalfcode.github.io/gandalf/
+The webpage for the code can be found at http://gandalfcode.github.io
 
 
 Download
