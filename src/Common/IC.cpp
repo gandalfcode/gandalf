@@ -3799,7 +3799,7 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
 
   // Loop over all required particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(kwave,r) private(diff,i,xnew,xold)
+#pragma omp parallel for default(none) shared(lambda,Npart,amp,kwave,r) private(diff,i,xnew,xold)
   for (i=0; i<Npart; i++) {
     xnew = r[ndim*i];
 

@@ -355,7 +355,14 @@ void Sinks<ndim>::AccreteMassToSinks
 
   // Set-up all parallel threads for computing sink accretion
   //===============================================================================================
-#pragma omp parallel default(none) shared(hydro,nbody,partdata)
+#if defined MPI_PARALLEL
+#pragma omp parallel default(none) \
+shared(mydomain,ghosts_accreted) \
+shared(hydro,nbody,partdata)
+#else
+#pragma omp parallel default(none) \
+shared(hydro,nbody,partdata)
+#endif
   {
     int i,j,k;                               // Particle and dimension counters
     int Nlist;                               // Max. no of gas particles inside sink
