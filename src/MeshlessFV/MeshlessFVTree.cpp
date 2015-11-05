@@ -777,7 +777,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
           // (to only calculate each pair once).
           if (neibpart[jj].itype == dead || neiblist[jj] == i ||
               activepart[j].level < neibpart[jj].level ||
-              (neiblist[jj] < i && neibpart[jj].level == activepart[j].level)) continue;
+              (neibpart[jj].iorig < i && neibpart[jj].level == activepart[j].level)) continue;
 
           // Compute relative position and distance quantities for pair
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
@@ -829,10 +829,13 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-        //for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
-        //for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
+      }
+      for (j=Nhydro; j<Nhydro+mfv->NPeriodicGhost; j++) {
+        i = mfvdata[j].iorig;
+        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[j][k];
+        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[j][k];
       }
     }
 

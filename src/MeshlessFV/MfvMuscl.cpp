@@ -116,8 +116,7 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
     part.hfactor  = pow(part.invh,ndim);
     invhsqd       = part.invh*part.invh;
 
-    // Loop over all nearest neighbours in list to calculate
-    // density, omega and zeta.
+    // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd           = drsqd[j]*invhsqd;
@@ -200,12 +199,7 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
 
 //=================================================================================================
 //  MfvMuscl::ComputeDerivatives
-/// Compute SPH neighbour force pairs for
-/// (i) All neighbour interactions of particle i with i.d. j > i,
-/// (ii) Active neighbour interactions of particle j with i.d. j > i
-/// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
-/// This ensures that all particle-particle pair interactions are only
-/// computed once only for efficiency.
+/// Compute Psi factors required for computing derivatives needed in Meshess FV equations.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void MfvMuscl<ndim, kernelclass>::ComputePsiFactors
@@ -286,12 +280,7 @@ void MfvMuscl<ndim, kernelclass>::ComputePsiFactors
 
 //=================================================================================================
 //  MfvMuscl::ComputeDerivatives
-/// Compute SPH neighbour force pairs for
-/// (i) All neighbour interactions of particle i with i.d. j > i,
-/// (ii) Active neighbour interactions of particle j with i.d. j > i
-/// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
-/// This ensures that all particle-particle pair interactions are only
-/// computed once only for efficiency.
+/// Compute derivatives required for Meshless FV equations.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void MfvMuscl<ndim, kernelclass>::ComputeGradients
@@ -498,7 +487,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   int var;                             // Particle state vector variable counter
-  FLOAT Aij[ndim];                     // ??
+  FLOAT Aij[ndim];                     // Pseudo 'Area' vector
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
   FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
   FLOAT drsqd;                         // Distance squared
@@ -550,8 +539,9 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
       for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.0;
     }
     else {
-      for (k=0; k<ndim; k++) rface[k] = part.r[k] +
-        part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
+      for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+      //for (k=0; k<ndim; k++) rface[k] = part.r[k] +
+      //  part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
       for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
       for (k=0; k<ndim; k++) vface[k] = part.v[k] +
         (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
@@ -581,11 +571,11 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     assert(Wleft[ipress] > 0.0);
     assert(Wright[irho] > 0.0);
     assert(Wright[ipress] > 0.0);
-    if (part.nstep > neibpart[j].nstep) {
+    /*if (part.nstep > neibpart[j].nstep) {
       cout << "TIMESTEP PROBLEM : " << part.nstep << "   " << part.level << "    neib : "
            << neibpart[j].nstep << "    " << neibpart[j].level << endl;
-    }
-    assert(part.nstep <= neibpart[j].nstep);
+    }*/
+    //assert(part.nstep <= neibpart[j].nstep);
 
 
     // Calculate Godunov flux using the selected Riemann solver

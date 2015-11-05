@@ -94,9 +94,9 @@ void MeshlessFV<ndim>::AllocateMemory(int N)
     if (allocated) DeallocateMemory();
 
     // Set conservative estimate for maximum number of particles, assuming
-    // extra space required for periodic ghost particles
+    // extra space required for (periodic) ghost particles
     if (Nhydromax < N) {
-      Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 8.0*kernp->kernrange,ndim);
+      Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 16.0*kernp->kernrange,ndim);
     }
 
     iorder    = new int[Nhydromax];
@@ -277,7 +277,7 @@ void MeshlessFV<ndim>::EndTimestep
 
       // Integrate all conserved quantities to end of the step (adding sums from neighbours)
       for (int var=0; var<nvar; var++) {
-        part.Qcons[var] += part.dQ[var]; //+ part.dQdt[var]*timestep*(FLOAT) nstep;
+        part.Qcons[var] += part.dQ[var];
       }
 
       // Further update conserved quantities if computing gravitational contributions
