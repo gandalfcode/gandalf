@@ -171,6 +171,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "evrard"){
 	icGenerator.EvrardCollapse() ;
   }
+  else if (ic == "dustybox"){
+	icGenerator.DustyBox() ;
+  }
   else if (ic == "python") {
     return;
   }
