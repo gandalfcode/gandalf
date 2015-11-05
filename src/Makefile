@@ -292,7 +292,7 @@ get_dir_str = $(patsubst %/,%,$(dir $1))
 WHICH_GPP   = which g++
 
 ifeq ($(findstring g++,$(WHICH_GPP)),g++)
-BUILD_DEPS = @set -e; g++ -MM -MG $< |\
+BUILD_DEPS = @set -e; g++ -M -MG $< |\
 	 sed 's;\($*\)\.o[ :]*;$(call get_dir_str, $@)/\1.o $@ : ;g' > $@ 
 else
 BUILD_DEPS = @echo "Warning: Cannot build dependencies for $(notdir $<)"
