@@ -3782,9 +3782,9 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddSinusoidalDensityPerturbation
- (const int Npart,                     ///< [in] No. of particles in sphere
-  const FLOAT amp,                     ///< [in] Amplitude of perturbation
-  const FLOAT lambda,                  ///< [in] Wave number of perturbation
+ (int Npart,                     ///< [in] No. of particles in sphere
+  FLOAT amp,                     ///< [in] Amplitude of perturbation
+  FLOAT lambda,                  ///< [in] Wave number of perturbation
   FLOAT *r)                            ///< [inout] Positions of particles
 {
   int i;                               // Particle counter
