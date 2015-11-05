@@ -282,3 +282,46 @@ clean ::
 	\rm -f ../analysis/swig_generated/*.so
 	\rm -f *.pyc
 	\rm -f ../analysis/swig_generated/SphSim.py
+	\rm -f *.d
+
+
+
+ifeq ($(BUILD_DEPENDENCIES), 1)
+# Handle the dependencies using black magic
+get_dir_str = $(patsubst %/,%,$(dir $1))
+WHICH_GPP   = which g++
+
+ifeq ($(findstring g++,$(WHICH_GPP)),g++)
+BUILD_DEPS = @set -e; g++ -MM -MG -I$(INCLUDE) $< |\
+	 sed 's;\($*\)\.o[ :]*;$(call get_dir_str, $@)/\1.o $@ : ;g' > $@ 
+else
+BUILD_DEPS = @echo "Warning: Cannot build dependencies for $(notdir $<)"
+endif
+
+else
+# Ignore dependencies
+BUILD_DEPS =
+endif
+
+# Compute the list of .cpp files from the OBJ files
+#    Note: chealpix is a .c file, so handle the special case
+CPP_TGT := $(patsubst %.o,  %.cpp, $(OBJ)) 
+CPP_TGT := $(patsubst chealpix.cpp, chealpix.c, $(CPP_TGT)) 
+REL_DEPS := $(patsubst %.cpp,  %.d, $(CPP_TGT)) 
+REL_DEPS := $(patsubst %.c,  %.d, $(REL_DEPS)) 
+
+%.o : %.d
+
+.PHONY : depends tidy
+
+depends: $(REL_DEPS)
+	@echo "Building Dependencies..."
+
+%.d: %.cpp
+	$(BUILD_DEPS)
+
+%.d: %.c
+	$(BUILD_DEPS)
+
+
+-include $(REL_DEPS)

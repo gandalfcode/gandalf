@@ -27,6 +27,7 @@ PRECISION          = DOUBLE
 OPENMP             = 0
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
+BUILD_DEPENDENCIES = 1
 
 
 # FFTW libary flags and paths.  If paths are empty, tries standard default linux paths.
@@ -73,3 +74,7 @@ unittests:
 
 clean:
 	@+$(MAKE) clean -C src
+
+depends:
+	@+$(MAKE) depends -C src
+
