@@ -141,7 +141,7 @@ class TreeBase
 	//                        const FLOAT, ParticleType<ndim> *) = 0;
 	virtual void AllocateTreeMemory(void) = 0;
 	virtual void DeallocateTreeMemory(void) = 0;
-	//virtual void UpdateAllHmaxValues(Particle<ndim> *) = 0;
+	virtual void UpdateAllHmaxValues(Particle<ndim> *) = 0;
 	//virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 
 #if defined(VERIFY_ALL)
@@ -233,8 +233,11 @@ class Tree : public TreeBase<ndim>
 
   virtual void BuildTree(const int, const int, const int, const int,
                          const FLOAT, ParticleType<ndim> *) = 0;
-  void UpdateAllHmaxValues(ParticleType<ndim>* sphdata)
-  { UpdateHmaxValues(celldata[0], sphdata) ; }
+  void UpdateAllHmaxValues(Particle<ndim>* sph_gen)
+  {
+	  ParticleType<ndim> * sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
+	  UpdateHmaxValues(celldata[0], sphdata) ;
+  }
   virtual void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
   virtual void StockTree(TreeCell<ndim> &, ParticleType<ndim> *) = 0 ;
   virtual void UpdateActiveParticleCounters(ParticleType<ndim> *) = 0;

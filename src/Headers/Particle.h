@@ -61,22 +61,26 @@ typedef bool Typemask[Ntypes];
 /// \author D. A. Hubber
 /// \date   14/10/2015
 //=================================================================================================
-struct ParticleType
+struct ParticleTypeInfo
 {
   int N;                               ///< Current no. of particles
   bool hydro_forces;                   ///< Does particle experience hydro forces?
   bool self_gravity;                   ///< Does particle experience gravitational forces?
+  bool drag_forces ;                   ///< Does particle experience drag forces?
   Typemask hmask;                      ///< Neighbour mask for computing smoothing lengths
   Typemask hydromask;                  ///< Neighbour mask for computing hydro forces
-  Typemask gravmask;                   ///< Neighbour mask for computing gravitational forces
+  Typemask gravmask;                   ///< Neighbour mask for computing drag forces
+  Typemask dragmask;
 
-  ParticleType() {
+  ParticleTypeInfo() {
     N = 0;
     hydro_forces = false;
     self_gravity = false;
+    drag_forces  = false ;
     for (int k=0; k<Ntypes; k++) hmask[k] = false;
     for (int k=0; k<Ntypes; k++) hydromask[k] = false;
     for (int k=0; k<Ntypes; k++) gravmask[k] = false;
+    for (int k=0; k<Ntypes; k++) dragmask[k] = false;
   }
 };
 
@@ -116,6 +120,7 @@ struct Particle
   FLOAT invh;                       ///< 1 / h
   FLOAT hfactor;                    ///< invh^(ndim + 1)
   FLOAT invrho;                     ///< 1 / rho
+//  FLOAT norm ;                      ///< normalisation constant (dust)
   FLOAT sound;                      ///< Sound speed
   FLOAT rho;                        ///< Density
   FLOAT u;                          ///< Specific internal energy

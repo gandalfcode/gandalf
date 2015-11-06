@@ -63,7 +63,8 @@ template<int ndim, template<int> class ParticleType>
 class DustFactory
 {
 public:
-  static DustBase<ndim>* ProcessParameters(Parameters * params, CodeTiming * timing,
+  static DustBase<ndim>* ProcessParameters(Parameters* params, CodeTiming* timing,
+		  	  	  	  	  	  	  	  	   ParticleTypeInfo* types,
 							               TreeBase<ndim>* t, TreeBase<ndim>* ghost,
 							               TreeBase<ndim>* mpi_tree)  ;
 } ;

@@ -119,6 +119,7 @@ TabulatedKernel<ndim>::TabulatedKernel
   kernrangesqd       = o_kernel.kernrangesqd;
   invkernrange       = o_kernel.invkernrange;
   kernnorm           = o_kernel.kernnorm;
+  kernnormdrag       = o_kernel.kernnormdrag ;
   resinvkernrange    = o_kernel.resinvkernrange;
   resinvkernrangesqd = o_kernel.resinvkernrangesqd;
 
