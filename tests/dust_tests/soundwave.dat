@@ -14,7 +14,7 @@ Select shocktube initial conditions         : ic = soundwave
 1D shocktube test                           : ndim = 1
 Pressure of LHS fluid                       : press1 = 1.0
 Density of LHS fluid                        : rhofluid1 = 1.0
-Sound wave amplitude                        : amp = 0.001
+Sound wave amplitude                        : amp = 1e-3
 No. of particles in wave                    : Nhydro = 256
 Use dimensionless units                     : dimensionless = 1
 
@@ -33,7 +33,7 @@ RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
 #--------------------------
 Simulation end time                         : tend = 2.0
 Time for first snapshot                     : tsnapfirst = 0.0
-Regular snapshot output frequency           : dt_snap = 0.5
+Regular snapshot output frequency           : dt_snap = 0.05
 Screen output frequency (in no. of steps)   : noutputstep = 1024
 
 
@@ -89,7 +89,8 @@ Switch-off self-gravity of gas              : self_gravity = 0
 #--------------
 # Misc. options
 #--------------
-Dust force type                             : dust_forces = test_particle
-Drag force law                              : drag_law = fixed
-Drag coefficient                            : drag_coeff = 20
-Dust to gas ratio                           : dust_mass_factor = 1
+Dust force type                             : dust_forces = full_twofluid
+#full_twofluid
+Drag force law                              : drag_law = density
+Drag coefficient                            : drag_coeff = 10
+Dust to gas ratio                           : dust_mass_factor = 1e-2
