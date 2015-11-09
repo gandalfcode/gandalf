@@ -1559,7 +1559,7 @@ In this example, we show how to plot using different units to those used in the 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  13 - Creating and plotting user-defined quantities}
-In this example, we show how to create new formulaic quantities to be plotted as regular quantities by the python library. \\
+In this example, we show how to create new quantities to be plotted as regular quantities by the python library. \\
 
 %\begin{tabular}{p{14.0cm}}
 %\var{from gandalf.analysis.facade import *} \\
@@ -1641,8 +1641,20 @@ In this example, we show how to save some data from the snapshots in a variable.
 
 
 
-\noindent The syntax of the functions get\_data and get\_render\_data should be self-explanatory. These routines just return the requested quantity as a numpy array, that you can save in a variable for further processing. Alternatively, every time you do a plot you can also save the return value in a variable as shown further on in the example. Particle plots save the data used on the x-axis inside the \lstinline{x\_data} field and on the y-axis inside the \lstinline{y\_data} field. Render instead saves the image in the \lstinline{render_data} field. In this way, you can use the rendered image to grid your SPH data. At the moment render only renders to a 2d grid; however, we plan in the future to extend its capabilities to render to a 3d grid.
+\noindent The syntax of the functions get\_data and get\_render\_data should be self-explanatory. These routines just return the requested quantity as a numpy array, that you can save in a variable for further processing. Alternatively, every time you do a plot you can also save the return value in a variable as shown further on in the example. Particle plots save the data used on the x-axis inside the \lstinline{x_data} field and on the y-axis inside the \lstinline{y_data} field. Render instead saves the image in the \lstinline{render_data} field. In this way, you can use the rendered image to grid your SPH data. At the moment render only renders to a 2d grid; however, we plan in the future to extend its capabilities to render to a 3d grid.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  17 - Creating and plotting user-defined quantities from a function given by the user}
+In this example, we show how to create and plot an user-defined quantity. However, rather than building it from a mathematical formula as shown in the example 13, we compute it using a function provided by the user. This allows you to have much more flexibility in performing the computations you want with the data of the simulation. \\
+
+
+
+\lstinputlisting{../examples/example17.py}
+
+
+
+
+\noindent Refer to the example 13 for the first use of \lstinline{CreateUserQuantity}. For what concerns the second, we first need to define the function that we want to use for computing the data. In this case, the function just retrieves the array with the velocities and computes the kinetic energy from them. The function needs to return the computed value. Note that we pass the parameters specifying the snapshot, the type of particle (e.g., gas or star) and the unit to \lstinline{get_data}. This is very important to do; if you forget to do it, you might get data from the wrong snapshot, the wrong particle type, or in the wrong units.
 
 
 \subsection{Tips and tricks}
