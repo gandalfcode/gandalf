@@ -120,7 +120,6 @@ struct Particle
   FLOAT invh;                       ///< 1 / h
   FLOAT hfactor;                    ///< invh^(ndim + 1)
   FLOAT invrho;                     ///< 1 / rho
-//  FLOAT norm ;                      ///< normalisation constant (dust)
   FLOAT sound;                      ///< Sound speed
   FLOAT rho;                        ///< Density
   FLOAT u;                          ///< Specific internal energy

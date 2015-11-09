@@ -33,8 +33,23 @@
 //=================================================================================================
 //  Class DustSphNgbFinder
 /// \brief   DustSphNgbFinder class definition.
-/// \details Base class for drag forces, finds neighbours for drag force. Implementer must provide
-///          the routines for computing the drag force.
+/// \details Template base class that does neighbour searching for drag forces. Two methods are
+///          provided: (1) FindNeigbAndDoInterp,
+///                    (2) FindNeigbAndDoForces,
+///          (1) finds the gas neighbours to dust particles for interpolating gas properties to
+///          the location of dust particles, while (2) finds the dust/gas neighbours for pair-wise
+///          force calculations in the full two-fluid limit that can include the back reaction on
+///          the gas.
+///
+///          The implementer should provide a template interpolation object if (1) is used, which
+///          must have define the nested type DataType and method DoInterpolate. DataType must be
+///          constructible from ParticleType and should collect the interpolation data needed.
+///          DoInterpolation should compute the dust smoothing length h_dust, and compute the drag
+///          forces from the interpolated data. See DustInterpolant for an example.
+///
+///          If (2) is used, then the implementer must provide the ComputeDragForces function that
+///          computes the drag forces for a given particle using the neighbours found by
+///          FindNeibAndDoForces. See DustSemiImplictForces for an example.
 /// \author  R. A. Booth
 /// \date    17/10/2015
 //=================================================================================================
@@ -73,16 +88,26 @@ protected:
 
 
 //=================================================================================================
-//  Class DustTestPartInterp
-/// \brief   DustTestPartInterp class definition.
-/// \details Collector class that grabs the required interpolation data for test particle drag
-///          force calculation.
+//  Class DustInterpolation
+/// \brief   DustInterpolation class definition.
+/// \details Interpolater class used for computing drag forces in the test particle limit. Provides
+///          a data type that can be used for collecting the necessary density, sound speed
+///          velocity and acceleration data from a gas particle, along with the interpolation and
+///          semi-implicit force calculation in the test particle limit.
 /// \author  R. A. Booth
 /// \date    17/10/2015
 //=================================================================================================
 template<int ndim, template <int> class ParticleType, class StoppingTime, class Kernel>
 class DustInterpolant
 {
+  //===============================================================================================
+  //  Class DustTestPartInterp
+  /// \brief   DustTestPartInterp class definition.
+  /// \details Collector class that grabs the required interpolation data for test particle drag
+  ///          force calculation.
+  /// \author  R. A. Booth
+  /// \date    17/10/2015
+  //===============================================================================================
   struct DustTestPartInterp
   {
 	DustTestPartInterp() { } ;
@@ -98,6 +123,7 @@ class DustInterpolant
 	FLOAT v[ndim] ;
 	FLOAT a[ndim] ;
   };
+
 public:
 
   DustInterpolant(const StoppingTime& ts,const Kernel &k, FLOAT h_factor, FLOAT h_conv )
@@ -121,8 +147,9 @@ private:
 //=================================================================================================
 //  Class DustSemiImplictForces
 /// \brief   DustSemiImplictForces class definition.
-/// \details Class that handles the force calculation for drag forces using semi-implicit
-///          time stepping
+/// \details Class that computes the drag forces between gas and dust particles in the full two-
+///          fluid approximation including the back-reaction of the dust on the gas from the given
+///          neighbour list.
 /// \author  R. A. Booth
 /// \date    5/11/2015
 //=================================================================================================
@@ -139,9 +166,6 @@ public:
 		                 const std::vector<FLOAT>&, const std::vector<FLOAT>&,
 		                 ParticleType<ndim>&, const std::vector<ParticleType<ndim> >&) ;
 
-  void ComputeNormalization(const int, const int, const std::vector<int>&,
-                            const std::vector<FLOAT>&, const std::vector<FLOAT>&,
-                            ParticleType<ndim>&, const std::vector<ParticleType<ndim> >&) ;
 
 private:
   Kernel kern ;
@@ -153,7 +177,8 @@ private:
 //=================================================================================================
 //  Class DustFull
 /// \brief   DustFull class definition.
-/// \details Computes the drag force on the dust and it's back-reaction on the gas
+/// \details Computes the drag force on the dust and it's back-reaction on the gas using the
+///          semi-implicit update.
 /// \author  R. A. Booth
 /// \date    17/10/2015
 //=================================================================================================
@@ -500,7 +525,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   int cactive;                             // No. of active cells
   TreeCellBase<ndim> **celllist;           // List of active tree cells
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
@@ -679,12 +703,15 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
 
 //=================================================================================================
-//
-/// Compute the value of the smoothing length of particle 'i' by iterating the relation :
-/// h = h_fac*(m/rho)^(1/ndim).
-/// Uses the previous value of h as a starting guess and then uses either a Newton-Rhapson solver,
-/// or fixed-point iteration, to converge on the correct value of h.  The maximum tolerance used
-/// for deciding whether the iteration has converged is given by the 'h_converge' parameter.
+//   Member function DustInterpolant:DoInterpolate
+/// \brief   Interpolation routine for calculating dust smoothing length and drag forces.
+/// \details Compute the smoothing length from the number density of gas neighbours using
+///          fixed-point iteration, in a similar way to the SPH density calculation. Once the
+///          local gas properties have been determined the stopping-time is calculated and the drag
+///          acceleration is averaged over the time-step. The gas sound speed and dust-gas relative
+///          velocity are then stored in sound and div_v for the time-step calculation.
+/// \author  R. A. Booth
+/// \date    20/10/2015
 //=================================================================================================
 template<int ndim, template <int> class ParticleType, class StoppingTime, class Kernel>
 int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
@@ -865,38 +892,22 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 }
 
 
-/*
-template<int ndim, template <int> class ParticleType, class StoppingTime, class Kernel>
-void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeNormalization
-(const int i,                                       ///< [in] id of particle
- const int Nneib,                                   ///< [in] No. of neins in neibpart array
- const std::vector<int>& neiblist,                  ///< [in] id of gather neibs in neibpart
- const std::vector<FLOAT>& drmag,                   ///< [in] Distances of gather neighbours
- const std::vector<FLOAT>& dr,                      ///< [in] Position vector of gather neibs
- ParticleType<ndim>& parti,                         ///< [inout] Particle i data
- const std::vector<ParticleType<ndim> >& neibpart)  ///< [inout] Neighbour particle data
- {
-	// Only compute normalisation for dust particles
-	if (parti.pytpe != dust_type)
-		return ;
-
-	FLOAT norm = 0 ;
-	for (int jj=0; jj<Nneib; jj++) {
-	  int j = neiblist[jj];
-
-	  if (parti.ptype != gas_type) continue ;
-
-	  FLOAT wkern = neibpart[j].hfactor*kern.wdrag(drmag[jj]*neibpart[j].invh);
-
-	   norm += (neibpart[j].m/neibpart[j].rho) * neibpart[j].hfactor * wkern ;
-	}
-	parti.norm = norm ;
- }
-*/
+//=================================================================================================
+//   Member function DustSemiImplictForces::ComputeDragForces
+/// \brief   Pairwise force calculation for semi-implicit drag forces.
+/// \details Compute the drag acceleration on a particles due to its neighbours using a pair-wise
+///          force projected along the line joining the particles in an angular-momentum conserving
+///          way. The drag acceleration is averaged over the particle's time-step. If the particle
+///          is a dust particle the maximum sound-speed of it's neighbours and dust-gas relative
+///          velocity are stored for the time-step computation. For gas particles, the change in
+///          kinetic energy is added to the internal energy to conserve energy.
+/// \author  R. A. Booth
+/// \date    6/11/2015
+//=================================================================================================
 template<int ndim, template <int> class ParticleType, class StoppingTime, class Kernel>
 void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDragForces
 (const int i,                                       ///< [in] id of particle
- const int Nneib,                                   ///< [in] No. of neins in neibpart array
+ const int Nneib,                                   ///< [in] No. of neibs in neibpart array
  const std::vector<int>& neiblist,                  ///< [in] id of gather neibs in neibpart
  const std::vector<FLOAT>& drmag,                   ///< [in] Distances of gather neighbours
  const std::vector<FLOAT>& dr,                      ///< [in] Position vector of gather neibs
@@ -911,7 +922,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
   FLOAT da[ndim];                      // Relative acceleration vector
   FLOAT dvdr;                          // Dot product of dv and dr
   FLOAT dadr;                          // Dot product of da and dr
-  FLOAT wkern;                         // Value of w1 kernel function for part i
+  FLOAT wkern;                         // Value of drag kernel function for part i
   FLOAT d2g ;                          // Dust to gas ratio
   FLOAT t_s ;                          // Stopping time
   FLOAT Xi ;                           // Stopping factor
@@ -1112,7 +1123,7 @@ DustBase<ndim>* ProcessParameters(Parameters * simparams, ParticleTypeInfo* type
 
 
 //=================================================================================================
-//  Funtion DustFactory::Process Parameters
+//  Function DustFactory::Process Parameters
 /// \brief   DustFactory function definition
 /// \details Selects the appropriate
 /// \author  R. A. Booth
@@ -1140,6 +1151,11 @@ TreeBase<ndim>* mpi_tree)
 			                               "neighbour finding") ;
 	}
 
+	if (intparams["dimensionless"] == 0){
+	  ExceptionHandler::getIstance().raise("Error: Non-dimensionless simulations with dust are "
+			  	  	  	  	  	  	  	   "not currently supported") ;
+	}
+
 	DustBase<ndim> * dust_forces ;
 
 	// Depending on the kernel, instantiate a different GradSph object
@@ -1154,7 +1170,8 @@ TreeBase<ndim>* mpi_tree)
 	else if (DragLaw == "epstein") {
 		_DustFactoryStop<ndim, ParticleType, EpsteinDrag> DF ;
 		dust_forces = DF.ProcessParameters(simparams, types, t, ghost, mpi_tree) ;
-	} else if (DragLaw == "LP2012") {
+	}
+	else if (DragLaw == "LP2012") {
 	    _DustFactoryStop<ndim, ParticleType, LP12_Drag> DF ;
 	    dust_forces = DF.ProcessParameters(simparams, types, t, ghost, mpi_tree) ;
 	}
