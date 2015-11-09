@@ -49,6 +49,7 @@ GANDALF is a new SPH and N-body code written in C++ and Python.  Although partly
 
 GANDALF has been developed as a fully open-source project hosted on the site github at the address \var{https://github.com/gandalfcode/gandalf}.  Since GANDALF is currently in the beta-testing phase, it would be very helpful for the authors if new users could provide feedback of any problems with the code, or with any suggestions for improvements of existing features.  Ideally, users would submit bug reports to the GANDALF github page (\var{https://github.com/gandalfcode/gandalf/issues}) since other users can see that a bug has been identified before sending duplicate bug reports.
 
+
 \newpage
 
 
@@ -1601,11 +1602,6 @@ In this example, we show how to plot a time series of particle quantities from e
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\subsubsection{Example  15 - Calling analysis routines and plotting results}
-%To be done
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\subsubsection{Example  16 - Creating and plotting multiple sub-plots on a single window}
@@ -1633,6 +1629,21 @@ In this example, we show how to generate a movie from a series of snapshot files
 
 
 \noindent Before generating a movie, we must first specify the plot commands that are to be used to generate the movie, for example with the regular plot command \lstinline{plot('x','rho')}.  Once the commands to generate the plot window have been completed, we then generate the movie with the command \singlecommand{make\_movie(`MOVIE1.mp4')} where the only required argument is the filename of the movie.  The python library will then step through each snapshot in turn, generate the image as a temporary png file, and then attach all images together using ffmpeg.  If you do not have ffmpeg installed, the command will fail. All temporary png files should then be deleted automatically from the disc.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  16 - Retrieving data from the simulation}
+In this example, we show how to save some data from the snapshots in a variable. You can even save the rendered image. \\
+
+
+
+\lstinputlisting{../examples/example16.py}
+
+
+
+
+\noindent The syntax of the functions get\_data and get\_render\_data should be self-explanatory. These routines just return the requested quantity as a numpy array, that you can save in a variable for further processing. Alternatively, every time you do a plot you can also save the return value in a variable as shown further on in the example. Particle plots save the data used on the x-axis inside the \lstinline{x\_data} field and on the y-axis inside the \lstinline{y\_data} field. Render instead saves the image in the \lstinline{render_data} field. In this way, you can use the rendered image to grid your SPH data. At the moment render only renders to a 2d grid; however, we plan in the future to extend its capabilities to render to a 3d grid.
+
+
 
 \subsection{Tips and tricks}
 
