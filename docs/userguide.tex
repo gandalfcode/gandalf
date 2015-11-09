@@ -1654,7 +1654,20 @@ In this example, we show how to create and plot an user-defined quantity. Howeve
 
 
 
-\noindent Refer to the example 13 for the first use of \lstinline{CreateUserQuantity}. For what concerns the second, we first need to define the function that we want to use for computing the data. In this case, the function just retrieves the array with the velocities and computes the kinetic energy from them. The function needs to return the computed value. Note that we pass the parameters specifying the snapshot, the type of particle (e.g., gas or star) and the unit to \lstinline{get_data}. This is very important to do; if you forget to do it, you might get data from the wrong snapshot, the wrong particle type, or in the wrong units.
+\noindent Refer to the example 13 for the first use of \lstinline{CreateUserQuantity}. For what concerns the second, we first need to define the function that we want to use for computing the data. In this case, the function just retrieves the array with the velocities (see the previous example) and computes the kinetic energy from them. The function needs to return the computed value. Note that we pass the parameters specifying the snapshot, the type of particle (e.g., gas or star) and the unit to \lstinline{get_data}. This is very important to do; if you forget to do it, you might get data from the wrong snapshot, the wrong particle type, or in the wrong units.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  18 - Creating and plotting time series from a function given by the user}
+In this example, we show how to plot time series from functions defined by the user.  \\
+
+
+
+\lstinputlisting{../examples/example18.py}
+
+
+
+
+\noindent For accomplishing this task we need to use the function \lstinline{CreateTimeData}. Note that the way this function works is very similar to \lstinline{CreateUserQuantity} shown in the previous example. In the first example we use the function \lstinline{lagrangian_radii}, which is defined in GANDALF in the module \lstinline{compute}. Note that we can pass additional parameters to the function using keywords; for example in this case we specify that we want the half-mass radius using the keyword \lstinline{mfrac}. In the second example, we show how to define your own function for computing a quantity from a snapshot. Just remember that in this case (differently from the previous example) you need to return a scalar, which will be plotted as a function of time. The example retrieves the array with the masses (see example 16) and sums up all of them to get the total one.
 
 
 \subsection{Tips and tricks}
