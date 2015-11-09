@@ -46,9 +46,6 @@ static const int parttype_converter[] = { gas, icm, cdm, dust } ;
 static const int parttype_reverse_converter[] =
 { gas_type, icm_type, gas_type, cdm_type, dust_type} ;
 
-enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
-             constant_temp, radws, Nhydroeos};
-
 
 typedef bool Typemask[Ntypes];
 
