@@ -42,8 +42,7 @@ sim.PreSetupForPython()
 sim.ImportArray(x,'x')
 sim.ImportArray(vx,'vx')
 sim.ImportArray(m,'m')
-sim.SetupSimulation()
-
+setupsim()
 # Plot the density of all particles near the shock
 plot("x","rho")
 plotanalytical("x","rho",ic="shocktube")

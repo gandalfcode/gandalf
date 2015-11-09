@@ -79,7 +79,7 @@ To reduce the number of needed libraries, we ship together with GANDALF the foll
 \end{itemize}
 We thank the authors for writing this software and releasing them under the MIT license.
 
-Finally, in order to generate movies through the Python library, you need to have ffmpeg installed and invokable from the command line.
+Finally, in order to generate movies through the Python library, you need to have ffmpeg installed and invokable from the command line. You do not need it to compile the code or to use it if you are not generating movies.
 
 \subsection{Linux}
 All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers (e.g. apt-get, yum, pacman).
@@ -1077,63 +1077,47 @@ GANDALF can generate initial conditions if using python scripts.  The initial co
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{GANDALF Python library} \label{S:PYTHONSCRIPT}
 
-The GANDALF Python library can be used for many purposes,
+The GANDALF Python library can be used to control a simulation via a Python script. In addition, it also provides routines for performing analysis tasks. Combined with the power of the Python language, this allows you to use it for many purposes. Some examples are listed below:
 \begin{itemize}
-\item To load in previously run simulations for analysis and producing visualisation
-\item To load in multiple previously run simulations for comparisons
-\item To prepare often-run simulations including the analysis in a single script
-\item To run batches of simulations (e.g. a parameter study) with a single controlling script
-\item To run or analyse simulations interactively through the interpreter
-\item To generate initial conditions directly in python (instead of via a file or in C++) and run the simulation
+\item Load in previously run simulations for analysis and producing visualisation
+\item Load in multiple previously run simulations for comparisons
+\item Prepare often-run simulations including the analysis in a single script
+\item Run batches of simulations (e.g. a parameter study) with a single controlling script
+\item Run or analyse simulations interactively through the interpreter
+\item Generate initial conditions directly in python (instead of via a file or in C++) and run the simulation
 \end{itemize}
-It can therefore provide an easier entry into using SPH and N-body than other codes which require more investigation of the code mechanics and file formats before even basic simulations can be run.
+It also provides an easier entry into using SPH and N-body than other codes which require more investigation of the code mechanics and file formats before even basic simulations can be run.
 
-%While the numerical part of GANDALF  is implemented in C++ for efficiency, we provide bindings to Python to control the simulation and a large set of analysis and plotting tools to inspect the results. Therefore, from Python you are able to set up the simulation (including initial conditions), run it, load existing snapshots and plot quantities.
+There are two main ways to use the Python side of GANDALF; (a) an interpreter, which works similarly to a shell (e.g. bash, csh) (b) a python script.  The interpreter understands a specific set of commands to load a simulation and plot quantities. You can use it for example to quickly read the output of a simulation and do a simple plot to check what is happening. Using a Python script instead is more powerful since, in addition to the same commands supported by the interpreter, you have the full power of Python at your disposal. For example you can access the raw particle data, compute additional particle properties, generate the initial conditions, and much more. The library will take care of the boring details such as reading the snapshots and extracting the data; you can concentrate on what to do with the data and on the science, and forget about the details.
 
-There are two main ways to use the Python side of GANDALF; (a) a python script, and  (b) the interpreter, that works similarly to a shell (e.g. bash, csh).  Both methods understand a specific set of commands to load a simulation and plot quantities, although in principle using a Python script is more powerful %We provide a large set of commands to do standard operations when running and analyzing a simulation, so that this solution can be satisfactory where you need to quickly analyze a simulation.
-% The second way is writing your own python script. You still have access to the same commands available in the interpeter, but combining the power of the python language you are free to do much more.
-since you can access the raw particle data (via swig) and compute additional particle properties.  The Python files for both the library and the interpreter and contained in the \var{gandalf/analysis} sub-directory.
-
-
+The Python files for both the library and the interpreter are contained in the \var{gandalf/analysis} sub-directory. We explain briefly in the next sections how to run the interpreter or import the GANDALF library (if you are writing a script) and then an extensive tutorial follows which should clarify how to use the library.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Python script usage}
-The GANDALF Python library contains a number of modules that can be imported in to provide the desired functionality.
-\begin{itemize}
-\item \lstinline[columns=fixed]{gandalf.analysis.facade} \\
-\noindent This module is the main front-end to the GANDALF Python library and contains the Python-wrapped C++ executable and all functions required to set-up and run simulations.  This module must always be imported in GANDALF Python scripts.
-\item \lstinline{gandalf.analysis.compute} \\
-\noindent This module contains all extra and user-defined routines for computing important quantities from the simulation snapshot data.  Currently contains routines for computing centre-of-mass properties, L1 error norm (when provided with an analytical solution) and the Lagrangian radius.
-\item \lstinline{gandalf.analysis.data\_fetcher} \\
-This module contains routines for exporting data from the C++ code to Python, generating custom data (e.g. time evolution) from snapshot data and generating user-defined data quantities from raw particle data.
-\end{itemize}
+\subsection{Interpreter}
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Interpreter usage}
-
-%The interpreter is located in the analysis/ folder in the main directory of GANDALF.
-To start the interpreter, type \\
+The interpreter is located in the analysis/ folder in the main directory of GANDALF.
+To start the interpreter, type from the main GANDALF folder:\\
 \newline
 \noindent \var{python analysis/gandalf\_interpreter.py}. \\
 \newline
-A list of commands available for the python interpeter can be printed by typing the 'help' command.  Furthermore, typing 'help command' gives more information on the chosen command.  The commands in the interpreter are principally the same as those used in the script.  The main difference is the scripts call functions with arguments in parenthesis serparated by commas, whereas the interpreter works like a command-line tool with arguments separated by spaces.  For example, the plot command in the python script will appear like \lstinline{plot(`x',`y')} whereas the interpreter equivalent would be typed as \var{plot x y}.
+A list of commands available for the python interpreter can be printed by typing the 'help' command.  Furthermore, typing 'help command' gives more information on the chosen command.  The commands have a streamlined syntax so that you can perform the tasks you need with as little typing as possible. For example, to render the density of the sph particles in a 2d simulation, you can just issue the command \var{render x y rho}. Under the hood, this is translated in the python code \lstinline[columns=fixed]{render('x','y','rho')}.
 
 
 %Like in a shell, you can use the interpreter interactively or you can write little scripts for it (that is, texts files with a list of the commands that you want to be executed). \textbf{TODO: must actually implement reading from a script}. Any script can be read in and processed by typing : \var{read SCRIPTNAME}.
 
 %The interpreter provides commands for creating new simulations, loading a simulation and do the plotting. The next section contains some examples to show how to use it.
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Commands}
-To be done
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\subsection{Python interpreter examples}
+\subsection{Python script - overview of the libraries to import}
+The GANDALF Python library contains a number of modules that can be imported in to provide the desired functionality.
+\begin{itemize}
+\item \lstinline[columns=fixed]{gandalf.analysis.facade} \\
+\noindent This module is the main front-end to the GANDALF Python library and contains the Python-wrapped C++ executable and all functions required to set-up and run simulations.  This module must always be imported in GANDALF Python scripts.
+\item \lstinline{gandalf.analysis.compute} \\
+\noindent This module contains all extra and user-defined routines for computing important quantities from the simulation snapshot data.  Currently contains routines for computing centre-of-mass properties, L1 error norm (when provided with an analytical solution) and the Lagrangian radius.
+\item \lstinline{gandalf.analysis.data_fetcher} \\
+This module contains routines for exporting data from the C++ code to Python, generating custom data (e.g. time evolution) from snapshot data and generating user-defined data quantities from raw particle data.
+\end{itemize}
 
 
 
@@ -1183,7 +1167,6 @@ To be done
 
 %\end{itemize}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{GANDALF Python library tutorial} \label{SS:PYTHONTUTORIAL}
 The GANDALF Python library contains a variety of commands that are used to create and run new simulations, load in old simulations from the disk, analyse and plot results and more.  A full list of all of these commands is given in Appendix A (to be written).  The same information can be found in the source code file \var{gandalf/analysis/facade.py}.  Also, when running the interpreter, information on interactive commands can be obtained by typing \var{help} for a full list of available commands, or \var{help command} for information on that particular command.
@@ -1207,7 +1190,17 @@ This first example demonstrates how to set-up and run a new simulation from a gi
 \lstinputlisting{../examples/example01.py}
 
 \noindent The first command \singlecommand{from gandalf.analysis.facade import *} loads in all definitions and functions from the GANDALF python frontend, \var{facade.py}.  Note that this assumes that the \var{PYTHONPATH} environment variable has been correctly set-up.  Otherwise, the full absolute path of the \var{facade.py} file must be given.  The second command \singlecommand{sim = newsim(`adsod.dat')} reads in the parameters file \var{'adsod.dat'} and creates a new simulation from those parameters and returns a Python object, \var{sim}, which can be used to refer to that simulation in Python (N.B. the user can use any name for this object, as long as it does not clash with another GANDALF or Python object).  In this case, it is assumed the parameters file is selecting an initial conditions generator in the main code to generate the particles in the simulation.  In order to fully set-up the simulation so it is ready to be run, the command \singlecommand{setupsim()} must be run.  Finally, to run the simulation to completion, we must execute the command \singlecommand{run()}  The code will run until the specified endtime and then exit the python environment.
-\newpage
+
+If run through the interpreter, the same example would look like:\\
+\newline
+\begin{tabular}{p{14.0cm}}
+\var{newsim adsod.dat}            \\
+\var{setupsim} \\
+\var{run} \\
+\end{tabular} \\
+\newline
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1226,7 +1219,7 @@ This example demonstrates how to modify parameters in Python that have been load
 
 
 
-\noindent The first two lines of this example are the as the first example, where we import the GANDALF Python frontend and then create a new simulation from the parameters file \var{`adsod.dat'}.  Once loaded in, we can now modify parameters with the command \singlecommand{sim.SetParam(parameter\_name,new\_value)}  In this case, we set the parameter \var{tend} (the total simulation run-time) to the value \var{2.0} with \lstinline{sim.SetParam(`tend',2.0)}.  Once all parameters have been modified, then we can set-up the simulation fully with \lstinline{setupsim()} and run it with \lstinline{run()}.  Note that if we attempt to modify any parameters AFTER calling \lstinline{setupsim()}, then the code will terminate with an exception.
+\noindent The first two lines of this example are the as the first example, where we import the GANDALF Python frontend and then create a new simulation from the parameters file \var{`adsod.dat'}.  Once loaded in, we can now modify parameters with the command \singlecommand{sim.SetParam(parameter\_name,new\_value)}  In this case, we set the parameter \var{tend} (the total simulation run-time) to the value \var{2.0} with \lstinline{sim.SetParam(`tend',2.0)}.  Once all parameters have been modified, then we can set-up the simulation fully with \lstinline{setupsim()} and run it with \lstinline{run()}.  Note that if we attempt to modify any parameters AFTER calling \lstinline{setupsim()}, then the code will terminate with an exception. It is not possible to change the parameters of a simulation through the interpreter.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1259,7 +1252,6 @@ In this example, we will create and run a simulation without needing to load-in 
 
 
 \noindent In this example, we call the \var{newsim} function passing the dimensionality of the simulation instead of a parameter file.  Therefore the line \lstinline{sim = newsim(ndim=2,sim=`sph')} sets up a 2-dimensional SPH simulation, but is otherwise unspecified because no other parameters have been set.  Next, we can set all the parameters that would have otherwise been set in the parameters file.  In this example, we set up an SPH simulation with initial conditions to perform the Sedov blast-wave test (\lstinline{sim.SetParam(`ic',`sedov')}); (See Section \ref{S:PARAMETERS} for a full description of all parameters).  Once all parameters have been set, we can fully set-up and run the simulation with \lstinline{setupsim()} and \lstinline{run()}.
-\newpage
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1281,7 +1273,19 @@ In this example, we show how to plot particle data interactively during a live s
 
 
 
-\noindent In this simulation, we will run a live simulation while also plotting particle data in a matplotlib window as the simulation is still running.  We first create the simulation as in previous examples with \var{newsim}.  We then set the value of the \var{dt\_python} which is the time between python/matplotlib window updates.  After the \var{setupsim()} command, we can then plot the initial conditions from the simulation using the command \singlecommand{plot(x,y)} where \var{x} and \var{y} are the x- and y-axis plotting variables (N.B. these can be any variables, not necessarily x and y. e.g. \var{plot(`y',`z')}).  If we now run the simulation with \var{run()}, the simulation will compute as normal while updating the plot window every \var{dt\_python} seconds (in this casem every 2 seconds).  After the simulation has finished, we can save the final plot to file with the command \singlecommand{savefig(filename)} where \var{filename} is the intended filename {\it including} the file extension.  matplotlib automatically determines the correct file format from the extension  (e.g. typing \lstinline{savefig(`fig1.png')} will automatically save the window to a png file without need for additional arguments).
+\noindent In this simulation, we will run a live simulation while also plotting particle data in a matplotlib window as the simulation is still running.  We first create the simulation as in previous examples with \var{newsim}.  We then set the value of the \var{dt\_python} which is the time between python/matplotlib window updates.  After the \var{setupsim()} command, we can then plot the initial conditions from the simulation using the command \singlecommand{plot(x,y)} where \var{x} and \var{y} are the x- and y-axis plotting variables (N.B. these can be any variables, not necessarily x and y. e.g. \var{plot(`y',`z')}).  If we now run the simulation with \var{run()}, the simulation will compute as normal while updating the plot window every \var{dt\_python} seconds (in this casem every 2 seconds).  After the simulation has finished, we can save the final plot to file with the command \singlecommand{savefig(filename)} where \var{filename} is the intended filename {\it including} the file extension.  matplotlib automatically determines the correct file format from the extension  (e.g. typing \lstinline{savefig(`fig1.png')} will automatically save the window to a png file without need for additional arguments). The use of \var{block()} in the last line is needed because otherwise python would exit immediately from the script. Instead, the function pauses the script so that you can look at the plot. Pressing Enter (or any other key) causes to script to continue (and so in this case to terminate as there is no other instruction afterwards).
+
+This same example can also be run through the interpreter (apart for changing the \var{dt\_python} parameter). Note that there is no need to call block as the interpreter already pauses after each command in order to wait for the next one:\\
+\newline
+\begin{tabular}{p{14.0cm}}
+\var{newsim glass.dat} \\
+\var{setupsim} \\
+\var{plot x y} \\
+\var{run} \\
+\var{savefig figure.eps } \\
+\end{tabular} \\
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1306,6 +1310,22 @@ In this example, we load in a previously run simulation from the disk and genera
 
 
 \noindent Instead of a creating a new simulation with the \var{newsim} function, we will load in a previous run simulation with the command \singlecommand{loadsim(runid)} where \var{runid} is the simulation run identification string.  Note, this assumes that all files from that simulation are present in the folder, including the \var{runid.param} file which contains all the parameters used to run the simulation.  In this case, we load a simulation with the runid \var{ADSOD1} with the command \lstinline{loadsim(`ADSOD1')}.  We can then plot particular snapshots of the simulation using the \var{plot} command with the optional \var{snap} argument.  Therefore to plot the first snapshot, type \var{plot(`x',`y',snap=0)}, to plot the second snapshot, type \var{plot(`x','y',snap=1)}, etc..  Note that Python uses C-style indexing, i.e. starting from zero, unlike other conventions like in FORTRAN where indexing starts from one.  If we wish to overplot one snapshot over another, we first plot the first snapshot and then use the command \singlecommand{addplot(`x',`y',snap=1)} to add the second snapshot plot over the first one.  This behaviour can also be replicated by adding the \var{overplot} optional boolean argument to \var{plot}, i.e. \lstinline{plot(`x',`y',snap=1,overplot=True)}.
+
+It is possible to run this example too through the interpreter:\\
+\newline
+\begin{tabular}{p{14.0cm}}
+\var{loadsim ADSOD1 } \\
+\var{plot x rho snap=0} \\
+\var{savefig snap1.eps} \\
+\var{plot x rho snap=1} \\
+\var{savefig snap2.eps} \\
+\var{plot x rho snap=0} \\
+\var{addplot x rho snap=1} \\
+\var{savefig snap12.eps} \\
+\end{tabular} \\
+\newline
+From now on, we stop providing also the code for the interpreter. As you have seen, the conversion is trivial to do.
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1418,7 +1438,7 @@ We then create an undefined 1D simulation object with \lstinline{sim = newsim(nd
 
 The last step before importing the arrays to C++, we must initialise various things in the code, including importantly allocating memory for the particles, by calling the function \singlecommand{sim.PreSetupforPython()}
 Next, we can import the array into the C++ arrays by the command \singlecommand{sim.ImportArray(numpyarray,varname)}
-where \var{numpyarray} is the local NUMPY array and \var{varname} is a string containing the C++ variable name.  For example, to import the x-positions, we call the command \lstinline{sim.ImportArray(x,'x')}.  Once all arrays have been called, we can finally call the setup function \lstinline{sim.SetupSimulation()} and plot and run the simulation to completion.
+where \var{numpyarray} is the local NUMPY array and \var{varname} is a string containing the C++ variable name.  For example, to import the x-positions, we call the command \lstinline{sim.ImportArray(x,'x')}.  Once all arrays have been called, we can finally call the \var{setupsim} function and plot and run the simulation to completion.
 
 
 
@@ -1594,25 +1614,36 @@ In this example, we show how to plot a time series of particle quantities from e
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Example  17 - Creating an animation from simulation snapshot files}
-%In this example, we show how to generate a movie from a series of snapshot files loaded into memory. \\
+\subsubsection{Example  15 - Creating an animation from simulation snapshot files}
+In this example, we show how to generate a movie from a series of snapshot files loaded into memory. \\
 
 
-\begin{tabular}{p{14.0cm}}
-\var{from gandalf.analysis.facade import *} \\
-\var{sim = loadsim(`TEST1')} \\
-\var{plot(`x',`y')} \\
-\var{make\_movie(`MOVIE1.mp4')} \\
-\var{break()} \\
-\end{tabular} \\
-\newline
-%\lstinputlisting{../examples/example17.py}
+%\begin{tabular}{p{14.0cm}}
+%\var{from gandalf.analysis.facade import *} \\
+%\var{sim = loadsim(`TEST1')} \\
+%\var{plot(`x',`y')} \\
+%\var{make\_movie(`MOVIE1.mp4')} \\
+%\var{block()} \\
+%\end{tabular} \\
+%\newline
+
+\lstinputlisting{../examples/example15.py}
 
 
 
 
-\noindent Before generating a movie, we must first specify the plot commands that are to be used to generate the movie.  For example, in order to show how the particles move on the x-y plane in the movie, we must first plot this with the regular plot command, \lstinline{plot('x','y')}.  Once the commands to generate the plot window have been completed, we then generate the movie with the command \singlecommand{make\_movie(`MOVIE1.mp4')} where the only required argument is the filename of the movie.  The python library will then step through each snapshot in turn, generate the image as a temporary png file, and then attach all images together using ffmpeg.  All temporary png files should then be deleted automatically from the disc.
+\noindent Before generating a movie, we must first specify the plot commands that are to be used to generate the movie, for example with the regular plot command \lstinline{plot('x','rho')}.  Once the commands to generate the plot window have been completed, we then generate the movie with the command \singlecommand{make\_movie(`MOVIE1.mp4')} where the only required argument is the filename of the movie.  The python library will then step through each snapshot in turn, generate the image as a temporary png file, and then attach all images together using ffmpeg.  If you do not have ffmpeg installed, the command will fail. All temporary png files should then be deleted automatically from the disc.
 
+\subsection{Tips and tricks}
+
+To plot the results we use the well-known library matplotlib. This means that if you are running from a script you have several ways to customize the plots if you are not satisfied by their graphical appearance:
+\begin{itemize}
+\item Calling functions in matplotlib. Example: to logscale the y axis, just call \lstinline{plt.yscale('log')} (assuming you have imported matplotlib).
+\item Passing keyword arguments to the plotting functions defined by GANDALF. Example: if you are doing a particle plot and want to change the marker size, you can call \lstinline{plot('x','y',ms=2)}, and the ms keyword will be passed to matplotlib.
+\item Modifying the defaults for matplotlib using the .matplotlibrc files (see matplotlib documentation at \url{http://matplotlib.org/users/customizing.html}).
+\end{itemize}
+
+You might notice that the matplotlib window freezes when you are running a simulation live. This is not GANDALF's fault unfortunately, but a flaw in the design of the Python interpreter (if you want to know more, read here: \url{https://wiki.python.org/moin/GlobalInterpreterLock}). If you do require interaction with the matplotlib window (for example to be able to pan/zoom while the simulation is running), you can run the plots in another process. In order to do this, open the file defaults.py in the analysis folder and change the value of \var{parallel} to \lstinline{True}. There is a drawback in this case: given that the plots are on another process, you cannot call matplotlib functions to customise your plots (but the other two ways we suggest for customising the plots still work).
 
 \newpage
 
