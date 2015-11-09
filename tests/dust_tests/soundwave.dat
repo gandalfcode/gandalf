@@ -91,6 +91,6 @@ Switch-off self-gravity of gas              : self_gravity = 0
 #--------------
 Dust force type                             : dust_forces = full_twofluid
 #full_twofluid
-Drag force law                              : drag_law = density
-Drag coefficient                            : drag_coeff = 10
-Dust to gas ratio                           : dust_mass_factor = 1e-2
+Drag force law                              : drag_law = LP2012
+Drag coefficient                            : drag_coeff = 1
+Dust to gas ratio                           : dust_mass_factor = 1e-1

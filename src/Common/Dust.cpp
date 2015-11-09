@@ -1154,6 +1154,9 @@ TreeBase<ndim>* mpi_tree)
 	else if (DragLaw == "epstein") {
 		_DustFactoryStop<ndim, ParticleType, EpsteinDrag> DF ;
 		dust_forces = DF.ProcessParameters(simparams, types, t, ghost, mpi_tree) ;
+	} else if (DragLaw == "LP2012") {
+	    _DustFactoryStop<ndim, ParticleType, LP12_Drag> DF ;
+	    dust_forces = DF.ProcessParameters(simparams, types, t, ghost, mpi_tree) ;
 	}
 	else {
 		string message = "Unrecognised parameter : drag_law = " + simparams->stringparams["drag_law"];

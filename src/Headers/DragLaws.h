@@ -33,7 +33,7 @@
 class FixedDrag
 {
 public:
-	FixedDrag(FLOAT DragCoeff)
+	FixedDrag(const FLOAT DragCoeff)
 	: _t_stop(1/DragCoeff)
 	{ } ;
 
@@ -53,7 +53,7 @@ private:
 class DensityDrag
 {
 public:
-	DensityDrag(FLOAT DragCoeff)
+	DensityDrag(const FLOAT DragCoeff)
 	: _K_d(DragCoeff)
     { } ;
 
@@ -73,11 +73,32 @@ private:
 class EpsteinDrag
 {
 public:
-	EpsteinDrag(FLOAT DragCoeff)
+	EpsteinDrag(const FLOAT DragCoeff)
 	: _K_d(DragCoeff)
 	{ } ;
 	FLOAT operator()(FLOAT grho, FLOAT drho, FLOAT gsound) const
 		{ return 1. / ((grho + drho) * gsound * _K_d) ; }
+private:
+	FLOAT _K_d ;
+};
+
+
+//=================================================================================================
+//  Class LP12_Drag
+/// \brief   LP12_Drag class definition.
+/// \details Stopping time using the drag coefficient from Laibe & Price (2012),
+///          t_s = rho_g rho_d / K_D (rho_d + rho_g))
+/// \author  R. A. Booth
+/// \date    9/11/2015
+//=================================================================================================
+class LP12_Drag
+{
+public:
+	LP12_Drag(const FLOAT DragCoeff)
+	: _K_d(DragCoeff)
+	{ } ;
+	FLOAT operator()(FLOAT grho, FLOAT drho, FLOAT) const
+		{ return drho * grho / ((grho + drho)  * _K_d) ; }
 private:
 	FLOAT _K_d ;
 };
