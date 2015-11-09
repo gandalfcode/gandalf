@@ -352,7 +352,7 @@ su/seren\_unform & = SEREN binary format
 
 \item \var{dt\_litesnap} : Lite snapshot time interval (given in {\var tunit}s)
 
-\item \var{tsnapfirst} : Time of first lite snapshot (given in {\var tunit}s)
+\item \var{tlitesnapfirst} : Time of first lite snapshot (given in {\var tunit}s)
 
 \end{itemize}
 
@@ -1006,8 +1006,136 @@ kdtree & = Use simple KD-tree decomposition
 
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Input and output file formats}
+
+GANDALF supports several simple file formats for reading in initial conditions or outputting snapshots for visualisation and analysis.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\subsection{Column format}
+The column format is the simplest snapshot file format in GANDALF and consists of a simple header plus a fixed column-data format with particle data.  It is designed for ease-of-use in quickly generating initial conditions, or perhaps porting initial conditions from other codes/generators.  It is certainly not designed as a long-term format for use in large simulations, partly due to being an ASCII file which can quickly get unfeasibly large for big simulations.
+
+The header comprises of four lines, each with one variable in the following order : 
+\begin{itemize}
+\item \var{Nhydro} : No. of hydro particles
+\item \var{Nstar}  : No. of star/sink particles
+\item \var{ndim}   : Dimensionality of snapshot data
+\item \var{t}      : Time of snapshot
+\end{itemize}
+Each of the 4 header variables is preceded by a hash (`\#') in order that simple plotting programs (e.g. gnuplot) will ignore the headers allowing the particle data to be simply plotted.  Older versions of GANDALF may not have this hash but nevertheless should still easily be read-in by the code.
+
+The particle data is then split up into \var{Nhydro} + \var{Nstar} rows, hydro particles first and then star particles.  The data columns are ordered as : 
+\begin{itemize}
+\item \var{x [,y, z]} : Particle position vectors (depending on value of \var{ndim})
+\item \var{vx [,vy, vz]} : Particle velocity vectors (depending on value of \var{ndim})
+\item \var{m} : Particle mass
+\item \var{h} : Particle smoothing length (for stars also; radius = \var{2/3\,h} depending on kernel)
+\item \var{rho} : Particle density (set to 0 for stars)
+\item \var{u} : Particle specific internal energy (set to 0 for stars)
+\end{itemize}
+Since the column format was only designed for simple IO and plotting, it is a rather minimalistic format that does not necessarily contain all the required data or options for full simulations.  For example, all stars are automatically set to being sinks.  Therefore it is not recommended for long-term use other than simple plotting (e.g. for debugging or developing/transfering ICs).  
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\subsection{SEREN format}
+The SEREN format is a legacy format from the original SEREN code which is currently the main format for use in GANDALF.  There are two different version of the SEREN format; 
+\begin{itemize}
+\item \var{seren\_form} or \var{sf} : `Formatted' (i.e. ASCII)
+\item \var{seren\_unform} or \var{su} : `Unformatted' (i.e. binary)
+\end{itemize}
+The format consists of a large multi-part header with different data types, including information about the units used as well as the particle data and star/sink data arrays.  The full header array sizes are given below.  For any fields not given below, assume the quantity to be unused and therefore defaulted to zero in the header.  The header reads as follows : 
+\begin{itemize}
+\item \var{format\_id} : A string identifying the exact format type (for verification)
+\item \var{pr} : Floating point precision (4 = single precision, 8 = double precision)
+\item \var{ndim} : Spatial dimensionality
+\item \var{vdim} : Velocity dimensionality
+\item \var{bdim} : Magnetic field dimensionality
+\item \var{idata[50]} : Integer variables
+\begin{itemize}
+\item idata[0] = \var{Nhydro} : No. of hydro particles (SEREN = \var{pgas})
+\item idata[1] = \var{Nstar}  : No. of star/sink particles (SEREN = \var{stot})
+\item idata[2] = N/A in GANDALF (SEREN = \var{pboundary} : No. of static boundary particles)
+\item idata[3] = N/A in GANDALF (SEREN = \var{picm} : No. of `inter-cloud medium' particles)
+\item idata[4] = \var{Ngas}  : No. of self-gravitating gas particles (SEREN = \var{pgas})
+\item idata[5] = \var{Ncdm}  : No. of self-gravitating cdm particles (SEREN = \var{pcdm})
+\item idata[6] = \var{Ndust} : No. of dust particles (SEREN = \var{pdust})
+\item idata[7] = N/A in GANDALF (SEREN = \var{pion} : No. of  particles)
+\item idata[19] = \var{nunit} : No. of unit variables in header
+\item idata[20] = \var{ndata} : No. of data arrays in snapshot file
+\item idata[29] = N/A in GANDALF (SEREN = \var{dmdt\_range} : No. of accretion rate variables in sink array)
+\item idata[30] = N/A in GANDALF (SEREN = \var{pgas\_orig} : Original no. of gas particles)
+\item idata[31] = N/A in GANDALF (SEREN = \var{pp\_gather} : Average/exact no. of neighbours)
+\item idata[39] = N/A in GANDALF (SEREN = \var{rank} : MPI process that created the file)
+\item idata[40] = N/A in GANDALF (SEREN = \var{Nmpi} : Total no. of MPI processes)
+\end{itemize}
+
+\item \var{ilpdata[50]} : Long integer variables
+\begin{itemize}
+\item ilpdata[0] = \var{Noutsnap} : No. of snapshot files created (SEREN = \var{snapshot})
+\item ilpdata[1] = \var{Nsteps} : No. of complete integration steps (SEREN = \var{nsteps})
+\item ilpdata[2] = N/A in GANDALF (SEREN = \var{ntempnext} : Integer time for next temporary snapshot)
+\item ilpdata[3] = N/A in GANDALF (SEREN = \var{ndiagnext} : Integer time for next diagnostic output)
+\item ilpdata[4] = N/A in GANDALF (SEREN = \var{nsnapnext} : Integer time for next integer snapshot)
+\item ilpdata[5] = N/A in GANDALF (SEREN = \var{nsinknext} : Integer time for next sink output)
+\item ilpdata[10] = \var{Noutlitesnap} : No. of lite snapshots (N/A in SEREN)
+\end{itemize}
+\item \var{rdata[50]} : Standard precision floating-point variables
+\begin{itemize}
+\item rdata[0] = \var{h\_fac} : `No. of particles per smoothing length' factor in h-rho iteration (SEREN = \var{h\_fac})
+\item rdata[1] = N/A in GANDALF (SEREN = \var{gamma} : Ratio of specific heats for gas)
+\item rdata[2] = N/A in GANDALF (SEREN = \var{mu\_bar} : Mean gas particle mass (in units of $m_h$))
+\item rdata[3] = N/A in GANDALF (SEREN = \var{hmin} : Minimum smoothing length)
+\end{itemize}
+\item \var{ddata[50]} : Double precision floating-point variables
+\begin{itemize}
+\item ddata[0] = \var{t} : Simulation time when snapshot was created (SEREN = \var{time})
+\item ddata[1] = \var{tsnaplast} : Time that previous snapshot was created (SEREN = \var{lastsnap})
+\item ddata[2] = \var{mmean} : Average mass of gas particles (SEREN = \var{mgas\_orig})
+\item ddata[10] = \var{tlitesnaplast} : Time when previous lite snapshot was created (N/A in SEREN)
+\end{itemize}
+\item \var{unit\_data[nunit]} : Strings identifying the chosen input unit for each physical quantity.  Note that this does not necessarily have to be the same as the chosen output units (See Section \ref{S:UNITS}).
+\item \var{data\_id[ndata]} : Strings identifying the physical quantities contained in the particle arrays that follow the header.
+\begin{itemize}
+\item \var{porig} : Original (unique) particle ids
+\item \var{r} : Hydro particle positions
+\item \var{m} : Hydro particle masses
+\item \var{h} : Hydro particle smoothing lengths
+\item \var{v} : Hydro particle velocities
+\item \var{rho} : Hydro particle densities
+\item \var{u} : Hydro particle specific internal energies
+\item \var{sink\_v1} : Star/sink particle data (N.B. a more complicated data structure due to the various star/sink properties in SEREN; recommended to look at the source code for more info)
+\end{itemize}
+\item \var{typedata} : Information on each particle array, such as the variable type, unit type, etc..  For the data held in array \var{idata}, the data information in each field is : 
+\begin{itemize}
+\item typedata[idata][0] : Dimensionality of array (i.e. 1 to ndim)
+\item typedata[idata][1] : i.d. of first particle in array in Fortran (i.e. normally 1 as opposed to 0 in C/C++)
+\item typedata[idata][2] : i.d. of last particle in array in Fortran (i.e. normally Nhydro as opposed to Nhydro - 1 as in C/C++)
+\item typedata[idata][3] : Variable type of array (1 : bool; 2 : integer; 3 : long integer; 4 : float;  5 : double)
+\item typedata[idata][4] : Physical unit of array (same i.d. as \var{unit\_data} array index plus one due to Fortran array convention)
+\end{itemize}
+\end{itemize}
+The headers, in particular \var{data\_id} and \var{typedata}, contain all the information about what type of data is contained in the particle arrays.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\subsection{SEREN `lite' format}
+The SEREN `lite' format is a minimised version of the SEREN format designed for creating many snapshots for movies.  It has various restrictions which do NOT make it useful for other forms of analysis or restarting simulation, such as : 
+\begin{itemize}
+\item No velocity information (only contains position, mass, smoothing length, density and specific internal energy)
+\item Hard-wired to single precision to obtain the smallest file-size in binary format
+\end{itemize}
+It can used simulataneously with the other more complete formats, which can instead be used for the analysis or for restarting.  There are three parameters which control the usage of the lite formats, \var{litesnap}, \var{dt\_litesnap} and \var{tlitesnapfirst} (See parameter tables)
+
+
+\newpage
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 \section{Generating initial conditions}
 
 There are three main ways of generating initial conditions in GANDALF.
@@ -1678,7 +1806,7 @@ If a class which does not know the exact particle data structure wishes to acces
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Units and scaling}
+\section{Units and scaling} \label{S:UNITS}
 In GANDALF, all physical calculations are done in dimensionless units for precision and accuracy reasons.  However, the scaling factors for converting the initial conditions and parameters (in physical units) are calculated automatically, once the user has specified the units of the quantities in the parameters file.
 
 
