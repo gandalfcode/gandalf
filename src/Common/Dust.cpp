@@ -542,12 +542,11 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     return;
   }
 
-  // Update ghost tree smoothing length values here
   _tree->UpdateAllHmaxValues(sphdata);
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,nbody,sph,sphdata)
+#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -679,7 +678,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     }
     //===============================================================================================
 
-#pragma omp for schedule(static)
+#pragma omp for schedule(guided)
     for (i=0; i<Nhydro; i++) sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
   }
 
