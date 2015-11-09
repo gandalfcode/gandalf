@@ -1,4 +1,5 @@
 \documentclass[a4paper]{article}
+\usepackage{amsmath}
 \usepackage{txfonts}
 
 \usepackage{graphicx}
@@ -1840,6 +1841,42 @@ You might notice that the matplotlib window freezes when you are running a simul
 
 \newpage
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Dust Dynamics}
+
+GANDALF now includes two implementations of combined dust-gas dynamics. The equations of motion for the gas and dust are
+\begin{align}
+\rho_g \frac{\mathrm{D}_g \vec{v}_g}{\mathrm{D} t} &= -\nabla P  + \rho_g \vec{a}_{g, \mathrm{ext}} 
+                                                     + K (\vec{v}_d - \vec{v}_g)  \\
+\rho_d \frac{\mathrm{D}_d \vec{v}_d}{\mathrm{D} t} &= \rho_d \vec{a}_{d, \mathrm{ext}} 
+                                                     - K (\vec{v}_d - \vec{v}_g),
+\end{align}
+where $\frac{\mathrm{D}_g}{\mathrm{D} t}$ is the Lagrangian derivative with respect to the gas. The external acclerations are included to take into account additional forces, which may either be the same for both the gas and dust particles (such as gravity) or affect just one species (e.g. viscosity). These equations can be re-written in terms of an equation of motion for the relative and barocentric velocities, $\vec{v} = (\rho_g \vec{v}_g + \rho_d \vec{v}_d)/(\rho_g + \rho_d)$ and $\Delta \vec{v} = \vec{v}_d - \vec{v}_g$, (Youdin \& Goodmann, 2005; Laibe \& Price, 2014; Lor\'en-Aguilar \& Bate, 2015),
+\begin{align}
+\frac{\mathrm{D} \vec{v}}{\mathrm{D} t} &= \frac{-\nabla P + \rho_g \vec{a}_{g, \mathrm{ext}} + \rho_d \vec{a}_{d, \mathrm{ext}}}{\rho_g + \rho_d} - \vec{F} \\
+\frac{\mathrm{D} \Delta \vec{v}}{\mathrm{D} t} &= -  \frac{\Delta \vec{v}}{t_s}+  \vec{a}_{d, \mathrm{ext}} + \frac{\nabla P}{\rho_g}  - \vec{a}_{g, \mathrm{ext}} - (\Delta \vec{v} \cdot \nabla) \vec{v} - \vec{G},
+\end{align}
+where $t_s = \rho_g \rho_d / K(\rho_g + \rho_d)$. The functions $\vec{F}$ and $\vec{G}$ are
+\begin{align}
+\vec{F} &= \frac{1}{\rho_d + \rho_g} \nabla \cdot \left(\frac{\rho_d \rho_d}{\rho_d + \rho_d} \Delta \vec{v} \Delta \vec{v} \right) \\
+\vec{G} &= \frac{1}{\rho_d + \rho_g} \left[ 
+ \rho_g \Delta \vec{v} \cdot \nabla \left(\frac{\rho_g}{\rho_g + \rho_d} \Delta \vec{v} \right) - 
+ \rho_d \Delta \vec{v} \cdot \nabla \left(\frac{\rho_d}{\rho_g + \rho_d} \Delta \vec{v} \right) \right].
+\end{align}
+These two formulations naturally lead to two different numerical approaches (in the same spirit as Eulerian vs. Lagrangian hydro codes), with equations (1) and (2) naturally represented by two different particle types representing fluid (gas) particles and dust particles. Equations (3) -- (6) are more naturally represented as a single fluid that moves with the barycentric velocity, on top of which the dust fraction is advected relative to the barycentre at velocity $\Delta \vec{v}$ (see Laibe \& Price 2014 for more details). 
+
+In GANDALF we solve directly equations (1) and (2) using a multi-fluid approach, using the semi-implicit time-stepping following Booth, Sijacki \& Clarke (2015) and Lor\'en-Aguilar \& Bate (2015). In these approaches we use of $\langle \Delta v \rangle$, the average of the relative velocity the time-step $\left[ t,t + \Delta t\right]$. This is found by solving equation (4) under the approximation that the densities, accelerations and $t_s$ are constant in both time and space. We find 
+\begin{equation}
+\langle \Delta \vec{v} \rangle \frac{\Delta t}{t_s} = \Delta \vec{v}(t+\Delta t) \left(1 - \exp(-\Delta t/ t_s\right) -
+\left(\vec{a}_{d, \mathrm{ext}} + \frac{\nabla P}{\rho_g}  - \vec{a}_{g, \mathrm{ext}}\right)\left[(\Delta t + t_s)\left(1 - \exp(-\Delta t/ t_s)\right) - \Delta t \right],
+\end{equation}
+where $ \Delta \vec{v}(t+\Delta t) = \Delta \vec{v} (t) + \left(\vec{a}_{d, \mathrm{ext}} + \nabla P/\rho_g  - \vec{a}_{g, \mathrm{ext}}\right) \Delta t$. From equation (7) the gas and dust accelerations can be found to be
+\begin{align}
+\vec{a}_{g,\mathrm{drag}} &= + \frac{\rho_d}{\rho_d + \rho_g} \frac{\langle \Delta \vec{v} \rangle}{t_s} \\
+\vec{a}_{d,\mathrm{drag}} &= - \frac{\rho_g}{\rho_d + \rho_g} \frac{\langle \Delta \vec{v} \rangle}{t_s}.
+\end{align}
+Equations (7) -- (9) make up the basis for the force evaluation used in GANDALF. 
+\newpage
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Developer notes}

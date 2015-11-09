@@ -860,7 +860,9 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   parti.div_v *= parti.h / parti.h_dust ;
   parti.sound *= parti.h / parti.h_dust ;
 
-
+  // Predict the relative velocity
+  for (k=0; k<ndim; k++)
+    dv[k] += da[k] * parti.dt ;
 
   //===============================================================================================
   // Compute the drag acceleration
@@ -879,11 +881,9 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 	Lambda = (1 + tau) * Xi - 1;
 	Xi /= t_s ;
   }
- // Xi = 1/t_s ;
- // Lambda = 0 ;
 
-  for (k=0; k<ndim;k++)
-	parti.a_dust[k] = - dv[k] * Xi  + da[k] * Lambda ;
+  for (k=0; k<ndim; k++)
+    parti.a_dust[k] = - dv[k] * Xi  + da[k] * Lambda ;
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;

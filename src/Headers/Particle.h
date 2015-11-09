@@ -46,7 +46,6 @@ static const int parttype_converter[] = { gas, icm, cdm, dust } ;
 static const int parttype_reverse_converter[] =
 { gas_type, icm_type, gas_type, cdm_type, dust_type} ;
 
-
 typedef bool Typemask[Ntypes];
 
 //static Typemask truemask = {true};
