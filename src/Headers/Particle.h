@@ -41,10 +41,6 @@ enum ptype{gas, icm, boundary, cdm, dust, dead,
            Nhydrotypes};
 
 
-enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
-             constant_temp, radws, Nhydroeos};
-
-
 typedef bool Typemask[Nhydrotypes];
 
 //static Typemask truemask = {true};

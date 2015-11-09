@@ -47,6 +47,10 @@ template <int ndim>
 class EOS;
 
 
+enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
+             constant_temp, radws, Nhydroeos};
+
+
 
 //=================================================================================================
 //  Class EOS

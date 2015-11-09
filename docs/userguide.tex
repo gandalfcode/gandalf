@@ -1626,15 +1626,15 @@ The \var{Simulation} class is the class that contains every other class, includi
 \item \var{AlgorithmSimulation} - Child class containing specific algorithmic implementation.  For example, `grad-h' SPH simulations are run by the \var{GradhSphSimulation} class; pure N-body simulations are run by the \var{NbodySimulation} class, etc..
 \end{itemize}
 
-\subsubsection{Sph class}
+\subsubsection{Hydrodynamics class}
 
-\subsubsection{SphKernel class}
+\subsubsection{SmoothingKernel class}
 
-\subsubsection{SphIntegration class}
-
-\subsubsection{SphNeighbourSearch class}
+\subsubsection{NeighbourSearch class}
 
 \subsubsection{EOS class}
+
+\subsubsection{EnergyEquation class}
 
 \subsubsection{Nbody class}
 
@@ -1651,7 +1651,7 @@ The simplest case of using templates in GANDALF is for dimensionality.  For almo
 Throughout the code, the variables that are used as template parameters are :
 \begin{itemize}
 \item \var{ndim} : Number of dimensions
-\item \var{SphKernel} : SPH kernel function used
+\item \var{Kernel} : Smoothing kernel function used
 \item \var{ParticleType} : Particle data structure for employed hydrodynamics method
 \item \var{CellType} : Radiation transport tree cell-type, depending on employed RT method
 \end{itemize}
@@ -1674,6 +1674,90 @@ The various particle data structures are defined in the header file \var{`SphPar
 If a class which does not know the exact particle data structure wishes to access an array, or a single array element.
 
 
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Units and scaling}
+In GANDALF, all physical calculations are done in dimensionless units for precision and accuracy reasons.  However, the scaling factors for converting the initial conditions and parameters (in physical units) are calculated automatically, once the user has specified the units of the quantities in the parameters file.
+
+
+\subsection{Calculating scaling factors}
+Most physical quantities in GANDALF are some combination of the three basic physical unit types, length, mass and time.  In principle, we are free to choose any scaling factor in order to convert to dimensionless units
+\begin{equation}
+r' = \frac{r}{R_0} \;\;\;\;\;\;\;\;
+m' = \frac{m}{M_0} \;\;\;\;\;\;\;\;
+t' = \frac{t}{T_0}
+\end{equation}
+where $r, m, t$ are the physical quantities, $r', m', t'$ are the dimensionless analogues and $R_0, M_0, T_0$ are the scaling factors.  The internal scaling factors for most quantities is some combination of the scaling factors of these three basic quantities.  For example, the scaling factor for the dimensionless velocity, $v' = v/V_0$ is equal to $V_0 = R_0/T_0$.
+
+
+\subsection{Scaling factors for \var{G=1}}
+If we take some equation using \var{G} (e.g. Newton's law of gravity) and then substitute in the scaling factors and rearrange, we obtain : 
+\begin{eqnarray}
+a = \frac{G\,m}{r^2} \;\;\;\; \Rightarrow \;\;\;\;
+\frac{R_0}{T_0^2}\,a' = \frac{G\,M_0\,m'}{{r'}^2\,R_0^2} \;\;\;\; \Rightarrow \;\;\;\; a' = \underbrace{\left\{\frac{G\,M_0\,T_0^2}{R_0^3} \right\}}_{G'}\,\frac{m'}{{r'}^2}\,.
+\end{eqnarray}
+The final dimensionless equation has the same form as the original equation, with all constants and scaling factors grouped together in the `dimensionless gravitational constant', \var{G'}.  In N-body codes, it is common to adjust one of the scaling factors in order to set this new constant equal to unity.  By convention, it is the time scaling factor that is adjusted : 
+\begin{eqnarray}
+\frac{G\,M_0\,T_0^2}{R_0^3} = 1 \;\;\;\; \Rightarrow \;\;\;\;T_0 = \left( \frac{R_0^3}{G\,M_0} \right)^{1/2}
+\end{eqnarray}
+For example, typical N-body units (at least in star cluser/formation simulations) of $R_0 = 1\,{\rm pc}$ and $M_0 = 1\,{\rm M}_{\odot}$ give a time scaling factor of $T_0 = 14.91\,{\rm Myr}$.  It is important to realise that this then has a knock-on effect on any other physical quantity that contains the dimensions of time.  For example, the unit of velocity becomes $V_0 = R_0/T_0 = 0.065\,{\rm km\,s^{-1}}$.
+
+
+\subsection{Temperature scaling factor}
+In thermodynamics, one additional unit that is often used (more often in the output rather than in internal quantities) is the thermodynamic temperature.  This quantity represents an additional unit that cannot be represented in any combination of length, mass and time.  The conversion between the three principle quantities is achieved via the Boltzmann constant.  Just as with setting $G = 1$, we can also combine and convert quantities involving temperature to an appropriate dimensionless unit, $T' = T/\theta_0$, by effectively setting the quantity $k_b/m_h$ equal to unity, i.e.
+\begin{equation}
+c^2 = \gamma \frac{k_b\,T}{\bar{m}} \;\;\;\; \Rightarrow \;\;\;\;
+V_0^2\,{c'}^2 = \gamma\,\frac{k_b\,\theta_0\,T'}{m_h\,\bar{\mu}}
+\;\;\;\; \Rightarrow \;\;\;\;
+{c'}^2 = \gamma \; \underbrace{ \left\{ \frac{k_b\,\theta_0}{m_h\, V_0^2} \right\} }_{1} \; \frac{T'}{\bar{\mu}}
+\end{equation}
+\begin{equation}
+\frac{k_b\,\theta_0}{m_h\, V_0^2} = 1 \;\;\;\; \Rightarrow \;\;\;\; \theta_0 = V_0^2\,\frac{m_h}{k_b}
+\end{equation}
+
+
+
+
+\subsection{Computing scaling variables in GANDALF}
+For consistency, GANDALF computes all scaling variables internally in SI units.  However, this is not useful for astrophysical applications where the natural units to choose may be parsecs or megayears.  Therefore, the internal scaling variables are split into two parts for convenience in chosing an appropriate.  For a given unit \var{X}, the scaling factor is split into $X_0 = X_{\rm outscale} \, X_{\rm outSI}$, where
+\begin{itemize}
+\item $X_{\rm outscale}$ : scale factor to convert $X'$ to $X$ in the user-requested units;
+\item $X_{\rm outSI}$ : the requested unit in SI units.
+\end{itemize}
+To convert from the code units to the user-requested units, $X_{\rm user} = X_{\rm outscale}\,X'$.  Alternatively, if you wish to convert directly to SI units, then you must also multiply by $X_{\rm outSI}$, i.e. $X_{\rm user} = X_{\rm outscale}\,X_{\rm outSI}\,X'$.  One alternative possibility is if the user wishes to convert from code units to c.g.s. units; in which case, they must use $X_{\rm outcgs}$ in place of $X_{\rm outSI}$, i.e. $X_{\rm user} = X_{\rm outscale}\,X_{\rm outcgs}\,X'$
+
+\subsection{Converting initial conditions to code units}
+Converting from physical units to code units (e.g. when setting up initial conditions) is trivial once the scaling factors have been computed.  Assuming the initial conditions for all variables are in the same units as specified in the parameters file, then we must simply divide by the $X_{\rm outscale}$, i.e.
+\begin{equation}
+X' = \frac{X_{\rm user}}{X_{\rm outscale}}\,.
+\end{equation}
+If the variable (or parameter) is in either SI or cgs units, then they can be converted directly also using the SI or cgs scaling factors.  For example, to convert a cgs quantity to code units, 
+\begin{equation}
+X' = \frac{X_{\rm user}}{X_{\rm outscale}\,X_{\rm outcgs}}\,.
+\end{equation}
+
+Inside the code, each unit is its own separate class defined in the src/Headers/SimUnits.h and src/Common/SimUnits.cpp files.  All units are then stored in a single container class, called `SimUnits'.  This is then passed around the simulation as an object with the name \var{simunits}.  The object name for each individual unit itself is usually a single character (e.g. \var{r} for length, \var{m} for mass, \var{t} for time, etc..  See the src/Headers/SimUnits.h files for a full list).  For example, the following line could be used to convert the particle mass from physical (user) units to code units,  \\
+\newline
+\noindent \var{part.m /= simunits.m.outscale;} \\
+
+\noindent For converting from say cgs units to code units, we could write \\
+\newline
+\noindent \var{part.m /= (simunits.m.outscale*simunits.m.outcgs);} \\
+
+
+
+
+
+\subsection{Input and output units}
+GANDALF does support the ability to read in initial conditions in a different set of units to use specified in the parameters file.  At the moment, this is only implemented in the \var{sf/seren\_formatted} and \var{su/seren\_unformatted}.  In practice, this is implemented by noting that the input and output scaling factors should be exacty the same, i.e.
+\begin{equation}
+X_0 = X_{\rm outscale} \, X_{\rm outSI} = X_{\rm inscale} \, X_{\rm inSI}
+\end{equation}
+
+
+
 
 \newpage
 
@@ -1685,7 +1769,7 @@ If a class which does not know the exact particle data structure wishes to acces
 List of known bugs as of version \VERNO.
 
 \begin{itemize}
-\item Godunov SPH and Saitoh \& Makino (2012) SPH have not been fully updated since recent code refactoring.
+\item Saitoh \& Makino (2012) SPH has not been fully updated since recent code refactoring.
 \item For very short simulations, plots may not be updated correctly since the simulation process finishes before the plotting process has recieved its commands.
 \item If running a simulation in interactive mode and a different simulation is loaded into memory, then it is no longer possible to continue running that simulation.
 \item Rendered images are technically not done correct if smoothing lengths are smaller than the grid size (which can often be the case, although the images are fine for viewing/movie purposes).
@@ -1704,7 +1788,6 @@ List of possible new features for future versions.
 \item Include analysis routines for python for N-body specific statistics, e.g. Q-parameter, $\lambda$-parameter, etc..
 \item Strict energy-error checking for N-body simulations
 \item More sanity-checking, error-trapping and assert statements (to prevent crashing on erroneous input and to help debugging purposes).
-\item Update Godunov SPH to 2nd-order using slope limiters.
 \end{itemize}
 
 

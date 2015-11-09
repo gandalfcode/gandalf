@@ -70,7 +70,7 @@ MeshlessFVBruteForce<ndim,ParticleType>::~MeshlessFVBruteForce()
 
 
 //=================================================================================================
-//  MeshlessFVBruteForce::UpdateAllSphProperties
+//  MeshlessFVBruteForce::UpdateAllProperties
 /// Routine for computing SPH properties (smoothing lengths, densities and forces) for all active
 /// SPH particle using neighbour lists generated using brute force (i.e. direct summation).
 //=================================================================================================
@@ -98,8 +98,8 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
   //timing->StartTimingSection("MFV_COMPUTE_H");
 
   // Store masses in separate array
-  gpot = new FLOAT[Ntot];
-  m = new FLOAT[Ntot];
+  gpot     = new FLOAT[Ntot];
+  m        = new FLOAT[Ntot];
   neiblist = new int[Ntot];
   for (i=0; i<Ntot; i++) {
     if (mfvdata[i].itype == dead) continue;
@@ -131,12 +131,11 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
         for (k=0; k<ndim; k++) dr[k] = mfvdata[j].r[k] - rp[k];
-        drsqd[jj] = DotProduct(dr,dr,ndim);
+        drsqd[jj] = DotProduct(dr, dr, ndim);
       }
       //-------------------------------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      //okflag =
       mfv->ComputeH(i, Nneib, big_number, m, mu, drsqd, gpot, mfvdata[i], nbody);
 
     }
@@ -160,17 +159,15 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
 
 //=================================================================================================
 //  MeshlessFVBruteForceSearch::UpdateGradientMatrices
-/// Routine for computing SPH properties (smoothing lengths, densities and
-/// forces) for all active SPH particle using neighbour lists generated
-/// using brute force (i.e. direct summation).
+/// ...
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  MeshlessFVParticle<ndim> *mfvdata,   ///< [inout] Pointer to SPH ptcl array
-  MeshlessFV<ndim> *mfv,               ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+ (int Nhydro,                            ///< [in] No. of hydro particles
+  int Ntot,                              ///< [in] No. of hydro + ghost particles
+  MeshlessFVParticle<ndim> *mfvdata,     ///< [inout] Pointer to hydro ptcl array
+  MeshlessFV<ndim> *mfv,                 ///< [inout] Pointer to MeshlessFV object
+  Nbody<ndim> *nbody)                    ///< [in] Pointer to N-body object
 {
   debug2("[MeshlessFVBruteForce::UpdateGradientMatrices]");
   timing->StartTimingSection("MFV_UPDATE_GRADIENTS");
@@ -215,14 +212,13 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
       Nneib = 0;
 
 
-      // Compute distances and the reciprical between the current particle
-      // and all neighbours here
+      // Compute distances and the reciprical between the current particle and all neighbours here
       //-------------------------------------------------------------------------------------------
       for (j=0; j<mfv->Nhydro + mfv->NPeriodicGhost; j++) {
         if (mfvdata[j].itype == dead) continue;
         hrangesqdj = mfvdata[j].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[j].h,2);
         for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
-        drsqd = DotProduct(draux,draux,ndim);
+        drsqd = DotProduct(draux, draux, ndim);
 
         if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j) {
           neiblist[Nneib] = j;
@@ -267,12 +263,12 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
- (const int Nhydro,                    ///< [in] No. of SPH particles
-  const int Ntot,                      ///< [in] No. of SPH + ghost particles
-  const FLOAT timestep,                ///< [in] ..
-  MeshlessFVParticle<ndim> *mfvdata,   ///< [inout] Pointer to SPH ptcl array
-  MeshlessFV<ndim> *mfv,               ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+ (const int Nhydro,                        ///< [in] No. of SPH particles
+  const int Ntot,                          ///< [in] No. of SPH + ghost particles
+  const FLOAT timestep,                    ///< [in] ..
+  MeshlessFVParticle<ndim> *mfvdata,       ///< [inout] Pointer to SPH ptcl array
+  MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
   debug2("[MeshlessFVBruteForce::UpdateGodunovFluxes]");
   timing->StartTimingSection("MFV_UPDATE_FLUXES");
@@ -339,16 +335,15 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
         // Skip if (i) neighbour is a dead (e.g. accreted) particle (ii) same i.d. as current
         // active particle, (iii) neighbour is on lower timestep level (i.e. timestep is shorter),
-        // or (iv) neighbour is on same level as current particle but has larger id. value
+        // or (iv) neighbour is on same level as current particle but has smaller id. value
         // (to only calculate each pair once).
-        if (neibdata[j].itype == dead || j == i || mfvdata[i].level < neibdata[j].level ||
-            (j < i && mfvdata[i].level == neibdata[j].level)) continue;
-        //assert(mfvdata[i].nstep <= neibdata[j].nstep);
-        //assert(mfvdata[i].level >= neibdata[j].level);
+        if (neibdata[j].itype == dead || j == i ||
+            (mfvdata[i].level < neibdata[j].level) ||
+            (neibdata[j].iorig < i && mfvdata[i].level == neibdata[j].level)) continue;
 
         hrangesqdj = mfvdata[j].hrangesqd;
         for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
-        drsqd = DotProduct(draux,draux,ndim);
+        drsqd = DotProduct(draux, draux, ndim);
 
         // Only include neighbours which are within either the gather or scatter kernel, and
         // are either on a longer timestep or with a larger i.d. (to prevent repeating each face)
@@ -370,7 +365,6 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       // Accumulate fluxes
       for (int jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
-        //for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[j].dQdt[k]*(FLOAT) mfvdata[i].nstep;
         for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[j].dQ[k];
         for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibdata[j].rdmdt[k];
       }
@@ -385,6 +379,11 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       for (i=0; i<Nhydro; i++) {
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
+      }
+      for (j=Nhydro; j<Nhydro+mfv->NPeriodicGhost; j++) {
+        i = mfvdata[j].iorig;
+        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[j][k];
+        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[j][k];
       }
     }
 
@@ -449,7 +448,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllGravForces
     partdata[i].levelneib = 0;
 
     // Add self-contribution to gravitational potential
-    partdata[i].gpot += partdata[i].m*partdata[i].invh*kernp->wpot(0.0);
+    partdata[i].gpot += partdata[i].m*partdata[i].invh*kernp->wpot((FLOAT) 0.0);
 
     // Determine interaction list (to ensure we don't compute pair-wise
     // forces twice)

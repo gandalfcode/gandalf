@@ -423,6 +423,7 @@ void Ic<ndim>::ShockTube(void)
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.v[0] = vfluid1[0];
+        part.rho = rhofluid1;
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
         if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
@@ -440,6 +441,7 @@ void Ic<ndim>::ShockTube(void)
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+        part.rho = rhofluid2;
         part.v[0] = vfluid2[0];
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);

@@ -195,7 +195,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sinks->smooth_accrete_dt   = floatparams["smooth_accrete_dt"];
   sinks->sink_radius_mode    = stringparams["sink_radius_mode"];
   sinks->rho_sink            = floatparams["rho_sink"];
-  sinks->rho_sink            /= simunits.rho.outscale/simunits.rho.outcgs;
+  sinks->rho_sink            /= (simunits.rho.outscale*simunits.rho.outcgs);
 
   if (sinks->sink_radius_mode == "fixed") {
     sinks->sink_radius = floatparams["sink_radius"]/simunits.r.outscale;

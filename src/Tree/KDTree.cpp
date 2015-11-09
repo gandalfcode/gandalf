@@ -969,7 +969,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
   debug2("[KDTree::ExtrapolateCellProperties]");
 
 
-  // ...
+  // ..
   //-----------------------------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
 
@@ -1138,7 +1138,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters
 
   // If cell is not leaf, stock child cells
   //-----------------------------------------------------------------------------------------------
-  if (cell.level != ltot) {
+  if (cell.level != ltot && cell.c1 >= 0) {
 #if defined _OPENMP
     if (pow(2,cell.level) < Nthreads) {
 #pragma omp parallel for default(none) private(i) shared(cell) num_threads(2)
@@ -1165,7 +1165,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters
 
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
-  if (cell.level == ltot) {
+  if (cell.level < ltot) {
     cell.worktot = (FLOAT) 0.0;
     cc = cell.c1;
     ccc = cell.c2;

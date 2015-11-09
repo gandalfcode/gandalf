@@ -78,7 +78,7 @@ class NullPotential : public ExternalPotential<ndim>
 //=================================================================================================
 //  Class VerticalPotential
 /// \brief   Add simple constant gravitational field potential
-/// \details ...
+/// \details Add simple constant gravitational field potential
 /// \author  D. A. Hubber
 /// \date    14/03/2015
 //=================================================================================================
@@ -91,17 +91,17 @@ class VerticalPotential : public ExternalPotential<ndim>
     kgrav(_kgrav), avert(_avert), rzero(_rzero) {}
   ~VerticalPotential();
 
-  const int kgrav;                     ///< ..
-  const FLOAT avert;                  ///< ..
-  const FLOAT rzero;                  ///< ..
+  const int kgrav;                     ///< 'Direction' of grav. field
+  const FLOAT avert;                   ///< Size (plus sign) of grav. field
+  const FLOAT rzero;                   ///< 'Zero' -height of potential
 
 
   void AddExternalPotential
-   (FLOAT rp[ndim],                   ///< Position of particle
-    FLOAT vp[ndim],                   ///< Velocity of particle
-    FLOAT ap[ndim],                   ///< Acceleration of particle
-    FLOAT adotp[ndim],                ///< 'Jerk' of particle
-    FLOAT &potp)                      ///< Potential of particle
+   (FLOAT rp[ndim],                    ///< Position of particle
+    FLOAT vp[ndim],                    ///< Velocity of particle
+    FLOAT ap[ndim],                    ///< Acceleration of particle
+    FLOAT adotp[ndim],                 ///< 'Jerk' of particle
+    FLOAT &potp)                       ///< Potential of particle
   {
     ap[kgrav]    += avert;
     adotp[kgrav] += (FLOAT) 0.0;
