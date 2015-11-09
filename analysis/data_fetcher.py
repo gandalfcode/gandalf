@@ -33,7 +33,7 @@ function_fetchers = {}
 
 #------------------------------------------------------------------------------
 def _KnownQuantities():
-  '''Return the list of the quantities that we know'''
+  '''Return the list of the quantities that are defined'''
   return derived_fetchers.keys()+direct+function_fetchers.keys()
 
 #------------------------------------------------------------------------------
@@ -53,18 +53,34 @@ from formula_parser import evaluateStack, exprStack, varStack, pattern
 
 #------------------------------------------------------------------------------
 def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1, label=''):
-    '''Given a mathematical formula, build a data fetcher from it.
-The quantity is given a name, which can now be used in plots and in other 
-formulae.  When you construct a quantity, you can rely on one of the units we 
-provide, in which case you can just pass as the scaling_factor parameter the 
-name of the unit you want inside the SimUnits class. For example, if your unit 
-has dimensions of acceleration, you can pass 'a' as the scaling_factor 
-parameter. Doing this allows the unit system to work seamlessly when plotting 
-(i.e., you can specify the units you want the plot in).  Alternatively, you can 
-build your own unit passing a numerical value for the scaling_factor, 
-a unitname and a latex label.  In this case, however, no rescaling is possible, 
-as the unit system does not know how to rescale your unit.    
-'''
+    '''Create a new quantity that can be used for example for plots. This can be done both by 
+    giving a mathematical formula, or providing a user-defined function.
+    The quantity is given a name, which can now be used in plots and in other 
+    formulae.  When you construct a quantity, you can rely on one of the units we 
+    provide, in which case you can just pass as the scaling_factor parameter the 
+    name of the unit you want inside the SimUnits class. For example, if your unit 
+    has dimensions of acceleration, you can pass 'a' as the scaling_factor 
+    parameter. Doing this allows the unit system to work seamlessly when plotting 
+    (i.e., you can specify the units you want the plot in).  Alternatively, you can 
+    build your own unit passing a numerical value for the scaling_factor, 
+    a unitname and a latex label.  In this case, however, no rescaling is possible, 
+    as the unit system does not know how to rescale your unit.
+    Technically, this function works by constructing either a FormulaDataFetcher object
+    or a FunctionFetcher object.
+    
+    Args:
+        name (str): the name of the new quantity created
+        formula: either a string with the mathematical formula, or a user defined function
+                    that computes the desired quantity. See the userguide for further reference.
+        unitlabel (str): label of the unit (to use in plots in the axis names)
+        unitname (str): name of the unit (to be passed to functions that take a unit keyword)
+        scaling_factor: either a string with a quantity with the same dimension, or a float
+                            that will be used to multiply the result of the formula/function
+        label (str): latex label of the quantity to be used on the axis when plotting
+    
+    Returns:
+        the newly constructed object which represents the desired quantity
+    '''
     if isinstance(formula, basestring):
         fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor, label)
         derived_fetchers[name]=fetcher
@@ -76,9 +92,20 @@ as the unit system does not know how to rescale your unit.
   
 #------------------------------------------------------------------------------
 def CreateTimeData(name, function, *args, **kwargs):
-    '''Given a function that takes a snapshot as input, construct a 
-FunctionTimeDataFetcher object from it and register it.
-    Return the FunctionTimeDataFetcher newly constructed.'''
+    '''Given a function that takes a snapshot as input, construct a new
+    quantity which can be used to do time plots. Technically this implemented
+    by constructing a new object of type FunctionTimeDataFetcher. See userguide
+    for how to use this function.
+    
+    Args:
+        name (str): the name of the new quantity
+        function: a python function that computes the desidered quantity. See the
+                    userguide for examples.
+        **kwargs: extra keyword arguments will be passed to your function (see
+                    example of lagrangian_radii)
+                    
+    Return:
+        The FunctionTimeDataFetcher object newly constructed.'''
     fetcher = FunctionTimeDataFetcher(function, *args, **kwargs)
     time_fetchers [name] = fetcher
     return fetcher

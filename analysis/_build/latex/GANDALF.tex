@@ -260,15 +260,20 @@ contains data on the y-axis
 Thin wrapper around plot that sets overplot to True.  All the other
 arguments are the same. If autoscale is not explicitly set, it will be set
 to False to preserve the existing settings.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-x          : Quantity on the x-axis. Must be a string.
-y          : Quantity on the y-axis. Must be a string.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{x}} (\emph{str}) -- Quantity on the x-axis.
 
-\item[{Optional arguments:}] \leavevmode
-See plot function optional arguments
+\item {} 
+\textbf{\texttt{y}} (\emph{str}) -- Quantity on the y-axis.
 
-\end{description}
+\end{itemize}
+
+\item[{Keyword Arguments}] \leavevmode
+\textbf{See documentation of the plot function.}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -277,41 +282,55 @@ See plot function optional arguments
 \begin{fulllineitems}
 \phantomsection\label{index:facade.render}\pysiglinewithargsret{\code{facade.}\bfcode{render}}{\emph{x}, \emph{y}, \emph{render}, \emph{snap='current'}, \emph{sim='current'}, \emph{overplot=False}, \emph{autoscale=False}, \emph{autoscalerender=False}, \emph{coordlimits=None}, \emph{zslice=None}, \emph{xunit='default'}, \emph{yunit='default'}, \emph{renderunit='default'}, \emph{res=64}, \emph{interpolation='nearest'}, \emph{lognorm=False}, \emph{**kwargs}}{}
 Create a rendered plot from selected particle data.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-x          : Quantity on the x-axis. Must be a string.
-y          : Quantity on the y-axis. Must be a string.
-renderdata : Quantity to be rendered. Must be a string.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{x}} (\emph{str}) -- Quantity on the x-axis.
 
-\item[{Optional arguments:}] \leavevmode
-snap       : Number of the snapshot to plot. Defaults to `current'.
-sim        : Number of the simulation to plot. Defaults to `current'.
-overplot   : If True, overplots on the previous existing plot rather
-\begin{quote}
+\item {} 
+\textbf{\texttt{y}} (\emph{str}) -- Quantity on the y-axis.
 
+\item {} 
+\textbf{\texttt{render}} (\emph{str}) -- Quantity to be rendered.
+
+\end{itemize}
+
+\item[{Keyword Arguments}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{snap} --
+Number of the snapshot to plot. Defaults to `current'.
+
+\item {} 
+\textbf{sim} --
+Number of the simulation to plot. Defaults to `current'.
+
+\item {} 
+\textbf{overplot} (\emph{bool}) --
+If True, overplots on the previous existing plot rather
 than deleting it. Defaults to False.
-\end{quote}
-\begin{description}
-\item[{autoscale}] \leavevmode{[}If True, the coordinate limits of the plot are set{]}
+
+\item {} 
+\textbf{autoscale} --
+If True, the coordinate limits of the plot are set
 automatically.  Can also be set to `x' or `y' to specify
 that only one of the axis has to use autoscaling.
 If False (default), autoscaling is not used. On an axis that
 does not have autoscaling turned on, global limits are used
 if defined for the plotted quantity.
 
-\end{description}
+\item {} 
+\textbf{autoscalerender} --
+Same as the autoscale, but for the rendered quantity.
 
-autoscalerender : Same as the autoscale, but for the rendered quantity.
-coordlimits : Specify the coordinate limits for the plot. In order of
-\begin{quote}
-
+\item {} 
+\textbf{coordlimits} --
+Specify the coordinate limits for the plot. In order of
 precedence, the limits are set in this way:
-- What this argument specifies. The value must be an
-\begin{quote}
-
-iterable of 4 elements: (xmin, xmax, ymin, ymax).
-\end{quote}
 \begin{itemize}
+\item {} 
+What this argument specifies. The value must be an
+iterable of 4 elements: (xmin, xmax, ymin, ymax).
+
 \item {} 
 If this argument is None (default), global settings for
 the quantity are used.
@@ -321,41 +340,61 @@ If global settings for the quantity are not defined,
 the min and max of the data are used.
 
 \end{itemize}
-\end{quote}
-\begin{description}
-\item[{zslice}] \leavevmode{[}z-coordinate of the slice when doing a slice rendering.{]}
+
+\item {} 
+\textbf{zslice} (\emph{float}) --
+z coordinate of the slice when doing a slice rendering.
 Default is None, which produces a column-integrated plot.
 If you set this variable, instead a slice rendering will
 be done.
 
-\item[{xunit}] \leavevmode{[}Specify the unit to use for the plotting for the quantity{]}
+\item {} 
+\textbf{xunit} (\emph{str}) --
+Specify the unit to use for the plotting for the quantity
 on the x-axis.
 
-\item[{yunit}] \leavevmode{[}Specify the unit to use for the plotting for the quantity{]}
+\item {} 
+\textbf{yunit} (\emph{str}) --
+Specify the unit to use for the plotting for the quantity
 on the y-axis.
 
-\item[{renderunit}] \leavevmode{[}Specify the unit to use for the plotting for the rendered{]}
+\item {} 
+\textbf{renderunit} (\emph{str}) --
+Specify the unit to use for the plotting for the rendered
 quantity.
 
-\item[{res}] \leavevmode{[}Specify the resolution. Can be an integer number, in which{]}
+\item {} 
+\textbf{res} --
+Specify the resolution. Can be an integer number, in which
 case the same resolution will be used on the two axes, or a
 tuple (e.g., (xres, yres)) of two integer numbers, if you
 want to specify different resolutions on the two axes.
 
-\item[{interpolation}] \leavevmode{[}Specify the interpolation to use. Default is nearest,{]}
+\item {} 
+\textbf{interpolation} --
+Specify the interpolation to use. Default is nearest,
 which will show the pixels of the rendering grid. If one
 wants to smooth the image, bilinear or bicubic could be
 used. See pyplot documentation for the full list of
 possible values.
 
-\item[{lognorm}] \leavevmode{[}Boolean flag specifying wheter the colour scale should be{]}
+\item {} 
+\textbf{lognorm} (\emph{bool}) --
+Specify wheter the colour scale should be
 logarithmic (default: linear). If you want to customise the
 limits, use the vmin and vmax flags which are passed to
 matplotlib
 
-\end{description}
+\item {} 
+\textbf{**kwarg} --
+Extra keyword arguments will be passed to matplotlib.
 
-\end{description}
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+Data plotted. The member render\_data contains the actual image (2d array).
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -365,16 +404,23 @@ matplotlib
 \phantomsection\label{index:facade.addrender}\pysiglinewithargsret{\code{facade.}\bfcode{addrender}}{\emph{x}, \emph{y}, \emph{renderq}, \emph{**kwargs}}{}
 Thin wrapper around render that sets overplot to True.  If autoscale is
 not explicitly set, it will be set to False to preserve the existing settings.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-x          : Quantity on the x-axis. Must be a string.
-y          : Quantity on the y-axis. Must be a string.
-renderdata : Quantity to be rendered. Must be a string.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{x}} (\emph{str}) -- Quantity on the x-axis.
 
-\item[{Optional arguments:}] \leavevmode
-See render function optional arguments
+\item {} 
+\textbf{\texttt{y}} (\emph{str}) -- Quantity on the y-axis.
 
-\end{description}
+\item {} 
+\textbf{\texttt{renderq}} (\emph{str}) -- Quantity to be rendered.
+
+\end{itemize}
+
+\item[{Keyword Arguments}] \leavevmode
+\textbf{See documentation of the render function.}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -383,17 +429,26 @@ See render function optional arguments
 \begin{fulllineitems}
 \phantomsection\label{index:facade.renderslice}\pysiglinewithargsret{\code{facade.}\bfcode{renderslice}}{\emph{x}, \emph{y}, \emph{renderq}, \emph{zslice}, \emph{**kwargs}}{}
 Thin wrapper around render that does slice rendering.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-x          : Quantity on the x-axis. Must be a string.
-y          : Quantity on the y-axis. Must be a string.
-renderq    : Quantity to be rendered. Must be a string.
-zslice     : z-coordinate of the slice.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{x}} (\emph{str}) -- Quantity on the x-axis.
 
-\item[{Optional arguments:}] \leavevmode
-See render function optional arguments
+\item {} 
+\textbf{\texttt{y}} (\emph{str}) -- Quantity on the y-axis.
 
-\end{description}
+\item {} 
+\textbf{\texttt{renderq}} (\emph{str}) -- Quantity to be rendered.
+
+\item {} 
+\textbf{\texttt{zslice}} (\emph{float}) -- z-coordinate of the slice.
+
+\end{itemize}
+
+\item[{Keyword Arguments}] \leavevmode
+\textbf{See documentation of the render function.}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -403,17 +458,26 @@ See render function optional arguments
 \phantomsection\label{index:facade.addrenderslice}\pysiglinewithargsret{\code{facade.}\bfcode{addrenderslice}}{\emph{x}, \emph{y}, \emph{renderq}, \emph{zslice}, \emph{**kwargs}}{}
 Thin wrapper around renderslice that sets overplot to True.  If autoscale is
 not explicitly set, it will be set to False to preserve the existing settings.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-x          : Quantity on the x-axis. Must be a string.
-y          : Quantity on the y-axis. Must be a string.
-renderq    : Quantity to be rendered. Must be a string.
-zslice     : z-coordinate of the slice.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{x}} (\emph{str}) -- Quantity on the x-axis.
 
-\item[{Optional arguments:}] \leavevmode
-See render function optional arguments
+\item {} 
+\textbf{\texttt{y}} (\emph{str}) -- Quantity on the y-axis.
 
-\end{description}
+\item {} 
+\textbf{\texttt{renderq}} (\emph{str}) -- Quantity to be rendered.
+
+\item {} 
+\textbf{\texttt{zslice}} (\emph{float}) -- z-coordinate of the slice.
+
+\end{itemize}
+
+\item[{Keyword Arguments}] \leavevmode
+\textbf{See documentation of the render function.}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -424,37 +488,60 @@ See render function optional arguments
 Plots the analytical solution.  Reads the problem type from the `ic'
 parameter and plots the appropriate solution if implemented.  If no solution
 exists, then nothing is plotted.
-\begin{description}
-\item[{Optional arguments:}] \leavevmode
-x          : Quantity on the x-axis. Must be a string.
-y          : Quantity on the y-axis. Must be a string.
-snap       : Number of the snapshot to plot. Defaults to `current'.
-sim        : Number of the simulation to plot. Defaults to `current'.
-overplot   : If True, overplots on the previous existing plot rather
-\begin{quote}
+\begin{quote}\begin{description}
+\item[{Keyword Arguments}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{x} (\emph{str}) --
+Quantity on the x-axis.
 
+\item {} 
+\textbf{y} (\emph{str}) --
+Quantity on the y-axis.
+
+\item {} 
+\textbf{snap} --
+Number of the snapshot to plot. Defaults to `current'.
+
+\item {} 
+\textbf{sim} --
+Number of the simulation to plot. Defaults to `current'.
+
+\item {} 
+\textbf{overplot} (\emph{bool}) --
+If True, overplots on the previous existing plot rather
 than deleting it. Defaults to False.
-\end{quote}
-\begin{description}
-\item[{autoscale}] \leavevmode{[}If True, the limits of the plot are set{]}
+
+\item {} 
+\textbf{autoscale} --
+If True, the limits of the plot are set
 automatically.  Can also be set to `x' or `y' to specify
 that only one of the axis has to use autoscaling.
 If False (default), autoscaling is not used. On an axis that does
 not have autoscaling turned on, global limits are used
 if defined for the plotted quantity.
 
-\item[{xunit}] \leavevmode{[}Specify the unit to use for the plotting for the quantity{]}
+\item {} 
+\textbf{xunit} (\emph{str}) --
+Specify the unit to use for the plotting for the quantity
 on the x-axis.
 
-\item[{yunit}] \leavevmode{[}Specify the unit to use for the plotting for the quantity{]}
+\item {} 
+\textbf{yunit} (\emph{str}) --
+Specify the unit to use for the plotting for the quantity
 on the y-axis.
 
-\item[{time}] \leavevmode{[}Plots the analytical solution for the given time.{]}
+\item {} 
+\textbf{time} --
+Plots the analytical solution for the given time.
 If not set, then reads the time from the sim or snapshot
 
-\end{description}
+\end{itemize}
 
-\end{description}
+\item[{Returns}] \leavevmode
+Data plotted. The member x\_data contains data on the x-axis and the member y\_data
+contains data on the y-axis
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -464,66 +551,86 @@ If not set, then reads the time from the sim or snapshot
 \phantomsection\label{index:facade.time_plot}\pysiglinewithargsret{\code{facade.}\bfcode{time\_plot}}{\emph{x}, \emph{y}, \emph{sim='current'}, \emph{overplot=False}, \emph{autoscale=False}, \emph{xunit='default'}, \emph{yunit='default'}, \emph{xaxis='linear'}, \emph{yaxis='linear'}, \emph{idx=None}, \emph{idy=None}, \emph{id=None}, \emph{typex='default'}, \emph{typey='default'}, \emph{type='default'}, \emph{**kwargs}}{}
 Plot two quantities as evolved in time one versus the another.  Creates
 a new plotting window if one does not already exist.
-\begin{description}
-\item[{Required arguments:}] \leavevmode\begin{description}
-\item[{x}] \leavevmode{[}Quantity on x-axis. Must be a string. The quantity is looked{]}
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{x}} (\emph{str}) -- Quantity on x-axis. The quantity is looked
 up in the quantities defined as a function of time. If it is
 not found there, then we try to interpret it as a quantity
 defined for a particle. In this case, the user needs to pass
 either idx either id to specify which particle he wishes
 to look-up.
 
-\item[{y}] \leavevmode{[}Quantity on y-axis.  Must be a string. The interpretation is{]}
+\item {} 
+\textbf{\texttt{y}} (\emph{str}) -- Quantity on y-axis. The interpretation is
 like for the previous argument.
 
-\end{description}
+\end{itemize}
 
-\item[{Optional arguments:}] \leavevmode
-sim        : Number of the simulation to plot. Defaults to `current'.
-overplot   : If True, overplots on the previous existing plot rather
-\begin{quote}
+\item[{Keyword Arguments}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{sim} --
+Number of the simulation to plot. Defaults to `current'.
 
+\item {} 
+\textbf{overplot} (\emph{bool}) --
+If True, overplots on the previous existing plot rather
 than deleting it. Defaults to False.
-\end{quote}
-\begin{description}
-\item[{autoscale}] \leavevmode{[}If True, the limits of the plot are set{]}
+
+\item {} 
+\textbf{autoscale} --
+If True, the limits of the plot are set
 automatically.  Can also be set to `x' or `y' to specify
 that only one of the axis has to use autoscaling.
 If False (default), autoscaling is not used. On an axis that
 does not have autoscaling turned on, global limits are used
 if defined for the plotted quantity.
 
-\item[{xunit}] \leavevmode{[}Specify the unit to use for the plotting for the quantity{]}
+\item {} 
+\textbf{xunit} (\emph{str}) --
+Specify the unit to use for the plotting for the quantity
 on the x-axis.
 
-\item[{yunit}] \leavevmode{[}Specify the unit to use for the plotting for the quantity{]}
+\item {} 
+\textbf{yunit} (\emph{str}) --
+Specify the unit to use for the plotting for the quantity
 on the y-axis.
 
-\item[{idx}] \leavevmode{[}id of the particle to plot on the x-axis. Ignored if the{]}
+\item {} 
+\textbf{idx} (\emph{int}) --
+id of the particle to plot on the x-axis. Ignored if the
 quantity given (e.g., com\_x) does not depend on the id.
 
-\end{description}
+\item {} 
+\textbf{idy} (\emph{int}) --
+same as previous, on the y-axis.
 
-idy        : same as previous, on the y-axis.
-id         : same as the two previous ones. To be used when the id is the
-\begin{quote}
-
+\item {} 
+\textbf{id} (\emph{int}) --
+same as the two previous ones. To be used when the id is the
 same on both axes. If set, overwrites the passed idx and idy.
-\end{quote}
-\begin{description}
-\item[{typex}] \leavevmode{[}type of particles on the x-axis. Ignored if the quantity{]}
+
+\item {} 
+\textbf{typex} (\emph{str}) --
+type of particles on the x-axis. Ignored if the quantity
 given does not depend on it
 
-\end{description}
+\item {} 
+\textbf{typey} (\emph{str}) --
+as the previous one, on the y-axis.
 
-typey      : as the previous one, on the y-axis.
-type       : as the previous ones, for both axis at the same time. If set,
-\begin{quote}
-
+\item {} 
+\textbf{type} (\emph{str}) --
+as the previous ones, for both axis at the same time. If set,
 overwrites typex and typey.
-\end{quote}
 
-\end{description}
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+Data plotted. The member x\_data contains data on the x-axis and the member y\_data
+contains data on the y-axis
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -531,13 +638,13 @@ overwrites typex and typey.
 
 \begin{fulllineitems}
 \phantomsection\label{index:facade.savefig}\pysiglinewithargsret{\code{facade.}\bfcode{savefig}}{\emph{name}}{}
-Saves the current figure with the given name.  Note that matplotlib
+Save the current figure with the given name.  Note that matplotlib
 figures out automatically the type of the file from the extension.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-name       : filename (including extension)
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{name}} (\emph{str}) -- filename (including extension)
 
-\end{description}
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -566,21 +673,30 @@ Return the new snapshot, or None if the call failed.
 Jump to the given snapshot number of the current simulation.  Note that
 you can use standard Numpy index notation (e.g., -1 is the last snapshot).
 Return the new snapshot, or None if the call failed.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-snapno     : Snapshot number
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{snapno}} (\emph{int}) -- Snapshot number
 
-\end{description}
+\item[{Returns}] \leavevmode
+The snapshot object
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
 \index{block() (in module facade)}
 
 \begin{fulllineitems}
-\phantomsection\label{index:facade.block}\pysiglinewithargsret{\code{facade.}\bfcode{block}}{}{}
+\phantomsection\label{index:facade.block}\pysiglinewithargsret{\code{facade.}\bfcode{block}}{\emph{message='Press enter to quit...'}}{}
 Stops the execution flow until the user presses `enter'.
-Useful in scripts, allowing to see a plot (which gets closed
-when the execution flow reaches the end of the script
+Useful in scripts, allowing to see a plot (which otherwise gets closed
+as soon as the execution flow reaches the end of the script)
+\begin{quote}\begin{description}
+\item[{Keyword Arguments}] \leavevmode
+\textbf{message} (\emph{str}) --
+text to print before pausing
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -597,11 +713,11 @@ Print a list of the simulations to screen
 \begin{fulllineitems}
 \phantomsection\label{index:facade.snaps}\pysiglinewithargsret{\code{facade.}\bfcode{snaps}}{\emph{simno}}{}
 For the given simulation number, print a list of all the snapshots
-\begin{description}
-\item[{Required argument:}] \leavevmode
-simno      : Simulation number from which to print the snapshot list.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{simno}} (\emph{int}) -- Simulation number from which to print the snapshot list.
 
-\end{description}
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -610,12 +726,15 @@ simno      : Simulation number from which to print the snapshot list.
 \begin{fulllineitems}
 \phantomsection\label{index:facade.set_current_sim}\pysiglinewithargsret{\code{facade.}\bfcode{set\_current\_sim}}{\emph{simno}}{}
 Set the current simulation to the given number.
-Returns the newly set current simulation.
-\begin{description}
-\item[{Required argument:}] \leavevmode
-simno      : Simulation number
+\begin{quote}\begin{description}
+\item[{Keyword Arguments}] \leavevmode
+\textbf{simno} (\emph{int}) --
+Simulation number
 
-\end{description}
+\item[{Returns}] \leavevmode
+The newly set current simulation
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -624,29 +743,39 @@ simno      : Simulation number
 \begin{fulllineitems}
 \phantomsection\label{index:facade.limit}\pysiglinewithargsret{\code{facade.}\bfcode{limit}}{\emph{quantity}, \emph{min=None}, \emph{max=None}, \emph{auto=False}, \emph{window='current'}, \emph{subfigure='current'}}{}
 Set plot limits. Quantity is the quantity to limit.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-quantity   : Set limits of this variable. Must be a string.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{quantity}} (\emph{str}) -- Set limits of this variable.
 
-\item[{Optional arguments:}] \leavevmode
-min        : Minimum value of variable range.
-max        : Maximum value of variable range.
-auto       : If auto is set to True, then the limits for that quantity are
-\begin{quote}
+\item[{Keyword Arguments}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{min} (\emph{float}) --
+Minimum value of variable range.
 
+\item {} 
+\textbf{max} (\emph{float}) --
+Maximum value of variable range.
+
+\item {} 
+\textbf{auto} (\emph{bool}) --
+If auto is set to True, then the limits for that quantity are
 set automatically. Otherwise, use the one given by max and min.
-\end{quote}
-\begin{description}
-\item[{window}] \leavevmode{[}If window is set to `global' is available, then any changes{]}
-will affect also future plots that do not have autoscaling
-turned on.
 
-\item[{subfigure}] \leavevmode{[}If subfigure is set to `all', the limits in all the figures or{]}
-in all the subfigures of the current figure are set.
+\item {} 
+\textbf{window} (\emph{str}) --
+By default only the current subplot of the current window is affected.
+If this parameter is set to `all', all the current windows are affected.
+If this parameter is set to `global', then also future plots are affected.
 
-\end{description}
+\item {} 
+\textbf{subfigure} (\emph{str}) --
+Similarly to window, by default only the current subplot is affected
+by this command. If this parameter is set to `all' then all the subfigures
+in the current window are affected.
 
-\end{description}
+\end{itemize}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -655,6 +784,24 @@ in all the subfigures of the current figure are set.
 \begin{fulllineitems}
 \phantomsection\label{index:facade.make_movie}\pysiglinewithargsret{\code{facade.}\bfcode{make\_movie}}{\emph{filename}, \emph{snapshots='all'}, \emph{window\_no=0}, \emph{fps=24}}{}
 Generates movie for plots generated in given window
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{filename}} (\emph{str}) -- filename (with extension, e.g. mp4) of the movie that will
+be created.
+
+\item {} 
+\textbf{\texttt{snapshots}} (\emph{str}) -- currently not used
+
+\item {} 
+\textbf{\texttt{window\_no}} (\emph{int}) -- currently not used
+
+\item {} 
+\textbf{\texttt{fps}} (\emph{int}) -- frames per second
+
+\end{itemize}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -662,7 +809,7 @@ Generates movie for plots generated in given window
 
 \begin{fulllineitems}
 \phantomsection\label{index:facade.KnownQuantities}\pysiglinewithargsret{\code{facade.}\bfcode{KnownQuantities}}{}{}
-Return the list of the quantities that we know
+Return the list of the quantities that are defined
 
 \end{fulllineitems}
 
@@ -672,17 +819,33 @@ Return the list of the quantities that we know
 \phantomsection\label{index:facade.get_data}\pysiglinewithargsret{\code{facade.}\bfcode{get\_data}}{\emph{quantity}, \emph{snap='current'}, \emph{type='default'}, \emph{sim='current'}, \emph{unit='default'}}{}
 Returns the array with the data for the given quantity.
 The data is returned scaled to the specified unit
-\begin{description}
-\item[{Required argument:}] \leavevmode
-quantity        :The quantity required. Must be a string
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{quantity}} (\emph{str}) -- The quantity required.
 
-\item[{Optional arguments:}] \leavevmode
-type            :The type of the particles (e.g. `star')
-snap            :Number of the snapshot. Defaults to `current'
-sim             :Number of the simulation. Defaults to `current'
-unit            :Specifies the unit to use to return the data
+\item[{Keyword Arguments}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{type} (\emph{str}) --
+The type of the particles (e.g. `star')
 
-\end{description}
+\item {} 
+\textbf{snap} --
+Number of the snapshot. Defaults to `current'
+
+\item {} 
+\textbf{sim} --
+Number of the simulation. Defaults to `current'
+
+\item {} 
+\textbf{unit} (\emph{str}) --
+Specifies the unit to use to return the data
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+A numpy array containing the requested data.
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -693,37 +856,52 @@ unit            :Specifies the unit to use to return the data
 Return the rendered data for the given quantity. Useful when one needs
 to grid SPH data. The result is scaled to the specified unit. The options are
 a subset of the options available to the `render' function.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-x        : Quantity on the x-axis. Must be a string
-y        : Quantity on the y-axis. Must be a string
-quantity : Quantity to render.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{x}} (\emph{str}) -- Quantity on the x-axis.
 
-\item[{Optional arguments:}] \leavevmode
-snap     : Number of the snapshot to plot. Defaults to `current'.
-sim      : Number of the simulation to plot. Defaults to `current'
-renderunit: Unit to use for the rendered quantity
-res      : Resolution
-zslice   : z-coordinate of the slice when doing a slice rendering.
-\begin{quote}
+\item {} 
+\textbf{\texttt{y}} (\emph{str}) -- Quantity on the y-axis.
 
+\item {} 
+\textbf{\texttt{quantity}} (\emph{str}) -- Quantity to render.
+
+\end{itemize}
+
+\item[{Keyword Arguments}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{snap} --
+Number of the snapshot to plot. Defaults to `current'.
+
+\item {} 
+\textbf{sim} --
+Number of the simulation to plot. Defaults to `current'
+
+\item {} 
+\textbf{renderunit} (\emph{quantity}) --
+Unit to use for the rendered quantity
+
+\item {} 
+\textbf{res} --
+Resolution
+
+\item {} 
+\textbf{zslice} (\emph{float}) --
+z-coordinate of the slice when doing a slice rendering.
 Default is None, which produces a column-integrated plot.
 If you set this variable, a slice rendering will be
 done instead.
-\end{quote}
-\begin{description}
-\item[{coordlimits: Limits of the coordinates on x and y. See documentation}] \leavevmode
+
+\item {} 
+\textbf{coordlimits} --
+Limits of the coordinates on x and y. See documentation
 of render.
 
-\end{description}
+\end{itemize}
 
-\end{description}
-\begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
-The rendered data, scaled to the requested unit.
-
-\item[{Return type}] \leavevmode
-data
+A numpy 2d array containig the rendered data, scaled to the requested unit.
 
 \end{description}\end{quote}
 
@@ -733,12 +911,29 @@ data
 
 \begin{fulllineitems}
 \phantomsection\label{index:facade.CreateTimeData}\pysiglinewithargsret{\code{facade.}\bfcode{CreateTimeData}}{\emph{name}, \emph{function}, \emph{*args}, \emph{**kwargs}}{}
-Given a function that takes a snapshot as input, construct a
-FunctionTimeDataFetcher object from it and register it.
-\begin{quote}
+Given a function that takes a snapshot as input, construct a new
+quantity which can be used to do time plots. Technically this implemented
+by constructing a new object of type FunctionTimeDataFetcher. See userguide
+for how to use this function.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{name}} (\emph{str}) -- the name of the new quantity
 
-Return the FunctionTimeDataFetcher newly constructed.
-\end{quote}
+\item {} 
+\textbf{\texttt{function}} -- a python function that computes the desidered quantity. See the
+userguide for examples.
+
+\item {} 
+\textbf{\texttt{**kwargs}} -- extra keyword arguments will be passed to your function (see
+example of lagrangian\_radii)
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+The FunctionTimeDataFetcher object newly constructed.
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -746,7 +941,8 @@ Return the FunctionTimeDataFetcher newly constructed.
 
 \begin{fulllineitems}
 \phantomsection\label{index:facade.CreateUserQuantity}\pysiglinewithargsret{\code{facade.}\bfcode{CreateUserQuantity}}{\emph{name}, \emph{formula}, \emph{unitlabel='`}, \emph{unitname='`}, \emph{scaling\_factor=1}, \emph{label='`}}{}
-Given a mathematical formula, build a data fetcher from it.
+Create a new quantity that can be used for example for plots. This can be done both by
+giving a mathematical formula, or providing a user-defined function.
 The quantity is given a name, which can now be used in plots and in other
 formulae.  When you construct a quantity, you can rely on one of the units we
 provide, in which case you can just pass as the scaling\_factor parameter the
@@ -757,6 +953,36 @@ parameter. Doing this allows the unit system to work seamlessly when plotting
 build your own unit passing a numerical value for the scaling\_factor,
 a unitname and a latex label.  In this case, however, no rescaling is possible,
 as the unit system does not know how to rescale your unit.
+Technically, this function works by constructing either a FormulaDataFetcher object
+or a FunctionFetcher object.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{name}} (\emph{str}) -- the name of the new quantity created
+
+\item {} 
+\textbf{\texttt{formula}} -- either a string with the mathematical formula, or a user defined function
+that computes the desired quantity. See the userguide for further reference.
+
+\item {} 
+\textbf{\texttt{unitlabel}} (\emph{str}) -- label of the unit (to use in plots in the axis names)
+
+\item {} 
+\textbf{\texttt{unitname}} (\emph{str}) -- name of the unit (to be passed to functions that take a unit keyword)
+
+\item {} 
+\textbf{\texttt{scaling\_factor}} -- either a string with a quantity with the same dimension, or a float
+that will be used to multiply the result of the formula/function
+
+\item {} 
+\textbf{\texttt{label}} (\emph{str}) -- latex label of the quantity to be used on the axis when plotting
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+the newly constructed object which represents the desired quantity
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -766,11 +992,11 @@ as the unit system does not know how to rescale your unit.
 \phantomsection\label{index:facade.window}\pysiglinewithargsret{\code{facade.}\bfcode{window}}{\emph{no=None}}{}
 Changes the current window to the number specified. If the window
 doesn't exist, recreate it.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-winno      : Window number
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{winno}} (\emph{int}) -- Window number
 
-\end{description}
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -779,17 +1005,21 @@ winno      : Window number
 \begin{fulllineitems}
 \phantomsection\label{index:facade.subfigure}\pysiglinewithargsret{\code{facade.}\bfcode{subfigure}}{\emph{nx}, \emph{ny}, \emph{current}}{}
 Creates a subplot in the current window.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-nx         : x-grid size
-ny         : y-grid size
-current    : id of active sub-figure.  If sub-figure already exists,
-\begin{quote}
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{nx}} (\emph{int}) -- x-grid size
 
+\item {} 
+\textbf{\texttt{ny}} (\emph{int}) -- y-grid size
+
+\item {} 
+\textbf{\texttt{current}} (\emph{int}) -- id of active sub-figure.  If sub-figure already exists,
 then this sets the new active sub-figure.
-\end{quote}
 
-\end{description}
+\end{itemize}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -805,18 +1035,24 @@ Useful in scripts where no interaction is required
 \index{rescale() (in module facade)}
 
 \begin{fulllineitems}
-\phantomsection\label{index:facade.rescale}\pysiglinewithargsret{\code{facade.}\bfcode{rescale}}{\emph{quantity}, \emph{unitname}, \emph{window='current'}, \emph{subfig='current'}}{}
+\phantomsection\label{index:facade.rescale}\pysiglinewithargsret{\code{facade.}\bfcode{rescale}}{\emph{quantity}, \emph{unitname}, \emph{window='current'}}{}
 Rescales the specified quantity in the specified window to the specified unit
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-quantity   : Quantity to be rescaled.  Must be a string.
-unitname   : Required unit for quantity.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{quantity}} (\emph{str}) -- Quantity to be rescaled.
 
-\item[{Optional qrguments:}] \leavevmode
-window     : Window containing plot
-subfig     : Sub-figure in window containing plot
+\item {} 
+\textbf{\texttt{unitname}} (\emph{str}) -- Required unit for quantity.
 
-\end{description}
+\end{itemize}
+
+\item[{Keyword Arguments}] \leavevmode
+\textbf{window} --
+Window containing plot. Can be either the string ``current'' or
+an integer specifying the window.
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
