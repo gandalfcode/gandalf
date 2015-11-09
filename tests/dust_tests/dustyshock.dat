@@ -1,13 +1,13 @@
 #----------------------------------------
-# Adiabatic Sod shock tube test
-# Creates an adiabatic Sod shocktube test
+# DUSTYSHOCK test
+# Creates an adiabatic Sod shocktube test with dust included
 #----------------------------------------
 
 
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = ADSOD1
+Simulation run id string                    : run_id = DUSTYSHOCK
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = shocktube
 1D shocktube test                           : ndim = 1

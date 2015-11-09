@@ -1880,7 +1880,7 @@ When the approximations made above hold exactly the resulting accelerations are 
 
 \subsection{Implementations}
 
-GANDALF now includes two implementations of combined dust-gas dynamics, based upon equations (1) \& (2) and  (7) -- (9). Currently these are only implemented for the grad-h SPH algorithm. In both implementations the dust and gas are represented by seperate particle types (which are identified in the code via the ptype particle attribute). In the first implementation the back-reaction of the dust on the gas is neglected (equilivalent to  $\rho_d \rightarrow 0$) -- the gas dynamics are not modified when dust is included (test-particle limit). While in the second implementation the back-reaction on the gas is included (full two-fluid). The advantages and disadvantages of the methods are discussed below.
+GANDALF now includes two implementations of combined dust-gas dynamics, based upon equations (1) \& (2) and  (7) -- (9). Currently these are only implemented for the grad-h SPH algorithm. In both implementations the dust and gas are represented by seperate particle types (which are identified in the code via the \lstinline{ptype} particle attribute). In the first implementation the back-reaction of the dust on the gas is neglected (equilivalent to  $\rho_d \rightarrow 0$) -- the gas dynamics are not modified when dust is included (test-particle limit). While in the second implementation the back-reaction on the gas is included (full two-fluid). The advantages and disadvantages of the methods are discussed below. These implementations can be found in src/Common/Dust.cpp
 
 \subsubsection{Test-particle implementation}
 
@@ -1890,21 +1890,59 @@ The test-particle implementation closely follows Booth et al (2015). Since in ge
 
 The full two-fluid algorithm follows the improved semi-implicit algorithm of Lor\'en-Aguilar \& Bate (2015). In order to ensure conservation of both energy and angular momentum the forces must: (1) change sign under the exchange of particles, (2) be directed along the lines between interacting particles (Laibe \& Price 2012). (1) can be achieved simply by interpolation, but (2) requires forces to be directed between particles rather than in the direction of the velocity difference. Following Laibe \& Price (2012) and Lor\'en-Aguilar \& Bate (2015) we project the drag force between pairs of particles and evaluate the total acceleration using a kernel sum:
 \begin{align*}
- \vec{a}_{d,\mathrm{drag}} &= - \sum_i^\mathrm{gas} \frac{m_i}{\rho_{g,i}} ( \vec{S}_{id}  \cdot \vec{\hat r}_{id}) \vec{\hat r}_{id} W'(\vec{r}_{id}, h_i) \\
- \vec{a}_{g,\mathrm{drag}} &= - \sum_i^\mathrm{dust} \frac{m_i}{\rho_{d,i}} ( \vec{S}_{ig} \cdot \vec{\hat r}_{gi}) \vec{\hat r}_{gi} W'(\vec{r}_{ig}, h_g),
+ \vec{a}_{d,\mathrm{drag}} &= - \sum_i^\mathrm{gas} \frac{m_i}{\rho_{g,i}} ( \vec{S}_{id}  \cdot \vec{\hat r}_{id}) \vec{\hat r}_{id} D(\vec{r}_{id}, h_i) \\
+ \vec{a}_{g,\mathrm{drag}} &= - \sum_i^\mathrm{dust} \frac{m_i}{\rho_{d,i}} ( \vec{S}_{ig} \cdot \vec{\hat r}_{ig}) \vec{\hat r}_{ig} D(\vec{r}_{ig}, h_g),
 \end{align*}
 where $\vec{\hat r}_{ij} = (\vec{r}_i - \vec{r}_j) / |\vec{r}_i - \vec{r}_j|$ and 
 \begin{equation}
  \vec{S}_{ij} = \frac{\rho_i}{\rho_i + \rho_j} \frac{\langle \Delta \vec{v}_{ij} \rangle}{t_s}.
 \end{equation}
-For the kernel $W'$ we use the double hump version of the kernel used for the SPH forces $W'(r,h) \propto (r/h)^2 W(r,h)$, which reduces the bias in the direction of the force estimate from nearby neighours when compared with bell-shaped kernels (Laibe \& Price, 2012).
+For the kernel $D$ we use the double hump version of the kernel used for the SPH forces $D(r,h) \propto (r/h)^2 W(r,h)$, which reduces the bias in the direction of the force estimate from nearby neighours when compared with bell-shaped kernels (Laibe \& Price, 2012).
+
+\subsubsection{Advantages, limitations and reasons for caution}
+
+\begin{itemize}
+\item \emph{Conservation} -- The full fluid has the advantage that the total energy, momentum and angular momentum
+are conserved explicitly, while in the test-particle limit these are conserved for the gas particles, but not for the dust. In some problems, such as when radial drift is important the explicit conservation can help maintain the correct solution.
+
+\item \emph{Dissipation} -- The full two-fluid system is a dissipative system, with the drag forces converting kinetic energy into thermal energy. If the smoothing length, $h < c_s t_s$, this can lead to massive numerical dissipation especially when $\rho_d \approx \rho_g$. The semi-implicit algorithms help to reduce the dissipation (see Lor\'en-Aguilar \& Bate, 2014), but this can still be an issue. For $\rho_d \ll \rho_g$ the dissipation is weak, with no dissipation occurring in the test particle limit. 
+
+\item \emph{Force Errors} -- The standard SPH interpolation used in the test-particle implementation is generally accurate to ∼ 0.1 per cent for the cubic spline, and even more accurate for smoother kernels (e.g. the Quintic spline). However, the projected interpolation is considerably more sensitive to the particle distribution. The double hump kernels help reduce the errors due to the particle distribution, but even for regular particle distributions the error can be $\sim 1$ per cent. When strong density gradients are present (e.g. the vertical structure of discs), the errors can be much larger (c.f the settling test, Lor\'en-Aguilar \& Bate, 2014). For this reason smoother kernels are highly recommended when using the full-two fluid implementation. 
+
+\item \emph{Individual particle time-steps} -- Individual particle time-steps are implemented for both dust algorithms, but typically the full-two fluid algorithm should not be used with individual particle time-steps, since the time averaged drag force is only correct once the time-step has been completed. Order unity errors can arise even the simplest dustybox tests when the time-step for the gas and dust differ for this reason, making it clear the exact conservation is necessary for accurate simulations with this algorithm. Development of a robust multi-step scheme for the full two-fluid scheme is being considered. Conversely, individual particle time-steps have been used in Booth, Sijacki \& Clarke (2015) and Booth \& Clarke (2016) with the test-particle limit algorithm and prove to be robust because the predicted velocities are not needed for force calculations. Individual particle time-steps have not been tested extensively in the GANDALF test-particle implementation, but preliminary tests have been successful.
+\end{itemize}
 
 \subsection{Drag Laws}
+Several drag laws have been implemented in via functions form of $t_s \equiv t_s (\rho_g , \rho_d , c_s)$. The different functional forms currently available can be chosen via the parameter options and are described below. The drag laws are defined in src/Headers/DragLaws.h. Currently only dimensionless units are supported when setting the stopping time.
 
-\subsection{Parameters?}
+\subsection{Test Problems}
+Some simple two-fluid test problems have been included in the directory tests/dust tests. Most of these are straight-forward modifications of classic hydrodynamics test problems to include dust particles. A description of a number of these can be found in Laibe \& Price (2012 a,b), including the \textsc{dustybox}, \textsc{dustywave}, \textsc{dustyshock} and \textsc{dustysedov} problems. The dust to gas ratio can be verified, but otherwise the dust initial conditions are identical to the those in the gas in all the problems provided.
 
-\subsection{Advantages and limitations}
+\subsection{Dust parameter options}
+\begin{itemize}
 
+\item \var{drag\_forces} : Select the drag force algorithm
+
+\begin{tabular}{ll}
+none              & = No drag forces \\
+test particle     & = Test particle limit drag regime \\
+full twofluid     & = Full two fluid drag regime
+\end{tabular} 
+
+\item \var{drag\_law} : Select the drag law
+
+\begin{tabular}{ll}
+fixed             & $t_s = 1 / K_D$ \\
+density           & $t_s = 1 / (K_D(\rho_d + \rho_g))$ \\
+epstein           & $t_s = 1 / (K_D(\rho_d + \rho_g)c_s)$ \\
+LB2012            & $t_s = \rho_d \rho_g / (K_D(\rho_d + \rho_g))$ \\
+\end{tabular} 
+
+\item \var{drag\_coeff} : Sets $K_D$
+
+\item \var{dust\_mass\_factor} : Sets the dust-to-gas mass ratio for the test problems
+
+\end{itemize}
 
 \newpage
 

@@ -1,14 +1,15 @@
 #------------------------------------------------------------------
-# Sound wave test
+# DUSTYWAVE test
 # Generates and propagates a small linear density perturbation as a 
-# sound-wave along a uniform density gas.
+# sound-wave along a uniform density gas. Dust particles are included with
+# identical initial conditions
 #------------------------------------------------------------------
 
 
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = SOUNDWAVE1
+Simulation run id string                    : run_id = DUSTYWAVE
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = soundwave
 1D shocktube test                           : ndim = 1

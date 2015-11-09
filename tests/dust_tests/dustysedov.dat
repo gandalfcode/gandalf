@@ -1,13 +1,13 @@
 #--------------------------------------------------------------
-# Sedov Blast Wave test
-# Creates Sedov blast wave test
+# DUSTYSEDOV test
+# Creates Sedov blast wave test with dust included
 #--------------------------------------------------------------
 
 
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = SEDOV1
+Simulation run id string                    : run_id = DUSTYSEDOV
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sedov
 Dimensionality of cube                      : ndim = 2
