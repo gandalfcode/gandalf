@@ -110,7 +110,7 @@ Returns the newly created simulation object.
 Required arguments:
     run_id      : Simulation run identification string.
 
-Optional qrguments:
+Optional arguments:
     fileformat  : Format of all snapshot files of simulation.
     buffer_flag : Record snapshot data in simulation buffer.
 '''

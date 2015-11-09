@@ -2,10 +2,13 @@
 \usepackage{txfonts}
 
 \usepackage{graphicx}
-\usepackage{amssymb}
+%\usepackage{amssymb}
 \usepackage{supertabular}
 \usepackage{array}
-\usepackage[colorlinks,final]{hyperref}
+%\usepackage[colorlinks,final]{hyperref}
+
+\usepackage{standalone}
+\usepackage{sphinx}
 
 \newcommand{\VERNO}{0.4.0 }
 \newcommand{\var}[1]{\texttt{#1}}
@@ -1781,6 +1784,19 @@ List of possible new features for future versions.
 \item More sanity-checking, error-trapping and assert statements (to prevent crashing on erroneous input and to help debugging purposes).
 \item Update Godunov SPH to 2nd-order using slope limiters.
 \end{itemize}
+
+\newpage
+
+\appendix
+
+%\part*{Appendix}
+%\phantomsection
+%\addcontentsline{toc}{part}{Appendix}
+%\appendix
+%\def\maketitle{}
+\def\tableofcontents{}
+\section{Command reference for the python functions}
+\input{../analysis/_build/latex/GANDALF}
 
 
 \end{document}
