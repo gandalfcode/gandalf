@@ -991,6 +991,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
       Xi /= t_s ;
     }
 
+    // Predict the relative velocity
     dvdr += parti.dt * dadr ;
 
     S = (dvdr * Xi - dadr * Lambda) ;
