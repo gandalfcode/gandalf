@@ -104,16 +104,17 @@ if we are in interactive mode, or re-raising it, if we are in script mode
 
 #------------------------------------------------------------------------------
 def loadsim(run_id, fileformat=None, buffer_flag='cache'):
-    '''Given the run_id of a simulation, reads it from the disk.
-Returns the newly created simulation object.
+    '''
+    Given the run_id of a simulation, reads it from the disk.
+    Returns the newly created simulation object.
 
-Required arguments:
-    run_id      : Simulation run identification string.
+    Arguments:
+        run_id(str): Simulation run identification string.
 
-Optional arguments:
-    fileformat  : Format of all snapshot files of simulation.
-    buffer_flag : Record snapshot data in simulation buffer.
-'''
+    Keyword Args:
+        fileformat: Format of all snapshot files of simulation.
+        buffer_flag: Record snapshot data in simulation buffer.
+    '''
     SimBuffer.loadsim(run_id, fileformat=fileformat, buffer_flag=buffer_flag)
     return SimBuffer.get_current_sim()
 
@@ -143,30 +144,34 @@ def plot(x, y, type="default", snap="current", sim="current",
          overplot=False, autoscale=False, xunit="default", yunit="default",
          xaxis="linear", yaxis="linear", **kwargs):
     '''Plot particle data as a scatter plot.  Creates a new plotting window if
-one does not already exist.
+    one does not already exist.
 
-Required arguments:
-    x          : Quantity on the x-axis. Must be a string.
-    y          : Quantity on the y-axis. Must be a string.
+    Args:
+        x (str) : Quantity on the x-axis.
+        y (str) : Quantity on the y-axis.
 
-Optional arguments:
-    type       : The type of the particles to plot (e.g. 'star' or 'sph').
-    snap       : Number of the snapshot to plot. Defaults to 'current'.
-    sim        : Number of the simulation to plot. Defaults to 'current'.
-    overplot   : If True, overplots on the previous existing plot rather
+    Keyword Args:
+        type       : The type of the particles to plot (e.g. 'star' or 'sph').
+        snap       : Number of the snapshot to plot. Defaults to 'current'.
+        sim        : Number of the simulation to plot. Defaults to 'current'.
+        overplot (bool)  : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True, the limits of the plot are set
+        autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
                  If False (default), autoscaling is not used. On an axis that does
                  not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
-    xunit      : Specify the unit to use for the plotting for the quantity
+        xunit (str)  : Specify the unit to use for the plotting for the quantity
                  on the x-axis.
-    yunit      : Specify the unit to use for the plotting for the quantity
+        yunit (str) : Specify the unit to use for the plotting for the quantity
                  on the y-axis.
-    **kwargs   : Extra keyword arguments will be passed to matplotlib.
-'''
+        **kwargs   : Extra keyword arguments will be passed to matplotlib.
+        
+    Return:
+        Data plotted. The member x_data contains data on the x-axis and the member y_data
+            contains data on the y-axis
+    '''
     simno = get_sim_no(sim)
     overplot=to_bool(overplot)
     # If we are plotting all particle species, call plot in turn
@@ -558,8 +563,8 @@ afterwards.
 #------------------------------------------------------------------------------
 def setupsim():
     '''Set up the current simulation object. Note that after calling this function,
-no parameter change it\'s possible.
-'''
+    no parameter change it\'s possible.
+    '''
     sim = SimBuffer.get_current_sim()
     sim.SetupSimulation()
     sim.simparams.RecordParametersToFile()
@@ -568,12 +573,12 @@ no parameter change it\'s possible.
 #------------------------------------------------------------------------------
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
-otherwise queries the buffer for the given simulation number.
-If the simulation has not been setup, does it before running.
+    otherwise queries the buffer for the given simulation number.
+    If the simulation has not been setup, does it before running.
 
-Optional arguments:
-    no         : Simulation number
-'''
+    Keyword Args:
+        no(int): Simulation number
+    '''
     #gets the correct simulation object from the buffer
     try:
         if no is None:

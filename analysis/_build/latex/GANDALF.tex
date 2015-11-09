@@ -151,15 +151,22 @@ afterwards.
 \phantomsection\label{index:facade.loadsim}\pysiglinewithargsret{\code{facade.}\bfcode{loadsim}}{\emph{run\_id}, \emph{fileformat=None}, \emph{buffer\_flag='cache'}}{}
 Given the run\_id of a simulation, reads it from the disk.
 Returns the newly created simulation object.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-run\_id      : Simulation run identification string.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\textbf{\texttt{run\_id}} (\emph{str}) -- Simulation run identification string.
 
-\item[{Optional arguments:}] \leavevmode
-fileformat  : Format of all snapshot files of simulation.
-buffer\_flag : Record snapshot data in simulation buffer.
+\item[{Keyword Arguments}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{fileformat} --
+Format of all snapshot files of simulation.
 
-\end{description}
+\item {} 
+\textbf{buffer\_flag} --
+Record snapshot data in simulation buffer.
+
+\end{itemize}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -170,11 +177,12 @@ buffer\_flag : Record snapshot data in simulation buffer.
 Run a simulation. If no argument is given, run the current one;
 otherwise queries the buffer for the given simulation number.
 If the simulation has not been setup, does it before running.
-\begin{description}
-\item[{Optional arguments:}] \leavevmode
-no         : Simulation number
+\begin{quote}\begin{description}
+\item[{Keyword Arguments}] \leavevmode
+\textbf{no} (\emph{int}) --
+Simulation number
 
-\end{description}
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -184,39 +192,64 @@ no         : Simulation number
 \phantomsection\label{index:facade.plot}\pysiglinewithargsret{\code{facade.}\bfcode{plot}}{\emph{x}, \emph{y}, \emph{type='default'}, \emph{snap='current'}, \emph{sim='current'}, \emph{overplot=False}, \emph{autoscale=False}, \emph{xunit='default'}, \emph{yunit='default'}, \emph{xaxis='linear'}, \emph{yaxis='linear'}, \emph{**kwargs}}{}
 Plot particle data as a scatter plot.  Creates a new plotting window if
 one does not already exist.
-\begin{description}
-\item[{Required arguments:}] \leavevmode
-x          : Quantity on the x-axis. Must be a string.
-y          : Quantity on the y-axis. Must be a string.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{\texttt{x}} (\emph{str}) -- Quantity on the x-axis.
 
-\item[{Optional arguments:}] \leavevmode
-type       : The type of the particles to plot (e.g. `star' or `sph').
-snap       : Number of the snapshot to plot. Defaults to `current'.
-sim        : Number of the simulation to plot. Defaults to `current'.
-overplot   : If True, overplots on the previous existing plot rather
-\begin{quote}
+\item {} 
+\textbf{\texttt{y}} (\emph{str}) -- Quantity on the y-axis.
 
+\end{itemize}
+
+\item[{Keyword Arguments}] \leavevmode\begin{itemize}
+\item {} 
+\textbf{type} --
+The type of the particles to plot (e.g. `star' or `sph').
+
+\item {} 
+\textbf{snap} --
+Number of the snapshot to plot. Defaults to `current'.
+
+\item {} 
+\textbf{sim} --
+Number of the simulation to plot. Defaults to `current'.
+
+\item {} 
+\textbf{overplot} (\emph{bool}) --
+If True, overplots on the previous existing plot rather
 than deleting it. Defaults to False.
-\end{quote}
-\begin{description}
-\item[{autoscale}] \leavevmode{[}If True, the limits of the plot are set{]}
+
+\item {} 
+\textbf{autoscale} --
+If True, the limits of the plot are set
 automatically.  Can also be set to `x' or `y' to specify
 that only one of the axis has to use autoscaling.
 If False (default), autoscaling is not used. On an axis that does
 not have autoscaling turned on, global limits are used
 if defined for the plotted quantity.
 
-\item[{xunit}] \leavevmode{[}Specify the unit to use for the plotting for the quantity{]}
+\item {} 
+\textbf{xunit} (\emph{str}) --
+Specify the unit to use for the plotting for the quantity
 on the x-axis.
 
-\item[{yunit}] \leavevmode{[}Specify the unit to use for the plotting for the quantity{]}
+\item {} 
+\textbf{yunit} (\emph{str}) --
+Specify the unit to use for the plotting for the quantity
 on the y-axis.
 
-\end{description}
+\item {} 
+\textbf{**kwargs} --
+Extra keyword arguments will be passed to matplotlib.
 
-{\color{red}\bfseries{}**}kwargs   : Extra keyword arguments will be passed to matplotlib.
+\end{itemize}
 
-\end{description}
+\item[{Returns}] \leavevmode
+Data plotted. The member x\_data contains data on the x-axis and the member y\_data
+contains data on the y-axis
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -658,7 +691,7 @@ unit            :Specifies the unit to use to return the data
 \begin{fulllineitems}
 \phantomsection\label{index:facade.get_render_data}\pysiglinewithargsret{\code{facade.}\bfcode{get\_render\_data}}{\emph{x}, \emph{y}, \emph{quantity}, \emph{sim='current'}, \emph{snap='current'}, \emph{renderunit='default'}, \emph{res=64}, \emph{zslice=None}, \emph{coordlimits=None}}{}
 Return the rendered data for the given quantity. Useful when one needs
-to grid SPH data. The result is scaled to the specified unit. The options are 
+to grid SPH data. The result is scaled to the specified unit. The options are
 a subset of the options available to the `render' function.
 \begin{description}
 \item[{Required arguments:}] \leavevmode
@@ -684,10 +717,15 @@ of render.
 
 \end{description}
 
-\item[{Return:}] \leavevmode
-data     : The rendered data, scaled to the requested unit.
-
 \end{description}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+The rendered data, scaled to the requested unit.
+
+\item[{Return type}] \leavevmode
+data
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -695,7 +733,7 @@ data     : The rendered data, scaled to the requested unit.
 
 \begin{fulllineitems}
 \phantomsection\label{index:facade.CreateTimeData}\pysiglinewithargsret{\code{facade.}\bfcode{CreateTimeData}}{\emph{name}, \emph{function}, \emph{*args}, \emph{**kwargs}}{}
-Given a function that takes a snapshot as input, construct a 
+Given a function that takes a snapshot as input, construct a
 FunctionTimeDataFetcher object from it and register it.
 \begin{quote}
 
@@ -709,15 +747,15 @@ Return the FunctionTimeDataFetcher newly constructed.
 \begin{fulllineitems}
 \phantomsection\label{index:facade.CreateUserQuantity}\pysiglinewithargsret{\code{facade.}\bfcode{CreateUserQuantity}}{\emph{name}, \emph{formula}, \emph{unitlabel='`}, \emph{unitname='`}, \emph{scaling\_factor=1}, \emph{label='`}}{}
 Given a mathematical formula, build a data fetcher from it.
-The quantity is given a name, which can now be used in plots and in other 
-formulae.  When you construct a quantity, you can rely on one of the units we 
-provide, in which case you can just pass as the scaling\_factor parameter the 
-name of the unit you want inside the SimUnits class. For example, if your unit 
-has dimensions of acceleration, you can pass `a' as the scaling\_factor 
-parameter. Doing this allows the unit system to work seamlessly when plotting 
-(i.e., you can specify the units you want the plot in).  Alternatively, you can 
-build your own unit passing a numerical value for the scaling\_factor, 
-a unitname and a latex label.  In this case, however, no rescaling is possible, 
+The quantity is given a name, which can now be used in plots and in other
+formulae.  When you construct a quantity, you can rely on one of the units we
+provide, in which case you can just pass as the scaling\_factor parameter the
+name of the unit you want inside the SimUnits class. For example, if your unit
+has dimensions of acceleration, you can pass `a' as the scaling\_factor
+parameter. Doing this allows the unit system to work seamlessly when plotting
+(i.e., you can specify the units you want the plot in).  Alternatively, you can
+build your own unit passing a numerical value for the scaling\_factor,
+a unitname and a latex label.  In this case, however, no rescaling is possible,
 as the unit system does not know how to rescale your unit.
 
 \end{fulllineitems}
