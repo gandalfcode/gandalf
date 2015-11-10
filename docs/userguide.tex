@@ -1007,7 +1007,7 @@ kdtree & = Use simple KD-tree decomposition
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Input and output file formats}
+\section{Input and output file formats} \label{S:IO}
 
 GANDALF supports several simple file formats for reading in initial conditions or outputting snapshots for visualisation and analysis.
 
@@ -1046,7 +1046,7 @@ The SEREN format is a legacy format from the original SEREN code which is curren
 \item \var{seren\_form} or \var{sf} : `Formatted' (i.e. ASCII)
 \item \var{seren\_unform} or \var{su} : `Unformatted' (i.e. binary)
 \end{itemize}
-The format consists of a large multi-part header with different data types, including information about the units used as well as the particle data and star/sink data arrays.  The full header array sizes are given below.  For any fields not given below, assume the quantity to be unused and therefore defaulted to zero in the header.  The header reads as follows : 
+The format consists of a large multi-part header with different data types, including information about the units used as well as the particle data and star/sink data arrays.  The full header array sizes are given below.  In the formatted/ASCII case, each array element is printed on a separate line but is compressed as a single stream.  For any fields not given below, assume the quantity to be unused and therefore defaulted to zero in the header.  The header reads as follows : 
 \begin{itemize}
 \item \var{format\_id} : A string identifying the exact format type (for verification)
 \item \var{pr} : Floating point precision (4 = single precision, 8 = double precision)
@@ -1096,8 +1096,8 @@ The format consists of a large multi-part header with different data types, incl
 \item ddata[2] = \var{mmean} : Average mass of gas particles (SEREN = \var{mgas\_orig})
 \item ddata[10] = \var{tlitesnaplast} : Time when previous lite snapshot was created (N/A in SEREN)
 \end{itemize}
-\item \var{unit\_data[nunit]} : Strings identifying the chosen input unit for each physical quantity.  Note that this does not necessarily have to be the same as the chosen output units (See Section \ref{S:UNITS}).
-\item \var{data\_id[ndata]} : Strings identifying the physical quantities contained in the particle arrays that follow the header.
+\item \var{unit\_data[nunit]} : Strings identifying the chosen input unit for each physical quantity.  Note that this does not necessarily have to be the same as the chosen output units (See Section \ref{S:UNITS}).  In unformatted/binary files, the strings are set to a default maximum length of 20 characters (with white space padding at the end).
+\item \var{data\_id[ndata]} : Strings identifying the physical quantities contained in the particle arrays that follow the header.  As with the \var{unit\_data} array using unformatted/binary file, the strings are set to a default maximum length of 20 characters (with white space padding at the end).
 \begin{itemize}
 \item \var{porig} : Original (unique) particle ids
 \item \var{r} : Hydro particle positions
@@ -1147,15 +1147,17 @@ There are three main ways of generating initial conditions in GANDALF.
 
 It is possible to generate initial conditions `on-the-fly' using internal subroutines in GANDALF.  At present, the following initial conditions are included in the code : \newline
 
-\noindent SPH simulations : \\
+\noindent Hydrodynamical simulations : \\
 \newline
 \begin{tabular}{ll}
 - bb             &: Boss-Bodenheimer test \\
 - binaryacc      &: Binary accretion simulation \\
+- blastwave      &: 1D blastwave test \\
 - bondi          &: Spherically symmetric Bondi accretion test \\
 - box            &: Create uniform box \\
 - cdiscontinuity &: Contact-discontinuity test \\
 - ewald          &: Several tests of Ewald gravity \\
+- gresho         &: Gresho vortex test \\
 - khi            &: Kelvin-helmholtz instability \\
 - noh            &: Noh shock test \\
 - plummer        &: Plummer sphere (stars + gas, or just gas) \\
@@ -1181,10 +1183,33 @@ It is possible to generate initial conditions `on-the-fly' using internal subrou
 - quadruple &: Simple hierarchical quadruple system test \\
 - triple    &: Simple hierarchical triple system test
 \end{tabular}
+\newline
+\newline
+
+\subsubsection{Creating your own initial conditions generators}
+The subroutines that create the initial conditions are all contained in the \var{Ic} class.  This class is essentially a container for all subroutines and helper functions in one place.  If the user wishes to create their own initial conditions subroutines inside GANDALF, then there are 3 important files that must be editted.
+\begin{itemize}
+\item \var{src/Headers/IC.h} : this file contains the class definition for the \var{Ic} class.  The function prototype for any new IC generating function should be placed in this class, e.g. \\
+\newline
+\var{void MyNewInitialConditions(void);})
+\item \var{src/Common/Ic.cpp} : this file contains all the functions contained in the Ic class, including the helper functions.  The full code for generating the initial conditions should be placed in this file, e.g. \\
+\newline
+\var{void Ic::MyNewInitialConditions(void) \{....\} }
+\item \var{src/Common/SimulationIC.hpp} : Interface file that links (and calls) the IC class functions from the main simulation class.  In this file, you will need to add your own function call (together with the `if' statement to call the function), e.g. \\
+\newline
+\var{else if (ic == ``myic'') \{icGenerator.MyNewInitialConditions();\}}
+\end{itemize}
+To select your own initial conditions when running GANDALF, you simply set the \var{ic} parameter in your parameters file to the chosen string, e.g. \var{ic = myic}\,.
+
 
 
 \subsection{Load from external file}
-GANDALF can load two main file formats; simple ASCII column format and SEREN format.
+GANDALF can load two main file formats; simple ASCII column format and SEREN format.  These are described in detail in Section \ref{S:IO}.  In order to read from file, you must set the following parameters : 
+\begin{itemize}
+\item \var{ic = file} : Tell GANDALF to ignore initial conditions generators and read from file instead
+\item \var{in\_file = ..}$\;$ : The name of the initial conditions file
+\item \var{in\_file\_form = column/sf/su} : The format of the initial conditions file
+\end{itemize}
 
 \subsection{Generate inside python script}
 GANDALF can generate initial conditions if using python scripts.  The initial conditions can be first set in numpy arrays and then imported into the C++ code in order to perform the simulation.  More information is given about this method, including detailed examples, in Section \ref{SS:PYTHONTUTORIAL}.
