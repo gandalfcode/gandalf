@@ -931,7 +931,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
   delete[] celllist;
 
-  timing->EndTimingSection("SPH_ALL_PERIODIC_FORCES");
+  timing->EndTimingSection("SPH_ALL_FORCES");
 
   return;
 }
@@ -957,7 +957,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
-  timing->StartTimingSection("SPH_ALL_FORCES");
+  timing->StartTimingSection("SPH_ALL_GRAV_FORCES");
 
   // Update ghost tree smoothing length values here
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
@@ -1202,7 +1202,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
   delete[] celllist;
 
-  timing->EndTimingSection("SPH_ALL_PERIODIC_FORCES");
+  timing->EndTimingSection("SPH_ALL_GRAV_FORCES");
 
   return;
 }
