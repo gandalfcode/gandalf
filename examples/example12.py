@@ -2,7 +2,7 @@
 # example12.py
 # Plot particle quantities in an alternative coordinate system.
 #==============================================================================
-from gandalf_dust.analysis.facade import *
+from gandalf.analysis.facade import *
 from matplotlib.colors import LogNorm
 
 # Create simulation object from Boss-Bodenheimer parameters file
