@@ -78,3 +78,8 @@ clean:
 depends:
 	@+$(MAKE) depends -C src
 
+installpython: all
+	./setup.py install
+	
+install: executable
+	cp bin/gandalf /usr/local/bin
