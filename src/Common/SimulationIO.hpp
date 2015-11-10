@@ -1504,6 +1504,36 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   }
   //===============================================================================================
 
+  // Finally set the ptype based on the number of types in the snapshot
+  int n=0 ;
+  for (int type=2; type < 8; type++) {
+	int ntype = idata[type] ;
+	if (ntype){
+	  int ptype ;
+	  switch (type){
+         case 3:
+         case 4:
+	       ptype = gas_type ;
+	       break ;
+         case 5:
+    	   ptype = cdm_type ;
+    	   break;
+         case 6:
+    	   ptype = dust_type ;
+    	   break ;
+         default:
+    	   ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
+    	   break ;
+		  }
+
+	  for (int k=0; k < ntype; k++) {
+		Particle<ndim>& p = hydro->GetParticlePointer(n) ;
+		p.ptype = ptype ;
+		p.itype = gas ;
+		n++;
+	  }
+    }
+  }
 
   infile.close();
 
