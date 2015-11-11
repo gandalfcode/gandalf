@@ -42,8 +42,12 @@ VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tre
 VPATH +=$(PWD)/src/UnitTesting
 INCLUDE = $(PWD)/src/Headers
 
-ifeq ($(CPP),)
+ifeq ($(strip $(CPP)),)
   CPP=$(CXX)
+endif
+
+ifneq ($(strip $(MPICPP)),)
+  CPP=$(MPICPP)
 endif
 
 # Compiler mode flags
@@ -102,7 +106,7 @@ OPT += -fopenmp -DOPENMP
 endif
 endif
 
-ifeq ($(CPP),clang++)
+ifeq ($(CXX),clang++)
  OPT += -D__extern_always_inline=inline
 endif
 

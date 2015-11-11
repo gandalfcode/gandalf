@@ -14,5 +14,5 @@ before_install:
   - sudo apt-get install -y openmpi-bin libopenmpi-dev
 script: 
  - export OMPI_CXX=$CXX
- - make executable -j 4 OPENMP=$OPENMP CPP=$MPICPP
+ - make executable -j 4 OPENMP=$OPENMP MPICPP=$MPICPP
  - export OMP_NUM_THREADS=4
