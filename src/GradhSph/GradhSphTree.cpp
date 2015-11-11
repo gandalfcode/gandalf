@@ -200,6 +200,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
 
+  // If there are no active cells, return to main loop
+  if (cactive == 0) {
+    delete[] celllist;
+    timing->EndTimingSection("SPH_PROPERTIES");
+    return;
+  }
+
 
   // Set-up all OMP threads
   //===============================================================================================
@@ -428,6 +435,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
+    delete[] celllist;
     timing->EndTimingSection("SPH_HYDRO_FORCES");
     return;
   }
