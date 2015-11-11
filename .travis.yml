@@ -2,6 +2,12 @@ language: cpp
 compiler:
   - clang
   - gcc
+env:
+  - OPENMP=1
+  - OPENMP=0
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y python-numpy python-scipy python-matplotlib
 script: 
- - make executable
+ - make executable -j 4 OPENMP=$OPENMP
  - export OMP_NUM_THREADS=4

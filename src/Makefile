@@ -42,6 +42,9 @@ VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tre
 VPATH +=$(PWD)/src/UnitTesting
 INCLUDE = $(PWD)/src/Headers
 
+ifeq ($(CPP),)
+  CPP=$(CXX)
+endif
 
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
