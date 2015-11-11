@@ -924,7 +924,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,cout,hydro,partdata,rand)
+#pragma omp parallel default(none) shared(rank,simbox,celllist,cactive,cout,hydro,partdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -1089,7 +1089,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,cout,rank,partdata)
+#pragma omp parallel default(none) shared(simbox,celllist,cactive,cout,rank,partdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();

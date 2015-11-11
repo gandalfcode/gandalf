@@ -3784,9 +3784,9 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddSinusoidalDensityPerturbation
- (const int Npart,                     ///< [in] No. of particles in sphere
-  const FLOAT amp,                     ///< [in] Amplitude of perturbation
-  const FLOAT lambda,                  ///< [in] Wave number of perturbation
+ (int Npart,                     ///< [in] No. of particles in sphere
+  FLOAT amp,                     ///< [in] Amplitude of perturbation
+  FLOAT lambda,                  ///< [in] Wave number of perturbation
   FLOAT *r)                            ///< [inout] Positions of particles
 {
   int i;                               // Particle counter
@@ -3801,7 +3801,7 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
 
   // Loop over all required particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(kwave,r) private(diff,i,xnew,xold)
+#pragma omp parallel for default(none) shared(lambda,Npart,amp,kwave,r) private(diff,i,xnew,xold)
   for (i=0; i<Npart; i++) {
     xnew = r[ndim*i];
 
