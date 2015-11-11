@@ -2,5 +2,6 @@ language: cpp
 compiler:
   - clang
   - gcc
-export OMP_NUM_THREADS=4
-script: make executable
+script: 
+ - make executable
+ - export OMP_NUM_THREADS=4
