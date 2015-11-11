@@ -102,6 +102,9 @@ OPT += -fopenmp -DOPENMP
 endif
 endif
 
+ifeq ($(CPP),clang++)
+ OPT += -D__extern_always_inline=inline
+endif
 
 # Precision options
 # -------------------------------------------------------------------------------------------------
