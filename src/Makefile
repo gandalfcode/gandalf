@@ -45,58 +45,39 @@ INCLUDE = $(PWD)/src/Headers
 
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
-ifeq ($(findstring g++,$(CPP)),g++)
 ifeq ($(COMPILER_MODE),FAST)
-OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
+GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
+ICCOPT   += -O3 -fast -fPIC -fno-exceptions
+CLANGOPT += -O3 -ffast-math -fPIC
+else ifeq ($(COMPILER_MODE),DEBUG)
+GCCOPT   += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
+ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
+CLANGOPT += -g -pg -Wall
 else ifeq ($(COMPILER_MODE),STANDARD)
-OPT += -O3 -fPIC -fno-exceptions -fno-rtti
+GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
-OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
-else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
-endif
-ifeq ($(OPENMP),1)
-OPT += -fopenmp
-endif
+GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 endif
 
-ifeq ($(CPP),icpc)
-ifeq ($(COMPILER_MODE),FAST)
-OPT += -O3 -fast -fPIC -fno-exceptions
-else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
-endif
 ifeq ($(OPENMP),1)
-OPT += -openmp
-endif
+GCCOPT   += -fopenmp
+ICCOPT   += -openmp
+CLANGOPT += -fopenmp -DOPENMP
 endif
 
-ifeq ($(CPP),mpic++)
+
+# Select the compiler
+# -------------------------------------------------------------------------------------------------
+ifeq ($(findstring g++,$(CPP)),g++)
+OPT += $(GCCOPT)
+else ifeq ($(CPP),icpc)
+OPT += $(ICCOPT)
+else ifeq ($(CPP),clang)
+OPT += $(CLANGOPT)
+else ifeq ($(CPP),mpic++)
 MPI = 1
 CFLAGS += -DMPI_PARALLEL
-ifeq ($(COMPILER_MODE),FAST)
-OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
-else ifeq ($(COMPILER_MODE),STANDARD)
-OPT += -O3 -fPIC -fno-exceptions -fno-rtti
-else ifeq ($(COMPILER_MODE),PROFILE)
-OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
-else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -Wall -fbounds-check -fPIC -O3  #-fprofile-arcs -ftest-coverage
-endif
-ifeq ($(OPENMP),1)
-OPT += -fopenmp
-endif
-endif
-
-ifeq ($(CPP),clang)
-ifeq ($(COMPILER_MODE),FAST)
-OPT += -O3 -ffast-math -fPIC
-else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall
-endif
-ifeq ($(OPENMP),1)
-OPT += -fopenmp -DOPENMP
-endif
+OPT += $(GCCOPT)
 endif
 
 
