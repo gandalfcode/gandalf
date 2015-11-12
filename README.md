@@ -33,6 +33,9 @@ The folder docs contains a latex file with the userguide.  The userguide contain
 
 Contact
 ---------
+
+If you plan to use the code, it is recommended that you subscribe to the [mailing list](https://groups.google.com/d/forum/gandalf-users) (please follow the link and request to join the group). You can use it for discussing suggestions and/or problems with the code and you can stay up to date about new releases of the code.
+
 David Hubber [david.hubber@googlemail.com](mailto:david.hubber@googlemail.com)
 
-Giovanni Rosotti [rosotti@usm.lmu.de](mailto:rosotti@usm.lmu.de)
+Giovanni Rosotti [rosotti@ast.cam.ac.uk](mailto:rosotti@ast.cam.ac.uk)
