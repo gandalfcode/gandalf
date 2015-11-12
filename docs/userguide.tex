@@ -1046,7 +1046,7 @@ The SEREN format is a legacy format from the original SEREN code which is curren
 \item \var{seren\_form} or \var{sf} : `Formatted' (i.e. ASCII)
 \item \var{seren\_unform} or \var{su} : `Unformatted' (i.e. binary)
 \end{itemize}
-The format consists of a large multi-part header with different data types, including information about the units used as well as the particle data and star/sink data arrays.  The full header array sizes are given below.  In the formatted/ASCII case, each array element is printed on a separate line but is compressed as a single stream.  For any fields not given below, assume the quantity to be unused and therefore defaulted to zero in the header.  The header reads as follows : 
+The format consists of a large multi-part header with different data types, including information about the units used as well as the particle data and star/sink data arrays.  The full header array sizes are given below.  In the formatted/ASCII case, each array element is printed on a separate line but is compressed as a single stream.  For any fields not given below, assume the quantity to be unused and therefore defaulted to zero in the header.  The header reads as follows: 
 \begin{itemize}
 \item \var{format\_id} : A string identifying the exact format type (for verification)
 \item \var{pr} : Floating point precision (4 = single precision, 8 = double precision)
@@ -1097,7 +1097,7 @@ The format consists of a large multi-part header with different data types, incl
 \item ddata[10] = \var{tlitesnaplast} : Time when previous lite snapshot was created (N/A in SEREN)
 \end{itemize}
 \item \var{unit\_data[nunit]} : Strings identifying the chosen input unit for each physical quantity.  Note that this does not necessarily have to be the same as the chosen output units (See Section \ref{S:UNITS}).  In unformatted/binary files, the strings are set to a default maximum length of 20 characters (with white space padding at the end).
-\item \var{data\_id[ndata]} : Strings identifying the physical quantities contained in the particle arrays that follow the header.  As with the \var{unit\_data} array using unformatted/binary file, the strings are set to a default maximum length of 20 characters (with white space padding at the end).
+\item \var{data\_id[ndata]} : Strings identifying the physical quantities contained in the particle arrays that follow the header.  Note that vector quantities are written grouping together the different components for each component, rathern than different ndim scalar values (e.g., in 2d x and y of a given particle are written one after the other, and after come the x and y of another particle). As with the \var{unit\_data} array using unformatted/binary file, the strings are set to a default maximum length of 20 characters (with white space padding at the end).
 \begin{itemize}
 \item \var{porig} : Original (unique) particle ids
 \item \var{r} : Hydro particle positions
@@ -1117,7 +1117,7 @@ The format consists of a large multi-part header with different data types, incl
 \item typedata[idata][4] : Physical unit of array (same i.d. as \var{unit\_data} array index plus one due to Fortran array convention)
 \end{itemize}
 \end{itemize}
-The headers, in particular \var{data\_id} and \var{typedata}, contain all the information about what type of data is contained in the particle arrays.
+The headers, in particular \var{data\_id} and \var{typedata}, contain all the information about what type of data is contained in the particle arrays. The particle arrays come immediately after the end of the header.
 
 
 
