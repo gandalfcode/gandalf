@@ -414,7 +414,8 @@ class ParticlePlotCommand (PlotCommand):
 
     sphstyle = {}
     starstyle = {'color': 'red'}
-    typestyle = {'sph': sphstyle, 'star': starstyle}
+    duststyle = {'color': 'green'}
+    typestyle = {'sph': sphstyle, 'star': starstyle, 'dust': duststyle}
 
 
     #--------------------------------------------------------------------------

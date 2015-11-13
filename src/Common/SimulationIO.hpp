@@ -566,6 +566,7 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
 
   info.Nhydro = idata[0];
   info.Nstar  = idata[1];
+  info.Ndust  = idata[6];
   info.t      = ddata[0];
   info.t      /= simunits.t.inscale;
 

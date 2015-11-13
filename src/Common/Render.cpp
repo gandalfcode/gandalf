@@ -118,7 +118,7 @@ int Render<ndim>::CreateColumnRenderingGrid
   int ii,jj;                           // ..
   int idummy;                          // Dummy integer to verify valid arrays
   int imin,imax,jmin,jmax;             // Grid limits for column density interpolation
-  int Nhydro = snap.Nhydro;                // No. of SPH particles in snap
+  int Nhydro = snap.GetNparticlesType("sph");                // No. of SPH particles in snap
   float dx,dy,invdx,invdy;             // ..
   float dr[2];                         // Rel. position vector on grid plane
   float drsqd;                         // Distance squared on grid plane
@@ -275,7 +275,7 @@ int Render<ndim>::CreateSliceRenderingGrid
   int idummy;                          // Dummy integer to verify correct array
   int ii,jj;                           // ..
   int imin,imax,jmin,jmax;             // Grid limits for column density interpolation
-  int Nhydro = snap.Nhydro;                // No. of SPH particles in snap
+  int Nhydro = snap.GetNparticlesType("sph");                // No. of SPH particles in snap
   float dx,dy,invdx,invdy;             // ..
   float dr[3];                         // Rel. position vector on grid plane
   float drsqd;                         // Distance squared on grid plane
