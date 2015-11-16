@@ -22,6 +22,8 @@
 #==============================================================================
 import numpy as np
 from swig_generated.SphSim import ShocktubeSolution
+from scipy.interpolate import interp1d
+#from scipy.special import gamma as GammaF
 
 '''This module contains the classes responsible for computing the analytical solution, in the case we know it.
 There is a template empty class, which shows that the class must expose a compute function.
@@ -212,3 +214,213 @@ class soundwave (AnalyticalSolution):
             return x,ax
         else:
             raise KeyError("There were errors in the quantity you requested")
+
+#-------------------------------------------------------------------------------
+class SedovSolution(object):
+    """Class for simple approximations to the Sedov (1959) solution
+    for point explosion. 
+    
+    Solutions are taken from Book (1991), who present solutions by KorobeYnikov
+    et al. (1961)
+
+    args:
+        E : float 
+            explosion energy
+        rho : float
+              density of the medium (initially constant everywhere)
+        gamma : float, default=1.4
+                ratio of specific heats
+        nu : int, default=3
+               number of dimensions which the explosion occurs in
+        w : float, default=0
+               power in the density law, rho=rho0 r^-w       
+    """
+    def __init__(self, E, rho, gamma=1.4, nu=3,w=0.):
+        self._E = E 
+        self._gamma = gamma 
+        
+        self._rho0 = rho
+        self._rho1 = ((gamma + 1.)/(gamma - 1.))*rho
+
+        self._nDim = nu 
+        self._w = w 
+
+        # Constants for the parametic equations:
+        w1 = (3*nu - 2 + gamma*(2-nu))/(gamma + 1.)
+        w2 = (2.*(gamma-1) + nu)/gamma
+        w3 = nu*(2.-gamma)
+
+        b0 = 1./(nu*gamma - nu + 2)
+        b2 = (gamma-1.)/(gamma*(w2-w))
+        b3 = (nu-w)/(float(gamma)*(w2-w))
+        b5 = (2.*nu-w*(gamma+1))/(w3-w)
+        b6 = 2./(nu+2-w)
+        b1 = b2 + (gamma+1.)*b0 - b6
+        b4 = b1*(nu-w)*(nu+2.-w)/(w3-w)
+        b7 = w*b6
+        b8 = nu*b6
+
+        # C0 is surface area function in ndim. Use approx:
+        if any(nu == np.array([1,2,3])): 
+            C0 = 2*(nu-1)*np.pi + (nu-2)*(nu-3)
+        else: # General form requires Gamma function
+            from scipy.special import gamma as GammaF
+            C0 = (2**nu)*(np.pi**((nu-1)/2.))*GammaF((nu+1)/2.)/GammaF(nu)
+        C5 = 2./(gamma - 1)
+        C6 = (gamma + 1)/2.
+        C1 = C5*gamma
+        C2 = C6/gamma
+        C3 = (nu*gamma - nu + 2.)/((w1-w)*C6)
+        C4 = (nu + 2. - w)*b0*C6
+
+        # Lambdas for setting up the interpolating functions:
+        ETA = lambda F: (F**-b6)*((C1*(F-C2))** b2          )*((C3*(C4-F))**(  -b1  ))
+        D   = lambda F: (F**-b7)*((C1*(F-C2))**(b3-  w  *b2))*((C3*(C4-F))**(b4+w*b1))*((C5*(C6-F))**-b5)
+        P   = lambda F: (F** b8)*((C3*(C4-F))**(b4+(w-2)*b1))*((C5*(C6-F))**(1 -  b5))
+        V   = lambda F: ETA(F)*F
+
+        # Characterize the solution
+        if w1 > w:
+            Fmin = C2
+        else:
+            Fmin = C6
+        
+        F = np.logspace(np.log10(Fmin),0,1e5)
+
+        # Sort the etas for our interpolation function
+        eta = ETA(F)
+        F = F[eta.argsort()]
+        eta.sort()
+
+        d = D(F)
+        p = P(F)
+        v = V(F)
+
+        # If min(eta) != 0 then all values for eta < min(eta) = 0
+        if eta[0] > 0:
+            e01 = [0., eta[0]*(1-1e-10)]
+            d01 = [0.,0]
+            p01 = [0.,0]
+            v01 = [0.,0]
+
+            eta = np.concatenate([np.array(e01),eta])
+            d   = np.concatenate([np.array(d01),  d])
+            p   = np.concatenate([np.array(p01),  p])
+            v   = np.concatenate([np.array(v01),  v])      
+
+        # Set up our interpolation functions
+        self._d = interp1d(eta,d,bounds_error=False, fill_value=1./self._rho1)
+        self._p = interp1d(eta,p,bounds_error=False, fill_value=0.)
+        self._v = interp1d(eta,v,bounds_error=False, fill_value=0.)
+        
+        # Finally Calculate the normalization of R_s:
+        I = eta**(nu-1)*(d*v**2 + p)
+        
+        I    = 0.5*(I[1: ]  +   I[:-1])
+        deta =     (eta[1:] - eta[:-1])
+
+        alpha = (I*deta).sum()*(8*C0)/((gamma**2-1.)*(nu+2.-w)**2)
+        self._C = (1./alpha)**(1./(nu+2-w))
+
+    # Shock properties
+    def R_s(self,t):
+        """Outer radius at time t"""
+        return self._C *(self.E*t**2/self.rho0)**(1./(self._nDim + 2-self._w))
+
+    def V_s(self,t):
+        """Velocity of the shock wave"""
+        return (2./(self._nDim+2-self._w)) * self.R_s(t) / t
+
+    def P_s(self,t):
+        """Post shock pressure"""
+        return (2./(self.gamma+1))*self.rho0*self.V_s(t)**2
+
+    @property
+    def Rho_s(self,t=0):
+        """Post shock density"""
+        return self._rho1
+
+    # Position dependent variables
+    def rho(self,r,t):
+        """Density at radius, r, and time, t."""
+        eta = r/self.R_s(t) ;
+        return self.Rho_s*self._d(eta)
+
+    def P(self,r,t):
+        """pressure at radius, r, and time, t."""
+        eta = r/self.R_s(t) ;
+        return self.P_s(t)*self._p(eta)
+
+        # Position dependent variable
+    def v(self,r,t):
+        """Density at radius, r, and time, t."""
+        eta = r/self.R_s(t) ;
+        return self._v(eta)*(2/(self.gamma+1))*self.V_s(t)
+
+    def u(self, r,t):
+        """Internal energy at radius, r, and time, t."""
+        return self.P(r,t)/(self.rho(r,t)*(self.gamma-1))
+
+    def Entropy(self,r,t):
+        """Entropy at radius, r, and time, t."""
+        return self.P(r,t)/self.rho(r,t)**self.gamma
+    
+    # Other properties
+    @property
+    def E(self):
+        """Total energy"""
+        return self._E
+
+    @property
+    def gamma(self):
+        """Ratio of specific heats"""
+        return self._gamma
+
+    @property
+    def rho0(self):
+        """Background density"""
+        return self._rho0
+        
+        
+
+class sedov (AnalyticalSolution):
+    '''Analytical solution for the sedov blast wave problem'''
+
+    def __init__(self, sim, time):
+        fparams = sim.simparams.floatparams
+        iparams = sim.simparams.intparams
+
+        rho0 = fparams['rhofluid1']
+        E0 = 1
+        gamma = fparams['gamma_eos']
+        w = 0 # Power law index
+        ndim = iparams['ndim']
+
+        self._sol = SedovSolution(E0, rho0, gamma=gamma,w=w,nu=ndim)
+
+        # Save domain
+        Rmax = 0;
+        for i in range(ndim):
+            Rmax += (0.5*(fparams['boxmax['+str(i)+']'] - 
+                          fparams['boxmin['+str(i)+']']))**2
+        Rmax = Rmax**0.5
+        
+        self._r = np.linspace(0, Rmax, 1e3)
+        self._t = time
+
+    def compute(self, x, y):
+        return map(self._get_data, [x,y])
+
+    def _get_data(self, x):
+        if x == 'R':
+            return self._r 
+        elif x == 'vr':
+            return self._sol.v(self._r, self._t)
+        elif x == 'rho':
+            return self._sol.rho(self._r, self._t)
+        elif x == 'press':
+            return self._sol.P(self._r, self._t)
+        elif x == 'u':
+            return self._sol.u(self._r, self._t)
+        else:
+            raise AttributeError("Sedov solution for variable %s not known"%x)
