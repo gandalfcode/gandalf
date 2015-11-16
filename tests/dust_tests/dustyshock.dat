@@ -25,8 +25,8 @@ Dimensionless units                         : dimensionless = 1
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = -2.0
-RHS position of boundary in x-dimension     : boxmax[0] = 2.0
+LHS position of boundary in x-dimension     : boxmin[0] = -1.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
 
 LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
 RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
@@ -34,8 +34,8 @@ RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.751
-Regular snapshot output frequency           : dt_snap = 0.25
+Simulation end time                         : tend = 0.25
+Regular snapshot output frequency           : dt_snap = 0.05
 Time for first snapshot                     : tsnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
 Output file format                          : out_file_form = su
@@ -96,7 +96,7 @@ Switch-off self-gravity of gas              : self_gravity = 0
 #--------------
 # Misc. options
 #--------------
-Dust force type                             : dust_forces = test_particle
+Dust force type                             : dust_forces = full_twofluid
 Drag force law                              : drag_law = fixed
-Drag coefficient                            : drag_coeff = 4
+Drag coefficient                            : drag_coeff = 10
 Dust to gas ratio                           : dust_mass_factor = 1.0
