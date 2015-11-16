@@ -674,6 +674,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     	i = activelist[j];
     	for (k=0; k<ndim; k++) sphdata[i].a_dust[k] = activepart[j].a_dust[k] ;
     	sphdata[i].dudt = activepart[j].dudt ;
+    	sphdata[i].div_v = activepart[j].div_v ;
+    	sphdata[i].sound = activepart[j].sound ;
       }
     }
     //===============================================================================================
