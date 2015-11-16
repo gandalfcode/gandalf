@@ -104,16 +104,17 @@ if we are in interactive mode, or re-raising it, if we are in script mode
 
 #------------------------------------------------------------------------------
 def loadsim(run_id, fileformat=None, buffer_flag='cache'):
-    '''Given the run_id of a simulation, reads it from the disk.
-Returns the newly created simulation object.
+    '''
+    Given the run_id of a simulation, reads it from the disk.
+    Returns the newly created simulation object.
 
-Required arguments:
-    run_id      : Simulation run identification string.
+    Arguments:
+        run_id(str): Simulation run identification string.
 
-Optional qrguments:
-    fileformat  : Format of all snapshot files of simulation.
-    buffer_flag : Record snapshot data in simulation buffer.
-'''
+    Keyword Args:
+        fileformat: Format of all snapshot files of simulation.
+        buffer_flag: Record snapshot data in simulation buffer.
+    '''
     SimBuffer.loadsim(run_id, fileformat=fileformat, buffer_flag=buffer_flag)
     return SimBuffer.get_current_sim()
 
@@ -143,30 +144,34 @@ def plot(x, y, type="default", snap="current", sim="current",
          overplot=False, autoscale=False, xunit="default", yunit="default",
          xaxis="linear", yaxis="linear", **kwargs):
     '''Plot particle data as a scatter plot.  Creates a new plotting window if
-one does not already exist.
+    one does not already exist.
 
-Required arguments:
-    x          : Quantity on the x-axis. Must be a string.
-    y          : Quantity on the y-axis. Must be a string.
+    Args:
+        x (str) : Quantity on the x-axis.
+        y (str) : Quantity on the y-axis.
 
-Optional arguments:
-    type       : The type of the particles to plot (e.g. 'star' or 'sph').
-    snap       : Number of the snapshot to plot. Defaults to 'current'.
-    sim        : Number of the simulation to plot. Defaults to 'current'.
-    overplot   : If True, overplots on the previous existing plot rather
+    Keyword Args:
+        type       : The type of the particles to plot (e.g. 'star' or 'sph').
+        snap       : Number of the snapshot to plot. Defaults to 'current'.
+        sim        : Number of the simulation to plot. Defaults to 'current'.
+        overplot (bool)  : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True, the limits of the plot are set
+        autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
                  If False (default), autoscaling is not used. On an axis that does
                  not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
-    xunit      : Specify the unit to use for the plotting for the quantity
+        xunit (str)  : Specify the unit to use for the plotting for the quantity
                  on the x-axis.
-    yunit      : Specify the unit to use for the plotting for the quantity
+        yunit (str) : Specify the unit to use for the plotting for the quantity
                  on the y-axis.
-    **kwargs   : Extra keyword arguments will be passed to matplotlib.
-'''
+        **kwargs   : Extra keyword arguments will be passed to matplotlib.
+        
+    Return:
+        Data plotted. The member x_data contains data on the x-axis and the member y_data
+            contains data on the y-axis
+    '''
     simno = get_sim_no(sim)
     overplot=to_bool(overplot)
     # If we are plotting all particle species, call plot in turn
@@ -194,43 +199,47 @@ def time_plot(x, y, sim="current", overplot=False, autoscale=False,
               yaxis="linear", idx=None, idy=None, id=None,
               typex="default", typey="default", type="default", **kwargs):
     '''Plot two quantities as evolved in time one versus the another.  Creates
-a new plotting window if one does not already exist.
+    a new plotting window if one does not already exist.
 
-Required arguments:
-    x          : Quantity on x-axis. Must be a string. The quantity is looked
-                 up in the quantities defined as a function of time. If it is
-                 not found there, then we try to interpret it as a quantity
-                 defined for a particle. In this case, the user needs to pass
-                 either idx either id to specify which particle he wishes
-                 to look-up.
-    y          : Quantity on y-axis.  Must be a string. The interpretation is
-                 like for the previous argument.
+    Args:
+        x (str): Quantity on x-axis. The quantity is looked
+                     up in the quantities defined as a function of time. If it is
+                     not found there, then we try to interpret it as a quantity
+                     defined for a particle. In this case, the user needs to pass
+                     either idx either id to specify which particle he wishes
+                     to look-up.
+        y (str): Quantity on y-axis. The interpretation is
+                     like for the previous argument.
 
-Optional arguments:
-    sim        : Number of the simulation to plot. Defaults to 'current'.
-    overplot   : If True, overplots on the previous existing plot rather
-                 than deleting it. Defaults to False.
-    autoscale  : If True, the limits of the plot are set
-                 automatically.  Can also be set to 'x' or 'y' to specify
-                 that only one of the axis has to use autoscaling.
-                 If False (default), autoscaling is not used. On an axis that
-                 does not have autoscaling turned on, global limits are used
-                 if defined for the plotted quantity.
-    xunit      : Specify the unit to use for the plotting for the quantity
-                 on the x-axis.
-    yunit      : Specify the unit to use for the plotting for the quantity
-                 on the y-axis.
-    idx        : id of the particle to plot on the x-axis. Ignored if the
-                 quantity given (e.g., com_x) does not depend on the id.
-    idy        : same as previous, on the y-axis.
-    id         : same as the two previous ones. To be used when the id is the
-                 same on both axes. If set, overwrites the passed idx and idy.
-    typex      : type of particles on the x-axis. Ignored if the quantity
-                 given does not depend on it
-    typey      : as the previous one, on the y-axis.
-    type       : as the previous ones, for both axis at the same time. If set,
-                 overwrites typex and typey.
-'''
+    Keyword Args:
+        sim: Number of the simulation to plot. Defaults to 'current'.
+        overplot (bool): If True, overplots on the previous existing plot rather
+                     than deleting it. Defaults to False.
+        autoscale: If True, the limits of the plot are set
+                     automatically.  Can also be set to 'x' or 'y' to specify
+                     that only one of the axis has to use autoscaling.
+                     If False (default), autoscaling is not used. On an axis that
+                     does not have autoscaling turned on, global limits are used
+                     if defined for the plotted quantity.
+        xunit (str): Specify the unit to use for the plotting for the quantity
+                     on the x-axis.
+        yunit (str): Specify the unit to use for the plotting for the quantity
+                     on the y-axis.
+        idx (int): id of the particle to plot on the x-axis. Ignored if the
+                     quantity given (e.g., com_x) does not depend on the id.
+        idy (int): same as previous, on the y-axis.
+        id (int) : same as the two previous ones. To be used when the id is the
+                     same on both axes. If set, overwrites the passed idx and idy.
+        typex (str): type of particles on the x-axis. Ignored if the quantity
+                     given does not depend on it
+        typey (str): as the previous one, on the y-axis.
+        type (str): as the previous ones, for both axis at the same time. If set,
+                     overwrites typex and typey.
+                     
+    Return:
+        Data plotted. The member x_data contains data on the x-axis and the member y_data
+            contains data on the y-axis
+    '''
     simno = get_sim_no(sim)
     overplot = to_bool(overplot)
     command = Commands.TimePlot(x, y,simno,overplot,autoscale,
@@ -249,55 +258,61 @@ def render(x, y, render, snap="current", sim="current", overplot=False,
            renderunit="default", res=64, interpolation='nearest',lognorm=False,**kwargs):
     '''Create a rendered plot from selected particle data.
 
-Required arguments:
-    x          : Quantity on the x-axis. Must be a string.
-    y          : Quantity on the y-axis. Must be a string.
-    renderdata : Quantity to be rendered. Must be a string.
+    Args:
+        x (str): Quantity on the x-axis.
+        y (str): Quantity on the y-axis.
+        render (str): Quantity to be rendered.
 
-Optional arguments:
-    snap       : Number of the snapshot to plot. Defaults to \'current\'.
-    sim        : Number of the simulation to plot. Defaults to \'current\'.
-    overplot   : If True, overplots on the previous existing plot rather
-                 than deleting it. Defaults to False.
-    autoscale  : If True, the coordinate limits of the plot are set
-                 automatically.  Can also be set to 'x' or 'y' to specify
-                 that only one of the axis has to use autoscaling.
-                 If False (default), autoscaling is not used. On an axis that
-                 does not have autoscaling turned on, global limits are used
-                 if defined for the plotted quantity.
-    autoscalerender : Same as the autoscale, but for the rendered quantity.
-    coordlimits : Specify the coordinate limits for the plot. In order of
-                  precedence, the limits are set in this way:
-                  - What this argument specifies. The value must be an
-                    iterable of 4 elements: (xmin, xmax, ymin, ymax).
-                  - If this argument is None (default), global settings for
-                    the quantity are used.
-                  - If global settings for the quantity are not defined,
-                    the min and max of the data are used.
-    zslice     : z-coordinate of the slice when doing a slice rendering.
-                 Default is None, which produces a column-integrated plot.
-                 If you set this variable, instead a slice rendering will
-                 be done.
-    xunit      : Specify the unit to use for the plotting for the quantity
-                 on the x-axis.
-    yunit      : Specify the unit to use for the plotting for the quantity
-                 on the y-axis.
-    renderunit : Specify the unit to use for the plotting for the rendered
-                 quantity.
-    res        : Specify the resolution. Can be an integer number, in which
-                 case the same resolution will be used on the two axes, or a
-                 tuple (e.g., (xres, yres)) of two integer numbers, if you
-                 want to specify different resolutions on the two axes.
-    interpolation : Specify the interpolation to use. Default is nearest,
-                    which will show the pixels of the rendering grid. If one
-                    wants to smooth the image, bilinear or bicubic could be
-                    used. See pyplot documentation for the full list of
-                    possible values.
-    lognorm    : Boolean flag specifying wheter the colour scale should be
-                 logarithmic (default: linear). If you want to customise the
-                 limits, use the vmin and vmax flags which are passed to
-                 matplotlib
-'''
+    Keyword Args:
+        snap       : Number of the snapshot to plot. Defaults to \'current\'.
+        sim        : Number of the simulation to plot. Defaults to \'current\'.
+        overplot (bool): If True, overplots on the previous existing plot rather
+                             than deleting it. Defaults to False.
+        autoscale: If True, the coordinate limits of the plot are set
+                     automatically.  Can also be set to 'x' or 'y' to specify
+                     that only one of the axis has to use autoscaling.
+                     If False (default), autoscaling is not used. On an axis that
+                     does not have autoscaling turned on, global limits are used
+                     if defined for the plotted quantity.
+        autoscalerender: Same as the autoscale, but for the rendered quantity.
+        coordlimits: Specify the coordinate limits for the plot. In order of
+                          precedence, the limits are set in this way:
+                          
+                          * What this argument specifies. The value must be an
+                            iterable of 4 elements: (xmin, xmax, ymin, ymax).
+                          * If this argument is None (default), global settings for
+                            the quantity are used.
+                          * If global settings for the quantity are not defined,
+                            the min and max of the data are used.
+        zslice (float): z coordinate of the slice when doing a slice rendering.
+                             Default is None, which produces a column-integrated plot.
+                             If you set this variable, instead a slice rendering will
+                             be done.
+        xunit (str): Specify the unit to use for the plotting for the quantity
+                         on the x-axis.
+        yunit (str): Specify the unit to use for the plotting for the quantity
+                         on the y-axis.
+        renderunit (str): Specify the unit to use for the plotting for the rendered
+                             quantity.
+        res: Specify the resolution. Can be an integer number, in which
+                     case the same resolution will be used on the two axes, or a
+                     tuple (e.g., (xres, yres)) of two integer numbers, if you
+                     want to specify different resolutions on the two axes.
+        interpolation: Specify the interpolation to use. Default is nearest,
+                        which will show the pixels of the rendering grid. If one
+                        wants to smooth the image, bilinear or bicubic could be
+                        used. See pyplot documentation for the full list of
+                        possible values.
+        lognorm (bool): Specify wheter the colour scale should be
+                         logarithmic (default: linear). If you want to customise the
+                         limits, use the vmin and vmax flags which are passed to
+                         matplotlib
+        **kwarg: Extra keyword arguments will be passed to matplotlib.
+                         
+                         
+    Return:
+        Data plotted. The member render_data contains the actual image (2d array).
+    '''
     if zslice is not None:
         zslice = float(zslice)
     simno = get_sim_no(sim)
@@ -323,14 +338,14 @@ Optional arguments:
 def renderslice(x, y, renderq, zslice, **kwargs):
     '''Thin wrapper around render that does slice rendering.
 
-Required arguments:
-    x          : Quantity on the x-axis. Must be a string.
-    y          : Quantity on the y-axis. Must be a string.
-    renderq    : Quantity to be rendered. Must be a string.
-    zslice     : z-coordinate of the slice.
+    Args:
+        x (str): Quantity on the x-axis.
+        y (str): Quantity on the y-axis.
+        renderq (str): Quantity to be rendered.
+        zslice (float): z-coordinate of the slice.
 
-Optional arguments:
-    See render function optional arguments
+    Keyword Args:
+        See documentation of the render function.
 '''
     data=render(x, y, renderq, zslice=zslice, **kwargs)
     return data
@@ -339,17 +354,17 @@ Optional arguments:
 #------------------------------------------------------------------------------
 def addrenderslice(x, y, renderq, zslice, **kwargs):
     '''Thin wrapper around renderslice that sets overplot to True.  If autoscale is
-not explicitly set, it will be set to False to preserve the existing settings.
+    not explicitly set, it will be set to False to preserve the existing settings.
 
-Required arguments:
-    x          : Quantity on the x-axis. Must be a string.
-    y          : Quantity on the y-axis. Must be a string.
-    renderq    : Quantity to be rendered. Must be a string.
-    zslice     : z-coordinate of the slice.
+    Args:
+        x (str): Quantity on the x-axis.
+        y (str): Quantity on the y-axis.
+        renderq (str): Quantity to be rendered.
+        zslice (float): z-coordinate of the slice.
 
-Optional arguments:
-    See render function optional arguments
-'''
+    Keyword Args:
+        See documentation of the render function.
+    '''
     try:
         kwargs['autoscale']
     except KeyError:
@@ -361,15 +376,15 @@ Optional arguments:
 #------------------------------------------------------------------------------
 def addrender(x, y, renderq, **kwargs):
     '''Thin wrapper around render that sets overplot to True.  If autoscale is
-not explicitly set, it will be set to False to preserve the existing settings.
+    not explicitly set, it will be set to False to preserve the existing settings.
 
-Required arguments:
-    x          : Quantity on the x-axis. Must be a string.
-    y          : Quantity on the y-axis. Must be a string.
-    renderdata : Quantity to be rendered. Must be a string.
+    Args:
+        x (str): Quantity on the x-axis.
+        y (str): Quantity on the y-axis.
+        renderq (str): Quantity to be rendered.
 
-Optional arguments:
-    See render function optional arguments
+    Keyword Args:
+        See documentation of the render function.
 '''
     try:
         kwargs['autoscale']
@@ -382,7 +397,17 @@ Optional arguments:
 
 #------------------------------------------------------------------------------
 def make_movie(filename, snapshots='all', window_no=0, fps=24):
-    '''Generates movie for plots generated in given window'''
+    '''Generates movie for plots generated in given window
+    
+    Args:
+        filename (str): filename (with extension, e.g. mp4) of the movie that will
+                            be created.
+        snapshots (str): currently not used
+        window_no (int): currently not used
+        fps (int): frames per second
+    
+    
+    '''
 
     # Remove all temporary files in the directory (in case they still exist)
     tmpfilelist = glob.glob('tmp.?????.png')
@@ -420,20 +445,21 @@ def limit(quantity, min=None, max=None, auto=False,
           window='current', subfigure='current'):
     '''Set plot limits. Quantity is the quantity to limit.
 
-Required arguments:
-    quantity   : Set limits of this variable. Must be a string.
+    Args:
+        quantity (str): Set limits of this variable.
 
-Optional arguments:
-    min        : Minimum value of variable range.
-    max        : Maximum value of variable range.
-    auto       : If auto is set to True, then the limits for that quantity are
-                 set automatically. Otherwise, use the one given by max and min.
-    window     : If window is set to 'global' is available, then any changes
-                 will affect also future plots that do not have autoscaling
-                 turned on.
-    subfigure  : If subfigure is set to 'all', the limits in all the figures or
-                 in all the subfigures of the current figure are set.
-'''
+    Keyword Args:
+        min (float): Minimum value of variable range.
+        max (float): Maximum value of variable range.
+        auto (bool): If auto is set to True, then the limits for that quantity are
+                     set automatically. Otherwise, use the one given by max and min.
+        window (str): By default only the current subplot of the current window is affected.
+                        If this parameter is set to 'all', all the current windows are affected. 
+                        If this parameter is set to 'global', then also future plots are affected.
+        subfigure (str): Similarly to window, by default only the current subplot is affected
+                            by this command. If this parameter is set to 'all' then all the subfigures
+                            in the current window are affected.
+    '''
     if min is not None:
         min = float(min)
     if max is not None:
@@ -452,16 +478,16 @@ Optional arguments:
 #------------------------------------------------------------------------------
 def addplot(x, y, **kwargs):
     '''Thin wrapper around plot that sets overplot to True.  All the other
-arguments are the same. If autoscale is not explicitly set, it will be set
-to False to preserve the existing settings.
+    arguments are the same. If autoscale is not explicitly set, it will be set
+    to False to preserve the existing settings.
 
-Required arguments:
-    x          : Quantity on the x-axis. Must be a string.
-    y          : Quantity on the y-axis. Must be a string.
+    Args:
+        x (str): Quantity on the x-axis.
+        y (str): Quantity on the y-axis.
 
-Optional arguments:
-    See plot function optional arguments
-'''
+    Keyword Args:
+        See documentation of the plot function.
+    '''
     try:
         kwargs['autoscale']
     except KeyError:
@@ -495,12 +521,15 @@ Return the new snapshot, or None if the call failed.'''
 #------------------------------------------------------------------------------
 def snap(no):
     '''Jump to the given snapshot number of the current simulation.  Note that
-you can use standard Numpy index notation (e.g., -1 is the last snapshot).
-Return the new snapshot, or None if the call failed.
+    you can use standard Numpy index notation (e.g., -1 is the last snapshot).
+    Return the new snapshot, or None if the call failed.
 
-Required arguments:
-    snapno     : Snapshot number
-'''
+    Args:
+        snapno (int): Snapshot number
+        
+    Returns:
+        The snapshot object
+    '''
     no = int(no)
     snapshot=None
     try:
@@ -515,10 +544,10 @@ Required arguments:
 #------------------------------------------------------------------------------
 def window(no = None):
     '''Changes the current window to the number specified. If the window
-doesn\'t exist, recreate it.
+    doesn\'t exist, recreate it.
 
-Required arguments:
-    winno      : Window number
+    Args:
+        winno (int): Window number
 '''
     if no is not None:
         no=int(no)
@@ -531,11 +560,11 @@ Required arguments:
 def subfigure(nx, ny, current):
     '''Creates a subplot in the current window.
 
-Required arguments:
-    nx         : x-grid size
-    ny         : y-grid size
-    current    : id of active sub-figure.  If sub-figure already exists,
-                 then this sets the new active sub-figure.
+    Args:
+        nx (int): x-grid size
+        ny (int): y-grid size
+        current (int): id of active sub-figure.  If sub-figure already exists,
+                         then this sets the new active sub-figure.
 '''
     nx = int(nx)
     ny = int(ny)
@@ -558,8 +587,8 @@ afterwards.
 #------------------------------------------------------------------------------
 def setupsim():
     '''Set up the current simulation object. Note that after calling this function,
-no parameter change it\'s possible.
-'''
+    no parameter change it\'s possible.
+    '''
     sim = SimBuffer.get_current_sim()
     sim.SetupSimulation()
     sim.simparams.RecordParametersToFile()
@@ -568,12 +597,12 @@ no parameter change it\'s possible.
 #------------------------------------------------------------------------------
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
-otherwise queries the buffer for the given simulation number.
-If the simulation has not been setup, does it before running.
+    otherwise queries the buffer for the given simulation number.
+    If the simulation has not been setup, does it before running.
 
-Optional arguments:
-    no         : Simulation number
-'''
+    Keyword Args:
+        no(int): Simulation number
+    '''
     #gets the correct simulation object from the buffer
     try:
         if no is None:
@@ -602,12 +631,15 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def block():
+def block(message="Press enter to quit..."):
     '''Stops the execution flow until the user presses 'enter'.
-Useful in scripts, allowing to see a plot (which gets closed
-when the execution flow reaches the end of the script
-'''
-    print "Press enter to quit..."
+    Useful in scripts, allowing to see a plot (which otherwise gets closed
+    as soon as the execution flow reaches the end of the script)
+    
+    Keyword Args:
+        message (str): text to print before pausing
+    '''
+    print message
     raw_input()
 
 
@@ -636,13 +668,13 @@ because you probably just spotted a bug in the code.
 
 #------------------------------------------------------------------------------
 def savefig(name):
-    '''Saves the current figure with the given name.  Note that matplotlib
-figures out automatically the type of the file from the extension.
+    '''Save the current figure with the given name.  Note that matplotlib
+    figures out automatically the type of the file from the extension.
 
-Required arguments:
-    name       : filename (including extension)
+    Args:
+        name (str): filename (including extension)
 
-'''
+    '''
     command = Commands.SaveFigCommand(name)
     data = None
     Singletons.place_command([command,data])
@@ -665,28 +697,32 @@ def plotanalytical(x=None, y=None, ic="default", snap="current", sim="current",
                    overplot=True, autoscale=False, xunit="default",
                    yunit="default", time="snaptime"):
     '''Plots the analytical solution.  Reads the problem type from the \'ic\'
-parameter and plots the appropriate solution if implemented.  If no solution
-exists, then nothing is plotted.
+    parameter and plots the appropriate solution if implemented.  If no solution
+    exists, then nothing is plotted.
 
-Optional arguments:
-    x          : Quantity on the x-axis. Must be a string.
-    y          : Quantity on the y-axis. Must be a string.
-    snap       : Number of the snapshot to plot. Defaults to 'current'.
-    sim        : Number of the simulation to plot. Defaults to 'current'.
-    overplot   : If True, overplots on the previous existing plot rather
-                 than deleting it. Defaults to False.
-    autoscale  : If True, the limits of the plot are set
-                 automatically.  Can also be set to 'x' or 'y' to specify
-                 that only one of the axis has to use autoscaling.
-                 If False (default), autoscaling is not used. On an axis that does
-                 not have autoscaling turned on, global limits are used
-                 if defined for the plotted quantity.
-    xunit      : Specify the unit to use for the plotting for the quantity
-                 on the x-axis.
-    yunit      : Specify the unit to use for the plotting for the quantity
-                 on the y-axis.
-    time       : Plots the analytical solution for the given time.
-                 If not set, then reads the time from the sim or snapshot
+    Keyword Args:
+        x (str): Quantity on the x-axis.
+        y (str): Quantity on the y-axis.
+        snap : Number of the snapshot to plot. Defaults to 'current'.
+        sim : Number of the simulation to plot. Defaults to 'current'.
+        overplot (bool): If True, overplots on the previous existing plot rather
+                             than deleting it. Defaults to False.
+        autoscale: If True, the limits of the plot are set
+                     automatically.  Can also be set to 'x' or 'y' to specify
+                     that only one of the axis has to use autoscaling.
+                     If False (default), autoscaling is not used. On an axis that does
+                     not have autoscaling turned on, global limits are used
+                     if defined for the plotted quantity.
+        xunit (str): Specify the unit to use for the plotting for the quantity
+                         on the x-axis.
+        yunit (str): Specify the unit to use for the plotting for the quantity
+                         on the y-axis.
+        time: Plots the analytical solution for the given time.
+                     If not set, then reads the time from the sim or snapshot
+                     
+    Return:
+        Data plotted. The member x_data contains data on the x-axis and the member y_data
+            contains data on the y-axis
 '''
     #TODO: figure out automatically the quantities to plot depending on current window
 
@@ -701,17 +737,17 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def rescale(quantity, unitname, window="current", subfig="current"):
+def rescale(quantity, unitname, window="current"):
     '''Rescales the specified quantity in the specified window to the specified unit
 
-Required arguments:
-    quantity   : Quantity to be rescaled.  Must be a string.
-    unitname   : Required unit for quantity.
+    Args:
+        quantity (str): Quantity to be rescaled.
+        unitname (str): Required unit for quantity.
 
-Optional qrguments:
-    window     : Window containing plot
-    subfig     : Sub-figure in window containing plot
-'''
+    Keyword args:
+        window     : Window containing plot. Can be either the string "current" or
+                        an integer specifying the window.
+    '''
     command = Commands.RescaleCommand(quantity, unitname, window)
     Singletons.place_command([command,None])
     okflag = Singletons.completedqueue.get()
@@ -731,9 +767,9 @@ def sims():
 def snaps(simno):
     '''For the given simulation number, print a list of all the snapshots
 
-Required argument:
-    simno      : Simulation number from which to print the snapshot list.
-'''
+    Args:
+        simno (int): Simulation number from which to print the snapshot list.
+    '''
     simno = int(simno)
     sim = SimBuffer.get_sim_no(simno)
     print "The run_id of the requested simulation is " + sim.simparams.stringparams["run_id"]
@@ -753,11 +789,13 @@ Required argument:
 #------------------------------------------------------------------------------
 def set_current_sim(simno):
     '''Set the current simulation to the given number.
-Returns the newly set current simulation.
 
-Required argument:
-    simno      : Simulation number
-'''
+    Keyword Args:
+        simno (int): Simulation number
+        
+    Returns:
+        The newly set current simulation
+    '''
     simno = int(simno)
     return SimBuffer.set_current_sim_no(simno)
 
@@ -779,14 +817,17 @@ def get_data(quantity, snap="current",type="default",sim="current",unit="default
     '''Returns the array with the data for the given quantity.
     The data is returned scaled to the specified unit
     
-    Required argument:
-        quantity        :The quantity required. Must be a string
+    Args:
+        quantity (str):The quantity required.
         
-    Optional arguments:
-        type            :The type of the particles (e.g. 'star')
-        snap            :Number of the snapshot. Defaults to 'current'
-        sim             :Number of the simulation. Defaults to 'current'
-        unit            :Specifies the unit to use to return the data
+    Keyword Args:
+        type (str):The type of the particles (e.g. 'star')
+        snap:Number of the snapshot. Defaults to 'current'
+        sim:Number of the simulation. Defaults to 'current'
+        unit (str):Specifies the unit to use to return the data
+        
+    Returns:
+        A numpy array containing the requested data.
     '''
     simno = get_sim_no(sim)
     sim = SimBuffer.get_sim_no(simno)
@@ -805,25 +846,25 @@ def get_render_data(x,y,quantity, sim="current",snap="current",
     to grid SPH data. The result is scaled to the specified unit. The options are 
     a subset of the options available to the 'render' function.
     
-    Required arguments:
-        x        : Quantity on the x-axis. Must be a string
-        y        : Quantity on the y-axis. Must be a string
-        quantity : Quantity to render.
+    Args:
+        x (str): Quantity on the x-axis.
+        y (str): Quantity on the y-axis.
+        quantity (str): Quantity to render.
         
-    Optional arguments:
-        snap     : Number of the snapshot to plot. Defaults to 'current'.
-        sim      : Number of the simulation to plot. Defaults to 'current'
-        renderunit: Unit to use for the rendered quantity
-        res      : Resolution
-        zslice   : z-coordinate of the slice when doing a slice rendering.
-                   Default is None, which produces a column-integrated plot.
-                   If you set this variable, a slice rendering will be
-                   done instead.
+    Keyword Args:
+        snap: Number of the snapshot to plot. Defaults to 'current'.
+        sim : Number of the simulation to plot. Defaults to 'current'
+        renderunit (quantity): Unit to use for the rendered quantity
+        res: Resolution
+        zslice (float): z-coordinate of the slice when doing a slice rendering.
+                           Default is None, which produces a column-integrated plot.
+                           If you set this variable, a slice rendering will be
+                           done instead.
         coordlimits: Limits of the coordinates on x and y. See documentation
                      of render.
                      
     Return:
-        data     : The rendered data, scaled to the requested unit.
+        A numpy 2d array containig the rendered data, scaled to the requested unit.
         
     
     '''

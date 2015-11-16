@@ -12,7 +12,7 @@ The code is open-source and can be downloaded anonimously. Users are encouraged 
 Webpage
 ---------
 
-The webpage for the code can be found at http://gandalfcode.github.io
+The webpage for the code can be found at [http://gandalfcode.github.io](http://gandalfcode.github.io).
 
 
 Download
@@ -29,7 +29,7 @@ If you wish to know more in detail what git is and what you can do with it, the 
 
 Userguide
 ------------
-The folder docs contains a latex file with the userguide.  The userguide contains a section about the requirements for installation and how to compile the code. You need at the very least a c++ compiler to compile the main code.
+The folder docs contains a latex file with the userguide.  The userguide contains a section about the requirements for installation and how to compile the code. You need at the very least a c++ compiler to compile the main code. If the userguide does not contain the answer you're looking for, why don't you take a look at the [website of the GANDALF school](http://gandalfcode.github.io/gandalf-school/programme.html)?
 
 Contact
 ---------

@@ -5,7 +5,7 @@
 #==============================================================================
 from gandalf.analysis.facade import *
 
-# Load in simulation frmo disk
+# Load in simulation from disk (from example 12)
 sim = loadsim("BB1")
 
 # Plot the density of particle `100' as a function of time
