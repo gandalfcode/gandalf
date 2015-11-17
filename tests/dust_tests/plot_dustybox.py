@@ -85,6 +85,6 @@ time_plot('t', 'vx', id=0, type='dust', overplot=True)
 plt.plot(t, sol.vd(t), 'k--')
 
 plt.xlim(0, t[-1])
-plt.ylim(min(vd, vg), max(vd, vg))
+limit('vx',min(vd, vg), max(vd, vg), window='all')
 plt.show()
 
