@@ -741,83 +741,82 @@ void SphSimulation<ndim>::MainLoop(void)
           for (k=0; k<ndim; k++) part.a_dust[k] = (FLOAT) 0.0;
         }
       }
-    }
 
-    // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+      // Calculate all SPH properties
+      sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
 
 
-    // Update the radiation field
-    if (Nsteps%nradstep == 0 || recomputeRadiation) {
-      radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
-                                      partdata, nbody->nbodydata, sinks->sink);
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        sph->ComputeThermalProperties(part);
+      // Update the radiation field
+      if (Nsteps%nradstep == 0 || recomputeRadiation) {
+	radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
+					partdata, nbody->nbodydata, sinks->sink);
+	for (i=0; i<sph->Nhydro; i++) {
+	  SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+	  sph->ComputeThermalProperties(part);
+	}
       }
-    }
 
 
-    // Copy properties from original particles to ghost particles
-    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+      // Copy properties from original particles to ghost particles
+      LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
 
-    // Calculate gravitational forces from other distant MPI nodes.
-    // Also determines particles that must be exported to other nodes
-    // if too close to the domain boundaries
+      // Calculate gravitational forces from other distant MPI nodes.
+      // Also determines particles that must be exported to other nodes
+      // if too close to the domain boundaries
 #ifdef MPI_PARALLEL
-    if (sph->self_gravity == 1) {
-      sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
-    }
-    else {
-      sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
-    }
+      if (sph->self_gravity == 1) {
+	sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
+      }
+      else {
+	sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
+      }
 
-    // If active particles need forces from other domains, export particles
-    mpicontrol->ExportParticlesBeforeForceLoop(sph);
+      // If active particles need forces from other domains, export particles
+      mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
 
 
-    // Calculate SPH gravity and hydro forces, depending on which are activated
-    if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-      sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
-				  sph, nbody, simbox, ewald);
-    }
-    else if (sph->self_gravity == 1) {
-      sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
-				      sph, nbody, simbox, ewald);
-    }
-    else if (sph->hydro_forces == 1) {
-      sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
-				       partdata, sph, nbody, simbox);
-    }/*
-      else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-        sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-      }
-      else if (sph->hydro_forces == 1) {
-        sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+      // Calculate SPH gravity and hydro forces, depending on which are activated
+      if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
+	sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
+				    sph, nbody, simbox, ewald);
       }
       else if (sph->self_gravity == 1) {
-        sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-      }*/
-
-    // Add external potential for all active SPH particles
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      if (part.active) {
-        sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
+	sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
+					sph, nbody, simbox, ewald);
       }
-    }
+      else if (sph->hydro_forces == 1) {
+	sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
+					 partdata, sph, nbody, simbox);
+      }/*
+	 else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
+	 sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+	 }
+	 else if (sph->hydro_forces == 1) {
+	 sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+	 }
+	 else if (sph->self_gravity == 1) {
+	 sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+	 }*/
 
-    // Checking if acceleration or other values are invalid
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      if (part.active) {
-        for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
-        for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
-        for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
-        assert(part.gpot == part.gpot);
+      // Add external potential for all active SPH particles
+      for (i=0; i<sph->Nhydro; i++) {
+	SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+	if (part.active) {
+	  sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
+	}
       }
-    }
+
+      // Checking if acceleration or other values are invalid
+      for (i=0; i<sph->Nhydro; i++) {
+	SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+	if (part.active) {
+	  for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
+	  for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
+	  for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
+	  assert(part.gpot == part.gpot);
+	}
+      }
 
 #if defined MPI_PARALLEL
       mpicontrol->GetExportedParticlesAccelerations(sph);
@@ -839,17 +838,17 @@ void SphSimulation<ndim>::MainLoop(void)
       part.active = false;
     }
 
-      // Check if all neighbouring timesteps are acceptable.  If not, then set any
-      // invalid particles to active to recompute forces immediately.
-      if (Nlevels > 1) {
-        activecount = sphint->CheckTimesteps(level_diff_max, level_step, n, sph->Nhydro, partdata);
-      }
-      else {
-        activecount = 0;
-      }
+    // Check if all neighbouring timesteps are acceptable.  If not, then set any
+    // invalid particles to active to recompute forces immediately.
+    if (Nlevels > 1) {
+      activecount = sphint->CheckTimesteps(level_diff_max, level_step, n, sph->Nhydro, partdata);
+    }
+    else {
+      activecount = 0;
+    }
 
 #if defined MPI_PARALLEL
-      MPI_Allreduce(MPI_IN_PLACE, &activecount, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, &activecount, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
 
