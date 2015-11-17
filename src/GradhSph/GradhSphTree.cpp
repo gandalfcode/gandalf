@@ -200,6 +200,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
 
+  // If there are no active cells, return to main loop
+  if (cactive == 0) {
+    delete[] celllist;
+    timing->EndTimingSection("SPH_PROPERTIES");
+    return;
+  }
+
 
   // Set-up all OMP threads
   //===============================================================================================
@@ -436,7 +443,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  //if (cactive == 0) return;
+  if (cactive == 0) {
+    delete[] celllist;
+    timing->EndTimingSection("SPH_HYDRO_FORCES");
+    return;
+  }
+
 
   // Update ghost tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0],sphdata);
