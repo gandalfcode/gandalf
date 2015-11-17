@@ -93,7 +93,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   // Set-up dummy SPH object in order to have valid pointers in N-body object
   hydro = new NullHydrodynamics<ndim>
     (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-     stringparams["gas_eos"], KernelName, sizeof(Particle<ndim>));
+     stringparams["gas_eos"], KernelName, sizeof(Particle<ndim>), simunits, simparams);
 
 
   // Process all N-body parameters and set-up main N-body objects
