@@ -92,7 +92,7 @@ To compile GANDALF only as a C++ executable to be run from the command line with
 \newline
 \noindent \var{make install} \\
 
-will copy the executable to your \var{/usr/local/bin} folder. In this way you should be able to invoke GANDALF from the command line just typing \var{gandalf} (i.e. without the need to specify the full path).
+will copy the executable (provided you have already compiled the code) to your \var{/usr/local/bin} folder. In this way you should be able to invoke GANDALF from the command line just typing \var{gandalf} (i.e. without the need to specify the full path). Note that you might need to be root to write to that folder (in this case, use the sudo command).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,7 +133,7 @@ Also, \var{make} requires the location of the python and numpy libraries.  In mo
 \var{make installpython}
 \\
 
-\noindent and the GANDALF python library will be installed. In this case, there is no need to set the variable \var{PYTHONPATH}. Also, the folder where you keep your original code does not need to have any special name. If later you do make changes to the code, remember to re-run this command - otherwise the installed version remains the old one!
+\noindent and the GANDALF python library will be installed (this requires that you have already used \var{make} to compile the code). In this case, there is no need to set the variable \var{PYTHONPATH}. Also, the folder where you keep your original code does not need to have any special name. If later you do make changes to the code, remember to re-run this command - otherwise the installed version remains the old one! Note that you might need to be root (or to use sudo) to run this command.
 
 \end{itemize}
 
