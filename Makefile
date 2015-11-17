@@ -20,13 +20,13 @@
 #==================================================================================================
 
 
-CPP                = g++
+CPP                = 
 PYTHON             = python
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
 OUTPUT_LEVEL       = 1
-DEBUG_LEVEL        = 1
+DEBUG_LEVEL        = 0
 BUILD_DEPENDENCIES = 1
 
 

@@ -998,7 +998,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         }
         else {
           Ngravcell = Ngravcelltemp;
-          assert(Ngravcell <= Ngravcellmax);
+          // assert(Ngravcell <= Ngravcellmax);
         }
 
       }
@@ -1131,7 +1131,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 
 #pragma omp atomic
           Npartexport[j] += Nactive;
-          assert(Ncellexport[j] <= tree->gmax);
+          // assert(Ncellexport[j] <= tree->gmax);
         }
 
       }

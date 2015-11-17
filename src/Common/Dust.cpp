@@ -212,7 +212,6 @@ public:
 
 	FindNeibAndDoForces(NPart, Ntot, sphdata, _types, _Forces) ;
 
-	//TODO: Check: Should this be NPart or Ntot?
 	for (int i(0); i < Ntot; ++i){
 	  if (sphdata[i].active && _types[sphdata[i].ptype].drag_forces){
 	    for (int k=0; k < ndim; k++)
@@ -257,7 +256,6 @@ public:
 
 		FindNeibAndDoInterp(NPart, Ntot, sphdata, mask, _interp) ;
 
-		//TODO: Check: Should this be NPart or Ntot?
 		for (int i(0); i < Ntot; ++i)
 			if (sphdata[i].active && sphdata[i].ptype == dust_type){
 			    for (int k(0); k < ndim; ++k)
@@ -457,7 +455,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) this->CheckValidNeighbourList(i, Ntot, Nneib, neiblist, sphdata, "gather");
+          // if (neibcheck)
+          //    this->CheckValidNeighbourList(i, Ntot, Nneib, neiblist, sphdata, "gather");
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
@@ -600,8 +599,9 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
         Nneib = _tree->ComputeNeighbourAndGhostList(cell, sphdata, Nneibmax, Nneib,
         		 								   &(neiblist[0]), &(neibpart[0]));
 #ifdef MPI_PARALLEL
-        Nneib = mpighosttree->ComputeNeighbourAndGhostList(cell, sphdata, Nneibmax, Nneib,
-        		 								          &(neiblist[0]), &(neibpart[0]));
+        // Ghosts are already in the mpi tree
+        Nneib = mpighosttree->ComputeNeighbourList(cell, sphdata, Nneibmax, Nneib,
+        		 								   &(neiblist[0]), &(neibpart[0]));
 #endif
         // If there are too many neighbours, reallocate the arrays and
         // recompute the neighbour list.
@@ -634,8 +634,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
-      		  	                                        Nneib, neiblist, sphdata, "all");
+          // if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
+      	  //	  	                                        Nneib, neiblist, sphdata, "all");
 #endif
 
           // Compute distances and the inverse between the current particle and all neighbours here,

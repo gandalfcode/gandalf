@@ -525,33 +525,22 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
 
-    // Calculate SPH gravity and hydro forces, depending on which are activated
-    if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-      sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
-                                          sph, nbody, simbox, ewald);
-    }
-    else if (sph->self_gravity == 1) {
-      sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
-                                              sph, nbody, simbox, ewald);
-    }
-    else if (sph->hydro_forces == 1) {
-      sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
-                                               partdata, sph, nbody, simbox);
-    }
-    /*
-    else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-      sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-    }
-    else if (sph->hydro_forces == 1) {
-      sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-    }
-    else if (sph->self_gravity == 1) {
-      sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-    }
-    */
-    else{
-      ExceptionHandler::getIstance().raise("Error: No forces included in simulation");
-    }
+  // Calculate SPH gravity and hydro forces, depending on which are activated
+  if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
+    sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
+				sph, nbody, simbox, ewald);
+  }
+  else if (sph->self_gravity == 1) {
+    sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
+				    sph, nbody, simbox, ewald);
+  }
+  else if (sph->hydro_forces == 1) {
+    sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
+				     partdata, sph, nbody, simbox);
+  }
+  else{
+    ExceptionHandler::getIstance().raise("Error: No forces included in simulation");
+  }
 
 #if defined MPI_PARALLEL
   mpicontrol->GetExportedParticlesAccelerations(sph);
@@ -563,18 +552,18 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
   }
 
-    // Compute the dust forces if present.
-    if (sphdust != NULL){
-         // Copy properties from original particles to ghost particles
-         LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+  // Compute the dust forces if present.
+  if (sphdust != NULL){
+    // Copy properties from original particles to ghost particles
+    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
 #ifdef MPI_PARALLEL
-         MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+    MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
 #endif
-   	  sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
-     }
+    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
+  }
 
-    // Set initial accelerations
-    for (i=0; i<sph->Nhydro; i++) {
+  // Set initial accelerations
+  for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
@@ -586,7 +575,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,sph);
 #endif
-
 
 
   // Compute initial N-body forces
@@ -788,16 +776,7 @@ void SphSimulation<ndim>::MainLoop(void)
       else if (sph->hydro_forces == 1) {
 	sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
 					 partdata, sph, nbody, simbox);
-      }/*
-	 else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-	 sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-	 }
-	 else if (sph->hydro_forces == 1) {
-	 sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-	 }
-	 else if (sph->self_gravity == 1) {
-	 sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-	 }*/
+      }
 
       // Add external potential for all active SPH particles
       for (i=0; i<sph->Nhydro; i++) {
@@ -824,13 +803,14 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Compute the dust forces if present.
       if (sphdust != NULL){
-          // Copy properties from original particles to ghost particles
-          LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+	// Copy properties from original particles to ghost particles
+	LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
 #ifdef MPI_PARALLEL
-          MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+	MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
 #endif
-    	  sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
+	sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
       }
+
 
     // Zero all active flags once accelerations have been computed
     for (i=0; i<sph->Nhydro; i++) {

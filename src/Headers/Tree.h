@@ -145,7 +145,7 @@ class TreeBase
 	//virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 
 #if defined(VERIFY_ALL)
-    virtual void ValidateTree(Particle<ndim> *) = 0;
+   // virtual void ValidateTree(Particle<ndim> *) = 0;
 #endif
 
 #if defined(MPI_PARALLEL)

@@ -551,8 +551,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
         bool do_hydro   = sph->types[activepart[j].ptype].hydro_forces ;
         if (do_hydro){
-	  Typemask hmask ;
-	  for (k=0; k<Ntypes; k++) hmask[k] = sph->types[activepart[j].ptype].hmask[k] ;
+          Typemask hmask ;
+          for (k=0; k<Ntypes; k++) hmask[k] = sph->types[activepart[j].ptype].hmask[k] ;
 
           for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
           hrangesqdi = activepart[j].hrangesqd;
