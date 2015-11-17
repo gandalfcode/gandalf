@@ -97,11 +97,15 @@ For Mac users, all programs can be installed with either fink, MacPorts or homeb
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Command-line code compilation}
 
-To compile GANDALF only as a C++ executable to be run from the command line without visualisation via the python program, first set the chosen C++ compiler in the Makefile and type \\
+To compile GANDALF only as a C++ executable to be run from the command line without visualisation via the python program, first set the chosen C++ compiler in the Makefile (see section \ref{S:MAKEFILE} for a full list of the variables you can change) by setting the variable \var{CPP} (if you leave it blank, you will get the default c++ compiler as defined by your system) and type \\
 \newline
 \noindent \var{make executable} \\
 
-\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.  If you do not have python installed on your system, or are having trouble getting the python components to function correctly, then the C++ executable can still be compiled and run stand-alone.
+\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.  If you do not have python installed on your system, or are having trouble getting the python components to function correctly, then the C++ executable can still be compiled and run stand-alone. Differently from other codes, in GANDALF we adopt the philosophy that the code should be compiled only once. If you need to change parameters, you can do it by setting them via the parameter files; in most cases no recompilation is needed. For this reason, if your physical set up does not require modifying the code, it could be that you need to compile GANDALF only once. If that is the case, you might want to copy the executable to one of your system directories. In this case, the command\\
+\newline
+\noindent \var{make install} \\
+
+will copy the executable (provided you have already compiled the code) to your \var{/usr/local/bin} folder. In this way you should be able to invoke GANDALF from the command line just typing \var{gandalf} (i.e. without the need to specify the full path). Note that you might need to be root to write to that folder (in this case, use the sudo command).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,6 +120,17 @@ To compile all code elements including the python components, then complete the 
 \item For Mac OS X, python is installed by default.  However, it does not have directly compatible versions of all the required libraries.  Therefore, it is required to install an additional version of python 2.7 using a 3rd party package manager like fink, Macports or homebrew.
 \end{itemize}
 
+\item Set the required version of python in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  This is set using the \var{PYTHON} variable in the Makefile.
+
+Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically (see description of Makefile options in section \ref{S:MAKEFILE}).  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.
+
+
+\item To compile all components of the code, including the python libraries with swig, type \\
+\newline
+\noindent \var{make} or (equivalently) \var{make all}\\
+
+\item You now need to tell python how to find GANDALF when you want to use it. You have two options:
+\begin{itemize}
 \item Add the location of the folder containing the main GANDALF directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add the line \\
 \newline
 \noindent \var{export PYTHONPATH=XXX/YYY:\$PYTHONPATH} \\
@@ -124,16 +139,79 @@ To compile all code elements including the python components, then complete the 
 \newline
 \noindent \var{setenv PYTHONPATH ``XXX/YYY:\$PYTHONPATH''} \\
 
-\noindent to your relevant shell configuration file. Remember that you have to close and reopen the shell for this change to take effect, or to \var{source} the shell configuration file.
+\noindent to your relevant shell configuration file. Remember that you have to close and reopen the shell for this change to take effect, or to \var{source} the shell configuration file. In this case, python will use the version of GANDALF present in the folder you specified. Note that this \textit{requires} the folder to be called \var{gandalf}; if you give another name, python will not be able to find GANDALF.
 
-\item Set the required version of python in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  This is set using the \var{PYTHON} variable in the Makefile.
-
-Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically (see description of Makefile options).  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.
-
-
-\item Finally, to compile all components of the code, including the python libraries with swig, type \\
+\item If you know you will not be making changes to GANDALF, consider installing GANDALF in one of your system folders. In this case, just type \\
 \newline
-\noindent \var{make} or \var{make all} \\
+\var{make installpython}
+\\
+
+\noindent and the GANDALF python library will be installed (this requires that you have already used \var{make} to compile the code). In this case, there is no need to set the variable \var{PYTHONPATH}. Also, the folder where you keep your original code does not need to have any special name. If later you do make changes to the code, remember to re-run this command - otherwise the installed version remains the old one! Note that you might need to be root (or to use sudo) to run this command.
+
+\end{itemize}
+
+\end{itemize}
+
+
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Makefile options} \label{S:MAKEFILE}
+The GANDALF Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean} and then \var{make}.  For users of SEREN, the GANDALF Makefile has been simplified with many options either not present (since various specialist algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
+
+Note that the Makefile in the root folder is just a convenience to set the variables you need - the actual Makefile is contained in the \var{src} folder.
+
+\begin{itemize}
+
+\item CPP : C++ compiler. If left blank (default), uses the default defined by your system. Depending on the values set here, we try to guess the compiler flags for your system. If you want to use a compiler different from the ones we support, you need to manually set the flags in the Makefile in the \var{src} folder. Note also that when using MPI we assume that you use g++/clang. If this is not the case, you need to manually edit the compiler flags in the Makefile in the \var{src} folder.\\
+\begin{tabular}{ll}
+g++ & : GCC C++ compiler \\
+icpc & : Intel C++ compiler \\
+clang & : CLANG compiler\\
+mpic++ & : Compiles the code with MPI.
+\end{tabular}
+
+\item PYTHON : name of python command-line executable (e.g. python, python2.7)
+
+\item COMPILER\_MODE : Set compiler flags for production or debug runs \\
+\begin{tabular}{ll}
+DEBUG & : Set all debug compiler options, including flags to use gdb debugger and full warning output (-Wall) \\
+STANDARD & : Standard optimisation options (-O3) \\
+FAST & : -O3 + fast flag options.  Uses 'potentially unsafe' fast maths optimisation.
+\end{tabular}
+
+\item PRECISION : Floating point precision \\
+\begin{tabular}{ll}
+SINGLE & : 32-bit precision floating point variables \\
+DOUBLE & : 64-bit precision floating point variables
+\end{tabular}
+
+\item OPENMP : Activate OpenMP directives during compilation (0 or 1)
+
+\item OUTPUT\_LEVEL : Amount of output produced by code \\
+\begin{tabular}{ll}
+0 & : No additional output \\
+1 & : Minimal output of main-loop routines \\
+2 & : Code routine marker output for all steps
+\end{tabular}
+
+\item DEBUG\_LEVEL : Amount of extra debug checking done by code \\
+\begin{tabular}{ll}
+0 & : No extra debugging computations and output \\
+1 & : Activate assert debug statements in code \\
+2 & : Activate extra (expensive) debugging computations in code
+\end{tabular}
+
+\item FFTW : Include FFTW (Fast Fourier transform) library for initial conditions (0 or 1).  The FFTW\_LIBRARY and FFTW\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
+
+\item GSL : Include GSL (GNU Scientific library) which is required for Ewald forces (0 or 1). The GSL\_LIBRARY and GSL\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
+
+\item PYLIB : Path to directory that includes prefered python libraries.  If left blank, {\var make} will use python routines to locate the libraries automatically.
+
+\item NUMPY : Path to directory that includes prefered numpy libraries.  Ase with PYLIB, If left blank, {\var make} will use python routines to locate the library locations automatically.
+
+\item GTEST : Path to directory containing Google test suite library for unit testing (Currently set witu environment variable)
 
 \end{itemize}
 
@@ -201,66 +279,6 @@ or, depending on the default version of python on your system (e.g. installing m
 \var{plot x y} \\
 \newline
 \noindent For a list on available commands, type \var{help} in the command line.  For more detailed information on the functionality of a particular command, type \var{help command}.  For more information on interactive python commands, see Section \ref{S:PYTHONSCRIPT}.
-
-\newpage
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Makefile options} \label{S:MAKEFILE}
-The GANDALF Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean} and then \var{make}.  For users of SEREN, the GANDALF Makefile has been simplified with many options either not present (since various specialist algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
-
-\begin{itemize}
-
-\item CPP : C++ compiler \\
-\begin{tabular}{ll}
-g++ & : GCC C++ compiler \\
-icpc & : Intel C++ compiler \\
-clang & : CLANG compiler (Mac OS X only)
-\end{tabular}
-
-\item PYTHON : name of python command-line executable (e.g. python, python2.7)
-
-\item COMPILER\_MODE : Set compiler flags for production or debug runs \\
-\begin{tabular}{ll}
-DEBUG & : Set all debug compiler options, including flags to use gdb debugger and full warning output (-Wall) \\
-STANDARD & : Standard optimisation options (-O3) \\
-FAST & : -O3 + fast flag options.  Uses 'potentially unsafe' fast maths optimisation.
-\end{tabular}
-
-\item PRECISION : Floating point precision \\
-\begin{tabular}{ll}
-SINGLE & : 32-bit precision floating point variables \\
-DOUBLE & : 64-bit precision floating point variables
-\end{tabular}
-
-\item OPENMP : Activate OpenMP directives during compilation (0 or 1)
-
-\item OUTPUT\_LEVEL : Amount of output produced by code \\
-\begin{tabular}{ll}
-0 & : No additional output \\
-1 & : Minimal output of main-loop routines \\
-2 & : Code routine marker output for all steps
-\end{tabular}
-
-\item DEBUG\_LEVEL : Amount of extra debug checking done by code \\
-\begin{tabular}{ll}
-0 & : No extra debugging computations and output \\
-1 & : Activate assert debug statements in code \\
-2 & : Activate extra (expensive) debugging computations in code
-\end{tabular}
-
-\item FFTW : Include FFTW (Fast Fourier transform) library for initial conditions (0 or 1).  The FFTW\_LIBRARY and FFTW\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
-
-\item GSL : Include GSL (GNU Scientific library) which is required for Ewald forces (0 or 1). The GSL\_LIBRARY and GSL\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
-
-\item PYLIB : Path to directory that includes prefered python libraries.  If left blank, {\var make} will use python routines to locate the libraries automatically.
-
-\item NUMPY : Path to directory that includes prefered numpy libraries.  Ase with PYLIB, If left blank, {\var make} will use python routines to locate the library locations automatically.
-
-\item GTEST : Path to directory containing Google test suite library for unit testing (Currently set witu environment variable)
-
-\end{itemize}
 
 \newpage
 
