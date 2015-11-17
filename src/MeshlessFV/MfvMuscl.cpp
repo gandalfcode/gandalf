@@ -48,10 +48,10 @@ using namespace std;
 template <int ndim, template<int> class kernelclass>
 MfvMuscl<ndim, kernelclass>::MfvMuscl
   (int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
-   FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName,
-   int size_sph):
-  MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult,
-                   h_fac_aux, h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_sph),
+   FLOAT _h_fac, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName,
+   int size_part, SimUnits &units, Parameters *params):
+  MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult, _h_fac,
+                   h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp      = &kern;
@@ -778,9 +778,6 @@ template class MfvMuscl<3, M4Kernel>;
 template class MfvMuscl<1, QuinticKernel>;
 template class MfvMuscl<2, QuinticKernel>;
 template class MfvMuscl<3, QuinticKernel>;
-template class MfvMuscl<1, GaussianKernel>;
-template class MfvMuscl<2, GaussianKernel>;
-template class MfvMuscl<3, GaussianKernel>;
 template class MfvMuscl<1, TabulatedKernel>;
 template class MfvMuscl<2, TabulatedKernel>;
 template class MfvMuscl<3, TabulatedKernel>;

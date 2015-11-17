@@ -99,11 +99,10 @@ public:
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
-  MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult,
-             FLOAT _courant_mult, FLOAT h_fac_aux, FLOAT h_converge_aux,
-             FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_mfv_part);
- virtual ~MeshlessFV();
-
+  MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
+             FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
+             string KernelName, int size_mfv_part, SimUnits &units, Parameters *params);
+  ~MeshlessFV();
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
@@ -231,8 +230,8 @@ class MfvMuscl : public MeshlessFV<ndim>
   // Constructor
   //-----------------------------------------------------------------------------------------------
   MfvMuscl(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
-            FLOAT h_fac_aux, FLOAT h_converge_aux,
-            FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_MeshlessFV_part);
+           FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
+           string KernelName, int size_MeshlessFV_part, SimUnits &units, Parameters *params);
   ~MfvMuscl();
 
 
@@ -313,8 +312,8 @@ class MfvRungeKutta : public MeshlessFV<ndim>
   // Constructor
   //-----------------------------------------------------------------------------------------------
   MfvRungeKutta(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
-                FLOAT h_fac_aux, FLOAT h_converge_aux,
-                FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_MeshlessFV_part);
+                FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
+                string KernelName, int size_MeshlessFV_part, SimUnits &units, Parameters *params);
   ~MfvRungeKutta();
 
 

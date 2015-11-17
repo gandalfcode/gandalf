@@ -37,6 +37,7 @@
 #include "EOS.h"
 #include "RiemannSolver.h"
 #include "ExternalPotential.h"
+#include "SimUnits.h"
 #if defined _OPENMP
 #include "omp.h"
 #endif
@@ -69,8 +70,8 @@ public:
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
-  Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
-                string gas_eos_aux, string KernelName, int size_hydro_part);
+  Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux, string gas_eos_aux,
+                string KernelName, int size_hydro_part, SimUnits &units, Parameters *params);
 
 
   // SPH array memory allocation functions
@@ -147,10 +148,10 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
 {
  public:
 
-  NullHydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
-                    string gas_eos_aux, string KernelName, int size_hydro_part):
-    Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux,
-                        gas_eos_aux, KernelName, size_hydro_part) {};
+  NullHydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux, string gas_eos_aux,
+                    string KernelName, int size_hydro_part, SimUnits &units, Parameters *params):
+    Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux, gas_eos_aux, KernelName,
+                        size_hydro_part, units, params) {};
 
   virtual Particle<ndim>* GetParticleArray() {return NULL;};
 

@@ -48,10 +48,10 @@ using namespace std;
 template <int ndim, template<int> class kernelclass>
 MfvRungeKutta<ndim, kernelclass>::MfvRungeKutta
   (int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
-   FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName,
-   int size_sph):
-  MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult,
-                   h_fac_aux, h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_sph),
+   FLOAT _h_fac, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName,
+   int size_part, SimUnits &units, Parameters *params):
+  MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult, _h_fac,
+                   h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp      = &kern;
@@ -75,60 +75,6 @@ MfvRungeKutta<ndim, kernelclass>::~MfvRungeKutta()
 
 
 //=================================================================================================
-//  MfvRungeKutta::InitialSmoothingLengthGuess
-/// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess
-/// the smoothing length assuming a uniform density medium with the same volume and total mass.
-//=================================================================================================
-/*template <int ndim>
-void MfvRungeKutta<ndim>::InitialSmoothingLengthGuess(void)
-{
-  int i;                           // Particle counter
-  FLOAT h_guess;                   // Global guess of smoothing length
-  FLOAT volume;                    // Volume of global bounding box
-  FLOAT rmin[ndim];                // Min. extent of bounding box
-  FLOAT rmax[ndim];                // Max. extent of bounding box
-
-  debug2("[Sph::InitialSmoothingLengthGuess]");
-
-  // Calculate bounding box containing all SPH particles
-  this->ComputeBoundingBox(rmax,rmin,Nhydro);
-
-  // Depending on the dimensionality, calculate the average smoothing
-  // length assuming a uniform density distribution filling the bounding box.
-  //-----------------------------------------------------------------------------------------------
-  if (ndim == 1) {
-    Ngather = (int) (2.0*kernp->kernrange*h_fac);
-    volume = rmax[0] - rmin[0];
-    h_guess = (volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nhydro);
-  }
-  //-----------------------------------------------------------------------------------------------
-  else if (ndim == 2) {
-    Ngather = (int) (pi*pow(kernp->kernrange*h_fac,2));
-    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
-    h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nhydro));
-  }
-  //-----------------------------------------------------------------------------------------------
-  else if (ndim == 3) {
-    Ngather = (int) (4.0*pi*pow(kernp->kernrange*h_fac,3)/3.0);
-    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
-    h_guess = powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Nhydro),onethird);
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  // Set all smoothing lengths equal to average value
-  for (i=0; i<Nhydro; i++) {
-    MeshlessFVParticle<ndim>& part = GetMeshlessFVParticlePointer(i);
-    part.h         = h_guess;
-    part.invh      = 1.0/h_guess;
-    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
-  }
-
-  return;
-}*/
-
-
-
-//=================================================================================================
 //  MfvRungeKutta::ComputeH
 /// Compute the value of the smoothing length of particle 'i' by iterating the relation :
 /// h = h_fac*(m/rho)^(1/ndim).
@@ -145,7 +91,7 @@ int MfvRungeKutta<ndim, kernelclass>::ComputeH
   FLOAT *mu,                           ///< [in] Array of m*u (not needed here)
   FLOAT *drsqd,                        ///< [in] Array of neib. distances squared
   FLOAT *gpot,                         ///< [in] Array of neib. grav. potentials
-  MeshlessFVParticle<ndim> &part,   ///< [inout] Particle i data
+  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
   Nbody<ndim> *nbody)                  ///< [in] Main N-body object
 {
   int j;                               // Neighbour id
@@ -267,15 +213,15 @@ void MfvRungeKutta<ndim, kernelclass>::ComputePsiFactors
   int k;                                       // Dimension counter
   FLOAT invdet;                                // Determinant
   FLOAT draux[ndim];                           // Relative position vector
-  FLOAT drsqd;                                 // ..
-  FLOAT E[ndim][ndim];                         // ..
-  const FLOAT invhsqd = part.invh*part.invh;   // ..
+  FLOAT drsqd;                                 // Distance squared
+  FLOAT E[ndim][ndim];                         // Aux. matrix
+  const FLOAT invhsqd = part.invh*part.invh;   // 1/h^2
 
 
   for (k=0; k<ndim; k++) {
     for (int kk=0; kk<ndim; kk++) {
       E[k][kk] = (FLOAT) 0.0;
-      part.B[k][kk] = 0.0;
+      part.B[k][kk] = (FLOAT) 0.0;
     }
   }
 
@@ -298,19 +244,19 @@ void MfvRungeKutta<ndim, kernelclass>::ComputePsiFactors
 
   // Invert the matrix (depending on dimensionality)
   if (ndim == 1) {
-    part.B[0][0] = 1.0/E[0][0];
+    part.B[0][0] = (FLOAT) 1.0/E[0][0];
   }
   else if (ndim == 2) {
     invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
     part.B[0][0] = invdet*E[1][1];
-    part.B[0][1] = -1.0*invdet*E[0][1];
-    part.B[1][0] = -1.0*invdet*E[1][0];
+    part.B[0][1] = -(FLOAT) 1.0*invdet*E[0][1];
+    part.B[1][0] = -(FLOAT) 1.0*invdet*E[1][0];
     part.B[1][1] = invdet*E[0][0];
   }
   else if (ndim == 3) {
-    invdet = 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
-                  E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
-                  E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
+    invdet = (FLOAT) 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
+                          E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
+                          E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
     part.B[0][0] = (E[1][1]*E[2][2] - E[2][1]*E[1][2])*invdet;
     part.B[0][1] = (E[0][2]*E[2][1] - E[0][1]*E[2][2])*invdet;
     part.B[0][2] = (E[0][1]*E[1][2] - E[0][2]*E[1][1])*invdet;
@@ -351,10 +297,10 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
-  int var;                             // ..
+  int var;                             // Primitive variable counter
   FLOAT draux[ndim];                   // Relative position vector
-  FLOAT drsqd;                         // ..
-  FLOAT dv[ndim];                      // ..
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity
   FLOAT dvdr;                          // Dot product of dv and dr
   FLOAT psitilda[ndim];                // ..
   const FLOAT invhsqd = part.invh*part.invh;
@@ -364,7 +310,7 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
   part.vsig_max = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
     for (var=0; var<nvar; var++) {
-      part.grad[var][k] = 0.0;
+      part.grad[var][k] = (FLOAT) 0.0;
     }
   }
   for (var=0; var<nvar; var++) {
@@ -443,7 +389,7 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
 
 
 //=================================================================================================
-//  ...
+//  MfvRungeKutta::CopyDataToGhosts
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
@@ -459,7 +405,7 @@ void MfvRungeKutta<ndim, kernelclass>::CopyDataToGhosts
   debug2("[MfvRungeKutta::CopyHydroDataToGhosts]");
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 //#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,partdata)
   for (j=0; j<this->NPeriodicGhost; j++) {
     i = this->Nhydro + j;
@@ -492,11 +438,10 @@ void MfvRungeKutta<ndim, kernelclass>::CopyDataToGhosts
     }
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
-
 
 
 
@@ -789,9 +734,6 @@ template class MfvRungeKutta<3, M4Kernel>;
 template class MfvRungeKutta<1, QuinticKernel>;
 template class MfvRungeKutta<2, QuinticKernel>;
 template class MfvRungeKutta<3, QuinticKernel>;
-template class MfvRungeKutta<1, GaussianKernel>;
-template class MfvRungeKutta<2, GaussianKernel>;
-template class MfvRungeKutta<3, GaussianKernel>;
 template class MfvRungeKutta<1, TabulatedKernel>;
 template class MfvRungeKutta<2, TabulatedKernel>;
 template class MfvRungeKutta<3, TabulatedKernel>;

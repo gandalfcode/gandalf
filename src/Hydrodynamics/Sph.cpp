@@ -48,7 +48,8 @@ Sph<ndim>::Sph(int _hydro_forces, int _self_gravity, FLOAT _alpha_visc, FLOAT _b
                FLOAT _h_fac, FLOAT _h_converge, aviscenum _avisc, acondenum _acond,
                tdaviscenum _tdavisc, string _gas_eos, string _KernelName, int _size_sph,
                SimUnits &units, Parameters *params):
-  Hydrodynamics<ndim>(_hydro_forces, _self_gravity, _h_fac, _gas_eos, _KernelName, _size_sph),
+  Hydrodynamics<ndim>(_hydro_forces, _self_gravity, _h_fac, _gas_eos,
+                      _KernelName, _size_sph, units, params),
   size_sph_part(_size_sph),
   acond(_acond),
   avisc(_avisc),
@@ -59,59 +60,8 @@ Sph<ndim>::Sph(int _hydro_forces, int _self_gravity, FLOAT _alpha_visc, FLOAT _b
   create_sinks(0),
   fixed_sink_mass(0)
 {
-  // Local references to parameter variables for brevity
-  map<string, int> &intparams = params->intparams;
-  map<string, double> &floatparams = params->floatparams;
-  map<string, string> &stringparams = params->stringparams;
-  string gas_radiation = stringparams["radiation"];
-
-  // Set other class variables here
   Ngather = 0;
   hmin_sink = big_number;
-
-
-  // Thermal physics object.  If energy equation is chosen, also initiate
-  // the energy integration object.
-  //-----------------------------------------------------------------------------------------------
-  if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" ||
-       _gas_eos == "isothermal" || _gas_eos == "barotropic" ||
-       _gas_eos == "barotropic2") && gas_radiation == "ionisation") {
-    eos = new IonisingRadiation<ndim>
-      (_gas_eos, floatparams["temp0"], floatparams["mu_bar"],
-       floatparams["gamma_eos"], floatparams["rho_bary"], &units);
-  }
-  else if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" ||
-            _gas_eos == "isothermal" || _gas_eos == "barotropic" ||
-            _gas_eos == "barotropic2") && gas_radiation == "monoionisation") {
-    eos = new MCRadiationEOS<ndim>
-      (_gas_eos, floatparams["temp0"], floatparams["temp_ion"], floatparams["mu_bar"],
-       floatparams["mu_ion"], floatparams["gamma_eos"], floatparams["rho_bary"], &units);
-  }
-  else if (_gas_eos == "energy_eqn" || _gas_eos == "constant_temp") {
-    eos = new Adiabatic<ndim>
-      (floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
-  }
-  else if (_gas_eos == "isothermal") {
-    eos = new Isothermal<ndim>
-      (floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"], &units);
-  }
-  else if (_gas_eos == "barotropic") {
-    eos = new Barotropic<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                               floatparams["gamma_eos"], floatparams["rho_bary"], &units);
-  }
-  else if (_gas_eos == "barotropic2") {
-    eos = new Barotropic2<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                                     floatparams["gamma_eos"], floatparams["rho_bary"], &units);
-  }
-  else if (_gas_eos == "rad_ws" || _gas_eos == "radws") {
-    eos = new Radws<ndim>(floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
-  }
-  else {
-    string message = "Unrecognised parameter : gas_eos = " + _gas_eos;
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-
 }
 
 
