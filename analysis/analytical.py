@@ -405,7 +405,7 @@ class sedov (AnalyticalSolution):
                           fparams['boxmin['+str(i)+']']))**2
         Rmax = Rmax**0.5
         
-        self._r = np.linspace(0, Rmax, 1e3)
+        self._r = np.linspace(0, Rmax, 1001)[1:]
         self._t = time
 
     def compute(self, x, y):

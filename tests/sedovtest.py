@@ -10,6 +10,11 @@ import time
 newsim('sedov.dat')
 setupsim()
 
+# Run simulation
+run()
+
+# Plot results to screen
+
 # Plot the density with the analytical solution
 subfigure(2,2,1)
 plot("R","rho")
@@ -36,8 +41,7 @@ plot("R","press")
 plotanalytical("R","press")
 limit("R",0,1,window="all")
 
-# Run simulation and plot results to screen
-run()
+
 block()
 
 
