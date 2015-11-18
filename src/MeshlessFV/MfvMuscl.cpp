@@ -69,7 +69,6 @@ MfvMuscl<ndim, kernelclass>::MfvMuscl
 template <int ndim, template<int> class kernelclass>
 MfvMuscl<ndim, kernelclass>::~MfvMuscl()
 {
-  //DeallocateMemory();
 }
 
 
@@ -623,8 +622,6 @@ void MfvMuscl<ndim, kernelclass>::ComputeSmoothedGravForces
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drmag;                         // Distance
-  //FLOAT dv[ndim];                      // Relative velocity vector
-  //FLOAT dvdr;                          // Dot product of dv and dr
   FLOAT invdrmag;                      // 1 / distance
   FLOAT gaux;                          // Aux. grav. potential variable
   FLOAT paux;                          // Aux. pressure force variable
@@ -639,9 +636,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeSmoothedGravForces
     assert(neibpart[j].itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
-    //for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-    //dvdr = DotProduct(dv,dr,ndim);
-    drmag = sqrt(DotProduct(dr,dr,ndim) + small_number);
+    drmag = sqrt(DotProduct(dr, dr, ndim) + small_number);
     invdrmag = (FLOAT) 1.0/drmag;
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
 
@@ -667,7 +662,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeSmoothedGravForces
 
 
 //=================================================================================================
-//  GradhSph::ComputeDirectGravForces
+//  MfvMuscl::ComputeDirectGravForces
 /// Compute the contribution to the total gravitational force of particle 'i'
 /// due to 'Nneib' neighbouring particles in the list 'neiblist'.
 //=================================================================================================
