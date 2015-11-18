@@ -1073,6 +1073,7 @@ Since the column format was only designed for simple IO and plotting, it is a ra
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 \subsection{SEREN format}
+\label{Sec:SerenForm}
 The SEREN format is a legacy format from the original SEREN code which is currently the main format for use in GANDALF.  There are two different version of the SEREN format; 
 \begin{itemize}
 \item \var{seren\_form} or \var{sf} : `Formatted' (i.e. ASCII)
@@ -1935,6 +1936,11 @@ are conserved explicitly, while in the test-particle limit these are conserved f
 
 \subsection{Drag Laws}
 Several drag laws have been implemented in via functions form of $t_s \equiv t_s (\rho_g , \rho_d , c_s)$. The different functional forms currently available can be chosen via the parameter options and are described below. The drag laws are defined in src/Headers/DragLaws.h. Currently only dimensionless units are supported when setting the stopping time.
+
+\subsection{IO and initial conditions}
+Dust particles are currently supported only in the SEREN formats (both formatted and unformatted), with the dust particles following the gas particles on the disc. The number of dust particles is stored in the header, as described in section \ref{Sec:SerenForm}. The column format is \emph{not} formally supported, but if used it will currently still contain the dust particles after the gas particles as long as MPI is not used. However, the number of dust particles is not currently saved in the column format.
+
+Currently the only systematic way to generate initial conditions that include dust is to provide an IC file in the SEREN format that includes dust. For the test problems currently included, when dust is turned  on (via setting the drag\_forces parameter) the initial conditions generated are identical to those for the gas, although dust-to-gas ratio can be varied. Currently, generating multi-species initial conditions in python is also not supported (with the exception of star particles), although we hope to support this soon.
 
 \subsection{Test Problems}
 Some simple two-fluid test problems have been included in the directory tests/dust tests. Most of these are straight-forward modifications of classic hydrodynamics test problems to include dust particles. A description of a number of these can be found in Laibe \& Price (2012 a,b), including the \textsc{dustybox}, \textsc{dustywave}, \textsc{dustyshock} and \textsc{dustysedov} problems. The dust to gas ratio can be verified, but otherwise the dust initial conditions are identical to the those in the gas in all the problems provided.
