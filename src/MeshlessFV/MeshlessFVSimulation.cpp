@@ -135,7 +135,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
       mfv = new MfvMuscl<ndim, TabulatedKernel>
        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
         floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
-        floatparams["gamma_eos"], stringparams["gas_eos"], KernelName, 
+        floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
         sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
     }
     else if (intparams["tabulated_kernel"] == 0) {
@@ -209,21 +209,6 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   hydro = mfv;
 
 
-  // Riemann solver object
-  //-----------------------------------------------------------------------------------------------
-  string riemann = stringparams["riemann_solver"];
-  if (riemann == "exact") {
-    mfv->riemann = new ExactRiemannSolver<ndim>(floatparams["gamma_eos"], intparams["zero_mass_flux"]);
-  }
-  else if (riemann == "hllc") {
-    mfv->riemann = new HllcRiemannSolver<ndim>(floatparams["gamma_eos"], intparams["zero_mass_flux"]);
-  }
-  else {
-    string message = "Unrecognised parameter : riemann_solver = " + riemann;
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-
   // Slope limiter
   //-----------------------------------------------------------------------------------------------
   string limiter = stringparams["slope_limiter"];
@@ -292,19 +277,6 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   }
   else if (ndim == 3) {
     mfv->Ngather = (int) (4.0*pi*pow(mfv->kernp->kernrange*mfv->h_fac,3)/3.0);
-  }
-
-
-  // Thermal physics object.  If energy equation is chosen, also initiate
-  // the energy integration object.
-  //-----------------------------------------------------------------------------------------------
-  if (gas_eos == "energy_eqn") {
-    mfv->eos = new Adiabatic<ndim>
-      (floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
-  }
-  else {
-    string message = "Unrecognised or invalid parameter : gas_eos = " + gas_eos;
-    ExceptionHandler::getIstance().raise(message);
   }
 
 

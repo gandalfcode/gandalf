@@ -129,16 +129,15 @@ public:
   virtual void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *) = 0;
 
 
-  // MeshlessFV array memory allocation functions
+  // Other functions.
   //-----------------------------------------------------------------------------------------------
-  void InitialSmoothingLengthGuess(void);
   void ComputeThermalProperties(MeshlessFVParticle<ndim> &);
-
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
+  void InitialSmoothingLengthGuess(void);
+  void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
   FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &);
-  void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
 
 
   // Functions needed to hide some implementation details

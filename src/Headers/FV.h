@@ -118,10 +118,4 @@ public:
   //void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
 
 };
-
-
-// Declare invndim constant here (prevents warnings with some compilers)
-template <int ndim>
-const FLOAT FV<ndim>::invndim = 1.0/ndim;
-
 #endif
