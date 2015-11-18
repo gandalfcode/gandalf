@@ -58,16 +58,16 @@ MeshlessFVKDTree<ndim,ParticleType,TreeCell>::MeshlessFVKDTree
 {
   // Set-up main tree object
   tree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                _macerror, _gravity_mac, _multipole);
+                                                _macerror, _gravity_mac, _multipole, *_box);
 
   // Set-up ghost-particle tree object
   ghosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                     _macerror, _gravity_mac, _multipole);
+                                                     _macerror, _gravity_mac, _multipole, *_box);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
   mpighosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                        _macerror, _gravity_mac, _multipole);
+                                                        _macerror, _gravity_mac, _multipole, *_box);
 
   // Set-up multiple pruned trees, one for each MPI process
   KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
@@ -77,11 +77,11 @@ MeshlessFVKDTree<ndim,ParticleType,TreeCell>::MeshlessFVKDTree
 
   for (int i=0; i<Nmpi; i++) {
     prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
   }
   for (int i=0; i<Nmpi; i++) {
     sendprunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
   }
 #endif
 }
@@ -104,16 +104,16 @@ MeshlessFVOctTree<ndim,ParticleType,TreeCell>::MeshlessFVOctTree
 {
   // Set-up main tree object
   tree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                 _macerror, _gravity_mac, _multipole);
+                                                 _macerror, _gravity_mac, _multipole, *_box);
 
   // Set-up ghost-particle tree object
   ghosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                      _macerror, _gravity_mac, _multipole);
+                                                      _macerror, _gravity_mac, _multipole, *_box);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
   mpighosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                         _macerror, _gravity_mac, _multipole);
+                                                         _macerror, _gravity_mac, _multipole, *_box);
 
   // Set-up multiple pruned trees, one for each MPI process
   //*(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
@@ -125,11 +125,11 @@ MeshlessFVOctTree<ndim,ParticleType,TreeCell>::MeshlessFVOctTree
 
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
   }
   for (int i=0; i<Nmpi; i++) {
     sendprunedtree[i] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
   }
 #endif
 }

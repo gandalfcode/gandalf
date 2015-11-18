@@ -1,14 +1,14 @@
 #----------------------------------------
-# Adiabatic Sod shock tube test
-# Creates an adiabatic Sod shocktube test
+# DUSTYSHOCK test
+# Creates an adiabatic Sod shocktube test with dust included
 #----------------------------------------
 
 
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = ADSOD1
-Select SPH simulation                       : sim = gradhsph
+Simulation run id string                    : run_id = DUSTYSHOCK
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = shocktube
 1D shocktube test                           : ndim = 1
 x-velocity of LHS fluid                     : vfluid1[0] = 0.0
@@ -25,17 +25,17 @@ Dimensionless units                         : dimensionless = 1
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = -2.0
-RHS position of boundary in x-dimension     : boxmax[0] = 2.0
+LHS position of boundary in x-dimension     : boxmin[0] = -1.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
+
 LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
 RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
-
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.75
-Regular snapshot output frequency           : dt_snap = 0.25
+Simulation end time                         : tend = 0.25
+Regular snapshot output frequency           : dt_snap = 0.05
 Time for first snapshot                     : tsnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
 Output file format                          : out_file_form = su
@@ -52,9 +52,10 @@ Ratio of specific heats of gas              : gamma_eos = 1.4
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
-SPH smoothing kernel choice                 : kernel = m4
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = gaussian
 SPH smoothing length iteration tolerance    : h_converge = 0.01
-
+SPH number of neigbours factor              : h_fac = 1.2
 
 #---------------------------------
 # SPH artificial viscosity options
@@ -63,6 +64,9 @@ Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
+Riemann solver                              : riemann_solver = exact
+Order of Riemann solver                     : riemann_order = 2
+Slope limiter                               : slope_limiter = simple
 
 
 #-------------------------
@@ -87,3 +91,12 @@ Stock tree every step                       : ntreestockstep = 1
 # Misc. options
 #--------------
 Switch-off self-gravity of gas              : self_gravity = 0
+
+
+#--------------
+# Misc. options
+#--------------
+Dust force type                             : dust_forces = full_twofluid
+Drag force law                              : drag_law = fixed
+Drag coefficient                            : drag_coeff = 10
+Dust to gas ratio                           : dust_mass_factor = 1.0

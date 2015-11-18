@@ -79,6 +79,16 @@ void Ic<ndim>::CheckInitialConditions(void)
   }
   //-----------------------------------------------------------------------------------------------
 
+  //Check particles are sorted in type order
+  int ptype =  hydro->GetParticlePointer(0).ptype;
+  for (i=1; i<hydro->Nhydro; i++) {
+	  Particle<ndim>& part = hydro->GetParticlePointer(i);
+	  if (part.ptype < ptype){
+	    ExceptionHandler::getIstance().raise("Error Particles must be ordered by ptype");
+	  }
+	  ptype = part.ptype ;
+  }
+
   if (!valid_ic) {
     string message = "Invalid initial conditions for SPH particles";
     ExceptionHandler::getIstance().raise(message);
@@ -408,6 +418,10 @@ void Ic<ndim>::ShockTube(void)
     Nbox2 = Nlattice2[0];
     hydro->Nhydro = Nbox1 + Nbox2;
 
+    bool dusty_shock = simparams->stringparams["dust_forces"] != "none" ;
+    if (dusty_shock)
+    	hydro->Nhydro *= 2 ;
+
     // Allocate local and main particle memory
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
@@ -448,6 +462,24 @@ void Ic<ndim>::ShockTube(void)
         if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
         else part.u = press2/rhofluid2/gammaone;
       }
+    }
+
+
+    // Add a slightly offset dust lattice
+    if (dusty_shock){
+    	int Ngas = Nbox1 + Nbox2 ;
+    	FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+    	for (j = 0; j < Ngas; ++j){
+    		Particle<ndim>& pg = hydro->GetParticlePointer(j) ;
+    		Particle<ndim>& pd = hydro->GetParticlePointer(j+Ngas) ;
+    		pd = pg ;
+    		pg.ptype = gas_type ;
+    		pd.ptype = dust_type ;
+    		pd.r[0] += 0.01 * pd.h ;
+    		pd.m *= d2g ;
+    		pd.u = 0 ;
+    		pd.h_dust = pd.h ;
+    	}
     }
 
     sim->initial_h_provided = true;
@@ -1397,7 +1429,16 @@ void Ic<ndim>::BossBodenheimer(void)
 
   // Allocate local and main particle memory
   hydro->Nhydro = Npart;
+
+  bool dusty_collapse =
+  	    simparams->stringparams["dust_forces"] != "none" ;
+
+  if (dusty_collapse)
+    hydro->Nhydro *= 2 ;
+
   sim->AllocateParticleMemory();
+
+
   mp = mcloud / (FLOAT) Npart;
   rho = (FLOAT) 3.0*mcloud / ((FLOAT)4.0*pi*pow(radius,3));
 
@@ -1421,6 +1462,29 @@ void Ic<ndim>::BossBodenheimer(void)
     //else
     //  part.u = press/rho/gammaone;
   }
+
+
+	if (dusty_collapse){
+		FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+		for (i = 0; i < Npart; ++i){
+		  Particle<ndim>& Pg = hydro->GetParticlePointer(i) ;
+		  Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart) ;
+		  Pd = Pg ;
+		  Pd.m *= d2g ;
+
+
+		  for (k=0; k < ndim; k++)
+			Pd.r[k] += 0.01 * Pd.h ;
+
+
+		  Pd.h_dust = Pd.h ;
+		  Pd.u = 0 ;
+
+		  Pg.ptype = gas_type ;
+		  Pd.ptype = dust_type ;
+		}
+	}
+
 
   sim->initial_h_provided = true;
 
@@ -2373,11 +2437,18 @@ void Ic<ndim>::SedovBlastWave(void)
   Nhot  = 0;
   r_hot = hydro->h_fac*hydro->kernrange*simbox.boxsize[0]/Nlattice[0];
 
+
   // Allocate local and main particle memory
   hydro->Nhydro = Nbox;
+
+  bool dusty_shock = simparams->stringparams["dust_forces"] != "none" ;
+  if (dusty_shock)
+  	hydro->Nhydro *= 2 ;
+
+
   sim->AllocateParticleMemory();
-  r = new FLOAT[ndim*hydro->Nhydro];
-  hotlist = new int[hydro->Nhydro];
+  r = new FLOAT[ndim*Nbox];
+  hotlist = new int[Nbox];
 
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
@@ -2431,11 +2502,13 @@ void Ic<ndim>::SedovBlastWave(void)
   // Calculate all SPH properties
   //sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
+
+
   // Now calculate which particles are hot
   //-----------------------------------------------------------------------------------------------
   umax = (FLOAT) 0.0;
   utot = (FLOAT) 0.0;
-  for (i=0; i<hydro->Nhydro; i++) {
+  for (i=0; i<Nbox; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     drsqd = DotProduct(part.r,part.r,ndim);
     if (drsqd < r_hot*r_hot) {
@@ -2454,7 +2527,7 @@ void Ic<ndim>::SedovBlastWave(void)
 
   // Normalise the energies
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<hydro->Nhydro; i++) {
+  for (i=0; i<Nbox; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (hotlist[i] == 1) {
       drmag = sqrt(DotProduct(part.r,part.r,ndim));
@@ -2469,6 +2542,25 @@ void Ic<ndim>::SedovBlastWave(void)
       //for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
     }
   }
+
+
+  // Add a slightly offset dust lattice
+  if (dusty_shock){
+  	FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+  	for (int j = 0; j < Nbox; ++j){
+  		Particle<ndim>& pg = hydro->GetParticlePointer(j) ;
+  		Particle<ndim>& pd = hydro->GetParticlePointer(j+Nbox) ;
+  		pd = pg ;
+  		pg.ptype = gas_type ;
+  		pd.ptype = dust_type ;
+  		pd.r[0] += 0.01 * pd.h ;
+  		pd.m *= d2g ;
+  		pd.u = 0 ;
+  		pd.h_dust = pd.h ;
+  	}
+  }
+
+  sim->initial_h_provided = true;
 
   delete[] hotlist;
   delete[] r;
@@ -2602,9 +2694,15 @@ void Ic<ndim>::SoundWave(void)
   // Allocate local and main particle memory
   for (k=0; k<ndim; k++) Nlattice1[k] = 1;
   Nlattice1[0] = Npart;
+
   hydro->Nhydro = Npart;
+  bool dusty_wave =
+	    simparams->stringparams["dust_forces"] != "none" ;
+  if (dusty_wave)
+	  hydro->Nhydro *= 2 ;
+
   sim->AllocateParticleMemory();
-  r = new FLOAT[ndim*hydro->Nhydro];
+  r = new FLOAT[ndim*Npart];
 
   // Add regular distribution of SPH particles
   AddCubicLattice(Npart, Nlattice1, simbox, false, r);
@@ -2631,6 +2729,22 @@ void Ic<ndim>::SoundWave(void)
     }
   }
   //-----------------------------------------------------------------------------------------------
+
+  if (dusty_wave){
+	FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+	for (i = 0; i < Npart; ++i){
+	  Particle<ndim>& Pg = hydro->GetParticlePointer(i) ;
+	  Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart) ;
+	  Pd = Pg ;
+	  Pd.m *= d2g ;
+	  Pd.h_dust = Pd.h ;
+	  Pd.u = 0 ;
+
+	  Pg.ptype = gas_type ;
+	  Pd.ptype = dust_type ;
+	}
+  }
+
 
   sim->initial_h_provided = true;
   delete[] r;
@@ -4368,6 +4482,216 @@ void Ic<ndim>::InterpolateVelocityField
   return;
 }
 
+template<int ndim>
+void Ic<ndim>::EvrardCollapse()
+{
+	int i;                               // Particle counter
+	int k;                               // Dimension counter
+	FLOAT rcentre[ndim];                 // Position of sphere centre
+	FLOAT *pos;                            // Positions of all particles
+
+	// Create local copies of initial conditions parameters
+	int Npart      = simparams->intparams["Nhydro"];
+	FLOAT Mtot     = simparams->floatparams["mcloud"];
+	FLOAT U_fac    = simparams->floatparams["thermal_energy"];
+	FLOAT radius   = simparams->floatparams["radius"];
+	string particle_dist = simparams->stringparams["particle_distribution"];
+
+	cout << "Setting ICs for Evrard collapse Problem:"
+		 << "\n\tNumPart (desired):\t" << Npart
+		 << "\n\tMass:             \t" << Mtot
+		 << "\n\tRadius:           \t" << radius
+		 << "\n\tInternal Energy:  \t" << U_fac ;
+
+	for (k =0; k < ndim; k++)
+	  rcentre[k] = 0 ;
+
+	// Allocate memory
+	pos = new FLOAT[ndim*Npart];
+
+    if (particle_dist == "random") {
+	  AddRandomSphere(Npart, rcentre, radius, pos);
+    }
+	else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
+	  Npart = AddLatticeSphere(Npart, rcentre, radius, particle_dist, pos) ;
+	}
+	else {
+	  string message = "Invalid particle distribution option";
+	  ExceptionHandler::getIstance().raise(message);
+	}
+
+	cout << "\n\tNpart (actual):   \t" << Npart
+		 << endl ;
+
+	//Allocate local and main particle memory
+	hydro->Nhydro = Npart;
+
+	bool dusty_collapse =
+	    simparams->stringparams["dust_forces"] != "none" ;
+
+	if (dusty_collapse)
+	  hydro->Nhydro *= 2 ;
+
+	sim->AllocateParticleMemory();
+
+
+	// Scale to the correct density profile
+	for (i = 0; i < Npart; ++i){
+		Particle<ndim>& P = hydro->GetParticlePointer(i) ;
+
+		FLOAT* ri = pos + ndim * i ;
+
+		FLOAT r = sqrt(DotProduct(ri, ri, ndim) + small_number) ;
+		FLOAT rnew = radius * r * sqrt(r) ;
+		for (k=0; k < ndim; k++){
+			P.r[k] = ri[k] * rnew / r ;
+			P.v[k] = 0 ;
+		}
+		P.m = Mtot / Npart ;
+		P.u = U_fac * Mtot / radius ;
+		P.rho = (Mtot/ (2*pi * pow(radius, ndim))) * (radius/rnew) ;
+		P.h = pow(P.m/P.rho, 1./ndim) ;
+	}
+
+	if (dusty_collapse){
+		FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+		for (i = 0; i < Npart; ++i){
+		  Particle<ndim>& Pg = hydro->GetParticlePointer(i) ;
+		  Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart) ;
+		  Pd = Pg ;
+		  Pd.m *= d2g ;
+
+
+		  for (k=0; k < ndim; k++)
+			Pd.r[k] += 0.01 * Pd.h ;
+
+
+		  Pd.h_dust = Pd.h ;
+		  Pd.u = 0 ;
+
+		  Pg.ptype = gas_type ;
+		  Pd.ptype = dust_type ;
+		}
+	}
+
+	sim->initial_h_provided = true;
+
+
+	delete[] pos ;
+}
+
+//=================================================================================================
+//  Ic::DustyBox
+/// Set-up dusty box test
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::DustyBox(void)
+{
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  int Nbox;                            // No. of particles in box
+  int Nlattice[3];                     // Lattice size
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT mbox;                          // Total mass inside simulation box
+  FLOAT umax;                          // Maximum u of all particles
+  FLOAT utot;                          // Total internal energy
+  FLOAT volume;                        // Volume of box
+  FLOAT *r;                            // Positions of all particles
+
+  // Create local copies of initial conditions parameters
+  Nlattice[0]    = simparams->intparams["Nlattice1[0]"];
+  Nlattice[1]    = simparams->intparams["Nlattice1[1]"];
+  Nlattice[2]    = simparams->intparams["Nlattice1[2]"];
+  FLOAT rhofluid = simparams->floatparams["rhofluid1"];
+  FLOAT press    = simparams->floatparams["press1"];
+  FLOAT gamma_m1 = simparams->floatparams["gamma_eos"] - 1;
+  FLOAT v_gas    = simparams->floatparams["vfluid1[0]"] ;
+  FLOAT v_dust   = simparams->floatparams["vfluid2[0]"] ;
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[Ic::DustyBox]");
+
+
+  // Compute size and range of fluid bounding boxes
+  //-----------------------------------------------------------------------------------------------
+  volume = 1 ;
+  Nbox = 1 ;
+  for (i=0; i < ndim; ++i){
+	volume *= simbox.boxmax[i] - simbox.boxmin[i];
+	Nbox *= Nlattice[i] ;
+  }
+  mbox  = volume*rhofluid;
+
+
+
+  // Allocate local and main particle memory
+  hydro->Nhydro = Nbox;
+
+  bool dusty_box = simparams->stringparams["dust_forces"] != "none" ;
+  if (dusty_box){
+  	hydro->Nhydro *= 2 ;
+  } else {
+	ExceptionHandler::getIstance().raise("Error: Drag forces must be enabled for dusty box test");
+  }
+
+  sim->AllocateParticleMemory();
+  r = new FLOAT[ndim*Nbox];
+
+  // Add a cube of random particles defined by the simulation bounding box and
+  // depending on the chosen particle distribution
+  if (particle_dist == "random") {
+    AddRandomBox(Nbox, simbox, r);
+  }
+  else if (particle_dist == "cubic_lattice") {
+    AddCubicLattice(Nbox, Nlattice, simbox, true, r);
+  }
+  else if (particle_dist == "hexagonal_lattice") {
+    AddHexagonalLattice(Nbox, Nlattice, simbox, true, r);
+  }
+  else {
+    string message = "Invalid particle distribution option";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Record positions in main memory
+  for (i=0; i<Nbox; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+    for (k=0; k<ndim; k++) part.v[k] = 0.0;
+    part.v[0] = v_gas ;
+
+    part.m = mbox/(FLOAT) Nbox;
+    part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
+    part.u = press / (rhofluid * gamma_m1);
+  }
+
+  sim->initial_h_provided = true;
+
+
+  // Add a slightly offset dust lattice
+  if (dusty_box){
+  	FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+  	for (int j = 0; j < Nbox; ++j){
+  		Particle<ndim>& pg = hydro->GetParticlePointer(j) ;
+  		Particle<ndim>& pd = hydro->GetParticlePointer(j+Nbox) ;
+  		pd = pg ;
+  		pg.ptype = gas_type ;
+  		pd.ptype = dust_type ;
+  		pd.r[0] += 0.01 * pd.h ;
+  		pd.v[0] = v_dust ;
+  		pd.m *= d2g ;
+  		pd.u = 0 ;
+  		pd.h_dust = pd.h ;
+  	}
+  }
+
+  sim->initial_h_provided = true;
+
+  delete[] r;
+
+  return;
+}
 
 template class Ic<1>;
 template class Ic<2>;

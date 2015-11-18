@@ -156,13 +156,21 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Create Ewald periodic gravity object
-  periodicBoundaries = IsAnyBoundarySpecial(simbox);
+  periodicBoundaries = IsAnyBoundaryPeriodic(simbox);
   if (periodicBoundaries && intparams["self_gravity"] == 1) {
     ewaldGravity = true;
     ewald = new Ewald<ndim>
       (simbox, intparams["gr_bhewaldseriesn"], intparams["in"], intparams["nEwaldGrid"],
        floatparams["ewald_mult"], floatparams["ixmin"], floatparams["ixmax"],
        floatparams["EFratio"], timing);
+    simbox.PeriodicGravity = true ;
+  }
+  else{
+    simbox.PeriodicGravity = false ;
+    if (IsAnyBoundaryReflecting(simbox) && intparams["self_gravity"]){
+      ExceptionHandler::getIstance().raise("Error: Reflecting boundaries and self-gravity is not "
+    		                               "supported") ;
+    }
   }
 
 
@@ -518,26 +526,20 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Calculate SPH gravity and hydro forces, depending on which are activated
-  if (ewaldGravity && sph->hydro_forces == 1 && sph->self_gravity == 1) {
-    sphneib->UpdateAllSphPeriodicForces(sph->Nhydro, sph->Ntot, partdata,
-                                        sph, nbody, simbox, ewald);
-  }
-  else if (ewaldGravity && sph->self_gravity == 1) {
-    sphneib->UpdateAllSphPeriodicGravForces(sph->Nhydro, sph->Ntot, partdata,
-                                            sph, nbody, simbox, ewald);
-  }
-  else if (periodicBoundaries && sph->hydro_forces == 1) {
-    sphneib->UpdateAllSphPeriodicHydroForces(sph->Nhydro, sph->Ntot,
-                                             partdata, sph, nbody, simbox);
-  }
-  else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-    sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-  }
-  else if (sph->hydro_forces == 1) {
-    sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+  if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
+    sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
+				sph, nbody, simbox, ewald);
   }
   else if (sph->self_gravity == 1) {
-    sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+    sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
+				    sph, nbody, simbox, ewald);
+  }
+  else if (sph->hydro_forces == 1) {
+    sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
+				     partdata, sph, nbody, simbox);
+  }
+  else{
+    ExceptionHandler::getIstance().raise("Error: No forces included in simulation");
   }
 
 #if defined MPI_PARALLEL
@@ -550,20 +552,29 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
   }
 
+  // Compute the dust forces if present.
+  if (sphdust != NULL){
+    // Copy properties from original particles to ghost particles
+    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+#endif
+    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
+  }
+
   // Set initial accelerations
   for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-    for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
-    for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
-    for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
-    part.active = false;
-  }
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+      part.active = false;
+    }
 
   LocalGhosts->CopyHydroDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,sph);
 #endif
-
 
 
   // Compute initial N-body forces
@@ -624,7 +635,6 @@ void SphSimulation<ndim>::MainLoop(void)
   SphParticle<ndim> *partdata = sph->GetSphParticleArray();
 
   debug2("[SphSimulation::MainLoop]");
-
 
   // Compute timesteps for all particles
   if (Nlevels == 1) this->ComputeGlobalTimestep();
@@ -705,95 +715,102 @@ void SphSimulation<ndim>::MainLoop(void)
     // Update cells containing active particles
     if (activecount > 0) sphneib->UpdateActiveParticleCounters(partdata, sph);
 
-    // Zero accelerations (here for now)
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      if (part.active) {
-        part.levelneib = 0;
-        part.dalphadt  = (FLOAT) 0.0;
-        part.div_v     = (FLOAT) 0.0;
-        part.dudt      = (FLOAT) 0.0;
-        part.gpot      = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
-      }
-    }
-
-    // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-
-
-    // Update the radiation field
-    if (Nsteps%nradstep == 0 || recomputeRadiation) {
-      radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
-                                      partdata, nbody->nbodydata, sinks->sink);
+      // Zero accelerations (here for now)
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        sph->ComputeThermalProperties(part);
+        if (part.active) {
+          part.levelneib = 0;
+          part.dalphadt  = (FLOAT) 0.0;
+          part.div_v     = (FLOAT) 0.0;
+          part.dudt      = (FLOAT) 0.0;
+          part.gpot      = (FLOAT) 0.0;
+          for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+          for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
+          for (k=0; k<ndim; k++) part.a_dust[k] = (FLOAT) 0.0;
+        }
       }
-    }
+
+      // Calculate all SPH properties
+      sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
 
 
-    // Copy properties from original particles to ghost particles
-    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+      // Update the radiation field
+      if (Nsteps%nradstep == 0 || recomputeRadiation) {
+	radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
+					partdata, nbody->nbodydata, sinks->sink);
+	for (i=0; i<sph->Nhydro; i++) {
+	  SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+	  sph->ComputeThermalProperties(part);
+	}
+      }
 
-    // Calculate gravitational forces from other distant MPI nodes.
-    // Also determines particles that must be exported to other nodes
-    // if too close to the domain boundaries
+
+      // Copy properties from original particles to ghost particles
+      LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+
+      // Calculate gravitational forces from other distant MPI nodes.
+      // Also determines particles that must be exported to other nodes
+      // if too close to the domain boundaries
 #ifdef MPI_PARALLEL
-    if (sph->self_gravity == 1) {
-      sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
-    }
-    else {
-      sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
-    }
+      if (sph->self_gravity == 1) {
+	sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
+      }
+      else {
+	sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
+      }
 
-    // If active particles need forces from other domains, export particles
-    mpicontrol->ExportParticlesBeforeForceLoop(sph);
+      // If active particles need forces from other domains, export particles
+      mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
 
 
-    // Calculate SPH gravity and hydro forces, depending on which are activated
-    if (ewaldGravity && sph->hydro_forces == 1 && sph->self_gravity == 1) {
-      sphneib->UpdateAllSphPeriodicForces(sph->Nhydro, sph->Ntot, partdata,
-                                          sph, nbody, simbox, ewald);
-    }
-    else if (ewaldGravity && sph->self_gravity == 1) {
-      sphneib->UpdateAllSphPeriodicGravForces(sph->Nhydro, sph->Ntot, partdata,
-                                              sph, nbody, simbox, ewald);
-    }
-    else if (periodicBoundaries && sph->hydro_forces == 1) {
-      sphneib->UpdateAllSphPeriodicHydroForces(sph->Nhydro, sph->Ntot,
-                                               partdata, sph, nbody, simbox);
-    }
-    else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-      sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-    }
-    else if (sph->hydro_forces == 1) {
-      sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-    }
-    else if (sph->self_gravity == 1) {
-      sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
-    }
-
-    // Add external potential for all active SPH particles
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      if (part.active) {
-        sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
+      // Calculate SPH gravity and hydro forces, depending on which are activated
+      if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
+	sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
+				    sph, nbody, simbox, ewald);
       }
-    }
-
-    // Checking if acceleration or other values are invalid
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      if (part.active) {
-        for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
-        for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
-        for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
-        assert(part.gpot == part.gpot);
+      else if (sph->self_gravity == 1) {
+	sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
+					sph, nbody, simbox, ewald);
       }
-    }
+      else if (sph->hydro_forces == 1) {
+	sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
+					 partdata, sph, nbody, simbox);
+      }
+
+      // Add external potential for all active SPH particles
+      for (i=0; i<sph->Nhydro; i++) {
+	SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+	if (part.active) {
+	  sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
+	}
+      }
+
+      // Checking if acceleration or other values are invalid
+      for (i=0; i<sph->Nhydro; i++) {
+	SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+	if (part.active) {
+	  for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
+	  for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
+	  for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
+	  assert(part.gpot == part.gpot);
+	}
+      }
+
+#if defined MPI_PARALLEL
+      mpicontrol->GetExportedParticlesAccelerations(sph);
+#endif
+
+      // Compute the dust forces if present.
+      if (sphdust != NULL){
+	// Copy properties from original particles to ghost particles
+	LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+#ifdef MPI_PARALLEL
+	MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+#endif
+	sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
+      }
+
 
     // Zero all active flags once accelerations have been computed
     for (i=0; i<sph->Nhydro; i++) {
@@ -809,10 +826,8 @@ void SphSimulation<ndim>::MainLoop(void)
     else {
       activecount = 0;
     }
-    //activecount = 0;
 
 #if defined MPI_PARALLEL
-    mpicontrol->GetExportedParticlesAccelerations(sph);
     MPI_Allreduce(MPI_IN_PLACE, &activecount, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 

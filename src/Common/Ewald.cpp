@@ -85,6 +85,13 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     debug2("[Ewald::Ewald]");
     timing->StartTimingSection("EWALD");
 
+    // First check that we don't have any reflecting boundaries
+    if (IsAnyBoundaryReflecting(simbox)){
+      ExceptionHandler::getIstance().raise("Ewald gravity does not work with "
+    		                               "reflecting boundaries");
+    }
+
+
 
     // set ewald_periodicity for given type of boundary conditions
     ewald_periodicity = 0;
@@ -97,6 +104,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     if (simbox.boundary_lhs[2] == periodicBoundary && simbox.boundary_rhs[2] == periodicBoundary) {
       ewald_periodicity+=4;
     }
+
 
 
     // prepare useful constants for generating Ewald field

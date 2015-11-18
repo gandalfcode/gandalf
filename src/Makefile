@@ -72,7 +72,6 @@ ICCOPT   += -openmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
 
-
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
 ifeq ($(findstring g++,$(CPP)),g++)
@@ -205,6 +204,8 @@ OBJ += Ghosts.o
 OBJ += SphSnapshot.o
 OBJ += CodeTiming.o
 OBJ += IC.o
+OBJ += Dust.o
+
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
@@ -300,6 +301,8 @@ CPP_TGT := $(patsubst %.o,  %.cpp, $(OBJ))
 CPP_TGT := $(patsubst chealpix.cpp, chealpix.c, $(CPP_TGT)) 
 REL_DEPS := $(patsubst %.cpp,  %.d, $(CPP_TGT)) 
 REL_DEPS := $(patsubst %.c,  %.d, $(REL_DEPS)) 
+
+
 
 %.o : %.d
 

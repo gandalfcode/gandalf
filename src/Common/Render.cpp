@@ -108,7 +108,8 @@ int Render<ndim>::CreateColumnRenderingGrid
   const float ymax,                    ///< [in] Maximum y-extent
   float* values,                       ///< [out] Rendered values for plotting
   const int Ngrid,                     ///< [in] No. of grid points (ixgrid*iygrid)
-  SphSnapshotBase &snap,               ///< [inout] Snapshot object reference
+  SphSnapshotBase &snap,               ///< [inout] Snapshot object reference,
+  const string typepart,                         ///< [in] Type of particles to render
   float &scaling_factor)               ///< [in] Rendered quantity scaling factor
 {
   int arraycheck = 1;                  // Verification flag
@@ -118,7 +119,7 @@ int Render<ndim>::CreateColumnRenderingGrid
   int ii,jj;                           // ..
   int idummy;                          // Dummy integer to verify valid arrays
   int imin,imax,jmin,jmax;             // Grid limits for column density interpolation
-  int Nhydro = snap.Nhydro;                // No. of SPH particles in snap
+  int Nhydro = snap.GetNparticlesType(typepart);                // No. of SPH particles in snap
   float dx,dy,invdx,invdy;             // ..
   float dr[2];                         // Rel. position vector on grid plane
   float drsqd;                         // Distance squared on grid plane
@@ -144,17 +145,17 @@ int Render<ndim>::CreateColumnRenderingGrid
   cout << "Generating rendered image!" << endl;
 
   // First, verify x, y, m, rho, h and render strings are valid
-  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray(xstring,typepart,&xvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray(ystring,typepart,&yvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,scaling_factor,renderunit);
+  snap.ExtractArray(renderstring,typepart,&rendervalues,&idummy,scaling_factor,renderunit);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray("m",typepart,&mvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray("rho",typepart,&rhovalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray("h",typepart,&hvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
 
   // If any are invalid, exit here with failure code
@@ -265,7 +266,8 @@ int Render<ndim>::CreateSliceRenderingGrid
   const float zslice,                  ///< [in] z-position of slice
   float* values,                       ///< [out] Rendered values for plotting
   const int Ngrid,                     ///< [in] No. of grid points (ixgrid*iygrid)
-  SphSnapshotBase &snap,               ///< [inout] Snapshot object reference
+  SphSnapshotBase &snap,               ///< [inout] Snapshot object reference,
+  const string typepart,                          ///< [in] Type of particles to render
   float &scaling_factor)               ///< [in] Rendered quantity scaling factor
 {
   int arraycheck = 1;                  // Verification flag
@@ -275,7 +277,7 @@ int Render<ndim>::CreateSliceRenderingGrid
   int idummy;                          // Dummy integer to verify correct array
   int ii,jj;                           // ..
   int imin,imax,jmin,jmax;             // Grid limits for column density interpolation
-  int Nhydro = snap.Nhydro;                // No. of SPH particles in snap
+  int Nhydro = snap.GetNparticlesType(typepart);                // No. of SPH particles in snap
   float dx,dy,invdx,invdy;             // ..
   float dr[3];                         // Rel. position vector on grid plane
   float drsqd;                         // Distance squared on grid plane
@@ -301,19 +303,19 @@ int Render<ndim>::CreateSliceRenderingGrid
       (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y, z, m, rho, h and render strings are valid
-  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray(xstring,typepart,&xvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray(ystring,typepart,&yvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(zstring,"sph",&zvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray(zstring,typepart,&zvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,scaling_factor,renderunit);
+  snap.ExtractArray(renderstring,typepart,&rendervalues,&idummy,scaling_factor,renderunit);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray("m",typepart,&mvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray("rho",typepart,&rhovalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring);
+  snap.ExtractArray("h",typepart,&hvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
 
   // If any are invalid, exit here with failure code

@@ -123,7 +123,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  OctTree(int, FLOAT, FLOAT, FLOAT, string, string);
+  OctTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&);
   ~OctTree();
 
 
@@ -131,8 +131,8 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void BuildTree(const int, const int, const int, const int, const FLOAT, ParticleType<ndim> *);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
-  bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
-  void ExtrapolateCellProperties(FLOAT);
+  //bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
+  //void ExtrapolateCellProperties(FLOAT);
   void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);

@@ -40,8 +40,13 @@ enum ptype{gas, icm, boundary, cdm, dust, dead,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
            Nhydrotypes};
 
+enum parttype{gas_type, icm_type, cdm_type, dust_type, Ntypes} ;
 
-typedef bool Typemask[Nhydrotypes];
+static const int parttype_converter[] = { gas, icm, cdm, dust } ;
+static const int parttype_reverse_converter[] =
+{ gas_type, icm_type, gas_type, cdm_type, dust_type} ;
+
+typedef bool Typemask[Ntypes];
 
 //static Typemask truemask = {true};
 
@@ -52,22 +57,26 @@ typedef bool Typemask[Nhydrotypes];
 /// \author D. A. Hubber
 /// \date   14/10/2015
 //=================================================================================================
-struct ParticleType
+struct ParticleTypeInfo
 {
   int N;                               ///< Current no. of particles
   bool hydro_forces;                   ///< Does particle experience hydro forces?
   bool self_gravity;                   ///< Does particle experience gravitational forces?
+  bool drag_forces ;                   ///< Does particle experience drag forces?
   Typemask hmask;                      ///< Neighbour mask for computing smoothing lengths
   Typemask hydromask;                  ///< Neighbour mask for computing hydro forces
-  Typemask gravmask;                   ///< Neighbour mask for computing gravitational forces
+  Typemask gravmask;                   ///< Neighbour mask for computing drag forces
+  Typemask dragmask;
 
-  ParticleType() {
+  ParticleTypeInfo() {
     N = 0;
     hydro_forces = false;
     self_gravity = false;
-    for (int k=0; k<Nhydrotypes; k++) hmask[k] = false;
-    for (int k=0; k<Nhydrotypes; k++) hydromask[k] = false;
-    for (int k=0; k<Nhydrotypes; k++) gravmask[k] = false;
+    drag_forces  = false ;
+    for (int k=0; k<Ntypes; k++) hmask[k] = false;
+    for (int k=0; k<Ntypes; k++) hydromask[k] = false;
+    for (int k=0; k<Ntypes; k++) gravmask[k] = false;
+    for (int k=0; k<Ntypes; k++) dragmask[k] = false;
   }
 };
 
@@ -85,7 +94,8 @@ struct Particle
   bool active;                      ///< Flag if active (i.e. recompute step)
   bool potmin;                      ///< Is particle at a potential minima?
   int iorig;                        ///< Original particle i.d.
-  int itype;                        ///< SPH particle type
+  int itype;                        ///< SPH particle type (eg boundary/dead)
+  int ptype;                        ///< SPH particle type (gas/cdm/dust)
   int sinkid;                       ///< i.d. of sink particle
   int levelneib;                    ///< Min. timestep level of neighbours
   int nstep;                        ///< Integer step-size of particle
@@ -98,8 +108,10 @@ struct Particle
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
   FLOAT agrav[ndim];                ///< Gravitational acceleration
+  FLOAT a_dust[ndim];                ///< Gravitational acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
+  FLOAT h_dust ;                    ///< Gas Smoothing length for dust
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
   FLOAT invh;                       ///< 1 / h
   FLOAT hfactor;                    ///< invh^(ndim + 1)
@@ -126,6 +138,7 @@ struct Particle
     active = false;
     iorig = -1;
     itype = gas;
+    ptype = gas_type;
     level = 0;
     nstep = 0;
     nlast = 0;
@@ -137,9 +150,10 @@ struct Particle
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
-    //for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) a_dust[k] = (FLOAT) 0.0;
     m         = (FLOAT) 0.0;
     h         = (FLOAT) 0.0;
+    h_dust    = (FLOAT) 0.0;
     hrangesqd = (FLOAT) 0.0;
     invh      = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;

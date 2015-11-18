@@ -27,6 +27,7 @@
 #include <iostream>
 #include <math.h>
 #include <numeric>
+#include "GhostNeighbours.hpp"
 #include "NeighbourSearch.h"
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
@@ -39,6 +40,52 @@
 #include "MpiNode.h"
 #endif
 using namespace std;
+
+
+//=================================================================================================
+//  ParticleCellProxy
+/// Proxy class that we can use to create the Ghosts for the brute force search
+//=================================================================================================
+template<int ndim>
+struct ParticleCellProxy
+{
+	ParticleCellProxy(const Particle<ndim>& p)
+	{
+		FLOAT dr = 0.5 * sqrt(p.hrangesqd) ;
+		for (int k=0; k<ndim;k++)
+		{
+			rcell[k] = p.r[k] ;
+
+			hboxmax[k] = rcell[k] + dr ;
+			hboxmax[k] = rcell[k] - dr ;
+		}
+	}
+	FLOAT hboxmin[ndim], hboxmax[ndim] ;
+	FLOAT rcell[ndim] ;
+} ;
+
+
+//=================================================================================================
+//  DomainCellProxy
+/// Proxy class that we can use to create the Ghosts for the brute force search
+//=================================================================================================
+template<int ndim>
+struct DomainCellProxy
+{
+	DomainCellProxy(const DomainBox<ndim>& box)
+	{
+		for (int k=0; k<ndim;k++)
+		{
+			rcell[k] = 0.5 * (box.boxmax[k] + box.boxmin[k]) ;
+			FLOAT dr = 0.6 * (box.boxmax[k] - box.boxmin[k]) ;
+
+			hboxmax[k] = rcell[k] + dr ;
+			hboxmax[k] = rcell[k] - dr ;
+		}
+	}
+	FLOAT hboxmin[ndim], hboxmax[ndim] ;
+	FLOAT rcell[ndim] ;
+} ;
 
 
 
@@ -54,8 +101,10 @@ SphBruteForceSearch<ndim,ParticleType>::SphBruteForceSearch
   CodeTiming *timingaux):
   NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
   SphNeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
-  BruteForceSearch<ndim,ParticleType>(kernrangeaux, boxaux, kernaux, timingaux)
+  BruteForceSearch<ndim,ParticleType>(kernrangeaux, boxaux, kernaux, timingaux),
+  GhostFinder(*boxaux)
 {
+	GhostFinder.SetTargetCell(DomainCellProxy<ndim>(*boxaux));
 }
 
 
@@ -158,7 +207,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
   return;
 }
 
-
+/*
 
 //=================================================================================================
 //  SphBruteForceSearch::UpdateAllSphHydroForces
@@ -400,7 +449,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
   return;
 }
-
+*/
 
 
 //=================================================================================================
@@ -408,7 +457,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 /// Update all SPH forces (both hydro and gravity) for periodic boundary conditions.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
+void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] Total no. of particles
   SphParticle<ndim> *part_gen,         ///< [in] Pointer to SPH particle array
@@ -427,7 +476,14 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
   ParticleType<ndim>* neibdata;        // Local copy of neighbouring particles
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
+
   debug2("[SphBruteForceSearch::UpdateAllSphPeriodicForces]");
+
+
+  FLOAT r_ghost[ndim] ;
+  int   sign[ndim] ;
+
+  assert(GhostFinder.MaxNumGhosts() == 1) ;
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
@@ -442,6 +498,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
+
     partdata[i].gpot = (FLOAT) 0.0;
     partdata[i].dudt = (FLOAT) 0.0;
     partdata[i].levelneib = 0;
@@ -457,20 +514,23 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
       if (i != j && partdata[j].itype != dead) {
         neiblist[Nneib++] = j;
         for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
-        NearestPeriodicVector(simbox,dr,dr_corr);
+        GhostFinder.NearestPeriodicVector(dr);
         for (k=0; k<ndim; k++) neibdata[j].r[k] = partdata[i].r[k] + dr[k];
       };
     }
 
+
     // Compute forces between SPH neighbours (hydro and gravity)
     sph->ComputeSphHydroGravForces(i,Nneib,neiblist,partdata[i],partdata);
 
-    // Now add the periodic correction force
-    for (j=0; j<Nneib; j++) {
-      for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
-      ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
-      for (k=0; k<ndim; k++) partdata[i].agrav[k] += aperiodic[k];
-      partdata[i].gpot += potperiodic;
+    if (simbox.PeriodicGravity){
+      // Now add the periodic correction force
+      for (j=0; j<Nneib; j++) {
+        for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
+        ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
+        for (k=0; k<ndim; k++) partdata[i].agrav[k] += aperiodic[k];
+        partdata[i].gpot += potperiodic;
+      }
     }
 
     // Compute all star forces
@@ -497,7 +557,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
 /// using brute force (i.e. direct summation).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicHydroForces
+void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *part_gen,         ///< [inout] Pointer to SPH ptcl array
@@ -522,6 +582,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicHydroForces
   const int offset_imported = sph->Nghost;
 
   debug2("[SphBruteForceSearch::UpdateAllSphPeriodicHydroForces]");
+
 
   // Allocate memory for storing neighbour ids and position data
   neibdata = new ParticleType<ndim>[Ntot];
@@ -551,25 +612,28 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicHydroForces
     for (k=0; k<ndim; k++) rp[k] = partdata[i].r[k];
     hrangesqdi = partdata[i].hrangesqd;
 
+    GhostFinder.SetTargetCell(ParticleCellProxy<ndim>(partdata[i])) ;
 
     // Determine interaction list (to ensure we don't compute pair-wise forces twice).
     // Also make sure that only the closest periodic replica is considered.
     Nneib = 0;
     for (j=0; j<Nhydro; j++) {
-      neibdata[j] = partdata[j];
       if (i != j && partdata[j].itype != dead) {
         neiblist[Nneib] = j;
-        for (k=0; k<ndim; k++) draux[k] = neibdata[j].r[k] - partdata[i].r[k];
-        NearestPeriodicVector(simbox, draux, dr_corr);
-        for (k=0; k<ndim; k++) neibdata[j].r[k] += dr_corr[k];
-        drsqd = DotProduct(draux, draux, ndim);
-        drmag[Nneib] = sqrt(drsqd + small_number);
-        invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
-        for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
-        Nneib++;
-      };
-    }
 
+        int NumGhosts = GhostFinder.ConstructGhostsScatterGather(partdata[j], neibdata + Nneib) ;
+
+        for (int n=0; n < NumGhosts; n++){
+          for (k=0; k < ndim; k++) draux[k] = neibdata[Nneib].r[k] - partdata[i].r[k] ;
+          drsqd = DotProduct(draux, draux, ndim);
+          drmag[Nneib] = sqrt(drsqd + small_number);
+
+          invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
+          for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+          Nneib++;
+        }
+      }
+    }
     // Compute all SPH hydro forces
     sph->ComputeSphHydroForces(i, Nneib, neiblist, drmag, invdrmag, dr, partdata[i], partdata);
 
@@ -601,7 +665,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicHydroForces
 /// Update all SPH gravity forces, including periodic Ewald corrections.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
+void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] Total no. of particles
   SphParticle<ndim> *part_gen,         ///< [in] Pointer to SPH particle array
@@ -621,6 +685,12 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[SphBruteForceSearch::UpdateAllSphPeriodicGravForces]");
+
+
+  FLOAT r_ghost[ndim] ;
+  int   sign[ndim] ;
+
+  assert(GhostFinder.MaxNumGhosts() == 1) ;
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
@@ -651,7 +721,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
       if (i != j && partdata[j].itype != dead) {
         neiblist[Nneib++] = j;
         for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
-        NearestPeriodicVector(simbox,dr,dr_corr);
+        GhostFinder.NearestPeriodicVector(dr);
         for (k=0; k<ndim; k++) neibdata[j].r[k] = partdata[i].r[k] + dr[k];
       };
     }
@@ -660,13 +730,14 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
     sph->ComputeSphGravForces(i,Nneib,neiblist,partdata[i],neibdata);
 
     // Now add the periodic correction force
-    for (j=0; j<Nneib; j++) {
-      for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
-      ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
-      for (k=0; k<ndim; k++) partdata[i].agrav[k] += aperiodic[k];
-      partdata[i].gpot += potperiodic;
+    if (simbox.PeriodicGravity) {
+      for (j=0; j<Nneib; j++) {
+        for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
+        ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
+        for (k=0; k<ndim; k++) partdata[i].agrav[k] += aperiodic[k];
+        partdata[i].gpot += potperiodic;
+      }
     }
-
     // Compute all star forces
     sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i]);
 

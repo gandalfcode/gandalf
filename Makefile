@@ -80,6 +80,6 @@ depends:
 
 installpython:
 	./setup.py install
-	
+
 install:
 	cp bin/gandalf /usr/local/bin

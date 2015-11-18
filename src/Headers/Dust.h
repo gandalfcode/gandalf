@@ -1,6 +1,7 @@
 //=================================================================================================
-//  M4Kernel.cpp
-//  M4 Kernel set-up functions
+//  Dust.h
+//  Contains main parent virtual class plus child classes for various dust
+//  algorithms that are implemented.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -19,53 +20,53 @@
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
 //=================================================================================================
+// Guard against multiple inclusions
+#ifndef __GANDALF_DUST_H__
+#define __GANDALF_DUST_H__
 
-
-#include <math.h>
-#include <iostream>
+#include "Parameters.h"
+#include "Particle.h"
+#include "Precision.h"
 #include "Constants.h"
-#include "SmoothingKernel.h"
-using namespace std;
+#include "CodeTiming.h"
+#include "InlineFuncs.h"
+#include "Tree.h"
 
 
 
 //=================================================================================================
-//  M4Kernel::M4Kernel
+//  Class DustBase
+/// \brief   DustBase class definition.
+/// \details  Base class that defines the interface for computing drag forces.
+/// \author  R. A. Booth
+/// \date    17/10/2015
 //=================================================================================================
-template <int ndim>
-M4Kernel<ndim>::M4Kernel(string kernelname):
-  SmoothingKernel<ndim>()
+template<int ndim>
+class DustBase
 {
-  kernrange = (FLOAT) 2.0;
-  invkernrange = (FLOAT) 0.5;
-  kernrangesqd = (FLOAT) 4.0;
-  if (ndim == 1) {
-	  kernnorm = twothirds;
-	  kernnormdrag = 3.0 ;
-	  }
-  else if (ndim == 2) {
-	  kernnorm = invpi*(FLOAT) (10.0/7.0);
-	  kernnormdrag = 49. / 31 ;
-  }
-  else if (ndim == 3) {
-	  kernnorm = invpi;
-	  kernnormdrag = 10./9 ;
-  }
-
-}
-
-
+protected:
+	DustBase() { } ;
+public:
+	virtual ~DustBase() {} ;
+	virtual void UpdateAllDragForces(int , int, Particle<ndim> *) = 0 ;
+	CodeTiming * timing;
+};
 
 //=================================================================================================
-//  M4Kernel::~M4Kernel
+//  Class DustFactory
+/// \brief   DustFactory function definition
+/// \details  Selects the appropriate dust implementation based on the parameters
+/// \author  R. A. Booth
+/// \date    23/10/2015
 //=================================================================================================
-template <int ndim>
-M4Kernel<ndim>::~M4Kernel()
+template<int ndim, template<int> class ParticleType>
+class DustFactory
 {
-}
+public:
+  static DustBase<ndim>* ProcessParameters(Parameters* params, CodeTiming* timing,
+		  	  	  	  	  	  	  	  	   ParticleTypeInfo* types,
+							               TreeBase<ndim>* t, TreeBase<ndim>* ghost,
+							               TreeBase<ndim>* mpi_tree)  ;
+} ;
 
-
-
-template class M4Kernel<1>;
-template class M4Kernel<2>;
-template class M4Kernel<3>;
+#endif//__GANDALF_DUST_H__

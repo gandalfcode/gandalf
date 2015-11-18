@@ -19,7 +19,7 @@
 
 
 \title{GANDALF Documentation}
-\date{November 09, 2015}
+\date{November 16, 2015}
 \release{0.4.0}
 \author{David Hubber; Giovanni Rosotti}
 \newcommand{\sphinxlogo}{}
@@ -280,7 +280,7 @@ to False to preserve the existing settings.
 \index{render() (in module facade)}
 
 \begin{fulllineitems}
-\phantomsection\label{index:facade.render}\pysiglinewithargsret{\code{facade.}\bfcode{render}}{\emph{x}, \emph{y}, \emph{render}, \emph{snap='current'}, \emph{sim='current'}, \emph{overplot=False}, \emph{autoscale=False}, \emph{autoscalerender=False}, \emph{coordlimits=None}, \emph{zslice=None}, \emph{xunit='default'}, \emph{yunit='default'}, \emph{renderunit='default'}, \emph{res=64}, \emph{interpolation='nearest'}, \emph{lognorm=False}, \emph{**kwargs}}{}
+\phantomsection\label{index:facade.render}\pysiglinewithargsret{\code{facade.}\bfcode{render}}{\emph{x}, \emph{y}, \emph{render}, \emph{snap='current'}, \emph{sim='current'}, \emph{overplot=False}, \emph{autoscale=False}, \emph{autoscalerender=False}, \emph{coordlimits=None}, \emph{zslice=None}, \emph{xunit='default'}, \emph{yunit='default'}, \emph{renderunit='default'}, \emph{res=64}, \emph{interpolation='nearest'}, \emph{lognorm=False}, \emph{type='sph'}, \emph{**kwargs}}{}
 Create a rendered plot from selected particle data.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
@@ -384,6 +384,10 @@ Specify wheter the colour scale should be
 logarithmic (default: linear). If you want to customise the
 limits, use the vmin and vmax flags which are passed to
 matplotlib
+
+\item {} 
+\textbf{type} (\emph{str}) --
+Specify the type of particles to be used for rendering (defaults to sph)
 
 \item {} 
 \textbf{**kwarg} --

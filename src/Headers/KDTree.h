@@ -106,7 +106,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  KDTree(int, FLOAT, FLOAT, FLOAT, string, string);
+  KDTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&);
   ~KDTree();
 
 
@@ -117,7 +117,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, TreeCell<ndim> &);
-  void ExtrapolateCellProperties(FLOAT);
+  void ExtrapolateCellProperties(const FLOAT);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   FLOAT QuickSelectSort(int, int, int, int, ParticleType<ndim> *);
   void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);

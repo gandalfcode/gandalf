@@ -115,6 +115,8 @@ public:
   void IsothermSphere(void);
   void RotIsothermSphere(void);
   void TurbIsothermSphere(void);
+  void EvrardCollapse(void);
+  void DustyBox(void);
 
 };
 #endif
