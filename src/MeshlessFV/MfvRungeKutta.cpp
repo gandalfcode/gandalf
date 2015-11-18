@@ -47,11 +47,11 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 MfvRungeKutta<ndim, kernelclass>::MfvRungeKutta
-  (int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
-   FLOAT _h_fac, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName,
-   int size_part, SimUnits &units, Parameters *params):
-  MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult, _h_fac,
-                   h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
+ (int _hydro_forces, int _self_gravity, FLOAT _accel_mult, FLOAT _courant_mult,
+  FLOAT _h_fac, FLOAT _h_converge, FLOAT _gamma, string _gas_eos, string KernelName,
+  int size_part, SimUnits &units, Parameters *params):
+  MeshlessFV<ndim>(_hydro_forces, _self_gravity, _accel_mult, _courant_mult, _h_fac,
+                   _h_converge, _gamma, _gas_eos, KernelName, size_part, units, params),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp      = &kern;
@@ -111,7 +111,7 @@ int MfvRungeKutta<ndim, kernelclass>::ComputeH
     iteration++;
     part.invh    = (FLOAT) 1.0/part.h;
     part.ndens   = (FLOAT) 0.0;
-    part.hfactor = pow(part.invh,ndim);
+    part.hfactor = pow(part.invh, ndim);
     invhsqd      = part.invh*part.invh;
 
     // Loop over all nearest neighbours in list to calculate
@@ -126,8 +126,6 @@ int MfvRungeKutta<ndim, kernelclass>::ComputeH
     part.ndens *= part.hfactor;
     part.volume = (FLOAT) 1.0/part.ndens;
     part.rho    = part.m*part.ndens;
-
-
     if (part.rho > (FLOAT) 0.0) part.invrho = (FLOAT) 1.0/part.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
