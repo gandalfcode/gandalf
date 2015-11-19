@@ -643,10 +643,8 @@ template <int ndim>
 void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                               // Particle counter
-  DOUBLE dt;                           // Particle timestep
   DOUBLE dt_min = big_number_dp;       // Local copy of minimum timestep
-  DOUBLE dt_nbody;                     // Aux. minimum N-body timestep
-  DOUBLE dt_hydro;                     // Aux. minimum SPH timestep
+
 
   debug2("[MeshlessFVSimulation::ComputeGlobalTimestep]");
   timing->StartTimingSection("GLOBAL_TIMESTEPS");
@@ -666,11 +664,11 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Find minimum timestep from all hydro particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) private(i) shared(dt_min,dt_min_nbody,dt_min_hydro)
+#pragma omp parallel default(none) private(i) shared(dt_min)
     {
-      dt       = big_number_dp;
-      dt_nbody = big_number_dp;
-      dt_hydro = big_number_dp;
+      DOUBLE dt       = big_number_dp;           // Aux. minimum timestep
+      DOUBLE dt_nbody = big_number_dp;           // Aux. minimum N-body timestep
+      DOUBLE dt_hydro = big_number_dp;           // Aux. minimum SPH timestep
 
 #pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
@@ -895,8 +893,8 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 //#pragma omp parallel default(none) private(dt,dt_nbody,dt_hydro,i) \
 //  private(istep,last_level,level,level_max_aux,level_hydro,nstep,nfactor) \
 //  shared(dt_min,level_max_nbody,level_max_hydro,level_min_hydro)
-#pragma omp parallel default(shared) private(dt,dt_nbody,dt_sph,i)\
-  private(istep,last_level,level,level_max_aux,level_nbody,level_sph,nstep,nfactor)
+#pragma omp parallel default(shared) private(dt,dt_nbody,dt_hydro,i)\
+  private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor)
     {
       dt_hydro      = big_number_dp;
       dt_nbody      = big_number_dp;
