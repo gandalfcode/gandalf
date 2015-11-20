@@ -518,8 +518,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   int *neiblist,                       ///< [out] List of all particle ids
   Particle<ndim> *neib_out)            ///< [out] Array of local copies of neighbour particles
 {
-  const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
-  ParticleType<ndim>* neibpart = reinterpret_cast<ParticleType<ndim>* >(neib_out) ;
   int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int j;                               // Aux. particle counter
@@ -531,28 +529,26 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
   const FLOAT rmax = cell.rmax;
 
+  const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
+  ParticleType<ndim>* neibpart = reinterpret_cast<ParticleType<ndim>* >(neib_out) ;
   assert(neibpart != NULL);
   assert(partdata != NULL);
 
-  for (k=0; k<ndim; k++) {
-	  rc[k] = cell.rcell[k];
-  }
+  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
+  // Declare objects/variables required for creating ghost particles
   GhostNeighbourFinder<ndim> GhostFinder(_domain) ;
   GhostFinder.SetTargetCell(cell) ;
-
   int MaxGhosts = GhostFinder.MaxNumGhosts() ;
-
   std::vector<FLOAT> _r_ghost(ndim *pow(3,ndim)) ;
   std::vector<int>   _sign(ndim *pow(3,ndim)) ;
-
   FLOAT *r_ghost = &(_r_ghost[0]) ;
   int   *sign    = &(_sign[0]) ;
+
 
   // Start with root cell and walk through entire tree
   Nneib = 0;
   Ntemp = 0;
-
 
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
@@ -579,32 +575,34 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
       }
 
       // If leaf-cell, add particles to list
-      else if (celldata[cc].copen == -1){
-    	i = celldata[cc].ifirst;
-    	while (i != -1) {
-    		if (Ntemp + MaxGhosts >= Nneibmax){ // Check that we have enough memory
-    		  return -1 ;
-    		} else {
-    		  int NumGhosts = GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Ntemp) ;
+      else if (celldata[cc].copen == -1) {
+        i = celldata[cc].ifirst;
+        while (i != -1) {
+          if (Ntemp + MaxGhosts >= Nneibmax) { // Check that we have enough memory
+            return -1;
+          }
+          else {
+            int NumGhosts = GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Ntemp);
 
-    		  for (int n(0); n < NumGhosts; ++n){
-    			for (k=0; k<ndim; k++) dr[k] = neibpart[Ntemp].r[k] - rc[k];
+            for (int n(0); n < NumGhosts; ++n) {
+              neibpart[Ntemp].iorig = i;
+              for (k=0; k<ndim; k++) dr[k] = neibpart[Ntemp].r[k] - rc[k];
+              drsqd = DotProduct(dr, dr, ndim);
+              FLOAT h2 = rmax + kernrange*neibpart[Ntemp].h;
+              if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
+                neiblist[Ntemp] = i;
+                Ntemp++ ;
+              }
+              else if (NumGhosts > 1) {
+                neibpart[Ntemp] = neibpart[Ntemp+NumGhosts-1];
+                NumGhosts-- ;
+              }
+            } // Loop over Ghosts
 
-    			drsqd = DotProduct(dr, dr, ndim);
-    			FLOAT h2 = rmax + kernrange*neibpart[Ntemp].h ;
-    			if (drsqd < hrangemaxsqd || drsqd < h2*h2){
-    			  neiblist[Ntemp] = i ;
-    			  Ntemp++ ;
-    	      	} else if (NumGhosts > 1){
-    	      	  neibpart[Ntemp] = neibpart[Ntemp+NumGhosts-1] ;
-    	      	  NumGhosts-- ;
-    	      	}
-    	     } // Loop over Ghosts
-
-    	   }
-    		if (i == celldata[cc].ilast) break;
-    		i = inext[i];
-    	}
+          }
+          if (i == celldata[cc].ilast) break;
+          i = inext[i];
+        }
        cc = celldata[cc].cnext;
       }
 
