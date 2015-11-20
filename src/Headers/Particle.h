@@ -65,8 +65,8 @@ struct ParticleTypeInfo
   bool drag_forces ;                   ///< Does particle experience drag forces?
   Typemask hmask;                      ///< Neighbour mask for computing smoothing lengths
   Typemask hydromask;                  ///< Neighbour mask for computing hydro forces
-  Typemask gravmask;                   ///< Neighbour mask for computing drag forces
-  Typemask dragmask;
+  Typemask gravmask;                   ///< Neighbour mask for computing gravity forces
+  Typemask dragmask;                   ///< Neighbour mask for computing drag forces
 
   ParticleTypeInfo() {
     N = 0;
