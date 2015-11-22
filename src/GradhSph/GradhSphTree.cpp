@@ -236,16 +236,14 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
     int Nneibmax = Nneibmaxbuf[ithread];       // Local copy of neighbour buffer size
     int* activelist = activelistbuf[ithread];  // Local array of active particle ids
     int* neiblist = new int[Nneibmax];         // Local array of neighbour particle ids
+    int* ptype    = new int[Nneibmax];         // Local array of particle types
     FLOAT* gpot   = new FLOAT[Nneibmax];       // Local array of particle potentials
     FLOAT* gpot2  = new FLOAT[Nneibmax];       // Local reduced array of neighbour potentials
     FLOAT* drsqd  = new FLOAT[Nneibmax];       // Local array of distances (squared)
     FLOAT* m      = new FLOAT[Nneibmax];       // Local array of particle masses
     FLOAT* m2     = new FLOAT[Nneibmax];       // Local reduced array of neighbour masses
     FLOAT* r      = new FLOAT[Nneibmax*ndim];  // Local array of particle positions
-    int* ptype    = new int[Nneibmax];         // Local array of particle types
-
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
-    //ParticleType<ndim>* activepart = new ParticleType<ndim>[Nleafmax];
 
 
     // Loop over all active cells
@@ -285,17 +283,17 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
           delete[] drsqd;
           delete[] gpot2;
           delete[] gpot;
-          delete[] neiblist;
           delete[] ptype;
+          delete[] neiblist;
           Nneibmax = 2*Nneibmax;
           neiblist = new int[Nneibmax];
+          ptype    = new int[Nneibmax];
           gpot     = new FLOAT[Nneibmax];
           gpot2    = new FLOAT[Nneibmax];
           drsqd    = new FLOAT[Nneibmax];
           m        = new FLOAT[Nneibmax];
           m2       = new FLOAT[Nneibmax];
           r        = new FLOAT[Nneibmax*ndim];
-          ptype    = new int[Nneibmax];
           Nneib = 0;
           Nneib = tree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
           Nneib = ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
@@ -307,11 +305,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
-          j        = neiblist[jj];
-          gpot[jj] = sphdata[j].gpot;
-          m[jj]    = sphdata[j].m;
-          for (k=0; k<ndim; k++) r[ndim*jj + k] = sphdata[j].r[k];
+          j         = neiblist[jj];
+          gpot[jj]  = sphdata[j].gpot;
+          m[jj]     = sphdata[j].m;
           ptype[jj] = sphdata[j].ptype;
+          for (k=0; k<ndim; k++) r[ndim*jj + k] = sphdata[j].r[k];
         }
 
         // Loop over all active particles in the cell
@@ -327,8 +325,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
           // Compute distance (squared) to all
           //---------------------------------------------------------------------------------------
           for (jj=0; jj<Nneib; jj++) {
-        	// Only include particles of appropriate types in density calculation
-        	if (!sph->types[activepart[j].ptype].hmask[ptype[jj]]) continue ;
+
+            // Only include particles of appropriate types in density calculation
+            if (!sph->types[activepart[j].ptype].hmask[ptype[jj]]) continue ;
 
             for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
             drsqdaux = DotProduct(draux,draux,ndim) + small_number;
@@ -379,8 +378,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
     delete[] drsqd;
     delete[] gpot2;
     delete[] gpot;
-    delete[] neiblist;
     delete[] ptype;
+    delete[] neiblist;
 
   }
   //===============================================================================================
@@ -449,7 +448,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     return;
   }
 
-
   // Update ghost tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0],sphdata);
   //if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
@@ -512,15 +510,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
       }
 
-
       // Compute neighbour list for cell from real and periodic ghost particles
       Nneib = 0;
       Nneib = tree->ComputeNeighbourAndGhostList
         (cell, sphdata, Nneibmax, Nneib, neiblist, neibpart);
       //Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
 
-      // If there are too many neighbours, reallocate the arrays and
-      // recompute the neighbour list.
+      // If there are too many neighbours, reallocate the arrays and recompute the neighbour list.
       while (Nneib == -1) {
         delete[] neibpartbuf[ithread];
         delete[] invdrmag;
@@ -549,9 +545,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        bool do_hydro   = sph->types[activepart[j].ptype].hydro_forces ;
+        bool do_hydro = sph->types[activepart[j].ptype].hydro_forces ;
         if (do_hydro){
-          Typemask hmask ;
+          Typemask hmask;
           for (k=0; k<Ntypes; k++) hmask[k] = sph->types[activepart[j].ptype].hmask[k];
 
           for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
@@ -637,6 +633,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
   }
   //===============================================================================================
+
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
