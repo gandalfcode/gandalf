@@ -3,7 +3,7 @@ set -v
 ERRORS=0
 for file in $(cat to_run)
 do
-    if [ -z "MPICPP" ];
+    if [ -z "$MPICPP" ];
     then
         mpirun -np 4 ../bin/gandalf $file    
     else
