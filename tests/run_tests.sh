@@ -1,15 +1,18 @@
 #!/bin/bash
-
-CODE=0
+set -v
+ERRORS=0
 for file in $(cat to_run)
 do
-    if [ -z "$VAR" ];
+    if [ -z "MPICPP" ];
     then
         mpirun -np 4 ../bin/gandalf $file    
     else
         ../bin/gandalf $file
     fi
-    CODE=$? || $CODE
-    echo $CODE
+    if [ $? -ne 0 ];
+    then
+        ERRORS += 1
+    fi
+    echo $ERRORS
 done
-exit $CODE
+exit $ERRORS
