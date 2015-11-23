@@ -889,6 +889,34 @@ def get_render_data(x,y,quantity, sim="current",snap="current",
     
 
 
+def get_analytical_data (x=None, y=None, ic="default", snap="current", sim="current",
+                   xunit="default",
+                   yunit="default", time="snaptime"):
+    '''Return the data of the analytical solution (if it exists).  Read the problem type from 
+    the \'ic\' parameter.
+
+    Keyword Args:
+        x (str): First quantity to be returned; normally you want it to be a spatial coordinate
+        y (str): Second quantity to be returned.
+        snap : Number of the snapshot to plot. Defaults to 'current'.
+        sim : Number of the simulation to plot. Defaults to 'current'.
+        xunit (str): Specify the unit for the first quantity.
+        yunit (str): Specify the unit for the second quantity.
+        time: Return the data for the analytical solution for the given time.
+                If not set, then read the time from the sim or snapshot
+                     
+    Return:
+        Requested data. The member x_data contains the first quantity and the member y_data
+            the second quantity
+'''
+
+    simno = get_sim_no(sim)
+    command = Commands.AnalyticalPlotCommand(x, y, ic, snap, simno, True,
+                                             True, xunit, yunit)
+    data = command.prepareData(Singletons.globallimits, time)
+    return data
+
+
 #------------------------------------------------------------------------------
 def to_list(str_variable,type):
     '''Convert the input string to a list of the specified type'''
