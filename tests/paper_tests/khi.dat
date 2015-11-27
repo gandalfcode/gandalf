@@ -1,0 +1,111 @@
+#------------------------------------------------------------------------------
+# Kelvin-Helmholtz instability test
+# Generate 2-1 Kelvin-Helmholtz instability test based on initial conditions
+# given by Springel (2009).
+#------------------------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = KHI2
+Select SPH simulation                       : sim = gradhsph
+Select Kelvin-Helmholtz initial conditions  : ic = khi
+Select 2D                                   : ndim = 2
+x-velocity of fluid 1                       : vfluid1[0] = -0.5
+x-velocity of fluid 2                       : vfluid2[0] = 0.5
+Pressure of fluid 1                         : press1 = 2.5
+Pressure of fluid 2                         : press2 = 2.5
+Density of fluid 1                          : rhofluid1 = 1.0
+Density of fluid 2                          : rhofluid2 = 2.0
+Velocity perturbation amplitude             : amp = 0.1
+Velocity perturbation wavelength            : lambda = 0.5
+No. of x-particles in fluid 1               : Nlattice1[0] = 88
+No. of y-particles in fluid 1               : Nlattice1[1] = 44
+No. of x-particles in fluid 2               : Nlattice2[0] = 128
+No. of y-particles in fluid 2               : Nlattice2[1] = 64
+Dimensionless units                         : dimensionless = 1
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = -0.5
+RHS position of boundary in x-dimension     : boxmax[0] = 0.5
+LHS position of boundary in y-dimension     : boxmin[1] = -0.5
+RHS position of boundary in y-dimension     : boxmax[1] = 0.5
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+
+
+#--------------------------
+# Simulation time variables
+#-------------------------
+Simulation end time                         : tend = 1.59
+Regular snapshot output frequency           : dt_snap = 0.5
+Time of first snapshot                      : tsnapfirst = 0.0
+Screen output frequency (in no. of steps)   : noutputstep = 32
+Diagnostic output frequency                 : ndiagstep = 128
+Output snapshot format                      : out_file_form = su
+
+
+#------------------------
+#�Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+#---------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH smoothing kernel choice                 : kernel = quintic
+SPH smoothing length iteration tolerance    : h_converge = 0.02
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = wadsley2008
+Use time-dependent viscosity?               : time_dependent_avisc = none
+Artificial viscosity alpha value            : alpha_visc = 0.1
+Artificial viscosity beta value             : beta_visc = 0.2
+Riemann solver                              : riemann_solver = exact
+Order of Riemann solver                     : riemann_order = 1
+Slope limiter                               : slope_limiter = simple
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.15
+SPH acceleration condition multiplier       : accel_mult = 0.3
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 1
+
+
+#-------------
+# Tree options
+#-------------
+SPH neighbour search algorithm              : neib_search = kdtree
+No. of particles in leaf cell               : Nleafmax = 12
+Tree opening angle (squared)                : thetamaxsqd = 0.2
+Tree re-build frequency                     : ntreebuildstep = 8
+Tree stock frequency                        : ntreestockstep = 1
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 1
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0
