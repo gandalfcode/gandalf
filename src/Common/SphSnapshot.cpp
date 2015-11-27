@@ -532,7 +532,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
         sph_values["vy"][igas] = (float) part.v[1];
         sph_values["ay"][igas] = (float) part.a[1];
       }
-      else if (ndims > 2) {
+      if (ndims > 2) {
         sph_values["z"][igas] = (float) part.r[2];
         sph_values["vz"][igas] = (float) part.v[2];
         sph_values["az"][igas] = (float) part.a[2];
@@ -555,7 +555,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
         dust_values["vy"][idust] = (float) part.v[1];
         dust_values["ay"][idust] = (float) part.a[1];
       }
-      else if (ndims > 2) {
+      if (ndims > 2) {
         dust_values["z"][idust] = (float) part.r[2];
         dust_values["vz"][idust] = (float) part.v[2];
         dust_values["az"][idust] = (float) part.a[2];
