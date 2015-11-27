@@ -1237,7 +1237,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
     if (ccount[c] != 1) {
       cout << "Error in cell walk count : " << ccount[c] << endl;
       PrintArray("ccount     : ",Ncell,ccount);
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error in cell walk count in KDTree");
     }
   }
 
@@ -1245,11 +1245,11 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
   for (i=ifirst; i<=ilast; i++) {
     if (!(ids[i] >= ifirst && ids[i] <= ilast)) {
       cout << "Problem with ids array : " << i << "   " << ids[i] << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with ids array in KDTree");
     }
     if (!(inext[i] >= -1)) {
       cout << "Problem with inext linked lists : " << i << "   " << inext[i] << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with inext linked lists in KDTree");
     }
   }
 
@@ -1309,18 +1309,16 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
         if (partdata[i].h > cell.hmax) {
           cout << "hmax flag error : " << c << "    "
                << partdata[i].h << "   " << cell.hmax << endl;
-          exit(0);
+          ExceptionHandler::getIstance().raise("hmax flag error in KDTree");
         }
         if (i == cell.ilast) break;
         i = inext[i];
       }
       if (leafcount > Nleafmax) {
-        cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Error : leaf particle error in KDTree");
       }
       if (activecount > leafcount) {
-        cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Error : leaf particle error in KDTree");
       }
     }
 
@@ -1338,7 +1336,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
       if (overlap_flag) {
         cout << "Parent/daughter cell overlap error!! : "
              << c << "   " << cell.c1 << "    " << cell.c2 << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Parent/daughter cell overlap error in KDTree");
       }
     }
 
@@ -1372,7 +1370,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
       }
       if (overlap_flag) {
         cout << "Brother/sister cell overlap error!! : " << c << "   " << cc << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Brother/sister cell overlap error in KDTree");
       }
     }
   }
@@ -1412,7 +1410,9 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
   delete[] pcount;
   delete[] ccount;
 
-  if (kill_flag) exit(0);
+  if (kill_flag) {
+    ExceptionHandler::getIstance().raise("Kill flag set in KDTree");
+  }
 
   return;
 }

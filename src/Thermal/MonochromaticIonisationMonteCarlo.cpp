@@ -313,7 +313,9 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
 
   if (level < 0 && level > radtree->ltot) {
     cout << "Walking invalid tree level" << endl;
-    exit(0);
+    string msg = "Error : walking invalid tree level in "
+      "MonochromaticIonisationMonteCarlo::IterateRadiationField";
+    ExceptionHandler::getIstance().raise(msg);
   }
 
   // Emit photon packets from single source (for now)
@@ -493,7 +495,7 @@ bool MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
                << cell->Xion << "   " << cell->Xold << "   " << cell->lsum[0] << "    "
                << cell->rho << "    " << cell->volume << "    " << cell->N << "    "
                << cell->m << endl;
-          exit(0);
+          ExceptionHandler::getIstance().raise("Error : NaN detected while computing Xion");
         }
 
       }
@@ -594,17 +596,12 @@ PhotonPacket<ndim> MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,Cel
   // Isotropic source
   //-----------------------------------------------------------------------------------------------
   else if (source.sourcetype == "isotropic") {
-    cout << "Isotropic radiation field not yet implemented" << endl;
-    exit(0);
-
+    ExceptionHandler::getIstance().raise("Error : isotropic radiation field not yet implemented");
   }
-
   // Planar source
   //-----------------------------------------------------------------------------------------------
   else if (source.sourcetype == "planar") {
-    cout << "Planar radiation field not yet implemented" << endl;
-    exit(0);
-
+    ExceptionHandler::getIstance().raise("Error : planar radiation field not yet implemented");
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -740,7 +737,8 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
     //cout << "Xion : " << cell.Xion << endl;
     if (cell.Xion != cell.Xion) {
       cout << "NaN detected : " << c << "   " << cell.Xion << endl;
-      exit(0);
+      string msg = "Nan detected in MonochromaticIonisationMonteCarlo::InterpolateParticleProperties";
+      ExceptionHandler::getIstance().raise(msg);
     }
 
   }
@@ -755,8 +753,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
         do {
           Ngather = radtree->ComputeGatherCellList(part.r, 3.0*part.h, Ngathermax, celllist);
           if (Ngather == 0) {
-            cout << "Ngather : " << Ngather << endl;
-            exit(0);
+            ExceptionHandler::getIstance().raise("Ngather = 0 in radtree->ComputeGatherCellList");
           }
           if (Ngather > 0) break;
           delete[] celllist;

@@ -885,7 +885,7 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindCell
     if (!(rp[k] >= radcell[c].bbmin[k] && rp[k] <= radcell[c].bbmax[k])) {
       cout << "Problem finding point in cell; k : " << k << "    r : " << rp[k] << "     bb : "
            << radcell[c].bbmin[k] << "    " << radcell[c].bbmax[k] << "    c : " << c << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error : problem finding point in cell in KDRadiationTree");
     }
   }
   assert(c >= cparent);
@@ -943,7 +943,7 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindRayExitFace
            << cell.bbmin[k] << "   " << cell.bbmax[k] << "   " <<  rp[k] << endl;
       cout << "LH ray : " << (cell.bbmax[k] - rp[k])/eray[k] << endl;
       cout << "RH ray : " << (cell.bbmin[k] - rp[k])/eray[k] << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error : problem with ray path length in KDRadiationTree");
     }
 #endif
 

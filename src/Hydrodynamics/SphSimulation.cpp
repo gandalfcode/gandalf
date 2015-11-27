@@ -1464,7 +1464,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   if (timestep <= 0.0) {
     cout << "Timestep fallen to zero : " << timestep << "    dtmax: " << dt_max
          << "    nresync " << nresync << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : timestep fallen to zero");
   }
 
   timing->EndTimingSection("BLOCK_TIMESTEPS");
@@ -1509,7 +1509,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   if (timestep <= 0.0) {
     cout << "Timestep fallen to zero : " << timestep << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : Timestep fallen to zero");
   }
   cin >> i;*/
 

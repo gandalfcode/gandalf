@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include "Exception.h"
 #include "Precision.h"
 using namespace std;
 
@@ -161,7 +162,7 @@ inline boundaryEnum setBoundaryType(string boundaryString)
   else if (boundaryString == "mirror") return mirrorBoundary;
   else if (boundaryString == "wall") return wallBoundary;
   else {
-    exit(0);
+    ExceptionHandler::getIstance().raise("Invalid boundary type chosen");
   }
 }
 

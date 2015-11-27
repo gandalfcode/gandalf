@@ -296,8 +296,8 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateIntersectList(void)
           if (ray_count[ipix] > 0) {
             if (il > max_il) max_il = il;
             if (il >= ilNI) {
-              cout << "GenIntersectList: Too many intersection. Increase ilNI" << endl;
-              exit(0);
+              string msg = "GenIntersectList: Too many intersection. Increase ilNI";
+              ExceptionHandler::getIstance().raise(msg);
             }
             intersectList[IIL(il,ins,iph,ith)] =
               (FLOAT) 0.999*(FLOAT) ray_count[ipix]/(FLOAT) node_count + (FLOAT) ipix;
@@ -785,7 +785,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeContribution
   if ((ins < 0) || (ins >= ilNNS)) {
     cout << "Wrong ins: " << ins << "   " << ilNNS << "   " << ns
          << "    " << (int) (ns*ilNNS - (FLOAT) 0.5) << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : Wrong ins in TreeRay::NodeContribution");
   }
 
   // Node angular position
@@ -797,13 +797,13 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeContribution
   if ((ith < 0) || (ith > ilNTheta)) {
     cout << "NC Wrong ith: " << ith << "    " << ilNTheta << "    " <<  theta
          << "    " << (int) (theta*ilNTheta/pi + 0.5) << endl;
+    ExceptionHandler::getIstance().raise("NC wrong ith in TreeRay::NodeContribution");
     //call Driver_abortFlash("TreeRay_bhBotNodeContrib: incorrect theta index")
-    exit(0);
   }
   if ((iph < 0) || (iph > ilNPhi)) {
     cout << "Wrong iph: " << iph << "    " << ilNPhi << "     "
          << phi << "    " << (int) (0.5*phi*ilNPhi/pi + 0.5) << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Wrong iph in TreeRay::NodeContribution");
   }
 
 
@@ -816,11 +816,12 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeContribution
   if ((irf < 0) || (irf >= bhNR*nFineR)) {
     cout << "Wrong irf: " << irf << "   " << bhNR << "    " << drmag
          << minCellSize << "    " << sqrt(2.0*drmag/minCellSize) << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Wrong iref in TreeRay::NodeContribution");
   }
 
   // Node size index for RadNodeMap
   iNodeSize = NTBLevels - NINT(log(cellEdgeSize/minCellSize)/log(2.0)) - 1;
+
 
   // Map node to the rays
   //-----------------------------------------------------------------------------------------------

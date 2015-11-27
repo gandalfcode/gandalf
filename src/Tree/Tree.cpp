@@ -1379,7 +1379,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
       cout << "Problem with new pointers : " << c << "    " << Nprunedcell << "   "
            << "    " << Nprunedcellmax << "    copen : " << prunedcells[c].copen
            << "    cnext : " << prunedcells[c].cnext << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Problem with pruned tree cell pointers in Tree");
     }
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
@@ -1627,7 +1627,7 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
     // Code should not technically reach here (unless there's a problem)
     else {
       cout << "Problem with overlap of pruned trees" << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with overlap of pruned trees in Tree");
     }
 
   };
