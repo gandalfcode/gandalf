@@ -134,7 +134,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     if (EFratio > 1.5) {
       printf("Use lower value of EFratio !\n");
       printf("Current value of EFratio is %4.2f \n",EFratio);
-      exit(0);
+      ExceptionHandler::getIstance().raise("Problem with EFratio in Ewald::Ewald");
     }
 
     //---------------------------------------------------------------------------------------------
@@ -530,7 +530,6 @@ void Ewald<ndim>::CalculatePeriodicCorrection
     if ((ip[0] > nEwaldGrid) && (ewald_periodicity == 3)) {
       printf("wrong integer %6d  %6d %6d %16.8lf %16.8lf %16.8lf \n",
              ip[0],ip[1],ip[2],dr[0],dr[1],dr[2]);
-      //  exit(0);
     }
 
 

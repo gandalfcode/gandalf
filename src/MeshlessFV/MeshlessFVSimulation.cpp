@@ -1153,7 +1153,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   }*/
   if (timestep <= 0.0) {
     cout << "Timestep fallen to zero : " << timestep << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Timestep fallen to zero");
   }
 
   timing->EndTimingSection("BLOCK_TIMESTEPS");
@@ -1194,7 +1194,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
   if (timestep <= 0.0) {
     cout << "Timestep fallen to zero : " << timestep << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Timestep fallen to zero");
   }
 
   return;*/

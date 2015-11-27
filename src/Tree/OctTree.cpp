@@ -364,7 +364,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
       // Check we have not reached maximum level
       if (ltot >= lmax) {
         cout << "Reached maximum Oct-tree level.  Exitting program" << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Error : reached maximum oct-tree level");
       }
 
     }
@@ -800,28 +800,24 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
     if (ccount[c] != 1) {
       cout << "Error in cell walk count : " << ccount[c] << endl;
       PrintArray("ccount     : ",Ncell,ccount);
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error in cell walk count in OctTree");
     }
     if (celldata[c].level < 0 || celldata[c].level > ltot) {
       cout << "Problem with cell levels : " << celldata[c].level << "    " << ltot << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with cell levels in OctTree");
     }
     if (celldata[c].Nactive > 0 && celldata[c].copen != -1) {
       cout << "Problem with active counters : " << celldata[c].Nactive << "    "
            << celldata[c].N << "    " << celldata[c].level << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with active counters in OctTree");
     }
   }
 
   // Check inext linked list values and ids array are all valid
   for (i=ifirst; i<=ilast; i++) {
-    //if (!(ids[i] >= ifirst && ids[i] <= ilast)) {
-    //  cout << "Problem with ids array : " << i << "   " << ids[i] << endl;
-    //  exit(0);
-    //}
     if (!(inext[i] >= -1)) {
       cout << "Problem with inext linked lists : " << i << "   " << inext[i] << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with inext linked lists in OctTree");
     }
   }
 
@@ -845,13 +841,13 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
         if (partdata[i].h > cell.hmax) {
           cout << "hmax flag error : " << c << "    "
                << partdata[i].h << "   " << cell.hmax << endl;
-          exit(0);
+          ExceptionHandler::getIstance().raise("hmax flag error in OctTree");
         }
         for (k=0; k<ndim; k++) {
           if (partdata[i].r[k] < cell.bbmin[k] || partdata[i].r[k] > cell.bbmax[k]) {
             cout << "Bounding box error : " << c << "   " << i << "    " << k << "    r : "
                  << partdata[i].r[k] << "    " << cell.bbmin[k] << "    " << cell.bbmax[k] << endl;
-            exit(0);
+            ExceptionHandler::getIstance().raise("Bounding box error in OctTree");
           }
         }
         if (i == cell.ilast) break;
@@ -859,11 +855,11 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
       }
       if (leafcount > Nleafmax) {
         cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Leaf particle counter error in OctTree");
       }
       if (activecount > leafcount) {
         cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Leaf particle count error in OctTree");
       }
     }
 
@@ -894,7 +890,9 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
   delete[] pcount;
   delete[] ccount;
 
-  if (kill_flag) exit(0);
+  if (kill_flag) {
+    ExceptionHandler::getIstance().raise("kill_flag in OctTree");
+  }
 
   return;
 }

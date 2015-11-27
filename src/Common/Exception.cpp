@@ -53,11 +53,15 @@ void ExceptionHandler::raise
   case cplusplus:
     cout << msg << endl;
 #ifdef MPI_PARALLEL
-    if (mpi)
+    if (mpi) {
       MPI_Abort(MPI_COMM_WORLD,-1);
-    else
-#endif
+    }
+    else {
       exit(-1);
+    }
+#else
+    exit(-1);
+#endif
     break;
   case python:
     throw (GandalfError (msg));

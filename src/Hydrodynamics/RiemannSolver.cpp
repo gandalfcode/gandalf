@@ -279,7 +279,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
       std::cout << "rho : " << dl << "   " << dr << "     vel : " << ul << "    "
                 << ur << "    press : " << pl << "    " << pr << std::endl;
       std::cout << "f/fprime : " << fl << "   " << fr << "   " << flprime << "   " << frprime << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error : Invalid star values in Riemann solver");
     }
 
 
@@ -448,7 +448,7 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
   if (p < 0.0) {
     cout << "s : " << s << "   " << ustar << "   " << pstar << "   " << pl << "    " << pr << endl;
     cout << "p : " << p << "    d : " << d << "    c : " << c << "    u : " << u << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : Negative pstar in Riemann solver");
   }
 
   return;

@@ -130,7 +130,7 @@ DOUBLE SphIntegration<ndim>::Timestep
   if (timestep > 1.0e20) {
     cout << "Timestep problem : " << timestep << "   " << amag << "   " << part.h << "    "
          << part.sound << "    " << part.h*fabs(part.div_v) << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : Hydro timestep too large");
   }
 
   assert(!(isnan(amag)) && !(isinf(amag)));

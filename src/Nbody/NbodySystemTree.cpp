@@ -391,7 +391,6 @@ void NbodySystemTree<ndim>::BuildSubSystems
              << NNtree[c].gpe_internal << "    ketot : " << ketot << endl;
         //if (NNtree[c].gpe < NNtree[c].gpe_internal) {
         //  cout << "Grav. energy problem" << NNtree[c].gpe - NNtree[c].gpe_internal << endl;
-        //  exit(0);
         //}
         cout << "Checking system criteria : "
              << fabs(NNtree[c].gpe - NNtree[c].gpe_internal)/NNtree[c].gpe
