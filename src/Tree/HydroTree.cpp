@@ -122,8 +122,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
     cellbuf         = new TreeCell<ndim>*[Nthreads];
 
     for (int ithread=0; ithread<Nthreads; ithread++) {
-      Nneibmaxbuf[ithread]     = max(1, 4*Ngather);
-      Ngravcellmaxbuf[ithread] = max(1, 4*Ngather);
+      Nneibmaxbuf[ithread]     = max(1, 8*Ngather);
+      Ngravcellmaxbuf[ithread] = max(1, 16*Ngather);
       activelistbuf[ithread]   = new int[Nleafmax];
       levelneibbuf[ithread]    = new int[Ntotmax];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
@@ -793,7 +793,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
 
 
   debug2("[GradhSphTree::UpdateAllStarGasForces]");
-  //timing->StartTimingSection("STAR_GAS_GRAV_FORCES");
+  timing->StartTimingSection("STAR_GAS_GRAV_FORCES");
 
   // Make list of all active stars
   Nactive = 0;
@@ -853,7 +853,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
           Ndirect, Ngravcell, neiblist, directlist, gravcell, partdata);
       };
 
-      // Compute contributions to star force from nearby SPH particles
+      // Compute contributions to star force from nearby hydro particles
       nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, hydro);
 
       // Compute gravitational force due to distant cells
@@ -879,7 +879,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
 
   delete[] activelist;
 
-  //timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
+  timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
 
   return;
 }

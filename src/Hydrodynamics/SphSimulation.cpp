@@ -194,7 +194,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // Sink particles
   //-----------------------------------------------------------------------------------------------
   sinks = new Sinks<ndim>(sphneib);
-  sink_particles            = intparams["sink_particles"];
+  sink_particles             = intparams["sink_particles"];
   sinks->sink_particles      = intparams["sink_particles"];
   sinks->create_sinks        = intparams["create_sinks"];
   sinks->smooth_accretion    = intparams["smooth_accretion"];
@@ -527,16 +527,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Calculate SPH gravity and hydro forces, depending on which are activated
   if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-    sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
-				sph, nbody, simbox, ewald);
+    sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
   }
   else if (sph->self_gravity == 1) {
-    sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
-				    sph, nbody, simbox, ewald);
+    sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
   }
   else if (sph->hydro_forces == 1) {
-    sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
-				     partdata, sph, nbody, simbox);
+    sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
   }
   else{
     ExceptionHandler::getIstance().raise("Error: No forces included in simulation");
@@ -733,17 +730,15 @@ void SphSimulation<ndim>::MainLoop(void)
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
 
-
       // Update the radiation field
       if (Nsteps%nradstep == 0 || recomputeRadiation) {
-	radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
-					partdata, nbody->nbodydata, sinks->sink);
-	for (i=0; i<sph->Nhydro; i++) {
-	  SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-	  sph->ComputeThermalProperties(part);
-	}
+        radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
+                                        partdata, nbody->nbodydata, sinks->sink);
+        for (i=0; i<sph->Nhydro; i++) {
+          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+          sph->ComputeThermalProperties(part);
+        }
       }
-
 
       // Copy properties from original particles to ghost particles
       LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
@@ -753,10 +748,10 @@ void SphSimulation<ndim>::MainLoop(void)
       // if too close to the domain boundaries
 #ifdef MPI_PARALLEL
       if (sph->self_gravity == 1) {
-	sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
+        sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
       }
       else {
-	sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
+        sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
       }
 
       // If active particles need forces from other domains, export particles
@@ -766,35 +761,32 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Calculate SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-	sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata,
-				    sph, nbody, simbox, ewald);
+        sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
       }
       else if (sph->self_gravity == 1) {
-	sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata,
-					sph, nbody, simbox, ewald);
+        sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
       }
       else if (sph->hydro_forces == 1) {
-	sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot,
-					 partdata, sph, nbody, simbox);
+        sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
       }
 
       // Add external potential for all active SPH particles
       for (i=0; i<sph->Nhydro; i++) {
-	SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-	if (part.active) {
-	  sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
-	}
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        if (part.active) {
+          sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
+        }
       }
 
       // Checking if acceleration or other values are invalid
       for (i=0; i<sph->Nhydro; i++) {
-	SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-	if (part.active) {
-	  for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
-	  for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
-	  for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
-	  assert(part.gpot == part.gpot);
-	}
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        if (part.active) {
+          for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
+          for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
+          for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
+          assert(part.gpot == part.gpot);
+        }
       }
 
 #if defined MPI_PARALLEL
@@ -803,12 +795,12 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Compute the dust forces if present.
       if (sphdust != NULL){
-	// Copy properties from original particles to ghost particles
-	LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+        // Copy properties from original particles to ghost particles
+        LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
 #ifdef MPI_PARALLEL
-	MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+        MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
 #endif
-	sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
+        sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, partdata) ;
       }
 
 
