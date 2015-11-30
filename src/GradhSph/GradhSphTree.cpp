@@ -552,7 +552,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         bool do_hydro   = sph->types[activepart[j].ptype].hydro_forces ;
         if (do_hydro){
           Typemask hmask ;
-          for (k=0; k<Ntypes; k++) hmask[k] = sph->types[activepart[j].ptype].hmask[k] ;
+          for (k=0; k<Ntypes; k++) hmask[k] = sph->types[activepart[j].ptype].hmask[k];
 
           for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
           hrangesqdi = activepart[j].hrangesqd;
@@ -571,7 +571,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
           for (jj=0; jj<Nneib; jj++) {
 
             // Skip non-hydro particles and the current active particle.
-        	if (hmask[neibpart[jj].ptype] == false) continue;
+            if (hmask[neibpart[jj].ptype] == false) continue;
 
             for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
             drsqd = DotProduct(draux, draux, ndim) + small_number;
@@ -682,8 +682,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
   debug2("[GradhSphTree::UpdateAllSphForces]");
   timing->StartTimingSection("SPH_ALL_FORCES");
 
-  // Update ghost tree smoothing length values here
-  if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], sphdata);
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
@@ -692,6 +690,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
   celllist = new TreeCell<ndim>[tree->gtot];
 #endif
   cactive = tree->ComputeActiveCellList(celllist);
+
+  // If there are no active cells, return to main loop
+  if (cactive == 0) {
+    delete[] celllist;
+    timing->EndTimingSection("SPH_ALL_FORCES");
+    return;
+  }
 
 
   // Set-up all OMP threads
@@ -732,7 +737,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
     int *gravlist    = new int[Nneibmax];
-    int *levelneib        = levelneibbuf[ithread];    // ..
+    int *levelneib   = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
@@ -747,6 +752,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     for (cc=0; cc<cactive; cc++) {
       TreeCell<ndim> &cell = celllist[cc];
       macfactor = (FLOAT) 0.0;
+
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
@@ -836,18 +842,16 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
           // Record if neighbour is direct-sum or and SPH neighbour.
           // If SPH neighbour, also record max. timestep level for neighbour
           if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd && do_grav) {
-        	if (gravmask[neibpart[ii].ptype]){
-              directlist[Ndirectaux++] = ii;
-        	}
+            if (gravmask[neibpart[ii].ptype]) directlist[Ndirectaux++] = ii;
           }
           else {
-        	if (hydromask[neibpart[ii].ptype]){
+            if (hydromask[neibpart[ii].ptype]){
               sphauxlist[Nhydroaux++] = ii;
               levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
-        	}
-        	else if (gravmask[neibpart[ii].ptype] && do_grav){
-        	  gravlist[Ngrav++] = ii;
-        	}
+            }
+            else if (gravmask[neibpart[ii].ptype] && do_grav){
+              gravlist[Ngrav++] = ii;
+            }
           }
         }
         //-----------------------------------------------------------------------------------------
@@ -933,6 +937,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     }
 
     // Free-up local memory for OpenMP thread
+    delete[] gravlist;
     delete[] directlist;
     delete[] sphauxlist;
     delete[] sphlist;
@@ -971,8 +976,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
   timing->StartTimingSection("SPH_ALL_GRAV_FORCES");
 
-  // Update ghost tree smoothing length values here
-  if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
@@ -981,6 +984,13 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   celllist = new TreeCell<ndim>[tree->gtot];
 #endif
   cactive = tree->ComputeActiveCellList(celllist);
+
+  // If there are no active cells, return to main loop
+  if (cactive == 0) {
+    delete[] celllist;
+    timing->EndTimingSection("SPH_ALL_GRAV_FORCES");
+    return;
+  }
 
 
   // Set-up all OMP threads
@@ -1021,7 +1031,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     int *sphauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
     int	*gravlist    = new int[Nneibmax];        // ..
-    int *levelneib        = levelneibbuf[ithread];    // ..
+    int *levelneib   = levelneibbuf[ithread];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
@@ -1068,11 +1078,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
       while (okflag < 0 || Nneib > Nneibmax) {
         delete[] neibpartbuf[ithread];
         delete[] cellbuf[ithread];
+        delete[] gravlist;
         delete[] directlist;
         delete[] sphauxlist;
         delete[] sphlist;
         delete[] neiblist;
-        delete[] gravlist;
         Nneibmax                 = 2*Nneibmax;
         Ngravcellmax             = 2*Ngravcellmax;
         Nneibmaxbuf[ithread]     = Nneibmax;
@@ -1204,6 +1214,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     }
 
     // Free-up local memory for OpenMP thread
+    delete[] gravlist;
     delete[] directlist;
     delete[] sphauxlist;
     delete[] sphlist;
@@ -1241,4 +1252,3 @@ template class GradhSphOctTree<3, GradhSphParticle, TreeRayCell>;
 template class GradhSphTree<1,GradhSphParticle,TreeRayCell>;
 template class GradhSphTree<2,GradhSphParticle,TreeRayCell>;
 template class GradhSphTree<3,GradhSphParticle,TreeRayCell>;
-

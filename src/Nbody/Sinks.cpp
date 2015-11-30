@@ -356,12 +356,9 @@ void Sinks<ndim>::AccreteMassToSinks
   // Set-up all parallel threads for computing sink accretion
   //===============================================================================================
 #if defined MPI_PARALLEL
-#pragma omp parallel default(none) \
-shared(mydomain,ghosts_accreted) \
-shared(hydro,nbody,partdata)
+#pragma omp parallel default(none) shared(ghosts_accreted,hydro,mydomain,nbody,partdata)
 #else
-#pragma omp parallel default(none) \
-shared(hydro,nbody,partdata)
+#pragma omp parallel default(none) shared(hydro,nbody,partdata)
 #endif
   {
     int i,j,k;                               // Particle and dimension counters
@@ -386,9 +383,9 @@ shared(hydro,nbody,partdata)
     FLOAT rold[ndim];                        // Old sink position
     FLOAT vold[ndim];                        // Old sink velocity
     FLOAT wnorm;                             // Kernel normalisation factor
-    int *ilist;                              // ..
+    int *ilist = new int[Nneibmax];          // ..
     int *neiblist = new int[Nneibmax];       // List of particle ids
-    FLOAT *rsqdlist;                         // Array of particle-sink distances
+    FLOAT *rsqdlist= new FLOAT[Nneibmax];    // Array of particle-sink distances
 
 
     // Determine which sink each SPH particle accretes to.  If none, flag -1
@@ -410,9 +407,13 @@ shared(hydro,nbody,partdata)
         // If there are too many neighbours so the buffers are filled,
         // reallocate the arrays and recompute the neighbour lists.
         while (Nlist == -1) {
+          delete[] rsqdlist;
           delete[] neiblist;
+          delete[] ilist;
           Nneibmax *= 2;
+          ilist = new int[Nneibmax];
           neiblist = new int[Nneibmax];
+          rsqdlist = new FLOAT[Nneibmax];
         };
 
       } while (Nlist == -1);
@@ -436,11 +437,6 @@ shared(hydro,nbody,partdata)
 
     }
     //---------------------------------------------------------------------------------------------
-
-
-    // Allocate additional memory
-    ilist = new int[Nneibmax];
-    rsqdlist = new FLOAT[Nneibmax];
 
 
     // Calculate the accretion timescale and the total mass accreted from all ptcls for each sink.
