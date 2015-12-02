@@ -18,7 +18,7 @@ Pressure of RHS fluid                       : press2 = 0.1795
 Density of LHS fluid                        : rhofluid1 = 1.0
 Density of RHS fluid                        : rhofluid2 = 0.25
 No. of particles in LHS fluid               : Nlattice1[0] = 100
-No. of particles in RHS fluid               : Nlattice2[0] = 100
+No. of particles in RHS fluid               : Nlattice2[0] = 25
 Dimensionless units                         : dimensionless = 1
 Smothed initial conditions                  : smooth_ic = 1
 
