@@ -75,7 +75,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
   mfv->CopyDataToGhosts(simbox, partdata);
 
-
   // Compute timesteps for all particles
   if (Nlevels == 1) {
     this->ComputeGlobalTimestep();
@@ -85,6 +84,10 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   }
   mfv->CopyDataToGhosts(simbox, partdata);
 
+  // Update the numerical fluxes of all active particles
+  if (mfv->hydro_forces) {
+    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
+  }
 
   // Advance all global time variables
   n++;
@@ -92,10 +95,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   t = t + timestep;
   if (n == nresync) Nblocksteps++;
   if (n%integration_step == 0) Nfullsteps++;
-
-
-  // Update the numerical fluxes of all active particles
-  mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
 
 
   // Integrate all conserved variables to end of timestep
@@ -163,20 +162,18 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Advance N-body particle positions
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
-
   // Rebuild or update local neighbour and gravity tree
   mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                      mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
 
-
   // Search for new ghost particles and create on local processor
-  //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-  tghost = timestep*(FLOAT) (ntreebuildstep - 1);
-  mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-  mfv->CopyDataToGhosts(simbox, partdata);
-  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                          mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
-
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    tghost = timestep*(FLOAT) (ntreebuildstep - 1);
+    mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+    mfv->CopyDataToGhosts(simbox, partdata);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+  }
 
   // Calculate terms due to self-gravity
   if (mfv->self_gravity == 1) {
@@ -190,18 +187,18 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     // Zero all acceleration terms
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->active) {
-        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k] = 0.0;
-        for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k] = 0.0;
-        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
-        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = 0.0;
-        nbody->nbodydata[i]->gpot = 0.0;
-        nbody->nbodydata[i]->gpe = 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = (FLOAT) 0.0;
+        nbody->nbodydata[i]->gpot = (FLOAT) 0.0;
+        nbody->nbodydata[i]->gpe = (FLOAT) 0.0;
       }
     }
     if (sink_particles == 1) {
       for (i=0; i<sinks->Nsink; i++) {
         if (sinks->sink[i].star->active) {
-          for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = 0.0;
+          for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = (FLOAT) 0.0;
         }
       }
     }
@@ -243,13 +240,19 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // End-step terms for all star particles
   if (nbody->Nstar > 0) nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
-
   // Search for new sink particles (if activated) and accrete to existing sinks
   if (sink_particles == 1) {
     if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
       sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
     }
     if (sinks->Nsink > 0) {
+      mfv->mmean = (FLOAT) 0.0;
+      for (i=0; i<mfv->Nhydro; i++) mfv->mmean += mfv->GetMeshlessFVParticlePointer(i).m;
+      mfv->mmean /= (FLOAT) mfv->Nhydro;
+      mfv->hmin_sink = big_number;
+      for (i=0; i<sinks->Nsink; i++) {
+        mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
+      }
       sinks->AccreteMassToSinks(n, timestep, partdata, mfv, nbody);
       nbody->UpdateStellarProperties();
       //if (extra_sink_output) WriteExtraSinkOutput();
