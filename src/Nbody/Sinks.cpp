@@ -409,7 +409,7 @@ shared(hydro,nbody,partdata)
 
         // If there are too many neighbours so the buffers are filled,
         // reallocate the arrays and recompute the neighbour lists.
-        while (Nlist == -1) {
+        if (Nlist == -1) {
           delete[] neiblist;
           Nneibmax *= 2;
           neiblist = new int[Nneibmax];
