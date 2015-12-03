@@ -935,7 +935,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
   // Update ghost tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0], partdata);
-  if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], partdata);
+  //if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], partdata);
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
@@ -955,32 +955,32 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 #else
     int ithread = 0;
 #endif
-    int cc;                              // Aux. cell counter
-    int i;                               // Particle id
-    int j;                               // Aux. particle counter
-    int jj;                              // Aux. particle counter
-    int k;                               // Dimension counter
-    int okflag;                          // Flag if h-rho iteration is valid
-    int Nactive;
-    int Ndirect;
-    int Ndirectaux;
-    int Nneib;                           // No. of neighbours
-    int Nhydroaux;
-    int Nhydroneib;
-    int Ngravcell;                       // No. of gravity cells
-    FLOAT draux[ndim];                   // Aux. relative position vector
-    FLOAT drsqd;                         // Distance squared
-    FLOAT hrangesqdi;                    // Kernel gather extent
-    FLOAT macfactor;                     // Gravity MAC factor
-    FLOAT rp[ndim];                      // ..
-    int Nneibmax                   = Nneibmaxbuf[ithread];
-    int Ngravcellmax               = Ngravcellmaxbuf[ithread];
-    int* neiblist                  = new int[Nneibmax];
-    int* mfvlist                   = new int[Nneibmax];
-    int *mfvauxlist                = new int[Nneibmax];
-    int* directlist                = new int[Nneibmax];
-    int* activelist                = activelistbuf[ithread];
-    int* levelneib        = levelneibbuf[ithread];
+    int cc;                                        // Aux. cell counter
+    int i;                                         // Particle id
+    int j;                                         // Aux. particle counter
+    int jj;                                        // Aux. particle counter
+    int k;                                         // Dimension counter
+    int okflag;                                    // Flag if h-rho iteration is valid
+    int Nactive;                                   // ..
+    int Ndirect;                                   // ..
+    int Ndirectaux;                                // ..
+    int Nneib;                                     // No. of neighbours
+    int Nhydroaux;                                 // ..
+    int Nhydroneib;                                // ..
+    int Ngravcell;                                 // No. of gravity cells
+    FLOAT draux[ndim];                             // Aux. relative position vector
+    FLOAT drsqd;                                   // Distance squared
+    FLOAT hrangesqdi;                              // Kernel gather extent
+    FLOAT macfactor;                               // Gravity MAC factor
+    FLOAT rp[ndim];                                // ..
+    int Nneibmax     = Nneibmaxbuf[ithread];       // ..
+    int Ngravcellmax = Ngravcellmaxbuf[ithread];   // ..
+    int* activelist  = activelistbuf[ithread];     // ..
+    int* levelneib   = levelneibbuf[ithread];      // ..
+    int* neiblist    = new int[Nneibmax];          // ..
+    int* mfvlist     = new int[Nneibmax];          // ..
+    int *mfvauxlist  = new int[Nneibmax];          // ..
+    int* directlist  = new int[Nneibmax];          // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];
     TreeCell<ndim>* gravcell       = cellbuf[ithread];

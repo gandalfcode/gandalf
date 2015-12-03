@@ -56,21 +56,17 @@ MeshlessFV<ndim>::MeshlessFV(int _hydro_forces, int _self_gravity, FLOAT _accel_
   accel_mult(_accel_mult),
   courant_mult(_courant_mult),
   h_converge(_h_converge),
-  staticParticles(false)
+  staticParticles(params->intparams["static_particles"])
 {
   // Local references to parameter variables for brevity
   map<string, int> &intparams = params->intparams;
   map<string, double> &floatparams = params->floatparams;
   map<string, string> &stringparams = params->stringparams;
 
-
   Nhydromax       = intparams["Nhydromax"];
   create_sinks    = intparams["create_sinks"];
   fixed_sink_mass = intparams["fixed_sink_mass"];
   msink_fixed     = floatparams["m1"];
-
-
-
 }
 
 
