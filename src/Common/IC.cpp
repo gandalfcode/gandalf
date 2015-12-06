@@ -3491,7 +3491,7 @@ int Ic<ndim>::AddLatticeSphere
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
-  for (k=0; k<ndim; k++) Nlattice[k] = (int) (1.5*powf((FLOAT) Npart, invndim));
+  for (k=0; k<ndim; k++) Nlattice[k] = (int) (3.0*powf((FLOAT) Npart, invndim));
   for (k=0; k<ndim; k++) box1.boxmin[k] = -2.0;
   for (k=0; k<ndim; k++) box1.boxmax[k] = 2.0;
   Naux = Nlattice[0]*Nlattice[1]*Nlattice[2];
