@@ -136,6 +136,7 @@ struct Particle
 
   Particle() {
     active = false;
+    potmin = false;
     iorig = -1;
     itype = gas;
     ptype = gas_type;
@@ -282,8 +283,6 @@ struct SM2012SphParticle : public SphParticle<ndim>
 template <int ndim>
 struct MeshlessFVParticle : public Particle<ndim>
 {
-  bool potmin;                         ///< Is particle at a potential minima?
-  int sinkid;                          ///< i.d. of sink particle
   FLOAT invh;                          ///< 1 / h
   FLOAT hfactor;                       ///< invh^(ndim + 1)
   FLOAT invrho;                        ///< 1 / rho
@@ -318,8 +317,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   //-----------------------------------------------------------------------------------------------
   MeshlessFVParticle()
   {
-    potmin    = false;
-    sinkid    = -1;
     invh      = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;
     invrho    = (FLOAT) 0.0;

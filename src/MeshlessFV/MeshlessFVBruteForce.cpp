@@ -71,8 +71,8 @@ MeshlessFVBruteForce<ndim,ParticleType>::~MeshlessFVBruteForce()
 
 //=================================================================================================
 //  MeshlessFVBruteForce::UpdateAllProperties
-/// Routine for computing SPH properties (smoothing lengths, densities and forces) for all active
-/// SPH particle using neighbour lists generated using brute force (i.e. direct summation).
+/// Routine for computing hydro properties (e.g. smoothing lengths, densities) for all active
+/// hydro particle using neighbour lists generated using brute force (i.e. direct summation).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
@@ -80,7 +80,8 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   MeshlessFVParticle<ndim> *mfvdata,   ///< [inout] Pointer to SPH ptcl array
   MeshlessFV<ndim> *mfv,               ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox)             ///< [in] Simulation domain box
 {
   int i,j,jj,k;                        // Particle and dimension counters
   int Nneib = 0;                       // No. of (non-dead) neighbours
@@ -167,7 +168,8 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
   int Ntot,                              ///< [in] No. of hydro + ghost particles
   MeshlessFVParticle<ndim> *mfvdata,     ///< [inout] Pointer to hydro ptcl array
   MeshlessFV<ndim> *mfv,                 ///< [inout] Pointer to MeshlessFV object
-  Nbody<ndim> *nbody)                    ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                    ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox)               ///< [in] Simulation domain box
 {
   debug2("[MeshlessFVBruteForce::UpdateGradientMatrices]");
   timing->StartTimingSection("MFV_UPDATE_GRADIENTS");
@@ -263,12 +265,13 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
- (const int Nhydro,                        ///< [in] No. of SPH particles
-  const int Ntot,                          ///< [in] No. of SPH + ghost particles
-  const FLOAT timestep,                    ///< [in] ..
+ (int Nhydro,                              ///< [in] No. of SPH particles
+  int Ntot,                                ///< [in] No. of SPH + ghost particles
+  FLOAT timestep,                          ///< [in] ..
   MeshlessFVParticle<ndim> *mfvdata,       ///< [inout] Pointer to SPH ptcl array
   MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   debug2("[MeshlessFVBruteForce::UpdateGodunovFluxes]");
   timing->StartTimingSection("MFV_UPDATE_FLUXES");
@@ -276,7 +279,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Compute forces of real and imported particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) shared(mfv,mfvdata)
+#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot,timestep)
   {
     int i,j,k;                             // Particle and dimension counters
     int Nneib;                             // No. of neighbours
@@ -416,7 +419,9 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllGravForces
   int Ntot,                            ///< [in] ..
   MeshlessFVParticle<ndim> *part_gen,  ///< [in] ..
   MeshlessFV<ndim> *mfv,               ///< [inout] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int i,j,k;                           // Particle and dimension counters
   int Nneib;                           // No. of neighbours

@@ -145,13 +145,13 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   // Calculate all properties at the half-step
   mfv->CopyDataToGhosts(simbox, partdata);
-  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
 
   // Calculate all properties at the half-step
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
-  mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
+  mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
 
 
   // Integrate all conserved variables to end of timestep using predicted fluxes
@@ -170,9 +170,9 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   // Calculate all properties at the half-step
   mfv->CopyDataToGhosts(simbox, partdata);
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
-  mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
+  mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
 
 
   // Correction step for all conserved variables to end of timestep

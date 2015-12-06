@@ -216,6 +216,15 @@ void MeshlessFV<ndim>::ComputeThermalProperties
   part.sound = eos->SoundSpeed(part);
   part.press = eos->Pressure(part);
 
+  //cout << "THERMAL : " << part.u << "   " << part.sound << "   " << part.rho << endl;
+  FLOAT ekin = 0.0;
+  for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
+  part.Ucons[ietot] = part.press/(gamma_eos - 1.0) + 0.5*part.rho*ekin;
+  part.Qcons[ietot] = part.Ucons[ietot]*part.volume;
+
+
+
+
   assert(part.u > 0.0);
   assert(part.sound > 0.0);
   assert(part.press > 0.0);

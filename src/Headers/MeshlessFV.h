@@ -215,6 +215,8 @@ class MfvMuscl : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
+  using Hydrodynamics<ndim>::create_sinks;
+  using Hydrodynamics<ndim>::hmin_sink;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
