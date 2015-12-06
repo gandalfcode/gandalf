@@ -57,7 +57,7 @@ Sph<ndim>::Sph(int _hydro_forces, int _self_gravity, FLOAT _alpha_visc, FLOAT _b
   alpha_visc(_alpha_visc),
   beta_visc(_beta_visc),
   h_converge(_h_converge),
-  create_sinks(0),
+  //create_sinks(0),
   fixed_sink_mass(0)
 {
   Ngather = 0;

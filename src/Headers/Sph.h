@@ -72,8 +72,10 @@ class Sph : public Hydrodynamics<ndim>
 
  public:
   using Hydrodynamics<ndim>::allocated;
+  using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::eos;
   using Hydrodynamics<ndim>::h_fac;
+  using Hydrodynamics<ndim>::hmin_sink;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
   using Hydrodynamics<ndim>::invndim;
   using Hydrodynamics<ndim>::kernfac;
@@ -156,12 +158,10 @@ class Sph : public Hydrodynamics<ndim>
 
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
-  int create_sinks;                    ///< Create new sink particles?
   int fixed_sink_mass;                 ///< Fix masses of sink particles
   //int Ngather;                         ///< Average no. of gather neighbours
   FLOAT alpha_visc_min;                ///< Min. time-dependent viscosity alpha
   FLOAT msink_fixed;                   ///< Fixed sink mass value
-  FLOAT hmin_sink;                     ///< Minimum smoothing length of sinks
   string riemann_solver;               ///< Selected Riemann solver
   string slope_limiter;                ///< Selected slope limiter
 

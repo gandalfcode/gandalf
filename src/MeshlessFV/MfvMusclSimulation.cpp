@@ -68,11 +68,11 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateActiveParticleCounters(partdata, mfv);
 
   // Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
 
   // Calculate all matrices and gradients (and copy updated data to ghost particles)
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
 
   // Compute timesteps for all particles
@@ -86,7 +86,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
-    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
+    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
   }
 
   // Advance all global time variables
@@ -177,7 +177,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // Calculate terms due to self-gravity
   if (mfv->self_gravity == 1) {
-    mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+    mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox, ewald);
   }
 
   // Compute N-body forces
@@ -237,6 +237,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // End-step terms for all hydro particles
   mfv->EndTimestep(n, mfv->Nhydro, t, timestep, partdata);
 
+
   // End-step terms for all star particles
   if (nbody->Nstar > 0) nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
@@ -266,6 +267,18 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   }
 
   rebuild_tree = true;
+  // Rebuild or update local neighbour and gravity tree
+  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                     mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+
+  // Search for new ghost particles and create on local processor
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    tghost = timestep*(FLOAT) (ntreebuildstep - 1);
+    mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+    mfv->CopyDataToGhosts(simbox, partdata);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+  }
 
   return;
 }

@@ -102,6 +102,21 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
   FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
 
 
+  // If there are sink particles present, check if the particle is inside one.
+  // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
+  if (part.sinkid != -1) {
+    h_lower_bound = hmin_sink;
+    //h_lower_bound = nbody->stardata[part.sinkid].h;  //hmin_sink;
+    if (hmax < hmin_sink) return -1;
+  }
+
+  // Some basic sanity-checking in case of invalid input into routine
+  assert(Nneib > 0);
+  assert(hmax > (FLOAT) 0.0);
+  assert(part.itype != dead);
+  assert(part.m > (FLOAT) 0.0);
+
+
   // Main smoothing length iteration loop
   //===============================================================================================
   do {
@@ -184,6 +199,14 @@ int MfvMuscl<ndim, kernelclass>::ComputeH
   part.invomega  = (FLOAT) 1.0/part.invomega;
   part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.h*part.zeta*part.invomega/part.ndens;
 
+  // Calculate the minimum neighbour potential (used later to identify new sinks)
+  if (create_sinks == 1) {
+    part.potmin = true;
+    for (j=0; j<Nneib; j++) {
+      if (gpot[j] > (FLOAT) 1.000000001*part.gpot &&
+          drsqd[j]*invhsqd < kern.kernrangesqd) part.potmin = false;
+    }
+  }
 
   // Set important thermal variables here
   this->ComputeThermalProperties(part);

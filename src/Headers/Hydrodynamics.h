@@ -108,6 +108,7 @@ public:
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
   bool allocated;                      ///< Is memory allocated?
+  int create_sinks;                    ///< Create new sink particles?
   int Ngather;                         ///< No. of gather neighbours
   int Nghost;                          ///< No. of ghost particles
   int Nghostmax;                       ///< Max. allowed no. of ghost particles
