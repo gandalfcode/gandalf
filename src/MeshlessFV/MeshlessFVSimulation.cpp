@@ -547,8 +547,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<mfv->Ntot; i++) {
     mfv->ComputeThermalProperties(partdata[i]);
     mfv->UpdatePrimitiveVector(partdata[i]);
-    mfv->ConvertPrimitiveToConserved(partdata[i].Wprim, partdata[i].Ucons);
-    mfv->ConvertConservedToQ(partdata[i].volume, partdata[i].Ucons, partdata[i].Qcons);
+    mfv->ConvertPrimitiveToConserved(partdata[i].volume, partdata[i].Wprim, partdata[i].Qcons);
     partdata[i].Utot = partdata[i].u*partdata[i].m;
     for (k=0; k<ndim+2; k++) partdata[i].dQ[k] = (FLOAT) 0.0;
     //for (k=0; k<ndim; k++) partdata[i].v0[k] = partdata[i].v[k];
@@ -1094,12 +1093,14 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     assert(part.nlast <= n);
     assert(part.tlast <= t);
     assert(part.nstep == pow(2,level_step - part.level));
+    assert(pow(2,level_step - part.level) >= n - part.nlast);
     assert(part.nlast != n || n%part.nstep == 0);
   }
   for (i=0; i<nbody->Nnbody; i++) {
     assert(nbody->nbodydata[i]->level <= level_max);
     assert(nbody->nbodydata[i]->nlast <= n);
     assert(nbody->nbodydata[i]->nstep == pow(2,level_step - nbody->nbodydata[i]->level));
+    assert(pow(2,level_step - nbody->nbodydata[i]->level) >= n - nbody->nbodydata[i]->nlast);
     assert(nbody->nbodydata[i]->nlast != n || n%nbody->nbodydata[i]->nstep == 0);
     assert(nbody->nbodydata[i]->level >= level_max_hydro);
     assert(nbody->nbodydata[i]->tlast <= t);
@@ -1182,8 +1183,7 @@ void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
     MeshlessFVParticle<ndim> &part = partdata[i];
     if (part.itype == dead) continue;
     for (int var=0; var<ndim+2; var++) part.Qcons[var] += part.dQ[var];
-    mfv->ConvertQToConserved(part.volume, part.Qcons, part.Ucons);
-    mfv->ConvertConservedToPrimitive(part.Ucons, part.Wprim);
+    mfv->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
     mfv->UpdateArrayVariables(part);
   }
 

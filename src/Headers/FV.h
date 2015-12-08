@@ -111,10 +111,13 @@ public:
 
   void CalculateFluxVectorFromPrimitive(FLOAT Wprim[nvar], FLOAT flux[nvar][ndim]);
   void CalculatePrimitiveTimeDerivative(FLOAT Wprim[nvar], FLOAT gradW[nvar][ndim], FLOAT Wdot[nvar]);
-  void ConvertQToConserved(const FLOAT, const FLOAT Qcons[nvar], FLOAT Ucons[nvar]);
-  void ConvertConservedToQ(const FLOAT, const FLOAT Ucons[nvar], FLOAT Qcons[nvar]);
-  void ConvertConservedToPrimitive(const FLOAT Ucons[nvar], FLOAT Wprim[nvar]);
-  void ConvertPrimitiveToConserved(const FLOAT Wprim[nvar], FLOAT Ucons[nvar]);
+  void ConvertConservedToPrimitive(const FLOAT, const FLOAT Qcons[nvar], FLOAT Wprim[nvar]);
+  void ConvertPrimitiveToConserved(const FLOAT, const FLOAT Wprim[nvar], FLOAT Qcons[nvar]);
+
+  //void ConvertQToConserved(const FLOAT, const FLOAT Qcons[nvar], FLOAT Ucons[nvar]);
+  //void ConvertConservedToQ(const FLOAT, const FLOAT Ucons[nvar], FLOAT Qcons[nvar]);
+  //void ConvertConservedToPrimitive(const FLOAT Ucons[nvar], FLOAT Wprim[nvar]);
+  //void ConvertPrimitiveToConserved(const FLOAT Wprim[nvar], FLOAT Ucons[nvar]);
   //void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
 
 };

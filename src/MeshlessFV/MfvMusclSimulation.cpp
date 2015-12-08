@@ -64,16 +64,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   debug2("[MfvMusclSimulation::MainLoop]");
 
-  // Update all active cell counters in the tree
-  mfvneib->UpdateActiveParticleCounters(partdata, mfv);
-
-  // Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
-
-  // Calculate all matrices and gradients (and copy updated data to ghost particles)
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
 
   // Compute timesteps for all particles
   if (Nlevels == 1) {
@@ -103,6 +93,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     for (i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim> &part = partdata[i];
       int dn = n - part.nlast;
+      part.m = part.Qcons[FV<ndim>::irho] + part.dQ[FV<ndim>::irho];
 
       //-------------------------------------------------------------------------------------------
       for (k=0; k<ndim; k++) {
@@ -162,17 +153,46 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Advance N-body particle positions
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
-  // Rebuild or update local neighbour and gravity tree
+  // Re-build/re-stock tree now particles have moved
   mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                      mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                          mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
 
-  // Search for new ghost particles and create on local processor
-  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    tghost = timestep*(FLOAT) (ntreebuildstep - 1);
-    mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-    mfv->CopyDataToGhosts(simbox, partdata);
+
+  // Search for new sink particles (if activated) and accrete to existing sinks
+  if (sink_particles == 1) {
+    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
+      sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
+    }
+    if (sinks->Nsink > 0) {
+      mfv->mmean = (FLOAT) 0.0;
+      for (i=0; i<mfv->Nhydro; i++) mfv->mmean += mfv->GetMeshlessFVParticlePointer(i).m;
+      mfv->mmean /= (FLOAT) mfv->Nhydro;
+      mfv->hmin_sink = big_number;
+      for (i=0; i<sinks->Nsink; i++) {
+        mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
+      }
+      sinks->AccreteMassToSinks(n, timestep, partdata, mfv, nbody);
+      nbody->UpdateStellarProperties();
+      //if (extra_sink_output) WriteExtraSinkOutput();
+    }
+    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
+    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
+         timing->WallClockTime() - timing->tstart_wall > (FLOAT) 0.99*tmax_wallclock) {
+      hydro->DeleteDeadParticles();
+      rebuild_tree = true;
+    }
+
+    // Update all array variables now accretion has probably removed some mass
+    for (i=0; i<mfv->Nhydro; i++) partdata[i].m = partdata[i].Qcons[FV<ndim>::irho] + partdata[i].dQ[FV<ndim>::irho];
+
+    // Re-build/re-stock tree now particles have moved
+    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                       mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                             mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+
   }
 
   // Calculate terms due to self-gravity
@@ -236,37 +256,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // End-step terms for all hydro particles
   mfv->EndTimestep(n, mfv->Nhydro, t, timestep, partdata);
+  nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
 
-  // End-step terms for all star particles
-  if (nbody->Nstar > 0) nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
-
-  // Search for new sink particles (if activated) and accrete to existing sinks
-  if (sink_particles == 1) {
-    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
-      sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
-    }
-    if (sinks->Nsink > 0) {
-      mfv->mmean = (FLOAT) 0.0;
-      for (i=0; i<mfv->Nhydro; i++) mfv->mmean += mfv->GetMeshlessFVParticlePointer(i).m;
-      mfv->mmean /= (FLOAT) mfv->Nhydro;
-      mfv->hmin_sink = big_number;
-      for (i=0; i<sinks->Nsink; i++) {
-        mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
-      }
-      sinks->AccreteMassToSinks(n, timestep, partdata, mfv, nbody);
-      nbody->UpdateStellarProperties();
-      //if (extra_sink_output) WriteExtraSinkOutput();
-    }
-    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
-      hydro->DeleteDeadParticles();
-      rebuild_tree = true;
-    }
-  }
-
-  rebuild_tree = true;
   // Rebuild or update local neighbour and gravity tree
   mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                      mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
@@ -279,6 +271,17 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                             mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
   }
+
+  // Update all active cell counters in the tree
+  mfvneib->UpdateActiveParticleCounters(partdata, mfv);
+
+  // Calculate all properties (and copy updated data to ghost particles)
+  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox, partdata);
+
+  // Calculate all matrices and gradients (and copy updated data to ghost particles)
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox, partdata);
 
   return;
 }
