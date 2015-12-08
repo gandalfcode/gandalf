@@ -1743,8 +1743,7 @@ void Ic<ndim>::BondiAccretion(void)
 
   // First check that mass of cloud is not greater than that provided by the table
   if (mcloud > z[Ntablemax-1]) {
-    cout << "Cloud mass too big" << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Ic::BondiAccretion problem; Cloud mass too big");
   }
 
   // Find radius of cloud
@@ -1820,7 +1819,6 @@ void Ic<ndim>::BondiAccretion(void)
 
   cout << "mmax : " << sinks->sink[0].mmax << "    " << sinks->sink[0].mmax/mp << endl;
   cout << "rsink : " << rsink << "     rsink/rsonic : " << rsink/rsonic << endl;
-  //exit(0);
 
   sim->initial_h_provided = false;
 
@@ -1990,8 +1988,8 @@ void Ic<ndim>::EwaldDensity(void)
       // it is assumed that the slab is selfgravitating, so boundary conditions for gravity
       // must be set properly
       if ((periodicity != 3) && (periodicity != 5) && (periodicity != 6)) {
-        printf("For this test boundary conditions must be periodic in two directions");
-        exit(0);
+        string msg = "For this test boundary conditions must be periodic in two directions";
+        ExceptionHandler::getIstance().raise(msg);
       }
 
       h0 = csound/sqrtf(twopi*rhofluid1);
@@ -2041,8 +2039,8 @@ void Ic<ndim>::EwaldDensity(void)
       // it is assumed that cylinder is selfgravitating, so boundary conditions for gravity
       // must be set properly
       if ((periodicity != 1) && (periodicity != 2) && (periodicity != 4)) {
-        printf("For this test boundary conditions must be periodic in one direction");
-        exit(0);
+        string msg="For this test boundary conditions must be periodic in one direction";
+        ExceptionHandler::getIstance().raise(msg);
       }
 
       a2inv = pi*rhofluid1*0.5/pow(csound,2);
@@ -4203,8 +4201,10 @@ void Ic<ndim>::GenerateTurbulentVelocityField
     krange = kmax - kmin + 1;
 //    cout << "kmin : " << kmin << "    kmax : " << kmax << "    krange : "
 //         << krange << "    gridsize : " << gridsize << endl;
-    if (krange != gridsize) exit(0);
-
+    if (krange != gridsize) {
+      string msg="Error : krange != gridsize in Ic::GenerateTurbulentVelocityField";
+      ExceptionHandler::getIstance().raise(msg);
+    }
     power = new DOUBLE*[3];  phase = new DOUBLE*[3];
     for (d=0; d<3; d++) power[d] = new DOUBLE[krange*krange*krange];
     for (d=0; d<3; d++) phase[d] = new DOUBLE[krange*krange*krange];
@@ -4431,7 +4431,7 @@ void Ic<ndim>::InterpolateVelocityField
       if (i > Ngrid || j > Ngrid || k > Ngrid || i < 0 || j < 0 || k < 0)  {
         cout << "Problem with velocity interpolation grid!! : "
              << i << "    " << j << "    " << k << "   " << Ngrid << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Problem with velocity interpolation grid");
       }
 
       for (kk=0; kk<ndim; kk++) dx[kk] -= (int) dx[kk];

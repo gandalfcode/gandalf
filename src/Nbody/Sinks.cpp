@@ -269,7 +269,7 @@ void Sinks<ndim>::CreateNewSinkParticle
   // If we've reached the maximum number of sinks, then throw exception
   if (Nsink == Nsinkmax || nbody->Nstar == nbody->Nstarmax) {
     cout << "Run out of memory : " << Nsink << "    " << Nsinkmax << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : run out of memory for new sinks");
   }
 
   // First create new star and set N-body pointer to star
@@ -731,7 +731,7 @@ shared(hydro,nbody,partdata)
     if (!(part.itype == dead || part.m > 0.0)) {
       cout << "Accretion problem? : " << i << "   " << part.itype << "   " << part.m
            << "   " << part.h << "   " << part.sinkid << "   " << hydro->mmean << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error : sink accreting dead or zero-mass particles");
     }
     assert(part.itype == dead || part.m > 0.0);
   }

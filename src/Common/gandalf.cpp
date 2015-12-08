@@ -100,8 +100,7 @@ int main(int argc, char** argv)
     paramfile = string(argv[1]);
   }
   else {
-    cout << "No parameter file specified, aborting..." << endl;
-    exit(-1);
+    ExceptionHandler::getIstance().raise("Error : no parameter file specified; aborting...");
   }
 
   // Create empty file (used for automatic restarts on clusters)

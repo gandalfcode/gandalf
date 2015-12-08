@@ -84,7 +84,7 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   if (simunits ->kappa.outunit != "cm2_g") {
     cout << "ERROR! Selected wrong unit for opacity. Use cm2_g" <<endl;
     cout << simunits->kappa.outunit << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : Wrong units for opacity.  Use cm2_g");
   }
 
   ifstream file;

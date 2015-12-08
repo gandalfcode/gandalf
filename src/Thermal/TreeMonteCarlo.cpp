@@ -178,8 +178,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
   RadiationSource<ndim> source;     // Current radiation source
 
   if (level < 0 && level > radtree->ltot) {
-    cout << "Walking invalid tree level" << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : walking invalid tree level for TreeMonteCarlo");
   }
 
   // Emit photon packets from single source (for now)
@@ -343,17 +342,13 @@ PhotonPacket<ndim> TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNew
   // Isotropic source
   //-----------------------------------------------------------------------------------------------
   else if (source.sourcetype == "isotropic") {
-    cout << "Isotropic radiation field not yet implemented" << endl;
-    exit(0);
-
+    ExceptionHandler::getIstance().raise("Error : isotropic radiation field not yet implemented");
   }
 
   // Isotropic source
   //-----------------------------------------------------------------------------------------------
   else if (source.sourcetype == "planar") {
-    cout << "Planar radiation field not yet implemented" << endl;
-    exit(0);
-
+    ExceptionHandler::getIstance().raise("Error : planar radiation field not yet implemented");
   }
   //-----------------------------------------------------------------------------------------------
 
