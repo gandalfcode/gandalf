@@ -459,7 +459,9 @@ void Sinks<ndim>::AccreteMassToSinks
       //if (sink[s].Ngas == 0 || !sink[s].star->active) continue;
       //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
       //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != sink[s].star->nstep/2) continue;
-      if (sink[s].Ngas == 0 || sink[s].star->nlast != n) continue;
+
+      //if (sink[s].Ngas == 0 || sink[s].star->nlast != n) continue;
+      if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
 
 
       // Initialise all variables for current sink
@@ -668,7 +670,8 @@ void Sinks<ndim>::AccreteMassToSinks
           part.active = false;
         }
         else {
-          part.m -= mtemp;
+          //part.m -= mtemp;
+          hydro->AccreteMassFromParticle(mtemp, part);
         }
 #if defined MPI_PARALLEL
         if (i > hydro->Nhydro) {

@@ -80,6 +80,7 @@ public:
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
   virtual void ReorderParticles(void) = 0;
+  virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) = 0;
   void ComputeBoundingBox(FLOAT *, FLOAT *, const int);
   void CheckXBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
   void CheckYBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
@@ -160,6 +161,7 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
   virtual void DeallocateMemory(void) {};
   virtual void DeleteDeadParticles(void) {};
   virtual void ReorderParticles(void) {};
+  virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {};
 
 };
 #endif

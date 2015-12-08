@@ -108,6 +108,13 @@ public:
   virtual void DeallocateMemory(void);
   virtual void DeleteDeadParticles(void);
   virtual void ReorderParticles(void);
+  virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {
+    MeshlessFVParticle<ndim>& mfvpart = static_cast<MeshlessFVParticle<ndim>& > (part);
+    mfvpart.m -= dm;
+    mfvpart.dQ[irho] -= dm;
+    //mfvpart.dQ[ietot] -= dm*part.u;
+    for (int k=0; k<ndim; k++) mfvpart.dQ[k] -= dm*mfvpart.v[k];
+  }
 
 
   // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles

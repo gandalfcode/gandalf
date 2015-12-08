@@ -301,7 +301,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT Wmax[ndim+2];                  ///< ..
   FLOAT Wmidmax[ndim+2];               ///< ..
   FLOAT Wmidmin[ndim+2];               ///< ..
-  FLOAT Ucons[ndim+2];                 ///< ..
   FLOAT Qcons[ndim+2];                 ///< ..
   FLOAT Qcons0[ndim+2];                ///< ..
   FLOAT grad[ndim+2][ndim];            ///< ..

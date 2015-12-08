@@ -52,12 +52,12 @@ const FLOAT FV<ndim>::invndim = 1.0/ndim;
 //=================================================================================================
 template <int ndim>
 FV<ndim>::FV(int _hydro_forces, int _self_gravity, FLOAT _accel_mult, FLOAT _courant_mult,
-             FLOAT _h_fac, FLOAT h_converge_aux, FLOAT gamma_aux, string _gas_eos,
+             FLOAT _h_fac, FLOAT _h_converge, FLOAT _gamma, string _gas_eos,
              string KernelName, int size_part, SimUnits &units, Parameters *params):
   Hydrodynamics<ndim>(_hydro_forces, _self_gravity, _h_fac,
                       _gas_eos, KernelName, size_part, units, params),
-  gamma_eos(gamma_aux),
-  gammam1(gamma_aux - 1.0)
+  gamma_eos(_gamma),
+  gammam1(_gamma - 1.0)
 {
 
   // Local references to parameter variables for brevity
@@ -91,65 +91,30 @@ FV<ndim>::FV(int _hydro_forces, int _self_gravity, FLOAT _accel_mult, FLOAT _cou
 template <int ndim>
 FV<ndim>::~FV()
 {
-  //DeallocateMemory();
+  delete riemann;
 }
-
-
-
-//=================================================================================================
-//  FV::ConvertConservedToQ
-/// ...
-//=================================================================================================
-template <int ndim>
-void FV<ndim>::ConvertConservedToQ
- (const FLOAT volume,
-  const FLOAT Ucons[nvar],
-  FLOAT Qcons[nvar])
-{
-  for (int var=0; var<nvar; var++) Qcons[var] = volume*Ucons[var];
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  FV::ConvertQToConserved
-/// ...
-//=================================================================================================
-template <int ndim>
-void FV<ndim>::ConvertQToConserved
- (const FLOAT volume,
-  const FLOAT Qcons[nvar],
-  FLOAT Ucons[nvar])
-{
-  for (int var=0; var<nvar; var++) Ucons[var] = Qcons[var]/volume;
-
-  return;
-}
-
 
 
 
 //=================================================================================================
 //  FV::ConvertConservedToPrimitive
-/// ...
+/// Convert conserved vector, Qcons (NOT Ucons) to the primitive vector, Wprim.
 //=================================================================================================
 template <int ndim>
 void FV<ndim>::ConvertConservedToPrimitive
- (const FLOAT Ucons[nvar],
+ (const FLOAT volume,
+  const FLOAT Qcons[nvar],
   FLOAT Wprim[nvar])
 {
   int k;
   FLOAT ekin = 0.0;
 
-  Wprim[irho] = Ucons[irho];
+  Wprim[irho] = Qcons[irho]/volume;
   for (k=0; k<ndim; k++) {
-    Wprim[k] = Ucons[k]/Ucons[irho];
+    Wprim[k] = Qcons[k]/Qcons[irho];
     ekin += Wprim[k]*Wprim[k];
   }
-  Wprim[ipress] = (gamma_eos - 1.0)*(Ucons[ietot] - 0.5*Ucons[irho]*ekin);
-  //Wprim[irho] = Ucons[irho]
+  Wprim[ipress] = (gamma_eos - 1.0)*(Qcons[ietot] - 0.5*Qcons[irho]*ekin)/volume;
 
   return;
 }
@@ -158,22 +123,23 @@ void FV<ndim>::ConvertConservedToPrimitive
 
 //=================================================================================================
 //  FV::ConvertPrimitiveToConserved
-/// ...
+/// Convert from primitive vector, Wprim, to conserved vector, Qcons (NOT Ucons).
 //=================================================================================================
 template <int ndim>
 void FV<ndim>::ConvertPrimitiveToConserved
- (const FLOAT Wprim[nvar],
-  FLOAT Ucons[nvar])
+ (const FLOAT volume,
+  const FLOAT Wprim[nvar],
+  FLOAT Qcons[nvar])
 {
   int k;
-  FLOAT ekin = 0.0;
+  FLOAT ekin = (FLOAT) 0.0;
 
-  Ucons[irho] = Wprim[irho];
+  Qcons[irho] = Wprim[irho]*volume;
   for (k=0; k<ndim; k++) {
-    Ucons[k] = Wprim[k]*Wprim[irho];
+    Qcons[k] = Wprim[k]*Wprim[irho]*volume;
     ekin += Wprim[k]*Wprim[k];
   }
-  Ucons[ietot] = Wprim[ipress]/(gamma_eos - 1.0) + 0.5*Wprim[irho]*ekin;
+  Qcons[ietot] = Wprim[ipress]*volume/(gamma_eos - 1.0) + (FLOAT) 0.5*Wprim[irho]*volume*ekin;
 
   return;
 }
@@ -181,37 +147,7 @@ void FV<ndim>::ConvertPrimitiveToConserved
 
 
 //=================================================================================================
-//  FV::CalculateConservedFluxFromConserved
-/// ...
-//=================================================================================================
-/*template <int ndim>
-void FV<ndim>::CalculateConservedFluxFromConserved
- (int k,
-  FLOAT Ucons[nvar],
-  FLOAT fluxVector[nvar])
-{
-  int kv;
-  FLOAT ekin = 0.0;
-  FLOAT press;
-
-  for (kv=0; kv<ndim; kv++) {
-    ekin += Ucons[kv]*Ucons[kv];
-  }
-  press = (gamma_eos - 1.0)*(Ucons[ietot] - 0.5*ekin/Ucons[irho]);
-
-  // Calculate fluxes from conserved variables (NOT Riemann solver) to compute evolved boundary values
-  for (kv=0; kv<ndim; kv++) fluxVector[kv] = Ucons[k]*Ucons[kv]/Ucons[irho];
-  fluxVector[k]     = Ucons[k]*Ucons[k]/Ucons[irho] + press;
-  fluxVector[irho]  = Ucons[k];
-  fluxVector[ietot] = Ucons[k]*(Ucons[ietot] + press)/Ucons[irho];
-
-  return;
-}*/
-
-
-
-//=================================================================================================
-//  FV::CalculateFluxVector
+//  FV::CalculateFluxVectorFromPrimitive
 /// ...
 //=================================================================================================
 template <int ndim>

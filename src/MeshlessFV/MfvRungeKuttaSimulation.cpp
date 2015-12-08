@@ -160,8 +160,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     for (k=0; k<ndim+2; k++) partdata[i].Qcons[k] += partdata[i].dQdt[k]*timestep;
 
     //mfv->IntegrateConservedVariables(partdata[i], timestep);
-    mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
-    mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
+    mfv->ConvertConservedToPrimitive(partdata[i].volume, partdata[i].Qcons, partdata[i].Wprim);
     mfv->UpdateArrayVariables(partdata[i]);
 
   }
@@ -181,8 +180,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     for (k=0; k<ndim+2; k++) partdata[i].Qcons[k] =
       (FLOAT) 0.5*(partdata[i].Qcons[k] + partdata[i].Qcons0[k] + partdata[i].dQdt[k]*timestep);
 
-    mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
-    mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
+    mfv->ConvertConservedToPrimitive(partdata[i].volume, partdata[i].Qcons, partdata[i].Wprim);
     mfv->UpdateArrayVariables(partdata[i]);
 
     for (k=0; k<ndim; k++) {

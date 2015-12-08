@@ -108,6 +108,7 @@ class Sph : public Hydrodynamics<ndim>
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
   virtual void ReorderParticles(void) = 0;
+  virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {part.m -= dm;}
 
 
   // SPH functions for computing SPH sums with neighbouring particles
