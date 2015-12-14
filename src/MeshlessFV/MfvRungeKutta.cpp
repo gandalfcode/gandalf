@@ -103,34 +103,55 @@ int MfvRungeKutta<ndim, kernelclass>::ComputeH
   FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
 
 
+  // If there are sink particles present, check if the particle is inside one.
+  // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
+  if (part.sinkid != -1) {
+    h_lower_bound = hmin_sink;
+    //h_lower_bound = nbody->stardata[part.sinkid].h;  //hmin_sink;
+    if (hmax < hmin_sink) return -1;
+  }
+
+  // Some basic sanity-checking in case of invalid input into routine
+  assert(Nneib > 0);
+  assert(hmax > (FLOAT) 0.0);
+  assert(part.itype != dead);
+  assert(part.m > (FLOAT) 0.0);
+
+
   // Main smoothing length iteration loop
   //===============================================================================================
   do {
 
     // Initialise all variables for this value of h
     iteration++;
-    part.invh    = (FLOAT) 1.0/part.h;
-    part.ndens   = (FLOAT) 0.0;
-    part.hfactor = pow(part.invh, ndim);
-    invhsqd      = part.invh*part.invh;
+    part.ndens    = (FLOAT) 0.0;
+    part.invomega = (FLOAT) 0.0;
+    part.zeta     = (FLOAT) 0.0;
+    part.invh     = (FLOAT) 1.0/part.h;
+    part.hfactor  = pow(part.invh,ndim);
+    invhsqd       = part.invh*part.invh;
 
-    // Loop over all nearest neighbours in list to calculate
-    // density, omega and zeta.
+    // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
-      ssqd        = drsqd[j]*invhsqd;
-      part.ndens += kern.w0_s2(ssqd);
+      ssqd           = drsqd[j]*invhsqd;
+      part.ndens    += kern.w0_s2(ssqd);
+      part.invomega += part.invh*kern.womega_s2(ssqd);
+      part.zeta     += m[j]*kern.wzeta_s2(ssqd);
     }
     //---------------------------------------------------------------------------------------------
 
-    part.ndens *= part.hfactor;
-    part.volume = (FLOAT) 1.0/part.ndens;
-    part.rho    = part.m*part.ndens;
+    part.ndens    *= part.hfactor;
+    part.invomega *= part.hfactor;
+    part.zeta     *= invhsqd;
+    part.volume    = (FLOAT) 1.0/part.ndens;
+    part.rho       = part.m*part.ndens;
     if (part.rho > (FLOAT) 0.0) part.invrho = (FLOAT) 1.0/part.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (part.rho > (FLOAT) 0.0 && part.h > h_lower_bound &&
         fabs(part.h - h_fac*pow(part.volume,MeshlessFV<ndim>::invndim)) < h_converge) break;
+
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
     // not converge in a reasonable number of iterations (iteration_max), then assume something is
@@ -144,10 +165,12 @@ int MfvRungeKutta<ndim, kernelclass>::ComputeH
       part.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else if (iteration < 5*iteration_max) {
-      if (part.ndens < small_number || part.ndens*pow(part.h,ndim) > pow(h_fac,ndim))
+      if (part.ndens < small_number || part.ndens*pow(part.h,ndim) > pow(h_fac,ndim)) {
         h_upper_bound = part.h;
-      else
+      }
+      else {
         h_lower_bound = part.h;
+      }
       part.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else {
@@ -173,10 +196,22 @@ int MfvRungeKutta<ndim, kernelclass>::ComputeH
   part.hfactor   = pow(part.invh, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
+  part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
+  part.invomega  = (FLOAT) 1.0/part.invomega;
+  part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.h*part.zeta*part.invomega/part.ndens;
 
+  // Calculate the minimum neighbour potential (used later to identify new sinks)
+  if (create_sinks == 1) {
+    part.potmin = true;
+    for (j=0; j<Nneib; j++) {
+      if (gpot[j] > (FLOAT) 1.000000001*part.gpot &&
+          drsqd[j]*invhsqd < kern.kernrangesqd) part.potmin = false;
+    }
+  }
 
   // Set important thermal variables here
   this->ComputeThermalProperties(part);
+  this->UpdatePrimitiveVector(part);
 
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
@@ -207,19 +242,18 @@ void MfvRungeKutta<ndim, kernelclass>::ComputePsiFactors
   MeshlessFVParticle<ndim> *neibpart)          ///< [inout] Neighbour particle data
 {
   int j;                                       // Neighbour list id
-  int jj;                                      // ..
+  int jj;                                      // Aux. neighbour loop counter
   int k;                                       // Dimension counter
-  FLOAT invdet;                                // Determinant
   FLOAT draux[ndim];                           // Relative position vector
   FLOAT drsqd;                                 // Distance squared
-  FLOAT E[ndim][ndim];                         // Aux. matrix
-  const FLOAT invhsqd = part.invh*part.invh;   // 1/h^2
+  FLOAT E[ndim][ndim];                         // E-matrix for computing normalised B-matrix
+  const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
 
-
+  // Zero all matrices
   for (k=0; k<ndim; k++) {
     for (int kk=0; kk<ndim; kk++) {
       E[k][kk] = (FLOAT) 0.0;
-      part.B[k][kk] = (FLOAT) 0.0;
+      part.B[k][kk] = 0.0;
     }
   }
 
@@ -240,21 +274,22 @@ void MfvRungeKutta<ndim, kernelclass>::ComputePsiFactors
   }
   //-----------------------------------------------------------------------------------------------
 
+
   // Invert the matrix (depending on dimensionality)
   if (ndim == 1) {
-    part.B[0][0] = (FLOAT) 1.0/E[0][0];
+    part.B[0][0] = 1.0/E[0][0];
   }
   else if (ndim == 2) {
-    invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
+    const FLOAT invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
     part.B[0][0] = invdet*E[1][1];
-    part.B[0][1] = -(FLOAT) 1.0*invdet*E[0][1];
-    part.B[1][0] = -(FLOAT) 1.0*invdet*E[1][0];
+    part.B[0][1] = -1.0*invdet*E[0][1];
+    part.B[1][0] = -1.0*invdet*E[1][0];
     part.B[1][1] = invdet*E[0][0];
   }
   else if (ndim == 3) {
-    invdet = (FLOAT) 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
-                          E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
-                          E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
+    const FLOAT invdet = 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
+                              E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
+                              E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
     part.B[0][0] = (E[1][1]*E[2][2] - E[2][1]*E[1][2])*invdet;
     part.B[0][1] = (E[0][2]*E[2][1] - E[0][1]*E[2][2])*invdet;
     part.B[0][2] = (E[0][1]*E[1][2] - E[0][2]*E[1][1])*invdet;
@@ -265,7 +300,6 @@ void MfvRungeKutta<ndim, kernelclass>::ComputePsiFactors
     part.B[2][1] = (E[2][0]*E[0][1] - E[0][0]*E[2][1])*invdet;
     part.B[2][2] = (E[0][0]*E[1][1] - E[1][0]*E[0][1])*invdet;
   }
-
 
   return;
 }
@@ -295,17 +329,18 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
-  int var;                             // Primitive variable counter
+  int var;                             // Particle state vector summation variable
   FLOAT draux[ndim];                   // Relative position vector
   FLOAT drsqd;                         // Distance squared
-  FLOAT dv[ndim];                      // Relative velocity
+  FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT psitilda[ndim];                // ..
-  const FLOAT invhsqd = part.invh*part.invh;
+  FLOAT psitilda[ndim];                // Normalised gradient psi factor
+  const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
 
 
   // Initialise/zero all variables to be updated in this routine
   part.vsig_max = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) part.vreg[k] = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
     for (var=0; var<nvar; var++) {
       part.grad[var][k] = (FLOAT) 0.0;
@@ -330,7 +365,7 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
     drsqd = DotProduct(draux, draux, ndim);
 
     // Calculate psitilda values
-    for (k=0; k<ndim; k++) psitilda[k] = 0.0;
+    for (k=0; k<ndim; k++) psitilda[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) {
       for (int kk=0; kk<ndim; kk++) {
         psitilda[k] += part.B[k][kk]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
@@ -348,8 +383,12 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
                                        min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
 
+    for (k=0; k<ndim; k++) part.vreg[k] -= draux[k]*kern.w0_s2(drsqd*invhsqd);
+
   }
   //-----------------------------------------------------------------------------------------------
+
+  for (k=0; k<ndim; k++) part.vreg[k] *= part.invh*part.sound;  //pow(part.invh, ndim);
 
 
   // Find all max and min values for meshless slope limiters
@@ -358,15 +397,15 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
     j = neiblist[jj];
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
-    //drsqd = DotProduct(draux, draux, ndim);
-
 
     // Calculate min and max values of primitives for slope limiters
     for (var=0; var<nvar; var++) {
       part.Wmin[var] = min(part.Wmin[var], neibpart[j].Wprim[var]);
       part.Wmax[var] = max(part.Wmax[var], neibpart[j].Wprim[var]);
-      part.Wmidmin[var] = min(part.Wmidmin[var], part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
-      part.Wmidmax[var] = max(part.Wmidmax[var], part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmin[var] = min(part.Wmidmin[var],
+        part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmax[var] = max(part.Wmidmax[var],
+        part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
       assert(part.Wmidmax[var] >= part.Wmidmin[var]);
       assert(part.Wmax[var] >= part.Wmin[var]);
     }
@@ -374,12 +413,7 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
   }
   //-----------------------------------------------------------------------------------------------
 
-  //cout << "vsig : " << part.vsig_max << "    " << part.sound << endl;
   assert(part.vsig_max >= part.sound);
-
-  //cout << "r : " << part.r[0] << "   " << part.r[1] << "   " << part.r[2] << "    vx gradient : "
-  //     << part.grad[ivx][0] << "    " << part.grad[ivx][1] << "   " << part.grad[ivx][2] << endl;
-  //cin >> j;
 
   return;
 }
@@ -402,7 +436,6 @@ void MfvRungeKutta<ndim, kernelclass>::CopyDataToGhosts
 
   debug2("[MfvRungeKutta::CopyHydroDataToGhosts]");
 
-
   //-----------------------------------------------------------------------------------------------
 //#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,partdata)
   for (j=0; j<this->NPeriodicGhost; j++) {
@@ -422,21 +455,46 @@ void MfvRungeKutta<ndim, kernelclass>::CopyDataToGhosts
     else if (itype == x_rhs_periodic) {
       partdata[i].r[0] -= simbox.boxsize[0];
     }
-    else if (itype == y_lhs_periodic && ndim > 1) {
+    else if (itype == x_lhs_mirror) {
+      partdata[i].r[0] = 2.0*simbox.boxmin[0] - partdata[i].r[0];
+      partdata[i].v[0] = -partdata[i].v[0];
+    }
+    else if (itype == x_rhs_mirror) {
+      partdata[i].r[0] = 2.0*simbox.boxmax[0] - partdata[i].r[0];
+      partdata[i].v[0] = -partdata[i].v[0];
+    }
+    else if (ndim > 1 && itype == y_lhs_periodic) {
       partdata[i].r[1] += simbox.boxsize[1];
     }
-    else if (itype == y_rhs_periodic && ndim > 1) {
+    else if (ndim > 1 && itype == y_rhs_periodic) {
       partdata[i].r[1] -= simbox.boxsize[1];
     }
-    else if (itype == z_lhs_periodic && ndim == 3) {
+    else if (ndim > 1 && itype == y_lhs_mirror) {
+      partdata[i].r[1] = 2.0*simbox.boxmin[1] - partdata[i].r[1];
+      partdata[i].v[1] = -partdata[i].v[1];
+    }
+    else if (ndim > 1 && itype == y_rhs_mirror) {
+      partdata[i].r[1] = 2.0*simbox.boxmax[1] - partdata[i].r[1];
+      partdata[i].v[1] = -partdata[i].v[1];
+    }
+    else if (ndim == 3 && itype == z_lhs_periodic) {
       partdata[i].r[2] += simbox.boxsize[2];
     }
-    else if (itype == z_rhs_periodic && ndim == 3) {
+    else if (ndim == 3 && itype == z_rhs_periodic) {
       partdata[i].r[2] -= simbox.boxsize[2];
+    }
+    else if (ndim == 3 && itype == z_lhs_mirror) {
+      partdata[i].r[2] = 2.0*simbox.boxmin[2] - partdata[i].r[2];
+      partdata[i].v[2] = -partdata[i].v[2];
+    }
+    else if (ndim == 3 && itype == z_rhs_mirror) {
+      partdata[i].r[2] = 2.0*simbox.boxmax[2] - partdata[i].r[2];
+      partdata[i].v[2] = -partdata[i].v[2];
     }
 
   }
   //-----------------------------------------------------------------------------------------------
+
 
   return;
 }
@@ -462,21 +520,21 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGodunovFlux
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
-  int var;                             // ..
-  FLOAT Aij[ndim];                     // ..
+  int var;                             // Particle state vector variable counter
+  FLOAT Aij[ndim];                     // Pseudo 'Area' vector
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
   FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
-  FLOAT drsqd;                         // ..
-  FLOAT invdrmagaux;
-  FLOAT psitildai[ndim];
-  FLOAT psitildaj[ndim];
-  FLOAT rface[ndim];
-  FLOAT vface[ndim];
-  FLOAT flux[nvar][ndim];
-  FLOAT Wleft[nvar];
-  FLOAT Wright[nvar];
-  FLOAT gradW[nvar][ndim];
-  FLOAT dW[nvar];
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrmagaux;                   // 1 / distance
+  FLOAT psitildai[ndim];               // Normalised gradient psi value for particle i
+  FLOAT psitildaj[ndim];               // Normalised gradient psi value for neighbour j
+  FLOAT rface[ndim];                   // Position of working face (to compute Godunov fluxes)
+  FLOAT vface[ndim];                   // Velocity of working face (to compute Godunov fluxes)
+  FLOAT flux[nvar][ndim];              // Flux tensor
+  FLOAT Wleft[nvar];                   // Primitive vector for LHS of Riemann problem
+  FLOAT Wright[nvar];                  // Primitive vector for RHS of Riemann problem
+  FLOAT gradW[nvar][ndim];             // Gradient of primitive vector
+  FLOAT dW[nvar];                      // Change in primitive quantities
 
 
   // Initialise all particle flux variables

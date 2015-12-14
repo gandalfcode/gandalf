@@ -379,9 +379,6 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
   //-----------------------------------------------------------------------------------------------
 
   for (k=0; k<ndim; k++) part.vreg[k] *= part.invh*part.sound;  //pow(part.invh, ndim);
-  //cout << "vreg? : " << part.vreg[0] << "    " << part.vreg[1] << endl;
-  //for (k=0; k<ndim; k++) part.v0[k] += part.vreg[k];
-  //for (k=0; k<ndim; k++) part.v[k] += part.vreg[k];
 
 
   // Find all max and min values for meshless slope limiters
@@ -390,7 +387,6 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
     j = neiblist[jj];
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
-    //drsqd = DotProduct(draux, draux, ndim);
 
     // Calculate min and max values of primitives for slope limiters
     for (var=0; var<nvar; var++) {
@@ -452,9 +448,11 @@ void MfvMuscl<ndim, kernelclass>::CopyDataToGhosts
     }
     else if (itype == x_lhs_mirror) {
       partdata[i].r[0] = 2.0*simbox.boxmin[0] - partdata[i].r[0];
+      partdata[i].v[0] = -partdata[i].v[0];
     }
     else if (itype == x_rhs_mirror) {
       partdata[i].r[0] = 2.0*simbox.boxmax[0] - partdata[i].r[0];
+      partdata[i].v[0] = -partdata[i].v[0];
     }
     else if (ndim > 1 && itype == y_lhs_periodic) {
       partdata[i].r[1] += simbox.boxsize[1];
@@ -464,9 +462,11 @@ void MfvMuscl<ndim, kernelclass>::CopyDataToGhosts
     }
     else if (ndim > 1 && itype == y_lhs_mirror) {
       partdata[i].r[1] = 2.0*simbox.boxmin[1] - partdata[i].r[1];
+      partdata[i].v[1] = -partdata[i].v[1];
     }
     else if (ndim > 1 && itype == y_rhs_mirror) {
       partdata[i].r[1] = 2.0*simbox.boxmax[1] - partdata[i].r[1];
+      partdata[i].v[1] = -partdata[i].v[1];
     }
     else if (ndim == 3 && itype == z_lhs_periodic) {
       partdata[i].r[2] += simbox.boxsize[2];
@@ -476,9 +476,11 @@ void MfvMuscl<ndim, kernelclass>::CopyDataToGhosts
     }
     else if (ndim == 3 && itype == z_lhs_mirror) {
       partdata[i].r[2] = 2.0*simbox.boxmin[2] - partdata[i].r[2];
+      partdata[i].v[2] = -partdata[i].v[2];
     }
     else if (ndim == 3 && itype == z_rhs_mirror) {
       partdata[i].r[2] = 2.0*simbox.boxmax[2] - partdata[i].r[2];
+      partdata[i].v[2] = -partdata[i].v[2];
     }
 
   }
