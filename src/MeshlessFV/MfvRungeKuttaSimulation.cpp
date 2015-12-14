@@ -60,13 +60,9 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   //int it;                              // Time-symmetric iteration counter
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
-  MeshlessFVParticle<ndim> *partdata;         // Pointer to main SPH data array
+  MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
 
   debug2("[MfvRungeKuttaSimulation::MainLoop]");
-
-
-  // Set pointer for SPH data array
-  partdata = mfv->GetMeshlessFVParticleArray();
 
 
   // Advance SPH and N-body particles' positions and velocities
