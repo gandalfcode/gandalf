@@ -111,4 +111,4 @@ axarr[1,3].plot(vxdata.x_data, vxdata.y_data, color="red")
 
 #fig.tight_layout()
 plt.show()
-fig.savefig('sedov2d.pdf')
+fig.savefig('sedov2d.eps', dpi=50)
