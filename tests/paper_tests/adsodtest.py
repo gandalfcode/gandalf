@@ -115,4 +115,4 @@ axarr[2,2].plot(udata.x_data, udata.y_data, color="red", label='Riemann solution
 
 #fig.tight_layout()
 plt.show()
-fig.savefig('adsod.pdf')
+fig.savefig('adsod.eps', dpi=50)

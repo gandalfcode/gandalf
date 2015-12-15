@@ -58,4 +58,4 @@ ax3.text(10, 22, '(c) MFV-static', color='white', size=14)
 
 #fig.tight_layout()
 plt.show()
-fig.savefig('khi.pdf')
+fig.savefig('khi.eps', dpi=50)
