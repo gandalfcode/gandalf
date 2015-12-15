@@ -77,4 +77,4 @@ print gradh_L1values
 
 
 plt.show()
-fig.savefig('adsod-L1error.pdf')
+fig.savefig('adsod-L1error.eps', dpi=50)

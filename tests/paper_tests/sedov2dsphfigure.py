@@ -56,7 +56,7 @@ fig.subplots_adjust(bottom=0.1, top=0.98, left=0.08, right=0.99)
 axarr[0,0].set_ylabel(r"$\rho$", fontsize=20)
 axarr[0,0].set_xlim([xmin, xmax])
 axarr[0,0].set_ylim([rhomin, rhomax])
-axarr[0,0].scatter(x0, rho0, color='black', marker='.', s=1.0, label='Gradh-SPH')
+axarr[0,0].scatter(x0, rho0, color='black', marker='.', s=1.0, label='Levels = 1')
 axarr[0,0].plot(rhodata.x_data, rhodata.y_data, color="red", label='Solution')
 axarr[0,0].legend(fontsize=12)
 
@@ -70,7 +70,7 @@ axarr[1,0].plot(vxdata.x_data, vxdata.y_data, color="red")
 # Static MFV simulation
 axarr[0,1].set_xlim([xmin, xmax])
 axarr[0,1].set_ylim([rhomin, rhomax])
-axarr[0,1].scatter(x1, rho1, color='black', marker='.', s=1.0, label='MFV-static')
+axarr[0,1].scatter(x1, rho1, color='black', marker='.', s=1.0, label='Levels = 10')
 axarr[0,1].plot(rhodata.x_data, rhodata.y_data, color="red", label='Solution')
 axarr[0,1].legend(fontsize=12)
 
@@ -82,7 +82,7 @@ axarr[1,1].plot(vxdata.x_data, vxdata.y_data, color="red")
 # Moving MFV simulation
 axarr[0,2].set_xlim([xmin, xmax])
 axarr[0,2].set_ylim([rhomin, rhomax])
-axarr[0,2].scatter(x2, rho2, color='black', marker='.', s=1.0, label='MFV-moving')
+axarr[0,2].scatter(x2, rho2, color='black', marker='.', s=1.0, label='Levels = 10, SM')
 axarr[0,2].plot(rhodata.x_data, rhodata.y_data, color="red", label='Solution')
 axarr[0,2].legend(fontsize=12)
 
@@ -93,4 +93,4 @@ axarr[1,2].plot(vxdata.x_data, vxdata.y_data, color="red")
 
 #fig.tight_layout()
 plt.show()
-fig.savefig('sedov2dsph.pdf')
+fig.savefig('sedov2dsph.eps', dpi=50)
