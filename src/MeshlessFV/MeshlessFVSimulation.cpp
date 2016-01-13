@@ -859,9 +859,6 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max_hydro = 0;
 
 
-//#pragma omp parallel default(none) private(dt,dt_nbody,dt_hydro,i) \
-//  private(istep,last_level,level,level_max_aux,level_hydro,nstep,nfactor) \
-//  shared(dt_min,level_max_nbody,level_max_hydro,level_min_hydro)
 #pragma omp parallel default(shared) private(dt,dt_nbody,dt_hydro,i)\
   private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor)
     {

@@ -520,7 +520,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 {
   int cc = 0;                          // Cell counter
   int i;                               // Particle id
-  int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
   int Ntemp = 0;                       // Aux. counter
   FLOAT dr[ndim];                      // Relative position vector
@@ -540,10 +539,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   GhostNeighbourFinder<ndim> GhostFinder(_domain) ;
   GhostFinder.SetTargetCell(cell) ;
   int MaxGhosts = GhostFinder.MaxNumGhosts() ;
-  std::vector<FLOAT> _r_ghost(ndim *pow(3,ndim)) ;
+  /*std::vector<FLOAT> _r_ghost(ndim *pow(3,ndim)) ;
   std::vector<int>   _sign(ndim *pow(3,ndim)) ;
   FLOAT *r_ghost = &(_r_ghost[0]) ;
-  int   *sign    = &(_sign[0]) ;
+  int   *sign    = &(_sign[0]) ;*/
 
 
   // Start with root cell and walk through entire tree
@@ -868,8 +867,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
   assert(GhostFinder.MaxNumGhosts() == 1) ;
 
-  FLOAT r_ghost[ndim] ;
-  int   sign[ndim] ;
+  //FLOAT r_ghost[ndim] ;
+  //int   sign[ndim] ;
 
   // Make local copies of important cell properties
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);

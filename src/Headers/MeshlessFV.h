@@ -142,6 +142,8 @@ public:
   void EndTimestep(const int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
   void InitialSmoothingLengthGuess(void);
   void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
+  void IntegrateParticles(const int, const int, const FLOAT, const FLOAT,
+                          const DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
   FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &);
@@ -307,6 +309,8 @@ class MfvRungeKutta : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
+  using Hydrodynamics<ndim>::create_sinks;
+  using Hydrodynamics<ndim>::hmin_sink;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;

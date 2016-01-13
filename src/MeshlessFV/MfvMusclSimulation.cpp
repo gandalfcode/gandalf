@@ -87,68 +87,8 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   if (n%integration_step == 0) Nfullsteps++;
 
 
-  // Integrate all conserved variables to end of timestep
-  //-----------------------------------------------------------------------------------------------
-  if (!mfv->staticParticles) {
-    for (i=0; i<mfv->Nhydro; i++) {
-      MeshlessFVParticle<ndim> &part = partdata[i];
-      int dn = n - part.nlast;
-      part.m = part.Qcons[FV<ndim>::irho] + part.dQ[FV<ndim>::irho];
-
-      //-------------------------------------------------------------------------------------------
-      for (k=0; k<ndim; k++) {
-        part.r[k] = part.r0[k] + part.v0[k]*timestep*(FLOAT) dn;
-
-        // Check if particle has crossed LHS boundary
-        //-----------------------------------------------------------------------------------------
-        if (part.r[k] < simbox.boxmin[k]) {
-
-          // Check if periodic boundary
-          if (simbox.boundary_lhs[k] == periodicBoundary) {
-            part.r[k]  += simbox.boxsize[k];
-            part.r0[k] += simbox.boxsize[k];
-          }
-
-          // Check if wall or mirror boundary
-          if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
-            part.r[k]  = (FLOAT) 2.0*simbox.boxmin[k] - part.r[k];
-            part.r0[k] = (FLOAT) 2.0*simbox.boxmin[k] - part.r0[k];
-            part.v[k]  = -part.v[k];
-            part.v0[k] = -part.v0[k];
-            part.a[k]  = -part.a[k];
-            part.a0[k] = -part.a0[k];
-          }
-        }
-
-        // Check if particle has crossed RHS boundary
-        //-----------------------------------------------------------------------------------------
-        if (part.r[k] > simbox.boxmax[k]) {
-
-          // Check if periodic boundary
-          if (simbox.boundary_rhs[k] == periodicBoundary) {
-            part.r[k]  -= simbox.boxsize[k];
-            part.r0[k] -= simbox.boxsize[k];
-          }
-
-          // Check if wall or mirror boundary
-          if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
-            part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
-            part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
-            part.v[k]  = -part.v[k];
-            part.v0[k] = -part.v0[k];
-            part.a[k]  = -part.a[k];
-            part.a0[k] = -part.a0[k];
-          }
-
-        }
-        //-----------------------------------------------------------------------------------------
-
-      }
-      //-------------------------------------------------------------------------------------------
-
-    }
-  }
-  //-----------------------------------------------------------------------------------------------
+  // Integrate positions of particles
+  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, partdata);
 
   // Advance N-body particle positions
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
