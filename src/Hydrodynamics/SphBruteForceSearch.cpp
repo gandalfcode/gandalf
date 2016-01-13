@@ -472,18 +472,11 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
   FLOAT potperiodic;                   // Periodic potential correction
   FLOAT aperiodic[ndim];               // Periodic acceleration correction
   FLOAT dr[ndim];                      // Relative displacement vector
-  FLOAT dr_corr[ndim];                 // Periodic correction displacement
   ParticleType<ndim>* neibdata;        // Local copy of neighbouring particles
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
-
   debug2("[SphBruteForceSearch::UpdateAllSphPeriodicForces]");
-
-
-  FLOAT r_ghost[ndim] ;
-  int   sign[ndim] ;
-
-  assert(GhostFinder.MaxNumGhosts() == 1) ;
+  assert(GhostFinder.MaxNumGhosts() == 1);
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
@@ -680,17 +673,11 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
   FLOAT potperiodic;                   // Periodic potential correction
   FLOAT aperiodic[ndim];               // Periodic acceleration correction
   FLOAT dr[ndim];                      // Relative displacement vector
-  FLOAT dr_corr[ndim];                 // Periodic correction vector
   ParticleType<ndim>* neibdata;        // Local copy of neighbouring particles
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[SphBruteForceSearch::UpdateAllSphPeriodicGravForces]");
-
-
-  FLOAT r_ghost[ndim] ;
-  int   sign[ndim] ;
-
-  assert(GhostFinder.MaxNumGhosts() == 1) ;
+  assert(GhostFinder.MaxNumGhosts() == 1);
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];

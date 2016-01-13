@@ -35,7 +35,19 @@
 template<int ndim>
 class GhostNeighbourFinder
 {
+private:
+
+  const DomainBox<ndim>& _domain ;
+  Box<ndim> _cell ;
+  FLOAT _centre[ndim] ;
+  bool _mirror_bound[ndim][2] ;
+  bool _need_mirror[ndim][2] ;
+  bool _periodic_bound[ndim] ;
+  bool _any_periodic, _any_mirror, _need_mirrors, _any_special;
+
+
 public:
+
 	GhostNeighbourFinder(const DomainBox<ndim>& simbox)
 	: _domain(simbox),
 	  _any_periodic(false), _any_mirror(false), _need_mirrors(false), _any_special(false)
@@ -72,8 +84,8 @@ public:
 	      _cell.boxmax[k] = cell.hboxmax[k] ;
 
 		  // Compute whether we need a mirror in the gather case
-		  _need_mirror[k][0] = (_mirror_bound[k][0] & _cell.boxmin[k] < _domain.boxmin[k]);
-		  _need_mirror[k][1] = (_mirror_bound[k][1] & _cell.boxmax[k] > _domain.boxmax[k]);
+		  _need_mirror[k][0] = ((_mirror_bound[k][0] & _cell.boxmin[k]) < _domain.boxmin[k]);
+		  _need_mirror[k][1] = ((_mirror_bound[k][1] & _cell.boxmax[k]) > _domain.boxmax[k]);
 		  _need_mirrors     |= (_need_mirror[k][0] | _need_mirror[k][1]) ;
 	    }
 	  }
@@ -430,17 +442,8 @@ public:
 		}
 	}
 
-private:
-	const DomainBox<ndim>& _domain ;
-	Box<ndim> _cell ;
-	FLOAT _centre[ndim] ;
-	bool _mirror_bound[ndim][2] ;
-	bool _need_mirror[ndim][2] ;
-	bool _periodic_bound[ndim] ;
-	bool _any_periodic, _any_mirror, _need_mirrors, _any_special;
 };
 
 
 
 #endif//_GHOST_NEIGHBOURS_H_
-

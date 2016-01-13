@@ -61,7 +61,7 @@ MeshlessFV<ndim>::MeshlessFV(int _hydro_forces, int _self_gravity, FLOAT _accel_
   // Local references to parameter variables for brevity
   map<string, int> &intparams = params->intparams;
   map<string, double> &floatparams = params->floatparams;
-  map<string, string> &stringparams = params->stringparams;
+  //map<string, string> &stringparams = params->stringparams;
 
   Nhydromax       = intparams["Nhydromax"];
   create_sinks    = intparams["create_sinks"];
@@ -245,6 +245,94 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
   else if (hydro_forces) return dt_cfl;
   else if (self_gravity) return dt_grav;
   else return big_number;
+}
+
+
+
+//=================================================================================================
+//  MeshlessFV<ndim>::IntegrateParticles
+/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
+//=================================================================================================
+template <int ndim>
+void MeshlessFV<ndim>::IntegrateParticles
+ (const int n,                         ///< [in] Integer time in block time struct
+  const int Npart,                     ///< [in] Number of particles
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep,                ///< [in] Base timestep value
+  const DomainBox<ndim> &simbox,       ///< [in] Simulation box
+  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
+{
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+
+  debug2("[MeshlessFV::IntegrateParticles]");
+
+  // Integrate all conserved variables to end of timestep
+  //-----------------------------------------------------------------------------------------------
+  if (!staticParticles) {
+    for (i=0; i<Nhydro; i++) {
+      MeshlessFVParticle<ndim> &part = partdata[i];
+      dn = n - part.nlast;
+      part.m = part.Qcons[FV<ndim>::irho] + part.dQ[FV<ndim>::irho];
+
+      //-------------------------------------------------------------------------------------------
+      for (k=0; k<ndim; k++) {
+        part.r[k] = part.r0[k] + part.v0[k]*timestep*(FLOAT) dn;
+
+        // Check if particle has crossed LHS boundary
+        //-----------------------------------------------------------------------------------------
+        if (part.r[k] < simbox.boxmin[k]) {
+
+          // Check if periodic boundary
+          if (simbox.boundary_lhs[k] == periodicBoundary) {
+            part.r[k]  += simbox.boxsize[k];
+            part.r0[k] += simbox.boxsize[k];
+          }
+
+          // Check if wall or mirror boundary
+          if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
+            part.r[k]  = (FLOAT) 2.0*simbox.boxmin[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.boxmin[k] - part.r0[k];
+            part.v[k]  = -part.v[k];
+            part.v0[k] = -part.v0[k];
+            part.a[k]  = -part.a[k];
+            part.a0[k] = -part.a0[k];
+          }
+        }
+
+        // Check if particle has crossed RHS boundary
+        //-----------------------------------------------------------------------------------------
+        if (part.r[k] > simbox.boxmax[k]) {
+
+          // Check if periodic boundary
+          if (simbox.boundary_rhs[k] == periodicBoundary) {
+            part.r[k]  -= simbox.boxsize[k];
+            part.r0[k] -= simbox.boxsize[k];
+          }
+
+          // Check if wall or mirror boundary
+          if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
+            part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
+            part.v[k]  = -part.v[k];
+            part.v0[k] = -part.v0[k];
+            part.a[k]  = -part.a[k];
+            part.a0[k] = -part.a0[k];
+          }
+
+        }
+        //-----------------------------------------------------------------------------------------
+
+      }
+      //-------------------------------------------------------------------------------------------
+
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  return;
 }
 
 

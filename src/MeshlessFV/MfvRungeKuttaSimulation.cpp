@@ -65,6 +65,138 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   debug2("[MfvRungeKuttaSimulation::MainLoop]");
 
 
+  // Compute timesteps for all particles
+  if (Nlevels == 1) {
+    this->ComputeGlobalTimestep();
+  }
+  else {
+    this->ComputeBlockTimesteps();
+  }
+  mfv->CopyDataToGhosts(simbox, partdata);
+
+
+  // Update the numerical fluxes of all active particles
+  if (mfv->hydro_forces) {
+    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
+  }
+
+  // Advance all global time variables
+  n++;
+  Nsteps++;
+  t = t + timestep;
+  if (n == nresync) Nblocksteps++;
+  if (n%integration_step == 0) Nfullsteps++;
+
+
+  // Integrate positions of particles
+  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, partdata);
+
+  // Advance N-body particle positions
+  nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+
+  // Re-build/re-stock tree now particles have moved
+  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                     mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                          mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+
+
+  // Search for new sink particles (if activated) and accrete to existing sinks
+  if (sink_particles == 1) {
+    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
+      sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
+    }
+    if (sinks->Nsink > 0) {
+      mfv->mmean = (FLOAT) 0.0;
+      for (i=0; i<mfv->Nhydro; i++) mfv->mmean += mfv->GetMeshlessFVParticlePointer(i).m;
+      mfv->mmean /= (FLOAT) mfv->Nhydro;
+      mfv->hmin_sink = big_number;
+      for (i=0; i<sinks->Nsink; i++) {
+        mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
+      }
+      sinks->AccreteMassToSinks(n, timestep, partdata, mfv, nbody);
+      nbody->UpdateStellarProperties();
+      //if (extra_sink_output) WriteExtraSinkOutput();
+    }
+    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
+    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
+         timing->WallClockTime() - timing->tstart_wall > (FLOAT) 0.99*tmax_wallclock) {
+      hydro->DeleteDeadParticles();
+      rebuild_tree = true;
+    }
+
+    // Update all array variables now accretion has probably removed some mass
+    for (i=0; i<mfv->Nhydro; i++) partdata[i].m = partdata[i].Qcons[FV<ndim>::irho] + partdata[i].dQ[FV<ndim>::irho];
+
+    // Re-build/re-stock tree now particles have moved
+    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                       mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+
+  }
+
+  // Calculate terms due to self-gravity
+  if (mfv->self_gravity == 1) {
+    mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox, ewald);
+  }
+
+  // Compute N-body forces
+  //-----------------------------------------------------------------------------------------------
+  if (nbody->Nnbody > 0) {
+
+    // Zero all acceleration terms
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->active) {
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = (FLOAT) 0.0;
+        nbody->nbodydata[i]->gpot = (FLOAT) 0.0;
+        nbody->nbodydata[i]->gpe = (FLOAT) 0.0;
+      }
+    }
+    if (sink_particles == 1) {
+      for (i=0; i<sinks->Nsink; i++) {
+        if (sinks->sink[i].star->active) {
+          for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = (FLOAT) 0.0;
+        }
+      }
+    }
+
+    if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
+      mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+#if defined MPI_PARALLEL
+      // We need to sum up the contributions from the different domains
+      mpicontrol->ComputeTotalStarGasForces(nbody);
+#endif
+    }
+
+    // Calculate forces, force derivatives etc.., for active stars/systems
+    if (nbody->nbody_softening == 1) {
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
+    }
+    else {
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+    }
+
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->active) {
+        nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
+                                            nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
+                                            nbody->nbodydata[i]->gpot);
+      }
+    }
+
+    // Calculate correction step for all stars at end of step.
+    nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+
+
   // Advance SPH and N-body particles' positions and velocities
   /*uint->EnergyIntegration(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
   sphint->AdvanceParticles(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());

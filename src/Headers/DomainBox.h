@@ -163,6 +163,7 @@ inline boundaryEnum setBoundaryType(string boundaryString)
   else if (boundaryString == "wall") return wallBoundary;
   else {
     ExceptionHandler::getIstance().raise("Invalid boundary type chosen");
+    return Nboundarytypes;
   }
 }
 
