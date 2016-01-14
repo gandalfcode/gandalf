@@ -533,12 +533,10 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGodunovFlux
   FLOAT flux[nvar][ndim];              // Flux tensor
   FLOAT Wleft[nvar];                   // Primitive vector for LHS of Riemann problem
   FLOAT Wright[nvar];                  // Primitive vector for RHS of Riemann problem
+  FLOAT Wdot[nvar];                    // Time derivative of primitive vector
   FLOAT gradW[nvar][ndim];             // Gradient of primitive vector
   FLOAT dW[nvar];                      // Change in primitive quantities
-
-
-  // Initialise all particle flux variables
-  for (var=0; var<nvar; var++) part.dQdt[var] = 0.0;
+  const FLOAT dt = timestep*(FLOAT) part.nstep;    // Timestep of given particle
 
 
   // Loop over all potential neighbours in the list
@@ -565,12 +563,18 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGodunovFlux
     }
 
     // Calculate position and velocity of the face
-    //for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
-    //for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
-    for (k=0; k<ndim; k++) rface[k] = part.r[k] + part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
-    for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
-    for (k=0; k<ndim; k++) vface[k] = part.v[k] +
-      (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
+    if (staticParticles) {
+      for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+      for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.0;
+    }
+    else {
+      for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+      //for (k=0; k<ndim; k++) rface[k] = part.r[k] +
+      //  part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
+      for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
+      for (k=0; k<ndim; k++) vface[k] = part.v[k] +
+        (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
+    }
 
     // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
@@ -584,26 +588,40 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGodunovFlux
     for (var=0; var<nvar; var++) Wright[var] = neibpart[j].Wprim[var] + dW[var];
     for (k=0; k<ndim; k++) Wright[k] -= vface[k];
 
-    if (Wright[ipress] <= 0.0) {
-      cout << "press   : " << part.Wprim[ipress] << "   " << Wleft[ipress] << "   " << Wright[ipress] << "   " << neibpart[j].Wprim[ipress] << endl;
-      cout << "gradW,j : " << DotProduct(neibpart[j].grad[ipress], draux, ndim) << "   " << DotProduct(gradW[ipress], draux, ndim) << endl;
+    assert(Wleft[irho] > 0.0);
+    assert(Wleft[ipress] > 0.0);
+    assert(Wright[irho] > 0.0);
+    assert(Wright[ipress] > 0.0);
+
+    // Calculate Godunov flux using the selected Riemann solver
+    riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+
+    // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
+    for (var=0; var<nvar; var++) {
+      part.dQ[var] -= 0.5*DotProduct(flux[var], Aij, ndim)*dt;
+      neibpart[j].dQ[var] += 0.5*DotProduct(flux[var], Aij, ndim)*dt;
     }
 
+    // Time-integrate LHS state to half-timestep value
+    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
+    for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) Wdot[var]*dt;
+
+    // Time-integrate RHS state to half-timestep value
+    this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
+    for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) Wdot[var]*dt;
 
     assert(Wleft[irho] > 0.0);
     assert(Wleft[ipress] > 0.0);
     assert(Wright[irho] > 0.0);
     assert(Wright[ipress] > 0.0);
 
-
     // Calculate Godunov flux using the selected Riemann solver
     riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
 
-
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      part.dQdt[var] -= DotProduct(flux[var], Aij, ndim);
-      neibpart[j].dQdt[var] += DotProduct(flux[var], Aij, ndim);
+      part.dQ[var] -= 0.5*DotProduct(flux[var], Aij, ndim)*dt;
+      neibpart[j].dQ[var] += 0.5*DotProduct(flux[var], Aij, ndim)*dt;
     }
 
   }

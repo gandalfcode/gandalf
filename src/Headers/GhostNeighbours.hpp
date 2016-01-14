@@ -84,8 +84,8 @@ public:
 	      _cell.boxmax[k] = cell.hboxmax[k] ;
 
 		  // Compute whether we need a mirror in the gather case
-		  _need_mirror[k][0] = ((_mirror_bound[k][0] & _cell.boxmin[k]) < _domain.boxmin[k]);
-		  _need_mirror[k][1] = ((_mirror_bound[k][1] & _cell.boxmax[k]) > _domain.boxmax[k]);
+		  _need_mirror[k][0] = (_mirror_bound[k][0] & _cell.boxmin[k] < _domain.boxmin[k]);
+		  _need_mirror[k][1] = (_mirror_bound[k][1] & _cell.boxmax[k] > _domain.boxmax[k]);
 		  _need_mirrors     |= (_need_mirror[k][0] | _need_mirror[k][1]) ;
 	    }
 	  }

@@ -530,11 +530,6 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
   const FLOAT dt = timestep*(FLOAT) part.nstep;    // Timestep of given particle
 
 
-  // Initialise all particle flux variables
-  //for (var=0; var<nvar; var++) part.dQdt[var] = (FLOAT) 0.0;
-  //for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
-
-
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
@@ -580,6 +575,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Time-integrate LHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
+    for (k=0; k<ndim; k++) Wleft[k] += part.a[k];
     for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*Wdot[var]*dt;
 
     // Compute slope-limited values for RHS
@@ -590,33 +586,28 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Time-integrate RHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
+    for (k=0; k<ndim; k++) Wright[k] += neibpart[j].a[k];
     for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*Wdot[var]*dt;
 
     assert(Wleft[irho] > 0.0);
     assert(Wleft[ipress] > 0.0);
     assert(Wright[irho] > 0.0);
     assert(Wright[ipress] > 0.0);
-    /*if (part.nstep > neibpart[j].nstep) {
-      cout << "TIMESTEP PROBLEM : " << part.nstep << "   " << part.level << "    neib : "
-           << neibpart[j].nstep << "    " << neibpart[j].level << endl;
-    }*/
-    //assert(part.nstep <= neibpart[j].nstep);
-
 
     // Calculate Godunov flux using the selected Riemann solver
     riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      //part.dQdt[var] -= DotProduct(flux[var], Aij, ndim);
-      //neibpart[j].dQdt[var] += DotProduct(flux[var], Aij, ndim);
       part.dQ[var] -= DotProduct(flux[var], Aij, ndim)*dt;
       neibpart[j].dQ[var] += DotProduct(flux[var], Aij, ndim)*dt;
     }
 
     // Compute mass-loss moments for gravitational correction terms
-    for (k=0; k<ndim; k++) part.rdmdt[k] += (part.r[k] - neibpart[j].r[k])*part.dQdt[irho];
-    for (k=0; k<ndim; k++) neibpart[j].rdmdt[k] -= (part.r[k] - neibpart[j].r[k])*part.dQdt[irho];
+    for (k=0; k<ndim; k++) {
+      part.rdmdt[k] -= (part.r[k] - neibpart[j].r[k])*DotProduct(flux[var], Aij, ndim);
+      neibpart[j].rdmdt[k] += (part.r[k] - neibpart[j].r[k])*DotProduct(flux[var], Aij, ndim);
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
