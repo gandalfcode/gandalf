@@ -383,9 +383,12 @@ void MeshlessFV<ndim>::EndTimestep
           (part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
         part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
           (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-           part.Qcons[irho]*DotProduct(part.v, part.a, ndim)); //+
-             //DotProduct(part.a0, part.rdmdt0, ndim) +
-             //DotProduct(part.a, part.rdmdt, ndim));
+           part.Qcons[irho]*DotProduct(part.v, part.a, ndim) +
+           DotProduct(part.a0, part.rdmdt0, ndim) +
+           DotProduct(part.a, part.rdmdt, ndim));
+        //part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+        //  (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
+        //   part.Qcons[irho]*DotProduct(part.v, part.a, ndim));
       }
 
       // Compute primtive values and update all main array quantities
