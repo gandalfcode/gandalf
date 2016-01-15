@@ -3596,7 +3596,7 @@ template <int ndim>
 void Ic<ndim>::AddCubicLattice
  (const int Npart,                     ///< [in] No. of particles in lattice
   const int Nlattice[ndim],            ///< [in] Ptcls per dimension in lattice
-  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
+  const DomainBox<ndim>& box,           ///< [in] Bounding box of particles
   const bool normalise,                ///< [in] Normalise lattice shape and size
   FLOAT *r)                            ///< [out] Positions of particles
 {
@@ -3641,7 +3641,7 @@ void Ic<ndim>::AddCubicLattice
   }
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(Nlattice,r,spacing) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(cout,box,Nlattice,r,spacing) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
@@ -3667,8 +3667,8 @@ void Ic<ndim>::AddCubicLattice
 template <int ndim>
 void Ic<ndim>::AddHexagonalLattice
  (const int Npart,                     ///< [in] No. of particles in lattice
-  const int Nlattice[ndim],            ///< [in] Ptcls per dimension in lattice
-  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
+  const int Nlattice[3],            ///< [in] Ptcls per dimension in lattice
+  const DomainBox<ndim>& box,           ///< [in] Bounding box of particles
   const bool normalise,                ///< [in] Normalise lattice shape and size
   FLOAT *r)                            ///< [out] Positions of particles
 {
@@ -3713,7 +3713,7 @@ void Ic<ndim>::AddHexagonalLattice
 
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(Nlattice,r,rad) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(box,Nlattice,r,rad) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {

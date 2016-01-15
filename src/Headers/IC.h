@@ -62,8 +62,8 @@ private:
   void AddAzimuthalDensityPerturbation(const int, const int, const FLOAT, const FLOAT *, FLOAT *);
   void AddBinaryStar(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
                      FLOAT *, FLOAT *, NbodyParticle<ndim> &, NbodyParticle<ndim> &);
-  void AddCubicLattice(const int, const int *, const DomainBox<ndim>, const bool, FLOAT *);
-  void AddHexagonalLattice(const int, const int *, const DomainBox<ndim>, const bool, FLOAT *);
+  void AddCubicLattice(const int, const int *, const DomainBox<ndim>&, const bool, FLOAT *);
+  void AddHexagonalLattice(const int, const int *, const DomainBox<ndim>&, const bool, FLOAT *);
   int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *);
   void AddRotationalVelocityField(const int, const FLOAT, const FLOAT *, const FLOAT *, FLOAT *);
   void AddRandomBox(const int, const DomainBox<ndim>, FLOAT *);
