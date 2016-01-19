@@ -466,6 +466,44 @@ void Parameters::SetDefaultValues(void)
   floatparams["drag_coeff"] = 0 ;
   floatparams["dust_mass_factor"] = 1 ;
 
+  // Chemistry Parameters
+  //-----------------------------------------------------------------------------------------------
+  floatparams["ab_h2"] = 1.0e-3;
+  floatparams["ab_hp"] = 0.5;
+  floatparams["ab_co"] = 1.0e-6;
+
+  floatparams["ab_c"]  = 1.4e-4;
+  floatparams["ab_d"]  = 2.6e-5;
+  floatparams["ab_he"] = 0.1;
+  floatparams["ab_M"]  = 1.0e-7;
+  floatparams["ab_N"]  = 0.0;
+  floatparams["ab_o"]  = 3.2e-4;
+  floatparams["ab_si"] = 0.0;
+
+  floatparams["ch_deff"] = 1.0;
+  floatparams["ch_g0"] = 1.7;
+  floatparams["ch_f_rsc"] = 1.0;
+  floatparams["ch_phi_pah"] = 0.5;
+  floatparams["ch_tdust"] = 10.0;
+  floatparams["ch_dust_to_gas_ratio_in_percent"] = 1.0;
+  floatparams["ch_av_conversion_factor"] = 5.348e-22;
+  floatparams["ch_cosmic_ray_ion_rate"] = 3.0e-17;
+  floatparams["ch_redshift"] = 0.0;
+  floatparams["ch_NH_ext"] = 1.0e20;
+  floatparams["ch_h2_form_ex"] = 0.0;
+  floatparams["ch_h2_form_kin"] = 0.0;
+  floatparams["ch_xray_scaling"] = 1.0;
+  floatparams["ch_Z_atom"] = 1.0;
+
+  intparams["ch_iphoto"] = 0;
+  intparams["ch_iflag_mn"] = 1;
+  intparams["ch_iflag_ad"] = 1;
+  intparams["ch_iflag_atom"] = 2;
+  intparams["ch_iflag_3bh2a"] = 1;
+  intparams["ch_iflag_3bh2b"] = 1;
+  intparams["ch_iflag_h3pra"] = 1;
+  intparams["ch_isrf_option"] = 1;
+
 
   return;
 }
