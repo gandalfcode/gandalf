@@ -98,9 +98,10 @@ public:
   void PlummerSphere(void);
   void QuadrupleStar(void);
   void RTI(void);
-  void ShockTube(void);
   void SedovBlastWave(void);
   void ShearFlow(void);
+  void ShockTube(void);
+  void Silcc(void);
   void SoundWave(void);
   void SpitzerExpansion(void);
   void TripleStar(void);

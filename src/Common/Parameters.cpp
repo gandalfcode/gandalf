@@ -447,6 +447,15 @@ void Parameters::SetDefaultValues(void)
   floatparams["thermal_energy"] = 1.0;
   floatparams["mach"]=2.7;
 
+  // SILCC initial conditions parameters
+  //-----------------------------------------------------------------------------------------------
+  floatparams["a_midplane"] = 1.0;
+  floatparams["h_midplane"] = 1.0;
+  floatparams["rho_midplane"] = 1.0;
+  floatparams["rho_star"] = 1.0;
+  floatparams["sigma_star"] = 30.0;
+  floatparams["z_d"] = 100.0;
+
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["rand_algorithm"] = "xorshift";
