@@ -147,6 +147,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "shearflow") {
     icGenerator.ShearFlow();
   }
+  else if (ic == "silcc") {
+    icGenerator.Silcc();
+  }
   else if (ic == "shocktube") {
     icGenerator.ShockTube();
   }
@@ -168,10 +171,10 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "isothermsphere") {
     icGenerator.IsothermSphere();
   }
-  else if (ic== "rotisothermsphere") {
+  else if (ic == "rotisothermsphere") {
     icGenerator.RotIsothermSphere();
   }
-  else if (ic== "turbisothermsphere") {
+  else if (ic == "turbisothermsphere") {
     icGenerator.TurbIsothermSphere();
   }
   else if (ic == "evrard"){
