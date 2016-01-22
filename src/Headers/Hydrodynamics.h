@@ -84,6 +84,9 @@ public:
   void CheckBoundaryGhostParticle(const int, const int, const FLOAT, const DomainBox<ndim> &);
 
   void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
+  Particle<ndim>& CreateNewParticle(const enum ptype, const enum parttype, const int, const int,
+                                    const FLOAT, const FLOAT, const FLOAT, const FLOAT*, const FLOAT*);
+
 
   virtual void ZeroAccelerations() = 0;
 
@@ -115,6 +118,7 @@ public:
   //-----------------------------------------------------------------------------------------------
   bool allocated;                      ///< Is memory allocated?
   int create_sinks;                    ///< Create new sink particles?
+  bool newParticles;                   ///< Have new ptcls been added? If so, flag to rebuild tree
   int Ngather;                         ///< No. of gather neighbours
   int Nghost;                          ///< No. of ghost particles (total among all kinds of ghosts)
   int NImportedParticles;              ///< No. of imported particles
