@@ -123,6 +123,58 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
 
 
 //=================================================================================================
+//  Hydrodynamics::CreateNewParticle
+/// Create a new hydro particle in the main arrays at the end of the existing particles.
+/// Also triggers the re-creation of ghosts and another tree-build to include new particles.
+//=================================================================================================
+template <int ndim>
+Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
+ (const enum ptype _ptype,             ///< [in] ptype of new particle
+  const enum parttype _parttype,       ///< [in] parttype of new particle
+  const int n,                         ///< [in] Current integer time
+  const int level_max,                 ///< [in] Current maximum block timestep level
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT m,                       ///< [in] Mass of new particle
+  const FLOAT u,                       ///< [in] Specific internal energy of new particle
+  const FLOAT r[ndim],                 ///< [in] Position of new particle
+  const FLOAT v[ndim])                 ///< [in] Velocity of new particle
+{
+  // First, check if there is space for the new particle.  Otherwisr, throw an exception.
+  if (Nhydro >= Nhydromax) {
+    ExceptionHandler::getIstance().raise("Run out of memory for new hydro particles");
+  }
+
+  // Find space for new particle at the end of the array and increment relevant counters.
+  newParticles = true;
+  int inew = Nhydro++;
+  Ntot++;
+  Particle<ndim> &part = GetParticlePointer(inew);
+
+  // Set all particle properties from given arguments
+  part.iorig  = -1;
+  part.active = true;
+  part.itype  = _ptype;
+  part.ptype  = _parttype;
+  part.nlast  = n;
+  part.nstep  = 0;
+  part.level  = level_max;
+  part.tlast  = t;
+  part.m      = m;
+  part.u      = u;
+  part.u0     = u;
+  for (int k=0; k<ndim; k++) part.r[k] = r[k];
+  for (int k=0; k<ndim; k++) part.v[k] = v[k];
+  for (int k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+  for (int k=0; k<ndim; k++) part.r0[k] = r[k];
+  for (int k=0; k<ndim; k++) part.v0[k] = v[k];
+  for (int k=0; k<ndim; k++) part.a0[k] = (FLOAT) 0.0;
+
+  return part;
+}
+
+
+
+//=================================================================================================
 //  Hydrodynamics::ComputeBoundingBox
 /// Calculate the bounding box containing all hydro particles.
 //=================================================================================================
