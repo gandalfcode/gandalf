@@ -560,6 +560,7 @@ void SphSimulation<ndim>::MainLoop(void)
   sphint->AdvanceParticles(n, sph->Nhydro, (FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
+
   // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..).
   //-----------------------------------------------------------------------------------------------
   if (n%(int) pow(2,level_step - level_max) == 0) {
@@ -640,7 +641,6 @@ void SphSimulation<ndim>::MainLoop(void)
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph, nbody);
 
-
     // Update the radiation field
     if (Nsteps%nradstep == 0 || recomputeRadiation) {
       radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
@@ -651,38 +651,37 @@ void SphSimulation<ndim>::MainLoop(void)
       }
     }
 
-      // Calculate gravitational forces from other distant MPI nodes.
-      // Also determines particles that must be exported to other nodes
-      // if too close to the domain boundaries
+    // Calculate gravitational forces from other distant MPI nodes.
+    // Also determines particles that must be exported to other nodes
+    // if too close to the domain boundaries
 #ifdef MPI_PARALLEL
-      // Pruned trees are used only to compute which particles to export
-      // Therefore we don't need to update them at the start of the loop, and we can do it soon before we need them
-      if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    	  sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
-      }
-      else {
-    	  sphneib->StockPrunedTree(rank, sph);
-      }
+    // Pruned trees are used only to compute which particles to export
+    // Therefore we don't need to update them at the start of the loop, and we can do it soon before we need them
+    if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+      sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
+    }
+    else {
+      sphneib->StockPrunedTree(rank, sph);
+    }
 
-      if (sph->self_gravity == 1) {
-        sphneib->UpdateGravityExportList(rank, sph, nbody, simbox);
-      }
-      else {
-        sphneib->UpdateHydroExportList(rank, sph, nbody, simbox);
-      }
+    if (sph->self_gravity == 1) {
+      sphneib->UpdateGravityExportList(rank, sph, nbody, simbox);
+    }
+    else {
+      sphneib->UpdateHydroExportList(rank, sph, nbody, simbox);
+    }
 
-      // If active particles need forces from other domains, export particles
-      mpicontrol->ExportParticlesBeforeForceLoop(sph);
+    // If active particles need forces from other domains, export particles
+    mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
+    // Calculate SPH gravity and hydro forces, depending on which are activated
+    if (sph->self_gravity == 1) {
+      sphneib->UpdateAllSphForces(sph, nbody, simbox, ewald);
+    }
+    else if (sph->hydro_forces == 1) {
+      sphneib->UpdateAllSphHydroForces(sph, nbody, simbox);
+    }
 
-
-      // Calculate SPH gravity and hydro forces, depending on which are activated
-      if (sph->self_gravity == 1) {
-        sphneib->UpdateAllSphForces(sph, nbody, simbox, ewald);
-      }
-      else if (sph->hydro_forces == 1) {
-        sphneib->UpdateAllSphHydroForces( sph, nbody, simbox);
-      }
 
     // Add external potential for all active SPH particles
     for (i=0; i<sph->Nhydro; i++) {
@@ -709,15 +708,14 @@ void SphSimulation<ndim>::MainLoop(void)
 #endif
 
     // Compute the dust forces if present.
-    if (sphdust != NULL){
+    if (sphdust != NULL) {
       // Copy properties from original particles to ghost particles
       LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
 #ifdef MPI_PARALLEL
       MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
 #endif
-        sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
-      }
-
+      sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
+    }
 
 
     // Zero all active flags once accelerations have been computed
