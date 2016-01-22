@@ -544,6 +544,9 @@ void SphSimulation<ndim>::MainLoop(void)
   sphint->AdvanceParticles(n, sph->Nhydro, (FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
+  // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..)
+  if (sph->newParticles) rebuild_tree = true;
+
   // Check all boundary conditions
   // (DAVID : create an analagous of this function for N-body)
   sphint->CheckBoundaries(simbox,sph);
@@ -583,6 +586,9 @@ void SphSimulation<ndim>::MainLoop(void)
   sphneib->SearchBoundaryGhostParticles(tghost, simbox, sph);
   sphneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 
+
+    // Re-build and communicate the new pruned trees (since the trees will necessarily change
+    // once there has been communication of particles to new domains)
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
@@ -599,31 +605,32 @@ void SphSimulation<ndim>::MainLoop(void)
     // Update cells containing active particles
     if (activecount > 0) sphneib->UpdateActiveParticleCounters(sph);
 
-      // Zero accelerations (here for now)
+    // Zero accelerations (here for now)
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      if (part.flags.check_flag(active)) {
+        part.levelneib = 0;
+        part.dalphadt  = (FLOAT) 0.0;
+        part.div_v     = (FLOAT) 0.0;
+        part.dudt      = (FLOAT) 0.0;
+        part.gpot      = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+      }
+    }
+
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+
+
+    // Update the radiation field
+    if (Nsteps%nradstep == 0 || recomputeRadiation) {
+      radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
+                                      partdata, nbody->nbodydata, sinks->sink);
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.flags.check_flag(active)) {
-          part.levelneib = 0;
-          part.dalphadt  = (FLOAT) 0.0;
-          part.div_v     = (FLOAT) 0.0;
-          part.dudt      = (FLOAT) 0.0;
-          part.gpot      = (FLOAT) 0.0;
-          for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
-        }
+        sph->ComputeThermalProperties(part);
       }
-
-      // Calculate all SPH properties
-      sphneib->UpdateAllSphProperties(sph, nbody);
-
-      // Update the radiation field
-      if (Nsteps%nradstep == 0 || recomputeRadiation) {
-        radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
-                                        sph->GetSphParticleArray(), nbody->nbodydata, sinks->sink);
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-          sph->ComputeThermalProperties(part);
-        }
-      }
+    }
 
       // Calculate gravitational forces from other distant MPI nodes.
       // Also determines particles that must be exported to other nodes
@@ -658,38 +665,40 @@ void SphSimulation<ndim>::MainLoop(void)
         sphneib->UpdateAllSphHydroForces( sph, nbody, simbox);
       }
 
-      // Add external potential for all active SPH particles
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.flags.check_flag(active)) {
-          sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
-        }
+    // Add external potential for all active SPH particles
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      if (part.flags.check_flag(active)) {
+        sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
       }
+    }
 
-      // Checking if acceleration or other values are invalid
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.flags.check_flag(active)) {
-          for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
-          for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
-          for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
-          assert(part.gpot == part.gpot);
-        }
+
+    // Checking if acceleration or other values are invalid
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      if (part.flags.check_flag(active)) {
+        for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
+        for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
+        for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
+        assert(part.gpot == part.gpot);
       }
+    }
 
 #if defined MPI_PARALLEL
-      mpicontrol->GetExportedParticlesAccelerations(sph);
+    mpicontrol->GetExportedParticlesAccelerations(sph);
 #endif
 
-      // Compute the dust forces if present.
-      if (sphdust != NULL){
-        // Copy properties from original particles to ghost particles
-        LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+    // Compute the dust forces if present.
+    if (sphdust != NULL){
+      // Copy properties from original particles to ghost particles
+      LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
 #ifdef MPI_PARALLEL
-        MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+      MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
 #endif
         sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
       }
+
 
 
     // Zero all active flags once accelerations have been computed
@@ -776,8 +785,10 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 
 
-  rebuild_tree = false;
-  recomputeRadiation = false;
+  // Reset flags in preparation for next timestep
+  hydro->newParticles = false;
+  rebuild_tree        = false;
+  recomputeRadiation  = false;
 
 
   // End-step terms for all SPH particles
