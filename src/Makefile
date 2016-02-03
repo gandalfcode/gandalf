@@ -36,7 +36,8 @@ PYFOLDER = ../analysis/swig_generated
 #GTEST = /Users#/david/astro/code/gtest-1.6.0/include
 
 
-VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/GodunovSph:$(PWD)/src/GradhSph:$(PWD)/src/Headers
+VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/Feedback:$(PWD)/src/GodunovSph
+VPATH +=$(PWD)/src/GradhSph:$(PWD)/src/Headers
 VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
 VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
 VPATH +=$(PWD)/src/UnitTesting
@@ -190,7 +191,7 @@ OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
 OBJ += RiemannSolver.o
 OBJ += SphNeighbourSearch.o
 OBJ += HydroTree.o Tree.o KDTree.o OctTree.o BruteForceTree.o
-OBJ += MeshlessFVTree.o 
+OBJ += MeshlessFVTree.o
 OBJ += GradhSphTree.o
 OBJ += SM2012SphTree.o
 OBJ += Ewald.o
@@ -213,6 +214,7 @@ OBJ += CodeTiming.o
 OBJ += IC.o
 OBJ += Dust.o
 OBJ += Particle.o
+OBJ += Supernova.o
 
 
 ifeq ($(MPI),1)

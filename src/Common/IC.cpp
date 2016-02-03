@@ -698,7 +698,7 @@ void Ic<ndim>::UniformSphere(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
@@ -1165,7 +1165,7 @@ void Ic<ndim>::NohProblem(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
@@ -1408,7 +1408,7 @@ void Ic<ndim>::BossBodenheimer(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
@@ -1691,7 +1691,7 @@ void Ic<ndim>::TurbulentCore(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
@@ -1846,7 +1846,7 @@ void Ic<ndim>::BondiAccretion(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
@@ -2918,7 +2918,7 @@ void Ic<ndim>::SpitzerExpansion(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
@@ -3648,7 +3648,8 @@ void Ic<ndim>::AddRandomSphere
  (const int Npart,                     ///< [in] No. of particles in sphere
   const FLOAT rcentre[ndim],           ///< [in] Position of sphere centre
   const FLOAT radius,                  ///< [in] Radius of sphere
-  FLOAT *r)                            ///< [out] Positions of particles in sphere
+  FLOAT *r,                            ///< [out] Positions of particles in sphere
+  RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
 {
   int i,k;                             // Particle and dimension counters
   FLOAT rad;                           // Radius of particle
@@ -3664,7 +3665,7 @@ void Ic<ndim>::AddRandomSphere
     // Continously loop until random particle lies inside sphere
     do {
       for (k=0; k<ndim; k++)
-      rpos[k] = (FLOAT) 1.0 - (FLOAT) 2.0*sim->randnumb->floatrand();
+      rpos[k] = (FLOAT) 1.0 - (FLOAT) 2.0*randnumb->floatrand();
       rad = DotProduct(rpos,rpos,ndim);
     } while (rad > 1.0);
 
@@ -4723,7 +4724,7 @@ void Ic<ndim>::EvrardCollapse()
 	pos = new FLOAT[ndim*Npart];
 
     if (particle_dist == "random") {
-	  AddRandomSphere(Npart, rcentre, radius, pos);
+	  AddRandomSphere(Npart, rcentre, radius, pos, sim->randnumb);
     }
 	else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
 	  Npart = AddLatticeSphere(Npart, rcentre, radius, particle_dist, pos) ;
