@@ -67,7 +67,7 @@ private:
   int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *);
   void AddRotationalVelocityField(const int, const FLOAT, const FLOAT *, const FLOAT *, FLOAT *);
   void AddRandomBox(const int, const DomainBox<ndim>, FLOAT *);
-  void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *);
+  //static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
   void Addr2Sphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
   int CutSphere(const int, const int, const DomainBox<ndim>, const bool, FLOAT *);
@@ -119,6 +119,8 @@ public:
   void TurbIsothermSphere(void);
   void EvrardCollapse(void);
   void DustyBox(void);
+
+  static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
 
 };
 #endif
