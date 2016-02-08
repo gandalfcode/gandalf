@@ -511,6 +511,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<mfv->Ntot; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+    for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
     part.level  = 0;
     part.nstep  = 0;
     part.nlast  = 0;
@@ -550,7 +552,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfv->ConvertPrimitiveToConserved(partdata[i].volume, partdata[i].Wprim, partdata[i].Qcons);
     partdata[i].Utot = partdata[i].u*partdata[i].m;
     for (k=0; k<ndim+2; k++) partdata[i].dQ[k] = (FLOAT) 0.0;
-    //for (k=0; k<ndim; k++) partdata[i].v0[k] = partdata[i].v[k];
   }
 
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);

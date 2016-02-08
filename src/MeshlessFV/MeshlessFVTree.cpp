@@ -1034,10 +1034,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       okflag = tree->ComputeGravityInteractionAndGhostList
         (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
          Ndirect, Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
-      //okflag = tree->ComputeGravityInteractionList
-      //  (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib, Ndirect,
-      //   Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
-
 
       // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
       while (okflag < 0 || Nneib > Nneibmax) {
@@ -1064,9 +1060,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
         okflag = tree->ComputeGravityInteractionAndGhostList
           (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
            Ndirect, Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
-        //okflag = tree->ComputeGravityInteractionList
-        //  (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib, Ndirect,
-        //   Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
       };
 
 

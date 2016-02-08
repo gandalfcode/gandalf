@@ -575,7 +575,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Time-integrate LHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
-    for (k=0; k<ndim; k++) Wleft[k] += part.a[k];
+    for (k=0; k<ndim; k++) Wdot[k] += part.a[k];
     for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*Wdot[var]*dt;
 
     // Compute slope-limited values for RHS
@@ -586,7 +586,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Time-integrate RHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
-    for (k=0; k<ndim; k++) Wright[k] += neibpart[j].a[k];
+    for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
     for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*Wdot[var]*dt;
 
     assert(Wleft[irho] > 0.0);
@@ -631,8 +631,10 @@ void MfvMuscl<ndim, kernelclass>::ComputeSmoothedGravForces
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  MeshlessFVParticle<ndim> *neib_gen)  ///< [inout] Neighbour particle data
+  MeshlessFVParticle<ndim> &parti,     ///< [inout] Particle i data
+  MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
+  //MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
+  //MeshlessFVParticle<ndim> *neib_gen)  ///< [inout] Neighbour particle data
 {
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
@@ -642,8 +644,8 @@ void MfvMuscl<ndim, kernelclass>::ComputeSmoothedGravForces
   FLOAT invdrmag;                      // 1 / distance
   FLOAT gaux;                          // Aux. grav. potential variable
   FLOAT paux;                          // Aux. pressure force variable
-  MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
-  MeshlessFVParticle<ndim>* neibpart = static_cast<MeshlessFVParticle<ndim>* > (neib_gen);
+  //MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
+  //MeshlessFVParticle<ndim>* neibpart = static_cast<MeshlessFVParticle<ndim>* > (neib_gen);
 
 
   // Loop over all potential neighbours in the list
