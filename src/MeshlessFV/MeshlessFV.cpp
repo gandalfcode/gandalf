@@ -349,23 +349,23 @@ void MeshlessFV<ndim>::EndTimestep
   const FLOAT timestep,                ///< [in] Base timestep value
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
 {
-  int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
-  int k;                               // Dimension counter
-  int nstep;                           // Particle (integer) step size
 
   debug2("[MeshlessFV::EndTimestep]");
   //timing->StartTimingSection("MFV_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(partdata)
+#pragma omp parallel for default(none) shared(partdata)
   for (i=0; i<Npart; i++) {
-    MeshlessFVParticle<ndim> &part = partdata[i];
+
+    MeshlessFVParticle<ndim> &part = partdata[i];    // Local reference to particle
+    int dn = n - part.nlast;                         // Integer time since beginning of step
+    int k;                                           // Dimension counter
+    int nstep = part.nstep;                          // Particle (integer) step size
+
     if (part.itype == dead) continue;
 
-    dn    = n - part.nlast;
-    nstep = part.nstep;
 
     // If particle is at the end of its timestep
     //---------------------------------------------------------------------------------------------
