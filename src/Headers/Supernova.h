@@ -55,4 +55,88 @@ public:
                           Hydrodynamics<ndim> *, NeighbourSearch<ndim> *, RandomNumber *);
 
 };
+
+
+
+//=================================================================================================
+//  Class SupernovaDriver
+/// \brief   Main parent Supernova class
+/// \details Injects a single Supernova; adds accelerated particles within injection radius
+/// \author  S. Walch, D. A. Hubber
+/// \date    19/01/2016
+//=================================================================================================
+template <int ndim>
+class SupernovaDriver
+{
+public:
+
+  int Nsupernova;                      ///< ..
+
+  //SupernovaDriver(Parameters *params, SimUnits &units, bool restart, FLOAT time);
+  SupernovaDriver() {Nsupernova = 0;}
+  ~SupernovaDriver() {};
+
+  void Update(FLOAT, Hydrodynamics *) = 0;
+
+};
+
+
+
+//=================================================================================================
+//  Class SedovTestDriver
+/// \brief   Simple Sedov-explosion driver for testing fidelity of explosions
+/// \details Simple Sedov-explosion driver for testing fidelity of explosions
+/// \author  D. A. Hubber
+/// \date    10/02/2016
+//=================================================================================================
+template <int ndim>
+class SedovTestDriver : public SupernovaDriver<ndim>
+{
+public:
+
+  Supernova supernova;                 ///< ..
+  FLOAT tsupernova;
+
+  SedovTestDriver(Parameters *params, SimUnits &units, bool restart, FLOAT time);
+  ~SedovTestDriver();
+
+  void Update(FLOAT, Hydrodynamics<ndim> *);
+
+};
+
+
+
+//=================================================================================================
+//  Class SilccSupernovaDriver
+/// \brief   Main parent SupernovaDriving class
+/// \details ..
+/// \author  D. A. Hubber, S. Walch, T. Balduin, P. Rohde
+/// \date    19/01/2016
+//=================================================================================================
+/*template <int ndim>
+class SilccSupernovaDriving
+{
+public:
+  // SN ID (defined in constructor)
+  int SNid;
+
+  // Global SN parameters that could go into the parameters file
+  FLOAT R_therm_kin;  //ratio of thermal and kinetic E to be injected
+  FLOAT Minj;         //ejecta mass (default 7 Msun)
+  FLOAT Rinj;         //injection radius (default 1pc)
+
+  int nSN;
+  FLOAT *SNtime;
+  FLOAT *SNposx;
+  FLOAT *SNposy;
+  FLOAT *SNposz;
+  FLOAT *SNEinj;
+
+
+  // Constructor
+  SupernovaDriving(Parameters *params, SimUnits &units, bool restart, FLOAT time);
+  // update pass current simulation time, time step, hydro
+  void Update(FLOAT, Hydrodynamics*);
+
+};*/
 #endif
