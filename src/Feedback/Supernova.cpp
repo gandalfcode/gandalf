@@ -72,18 +72,18 @@ Supernova<ndim>::~Supernova()
 //=================================================================================================
 template <int ndim>
 void Supernova<ndim>::SupernovaInjection
- (int n,                                     ///< ..
-  int level_max,                             ///< ..
-  int SNid,                                  ///< ..
-  FLOAT t,                                   ///< ..
-  FLOAT SNpos[ndim],                         ///< ..
-  FLOAT Einj,                                ///< ..
+ (int n,                                     ///< Current integer time
+  int level_max,                             ///< Max. block timestep level
+  int SNid,                                  ///< i.d. of supernova
+  FLOAT t,                                   ///< Physical simulation time
+  FLOAT SNpos[ndim],                         ///< Position of supernova
+  FLOAT Einj,                                ///< Total energy injection of supernova
   FLOAT R_therm_kin,                         ///< ..
-  FLOAT Minj,                                ///< ..
+  FLOAT Minj,                                ///< Total injected mass
   FLOAT Rinj,                                ///< ..
-  Hydrodynamics<ndim> *hydro,                ///< ..
-  NeighbourSearch<ndim> *neibsearch,         ///< ..
-  RandomNumber *randnumb)                    ///< ..
+  Hydrodynamics<ndim> *hydro,                ///< Pointer to hydrodynamics object
+  NeighbourSearch<ndim> *neibsearch,         ///< Pointer to neighbour search object
+  RandomNumber *randnumb)                    ///< Pointer to random number generator
 {
   // LOCAL VARIABLES
   int i;                                     // ..
