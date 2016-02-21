@@ -127,9 +127,12 @@ DOUBLE SphIntegration<ndim>::Timestep
   //adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
   //timestep = min(timestep, accel_mult*amag/(adotmag + small_number_dp));
 
-  if (timestep > 1.0e20) {
+  if (timestep > 1.0e20 || timestep < 0.0) {
     cout << "Timestep problem : " << timestep << "   " << amag << "   " << part.h << "    "
          << part.sound << "    " << part.h*fabs(part.div_v) << endl;
+    cout << "tcourant : " << courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp)
+         << "    taccel : " << accel_mult*sqrt(part.h/(amag + small_number_dp))
+         << "    tenergy : " << part.u << endl;
     ExceptionHandler::getIstance().raise("Error : Hydro timestep too large");
   }
 
