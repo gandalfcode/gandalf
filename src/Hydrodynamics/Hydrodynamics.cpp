@@ -132,6 +132,7 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
  (const enum ptype _ptype,             ///< [in] ptype of new particle
   const enum parttype _parttype,       ///< [in] parttype of new particle
   const int n,                         ///< [in] Current integer time
+  const int level_step,                ///< [in] ..
   const int level_max,                 ///< [in] Current maximum block timestep level
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT m,                       ///< [in] Mass of new particle
@@ -151,23 +152,29 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   Particle<ndim> &part = GetParticlePointer(inew);
 
   // Set all particle properties from given arguments
-  part.iorig  = -1;
-  part.active = true;
-  part.itype  = _ptype;
-  part.ptype  = _parttype;
-  part.nlast  = n;
-  part.nstep  = 0;
-  part.level  = level_max;
-  part.tlast  = t;
-  part.m      = m;
-  part.u      = u;
-  part.u0     = u;
+  part.iorig     = inew;
+  part.active    = true;
+  part.itype     = _ptype;
+  part.ptype     = _parttype;
+  part.level     = level_max;
+  part.levelneib = level_max;
+  part.nstep     = pow(2,level_step - part.level);
+  part.nlast     = n - part.nstep;
+  part.tlast     = t;
+  part.m         = m;
+  part.h         = (FLOAT) 1.0;
+  part.u         = u;
+  part.u0        = u;
+  part.dudt      = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) part.r[k] = r[k];
   for (int k=0; k<ndim; k++) part.v[k] = v[k];
   for (int k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) part.r0[k] = r[k];
   for (int k=0; k<ndim; k++) part.v0[k] = v[k];
   for (int k=0; k<ndim; k++) part.a0[k] = (FLOAT) 0.0;
+
+  cout << "CREATING NEW PARTICLE : " << inew << "   " << Nhydro << "   m : " << m << "   v : "
+       << part.r[0] << "   " << part.r[1] << endl;
 
   return part;
 }

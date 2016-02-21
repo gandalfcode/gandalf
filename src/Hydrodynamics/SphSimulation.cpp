@@ -148,6 +148,19 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
 #endif
 
+  // Supernova feedback
+  //-----------------------------------------------------------------------------------------------
+  if (stringparams["supernova_feedback"] == "none") {
+    snDriver = new NullSupernovaDriver<ndim>();
+  }
+  else if (stringparams["supernova_feedback"] == "single") {
+    snDriver = new SedovTestDriver<ndim>(simparams, simunits);
+  }
+  else {
+    string message = "Unrecognised parameter :  = supernova_feedback"
+      + simparams->stringparams["supernova_feedback"];
+    ExceptionHandler::getIstance().raise(message);
+  }
 
 
   // Set pointers to timing object
@@ -555,8 +568,12 @@ void SphSimulation<ndim>::MainLoop(void)
   sphint->AdvanceParticles(n, sph->Nhydro, (FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
-  // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..)
-  if (sph->newParticles) rebuild_tree = true;
+  // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..).
+  //-----------------------------------------------------------------------------------------------
+  if (n%(int) pow(2,level_step - level_max) == 0) {
+    snDriver->Update(n, level_step, level_max, t, hydro, sphneib, randnumb);
+    if (sph->newParticles) rebuild_tree = true;
+  }
 
   // Check all boundary conditions
   // (DAVID : create an analagous of this function for N-body)
@@ -1018,6 +1035,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_step = level_max + integration_step - 1;
     dt_max     = timestep*powf(2.0, level_max);
 
+    cout << "LEVEL_MAX : " << level_max << "   " << dt_max << "   " << dt_min_hydro << endl;
+
     // Calculate the maximum level occupied by all SPH particles
     level_max_sph   = min(ComputeTimestepLevel(dt_min_hydro, dt_max), level_max);
     level_max_nbody = min(ComputeTimestepLevel(dt_min_nbody, dt_max), level_max);
@@ -1331,12 +1350,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
 
   // Various asserts for debugging
-  assert(timestep >= 0.0 && !(isinf(timestep)) && !(isnan(timestep)));
-  assert(dt_max > 0.0 && !(isinf(dt_max)) && !(isnan(dt_max)));
-  assert(level_step == level_max + integration_step - 1);
-  assert(level_max_sph <= level_max);
-  assert(level_max_nbody <= level_max);
-  assert(n <= nresync);
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     if (part.flags.is_dead()) continue;
@@ -1354,6 +1367,12 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     assert(nbody->nbodydata[i]->level >= level_max_sph);
     assert(nbody->nbodydata[i]->tlast <= t);
   }
+  assert(timestep >= 0.0 && !(isinf(timestep)) && !(isnan(timestep)));
+  assert(dt_max > 0.0 && !(isinf(dt_max)) && !(isnan(dt_max)));
+  assert(level_step == level_max + integration_step - 1);
+  assert(level_max_sph <= level_max);
+  assert(level_max_nbody <= level_max);
+  assert(n <= nresync);
   if (timestep <= 0.0) {
     cout << "Timestep fallen to zero : " << timestep << "    dtmax: " << dt_max
          << "    nresync " << nresync << endl;
