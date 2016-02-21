@@ -460,13 +460,16 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   floatparams["dt_python"] = 8.0;
 
-  // Dust Parameters
+  // Dust parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["dust_forces"] = "none" ;
   stringparams["drag_law"] = "none" ;
   floatparams["drag_coeff"] = 0 ;
   floatparams["dust_mass_factor"] = 1 ;
 
+  // Supernova feedback parameters
+  //-----------------------------------------------------------------------------------------------
+  stringparams["supernova_feedback"] = "none";
 
   return;
 }

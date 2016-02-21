@@ -51,7 +51,8 @@ public:
   ~Supernova();
 
   // pass SN position, Einj, Etherm/Ekin, Minj, Rinj, SNid, hydro
-  void SupernovaInjection(int, int, int, FLOAT, FLOAT *, FLOAT, FLOAT, FLOAT, FLOAT,
+  void SupernovaInjection(const int, const int, const int, const int, const FLOAT,
+                          FLOAT *, FLOAT, FLOAT, FLOAT, FLOAT,
                           Hydrodynamics<ndim> *, NeighbourSearch<ndim> *, RandomNumber *);
 
 };
@@ -76,7 +77,29 @@ public:
   SupernovaDriver() {Nsupernova = 0;}
   ~SupernovaDriver() {};
 
-  void Update(FLOAT, Hydrodynamics *) = 0;
+  virtual void Update(const int, const int, const int, const FLOAT, Hydrodynamics<ndim> *, NeighbourSearch<ndim> *, RandomNumber *) = 0;
+
+};
+
+
+
+//=================================================================================================
+//  Class NullSupernovaDriver
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    18/02/2016
+//=================================================================================================
+template <int ndim>
+class NullSupernovaDriver : public SupernovaDriver<ndim>
+{
+public:
+
+  NullSupernovaDriver() {};
+  ~NullSupernovaDriver() {};
+
+  virtual void Update(const int, const int, const int, const FLOAT, Hydrodynamics<ndim> *,
+                      NeighbourSearch<ndim> *, RandomNumber *) {};
 
 };
 
@@ -93,14 +116,16 @@ template <int ndim>
 class SedovTestDriver : public SupernovaDriver<ndim>
 {
 public:
+  using SupernovaDriver<ndim>::Nsupernova;
 
-  Supernova supernova;                 ///< ..
+  Supernova<ndim>  supernova;                 ///< ..
   FLOAT tsupernova;
 
-  SedovTestDriver(Parameters *params, SimUnits &units, bool restart, FLOAT time);
+  SedovTestDriver(Parameters *params, SimUnits &units);
   ~SedovTestDriver();
 
-  void Update(FLOAT, Hydrodynamics<ndim> *);
+  virtual void Update(const int, const int, const int, const FLOAT,
+                      Hydrodynamics<ndim> *, NeighbourSearch<ndim> *, RandomNumber *);
 
 };
 

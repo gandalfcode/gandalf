@@ -28,28 +28,25 @@
 #include <fstream>
 #include <math.h>
 #include "Constants.h"
-#include "Precision.h"
-#include "NbodyParticle.h"
-#include "StarParticle.h"
-#include "Parameters.h"
-#include "Sph.h"
-#include "Nbody.h"
-#include "Sinks.h"
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
+#include "Parameters.h"
+#include "Particle.h"
+#include "Precision.h"
+#include "RandomNumber.h"
+#include "Supernova.h"
 using namespace std;
 
 
 
 //=================================================================================================
-//  ...
-/// SupernovaDriving class constructor
-// For now this class treats the Supernova driving from an external file
+//  SedovTestDriver::SedovTestDriver
+/// ...
 //=================================================================================================
 template <int ndim>
 SedovTestDriver<ndim>::SedovTestDriver
- (Parameters *params, SimUnits &units, bool restart, FLOAT time) : SupernovaDriver()
+ (Parameters *params, SimUnits &units) : SupernovaDriver<ndim>()
 {
   // Local references to parameter variables for brevity
   map<string, int> &intparams = params->intparams;
@@ -67,43 +64,38 @@ SedovTestDriver<ndim>::SedovTestDriver
 //=================================================================================================
 template <int ndim>
 void SedovTestDriver<ndim>::Update
- (int n,                                     ///< Current integer time
-  int level_max,                             ///< Max. block timestep level
-  FLOAT t,                                   ///< Physical simulation time
+ (const int n,                               ///< Current integer time
+  const int level_step,                      ///< ..
+  const int level_max,                       ///< Max. block timestep level
+  const FLOAT t,                             ///< Physical simulation time
   Hydrodynamics<ndim> *hydro,                ///< Pointer to hydrodynamics object
   NeighbourSearch<ndim> *neibsearch,         ///< Pointer to neighbour search object
   RandomNumber *randnumb)                    ///< Pointer to random number generator
 {
 
-  FLOAT SNpos[ndim];  //current Supernova position
-  FLOAT Einj;         //total energy of SN (default 1e51 erg)
+  // Create supernova at requested time (and ensure that only one is made)
+  //-----------------------------------------------------------------------------------------------
+  if (Nsupernova == 0 && t >= tsupernova) {
 
-    // Helper variables (local)
-  FLOAT t_ratio1;
+    cout << "ADDING SUPERNOVA!!" << endl;
 
+    FLOAT SNpos[ndim];
+    FLOAT Einj        = (FLOAT) 0.01;
+    FLOAT R_therm_kin = (FLOAT) 100000.0;
+    FLOAT Minj        = (FLOAT) 0.005;
+    FLOAT Rinj        = hydro->GetParticlePointer(0).h; //(FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) SNpos[k] = (FLOAT) 0.0;
 
-  if (SNid == -1) {
-    cout << "Welcome, this is your first Supernova!";
-    SNid =0;
+    supernova.SupernovaInjection(n, level_step, level_max, Nsupernova, t, SNpos, Einj,
+                                 R_therm_kin, Minj, Rinj, hydro, neibsearch, randnumb);
+    Nsupernova++;
   }
+  //-----------------------------------------------------------------------------------------------
 
-  // get last SN from table
-  t_ratio1 = SNtime[SNid]/time;
-
-
-  // check if a Supernova should be injected:
-  while (t_ratio1<= 1.){
-    // inject SN now!...
-    cout << "Injecting SN number "<< SNid;
-
-    // Fill entries to pass to SupernovaInjection
-    SNpos[0]=SNposx[SNid];
-    SNpos[1]=SNposy[SNid];
-    SNpos[2]=SNposz[SNid];
-    Einj = SNEinj[SNid];
-
-  supernova.SupernovaInjection(SNpos, Einj, R_therm_kin, Minj, Rinj, SNid, hydro);
-
-
-  //return
+  return;
 }
+
+
+template class SedovTestDriver<1>;
+template class SedovTestDriver<2>;
+template class SedovTestDriver<3>;

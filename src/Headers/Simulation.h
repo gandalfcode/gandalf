@@ -39,20 +39,27 @@
 #include "Diagnostics.h"
 #include "DomainBox.h"
 #include "Dust.h"
+#include "EnergyEquation.h"
 #include "Ewald.h"
 #include "ExternalPotential.h"
+#include "Ghosts.h"
+#include "HeaderInfo.h"
 #include "Hydrodynamics.h"
 #include "MeshlessFV.h"
 #include "MfvNeighbourSearch.h"
+#include "Nbody.h"
+#include "NbodySystemTree.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "Radiation.h"
 #include "RandomNumber.h"
 #include "SimUnits.h"
+#include "Sinks.h"
 #include "SmoothingKernel.h"
 #include "Sph.h"
 #include "SphNeighbourSearch.h"
 #include "SphIntegration.h"
+#include "Supernova.h"
 #include "TreeRay.h"
 #include "EnergyEquation.h"
 #include "Nbody.h"
@@ -301,6 +308,7 @@ class Simulation : public SimulationBase
   Sinks<ndim> *sinks;                  ///< Sink particle object
   SphIntegration<ndim> *sphint;        ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;   ///< SPH Neighbour scheme pointer
+  SupernovaDriver<ndim> *snDriver;     ///< Supernova feedback driver
 #ifdef MPI_PARALLEL
   MpiControl<ndim>* mpicontrol;        ///< MPI control object
   Ghosts<ndim>* MpiGhosts;             ///< MPI ghost particle object
@@ -390,6 +398,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
+  using Simulation<ndim>::snDriver;
   using Simulation<ndim>::sphneib;
   using Simulation<ndim>::radiation;
 #ifdef MPI_PARALLEL

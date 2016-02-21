@@ -72,9 +72,10 @@ Supernova<ndim>::~Supernova()
 //=================================================================================================
 template <int ndim>
 void Supernova<ndim>::SupernovaInjection
- (int n,                                     ///< Current integer time
-  int level_max,                             ///< Max. block timestep level
-  int SNid,                                  ///< i.d. of supernova
+ (const int n,                               ///< Current integer time
+  const int level_step,                      ///< ..
+  const int level_max,                       ///< Max. block timestep level
+  const int SNid,                            ///< i.d. of supernova
   FLOAT t,                                   ///< Physical simulation time
   FLOAT SNpos[ndim],                         ///< Position of supernova
   FLOAT Einj,                                ///< Total energy injection of supernova
@@ -85,7 +86,6 @@ void Supernova<ndim>::SupernovaInjection
   NeighbourSearch<ndim> *neibsearch,         ///< Pointer to neighbour search object
   RandomNumber *randnumb)                    ///< Pointer to random number generator
 {
-  // LOCAL VARIABLES
   int i;                                     // ..
   int j;                                     // ..
   int k;                                     // ..
@@ -95,6 +95,7 @@ void Supernova<ndim>::SupernovaInjection
   int Nneibmax = 100;                        // ..
   int nSNinject;                             // No. of ptcls accelerated by the SN (ninject + counter)
   FLOAT *pos;                                // position array for all injected particles
+  FLOAT dr[ndim];                            // ..
   FLOAT vpart[ndim];                         // radial velocities for injected particles
   FLOAT rpart[ndim];                         // ..
   FLOAT drsqd;                               // distance^2 from SNpos
@@ -102,11 +103,13 @@ void Supernova<ndim>::SupernovaInjection
   FLOAT vrad_mag;                            // radial velocity magnitude [code units velocity]
   FLOAT etherm_mag;                          // thermal energy to be injected per particle [code units E]
   FLOAT uinj;                                // internal energy to be added to the particles [code units u = erg/g]
-  int *neiblist = new int[Nneibmax];
+  int *neiblist = new int[Nneibmax];         // ..
 
   // Randomly draw the new position within Rinj
   pos = new FLOAT[ndim*Ninject];
   Ic<ndim>::AddRandomSphere(Ninject, SNpos, Rinj, pos, randnumb);
+  //Ninject = Ic<ndim>::AddLatticeSphere(Ninject, SNpos, Rinj, "hexagonal_lattice", pos, randnumb);
+  //FLOAT mnew = Minj/(FLOAT) Ninject;
 
   // Do a neighbour search to find existing particles inside sphere.  If memory is not large
   // enough, then increase the size.
@@ -122,19 +125,25 @@ void Supernova<ndim>::SupernovaInjection
 
   // Total number of hot SN particles = new particles + existing particles within sphere
   nSNinject = Ninject + Nneib;
+  cout << "Adding " << Ninject << " new particles.  Heating " << Nneib << " other particles" << endl;
+  cout << "Rinj : " << Rinj << endl;
 
   // Give the particles their radial velocities
   vrad_mag = sqrt(2./( (FLOAT) nSNinject)/(hydro->mmean)*Einj*1./(R_therm_kin+1.));
-  etherm_mag = (1./(1.+1./R_therm_kin))*Einj/( (FLOAT) nSNinject);
+  etherm_mag = (1.0/(1.0 + 1.0/R_therm_kin))*Einj/( (FLOAT) nSNinject);
   uinj = etherm_mag/(hydro->mmean);
+  cout << "etot : " << (1.0/(1.0 + 1.0/R_therm_kin))*Einj
+       << "    etherm_mag : " << etherm_mag << "     uinj : " << uinj << endl;
 
   // Loop over existing particles and accelerate them
   for (j=0; j<Nneib; j++) {
     i = neiblist[j];
 
     Particle<ndim>& part = hydro->GetParticlePointer(i);
+
     // determine radial velocity vector for this particle
-    drsqd = DotProduct(part.r, SNpos, ndim);
+    for (k=0; k<ndim; k++) dr[k] = part.r[k] - SNpos[k];
+    drsqd = DotProduct(dr, dr, ndim);
     drmag = sqrt(drsqd) + small_number;
     part.u += uinj;
 
@@ -149,16 +158,16 @@ void Supernova<ndim>::SupernovaInjection
   // Loop over all new particles, create them one by one and initialize
   for (j=0; j<Ninject; j++){
 
-    for (k=0; k<ndim; k++) rpart[k] = pos[ndim*i+k];
-    // Not sure what this means??
-    //drsqd = DotProduct(part.r, SNpos, ndim);
-    //drmag = sqrt(drsqd)+small_number;
+    for (k=0; k<ndim; k++) rpart[k] = pos[ndim*j+k];
 
+    for (k=0; k<ndim; k++) dr[k] = rpart[k] - SNpos[k];
+    drsqd = DotProduct(dr, dr, ndim);
+    drmag = sqrt(drsqd) + small_number;
     for (k=0; k<ndim; k++) vpart[k] = (rpart[k] - SNpos[k])/drmag * vrad_mag;
 
     // Get new particle i
-    Particle<ndim> &part = hydro->CreateNewParticle(gas, gas_type, n, level_max, t,
-                                                    hydro->mmean, uinj, rpart, vpart);
+    Particle<ndim> &part = hydro->CreateNewParticle(gas, gas_type, n, level_step, level_max,
+                                                    t, hydro->mmean, uinj, rpart, vpart);
 
     // Set SNid?
     // Set smoothing length?

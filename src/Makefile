@@ -214,7 +214,7 @@ OBJ += CodeTiming.o
 OBJ += IC.o
 OBJ += Dust.o
 OBJ += Particle.o
-OBJ += Supernova.o
+OBJ += Supernova.o SupernovaDriver.o
 
 
 ifeq ($(MPI),1)
