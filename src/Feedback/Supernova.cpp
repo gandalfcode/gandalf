@@ -108,7 +108,6 @@ void Supernova<ndim>::SupernovaInjection
 
   // Total number of hot SN particles = new particles + existing particles within sphere
   nSNinject = Ninject + Nneib;
-
 #ifdef OUTPUT_ALL
   cout << "Adding " << Ninject << " new particles.  Heating " << Nneib << " other particles" << endl;
   cout << "Rinj : " << Rinj << endl;

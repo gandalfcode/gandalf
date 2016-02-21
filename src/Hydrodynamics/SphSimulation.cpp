@@ -1033,6 +1033,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_step = level_max + integration_step - 1;
     dt_max     = timestep*powf(2.0, level_max);
 
+    cout << "LEVEL_MAX : " << level_max << "   " << dt_max << "   " << dt_min_hydro << endl;
+
     // Calculate the maximum level occupied by all SPH particles
     level_max_sph   = min(ComputeTimestepLevel(dt_min_hydro, dt_max), level_max);
     level_max_nbody = min(ComputeTimestepLevel(dt_min_nbody, dt_max), level_max);
