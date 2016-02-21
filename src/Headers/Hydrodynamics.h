@@ -84,7 +84,7 @@ public:
   void CheckBoundaryGhostParticle(const int, const int, const FLOAT, const DomainBox<ndim> &);
 
   void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
-  Particle<ndim>& CreateNewParticle(const enum ptype, const enum parttype, const int, const int,
+  Particle<ndim>& CreateNewParticle(const enum ptype, const enum parttype, const int, const int, const int,
                                     const FLOAT, const FLOAT, const FLOAT, const FLOAT*, const FLOAT*);
 
 

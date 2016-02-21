@@ -119,6 +119,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
 
     // Flag all dead particles as inactive here
     if (part.flags.is_dead()) part.flags.unset_flag(active);
+
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -216,6 +217,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
       if (gas_eos == energy_eqn) {
+        assert(part.u > 0.0);
         part.u     += 0.5*(part.dudt - part.dudt0)*(t - part.tlast); //timestep*(FLOAT) nstep;
         part.u0    = part.u;
         part.dudt0 = part.dudt;
@@ -224,6 +226,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
       part.tlast  = t;
       part.flags.unset_flag(active);
     }
+
   }
   //-----------------------------------------------------------------------------------------------
 
