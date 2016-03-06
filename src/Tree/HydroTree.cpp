@@ -39,6 +39,9 @@
 #if defined _OPENMP
 #include <omp.h>
 #endif
+#if defined MPI_PARALLEL
+#include "CommunicationHandler.h"
+#endif
 using namespace std;
 
 
@@ -1674,7 +1677,11 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
   int activelist[Nleafmax];
   int exported_particles    = 0;
   const int size_header     = 2*sizeof(int);
-  const int size_particles  = Nactive*sizeof(ParticleType<ndim>);
+
+  typename ParticleType<ndim>::HandlerType handler;
+  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+
+  const int size_particles  = Nactive*sizeof(StreamlinedPart);
   const int size_cells      = cactive*sizeof(TreeCell<ndim>);
   const int old_size        = send_buffer.size();
   int offset                = size_header + old_size;
@@ -1712,8 +1719,16 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
     // Copy active particles
     for (int jpart=0; jpart<Nactive_cell; jpart++) {
       ids_active_particles.push_back(activelist[jpart]);
-      copy(&send_buffer[offset], &partdata[activelist[jpart]]);
-      offset += sizeof(ParticleType<ndim>);
+      StreamlinedPart p = partdata[activelist[jpart]];
+      ParticleType<ndim>& part = partdata[activelist[jpart]];
+
+      //cout << part.iorig << endl;
+
+      if (part.iorig==4824)
+        cout << part.rho << " " << p.rho << endl;
+
+      copy(&send_buffer[offset], &p);
+      offset += sizeof(StreamlinedPart);
     }
     exported_particles += Nactive_cell;
   }
@@ -1740,6 +1755,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 {
   int offset = 0;
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+
+  typename ParticleType<ndim>::HandlerType handler;
+  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
 
   assert(hydro->NImportedParticles == 0);
   tree->Nimportedcell = 0;
@@ -1790,7 +1808,15 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
       // Now copy the received particles inside the hydro particle main arrays
       for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
-        copy(&partdata[particle_index], &received_array[offset]);
+        StreamlinedPart& p = *reinterpret_cast<StreamlinedPart*>(&received_array[offset]);
+
+
+        handler.ReceiveParticle(&received_array[offset],partdata[particle_index],hydro);
+
+        if (p.iorig==4824)
+          cout << partdata[particle_index].rho << " " << p.rho << endl;
+
+
         partdata[particle_index].gpot=0;
         for (int k=0; k<ndim; k++) {
           partdata[particle_index].a[k]=0;
@@ -1798,7 +1824,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
         }
         tree->inext[particle_index] = particle_index + 1;
         particle_index++;
-        offset += sizeof(ParticleType<ndim>);
+        offset += sizeof(StreamlinedPart);
       }
 
     }
@@ -2146,12 +2172,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
 #endif
 
 
-template class HydroTree<1,SphParticle,KDTreeCell>;
-template class HydroTree<2,SphParticle,KDTreeCell>;
-template class HydroTree<3,SphParticle,KDTreeCell>;
-template class HydroTree<1,SphParticle,OctTreeCell>;
-template class HydroTree<2,SphParticle,OctTreeCell>;
-template class HydroTree<3,SphParticle,OctTreeCell>;
+//template class HydroTree<1,SphParticle,KDTreeCell>;
+//template class HydroTree<2,SphParticle,KDTreeCell>;
+//template class HydroTree<3,SphParticle,KDTreeCell>;
+//template class HydroTree<1,SphParticle,OctTreeCell>;
+//template class HydroTree<2,SphParticle,OctTreeCell>;
+//template class HydroTree<3,SphParticle,OctTreeCell>;
 
 template class HydroTree<1,GradhSphParticle,KDTreeCell>;
 template class HydroTree<2,GradhSphParticle,KDTreeCell>;

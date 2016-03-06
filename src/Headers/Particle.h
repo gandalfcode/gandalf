@@ -31,6 +31,9 @@
 #include <stddef.h>
 #include "mpi.h"
 #include "Exception.h"
+template<int ndim> class GradhSphCommunicationHandler;
+template<int ndim> class MeshlessCommunicationHandler;
+template<int ndim> class SM2012CommunicationHandler;
 #endif
 
 
@@ -233,6 +236,8 @@ struct GradhSphParticle : public SphParticle<ndim>
 
     return particle_type;
   }
+
+  typedef GradhSphCommunicationHandler<ndim> HandlerType;
 #endif
 
 };
@@ -267,6 +272,8 @@ struct SM2012SphParticle : public SphParticle<ndim>
 
     return particle_type;
   }
+
+  typedef SM2012CommunicationHandler<ndim> HandlerType;
 #endif
 
 };
@@ -333,6 +340,10 @@ struct MeshlessFVParticle : public Particle<ndim>
     vsig_max  = (FLOAT) 0.0;
     zeta      = (FLOAT) 0.0;
   }
+
+#ifdef MPI_PARALLEL
+  typedef MeshlessCommunicationHandler<ndim> HandlerType;
+#endif
 
 };
 #endif
