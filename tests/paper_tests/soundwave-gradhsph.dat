@@ -8,7 +8,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = SOUNDWAVE1
+Simulation run id string                    : run_id = SOUNDWAVE1-GRADH
 Select SPH simulation                       : sim = gradhsph
 Select shocktube initial conditions         : ic = soundwave
 1D shocktube test                           : ndim = 1
@@ -32,8 +32,8 @@ RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 2.0
-Time for first snapshot                     : tsnapfirst = 0.0
-Regular snapshot output frequency           : dt_snap = 0.5
+Time for first snapshot                     : tsnapfirst = 3.0
+Regular snapshot output frequency           : dt_snap = 3.0
 Screen output frequency (in no. of steps)   : noutputstep = 1024
 Diagnostic output frequency                 : ndiagstep = 4096
 
@@ -50,7 +50,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.00000000001
+SPH smoothing length iteration tolerance    : h_converge = 0.0000000000001
 
 
 #---------------------------------
@@ -61,7 +61,6 @@ Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 0.01
 Artificial viscosity beta value             : beta_visc = 0.02
 Riemann solver                              : riemann_solver = exact
-Order of Riemann solver                     : riemann_order = 2
 Slope limiter                               : slope_limiter = gizmo
 
 
