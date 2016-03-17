@@ -341,6 +341,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
     part.Wmax[var] = part.Wprim[var];
     part.Wmidmin[var] = big_number;
     part.Wmidmax[var] = -big_number;
+    part.alpha_slope[var] = (FLOAT) 1.0;
   }
 
 
@@ -402,6 +403,18 @@ void MfvMuscl<ndim, kernelclass>::ComputeGradients
 
   }
   //-----------------------------------------------------------------------------------------------
+
+
+
+  // Compute the alpha slope term for certain slope limiters
+  //-----------------------------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
+    limiter->ComputeAlphaSlope(part, neibpart[j], draux);
+  }
+  //-----------------------------------------------------------------------------------------------
+
 
   assert(part.vsig_max >= part.sound);
 
