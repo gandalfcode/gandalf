@@ -102,9 +102,9 @@ FV<ndim>::~FV()
 //=================================================================================================
 template <int ndim>
 void FV<ndim>::ConvertConservedToPrimitive
- (const FLOAT volume,
-  const FLOAT Qcons[nvar],
-  FLOAT Wprim[nvar])
+ (const FLOAT volume,                  ///< [in] Effective volume of particle
+  const FLOAT Qcons[nvar],             ///< [in] Conserved vector, Qcons, of particle
+  FLOAT Wprim[nvar])                   ///< [out] Primitive vector, Wprim, of particle
 {
   int k;
   FLOAT ekin = 0.0;
@@ -127,15 +127,14 @@ void FV<ndim>::ConvertConservedToPrimitive
 //=================================================================================================
 template <int ndim>
 void FV<ndim>::ConvertPrimitiveToConserved
- (const FLOAT volume,
-  const FLOAT Wprim[nvar],
-  FLOAT Qcons[nvar])
+ (const FLOAT volume,                  ///< [in] Effective volume of particle
+  const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
+  FLOAT Qcons[nvar])                   ///< [out] Conserved vector, Qcons, of particle
 {
-  int k;
   FLOAT ekin = (FLOAT) 0.0;
 
   Qcons[irho] = Wprim[irho]*volume;
-  for (k=0; k<ndim; k++) {
+  for (int k=0; k<ndim; k++) {
     Qcons[k] = Wprim[k]*Wprim[irho]*volume;
     ekin += Wprim[k]*Wprim[k];
   }
@@ -148,27 +147,23 @@ void FV<ndim>::ConvertPrimitiveToConserved
 
 //=================================================================================================
 //  FV::CalculateFluxVectorFromPrimitive
-/// ...
+/// Calculate the flux vector of conserved variables, U, from the primitive variables, Wprim.
 //=================================================================================================
 template <int ndim>
 void FV<ndim>::CalculateFluxVectorFromPrimitive
- (FLOAT Wprim[nvar],
-  FLOAT fluxVector[nvar][ndim])
+ (const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
+  FLOAT fluxVector[nvar][ndim])        ///< [out] Flux vector
 {
-  int k;
-  int kv;
-  FLOAT ekin = 0.0;
+  FLOAT ekin = (FLOAT) 0.0;
 
-  for (kv=0; kv<ndim; kv++) {
-    ekin += Wprim[kv]*Wprim[kv];
-  }
+  for (int kv=0; kv<ndim; kv++) ekin += Wprim[kv]*Wprim[kv];
 
-  for (k=0; k<ndim; k++) {
-    for (kv=0; kv<ndim; kv++) fluxVector[kv][k] = Wprim[irho]*Wprim[k]*Wprim[kv];
+  for (int k=0; k<ndim; k++) {
+    for (int kv=0; kv<ndim; kv++) fluxVector[kv][k] = Wprim[irho]*Wprim[k]*Wprim[kv];
     fluxVector[k][k]     = Wprim[irho]*Wprim[k]*Wprim[k] + Wprim[ipress];
     fluxVector[irho][k]  = Wprim[irho]*Wprim[k];
-    fluxVector[ietot][k] =
-      Wprim[k]*(Wprim[ipress]/(gamma_eos - 1.0) + 0.5*Wprim[irho]*ekin + Wprim[ipress]);
+    fluxVector[ietot][k] = Wprim[k]*(Wprim[ipress]/(gamma_eos - (FLOAT) 1.0) +
+      (FLOAT) 0.5*Wprim[irho]*ekin + Wprim[ipress]);
   }
 
   return;
@@ -178,13 +173,14 @@ void FV<ndim>::CalculateFluxVectorFromPrimitive
 
 //=================================================================================================
 //  FV::CalculatePrimitiveTimeDerivative
-/// ...
+/// Calculate the time derivative of the primitive variables, dWprim/dt.  Used for extrapolating
+/// the primitive variables forward in time for, e.g. the half-step for the MUSCL scheme.
 //=================================================================================================
 template <int ndim>
 void FV<ndim>::CalculatePrimitiveTimeDerivative
- (FLOAT Wprim[nvar],
-  FLOAT gradW[nvar][ndim],
-  FLOAT Wdot[nvar])
+ (const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
+  const FLOAT gradW[nvar][ndim],       ///< [in] Gradients of primitive quantities
+  FLOAT Wdot[nvar])                    ///< [out] Time derivatives of primitive quantities
 {
   if (ndim == 1) {
     Wdot[irho]   = Wprim[ivx]*gradW[irho][0] + Wprim[irho]*gradW[ivx][0];

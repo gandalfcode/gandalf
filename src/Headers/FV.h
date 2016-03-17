@@ -50,8 +50,8 @@ using namespace std;
 //=================================================================================================
 //  Class FV
 /// \brief   Main parent FV class.
-/// \details ..
-/// \author  D. A. Hubber, J. Ngoumou
+/// \details Main parent FV class.
+/// \author  D. A. Hubber, J. Ngoumou, S. Heigl
 /// \date    19/02/2015
 //=================================================================================================
 template <int ndim>
@@ -91,8 +91,8 @@ public:
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
-  const FLOAT gamma_eos;               ///< ..
-  const FLOAT gammam1;                 ///< ..
+  const FLOAT gamma_eos;                 ///< gamma, ratio of specific heats
+  const FLOAT gammam1;                   ///< gamma - 1
 
 
   // Constructor
@@ -102,23 +102,19 @@ public:
      string KernelName, int size_mfv_part, SimUnits &units, Parameters *params);
   ~FV();
 
-
+  // Pure virtual functions (implemented by child classes)
+  //-----------------------------------------------------------------------------------------------
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
   virtual void ReorderParticles(void) = 0;
 
-
-  void CalculateFluxVectorFromPrimitive(FLOAT Wprim[nvar], FLOAT flux[nvar][ndim]);
-  void CalculatePrimitiveTimeDerivative(FLOAT Wprim[nvar], FLOAT gradW[nvar][ndim], FLOAT Wdot[nvar]);
+  // Other functions
+  //-----------------------------------------------------------------------------------------------
+  void CalculateFluxVectorFromPrimitive(const FLOAT Wprim[nvar], FLOAT flux[nvar][ndim]);
+  void CalculatePrimitiveTimeDerivative(const FLOAT Wprim[nvar], const FLOAT gradW[nvar][ndim], FLOAT Wdot[nvar]);
   void ConvertConservedToPrimitive(const FLOAT, const FLOAT Qcons[nvar], FLOAT Wprim[nvar]);
   void ConvertPrimitiveToConserved(const FLOAT, const FLOAT Wprim[nvar], FLOAT Qcons[nvar]);
-
-  //void ConvertQToConserved(const FLOAT, const FLOAT Qcons[nvar], FLOAT Ucons[nvar]);
-  //void ConvertConservedToQ(const FLOAT, const FLOAT Ucons[nvar], FLOAT Qcons[nvar]);
-  //void ConvertConservedToPrimitive(const FLOAT Ucons[nvar], FLOAT Wprim[nvar]);
-  //void ConvertPrimitiveToConserved(const FLOAT Wprim[nvar], FLOAT Ucons[nvar]);
-  //void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
 
 };
 #endif

@@ -184,7 +184,7 @@ void MeshlessFV<ndim>::DeleteDeadParticles(void)
 
 //=================================================================================================
 //  MeshlessFV::ReorderParticles
-/// Delete selected SPH particles from the main arrays.
+/// Reorder particles in main arrays according to order given in iorder array.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::ReorderParticles(void)
@@ -423,29 +423,8 @@ void MeshlessFV<ndim>::EndTimestep
 
 
 //=================================================================================================
-//  MeshlessFV<ndim>::IntegrateConservedVariables
-/// ...
-//=================================================================================================
-template <int ndim>
-void MeshlessFV<ndim>::IntegrateConservedVariables
- (MeshlessFVParticle<ndim> &part,
-  FLOAT timestep)
-{
-  FLOAT dUdt = part.dQdt[ietot] - DotProduct(part.v, part.dQdt, ndim) +
-    0.5*DotProduct(part.v, part.v, ndim)*part.dQdt[irho];
-  part.Utot += dUdt*timestep;
-  for (int var=0; var<nvar; var++) {
-    part.Qcons[var] += part.dQdt[var]*timestep;
-  }
-
-  return;
-}
-
-
-
-//=================================================================================================
 //  MeshlessFV::UpdatePrimitiveVector
-/// ...
+/// Updates the primitive vector from particle quantities.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
@@ -459,7 +438,7 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 
 //=================================================================================================
 //  MeshlessFV::UpdateArrayVariables
-/// ...
+/// Updates all particle quantities based on the primmitive/conserved variables.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
@@ -473,15 +452,10 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
   part.u = (part.Qcons[ietot] + part.dQ[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
-  /*if (part.u < (FLOAT) 0.0 || part.m < (FLOAT) 0.0) {
-    cout << "Mistake? : " << part.Qcons[ietot] << "    " << 0.5*part.m*ekin
-         << "    " << part.m << "    " << part.u << endl;
-    cout << "r : " << part.r[0] << "    " << part.r[1] << "     v : " << part.v[0] << endl;
-    cout << "Internal energy : " << part.u << "     " << part.Utot/part.m << endl;
-  }
 
-  assert(part.m > 0.0);
-  assert(part.u > 0.0);*/
+  assert(part.m > (FLOAT) 0.0);
+  assert(part.u > (FLOAT) 0.0);
+  assert(part.press > (FLOAT) 0.0);
 
 }
 

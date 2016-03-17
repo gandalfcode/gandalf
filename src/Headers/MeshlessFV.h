@@ -51,7 +51,7 @@ using namespace std;
 //=================================================================================================
 //  Class MeshlessFV
 /// \brief   Main parent MeshlessFV class.
-/// \details
+/// \details Main parent MeshlessFV class.
 /// \author  D. A. Hubber, J. Ngoumou
 /// \date    19/02/2015
 //=================================================================================================
@@ -141,7 +141,6 @@ public:
   void ComputeThermalProperties(MeshlessFVParticle<ndim> &);
   void EndTimestep(const int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
   void InitialSmoothingLengthGuess(void);
-  void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
   void IntegrateParticles(const int, const int, const FLOAT, const FLOAT,
                           const DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
   FLOAT Timestep(MeshlessFVParticle<ndim> &);
@@ -186,15 +185,15 @@ public:
 
 
 //=================================================================================================
-//  Class MfvMuscl
-/// \brief   Meshless Finite-Volume scheme described by Lanson & Vila (2008)
-/// \details Meshless Finite-Volume scheme described by Lanson & Vila (2008).
+//  Class MfvCommon
+/// \brief   Intermediate class for Meshless FV scheme containing all common functions.
+/// \details Intermediate class for Meshless FV scheme containing all common functions.
 /// \author  D. A. Hubber, J. Ngoumou
 /// \date    25/02/2015
 //=================================================================================================
 //template <int ndim>
 template <int ndim, template<int> class kernelclass>
-class MfvMuscl : public MeshlessFV<ndim>
+class MfvCommon : public MeshlessFV<ndim>
 {
  public:
 
@@ -226,6 +225,91 @@ class MfvMuscl : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::staticParticles;
   using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::hmin_sink;
+
+  static const int nvar = ndim + 2;
+  static const int ivx = 0;
+  static const int ivy = 1;
+  static const int ivz = 2;
+  static const int irho = ndim;
+  static const int ietot = ndim + 1;
+  static const int ipress = ndim + 1;
+
+
+
+  // Constructor
+  //-----------------------------------------------------------------------------------------------
+  MfvCommon(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
+           FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
+           string KernelName, int size_MeshlessFV_part, SimUnits &units, Parameters *params);
+  ~MfvCommon();
+
+  virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
+                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
+
+  // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles
+  // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)
+  //-----------------------------------------------------------------------------------------------
+  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
+               MeshlessFVParticle<ndim> &, Nbody<ndim> *);
+  void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
+                         MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
+                                    MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeSmoothedGravForces(const int, const int, int *,
+                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeDirectGravForces(const int, const int, int *,
+                               MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
+
+  kernelclass<ndim> kern;                  ///< SPH kernel
+
+};
+
+
+
+//=================================================================================================
+//  Class MfvMuscl
+/// \brief   Meshless Finite-Volume scheme described by Lanson & Vila (2008)
+/// \details Meshless Finite-Volume scheme described by Lanson & Vila (2008).
+/// \author  D. A. Hubber, J. Ngoumou
+/// \date    25/02/2015
+//=================================================================================================
+//template <int ndim>
+template <int ndim, template<int> class kernelclass>
+class MfvMuscl : public MfvCommon<ndim,kernelclass>
+{
+ public:
+
+  using Hydrodynamics<ndim>::create_sinks;
+  using Hydrodynamics<ndim>::hmin_sink;
+  using MeshlessFV<ndim>::allocated;
+  using MeshlessFV<ndim>::gamma_eos;
+  using MeshlessFV<ndim>::gammam1;
+  using MeshlessFV<ndim>::h_converge;
+  using MeshlessFV<ndim>::h_fac;
+  using MeshlessFV<ndim>::hydrodata;
+  using MeshlessFV<ndim>::hydrodata_unsafe;
+  using MeshlessFV<ndim>::invndim;
+  using MeshlessFV<ndim>::kernfac;
+  using MeshlessFV<ndim>::kernfacsqd;
+  using MeshlessFV<ndim>::kernp;
+  using MeshlessFV<ndim>::kernrange;
+  using MeshlessFV<ndim>::limiter;
+  using MeshlessFV<ndim>::mmean;
+  using MeshlessFV<ndim>::Ngather;
+  using MeshlessFV<ndim>::Nghost;
+  using MeshlessFV<ndim>::Nghostmax;
+  using MeshlessFV<ndim>::NImportedParticles;
+  using MeshlessFV<ndim>::Nhydro;
+  using MeshlessFV<ndim>::Nhydromax;
+  using MeshlessFV<ndim>::Nmpighost;
+  using MeshlessFV<ndim>::NPeriodicGhost;
+  using MeshlessFV<ndim>::Ntot;
+  using MeshlessFV<ndim>::riemann;
+  using MeshlessFV<ndim>::size_hydro_part;
+  using MeshlessFV<ndim>::staticParticles;
+  using MfvCommon<ndim,kernelclass>::kern;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -245,26 +329,9 @@ class MfvMuscl : public MeshlessFV<ndim>
   ~MfvMuscl();
 
 
-
-  // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles
-  // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)
   //-----------------------------------------------------------------------------------------------
-  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               MeshlessFVParticle<ndim> &, Nbody<ndim> *);
-  void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                         MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                    MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
-                          MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeSmoothedGravForces(const int, const int, int *,
-                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeDirectGravForces(const int, const int, int *,
-                               MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
-
-  kernelclass<ndim> kern;                  ///< SPH kernel
+  virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
+                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
 
 };
 
@@ -279,10 +346,12 @@ class MfvMuscl : public MeshlessFV<ndim>
 //=================================================================================================
 //template <int ndim>
 template <int ndim, template<int> class kernelclass>
-class MfvRungeKutta : public MeshlessFV<ndim>
+class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
 {
  public:
 
+  using Hydrodynamics<ndim>::create_sinks;
+  using Hydrodynamics<ndim>::hmin_sink;
   using MeshlessFV<ndim>::allocated;
   using MeshlessFV<ndim>::gamma_eos;
   using MeshlessFV<ndim>::gammam1;
@@ -309,8 +378,7 @@ class MfvRungeKutta : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
-  using Hydrodynamics<ndim>::create_sinks;
-  using Hydrodynamics<ndim>::hmin_sink;
+  using MfvCommon<ndim,kernelclass>::kern;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -329,26 +397,10 @@ class MfvRungeKutta : public MeshlessFV<ndim>
   ~MfvRungeKutta();
 
 
-
-  // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles
-  // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)
+  // ..
   //-----------------------------------------------------------------------------------------------
-  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               MeshlessFVParticle<ndim> &, Nbody<ndim> *);
-  void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                         MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                    MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
                           MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeSmoothedGravForces(const int, const int, int *,
-                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeDirectGravForces(const int, const int, int *,
-                               MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
-
-  kernelclass<ndim> kern;                  ///< SPH kernel
 
 };
 #endif
