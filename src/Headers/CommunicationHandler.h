@@ -27,6 +27,31 @@
 template <int ndim>
 class GradhSphCommunicationHandler {
 
+  struct GradSphForcesParticle {
+    GradSphForcesParticle() {};
+
+    GradSphForcesParticle (const GradhSphParticle<ndim>& p) {
+      for (int k=0; k<ndim; k++) {
+        a[k] = p.a[k];
+        agrav[k] = p.agrav[k];
+      }
+      gpot = p.gpot;
+      dudt = p.dudt;
+      div_v = p.div_v;
+      levelneib = p.levelneib;
+      iorig = p.iorig;
+    }
+
+    FLOAT a[ndim];
+    FLOAT agrav[ndim];
+    FLOAT gpot;
+    FLOAT dudt;
+    FLOAT div_v;
+    int levelneib;
+    int iorig;
+
+  };
+
   struct GradhSphExportParticle {
     GradhSphExportParticle () {};
 
@@ -74,6 +99,23 @@ class GradhSphCommunicationHandler {
 
 public:
   typedef GradhSphExportParticle DataType;
+  typedef GradSphForcesParticle ReturnDataType;
+
+  void ReceiveParticleAccelerations (ReturnDataType* pointer, GradhSphParticle<ndim>& p2) {
+
+    ReturnDataType& p = *pointer;
+
+    for (int k=0; k<ndim; k++) {
+      p2.a[k] += p.a[k];
+      p2.agrav[k] += p.agrav[k];
+    }
+
+    p2.gpot += p.gpot;
+    p2.dudt += p.dudt;
+    p2.div_v += p.div_v;
+    p2.levelneib = max(p.levelneib,p2.levelneib);
+
+  }
 
   void ReceiveParticle (void* pointer, GradhSphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
     DataType& p = *reinterpret_cast<DataType*>(pointer);
@@ -129,8 +171,21 @@ class MeshlessCommunicationHandler {
 
   };
 
+  struct MeshlessForcesParticle {
+    MeshlessForcesParticle (const MeshlessFVParticle<ndim>& p) {
+      ExceptionHandler::getIstance().raise("not implemented");
+    }
+
+    int iorig;
+  };
+
 public:
   typedef MeshlessExportParticle DataType;
+  typedef MeshlessForcesParticle ReturnDataType;
+
+  void ReceiveParticleAccelerations (ReturnDataType* pointer, MeshlessFVParticle<ndim>& p2) {
+    ExceptionHandler::getIstance().raise("not implemented");
+  }
 
   void ReceiveParticle (void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
     DataType& p = *reinterpret_cast<DataType*>(pointer);
@@ -166,8 +221,23 @@ class SM2012CommunicationHandler {
 
   };
 
+  struct SM2012ForcesParticle {
+    SM2012ForcesParticle(const SM2012SphParticle<ndim>& p) {
+      ExceptionHandler::getIstance().raise("not implemented");
+    }
+
+    int iorig;
+
+  };
+
 public:
   typedef SM2012ExportParticle DataType;
+  typedef SM2012ForcesParticle ReturnDataType;
+
+  void ReceiveParticleAccelerations (ReturnDataType* pointer, SM2012SphParticle<ndim>& p2) {
+    ExceptionHandler::getIstance().raise("not implemented");
+  }
+
   void ReceiveParticle (void* pointer, SM2012SphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
     DataType& p = *reinterpret_cast<DataType*>(pointer);
     ExceptionHandler::getIstance().raise("not implemented");

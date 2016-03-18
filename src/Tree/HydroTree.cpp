@@ -1720,12 +1720,6 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
     for (int jpart=0; jpart<Nactive_cell; jpart++) {
       ids_active_particles.push_back(activelist[jpart]);
       StreamlinedPart p = partdata[activelist[jpart]];
-      ParticleType<ndim>& part = partdata[activelist[jpart]];
-
-      //cout << part.iorig << endl;
-
-      if (part.iorig==4824)
-        cout << part.rho << " " << p.rho << endl;
 
       copy(&send_buffer[offset], &p);
       offset += sizeof(StreamlinedPart);
@@ -1860,10 +1854,15 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
 {
   int removed_particles = 0;               // ..
   int InitialNImportedParticles = hydro->NImportedParticles;
+
+  typename ParticleType<ndim>::HandlerType handler;
+  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+
+
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   // Loop over the processors, removing particles as we go
-  send_buffer.resize(hydro->NImportedParticles * sizeof(ParticleType<ndim>));
+  send_buffer.resize(hydro->NImportedParticles * sizeof(StreamlinedPart));
 
   //-----------------------------------------------------------------------------------------------
   for (int iproc=0; iproc<N_imported_part_per_proc.size(); iproc++ ) {
@@ -1874,7 +1873,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
     int j = 0;
 
     for (int i=start_index; i<start_index + N_received_particles; i++) {
-      copy (&send_buffer[(removed_particles + j)*sizeof(ParticleType<ndim>)], &partdata[i]);
+      StreamlinedPart p = partdata[i];
+      copy (&send_buffer[(removed_particles + j)*sizeof(StreamlinedPart)], &p);
       j++;
     }
     assert(j == N_received_particles);
@@ -1885,10 +1885,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
     hydro->NImportedParticles -= N_received_particles;
 
     // Update the information about how much data we are sending
-    Nbytes_exported_from_proc[iproc] = N_received_particles*sizeof(ParticleType<ndim>);
+    Nbytes_exported_from_proc[iproc] = N_received_particles*sizeof(StreamlinedPart);
 
     // Update the information with how much data we are receiving
-    Nbytes_to_each_proc[iproc] = ids_sent_particles[iproc].size()*sizeof(ParticleType<ndim>);
+    Nbytes_to_each_proc[iproc] = ids_sent_particles[iproc].size()*sizeof(StreamlinedPart);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -1899,7 +1899,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
 
   assert(hydro->NImportedParticles == 0);
   assert(hydro->Ntot == hydro->Nhydro + hydro->Nghost);
-  assert(send_buffer.size() == removed_particles*sizeof(ParticleType<ndim>));
+  assert(send_buffer.size() == removed_particles*sizeof(StreamlinedPart));
 
   return;
 }
@@ -1919,12 +1919,13 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
 {
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
 
+  typename ParticleType<ndim>::HandlerType handler;
+  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
 
   // For each processor, sum up the received quantities for each particle
   //-----------------------------------------------------------------------------------------------
   for (int iproc=0; iproc<recv_displs.size(); iproc++ ) {
 
-    // (IS THIS CORRECT WHEN NOT ALL PROCS SEND PARTICLES?)
     if (rank == iproc) continue;
 
     const vector<int>& ids_active_particles = ids_sent_particles[iproc];
@@ -1932,19 +1933,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
     for (int j=0; j<ids_active_particles.size(); j++) {
       const int i = ids_active_particles[j];
 
-      ParticleType<ndim>* received_particle = reinterpret_cast<ParticleType<ndim>*>
-        (&received_information[j*sizeof(ParticleType<ndim>) + recv_displs[iproc] ]);
+      StreamlinedPart* received_particle = reinterpret_cast<StreamlinedPart*>
+        (&received_information[j*sizeof(StreamlinedPart) + recv_displs[iproc] ]);
 
       assert(partdata[i].iorig == received_particle->iorig);
 
-      for (int k=0; k<ndim; k++) {
-        partdata[i].a[k]     += received_particle->a[k];
-        partdata[i].agrav[k] += received_particle->agrav[k];
-      }
-      partdata[i].gpot  += received_particle->gpot;
-      partdata[i].dudt  += received_particle->dudt;
-      partdata[i].div_v += received_particle->div_v;
-      partdata[i].levelneib = max(partdata[i].levelneib, received_particle->levelneib);
+      handler.ReceiveParticleAccelerations(received_particle,partdata[i]);
     }
 
   }
