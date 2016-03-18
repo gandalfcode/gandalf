@@ -77,7 +77,9 @@ NbodyLeapfrogDKD<ndim, kernelclass>::~NbodyLeapfrogDKD()
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
  (int N,                               ///< [in] Number of stars
-  NbodyParticle<ndim> **star)          ///< [inout] Array of stars/systems
+  NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int i,j,k;                           // Star and dimension counters
   FLOAT dr[ndim];                      // Relative position vector
