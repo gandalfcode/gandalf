@@ -102,7 +102,6 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   for (i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
-
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
     for (j=0; j<N; j++) {
@@ -134,7 +133,6 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
       }
 
     }
-    //---------------------------------------------------------------------------------------------
 
   }
   //-----------------------------------------------------------------------------------------------
