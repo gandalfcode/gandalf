@@ -223,7 +223,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
     // Calculate forces, force derivatives etc.., for active stars/systems
     if (nbody->nbody_softening == 1) {
-      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     }
     else {
       nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
