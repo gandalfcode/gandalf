@@ -1813,10 +1813,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
         handler.ReceiveParticle(&received_array[offset],partdata[particle_index],hydro);
 
-        if (p.iorig==4824)
-          cout << partdata[particle_index].rho << " " << p.rho << endl;
-
-
         partdata[particle_index].gpot=0;
         for (int k=0; k<ndim; k++) {
           partdata[particle_index].a[k]=0;
