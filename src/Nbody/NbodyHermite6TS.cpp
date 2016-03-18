@@ -169,8 +169,10 @@ void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
-(int N,                             ///< [in] Number of stars
- NbodyParticle<ndim> **star)        ///< [inout] Array of stars/systems
+ (int N,                               ///< [in] Number of stars
+  NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int i,j,k;                        // Star and dimension counters
   FLOAT dr[ndim];                  // Relative position vector
