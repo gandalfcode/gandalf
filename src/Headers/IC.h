@@ -45,7 +45,7 @@
 template <int ndim>
 class Ic
 {
-private:
+protected:
 
   Simulation<ndim>* const sim;              ///< Simulation class pointer
   Hydrodynamics<ndim>* const hydro;         ///< Hydrodynamics algorithm pointer
@@ -79,6 +79,9 @@ public:
     simparams(_sim->simparams), randnumb(_sim->randnumb)
   {
   };
+
+  virtual void Generate(void) {};
+  virtual FLOAT GetValue(std::string var, FLOAT x, FLOAT y=0.0, FLOAT z=0.0) {return (FLOAT) 0.0;}
 
 
   // Initial conditions routines
@@ -124,6 +127,61 @@ public:
   static void AddRandomBox(const int, const DomainBox<ndim>, FLOAT *, RandomNumber *);
   static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
   static int CutSphere(const int, const int, const DomainBox<ndim>, const bool, FLOAT *);
+
+};
+
+
+
+//=================================================================================================
+//  Class NullIc
+/// \brief   ..
+/// \details ..
+/// \author  D. A. Hubber
+/// \date    20/03/2016
+//=================================================================================================
+template <int ndim>
+class NullIc : public Ic<ndim>
+{
+public:
+
+  NullIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
+    Ic<ndim>(_sim, _hydro, _invndim) {};
+
+  virtual void Generate(void) {};
+  virtual FLOAT GetValue(std::string var, FLOAT x, FLOAT y=0.0, FLOAT z=0.0) {return (FLOAT) 0.0;}
+
+};
+
+
+
+//=================================================================================================
+//  Class SilccIc
+/// \brief   Class to generate SILCC-like initial conditions
+/// \details Class to generate SILCC-like initial conditions
+/// \author  D. A. Hubber, S. Walch
+/// \date    20/03/2016
+//=================================================================================================
+template <int ndim>
+class SilccIc : public Ic<ndim>
+{
+protected:
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+
+  SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
+    Ic<ndim>(_sim, _hydro, _invndim) {};
+
+  virtual void Generate(void);
+  virtual FLOAT GetValue(std::string var, FLOAT x, FLOAT y=0.0, FLOAT z=0.0) {return (FLOAT) 0.0;}
 
 };
 #endif

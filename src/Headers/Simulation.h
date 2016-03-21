@@ -45,6 +45,7 @@
 #include "Ghosts.h"
 #include "HeaderInfo.h"
 #include "Hydrodynamics.h"
+//#include "Ic.h"
 #include "MeshlessFV.h"
 #include "MfvNeighbourSearch.h"
 #include "Nbody.h"
@@ -69,8 +70,11 @@ using namespace std;
 #endif
 
 
-// Forward declaration of SphSnapshotBase to prevent circular dependency
+// Forward declaration of various classes to prevent circular dependency
 class SphSnapshotBase;
+
+template <int ndim>
+class Ic;
 
 
 //=================================================================================================
@@ -296,6 +300,7 @@ class Simulation : public SimulationBase
   Ewald<ndim> *ewald;                  ///< Ewald periodic gravity object
   Ghosts<ndim>* LocalGhosts;           ///< Periodic ghost particle object
   Hydrodynamics<ndim> *hydro;          ///< Hydrodynamics algorithm pointer
+  Ic<ndim> *icGenerator;               ///< Initial conditions pointer
   Nbody<ndim> *nbody;                  ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;              ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;     ///< N-body tree to create sub-systems
