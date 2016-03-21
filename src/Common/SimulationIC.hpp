@@ -35,7 +35,7 @@
 #include "RandomNumber.h"
 #include "Debug.h"
 #include "Ghosts.h"
-#include "IC.h"
+#include "Ic.h"
 #if defined(FFTW_TURBULENCE)
 #include "fftw3.h"
 #endif
@@ -63,6 +63,7 @@ void Simulation<ndim>::GenerateIC(void)
   // determine the name of the last snapshot file to be re-read
   //-----------------------------------------------------------------------------------------------
   if (restart) {
+    icGenerator = new NullIc<ndim>(this, hydro, invndim);
     filename = run_id + ".restart";
     f.open(filename.c_str());
 
@@ -84,112 +85,113 @@ void Simulation<ndim>::GenerateIC(void)
 
   // If not a restart, generate initial conditions either from external file or created on the fly.
   //-----------------------------------------------------------------------------------------------
-  Ic<ndim> icGenerator(this, hydro, invndim);
 
   if (ic == "file") {
     ReadSnapshotFile(simparams->stringparams["in_file"], simparams->stringparams["in_file_form"]);
     rescale_particle_data = true;
     this->initial_h_provided = false;
+    icGenerator = new NullIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
-  else if (ic == "bb") {
-    icGenerator.BossBodenheimer();
-  }
-  else if (ic == "binary") {
-    icGenerator.BinaryStar();
-  }
-  else if (ic == "binaryacc") {
-    icGenerator.BinaryAccretion();
-  }
-  else if (ic == "blastwave") {
-    icGenerator.BlastWave();
-  }
-  else if (ic == "blob") {
-    icGenerator.BlobTest();
-  }
-  else if (ic == "bondi") {
-    icGenerator.BondiAccretion();
-  }
-  else if (ic == "box") {
-    icGenerator.UniformBox();
-  }
-  else if (ic == "cdiscontinuity") {
-    icGenerator.ContactDiscontinuity();
-  }
-  else if (ic == "ewaldsine" || ic == "jeans" ||
-           ic == "ewaldsine2" || ic == "ewaldslab" || ic == "ewaldcylinder") {
-    icGenerator.EwaldDensity();
-  }
-  else if (ic == "gaussianring") {
-	  icGenerator.GaussianRing();
-  }
-  else if (ic == "gresho") {
-    icGenerator.GreshoVortex();
-  }
-  else if (ic == "khi") {
-    icGenerator.KHI();
-  }
-  else if (ic == "noh") {
-    icGenerator.NohProblem();
-  }
-  else if (ic == "plummer") {
-    icGenerator.PlummerSphere();
-  }
-  else if (ic == "quadruple") {
-    icGenerator.QuadrupleStar();
-  }
-  else if (ic == "rti") {
-    icGenerator.RTI();
-  }
-  else if (ic == "sedov") {
-    icGenerator.SedovBlastWave();
-  }
-  else if (ic == "shearflow") {
-    icGenerator.ShearFlow();
-  }
   else if (ic == "silcc") {
-    icGenerator.Silcc();
-  }
-  else if (ic == "shocktube") {
-    icGenerator.ShockTube();
-  }
-  else if (ic == "soundwave") {
-    icGenerator.SoundWave();
-  }
-  else if (ic == "sphere") {
-    icGenerator.UniformSphere();
-  }
-  else if (ic == "spitzer") {
-    icGenerator.SpitzerExpansion();
-  }
-  else if (ic == "triple") {
-    icGenerator.TripleStar();
-  }
-  else if (ic == "turbcore") {
-    icGenerator.TurbulentCore();
-  }
-  else if (ic == "isothermsphere") {
-    icGenerator.IsothermSphere();
-  }
-  else if (ic == "rotisothermsphere") {
-    icGenerator.RotIsothermSphere();
-  }
-  else if (ic == "turbisothermsphere") {
-    icGenerator.TurbIsothermSphere();
-  }
-  else if (ic == "evrard"){
-	icGenerator.EvrardCollapse() ;
-  }
-  else if (ic == "dustybox"){
-	icGenerator.DustyBox() ;
-  }
-  else if (ic == "python") {
-    return;
+    icGenerator = new SilccIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
   else {
-    string message = "Unrecognised parameter : ic = " + ic;
-    ExceptionHandler::getIstance().raise(message);
+    icGenerator = new NullIc<ndim>(this, hydro, invndim);
+
+    if (ic == "bb") {
+      icGenerator->BossBodenheimer();
+    }
+    else if (ic == "binary") {
+      icGenerator->BinaryStar();
+    }
+    else if (ic == "binaryacc") {
+      icGenerator->BinaryAccretion();
+    }
+    else if (ic == "blastwave") {
+      icGenerator->BlastWave();
+    }
+    else if (ic == "bondi") {
+      icGenerator->BondiAccretion();
+    }
+    else if (ic == "box") {
+      icGenerator->UniformBox();
+    }
+    else if (ic == "cdiscontinuity") {
+      icGenerator->ContactDiscontinuity();
+    }
+    else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
+             ic == "ewaldslab" ||  ic == "ewaldcylinder") {
+      icGenerator->EwaldDensity();
+    }
+    else if (ic == "gresho") {
+      icGenerator->GreshoVortex();
+    }
+    else if (ic == "khi") {
+      icGenerator->KHI();
+    }
+    else if (ic == "noh") {
+      icGenerator->NohProblem();
+    }
+    else if (ic == "plummer") {
+      icGenerator->PlummerSphere();
+    }
+    else if (ic == "quadruple") {
+      icGenerator->QuadrupleStar();
+    }
+    else if (ic == "rti") {
+      icGenerator->RTI();
+    }
+    else if (ic == "sedov") {
+      icGenerator->SedovBlastWave();
+    }
+    else if (ic == "shearflow") {
+      icGenerator->ShearFlow();
+    }
+    else if (ic == "shocktube") {
+      icGenerator->ShockTube();
+    }
+    else if (ic == "soundwave") {
+      icGenerator->SoundWave();
+    }
+    else if (ic == "sphere") {
+      icGenerator->UniformSphere();
+    }
+    else if (ic == "spitzer") {
+      icGenerator->SpitzerExpansion();
+    }
+    else if (ic == "triple") {
+      icGenerator->TripleStar();
+    }
+    else if (ic == "turbcore") {
+      icGenerator->TurbulentCore();
+    }
+    else if (ic == "isothermsphere") {
+      icGenerator->IsothermSphere();
+    }
+    else if (ic == "rotisothermsphere") {
+      icGenerator->RotIsothermSphere();
+    }
+    else if (ic == "turbisothermsphere") {
+      icGenerator->TurbIsothermSphere();
+    }
+    else if (ic == "evrard"){
+      icGenerator->EvrardCollapse() ;
+    }
+    else if (ic == "dustybox"){
+      icGenerator->DustyBox() ;
+    }
+    else if (ic == "python") {
+      return;
+    }
+    //---------------------------------------------------------------------------------------------
+    else {
+      string message = "Unrecognised parameter : ic = " + ic;
+      ExceptionHandler::getIstance().raise(message);
+    }
+    //---------------------------------------------------------------------------------------------
+
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -197,7 +199,7 @@ void Simulation<ndim>::GenerateIC(void)
   if (rescale_particle_data) ConvertToCodeUnits();
 
   // Check that the initial conditions are valid
-  icGenerator.CheckInitialConditions();
+  icGenerator->CheckInitialConditions();
 
   cout << "Finished creating initial conditions" << endl;
 

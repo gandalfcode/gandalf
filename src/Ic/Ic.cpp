@@ -1645,93 +1645,6 @@ void Ic<ndim>::BlobTest(void)
 
 
 //=================================================================================================
-//  Ic::Silcc
-/// Set-up SILCC-type simulation initial conditions.
-//=================================================================================================
-template <int ndim>
-void Ic<ndim>::Silcc(void)
-{
-  // Only compile for 3-dimensional case
-  //-----------------------------------------------------------------------------------------------
-  if (ndim == 3) {
-
-    int i;                               // Particle counter
-    int k;                               // Dimension counter
-    FLOAT box_area;                      // Area of x-y plane of simulation box
-    FLOAT m_box;                         // Total gas mass in box
-    FLOAT m_exp;                         // Total gas mass in exponential profile region
-    FLOAT m_uniform;                     // Total gas mass in uniform density region
-    FLOAT mp;                            // Mass of individual particle
-    FLOAT rho_a;                         // Density at edge of exponential midplane profile
-    FLOAT rho_star;                      // Stellar density at the midplane
-    FLOAT z;                             // z-position of newly inserted particle
-
-    // Create local copies of initial conditions parameters
-    int Npart          = simparams->intparams["Nhydro"];
-    FLOAT a_midplane   = simparams->floatparams["a_midplane"];
-    FLOAT gammaone     = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
-    FLOAT h_midplane   = simparams->floatparams["h_midplane"];
-    FLOAT rho_midplane = simparams->floatparams["rho_midplane"];
-    FLOAT sigma_star   = simparams->floatparams["sigma_star"];
-    FLOAT z_d          = simparams->floatparams["z_s"];
-
-    debug2("[Ic::Silcc]");
-
-    // Some sanity checking to ensure correct units are used for these ICs
-    if (simparams->stringparams["routunit"] != "pc") {
-      ExceptionHandler::getIstance().raise("r unit not set to pc");
-    }
-    if (simparams->stringparams["sigmaoutunit"] != "m_sun_pc2") {
-      ExceptionHandler::getIstance().raise("sigma unit not set to m_sun_pc2");
-    }
-
-    // Convert any parameters to code units
-    a_midplane   /= simunits.r.outscale;
-    h_midplane   /= simunits.r.outscale;
-    rho_midplane /= simunits.rho.outscale;
-    sigma_star   /= simunits.sigma.outscale;
-    z_d          /= simunits.r.outscale;
-
-    // Compute total mass of particles in simulation box by integrating in the z-direction
-    box_area  = simbox.boxsize[0]*simbox.boxsize[1];
-    rho_star  = (FLOAT) 0.25*sigma_star/z_d;
-    rho_a     = rho_midplane*exp(-a_midplane*a_midplane/h_midplane/h_midplane);
-    m_exp     = (FLOAT) 0.5*sqrt(pi)*rho_midplane*h_midplane*erf(a_midplane/h_midplane)*box_area;
-    m_uniform = rho_a*box_area*(simbox.boxmax[0] - a_midplane);
-    m_box     = m_exp + m_uniform;
-
-    // Allocate local and main particle memory
-    hydro->Nhydro = Npart;
-    sim->AllocateParticleMemory();
-    mp = m_box / (FLOAT) Npart;
-
-
-    // Record particle properties in main memory
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-
-      part.r[0] = simbox.boxmin[0] + simbox.boxsize[0]*sim->randnumb->floatrand();
-      part.r[1] = simbox.boxmin[1] + simbox.boxsize[1]*sim->randnumb->floatrand();
-      z = m_box*((FLOAT) 2.0*sim->randnumb->floatrand() - (FLOAT) 1.0);
-
-
-      for (k=0; k<ndim; k++) part.v[k] = 0.0;
-      part.m = mp;
-      //part.h = hydro->h_fac*powf(mp/rho,invndim);
-      part.itype = gas;
-    }
-
-    sim->initial_h_provided = true;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
-
-
-
-//=================================================================================================
 //  Ic::TurbulentCore
 /// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a
 /// rotating uniform sphere with an imposed m=2 azimuthal density perturbation.
@@ -3901,7 +3814,7 @@ template <int ndim>
 void Ic<ndim>::AddCubicLattice
  (const int Npart,                     ///< [in] No. of particles in lattice
   const int Nlattice[ndim],            ///< [in] Ptcls per dimension in lattice
-  const DomainBox<ndim>& box,           ///< [in] Bounding box of particles
+  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
   const bool normalise,                ///< [in] Normalise lattice shape and size
   FLOAT *r)                            ///< [out] Positions of particles
 {
@@ -3946,7 +3859,7 @@ void Ic<ndim>::AddCubicLattice
   }
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(cout,box,Nlattice,r,spacing) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(cout,Nlattice,r,spacing) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
@@ -3972,8 +3885,8 @@ void Ic<ndim>::AddCubicLattice
 template <int ndim>
 void Ic<ndim>::AddHexagonalLattice
  (const int Npart,                     ///< [in] No. of particles in lattice
-  const int Nlattice[3],            ///< [in] Ptcls per dimension in lattice
-  const DomainBox<ndim>& box,           ///< [in] Bounding box of particles
+  const int Nlattice[3],               ///< [in] Ptcls per dimension in lattice
+  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
   const bool normalise,                ///< [in] Normalise lattice shape and size
   FLOAT *r)                            ///< [out] Positions of particles
 {
@@ -4018,7 +3931,7 @@ void Ic<ndim>::AddHexagonalLattice
 
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(box,Nlattice,r,rad) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(Nlattice,r,rad) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
