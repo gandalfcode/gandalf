@@ -81,7 +81,7 @@ public:
   };
 
   virtual void Generate(void) {};
-  virtual FLOAT GetValue(std::string var, FLOAT x, FLOAT y=0.0, FLOAT z=0.0) {return (FLOAT) 0.0;}
+  virtual FLOAT GetValue(std::string, FLOAT *) {return (FLOAT) 0.0;}
 
 
   // Initial conditions routines
@@ -148,11 +148,14 @@ public:
     Ic<ndim>(_sim, _hydro, _invndim) {};
 
   virtual void Generate(void) {};
-  virtual FLOAT GetValue(std::string var, FLOAT x, FLOAT y=0.0, FLOAT z=0.0) {return (FLOAT) 0.0;}
+  virtual FLOAT GetValue(std::string, FLOAT *) {return (FLOAT) 0.0;}
 
 };
 
 
+static FLOAT sech(FLOAT arg) {
+  return (FLOAT) 2.0 / (exp(arg) + exp(-arg));
+}
 
 //=================================================================================================
 //  Class SilccIc
@@ -173,15 +176,27 @@ protected:
   using Ic<ndim>::simparams;
   using Ic<ndim>::simunits;
 
+  FLOAT a_midplane;                    // ..
+  FLOAT box_area;                      // Area of x-y plane of simulation box
+  FLOAT h_midplane;                    // ..
+  FLOAT m_box;                         // Total gas mass in box
+  FLOAT m_exp;                         // Total gas mass in exponential profile region
+  FLOAT m_uniform;                     // Total gas mass in uniform density region
+  FLOAT rho_a;                         // Density at edge of exponential midplane profile
+  FLOAT rho_midplane;                  // ..
+  FLOAT rho_star;                      // Stellar density at the midplane
+  FLOAT sigma_star;                    // ..
+  FLOAT z_d;                           // ..
+
 
 public:
 
 
-  SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-    Ic<ndim>(_sim, _hydro, _invndim) {};
+  SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  virtual ~SilccIc() {};
 
   virtual void Generate(void);
-  virtual FLOAT GetValue(std::string var, FLOAT x, FLOAT y=0.0, FLOAT z=0.0) {return (FLOAT) 0.0;}
+  virtual FLOAT GetValue(std::string, FLOAT *);
 
 };
 #endif

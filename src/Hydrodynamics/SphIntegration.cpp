@@ -119,7 +119,7 @@ DOUBLE SphIntegration<ndim>::Timestep
   //adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
   //timestep = min(timestep, accel_mult*amag/(adotmag + small_number_dp));
 
-  if (timestep > 1.0e20 || timestep < 0.0) {
+  if (timestep > 1.0e20 || timestep <= 0.0) {
     cout << "Timestep problem : " << timestep << "   " << amag << "   " << part.h << "    "
          << part.sound << "    " << part.h*fabs(part.div_v) << endl;
     cout << "tcourant : " << courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp)
@@ -151,6 +151,7 @@ void SphIntegration<ndim>::CheckBoundaries
   if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
       simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
       simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary) return;
+
 
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
