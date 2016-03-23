@@ -58,6 +58,7 @@ void Simulation<ndim>::GenerateIC(void)
 
   debug2("[Simulation::GenerateIC]");
 
+std::cout << "IC : " << ic << "  " << restart << std::endl;
 
   // First, check special case of restarting a simulation, in which case
   // determine the name of the last snapshot file to be re-read
@@ -82,10 +83,10 @@ void Simulation<ndim>::GenerateIC(void)
     }
   }
 
+std::cout << "IC : " << ic << "  " << std::endl;
 
   // If not a restart, generate initial conditions either from external file or created on the fly.
   //-----------------------------------------------------------------------------------------------
-
   if (ic == "file") {
     ReadSnapshotFile(simparams->stringparams["in_file"], simparams->stringparams["in_file_form"]);
     rescale_particle_data = true;
@@ -94,7 +95,9 @@ void Simulation<ndim>::GenerateIC(void)
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "silcc") {
+    std::cout << "SILCC? : " << ic << "  " << std::endl;
     icGenerator = new SilccIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else {

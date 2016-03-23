@@ -25,7 +25,7 @@
 #include <sstream>
 #include "Precision.h"
 #include "Debug.h"
-#include "IC.h"
+#include "Ic.h"
 using namespace std;
 
 
