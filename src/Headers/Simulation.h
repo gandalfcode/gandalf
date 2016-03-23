@@ -338,6 +338,7 @@ class SphSimulation : public Simulation<ndim>
  public:
   using Simulation<ndim>::ewaldGravity;
   using Simulation<ndim>::extra_sink_output;
+  using Simulation<ndim>::icGenerator;
   using Simulation<ndim>::periodicBoundaries;
   using Simulation<ndim>::Nmpi;
   using Simulation<ndim>::pruning_level_min;
