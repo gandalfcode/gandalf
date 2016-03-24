@@ -29,6 +29,7 @@
 #include "Precision.h"
 #include "Constants.h"
 #include "InlineFuncs.h"
+#include "SimUnits.h"
 using namespace std;
 
 
@@ -48,7 +49,7 @@ class ExternalPotential
   ExternalPotential() {};
   ~ExternalPotential() {};
 
-  virtual void AddExternalPotential(FLOAT *, FLOAT *, FLOAT *, FLOAT *, FLOAT &) = 0;
+  virtual void AddExternalPotential(const FLOAT *, const FLOAT *, FLOAT *, FLOAT *, FLOAT &) = 0;
 
 };
 
@@ -69,7 +70,7 @@ class NullPotential : public ExternalPotential<ndim>
   NullPotential() {};
   ~NullPotential() {};
 
-  void AddExternalPotential(FLOAT *, FLOAT *, FLOAT *, FLOAT *, FLOAT &) {}
+  void AddExternalPotential(const FLOAT *, const FLOAT *, FLOAT *, FLOAT *, FLOAT &) {}
 
 };
 
@@ -85,20 +86,20 @@ class NullPotential : public ExternalPotential<ndim>
 template <int ndim>
 class VerticalPotential : public ExternalPotential<ndim>
 {
- public:
-
-  VerticalPotential(int _kgrav, FLOAT _avert, FLOAT _rzero) :
-    kgrav(_kgrav), avert(_avert), rzero(_rzero) {}
-  ~VerticalPotential();
+public:
 
   const int kgrav;                     ///< 'Direction' of grav. field
   const FLOAT avert;                   ///< Size (plus sign) of grav. field
   const FLOAT rzero;                   ///< 'Zero' -height of potential
 
 
+  VerticalPotential(int _kgrav, FLOAT _avert, FLOAT _rzero) :
+    kgrav(_kgrav), avert(_avert), rzero(_rzero) {}
+  ~VerticalPotential();
+
   void AddExternalPotential
-   (FLOAT rp[ndim],                    ///< Position of particle
-    FLOAT vp[ndim],                    ///< Velocity of particle
+   (const FLOAT rp[ndim],              ///< Position of particle
+    const FLOAT vp[ndim],              ///< Velocity of particle
     FLOAT ap[ndim],                    ///< Acceleration of particle
     FLOAT adotp[ndim],                 ///< 'Jerk' of particle
     FLOAT &potp)                       ///< Potential of particle
@@ -124,27 +125,27 @@ class VerticalPotential : public ExternalPotential<ndim>
 template <int ndim>
 class PlummerPotential : public ExternalPotential<ndim>
 {
- public:
+public:
+
+  const FLOAT mplummer;                ///< Mass of Plummer sphere
+  const FLOAT rplummer;                ///< Core radius of Plummer sphere
+
 
   PlummerPotential(FLOAT mplummeraux, FLOAT rplummeraux) :
     mplummer(mplummeraux), rplummer(rplummeraux) {}
   ~PlummerPotential();
 
 
-  const FLOAT mplummer;               ///< Mass of Plummer sphere
-  const FLOAT rplummer;               ///< Core radius of Plummer sphere
-
-
   void AddExternalPotential
-   (FLOAT rp[ndim],                   ///< Position of particle
-    FLOAT vp[ndim],                   ///< Velocity of particle
-    FLOAT ap[ndim],                   ///< Acceleration of particle
-    FLOAT adotp[ndim],                ///< 'Jerk' of particle
-    FLOAT &potp)                      ///< Potential of particle
+   (const FLOAT rp[ndim],              ///< Position of particle
+    const FLOAT vp[ndim],              ///< Velocity of particle
+    FLOAT ap[ndim],                    ///< Acceleration of particle
+    FLOAT adotp[ndim],                 ///< 'Jerk' of particle
+    FLOAT &potp)                       ///< Potential of particle
   {
     int k;                             // Dimension counter
-    FLOAT drsqd;                      // Distance squared
-    FLOAT dvdr;                       // Dot product of velocity and position
+    FLOAT drsqd;                       // Distance squared
+    FLOAT dvdr;                        // Dot product of velocity and position
 
     drsqd = DotProduct(rp,rp,ndim);
     dvdr = DotProduct(rp,vp,ndim);
@@ -154,6 +155,45 @@ class PlummerPotential : public ExternalPotential<ndim>
       - mplummer*pow(drsqd + rplummer*rplummer, -(FLOAT) 1.5)*vp[k];
     potp += (FLOAT) 2.0*mplummer*pow(drsqd + rplummer*rplummer, -(FLOAT) 0.5);
 
+    return;
+  }
+
+};
+
+
+
+//=================================================================================================
+//  Class SilccPotential
+/// \brief   Add potential, acceleration and jerk for Silcc simulations.
+/// \details Add potential, acceleration and jerk for Silcc simulations.
+/// \author  D. A. Hubber
+/// \date    10/03/2014
+//=================================================================================================
+template <int ndim>
+class SilccPotential : public ExternalPotential<ndim>
+{
+public:
+
+  FLOAT rho_star;
+  FLOAT sigma_star;
+  FLOAT z_d;
+
+  SilccPotential(FLOAT _sigma_star, FLOAT _z_d, SimUnits &simunits)
+  {
+    sigma_star = _sigma_star/simunits.sigma.outscale;
+    z_d = _z_d/simunits.r.outscale,
+    rho_star = (FLOAT) 0.25*sigma_star/z_d;
+  }
+  ~SilccPotential();
+
+
+  void AddExternalPotential
+   (const FLOAT rp[ndim],              ///< Position of particle
+    const FLOAT vp[ndim],              ///< Velocity of particle
+    FLOAT ap[ndim],                    ///< Acceleration of particle
+    FLOAT adotp[ndim],                 ///< 'Jerk' of particle
+    FLOAT &potp)                       ///< Potential of particle
+  {
     return;
   }
 

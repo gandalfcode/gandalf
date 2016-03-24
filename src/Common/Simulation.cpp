@@ -1119,6 +1119,9 @@ void Simulation<ndim>::ProcessParameters(void)
   else if (stringparams["external_potential"] == "plummer") {
     extpot = new PlummerPotential<ndim>(floatparams["mplummer"], floatparams["rplummer"]);
   }
+  else if (stringparams["external_potential"] == "silcc") {
+    extpot = new SilccPotential<ndim>(floatparams["sigma_star"], floatparams["z_d"], simunits);
+  }
   else {
     string message = "Unrecognised parameter : external_potential = "
       + simparams->stringparams["external_potential"];

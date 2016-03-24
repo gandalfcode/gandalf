@@ -223,7 +223,6 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
 
       // If using an adiabatic energy equation, then explictly integrate the internal energy
       if (gas_eos == energy_eqn) {
-        assert(part.u > 0.0);
         part.u     += 0.5*(part.dudt - part.dudt0)*(t - part.tlast); //timestep*(FLOAT) nstep;
 
         // In spurious cases where correction term can lead to negative energies, simply use
