@@ -29,6 +29,72 @@
 using namespace std;
 
 
+
+
+//=================================================================================================
+//  Ic::CheckInitialConditions
+/// Performs some simple sanity checks on all initial conditions
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::CalculateMassTable
+ (std::string posString,
+  FLOAT xmin,
+  FLOAT xmax)
+{
+  posQuantity = posString;
+  Ntable = 1001;
+  xTable = new FLOAT[Ntable];
+  mTable = new FLOAT[Ntable];
+  mFracTable = new FLOAT[Ntable];
+
+  xTable[0] = xmin;
+  mTable[0] = (FLOAT) 0.0;
+
+  for (int i=1; i<Ntable; i++) {
+    xTable[i] = xmin + (FLOAT) i*(xmax - xmin)/(FLOAT) (Ntable - 1);
+    if (posString == "x" || posString == "y" || posString == "z") {
+      mTable[i] = mTable[i-1] + (FLOAT) 0.5*(GetDensity(xTable[i-1]) + GetDensity(xTable[i]))*
+        (xTable[i] - xTable[i-1]);
+    }
+    else if (posString == "r" && ndim == 3) {
+      mTable[i] = mTable[i-1] + (FLOAT) 4.0*pi*(GetDensity(xTable[i])*pow(xTable[i],3) -
+                                                GetDensity(xTable[i-1])*pow(xTable[i-1],3))/3.0;
+    }
+    else {
+      std::cout << "Unrecognised position quantity : " << posString << std::endl;
+    }
+    cout << "i : " << i << "    x : " << xTable[i] << "     mTable[" << i << "] : " << mTable[i] << endl;
+  }
+
+  // Calculate normalised/fractional mass table
+  for (int i=0; i<Ntable; i++) mFracTable[i] = mTable[i]/mTable[Ntable-1];
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Ic::FindMassIntegratedPosition
+/// Performs some simple sanity checks on all initial conditions
+//=================================================================================================
+template <int ndim>
+FLOAT Ic<ndim>::FindMassIntegratedPosition(FLOAT mfrac)
+{
+  int itable = 0;
+  FLOAT xValue;
+  for (int i=1; i<Ntable; i++) {
+    itable = i;
+    if (mfrac >= mFracTable[i-1] && mfrac < mFracTable[i]) break;
+  }
+
+  xValue = xTable[itable];
+
+  return xValue;
+}
+
+
+
 //=================================================================================================
 //  Ic::CheckInitialConditions
 /// Performs some simple sanity checks on all initial conditions

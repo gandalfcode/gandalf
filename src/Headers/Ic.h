@@ -53,6 +53,11 @@ protected:
   const SimUnits& simunits;                 ///< Reference to main simunits object
   const DomainBox<ndim>& simbox;            ///< Reference to simulation bounding box object
 
+  int Ntable;                               ///< No. of table elements
+  FLOAT *xTable;                            ///< Tabulated position values
+  FLOAT *mTable;                            ///< Tabulated integrated mass values
+  FLOAT *mFracTable;                        ///< Tabulated fractional integrated mass values
+  std::string posQuantity;                  ///< Position quantity string (e.g. x, y, r)
   Parameters* simparams;                    ///< Pointer to parameters object
   RandomNumber *randnumb;                   ///< Random number object pointer
 
@@ -73,6 +78,8 @@ protected:
 
 public:
 
+  // Constructor for setting important variables and pointers
+  //-----------------------------------------------------------------------------------------------
   Ic(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
     sim(_sim), hydro(_hydro), invndim(_invndim),
     simunits(_sim->simunits), simbox(_sim->simbox),
@@ -80,8 +87,19 @@ public:
   {
   };
 
+
+  // Virtual functions
+  //-----------------------------------------------------------------------------------------------
+  virtual void CalculateMassTable(std::string, FLOAT, FLOAT);
+  virtual FLOAT FindMassIntegratedPosition(FLOAT);
   virtual void Generate(void) {};
   virtual FLOAT GetValue(std::string, FLOAT *) {return (FLOAT) 0.0;}
+  virtual FLOAT GetDensity(FLOAT) {return (FLOAT) 0.0;}
+
+
+  // Other common functions
+  //-----------------------------------------------------------------------------------------------
+  void CheckInitialConditions(void);
 
 
   // Initial conditions routines
@@ -91,7 +109,6 @@ public:
   void BlastWave(void);
   void BondiAccretion(void);
   void BossBodenheimer(void);
-  void CheckInitialConditions(void);
   void ContactDiscontinuity(void);
   void EwaldDensity(void);
   void GaussianRing(void);
@@ -117,6 +134,7 @@ public:
   void TurbIsothermSphere(void);
   void EvrardCollapse(void);
   void DustyBox(void);
+
 
   // Static functions which can be used outside of Ic class
   // (e.g. generating new particles on the fly in simulations)
@@ -146,9 +164,6 @@ public:
 
   NullIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
     Ic<ndim>(_sim, _hydro, _invndim) {};
-
-  virtual void Generate(void) {};
-  virtual FLOAT GetValue(std::string, FLOAT *) {return (FLOAT) 0.0;}
 
 };
 
@@ -186,6 +201,8 @@ protected:
   FLOAT rho_midplane;                  // ..
   FLOAT rho_star;                      // Stellar density at the midplane
   FLOAT sigma_star;                    // ..
+  FLOAT temp0;                         // ..
+  FLOAT u0;                            // ..
   FLOAT z_d;                           // ..
 
 
@@ -197,6 +214,7 @@ public:
 
   virtual void Generate(void);
   virtual FLOAT GetValue(std::string, FLOAT *);
+  virtual FLOAT GetDensity(FLOAT);
 
 };
 #endif

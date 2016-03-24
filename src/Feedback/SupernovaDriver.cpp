@@ -132,7 +132,6 @@ void RandomSedovTestDriver<ndim>::Update
   NeighbourSearch<ndim> *neibsearch,         ///< Pointer to neighbour search object
   RandomNumber *randnumb)                    ///< Pointer to random number generator
 {
-
   // Use random number generator to decide the position of the supernova
   //-----------------------------------------------------------------------------------------------
   if (t >= tnext) {

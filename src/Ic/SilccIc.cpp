@@ -38,12 +38,16 @@ template <int ndim>
 SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
   Ic<ndim>(_sim, _hydro, _invndim)
 {
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+
   // Create local copies of initial conditions parameters
   a_midplane   = simparams->floatparams["a_midplane"];
   h_midplane   = simparams->floatparams["h_midplane"];
   rho_midplane = simparams->floatparams["rho_midplane"];
   sigma_star   = simparams->floatparams["sigma_star"];
   z_d          = simparams->floatparams["z_d"];
+  temp0        = simparams->floatparams["temp0"];
 
   // Some sanity checking to ensure correct units are used for these ICs
   if (simparams->stringparams["routunit"] != "pc") {
@@ -59,14 +63,27 @@ SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOA
   rho_midplane /= simunits.rho.outscale;
   sigma_star   /= simunits.sigma.outscale;
   z_d          /= simunits.r.outscale;
+  temp0        /= simunits.temp.outscale;
+
+  // Compute initial internal energy of all particles
+  u0 = temp0/gammaone/mu_bar;
 
   // Compute total mass of particles in simulation box by integrating in the z-direction
-  box_area  = simbox.boxsize[1]*simbox.boxsize[2];
+  box_area = (FLOAT) 1.0;
+  for (int k=0; k<ndim-1; k++) box_area *= simbox.boxsize[k];
   rho_star  = (FLOAT) 0.25*sigma_star/z_d;
   rho_a     = rho_midplane*exp(-a_midplane*a_midplane/h_midplane/h_midplane);
   m_exp     = (FLOAT) 0.5*sqrt(pi)*rho_midplane*h_midplane*erf(a_midplane/h_midplane)*box_area;
-  m_uniform = rho_a*box_area*(simbox.boxmax[0] - a_midplane);
+  m_uniform = rho_a*box_area*(simbox.boxmax[ndim-1] - a_midplane);
   m_box     = 2.0*(m_exp + m_uniform);
+
+  FLOAT sigma_gas = m_box/box_area;
+
+
+  // Generate mass table
+  this->CalculateMassTable("z", simbox.boxmin[ndim-1], simbox.boxmax[ndim-1]);
+  cout << "Compare masses;  m_box : " << m_box <<  "    m_table : " << this->mTable[this->Ntable-1]*box_area << endl;
+
 
   // TESTING :
   //m_box = 1.2*0.5*box_area + 0.8*0.5*box_area;
@@ -74,6 +91,7 @@ SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOA
   cout << "rho_midplane : " << rho_midplane*simunits.rho.outscale << "   rho_star : " << rho_star*simunits.rho.outscale << endl;
   cout << "rho_a : " << rho_a*simunits.rho.outscale << "   " << "    box_area : " <<  box_area << endl;
   cout << "a_midplane : " << a_midplane << "   " << h_midplane << "   " << endl;
+  cout << "sigma_gas : " << sigma_gas*simunits.sigma.outscale << endl;
 
 }
 
@@ -88,7 +106,7 @@ void SilccIc<ndim>::Generate(void)
 {
   // Only compile for 3-dimensional case
   //-----------------------------------------------------------------------------------------------
-  //if (ndim == 3) {
+  if (ndim == 3) {
 
     int i;                               // Particle counter
     int k;                               // Dimension counter
@@ -114,11 +132,11 @@ void SilccIc<ndim>::Generate(void)
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
 
-      /*part.r[0] = simbox.boxmin[0] + simbox.boxsize[0]*sim->randnumb->floatrand();
+      part.r[0] = simbox.boxmin[0] + simbox.boxsize[0]*sim->randnumb->floatrand();
       part.r[1] = simbox.boxmin[1] + simbox.boxsize[1]*sim->randnumb->floatrand();
-      z = m_box*((FLOAT) 2.0*sim->randnumb->floatrand() - (FLOAT) 1.0);*/
+      part.r[2] = this->FindMassIntegratedPosition(sim->randnumb->floatrand());
 
-      for (k=0; k<ndim; k++) part.r[k] = simbox.boxmin[k] + simbox.boxsize[k]*sim->randnumb->floatrand();
+
       for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
       part.m = mp;
       part.u = (FLOAT) 1.5;
@@ -127,12 +145,29 @@ void SilccIc<ndim>::Generate(void)
 
     }
 
-  //}
+  }
   //-----------------------------------------------------------------------------------------------
 
   return;
 }
 
+
+
+//=================================================================================================
+//  Silcc::GetDensity
+/// ...
+//=================================================================================================
+template <int ndim>
+FLOAT SilccIc<ndim>::GetDensity
+ (FLOAT r)
+{
+  if (fabs(r) <= a_midplane) {
+    return rho_midplane*exp(-r*r/h_midplane/h_midplane);
+  }
+  else {
+    return rho_a;
+  }
+}
 
 
 //=================================================================================================
@@ -154,16 +189,12 @@ FLOAT SilccIc<ndim>::GetValue
     return r[2];
   }
   else if (var == "rho") {
-
-    if (fabs(r[0]) <= a_midplane) {
-      return rho_midplane*exp(-r[0]*r[0]/h_midplane/h_midplane);
+    if (fabs(r[ndim-1]) <= a_midplane) {
+      return rho_midplane*exp(-r[ndim-1]*r[ndim-1]/h_midplane/h_midplane);
     }
     else {
       return rho_a;
     }
-    //if (r[1] > 0.0) return 0.5;
-    //else return 1.5;
-    //return 1.0 + r[1]/1000.0;
   }
   else {
     std::cout << "Invalid string variable for Silcc::GetValue" << std::endl;
