@@ -172,30 +172,30 @@ public:
 /// \author  D. A. Hubber, S. Walch, T. Balduin, P. Rohde
 /// \date    19/01/2016
 //=================================================================================================
-/*template <int ndim>
-class SilccSupernovaDriving
+template <int ndim>
+class SilccSupernovaDriver : public SupernovaDriver<ndim>
 {
 public:
-  // SN ID (defined in constructor)
+  using SupernovaDriver<ndim>::Nsupernova;
+
   int SNid;
-
-  // Global SN parameters that could go into the parameters file
-  FLOAT R_therm_kin;  //ratio of thermal and kinetic E to be injected
-  FLOAT Minj;         //ejecta mass (default 7 Msun)
-  FLOAT Rinj;         //injection radius (default 1pc)
-
-  int nSN;
+  FLOAT tsupernova;
+  FLOAT Minj;
+  FLOAT Rinj;
+  FLOAT R_therm_kin;
   FLOAT *SNtime;
   FLOAT *SNposx;
   FLOAT *SNposy;
   FLOAT *SNposz;
   FLOAT *SNEinj;
+  Supernova<ndim>  supernova;                 ///< ..
 
 
-  // Constructor
-  SupernovaDriving(Parameters *params, SimUnits &units, bool restart, FLOAT time);
-  // update pass current simulation time, time step, hydro
-  void Update(FLOAT, Hydrodynamics*);
+  SilccSupernovaDriver(Parameters *params, SimUnits &units);
+  ~SilccSupernovaDriver();
 
-};*/
+  virtual void Update(const int, const int, const int, const FLOAT,
+                      Hydrodynamics<ndim> *, NeighbourSearch<ndim> *, RandomNumber *);
+
+};
 #endif

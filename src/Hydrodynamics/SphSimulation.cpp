@@ -160,6 +160,9 @@ void SphSimulation<ndim>::ProcessParameters(void)
   else if (stringparams["supernova_feedback"] == "random") {
     snDriver = new RandomSedovTestDriver<ndim>(this,simparams, simunits, simbox);
   }
+  else if (stringparams["supernova_feedback"] == "silcc") {
+    snDriver = new SilccSupernovaDriver<ndim>(simparams, simunits);
+  }
   else {
     string message = "Unrecognised parameter :  = supernova_feedback"
       + simparams->stringparams["supernova_feedback"];
@@ -1498,8 +1501,8 @@ template <int ndim>
 void SphSimulation<ndim>::RegulariseParticleDistribution
  (const int Nreg)                                  ///< [in] No. of regularisation steps
 {
-  FLOAT alphaReg = 0.1;                      // Particle displacement magnitude
-  FLOAT rhoReg = 0.5;                        // ..
+  FLOAT alphaReg = 0.0;                      // Particle displacement magnitude
+  FLOAT rhoReg = 0.8;                        // ..
   FLOAT *rreg = new FLOAT[ndim*sph->Nhydromax];    // Array of particle positions
   SphParticle<ndim> *partdata = sph->GetSphParticleArray();
 
