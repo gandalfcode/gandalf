@@ -52,7 +52,7 @@ class SlopeLimiter
 
   virtual void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
                                     FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2]) = 0;
-
+  virtual void ComputeAlphaSlope(ParticleType<ndim> &parti, ParticleType<ndim> &partj, FLOAT draux[ndim]) {};
 };
 
 
@@ -134,19 +134,24 @@ class Springel2009Limiter : public SlopeLimiter<ndim,ParticleType>
   void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
                             FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
   {
-    int var;
-    FLOAT alpha;
-
-    for (var=0; var<ndim+2; var++) {
+    for (int var=0; var<ndim+2; var++) {
       dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      if (dW[var] > 0.0) alpha = (parti.Wmax[var] - parti.Wprim[var])/dW[var];
-      else if (dW[var] < 0.0) alpha = (parti.Wmin[var] - parti.Wprim[var])/dW[var];
-      else alpha = (FLOAT) 1.0;
-      alpha = min((FLOAT) 1.0, alpha);
-      //alpha = (FLOAT) 0.0;
-      dW[var] = alpha*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
-      assert(alpha >= (FLOAT) 0.0);
+      dW[var] = parti.alpha_slope[var]*dW[var];
+      for (int k=0; k<ndim; k++) gradW[var][k] = parti.alpha_slope[var]*parti.grad[var][k];
+    }
+  }
+
+  virtual void ComputeAlphaSlope(ParticleType<ndim> &parti, ParticleType<ndim> &partj, FLOAT draux[ndim])
+  {
+    FLOAT psi;
+    FLOAT dW[ndim+2];
+
+    for (int var=0; var<ndim+2; var++) {
+      dW[var] = DotProduct(parti.grad[var], draux, ndim);
+      if (dW[var] > (FLOAT) 0.0) psi = (parti.Wmax[var] - parti.Wprim[var])/dW[var];
+      else if (dW[var] < (FLOAT) 0.0) psi = (parti.Wmin[var] - parti.Wprim[var])/dW[var];
+      else psi = (FLOAT) 1.0;
+      parti.alpha_slope[var] = min(parti.alpha_slope[var], psi);
     }
   }
 
@@ -173,20 +178,25 @@ class TESS2011Limiter : public SlopeLimiter<ndim,ParticleType>
   void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
                             FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
   {
-    int var;
-    FLOAT alpha;
-    const FLOAT theta = (FLOAT) 0.5;
-
-    for (var=0; var<ndim+2; var++) {
+    for (int var=0; var<ndim+2; var++) {
       dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      if (dW[var] > (FLOAT) 0.0) alpha = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], (FLOAT) 0.0);
-      else if (dW[var] < 0.0) alpha = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], (FLOAT) 0.0);
-      else alpha = (FLOAT) 1.0;
-      alpha = min((FLOAT) 1.0, alpha);
-      //alpha = 0.0;
-      dW[var] = alpha*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
-      assert(alpha >= (FLOAT) 0.0);
+      dW[var] = parti.alpha_slope[var]*dW[var];
+      for (int k=0; k<ndim; k++) gradW[var][k] = parti.alpha_slope[var]*parti.grad[var][k];
+    }
+  }
+
+  virtual void ComputeAlphaSlope(ParticleType<ndim> &parti, ParticleType<ndim> &partj, FLOAT draux[ndim])
+  {
+    const FLOAT theta = (FLOAT) 0.5;
+    FLOAT psi;
+    FLOAT dW[ndim+2];
+
+    for (int var=0; var<ndim+2; var++) {
+      dW[var] = DotProduct(parti.grad[var], draux, ndim);
+      if (dW[var] > (FLOAT) 0.0) psi = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], (FLOAT) 0.0);
+      else if (dW[var] < 0.0) psi = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], (FLOAT) 0.0);
+      else psi = (FLOAT) 1.0;
+      parti.alpha_slope[var] = min(parti.alpha_slope[var], psi);
     }
   }
 
@@ -260,9 +270,9 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
     FLOAT phiminus;
     FLOAT phiplus;
     FLOAT phimid;
-    const FLOAT beta = (FLOAT) 1.0;
+    const FLOAT beta = (FLOAT) 0.75;
     const FLOAT psi1 = (FLOAT) 0.5;
-    const FLOAT psi2 = (FLOAT) 0.375;  //0.25;
+    const FLOAT psi2 = (FLOAT) 0.25;  //0.25;
 
     //---------------------------------------------------------------------------------------------
     for (var=0; var<ndim+2; var++) {

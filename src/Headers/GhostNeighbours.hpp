@@ -35,7 +35,19 @@
 template<int ndim>
 class GhostNeighbourFinder
 {
+private:
+
+  const DomainBox<ndim>& _domain ;
+  Box<ndim> _cell ;
+  FLOAT _centre[ndim] ;
+  bool _mirror_bound[ndim][2] ;
+  bool _need_mirror[ndim][2] ;
+  bool _periodic_bound[ndim] ;
+  bool _any_periodic, _any_mirror, _need_mirrors, _any_special;
+
+
 public:
+
 	GhostNeighbourFinder(const DomainBox<ndim>& simbox)
 	: _domain(simbox),
 	  _any_periodic(false), _any_mirror(false), _need_mirrors(false), _any_special(false)
@@ -430,17 +442,8 @@ public:
 		}
 	}
 
-private:
-	const DomainBox<ndim>& _domain ;
-	Box<ndim> _cell ;
-	FLOAT _centre[ndim] ;
-	bool _mirror_bound[ndim][2] ;
-	bool _need_mirror[ndim][2] ;
-	bool _periodic_bound[ndim] ;
-	bool _any_periodic, _any_mirror, _need_mirrors, _any_special;
 };
 
 
 
 #endif//_GHOST_NEIGHBOURS_H_
-

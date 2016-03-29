@@ -37,6 +37,7 @@
 #include "EOS.h"
 #include "RiemannSolver.h"
 #include "ExternalPotential.h"
+#include "SimUnits.h"
 #if defined _OPENMP
 #include "omp.h"
 #endif
@@ -69,8 +70,8 @@ public:
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
-  Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
-                string gas_eos_aux, string KernelName, int size_hydro_part);
+  Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux, string gas_eos_aux,
+                string KernelName, int size_hydro_part, SimUnits &units, Parameters *params);
 
 
   // SPH array memory allocation functions
@@ -79,6 +80,7 @@ public:
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
   virtual void ReorderParticles(void) = 0;
+  virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) = 0;
   void ComputeBoundingBox(FLOAT *, FLOAT *, const int);
   void CheckXBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
   void CheckYBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
@@ -107,6 +109,7 @@ public:
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
   bool allocated;                      ///< Is memory allocated?
+  int create_sinks;                    ///< Create new sink particles?
   int Ngather;                         ///< No. of gather neighbours
   int Nghost;                          ///< No. of ghost particles
   int Nghostmax;                       ///< Max. allowed no. of ghost particles
@@ -147,10 +150,10 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
 {
  public:
 
-  NullHydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
-                    string gas_eos_aux, string KernelName, int size_hydro_part):
-    Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux,
-                        gas_eos_aux, KernelName, size_hydro_part) {};
+  NullHydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux, string gas_eos_aux,
+                    string KernelName, int size_hydro_part, SimUnits &units, Parameters *params):
+    Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux, gas_eos_aux, KernelName,
+                        size_hydro_part, units, params) {};
 
   virtual Particle<ndim>* GetParticleArray() {return NULL;};
 
@@ -158,6 +161,7 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
   virtual void DeallocateMemory(void) {};
   virtual void DeleteDeadParticles(void) {};
   virtual void ReorderParticles(void) {};
+  virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {};
 
 };
 #endif

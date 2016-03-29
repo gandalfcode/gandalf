@@ -65,8 +65,8 @@ struct ParticleTypeInfo
   bool drag_forces ;                   ///< Does particle experience drag forces?
   Typemask hmask;                      ///< Neighbour mask for computing smoothing lengths
   Typemask hydromask;                  ///< Neighbour mask for computing hydro forces
-  Typemask gravmask;                   ///< Neighbour mask for computing drag forces
-  Typemask dragmask;
+  Typemask gravmask;                   ///< Neighbour mask for computing gravity forces
+  Typemask dragmask;                   ///< Neighbour mask for computing drag forces
 
   ParticleTypeInfo() {
     N = 0;
@@ -136,6 +136,7 @@ struct Particle
 
   Particle() {
     active = false;
+    potmin = false;
     iorig = -1;
     itype = gas;
     ptype = gas_type;
@@ -282,8 +283,6 @@ struct SM2012SphParticle : public SphParticle<ndim>
 template <int ndim>
 struct MeshlessFVParticle : public Particle<ndim>
 {
-  bool potmin;                         ///< Is particle at a potential minima?
-  int sinkid;                          ///< i.d. of sink particle
   FLOAT invh;                          ///< 1 / h
   FLOAT hfactor;                       ///< invh^(ndim + 1)
   FLOAT invrho;                        ///< 1 / rho
@@ -302,12 +301,12 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT Wmax[ndim+2];                  ///< ..
   FLOAT Wmidmax[ndim+2];               ///< ..
   FLOAT Wmidmin[ndim+2];               ///< ..
-  FLOAT Ucons[ndim+2];                 ///< ..
   FLOAT Qcons[ndim+2];                 ///< ..
   FLOAT Qcons0[ndim+2];                ///< ..
   FLOAT grad[ndim+2][ndim];            ///< ..
   FLOAT dQ[ndim+2];                    ///< ..
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
+  FLOAT alpha_slope[ndim+2];           ///< ..
   FLOAT Utot;                          ///< ..
   FLOAT rdmdt[ndim];                   ///< ..
   FLOAT rdmdt0[ndim];                  ///< ..
@@ -318,8 +317,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   //-----------------------------------------------------------------------------------------------
   MeshlessFVParticle()
   {
-    potmin    = false;
-    sinkid    = -1;
     invh      = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;
     invrho    = (FLOAT) 0.0;

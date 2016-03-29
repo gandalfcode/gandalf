@@ -594,7 +594,10 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
 
   int k,kv;                            // ..
   FLOAT ekin;                          // ..
-  FLOAT etotl, etotr, Sl, Sr, ddu, dstarl, dstarr, etotstarl, etotstarr, df, uf, pf, etotf;
+  FLOAT etotl, etotr, Sl, Sr, ddu, dstarl, dstarr;
+  //FLOAT etotstarl, etotstarr, 
+  FLOAT df, uf, pf;
+  //FLOAT etotf;
   FLOAT pstar;                         // Pressure in star region
   FLOAT ustar;                         // Velocity in star region
   //FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
@@ -655,36 +658,36 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
 
     // Left star region variables
     dstarl = dl*(Sl - ul)/(Sl - ustar);
-    etotstarl = dstarl*(etotl/dl + (ustar - ul)*(ustar + pl/(dl*(Sl - ul))));
+    //etotstarl = dstarl*(etotl/dl + (ustar - ul)*(ustar + pl/(dl*(Sl - ul))));
 
     // Right star region variables
     dstarr = dr*(Sr - ur)/(Sr - ustar);
-    etotstarr = dstarr*(etotr/dr + (ustar - ur)*(ustar + pr/(dr*(Sr - ur))));
+    //etotstarr = dstarr*(etotr/dr + (ustar - ur)*(ustar + pr/(dr*(Sr - ur))));
 
     // Sample solution at x/t=0
     if( Sl > 0.0 ) {
       df = dl;
       uf = ul;
       pf = pl;
-      etotf = etotl;
+      //etotf = etotl;
     }
     else if( ustar > 0.0 ) {
       df = dstarl;
       uf = ustar;
       pf = pstar;
-      etotf = etotstarl;
+      //etotf = etotstarl;
     }
     else if( Sr > 0.0 ) {
       df = dstarr;
       uf = ustar;
       pf = pstar;
-      etotf = etotstarr;
+      //etotf = etotstarr;
     }
     else {
       df = dr;
       uf = ur;
       pf = pr;
-      etotf = etotr;
+      //etotf = etotr;
     }
     assert(pf >= 0.0);
     assert(df >= 0.0);
@@ -727,7 +730,8 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
 
     // Add corrections for transforming back to original lab frame
     for (k=0; k<ndim; k++) {
-      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] + DotProduct(vface, flux[k], ndim);
+      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] +
+        DotProduct(vface, flux[k], ndim);
     }
     for (k=0; k<ndim; k++) {
       for (kv=0; kv<ndim; kv++) flux[kv][k] += vface[kv]*flux[irho][k];
