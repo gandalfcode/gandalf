@@ -109,6 +109,7 @@ public:
   void SoundWave(void);
   void SpitzerExpansion(void);
   void TripleStar(void);
+  void BlobTest(void);
   void TurbulentCore(void);
   void UniformBox(void);
   void UniformSphere(void);
