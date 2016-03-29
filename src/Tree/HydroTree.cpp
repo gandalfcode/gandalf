@@ -883,7 +883,20 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
 
   return;
 }
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+double HydroTree<ndim,ParticleType,TreeCell>::GetMaximumSmoothingLength()
+{
+  assert(tree != NULL) ;
+  assert(tree->celldata != NULL) ;
+  double hmax = tree->celldata[0].hmax ;
 
+#if defined MPI_PARALLEL
+  for (int n = 0; n < Nmpi; n++)
+	hmax = std::max(hmax, prunedtree[n]->celldata[0].hmax) ;
+#endif
+  return hmax ;
+}
 
 
 #ifdef MPI_PARALLEL

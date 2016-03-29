@@ -91,6 +91,7 @@ protected:
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) = 0;
   virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
                                       Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+  virtual double GetMaximumSmoothingLength() = 0 ;
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Particle<ndim> *) = 0;
@@ -182,6 +183,8 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
                                       Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual double GetMaximumSmoothingLength() { return _Hmax ; }
+
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Particle<ndim> *) {};
@@ -209,6 +212,8 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void FindParticlesToTransfer(Hydrodynamics<ndim> *, vector<vector<int> >& ,
                                        vector<int> &, const vector<int> &, MpiNode<ndim> *);
 #endif
+
+  double _Hmax ;
 
 };
 
@@ -257,6 +262,7 @@ protected:
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
   virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
                                       Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual double GetMaximumSmoothingLength() ;
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Particle<ndim> *);
