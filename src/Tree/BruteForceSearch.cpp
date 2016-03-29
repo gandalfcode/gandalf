@@ -70,7 +70,7 @@ void BruteForceSearch<ndim,ParticleType>::BuildTree
     	hmax = partdata[n].h ;
 #if defined MPI_PARALLEL
   double hmax_local = hmax ;
-  	 MPI_AllReduce(&hmax_local, &hmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD) ;
+  	 MPI_Allreduce(&hmax_local, &hmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD) ;
 #endif
   _Hmax = hmax ;
   return;
