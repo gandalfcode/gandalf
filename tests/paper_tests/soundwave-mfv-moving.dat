@@ -12,9 +12,9 @@ Simulation run id string                    : run_id = SOUNDWAVE1-MFV
 Select SPH simulation                       : sim = mfvmuscl
 Select shocktube initial conditions         : ic = soundwave
 1D shocktube test                           : ndim = 1
-Pressure of LHS fluid                       : press1 = 1.0
+Pressure of LHS fluid                       : press1 = 0.6
 Density of LHS fluid                        : rhofluid1 = 1.0
-Sound wave amplitude                        : amp = 0.0001
+Sound wave amplitude                        : amp = 0.000001
 No. of particles in wave                    : Nhydro = 16
 Use dimensionless units                     : dimensionless = 1
 
@@ -50,7 +50,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666666
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.00000000000001
+SPH smoothing length iteration tolerance    : h_converge = 0.0000000000000001
 Smoothing length constant                   : h_fac = 1.0
 
 
@@ -69,7 +69,7 @@ Slope limiter                               : slope_limiter = gizmo
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfdkd
-SPH Courant timestep condition multiplier   : courant_mult = 0.05
+SPH Courant timestep condition multiplier   : courant_mult = 0.25
 SPH acceleration condition multiplier       : accel_mult = 0.1
 No. of block timestep levels                : Nlevels = 1
 
