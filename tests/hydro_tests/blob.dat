@@ -1,0 +1,96 @@
+#-------------------------------------------------------------
+# Blob test
+# Generate initial conditiosn to run the 'blob' problem.
+#-------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = BLOB1
+Select SPH simulation                       : sim = sph
+Select shocktube initial conditions         : ic = blob
+Dimensionality of cube                      : ndim = 3
+Pressure of fluid 1                         : press1 = 0.1
+Density of fluid 1                          : rhofluid1 = 1.0
+Radius of initial fluid sphere              : radius = 1.0
+Density of fluid 2                          : rhofluid2 = 10.0
+No. of x-particles in fluid 1               : Nlattice1[0] = 64
+No. of y-particles in fluid 1               : Nlattice1[1] = 64
+No. of y-particles in fluid 1               : Nlattice1[2] = 64
+Background flow Mach number                 : mach = 2.7
+Local arrangement of particles              : particle_distribution = hexagonal_lattice
+Use dimensionless units                     : dimensionless = 1
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = -2.0
+RHS position of boundary in x-dimension     : boxmax[0] = 2.0
+LHS position of boundary in y-dimension     : boxmin[1] = -2.0
+RHS position of boundary in y-dimension     : boxmax[1] = 2.0
+LHS position of boundary in z-dimension     : boxmin[2] = -2.0
+RHS position of boundary in z-dimension     : boxmax[2] = 2.0
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+LHS boundary type in z-dimension            : boundary_lhs[2] = periodic
+RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 3.0
+Time of first snapshot                      : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.5
+Screen output frequency (in no. of steps)   : noutputstep = 128
+
+
+#------------------------
+#�Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = quintic
+SPH smoothing length iteration tolerance    : h_converge = 0.02
+Tabulate SPH kernel                         : tabulated_kernel = 1
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = wadsley2008
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.1
+SPH energy equation timestep multiplier     : energy_mult = 0.4
+No. of block timestep levels                : Nlevels = 4
+
+
+#---------------------
+# Tree options
+#---------------------
+SPH neighbour search algorithm              : neib_search = kdtree
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0
