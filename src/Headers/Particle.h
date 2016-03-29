@@ -306,6 +306,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT grad[ndim+2][ndim];            ///< ..
   FLOAT dQ[ndim+2];                    ///< ..
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
+  FLOAT alpha_slope[ndim+2];           ///< ..
   FLOAT Utot;                          ///< ..
   FLOAT rdmdt[ndim];                   ///< ..
   FLOAT rdmdt0[ndim];                  ///< ..

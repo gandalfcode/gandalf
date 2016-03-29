@@ -211,7 +211,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,mfv,mfvdata)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,mfv,mfvdata,Ntot)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -456,7 +456,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,nbody,mfv,mfvdata)
+#pragma omp parallel default(none) shared(cactive,celllist,nbody,mfv,mfvdata,Ntot)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -1034,10 +1034,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       okflag = tree->ComputeGravityInteractionAndGhostList
         (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
          Ndirect, Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
-      //okflag = tree->ComputeGravityInteractionList
-      //  (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib, Ndirect,
-      //   Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
-
 
       // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
       while (okflag < 0 || Nneib > Nneibmax) {
@@ -1064,9 +1060,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
         okflag = tree->ComputeGravityInteractionAndGhostList
           (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
            Ndirect, Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
-        //okflag = tree->ComputeGravityInteractionList
-        //  (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib, Ndirect,
-        //   Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
       };
 
 

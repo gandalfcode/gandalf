@@ -61,7 +61,7 @@ MeshlessFV<ndim>::MeshlessFV(int _hydro_forces, int _self_gravity, FLOAT _accel_
   // Local references to parameter variables for brevity
   map<string, int> &intparams = params->intparams;
   map<string, double> &floatparams = params->floatparams;
-  map<string, string> &stringparams = params->stringparams;
+  //map<string, string> &stringparams = params->stringparams;
 
   Nhydromax       = intparams["Nhydromax"];
   create_sinks    = intparams["create_sinks"];
@@ -184,7 +184,7 @@ void MeshlessFV<ndim>::DeleteDeadParticles(void)
 
 //=================================================================================================
 //  MeshlessFV::ReorderParticles
-/// Delete selected SPH particles from the main arrays.
+/// Reorder particles in main arrays according to order given in iorder array.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::ReorderParticles(void)
@@ -250,6 +250,94 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
 
 
 //=================================================================================================
+//  MeshlessFV<ndim>::IntegrateParticles
+/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
+//=================================================================================================
+template <int ndim>
+void MeshlessFV<ndim>::IntegrateParticles
+ (const int n,                         ///< [in] Integer time in block time struct
+  const int Npart,                     ///< [in] Number of particles
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep,                ///< [in] Base timestep value
+  const DomainBox<ndim> &simbox,       ///< [in] Simulation box
+  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
+{
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+
+  debug2("[MeshlessFV::IntegrateParticles]");
+
+  // Integrate all conserved variables to end of timestep
+  //-----------------------------------------------------------------------------------------------
+  if (!staticParticles) {
+    for (i=0; i<Nhydro; i++) {
+      MeshlessFVParticle<ndim> &part = partdata[i];
+      dn = n - part.nlast;
+      part.m = part.Qcons[FV<ndim>::irho] + part.dQ[FV<ndim>::irho];
+
+      //-------------------------------------------------------------------------------------------
+      for (k=0; k<ndim; k++) {
+        part.r[k] = part.r0[k] + part.v0[k]*timestep*(FLOAT) dn;
+
+        // Check if particle has crossed LHS boundary
+        //-----------------------------------------------------------------------------------------
+        if (part.r[k] < simbox.boxmin[k]) {
+
+          // Check if periodic boundary
+          if (simbox.boundary_lhs[k] == periodicBoundary) {
+            part.r[k]  += simbox.boxsize[k];
+            part.r0[k] += simbox.boxsize[k];
+          }
+
+          // Check if wall or mirror boundary
+          if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
+            part.r[k]  = (FLOAT) 2.0*simbox.boxmin[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.boxmin[k] - part.r0[k];
+            part.v[k]  = -part.v[k];
+            part.v0[k] = -part.v0[k];
+            part.a[k]  = -part.a[k];
+            part.a0[k] = -part.a0[k];
+          }
+        }
+
+        // Check if particle has crossed RHS boundary
+        //-----------------------------------------------------------------------------------------
+        if (part.r[k] > simbox.boxmax[k]) {
+
+          // Check if periodic boundary
+          if (simbox.boundary_rhs[k] == periodicBoundary) {
+            part.r[k]  -= simbox.boxsize[k];
+            part.r0[k] -= simbox.boxsize[k];
+          }
+
+          // Check if wall or mirror boundary
+          if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
+            part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
+            part.v[k]  = -part.v[k];
+            part.v0[k] = -part.v0[k];
+            part.a[k]  = -part.a[k];
+            part.a0[k] = -part.a0[k];
+          }
+
+        }
+        //-----------------------------------------------------------------------------------------
+
+      }
+      //-------------------------------------------------------------------------------------------
+
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  return;
+}
+
+
+
+//=================================================================================================
 //  MeshlessFV<ndim>::EndTimestep
 /// Calculate or reset all quantities for all particles that reach the end of their timesteps.
 //=================================================================================================
@@ -261,23 +349,23 @@ void MeshlessFV<ndim>::EndTimestep
   const FLOAT timestep,                ///< [in] Base timestep value
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
 {
-  int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
-  int k;                               // Dimension counter
-  int nstep;                           // Particle (integer) step size
 
   debug2("[MeshlessFV::EndTimestep]");
   //timing->StartTimingSection("MFV_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(partdata)
+#pragma omp parallel for default(none) shared(partdata)
   for (i=0; i<Npart; i++) {
-    MeshlessFVParticle<ndim> &part = partdata[i];
+
+    MeshlessFVParticle<ndim> &part = partdata[i];    // Local reference to particle
+    int dn = n - part.nlast;                         // Integer time since beginning of step
+    int k;                                           // Dimension counter
+    int nstep = part.nstep;                          // Particle (integer) step size
+
     if (part.itype == dead) continue;
 
-    dn    = n - part.nlast;
-    nstep = part.nstep;
 
     // If particle is at the end of its timestep
     //---------------------------------------------------------------------------------------------
@@ -295,9 +383,12 @@ void MeshlessFV<ndim>::EndTimestep
           (part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
         part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
           (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-           part.Qcons[irho]*DotProduct(part.v, part.a, ndim)); //+
-             //DotProduct(part.a0, part.rdmdt0, ndim) +
-             //DotProduct(part.a, part.rdmdt, ndim));
+           part.Qcons[irho]*DotProduct(part.v, part.a, ndim) +
+           DotProduct(part.a0, part.rdmdt0, ndim) +
+           DotProduct(part.a, part.rdmdt, ndim));
+        //part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+        //  (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
+        //   part.Qcons[irho]*DotProduct(part.v, part.a, ndim));
       }
 
       // Compute primtive values and update all main array quantities
@@ -332,29 +423,8 @@ void MeshlessFV<ndim>::EndTimestep
 
 
 //=================================================================================================
-//  MeshlessFV<ndim>::IntegrateConservedVariables
-/// ...
-//=================================================================================================
-template <int ndim>
-void MeshlessFV<ndim>::IntegrateConservedVariables
- (MeshlessFVParticle<ndim> &part,
-  FLOAT timestep)
-{
-  FLOAT dUdt = part.dQdt[ietot] - DotProduct(part.v, part.dQdt, ndim) +
-    0.5*DotProduct(part.v, part.v, ndim)*part.dQdt[irho];
-  part.Utot += dUdt*timestep;
-  for (int var=0; var<nvar; var++) {
-    part.Qcons[var] += part.dQdt[var]*timestep;
-  }
-
-  return;
-}
-
-
-
-//=================================================================================================
 //  MeshlessFV::UpdatePrimitiveVector
-/// ...
+/// Updates the primitive vector from particle quantities.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
@@ -368,7 +438,7 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 
 //=================================================================================================
 //  MeshlessFV::UpdateArrayVariables
-/// ...
+/// Updates all particle quantities based on the primmitive/conserved variables.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
@@ -382,15 +452,10 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
   part.u = (part.Qcons[ietot] + part.dQ[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
-  /*if (part.u < (FLOAT) 0.0 || part.m < (FLOAT) 0.0) {
-    cout << "Mistake? : " << part.Qcons[ietot] << "    " << 0.5*part.m*ekin
-         << "    " << part.m << "    " << part.u << endl;
-    cout << "r : " << part.r[0] << "    " << part.r[1] << "     v : " << part.v[0] << endl;
-    cout << "Internal energy : " << part.u << "     " << part.Utot/part.m << endl;
-  }
 
-  assert(part.m > 0.0);
-  assert(part.u > 0.0);*/
+  assert(part.m > (FLOAT) 0.0);
+  assert(part.u > (FLOAT) 0.0);
+  assert(part.press > (FLOAT) 0.0);
 
 }
 

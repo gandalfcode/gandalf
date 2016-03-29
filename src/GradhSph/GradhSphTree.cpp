@@ -210,7 +210,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata,Ntot)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();

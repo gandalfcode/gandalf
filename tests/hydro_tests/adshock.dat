@@ -66,7 +66,7 @@ Use time-dependent viscosity                : time_dependent_avisc = mm97
 Minimum value of alpha                      : alpha_visc_min = 0.1
 Riemann solver                              : riemann_solver = exact
 Order of Riemann solver                     : riemann_order = 1
-Slope limiter                               : slope_limiter = mine
+Slope limiter                               : slope_limiter = gizmo
 
 
 #-------------------------

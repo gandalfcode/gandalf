@@ -21,7 +21,7 @@ limit("y",-0.007,0.007)
 
 # Create rendered slice of density
 subfigure(2,2,2)
-render("x","y","rho",res=256,norm=LogNorm(),interpolation='bicubic')
+render("x","y","rho",res=256,interpolation='bicubic',lognorm=True)
 limit("x",-0.007,0.007)
 limit("y",-0.007,0.007)
 #limit("rho",1.0e-16,1.0e-14)

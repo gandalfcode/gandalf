@@ -67,7 +67,7 @@ Artificial viscosity alpha value            : alpha_visc = 0.1
 Artificial viscosity beta value             : beta_visc = 0.2
 Riemann solver                              : riemann_solver = exact
 Order of Riemann solver                     : riemann_order = 1
-Slope limiter                               : slope_limiter = mine
+Slope limiter                               : slope_limiter = gizmo
 
 
 #-------------------------
