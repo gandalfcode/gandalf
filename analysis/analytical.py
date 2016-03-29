@@ -238,10 +238,7 @@ class soundwave (AnalyticalSolution):
         self.omega = 2.0*np.pi*self.csound/self.wlambda
         self.time = time
         self.iMAX = 1000
-        if sim.simparams.stringparams["gas_eos"] == "isothermal":
-            self.gamma = 1.0 + 1e-5
-        else:
-            self.gamma = simfloatparams["gamma_eos"]
+
 
     def compute(self, ix, iy):
         x = np.arange(self.xL,self.xR,1.0/self.iMAX)

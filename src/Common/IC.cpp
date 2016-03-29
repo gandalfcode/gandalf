@@ -2718,13 +2718,14 @@ void Ic<ndim>::SoundWave(void)
     for (k=0; k<ndim; k++) part.v[k] = csound*amp*sin(kwave*r[ndim*i]);
     part.m = rhofluid1*lambda/(FLOAT) Npart;
     part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
+    part.u = ugas; //*((FLOAT) 1.0 + amp*sin(kwave*r[ndim*i]));
 
-    if (hydro->gas_eos == "isothermal") {
-      part.u = temp0/gammaone/mu_bar;
+    /*if (hydro->gas_eos == "isothermal") {
+      part.u = (temp0/gammaone/mu_bar;
     }
     else {
       part.u = press1/rhofluid1/gammaone;
-    }
+    }*/
   }
   //-----------------------------------------------------------------------------------------------
 
