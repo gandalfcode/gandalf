@@ -75,7 +75,7 @@ protected:
 
 	template<class ForceCalc>
 	void FindNeibAndDoForces(int ,int, ParticleType<ndim> *,
-				             const ParticleTypeInfo*, ForceCalc&) ;
+				             const ParticleTypeRegister&, ForceCalc&) ;
 private:
 
 	TreeBase<ndim>* _tree, *_ghosttree ;   ///< Pointer to neighbour tree
@@ -190,7 +190,7 @@ class DustFull
 public:
   typedef DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>  DF ;
 
-  DustFull(DF Forces, ParticleTypeInfo* types,
+  DustFull(DF Forces, const ParticleTypeRegister& types,
 		  TreeBase<ndim> * t, TreeBase<ndim> * gt=NULL)
     :  DustSphNgbFinder<ndim, ParticleType>(t, gt),
        _types(types),
@@ -220,7 +220,7 @@ public:
 	  }
   }
 private:
-  ParticleTypeInfo *_types ;
+  ParticleTypeRegister _types ;
   DF _Forces ;
 };
 
@@ -251,7 +251,7 @@ public:
 
 		ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
 
-		Typemask mask = {false} ;
+		Typemask mask ;
 		mask[gas_type] = true ;
 
 		FindNeibAndDoInterp(NPart, Ntot, sphdata, mask, _interp) ;
@@ -516,7 +516,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 (int Nhydro,                              ///< [in] No. of SPH particles
  int Ntot,                                ///< [in] No. of SPH + ghost particles
  ParticleType<ndim> *sphdata,             ///< [inout] Pointer to SPH ptcl array
- const ParticleTypeInfo* types,  	      ///< [in] Type data for particles
+ const ParticleTypeRegister& types,       ///< [in] Type data for particles
  ForceCalc& Forces)                       ///< [in] Force calculation functor
 {
   using std::vector ;
@@ -1024,7 +1024,7 @@ template<int ndim, template<int> class ParticleType, class StoppingTime, class K
 class _DustFactoryKern
 {
 public:
-DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeInfo* types,
+DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeRegister& types,
 							      TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
 {
 	map<string, int> &intparams = simparams->intparams;
@@ -1081,7 +1081,7 @@ class _DustFactoryStop
 {
 public:
 
-DustBase<ndim>* ProcessParameters(Parameters * simparams, ParticleTypeInfo* types,
+DustBase<ndim>* ProcessParameters(Parameters * simparams, ParticleTypeRegister& types,
 							      TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
 {
 	map<string, int> &intparams = simparams->intparams;
@@ -1135,7 +1135,7 @@ template<int ndim, template<int> class ParticleType>
 DustBase<ndim>* DustFactory<ndim, ParticleType>::ProcessParameters
 (Parameters * simparams,
 CodeTiming * timing,
-ParticleTypeInfo* types,
+ParticleTypeRegister& types,
 TreeBase<ndim>* t,
 TreeBase<ndim>* ghost,
 TreeBase<ndim>* mpi_tree)

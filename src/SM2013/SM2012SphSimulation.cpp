@@ -237,13 +237,13 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
     sphneib = new SM2012SphKDTree<ndim,SM2012SphParticle,KDTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new SM2012SphOctTree<ndim,SM2012SphParticle,OctTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
   }
   else {
     string message = "Unrecognised parameter : neib_search = "

@@ -123,11 +123,14 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
       if (!sphdata[i].active || sphdata[i].itype == dead) continue;
 
       for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
+      Typemask hmask = sph->types[sphdata[i].ptype].hmask ;
 
       // Compute distances and the reciprical between the current particle and all neighbours here
       //-------------------------------------------------------------------------------------------
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
+    	if (!hmask[sphdata[j].ptype]) continue ;
+
         for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
         drsqd[jj] = DotProduct(dr,dr,ndim);
       }

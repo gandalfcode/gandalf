@@ -25,6 +25,7 @@
 #define _PARTICLE_H_
 
 
+#include "Parameters.h"
 #include "Precision.h"
 #include "Constants.h"
 #ifdef MPI_PARALLEL
@@ -49,9 +50,34 @@ static const int parttype_converter[] = { gas, icm, cdm, dust } ;
 static const int parttype_reverse_converter[] =
 { gas_type, icm_type, gas_type, cdm_type, dust_type} ;
 
-typedef bool Typemask[Ntypes];
 
-//static Typemask truemask = {true};
+
+//=================================================================================================
+//  Class Typemask
+/// \brief  Wrapper around array of bool to make it copyable.
+/// \author R. A. Booth
+/// \date   31/3/2016
+//=================================================================================================
+class Typemask {
+public:
+  Typemask() {
+    for (int k=0; k<Ntypes; k++) _data[k] = false;
+  }
+
+  const bool& operator[](int i) const {
+	return _data[i] ;
+  }
+  bool& operator[](int i) {
+	return _data[i] ;
+  }
+
+  int size() const {
+	return Ntypes ;
+  }
+
+private:
+  bool _data[Ntypes] ;
+};
 
 
 //=================================================================================================
@@ -68,7 +94,6 @@ struct ParticleTypeInfo
   bool drag_forces ;                   ///< Does particle experience drag forces?
   Typemask hmask;                      ///< Neighbour mask for computing smoothing lengths
   Typemask hydromask;                  ///< Neighbour mask for computing hydro forces
-  Typemask gravmask;                   ///< Neighbour mask for computing gravity forces
   Typemask dragmask;                   ///< Neighbour mask for computing drag forces
 
   ParticleTypeInfo() {
@@ -76,14 +101,32 @@ struct ParticleTypeInfo
     hydro_forces = false;
     self_gravity = false;
     drag_forces  = false ;
-    for (int k=0; k<Ntypes; k++) hmask[k] = false;
-    for (int k=0; k<Ntypes; k++) hydromask[k] = false;
-    for (int k=0; k<Ntypes; k++) gravmask[k] = false;
-    for (int k=0; k<Ntypes; k++) dragmask[k] = false;
   }
 };
 
 
+//=================================================================================================
+//  Class ParticleTypeRegister
+/// \brief  Structure containing particle type information for all types
+/// \author R. A. Booth
+/// \date   31/3/2016
+//=================================================================================================
+class ParticleTypeRegister {
+public:
+  ParticleTypeRegister(Parameters *params) ;
+
+  ParticleTypeInfo& operator[](int i) {
+	return _types[i] ;
+  }
+  const ParticleTypeInfo& operator[](int i) const {
+	return _types[i] ;
+  }
+
+  Typemask gravmask ;       ///< Does the particle type contribute to gravitational forces?
+
+private:
+  ParticleTypeInfo _types[Ntypes] ;
+};
 
 //=================================================================================================
 //  Structure Particle

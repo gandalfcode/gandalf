@@ -129,7 +129,7 @@ public:
   FLOAT kernfacsqd;                    ///< Kernel range neib. fraction squared
   FLOAT kernrange;                     ///< Kernel range
   FLOAT mmean;                         ///< Mean SPH particle mass
-  ParticleTypeInfo types[Ntypes];      ///< Array of particle types
+  ParticleTypeRegister types;          ///< Array of particle types
 
   int *iorder;                         ///< Array containing particle ordering
   EOS<ndim> *eos;                      ///< Equation-of-state

@@ -248,13 +248,13 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
     mfvneib = new MeshlessFVKDTree<ndim,MeshlessFVParticle,KDTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
   }
   else if (stringparams["neib_search"] == "octtree") {
     mfvneib = new MeshlessFVOctTree<ndim,MeshlessFVParticle,OctTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing,  mfv->types);
   }
   else {
     string message = "Unrecognised parameter : neib_search = "

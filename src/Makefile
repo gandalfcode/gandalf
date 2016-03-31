@@ -205,6 +205,7 @@ OBJ += SphSnapshot.o
 OBJ += CodeTiming.o
 OBJ += IC.o
 OBJ += Dust.o
+OBJ += Particle.o
 
 
 ifeq ($(MPI),1)

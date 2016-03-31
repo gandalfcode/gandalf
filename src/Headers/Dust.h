@@ -64,7 +64,7 @@ class DustFactory
 {
 public:
   static DustBase<ndim>* ProcessParameters(Parameters* params, CodeTiming* timing,
-		  	  	  	  	  	  	  	  	   ParticleTypeInfo* types,
+		  	  	  	  	  	  	  	  	   ParticleTypeRegister& types,
 							               TreeBase<ndim>* t, TreeBase<ndim>* ghost,
 							               TreeBase<ndim>* mpi_tree)  ;
 } ;
