@@ -218,8 +218,9 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 
   FLOAT ekin = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.Qcons[ietot] = part.press*part.volume/(gamma_eos - (FLOAT) 1.0) +
-    (FLOAT) 0.5*part.rho*part.volume*ekin;
+  part.Qcons[ietot] = part.m*part.u + (FLOAT) 0.5*part.m*ekin;
+  //part.Qcons[ietot] = part.press*part.volume/(gamma_eos - (FLOAT) 1.0) +
+  //  (FLOAT) 0.5*part.rho*part.volume*ekin;
 
   assert(part.u > (FLOAT) 0.0);
   assert(part.sound > (FLOAT) 0.0);
@@ -450,6 +451,7 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
   FLOAT ekin = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
   part.u = (part.Qcons[ietot] + part.dQ[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
+  part.u = eos->SpecificInternalEnergy(part);
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
 

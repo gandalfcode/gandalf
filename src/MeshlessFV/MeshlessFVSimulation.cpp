@@ -436,6 +436,17 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfv->Ntot = mfv->Nhydro;
   for (i=0; i<mfv->Nhydro; i++) partdata[i].active = true;
 
+  // Initialise conserved variables
+  for (i=0; i<mfv->Nhydro; i++) {
+    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+    part.Qcons[MeshlessFV<ndim>::irho] = part.m;
+    for (int k=0; k<ndim; k++) part.Qcons[k] = part.m*part.v[k];
+    FLOAT ekin = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
+    part.Qcons[MeshlessFV<ndim>::ietot] = part.u*part.m + (FLOAT) 0.5*part.m*ekin;
+  }
+
+
   // If the smoothing lengths have not been provided beforehand, then
   // calculate the initial values here
   mfvneib->neibcheck = false;

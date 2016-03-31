@@ -211,6 +211,7 @@ int MfvCommon<ndim, kernelclass>::ComputeH
   // Set important thermal variables here
   this->ComputeThermalProperties(part);
   this->UpdatePrimitiveVector(part);
+  this->UpdateArrayVariables(part);
 
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)

@@ -367,10 +367,10 @@ void Parameters::SetDefaultValues(void)
   stringparams["boundary_lhs[2]"] = "open";
   stringparams["boundary_rhs[2]"] = "open";
   floatparams["boxmin[0]"] = -9.9e30;
-  floatparams["boxmin[1]"] = 9.9e30;
+  floatparams["boxmin[1]"] = -9.9e30;
   floatparams["boxmin[2]"] = -9.9e30;
   floatparams["boxmax[0]"] = 9.9e30;
-  floatparams["boxmax[1]"] = -9.9e30;
+  floatparams["boxmax[1]"] = 9.9e30;
   floatparams["boxmax[2]"] = 9.9e30;
 
   // Ewald periodic gravity parameters

@@ -925,7 +925,7 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
-  MeshlessFVParticle<ndim> *part_gen,  ///< [inout] Pointer to SPH ptcl array
+  MeshlessFVParticle<ndim> *partdata,  ///< [inout] Pointer to SPH ptcl array
   MeshlessFV<ndim> *mfv,               ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
@@ -933,7 +933,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 {
   int cactive;                         // No. of active cells
   TreeCell<ndim> *celllist;            // List of active tree cells
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  //ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[MeshlessFVTree::UpdateAllGravForces]");
   timing->StartTimingSection("MFV_GRAV_FORCES");
@@ -1177,7 +1177,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       partdata[i].levelneib = max(partdata[i].levelneib, levelneib[i]);
     }
 
+
     // Free-up local memory for OpenMP thread
+    delete[] gravlist;
     delete[] directlist;
     delete[] mfvauxlist;
     delete[] mfvlist;

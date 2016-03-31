@@ -59,7 +59,7 @@ CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
 ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
-CLANGOPT += -g -pg -Wall
+CLANGOPT += -O3 -g -pg -Wall
 else ifeq ($(COMPILER_MODE),STANDARD)
 GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)

@@ -153,7 +153,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     // Time-integrate LHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += part.a[k];
-    for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*Wdot[var]*dt;
+    for (var=0; var<nvar; var++) Wleft[var] += (FLOAT) 0.5*Wdot[var]*dt;
 
     // Compute slope-limited values for RHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - neibpart[j].r[k];
@@ -164,7 +164,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     // Time-integrate RHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
-    for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*Wdot[var]*dt;
+    for (var=0; var<nvar; var++) Wright[var] += (FLOAT) 0.5*Wdot[var]*dt;
 
     assert(Wleft[irho] > 0.0);
     assert(Wleft[ipress] > 0.0);
@@ -182,8 +182,8 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
     // Compute mass-loss moments for gravitational correction terms
     for (k=0; k<ndim; k++) {
-      part.rdmdt[k] -= (part.r[k] - neibpart[j].r[k])*DotProduct(flux[var], Aij, ndim);
-      neibpart[j].rdmdt[k] += (part.r[k] - neibpart[j].r[k])*DotProduct(flux[var], Aij, ndim);
+      part.rdmdt[k] -= (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim);
+      neibpart[j].rdmdt[k] += (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim);
     }
 
   }
