@@ -104,6 +104,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "blastwave") {
     icGenerator.BlastWave();
   }
+  else if (ic == "blob") {
+    icGenerator.BlobTest();
+  }
   else if (ic == "bondi") {
     icGenerator.BondiAccretion();
   }

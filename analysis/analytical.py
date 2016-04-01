@@ -146,22 +146,21 @@ class noh (AnalyticalSolution):
     def compute(self, x, y):
         '''Computes the exact solution of the Noh problem for
         1, 2 and 3 dimensions'''
-        r = np.arange(0.0,self.radius,1.0/self.iMAX)
+        r = np.linspace(0.0,self.radius,self.iMAX)
         rho = self.rho*np.ones(self.iMAX)
         if self.time > 0:
             bound = 0.3333333333333*self.time
-            i = 0
-            while i < self.iMAX:
-                if self.ndim == 1:
-                    if r[i] < bound: rho[i] = 4.0*self.rho
-                    else: rho[i] = self.rho
-                elif self.ndim == 2:
-                    if r[i] < bound: rho[i] = 16.0*self.rho
-                    else: rho[i] = self.rho*(1.0 + self.time/r[i])
-                elif self.ndim == 3:
-                    if r[i] < bound: rho[i] = 64.0*self.rho
-                    else: rho[i] = self.rho*pow(1.0 + self.time/r[i],2.0)
-                i = i + 1
+            inside = r<bound
+            outside = r>bound
+            if self.ndim ==1:
+                rho[inside]=4.0*self.rho
+                rho[outside]=self.rho
+            elif self.ndim ==2:
+                rho[inside]=16.0*self.rho
+                rho[outside]=self.rho*(1.0 + self.time/r[outside])
+            elif self.ndim ==3:
+                rho[inside]=64.0*self.rho
+                rho[outside]=self.rho*(1.0 + self.time/r[outside])**2.0
         return r,rho
 
 
