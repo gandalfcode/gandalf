@@ -90,6 +90,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
   int k;                               // Dimension counter
   int var;                             // Particle state vector variable counter
   FLOAT Aij[ndim];                     // Pseudo 'Area' vector
+  FLOAT Aunit[ndim];                   // ..
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
   FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
   FLOAT drsqd;                         // Distance squared
@@ -99,8 +100,8 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
   FLOAT rface[ndim];                   // Position of working face (to compute Godunov fluxes)
   FLOAT vface[ndim];                   // Velocity of working face (to compute Godunov fluxes)
   FLOAT flux[nvar][ndim];              // Flux tensor
-  FLOAT Wleft[nvar];                   // Primitive vector for LHS of Riemann problem
-  FLOAT Wright[nvar];                  // Primitive vector for RHS of Riemann problem
+  FLOAT Wi[nvar];                      // Primitive vector for LHS of Riemann problem
+  FLOAT Wj[nvar];                      // Primitive vector for RHS of Riemann problem
   FLOAT Wdot[nvar];                    // Time derivative of primitive vector
   FLOAT gradW[nvar][ndim];             // Gradient of primitive vector
   FLOAT dW[nvar];                      // Change in primitive quantities
@@ -112,7 +113,7 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
-    for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
+    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     drsqd = DotProduct(draux, draux, ndim);
     invdrmagaux = (FLOAT) 1.0/sqrt(drsqd + small_number);
     for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
@@ -130,16 +131,20 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
       Aij[k] = part.volume*psitildaj[k] - neibpart[j].volume*psitildai[k];
     }
 
+    FLOAT Amag = sqrt(DotProduct(Aij, Aij, ndim));
+    for (k=0; k<ndim; k++) Aunit[k] = Aij[k] / Amag;
+
     // Calculate position and velocity of the face
     if (staticParticles) {
       for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
       for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.0;
     }
     else {
-      for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
-      //for (k=0; k<ndim; k++) rface[k] = part.r[k] +
-      //  part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
-      for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
+      //for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+      for (k=0; k<ndim; k++) rface[k] = part.r[k] +
+        part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
+      for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
+      //for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
       for (k=0; k<ndim; k++) vface[k] = part.v[k] +
         (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
     }
@@ -147,37 +152,38 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
     limiter->ComputeLimitedSlopes(part, neibpart[j], draux, gradW, dW);
-    for (var=0; var<nvar; var++) Wleft[var] = part.Wprim[var] + dW[var];
-    for (k=0; k<ndim; k++) Wleft[k] -= vface[k];
+    for (var=0; var<nvar; var++) Wi[var] = part.Wprim[var] + dW[var];
+    for (k=0; k<ndim; k++) Wi[k] -= vface[k];
 
     // Time-integrate LHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wi, gradW, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += part.a[k];
-    for (var=0; var<nvar; var++) Wleft[var] += (FLOAT) 0.5*Wdot[var]*dt;
+    for (var=0; var<nvar; var++) Wi[var] += (FLOAT) 0.5*Wdot[var]*dt;
 
     // Compute slope-limited values for RHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - neibpart[j].r[k];
     limiter->ComputeLimitedSlopes(neibpart[j], part, draux, gradW, dW);
-    for (var=0; var<nvar; var++) Wright[var] = neibpart[j].Wprim[var] + dW[var];
-    for (k=0; k<ndim; k++) Wright[k] -= vface[k];
+    for (var=0; var<nvar; var++) Wj[var] = neibpart[j].Wprim[var] + dW[var];
+    for (k=0; k<ndim; k++) Wj[k] -= vface[k];
 
     // Time-integrate RHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wj, gradW, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
-    for (var=0; var<nvar; var++) Wright[var] += (FLOAT) 0.5*Wdot[var]*dt;
+    for (var=0; var<nvar; var++) Wj[var] += (FLOAT) 0.5*Wdot[var]*dt;
 
-    assert(Wleft[irho] > 0.0);
-    assert(Wleft[ipress] > 0.0);
-    assert(Wright[irho] > 0.0);
-    assert(Wright[ipress] > 0.0);
+    assert(Wi[irho] > 0.0);
+    assert(Wi[ipress] > 0.0);
+    assert(Wj[irho] > 0.0);
+    assert(Wj[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    //riemann->ComputeFluxes(Wj, Wi, dr_unit, vface, flux);
+    riemann->ComputeFluxes(Wj, Wi, Aunit, vface, flux);
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      part.dQ[var] -= DotProduct(flux[var], Aij, ndim)*dt;
-      neibpart[j].dQ[var] += DotProduct(flux[var], Aij, ndim)*dt;
+      part.dQ[var] += DotProduct(flux[var], Aij, ndim)*dt;
+      neibpart[j].dQ[var] -= DotProduct(flux[var], Aij, ndim)*dt;
     }
 
     // Compute mass-loss moments for gravitational correction terms

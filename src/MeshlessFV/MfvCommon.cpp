@@ -189,8 +189,8 @@ int MfvCommon<ndim, kernelclass>::ComputeH
   //===============================================================================================
 
 
-  // Normalise all SPH sums correctly
-  part.h         = max(h_fac*powf(part.volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
+  // Compute other terms once number density and smoothing length are known
+  //part.h         = max(h_fac*powf(part.volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
   part.invh      = (FLOAT) 1.0/part.h;
   part.hfactor   = pow(part.invh, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
@@ -248,7 +248,7 @@ void MfvCommon<ndim, kernelclass>::ComputePsiFactors
   for (k=0; k<ndim; k++) {
     for (int kk=0; kk<ndim; kk++) {
       E[k][kk] = (FLOAT) 0.0;
-      part.B[k][kk] = 0.0;
+      part.B[k][kk] = (FLOAT) 0.0;
     }
   }
 
@@ -272,19 +272,19 @@ void MfvCommon<ndim, kernelclass>::ComputePsiFactors
 
   // Invert the matrix (depending on dimensionality)
   if (ndim == 1) {
-    part.B[0][0] = 1.0/E[0][0];
+    part.B[0][0] = (FLOAT) 1.0/E[0][0];
   }
   else if (ndim == 2) {
-    const FLOAT invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
+    const FLOAT invdet = (FLOAT) 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
     part.B[0][0] = invdet*E[1][1];
-    part.B[0][1] = -1.0*invdet*E[0][1];
-    part.B[1][0] = -1.0*invdet*E[1][0];
+    part.B[0][1] = -(FLOAT) 1.0*invdet*E[0][1];
+    part.B[1][0] = -(FLOAT) 1.0*invdet*E[1][0];
     part.B[1][1] = invdet*E[0][0];
   }
   else if (ndim == 3) {
-    const FLOAT invdet = 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
-                              E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
-                              E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
+    const FLOAT invdet = (FLOAT) 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
+                                      E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
+                                      E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
     part.B[0][0] = (E[1][1]*E[2][2] - E[2][1]*E[1][2])*invdet;
     part.B[0][1] = (E[0][2]*E[2][1] - E[0][1]*E[2][2])*invdet;
     part.B[0][2] = (E[0][1]*E[1][2] - E[0][2]*E[1][1])*invdet;
@@ -381,6 +381,7 @@ void MfvCommon<ndim, kernelclass>::ComputeGradients
   //-----------------------------------------------------------------------------------------------
 
   for (k=0; k<ndim; k++) part.vreg[k] *= part.invh*part.sound;  //pow(part.invh, ndim);
+
 
 
   // Find all max and min values for meshless slope limiters
