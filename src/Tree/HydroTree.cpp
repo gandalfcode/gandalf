@@ -1155,10 +1155,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   delete[] celllist;
 
 
-#ifdef MPI_PARALLEL
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
   timing->EndTimingSection("MPI_HYDRO_EXPORT");
 
   return;
@@ -1245,7 +1241,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   //-----------------------------------------------------------------------------------------------
 
   timing->EndTimingSection("BUILD_PRUNED_TREE");
-  MPI_Barrier(MPI_COMM_WORLD);
 
   return;
 }
@@ -1960,8 +1955,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
 {
   bool send_turn;                      // Flag if this node is sending (true) or receiving (false)
 
-  MPI_Barrier(MPI_COMM_WORLD);
-
   //-----------------------------------------------------------------------------------------------
   for (int iturn=0; iturn<my_matches.size(); iturn++) {
 
@@ -2025,7 +2018,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
   }
   //----------------------------------------------------------------------------------------------
 
-  MPI_Barrier(MPI_COMM_WORLD);
 #if defined(OUTPUT_ALL)
   int k;
   FLOAT rcom[ndim],mcom = 0.0;

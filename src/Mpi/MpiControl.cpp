@@ -334,8 +334,6 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
     mpinode[inode].hbox = boxes_buffer[inode];
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
-
   // Do an all_gather to receive the new array
   MPI_Allgather(&(mpinode[rank].rbox), 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
 
