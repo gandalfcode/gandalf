@@ -1681,8 +1681,11 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
   typename ParticleType<ndim>::HandlerType handler;
   typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
 
+  typename TreeCell<ndim>::HandlerType handler_cell;
+  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
+
   const int size_particles  = Nactive*sizeof(StreamlinedPart);
-  const int size_cells      = cactive*sizeof(TreeCell<ndim>);
+  const int size_cells      = cactive*sizeof(StreamlinedCell);
   const int old_size        = send_buffer.size();
   int offset                = size_header + old_size;
   TreeCell<ndim>** celllist = cellexportlist[iproc];
@@ -1707,14 +1710,11 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
   // Loop over all cells to be exported and include all cell and particle data
   //-----------------------------------------------------------------------------------------------
   for (int cc=0; cc<cactive; cc++) {
-    copy(&send_buffer[offset], celllist[cc]);
-    const int Nactive_cell = tree->ComputeActiveParticleList(*(celllist[cc]), partdata, activelist);
-
-    // Update the ifirst and ilast pointers in the cell
-    TreeCell<ndim>* exported_cell = reinterpret_cast<TreeCell<ndim>*> (&send_buffer[offset]);
-    exported_cell->ifirst = exported_particles;
-    exported_cell->ilast  = exported_particles + Nactive_cell - 1;
-    offset += sizeof(TreeCell<ndim>);
+    TreeCell<ndim>& cell_orig = *celllist[cc];
+    const int Nactive_cell = tree->ComputeActiveParticleList(cell_orig, partdata, activelist);
+    StreamlinedCell c (Nactive_cell, exported_particles);
+    copy(&send_buffer[offset], &c);
+    offset += sizeof(StreamlinedCell);
 
     // Copy active particles
     for (int jpart=0; jpart<Nactive_cell; jpart++) {
@@ -1752,6 +1752,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   typename ParticleType<ndim>::HandlerType handler;
   typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+
+  typename TreeCell<ndim>::HandlerType handler_cell;
+  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
 
   assert(hydro->NImportedParticles == 0);
   tree->Nimportedcell = 0;
@@ -1793,17 +1796,11 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
     //---------------------------------------------------------------------------------------------
     for (int icell=0; icell<N_received_cells; icell++) {
       TreeCell<ndim>& dest_cell = tree->celldata[icell + tree->Ncelltot];
-      copy(&dest_cell, &received_array[offset]);
-      offset += sizeof(TreeCell<ndim>);
-
-      // Offset the ifirst and ilast pointers
-      dest_cell.ifirst += hydro->Ntot;
-      dest_cell.ilast += hydro->Ntot;
+      handler_cell.ReceiveCell(&received_array[offset],dest_cell,hydro->Ntot);
+      offset += sizeof(StreamlinedCell);
 
       // Now copy the received particles inside the hydro particle main arrays
       for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
-        StreamlinedPart& p = *reinterpret_cast<StreamlinedPart*>(&received_array[offset]);
-
 
         handler.ReceiveParticle(&received_array[offset],partdata[particle_index],hydro);
 
@@ -1816,6 +1813,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
         particle_index++;
         offset += sizeof(StreamlinedPart);
       }
+
+      handler_cell.ReconstructProperties(dest_cell, partdata, kernrange);
 
     }
     //---------------------------------------------------------------------------------------------

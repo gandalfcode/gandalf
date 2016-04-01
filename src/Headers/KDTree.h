@@ -52,6 +52,12 @@ struct KDTreeCell : public TreeCellBase<ndim> {
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
   int k_divide;                     ///< Dimension along which cell is split
+
+#ifdef MPI_PARALLEL
+  typedef TreeCommunicationHandler<ndim> HandlerType;
+#endif
+
+
 };
 
 

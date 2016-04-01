@@ -28,7 +28,6 @@ template <int ndim>
 class GradhSphCommunicationHandler {
 
   struct GradSphForcesParticle {
-    GradSphForcesParticle() {};
 
     GradSphForcesParticle (const GradhSphParticle<ndim>& p) {
       for (int k=0; k<ndim; k++) {
@@ -53,7 +52,6 @@ class GradhSphCommunicationHandler {
   };
 
   struct GradhSphExportParticle {
-    GradhSphExportParticle () {};
 
     GradhSphExportParticle (const GradhSphParticle<ndim>& p) {
       iorig = p.iorig;
@@ -103,7 +101,7 @@ public:
 
   void ReceiveParticleAccelerations (ReturnDataType* pointer, GradhSphParticle<ndim>& p2) {
 
-    ReturnDataType& p = *pointer;
+    const ReturnDataType& p = *pointer;
 
     for (int k=0; k<ndim; k++) {
       p2.a[k] += p.a[k];
@@ -160,7 +158,6 @@ template <int ndim>
 class MeshlessCommunicationHandler {
 
   struct MeshlessExportParticle {
-    MeshlessExportParticle () {};
 
     MeshlessExportParticle (const MeshlessFVParticle<ndim>& p) {
       ExceptionHandler::getIstance().raise("not implemented");
@@ -199,7 +196,6 @@ template <int ndim>
 class SM2012CommunicationHandler {
 
   struct SM2012ExportParticle {
-    SM2012ExportParticle () {};
 
     SM2012ExportParticle (const SM2012SphParticle<ndim>& p) {
       ExceptionHandler::getIstance().raise("not implemented");
@@ -246,6 +242,84 @@ public:
   }
 };
 
+template <int ndim>
+class TreeCommunicationHandler {
+
+  struct TreeCellStreamlined {
+
+    TreeCellStreamlined (int Nactive, int exported_particles) {
+
+        ifirst = exported_particles;
+        ilast = exported_particles+Nactive-1;
+        N = Nactive;
+
+      }
+
+
+    int ifirst;
+    int ilast;
+    int N;
+
+
+
+    };
+
+public:
+
+  typedef TreeCellStreamlined DataType;
+
+  void ReceiveCell (void* pointer, TreeCellBase<ndim>& c2,int Ntot) {
+    const DataType& c = *reinterpret_cast<DataType*>(pointer);
+
+    c2.ifirst = c.ifirst + Ntot;
+    c2.ilast = c.ilast + Ntot;
+
+    c2.Nactive = c.N;
+    c2.N = c.N;
+
+
+  }
+
+  template <template <int> class ParticleType>
+  void ReconstructProperties (TreeCellBase<ndim>& c, ParticleType<ndim>* partdata, FLOAT kernrange) {
+
+    c.m = 0;
+    c.hmax = 0;
+    for (int k=0; k<ndim; k++) {
+      c.bbmin[k] = big_number;
+      c.bbmax[k] = -big_number;
+      c.hboxmin[k] = big_number;
+      c.hboxmax[k] = -big_number;
+      c.r[k] = 0;
+    }
+
+
+    for (int i=c.ifirst; i<=c.ilast; i++) {
+      const ParticleType<ndim>& p = partdata[i];
+      for (int k=0; k<ndim; k++) {
+        c.r[k] += p.m*p.r[k];
+        if (c.bbmin[k] > p.r[k]) c.bbmin[k] = p.r[k];
+        if (c.bbmax[k] < p.r[k]) c.bbmax[k] = p.r[k];
+        if (p.r[k] - kernrange*p.h < c.hboxmin[k])
+          c.hboxmin[k] = p.r[k] - kernrange*p.h;
+        if (p.r[k] + kernrange*p.h > c.hboxmax[k])
+          c.hboxmax[k] = p.r[k] + kernrange*p.h;
+      }
+      c.m += p.m;
+      c.hmax = max(c.hmax,p.h);
+    }
+
+    FLOAT dr[ndim];
+    for (int k=0; k<ndim; k++) {
+      c.r[k] /= c.m;
+      c.rcell[k] = (FLOAT) 0.5*(c.bbmin[k] + c.bbmax[k]);
+      dr[k] = (FLOAT) 0.5*(c.bbmax[k] - c.bbmin[k]);
+    }
+    c.rmax = sqrt(DotProduct(dr,dr,ndim));
+
+  }
+
+};
 
 
 #endif
