@@ -472,7 +472,6 @@ struct MeshlessFVParticle : public Particle<ndim>
     Utot      = (FLOAT) 0.0;
   }
 
-
 #ifdef MPI_PARALLEL
   typedef MeshlessCommunicationHandler<ndim> HandlerType;
 #endif
