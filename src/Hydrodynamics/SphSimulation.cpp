@@ -426,7 +426,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
   sphneib->BuildPrunedTree(rank, sph->Nhydromax, simbox, mpicontrol->mpinode, partdata);
-  mpicontrol->CommunicatePrunedTrees();
+  //mpicontrol->CommunicatePrunedTrees();
 #endif
 
 
@@ -666,7 +666,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     sphneib->BuildPrunedTree(rank, sph->Nhydromax, simbox, mpicontrol->mpinode, partdata);
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
-    mpicontrol->CommunicatePrunedTrees();
+    //mpicontrol->CommunicatePrunedTrees();
     mpicontrol->LoadBalancing(sph, nbody);
     sphneib->InitialiseCellWorkCounters();
   }
@@ -689,7 +689,7 @@ void SphSimulation<ndim>::MainLoop(void)
   // once there has been communication of particles to new domains)
 #ifdef MPI_PARALLEL
     sphneib->BuildPrunedTree(rank, sph->Nhydromax, simbox, mpicontrol->mpinode, partdata);
-    mpicontrol->CommunicatePrunedTrees();
+    //mpicontrol->CommunicatePrunedTrees();
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
     sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,

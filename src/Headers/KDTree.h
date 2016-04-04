@@ -132,7 +132,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters(TreeCell<ndim> &);
-  int GetMaxCellNumber(const int _level) {return pow(2,_level);};
+  int GetMaxCellNumber(const int _level) {return pow(2,_level+1)-1;};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

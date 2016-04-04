@@ -1192,6 +1192,29 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   tree->UpdateWorkCounters(tree->celldata[0]);
 
 
+  MPI_Request req[Nmpi-1];
+  MPI_Status status[Nmpi-1];
+  int j=0;
+  // Post all the receives
+  for (int i=0; i<Nmpi; i++) {
+
+	  if (i==rank)
+		  continue;
+
+	  Tree<ndim,ParticleType,TreeCell>* treeptr = prunedtree[i];
+
+	  // Guess the maximum number of cells and allocate memory
+	  treeptr->Ncellmax = treeptr->GetMaxCellNumber(pruning_level_max);
+	  treeptr->AllocateTreeMemory();
+
+	  MPI_Irecv(treeptr->celldata,treeptr->Ncellmax*sizeof(TreeCell<ndim>),MPI_CHAR,i,3,MPI_COMM_WORLD,&req[j] );
+	  cout << i << j << endl;
+	  j++;
+  }
+
+
+  MPI_Request send_req[Nmpi-1];
+  j=0;
   // Set level at which tree will be pruned (for all trees)
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nmpi; i++) {
@@ -1210,8 +1233,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
     treeptr->ltot     = pruning_level_max;
     treeptr->Ntot     = 0;
     treeptr->gmax     = 0;
-    treeptr->Ncellmax = max(treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_min));
+    treeptr->Ncellmax = max(treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_max));
     treeptr->AllocateTreeMemory();
+
 
     treeptr->Ncell = tree->CreatePrunedTreeForMpiNode
       (mpinode[i], simbox, (FLOAT) 0.0, localNode, pruning_level_min, pruning_level_max,
@@ -1222,7 +1246,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
     //---------------------------------------------------------------------------------------------
     while (treeptr->Ncell == -1) {
 
-      treeptr->Ncellmax = max(2*treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_min));
+      treeptr->Ncellmax = max(2*treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_max));
       treeptr->AllocateTreeMemory();
       treeptr->Ncell = tree->CreatePrunedTreeForMpiNode
         (mpinode[i], simbox, (FLOAT) 0.0, localNode, pruning_level_min, pruning_level_max,
@@ -1237,8 +1261,37 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
     // Allocate (or reallocate if needed) all tree memory
     Nprunedcellmax += treeptr->Ncell;
 
+    // Now that the tree is ready, start the sending
+    if (i != rank) {
+      MPI_Isend(treeptr->celldata,treeptr->Ncell*sizeof(TreeCell<ndim>),MPI_CHAR,i,3,MPI_COMM_WORLD,&send_req[j]);
+      j++;
+    }
+
   }
   //-----------------------------------------------------------------------------------------------
+
+  // Now wait for all sends to be completed
+  MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
+
+  // Wait for all receives to be completed
+  MPI_Waitall(Nmpi-1,req,status);
+
+  // Set the number of cells
+  j=0;
+  for (int i=0; i<Nmpi; i++) {
+	  if (i==rank)
+		  continue;
+
+	  int count;
+	  MPI_Get_count(&status[j], MPI_CHAR, &count);
+
+	  treeptr = prunedtree[i];
+
+	  treeptr->Ncell= count/sizeof(TreeCell<ndim>);
+
+	  j++;
+
+  }
 
   timing->EndTimingSection("BUILD_PRUNED_TREE");
 
