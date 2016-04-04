@@ -77,7 +77,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   // Loop over all hydro particles and add contributions to all quantities
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    if (part.itype == dead) {
+    if (part.flags.is_dead()) {
       diag.Ndead++;
       continue;
     }
@@ -99,14 +99,14 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   if (ndim == 2) {
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      if (part.itype == dead) continue;
+      if (part.flags.is_dead()) continue;
       diag.angmom[2] += part.m*(part.r[0]*part.v[1] - part.r[1]*part.v[0]);
     }
   }
   else if (ndim == 3) {
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      if (part.itype == dead) continue;
+      if (part.flags.is_dead()) continue;
       diag.angmom[0] += part.m*(part.r[1]*part.v[2] - part.r[2]*part.v[1]);
       diag.angmom[1] += part.m*(part.r[2]*part.v[0] - part.r[0]*part.v[2]);
       diag.angmom[2] += part.m*(part.r[0]*part.v[1] - part.r[1]*part.v[0]);

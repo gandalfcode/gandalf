@@ -1081,7 +1081,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 #pragma omp for
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         dt         = sphint->Timestep(part,sph);
         dt_min_aux = min(dt_min_aux,dt);
         dt_sph     = min(dt_sph,dt);
@@ -1155,7 +1155,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.level     = level_max_sph;
         part.levelneib = level_max_sph;
         part.nlast     = n;
@@ -1167,7 +1167,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     else {
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         dt             = part.dt;
         level          = min(ComputeTimestepLevel(dt, dt_max), level_max);
         part.level     = level;
@@ -1213,7 +1213,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 #pragma omp for
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         // SPH particles whose timestep has been artificially reduced by Saitoh & Makino scheme.
         if (part.nlast == n && part.nstep != pow(2,level_step - part.level)) {
@@ -1335,7 +1335,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   /*#pragma omp for
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.itype == dead || part.nlast != n) continue;
+        if (part.flags.is_dead() || part.nlast != n) continue;
         if (part.sinkid != -1) {
           if (sinks->sink[part.sinkid].star->level - part.level > level_diff_max) {
             part.level = sinks->sink[part.sinkid].star->level - level_diff_max;
@@ -1361,7 +1361,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         if (part.nlast == n) part.level = level_max_sph;
       }
     }
@@ -1387,7 +1387,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       n *= nfactor;
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.nstep *= nfactor;
         part.nlast *= nfactor;
       }
@@ -1402,7 +1402,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       n /= nfactor;
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.nlast /= nfactor;
         part.nstep /= nfactor;
       }
@@ -1420,7 +1420,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     // Update values of nstep for both SPH and star particles
     for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      if (part.itype == dead) continue;
+      if (part.flags.is_dead()) continue;
       if (part.nlast == n) part.nstep = pow(2, level_step - part.level);
     }
     for (i=0; i<nbody->Nnbody; i++) {
@@ -1444,7 +1444,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   assert(n <= nresync);
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
     assert(part.level <= level_max);
     assert(part.nlast <= n);
     assert(part.tlast <= t);

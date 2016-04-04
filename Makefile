@@ -22,11 +22,11 @@
 
 CPP                = 
 PYTHON             = python
-COMPILER_MODE      = FAST
+COMPILER_MODE      = DEBUG
 PRECISION          = DOUBLE
 OPENMP             = 0
 OUTPUT_LEVEL       = 1
-DEBUG_LEVEL        = 0
+DEBUG_LEVEL        = 1
 BUILD_DEPENDENCIES = 1
 
 

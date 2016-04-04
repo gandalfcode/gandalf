@@ -48,7 +48,13 @@ using namespace std;
 //=================================================================================================
 template<int ndim>
 struct ParticleCellProxy
+: public TreeCellBase<ndim>
 {
+	using TreeCellBase<ndim>::hboxmin ;
+	using TreeCellBase<ndim>::hboxmax ;
+	using TreeCellBase<ndim>::rcell ;
+
+
 	ParticleCellProxy(const Particle<ndim>& p)
 	{
 		FLOAT dr = 0.5 * sqrt(p.hrangesqd) ;
@@ -60,8 +66,6 @@ struct ParticleCellProxy
 			hboxmax[k] = rcell[k] - dr ;
 		}
 	}
-	FLOAT hboxmin[ndim], hboxmax[ndim] ;
-	FLOAT rcell[ndim] ;
 } ;
 
 
@@ -71,7 +75,12 @@ struct ParticleCellProxy
 //=================================================================================================
 template<int ndim>
 struct DomainCellProxy
+: public TreeCellBase<ndim>
 {
+	using TreeCellBase<ndim>::hboxmin ;
+	using TreeCellBase<ndim>::hboxmax ;
+	using TreeCellBase<ndim>::rcell ;
+
 	DomainCellProxy(const DomainBox<ndim>& box)
 	{
 		for (int k=0; k<ndim;k++)
@@ -83,8 +92,6 @@ struct DomainCellProxy
 			hboxmax[k] = rcell[k] - dr ;
 		}
 	}
-	FLOAT hboxmin[ndim], hboxmax[ndim] ;
-	FLOAT rcell[ndim] ;
 } ;
 
 
@@ -153,7 +160,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
   mu = new FLOAT[Ntot];
   neiblist = new int[Ntot];
   for (i=0; i<Ntot; i++) {
-    if (partdata[i].itype == dead) continue;
+    if (partdata[i].flags.is_dead()) continue;
     neiblist[Nneib] = i;
     gpot[Nneib] = partdata[i].gpot;
     m[Nneib]    = partdata[i].m;
@@ -174,7 +181,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
     for (i=0; i<Nhydro; i++) {
 
       // Skip over inactive particles
-      if (!partdata[i].active || partdata[i].itype == dead) continue;
+      if (!partdata[i].active || partdata[i].flags.is_dead()) continue;
 
       for (k=0; k<ndim; k++) rp[k] = partdata[i].r[k];
       Typemask hmask = sph->types[partdata[i].ptype].hmask ;
@@ -257,7 +264,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
     else i = ipart + offset_imported;
 
     // Skip over inactive particles
-    if (!partdata[i].active || partdata[i].itype == dead) continue;
+    if (!partdata[i].active || partdata[i].flags.is_dead()) continue;
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
@@ -275,7 +282,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
     // and all neighbours here
     //---------------------------------------------------------------------------------------------
     for (j=0; j<sph->Nhydro + sph->NPeriodicGhost; j++) {
-      if (partdata[j].itype == dead) continue;
+      if (partdata[i].flags.is_dead()) continue;
       hrangesqdj = partdata[j].hrangesqd;
       //hrangesqdj = pow(kernfac*kernp->kernrange*partdata[j].h,2);
       for (k=0; k<ndim; k++) draux[k] = partdata[j].r[k] - rp[k];
@@ -349,7 +356,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
     else i = ipart + offset_imported;
 
     // Skip over inactive particles
-    if (!partdata[i].active || partdata[i].itype == dead) continue;
+    if (!partdata[i].active || partdata[i].flags.is_dead()) continue;
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
@@ -364,7 +371,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
     // Determine interaction list (to ensure we don't compute pair-wise forces twice)
     Nneib = 0;
     for (j=0; j<sph->Nhydro + sph->NPeriodicGhost; j++) {
-      if (i != j && partdata[j].itype != dead) neiblist[Nneib++] = j;
+      if (i != j && !partdata[j].flags.is_dead()) neiblist[Nneib++] = j;
     }
 
     // Compute forces between SPH neighbours (hydro and gravity)
@@ -418,7 +425,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
     else i = iparticle + offset_imported;
 
     // Skip over inactive particles
-    if (!partdata[i].active || partdata[i].itype == dead) continue;
+    if (!partdata[i].active || partdata[i].flags.is_dead()) continue;
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
@@ -433,7 +440,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
     // Determine interaction list (to ensure we don't compute pair-wise forces twice)
     Nneib = 0;
     for (j=0; j<Nhydro; j++) {
-      if (i != j && partdata[j].itype != dead) neiblist[Nneib++] = j;
+      if (i != j && !partdata[i].flags.is_dead()) neiblist[Nneib++] = j;
     }
 
     // Compute forces between SPH neighbours (hydro and gravity)
@@ -492,7 +499,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nhydro; i++) {
     // Skip over inactive particles
-    if (!partdata[i].active || partdata[i].itype == dead) continue;
+    if (!partdata[i].active || partdata[i].flags.is_dead()) continue;
 
     bool do_hydro = sph->types[partdata[j].ptype].hydro_forces ;
     bool do_grav  = sph->types[partdata[j].ptype].self_gravity ;
@@ -520,7 +527,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
     Ngrav = 0 ;
     for (j=0; j<Nhydro; j++) {
       neibdata[j] = partdata[j];
-      if (i != j && partdata[j].itype != dead) {
+      if (i != j && !partdata[j].flags.is_dead()) {
     	if (do_hydro && hydromask[partdata[j].ptype]) {
           neiblist[Nneib++] = j;
           for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
@@ -621,7 +628,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
     else i = ipart + offset_imported;
 
     // Skip over inactive particles
-    if (!partdata[i].active || partdata[i].itype == dead) continue;
+    if (!partdata[i].active || partdata[i].flags.is_dead()) continue;
 
     bool do_hydro = sph->types[partdata[i].ptype].hydro_forces ;
     if (do_hydro){
@@ -644,7 +651,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
       Nneib = 0;
       for (j=0; j<Nhydro; j++) {
     	if (!hydromask[partdata[j].ptype]) continue ;
-        if (i != j && partdata[j].itype != dead) {
+        if (i != j && !partdata[j].flags.is_dead()) {
           neiblist[Nneib] = j;
 
           int NumGhosts = GhostFinder.ConstructGhostsScatterGather(partdata[j], neibdata + Nneib) ;
@@ -725,7 +732,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
   for (i=0; i<Nhydro; i++) {
 
     // Skip over inactive particles
-    if (!partdata[i].active || partdata[i].itype == dead) continue;
+    if (!partdata[i].active || partdata[i].flags.is_dead()) continue;
     if (sph->types[partdata[i].ptype].self_gravity) {
 
       // Zero all arrays to be updated
@@ -745,7 +752,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
         if (!gravmask[partdata[j].ptype]) continue ;
 
         neibdata[j] = partdata[j];
-        if (i != j && partdata[j].itype != dead) {
+        if (i != j && !partdata[j].flags.is_dead()) {
           neiblist[Nneib++] = j;
           for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
           GhostFinder.NearestPeriodicVector(dr);

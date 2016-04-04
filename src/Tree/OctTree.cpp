@@ -454,7 +454,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         cell.ifirst = -1;
         cell.N      = 0;
         while (i != -1) {
-          if (partdata[i].itype != dead) {
+          if (!partdata[i].flags.is_dead()) {
             if (iaux == -1) cell.ifirst = i;
             else inext[iaux] = i;
             iaux = i;
@@ -468,7 +468,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         // Loop over all particles in cell summing their contributions
         i = cell.ifirst;
         while (i != -1) {
-          if (partdata[i].itype != dead) {
+          if (!partdata[i].flags.is_dead()) {
             cell.N++;
             if (partdata[i].active) cell.Nactive++;
             cell.hmax = max(cell.hmax, partdata[i].h);
@@ -505,7 +505,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           i = cell.ifirst;
 
           while (i != -1) {
-            if (partdata[i].itype != dead && gravmask[partdata[i].ptype]) {
+            if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
               mi = partdata[i].m;
               for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
               drsqd = DotProduct(dr,dr,ndim);

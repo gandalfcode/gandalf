@@ -541,7 +541,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         if (!mfv->types[activepart[j].ptype].hydro_forces) continue;
 
         // Make local copy of hmask for active particle
-        for (k=0; k<Ntypes; k++) hmask[k] = mfv->types[activepart[j].ptype].hmask[k];
+        hmask = mfv->types[activepart[j].ptype].hmask;
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
@@ -562,7 +562,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
           if (hmask[neibpart[jj].ptype] == false) continue ;
 
           // Skip current active particle
-          if (neiblist[jj] == i) continue;
+          if (!neibpart[jj].flags.is_mirror() && neiblist[jj] == i) continue;
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim) + small_number;
@@ -607,7 +607,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 
     }
     //=============================================================================================
-
 
     // Free-up local memory for OpenMP thread
     delete[] invdrmag;
@@ -761,7 +760,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         delete[] neiblist;
         Nneibmax                  = 2*Nneibmax;
         Nneibmaxbuf[ithread]      = Nneibmax;
-        Ngravcellmaxbuf[ithread] *= 2;
         neiblist                  = new int[Nneibmax];
         mfvlist                   = new int[Nneibmax];
         dr                        = new FLOAT[Nneibmax*ndim];
@@ -774,7 +772,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
           (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
       };
 
-      for (j=0; j<Nneibmax; j++) {
+      for (j=0; j<Nneib; j++) {
         for (k=0; k<ndim+2; k++) neibpart[j].dQ[k]   = (FLOAT) 0.0;
         for (k=0; k<ndim+2; k++) neibpart[j].dQdt[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) neibpart[j].rdmdt[k]  = (FLOAT) 0.0;
@@ -790,7 +788,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         if (mfv->types[activepart[j].ptype].hydro_forces == false) continue;
 
         // Make a local copy of the hydro neighbour mask
-        for (k=0; k<Ntypes; k++) hydromask[k] = mfv->types[activepart[j].ptype].hydromask[k];
+        hydromask = mfv->types[activepart[j].ptype].hydromask;
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
@@ -812,9 +810,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
           // particle, (iv) neighbour is on lower timestep level (i.e. timestep is shorter),
           // or (v) neighbour is on same level as current particle but has larger id. value
           // (to only calculate each pair once).
-          if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].itype == dead ||
-              neiblist[jj] == i || activepart[j].level < neibpart[jj].level ||
-              (neibpart[jj].iorig < i && neibpart[jj].level == activepart[j].level)) continue;
+          if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].flags.is_dead()) continue ;
+          if ((!neibpart[jj].flags.is_mirror()) &&
+              (neiblist[jj] == i || activepart[j].level < neibpart[jj].level ||
+              (neibpart[jj].iorig < i && neibpart[jj].level == activepart[j].level))) continue;
 
           // Compute relative position and distance quantities for pair
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
@@ -844,15 +843,11 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       // Accumulate fluxes for neighbours (only currently works for real and periodic neighbours)
       for (int jj=0; jj<Nneib; jj++) {
         i = neibpart[jj].iorig;
-        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQ[k];
-        for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
+        if (!neibpart[jj].flags.is_mirror()) {
+          for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQ[k];
+          for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
+        }
       }
-      /*for (int jj=0; jj<Nneib; jj++) {
-        j = neiblist[jj];
-        for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibpart[jj].dQ[k];
-        for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibpart[jj].rdmdt[k];
-      }*/
-
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
@@ -865,6 +860,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
 
     // Add all buffers back to main arrays
+    // Could be simply atomic?
 #pragma omp barrier
 #pragma omp critical
     {
@@ -872,13 +868,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
       }
-      for (j=Nhydro; j<Nhydro+mfv->NPeriodicGhost; j++) {
-        i = mfvdata[j].iorig;
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[j][k];
-        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[j][k];
-      }
     }
-
 
     // Free-up local memory for OpenMP thread
     delete[] rdmdtBuffer;

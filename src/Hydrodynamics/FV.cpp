@@ -208,7 +208,26 @@ void FV<ndim>::CalculatePrimitiveTimeDerivative
       Wprim[ivz]*gradW[ipress][2] -
       gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
   }
-
+  /*
+  if (ndim == 1) {
+    Wdot[irho]   = - Wprim[irho]*gradW[ivx][0];
+    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
+    Wdot[ipress] = - gamma_eos*Wprim[ipress]*gradW[ivx][0];
+  }
+  else if (ndim == 2) {
+    Wdot[irho]   = - Wprim[irho]*(gradW[ivx][0] - gradW[ivy][1]);
+    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
+    Wdot[ivy]    = - gradW[ipress][1]/Wprim[irho];
+    Wdot[ipress] = - gamma_eos*Wprim[ipress]*(gradW[ivx][0] - gradW[ivy][1]);
+  }
+  else if (ndim == 3) {
+    Wdot[irho]   = - Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
+    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
+    Wdot[ivy]    = - gradW[ipress][1]/Wprim[irho];
+    Wdot[ivz]    = - gradW[ipress][2]/Wprim[irho];
+    Wdot[ipress] = - gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
+  }
+  */
   return;
 }
 

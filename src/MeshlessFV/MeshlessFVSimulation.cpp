@@ -760,7 +760,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 #pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         dt         = mfv->Timestep(part);
         dt_min_aux = min(dt_min_aux, dt);
         dt_hydro   = min(dt_hydro, dt);
@@ -834,7 +834,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.active    = true;
         part.level     = level_max_hydro;
         part.levelneib = level_max_hydro;
@@ -847,7 +847,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     else {
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         dt              = part.dt;
         level           = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
         level           = max(level, 0);
@@ -892,7 +892,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 #pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.active = false;
 
         if (part.nlast == n) {
@@ -1004,7 +1004,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   /*#pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
         SphParticle<ndim>& part = mfv->GetSphParticlePointer(i);
-        if (part.itype == dead || part.nlast != n) continue;
+        if (part.flags.is_dead() || part.nlast != n) continue;
         if (part.sinkid != -1) {
           if (sinks.sink[part.sinkid].star->level - part.level > level_diff_max) {
             part.level = sinks.sink[part.sinkid].star->level - level_diff_max;
@@ -1030,7 +1030,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         if (part.nlast == n) part.level = level_max_hydro;
       }
     }
@@ -1045,7 +1045,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       n *= nfactor;
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.nstep *= nfactor;
         part.nlast *= nfactor;
       }
@@ -1060,7 +1060,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       n /= nfactor;
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.nlast /= nfactor;
         part.nstep /= nfactor;
       }
@@ -1080,7 +1080,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     // Update values of nstep for both hydro and star particles
     for (i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-      if (part.itype == dead) continue;
+      if (part.flags.is_dead()) continue;
       if (part.nlast == n) part.nstep = pow(2,level_step - part.level);
     }
     for (i=0; i<nbody->Nnbody; i++) {
@@ -1103,7 +1103,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   assert(n <= nresync);
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
     assert(part.level <= level_max);
     assert(part.nlast <= n);
     assert(part.tlast <= t);
@@ -1196,7 +1196,7 @@ void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
 
   for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
     for (int var=0; var<ndim+2; var++) part.Qcons[var] += part.dQ[var];
     mfv->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
     mfv->UpdateArrayVariables(part);

@@ -224,7 +224,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 #pragma omp parallel for default(none) private(dt,i) shared(partdata)
   for (i=0; i<Npart; i++) {
     ParticleType<ndim>& part = partdata[i];
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step
     dt = t - part.tlast;
@@ -277,7 +277,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 #pragma omp parallel for default(none) private(dn,i,temp) shared(partdata)
   for (i=0; i<Npart; i++) {
     ParticleType<ndim> &part = partdata[i];
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
     dn = n - part.nlast;
 
     if (dn == part.nstep) {

@@ -151,17 +151,17 @@ void MeshlessFV<ndim>::DeleteDeadParticles(void)
   // Determine new order of particles in arrays.
   // First all live particles and then all dead particles.
   for (i=0; i<Nhydro; i++) {
-    itype = hydrodata[i].itype;
-    while (itype == dead) {
+    itype = hydrodata[i].flags.get();
+    while (itype & dead) {
       Ndead++;
       ilast--;
       if (i < ilast) {
         hydrodata[i] = hydrodata[ilast];
-        hydrodata[ilast].itype = dead;
+        hydrodata[ilast].flags.set_flag(dead);
         hydrodata[ilast].m = (FLOAT) 0.0;
       }
       else break;
-      itype = hydrodata[i].itype;
+      itype = hydrodata[i].flags.get();
     };
     if (i >= ilast - 1) break;
   }
@@ -174,7 +174,7 @@ void MeshlessFV<ndim>::DeleteDeadParticles(void)
   Ntot -= Ndead;
   for (i=0; i<Nhydro; i++) {
     iorder[i] = i;
-    assert(hydrodata[i].itype != dead);
+    assert(!hydrodata[i].flags.is_dead());
   }
 
   return;
@@ -365,7 +365,7 @@ void MeshlessFV<ndim>::EndTimestep
     int k;                                           // Dimension counter
     int nstep = part.nstep;                          // Particle (integer) step size
 
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
 
 
     // If particle is at the end of its timestep

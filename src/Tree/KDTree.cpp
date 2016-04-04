@@ -787,7 +787,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     cell.ifirst = -1;
     iaux = -1;
     while (i != -1) {
-      if (partdata[i].itype != dead) {
+      if (!partdata[i].flags.is_dead()) {
         if (iaux == -1) cell.ifirst = i;
         else inext[iaux] = i;
         iaux = i;
@@ -801,7 +801,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     // Loop over all particles in cell summing their contributions
     i = cell.ifirst;
     while (i != -1) {
-      if (partdata[i].itype != dead) {
+      if (!partdata[i].flags.is_dead()) {
         cell.N++;
         if (partdata[i].active) cell.Nactive++;
         cell.hmax = max(cell.hmax,partdata[i].h);
@@ -838,7 +838,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       i = cell.ifirst;
 
       while (i != -1) {
-        if (partdata[i].itype != dead && gravmask[partdata[i].ptype]) {
+        if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
           mi = partdata[i].m;
           for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
           drsqd = DotProduct(dr,dr,ndim);
@@ -1112,7 +1112,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
     // Else walk through linked list to obtain list and number of active ptcls.
     while (i != -1) {
-      if (i < Ntot && partdata[i].active && partdata[i].itype != dead) celldata[c].Nactive++;
+      if (i < Ntot && partdata[i].active && !partdata[i].flags.is_dead()) celldata[c].Nactive++;
       if (i == ilast) break;
       i = inext[i];
     };

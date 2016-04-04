@@ -405,7 +405,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
-          if (sphdata[j].itype == dead){
+          if (sphdata[j].flags.is_dead()){
         	Nneib-- ;
         	continue ;
           }
@@ -644,7 +644,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
           //-----------------------------------------------------------------------------------------
       	  for (jj=0; jj<Nneib; jj++) {
       	    if (dragmask[neibpart[jj].ptype] == false) continue;
-      	    if (neibpart[jj].itype == dead) continue ;
+      	    if (neibpart[jj].flags.is_dead()) continue ;
 
       	    for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
       	    drsqd = DotProduct(draux, draux, ndim) + small_number;
@@ -731,11 +731,8 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   int k;                               // Dimension counter
   int iteration = 0 ;
   int iteration_max = 100 ;
-  FLOAT dr[ndim];                      // Relative position vector
   FLOAT h_lower_bound = (FLOAT) 0.0;   // Lower bound on h
   FLOAT h_upper_bound = hmax;          // Upper bound on h
-  FLOAT invhsqd;                       // (1 / h)^2
-  FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
   FLOAT w ;                            // Kernel value
   FLOAT n ;                            // Kernel normalization
   FLOAT grho ;                         // Gas Density
@@ -747,7 +744,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   // Some basic sanity-checking in case of invalid input into routine
   assert(Nneib > 0);
   assert(hmax > (FLOAT) 0.0);
-  assert(parti.itype != dead);
+  assert(!parti.flags.is_dead());
 
   FLOAT h = parti.h_dust ;
 
@@ -924,13 +921,10 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
   FLOAT dvdr;                          // Dot product of dv and dr
   FLOAT dadr;                          // Dot product of da and dr
   FLOAT wkern;                         // Value of drag kernel function for part i
-  FLOAT d2g ;                          // Dust to gas ratio
-  FLOAT t_s ;                          // Stopping time
-  FLOAT Xi ;                           // Stopping factor
   FLOAT S ;                            // Drag term
 
   // Some basic sanity-checking in case of invalid input into routine
-  assert(parti.itype != dead);
+  assert(!parti.flags.is_dead());
 
   if (parti.ptype == dust_type){
 	  parti.sound = 0;
@@ -942,7 +936,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
-    assert(neibpart[j].itype != dead);
+    assert(!neibpart[j].flags.is_dead());
 
     if (parti.ptype == gas_type)
       wkern = pow(parti.invh, ndim)*kern.wdrag(drmag[jj]*parti.invh);
@@ -1180,6 +1174,7 @@ TreeBase<ndim>* mpi_tree)
 	else {
 		string message = "Unrecognised parameter : drag_law = " + simparams->stringparams["drag_law"];
 		ExceptionHandler::getIstance().raise(message);
+		return NULL ;
 	}
 
 	dust_forces->timing = timing ;

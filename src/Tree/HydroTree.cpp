@@ -2158,7 +2158,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
            << "      " << sqrt(drsqd)/kernrange/partdata[i].h << "     "
            << sqrt(drsqd)/kernrange/partdata[trueneiblist[j]].h << "    "
            << partdata[trueneiblist[j]].r[0] << "   type : "
-           << partdata[trueneiblist[j]].itype << endl;
+           << partdata[trueneiblist[j]].pitype << endl;
       invalid_flag = true;
     }
 

@@ -191,7 +191,6 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
       part.rdmdt[k] -= (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim);
       neibpart[j].rdmdt[k] += (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim);
     }
-
   }
   //-----------------------------------------------------------------------------------------------
 

@@ -623,7 +623,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockCellProperties
     // Loop over all particles in cell summing their contributions
     i = cell.ifirst;
     while (i != -1) {
-      if (partdata[i].itype != dead) {
+      if (!partdata[i].flags.is_dead()) {
         cell.N++;
         cell.m += partdata[i].m;
         cell.rho += partdata[i].m*partdata[i].rho;

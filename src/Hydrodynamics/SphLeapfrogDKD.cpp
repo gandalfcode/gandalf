@@ -95,7 +95,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
 #pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step
     nstep = part.nstep;
@@ -125,7 +125,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
     else part.active = false;
 
     // Flag all dead particles as inactive here
-    if (part.itype == dead) part.active = false;
+    if (part.flags.is_dead()) part.active = false;
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -163,7 +163,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
 #pragma omp parallel for default(none) private(dn,i,k,nstep) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
 
     dn = n - part.nlast;
     nstep = part.nstep;
@@ -218,7 +218,7 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
   shared(sphdata) reduction(+:activecount)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
 
     dn = n - part.nlast;
     if (dn == part.nstep) continue;
