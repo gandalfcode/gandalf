@@ -496,7 +496,8 @@ void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo
   vector<int>& Nbytes_from_proc,       ///< ..
   vector<int>& Nbytes_to_proc,         ///< ..
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to the SPH object
-  int rank)                            ///< ..
+  const int rank,							   ///< [in] Our rank
+  const int iproc)                            ///< [in] Rank that we are sending to
 {
   int removed_particles=0;
   int Nbytes_received_exported = std::accumulate(Nbytes_from_proc.begin(), Nbytes_from_proc.end(), 0);
@@ -555,9 +556,9 @@ void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo
  (vector<char >& received_information,   ///< ..
-  vector<int>& recv_displs,              ///< ..
   Hydrodynamics<ndim> *hydro,            ///< ..
-  int rank)                              ///< ..
+  const int rank,						 ///< Our local rank
+  const int iproc)                       ///< Rank of the other processor
 {
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
 
@@ -582,12 +583,9 @@ void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo
   for (int i=0; i<ids_active_particles.size(); i++) {
     const int j = ids_active_particles[i];
 
-    for (int Nproc=0; Nproc<recv_displs.size(); Nproc++) {
 
-      if (rank == Nproc) continue;
-
-      ParticleType<ndim>* received_particle = reinterpret_cast<ParticleType<ndim>*>
-        (&received_information[i * sizeof(ParticleType<ndim>) + recv_displs[Nproc] ]);
+     ParticleType<ndim>* received_particle = reinterpret_cast<ParticleType<ndim>*>
+        (&received_information[i * sizeof(ParticleType<ndim>)]);
 
 
       assert(partdata[j].iorig == received_particle->iorig);
@@ -601,7 +599,6 @@ void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo
       partdata[j].div_v += received_particle->div_v;
       partdata[j].levelneib = max(partdata[j].levelneib, received_particle->levelneib);
 
-    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -611,9 +608,6 @@ void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo
 
 
 
-template class BruteForceSearch<1,SphParticle>;
-template class BruteForceSearch<2,SphParticle>;
-template class BruteForceSearch<3,SphParticle>;
 template class BruteForceSearch<1,GradhSphParticle>;
 template class BruteForceSearch<2,GradhSphParticle>;
 template class BruteForceSearch<3,GradhSphParticle>;

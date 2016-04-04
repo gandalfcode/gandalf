@@ -40,6 +40,7 @@
 #include "MpiControl.h"
 #include "MpiTree.h"
 #include "Sinks.h"
+#include "CommunicationHandler.h"
 using namespace std;
 
 
@@ -691,30 +692,68 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
  (Hydrodynamics<ndim>* hydro)              ///< Pointer to main hydrodynamics object
 {
-  vector<char> send_buffer;                // ..
-  vector<int> recv_displs(Nmpi);           // ..
-  vector<int> send_displs(Nmpi);           // ..
+  vector<vector<char> > send_buffer(Nmpi-1);                // ..
+  vector<vector<char> > receive_buffer(Nmpi-1);
 
-  // Get the array with the acceleration for every other processor.
-  // Quite confusingly, note that the role of the two arays with the number of bytes from/to
+
+  // Post all the receives (for performance)
+  MPI_Request req[Nmpi-1];
+  MPI_Status status[Nmpi-1];
+  int j=0;
+  for (int i=0; i<Nmpi; i++) {
+
+	  if (i==rank)
+		  continue;
+
+	  typename ParticleType<ndim>::HandlerType handler;
+	  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+	  // We know how much data we are going to receive
+	  const int size_receive = neibsearch->ExportInfoSize(i);
+	  receive_buffer[j].resize(size_receive);
+
+	  MPI_Irecv(&receive_buffer[j][0],size_receive,MPI_CHAR,i,5,MPI_COMM_WORLD,&req[j]);
+
+	  j++;
+  }
+
+
+  // Get the accelerations to send to the other processors
+  // Quite confusingly, note that the role of the two arrays with the number of bytes from/to
   // each processor is now reversed (from is to send and to is to receive)
-  neibsearch->GetBackExportInfo(send_buffer, Nbytes_from_proc, Nbytes_to_proc, hydro, rank);
-  compute_displs(send_displs, Nbytes_from_proc);
+  MPI_Request send_req[Nmpi-1];
+  j=0;
+  for (int i=0; i<Nmpi; i++) {
 
-  // Allocate receive buffer
-  const int Nbytes_to_receive = std::accumulate(Nbytes_to_proc.begin(),
-                                                Nbytes_to_proc.end(), 0);
-  vector<char> receive_buffer(Nbytes_to_receive);
+	  if (i==rank)
+		  continue;
 
-  // Prepare receive counts and displacements
-  compute_displs(recv_displs, Nbytes_to_proc);
+	  // Prepare the data to send to each processor
+	  neibsearch->GetBackExportInfo(send_buffer[j], Nbytes_from_proc, Nbytes_to_proc, hydro, rank, i);
 
-  // Do the actual communication
-  MPI_Alltoallv(&send_buffer[0], &Nbytes_from_proc[0], &send_displs[0], MPI_CHAR,
-                &receive_buffer[0], &Nbytes_to_proc[0], &recv_displs[0], MPI_CHAR, MPI_COMM_WORLD);
+	  // Post the send immediately now that we know which data to send
+	  MPI_Isend(&send_buffer[j][0],send_buffer[j].size(),MPI_CHAR,i,5,MPI_COMM_WORLD,&send_req[j]);
+
+	  j++;
+
+  }
+  //Now that we have extracted all the needed information reset the counters
+  neibsearch->ResetCountersExportInfo(hydro);
+
+
+  // Now wait for all the communication to be finished
+  // TODO: obviously we should NOT use Waitall here!!!!
+  MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
+  MPI_Waitall(Nmpi-1,req,status);
 
   // Unpack the received information to update accelerations
-  neibsearch->UnpackReturnedExportInfo(receive_buffer, recv_displs, hydro, rank);
+  j=0;
+  for (int i=0; i<Nmpi; i++) {
+	  if (i==rank) continue;
+
+	  neibsearch->UnpackReturnedExportInfo(receive_buffer[j], hydro, rank, i);
+	  j++;
+  }
+
 
   return;
 }
