@@ -120,6 +120,9 @@ void Simulation<ndim>::GenerateIC(void)
            ic == "ewaldslab" ||  ic == "ewaldcylinder") {
     icGenerator.EwaldDensity();
   }
+  else if (ic == "gaussianring") {
+	  icGenerator.GaussianRing();
+  }
   else if (ic == "gresho") {
     icGenerator.GreshoVortex();
   }
