@@ -755,7 +755,6 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
 		  int iproc = j;
 		  if (j >= rank)
 			  iproc +=1;
-		  cout << rank << " " << iproc << " " << j << endl;
 		  neibsearch->UnpackReturnedExportInfo(receive_buffer[j], hydro, rank, iproc);
 	  }
 
@@ -765,7 +764,6 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
 
   }
 
-  cout << "number iterations " << niter << " on processor " << rank << endl;
 
   // Vector with sends gets deallocated when the function returns, so need to be sure that the sending request have completed
   // Probably not a big problem - if the receives have finished, very likely also the sends have
