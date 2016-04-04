@@ -3277,6 +3277,87 @@ void Ic<ndim>::TurbIsothermSphere(void)
 
 
 //=================================================================================================
+//  Ic::GaussianRing
+/// Initialise a rotating gaussian ring around a star to measure the numerical viscosity of
+/// the numerical method (see e.g. Murray 1996)
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::GaussianRing(void)
+{
+
+	debug2("[Ic::GaussianRing]");
+
+	// Run the test only in 2d
+	if (ndim != 2) {
+		ExceptionHandler::getIstance().raise("Gaussian ring test only in 2D");
+	}
+
+	//int Nhydro = simparams->intparams["Nhydro"];
+	int Nhydro = 13188*2; //I've hard-coded it to reproduce Murray 1996
+	const FLOAT temp0     = simparams->floatparams["temp0"];
+	const FLOAT mu_bar    = simparams->floatparams["mu_bar"];
+	const FLOAT alpha = simparams->floatparams["alpha_visc"];
+	const FLOAT c_s = sqrt(temp0/mu_bar);
+	cout << "sound speed: " << c_s << endl;
+	const FLOAT nu = 1./8. * alpha * c_s * 0.01;
+
+	// Parameters of the gaussian
+	const FLOAT rcentre = 0.85;
+	const FLOAT width = 0.025;
+	const FLOAT inner_edge = 0.80;
+	const FLOAT outer_edge = 0.90;
+	const int nrings = 21;
+
+	const int Nperring = Nhydro/nrings;
+	Nhydro=nrings*Nperring;
+
+	// Allocate memory
+	hydro->Nhydro = Nhydro;
+	sim->nbody->Nstar=1;
+	sim->AllocateParticleMemory();
+
+	// Set up the star
+	StarParticle<ndim>& star = sim->nbody->stardata[0];
+	star.m=1;
+
+	// Set up the particles
+	for (int i=0; i<Nhydro; i++) {
+
+		Particle<ndim>& part = hydro->GetParticlePointer(i);
+
+		// Position
+		const int iring = i/Nperring;
+		const FLOAT ring_spacing = (outer_edge-inner_edge)/(nrings-1);
+		const FLOAT r = inner_edge + iring*ring_spacing;
+		const FLOAT phi_spacing = 2*M_PI/Nperring;
+		const FLOAT phi = phi_spacing*(i-iring*Nperring);
+
+		part.r[0] = r*cos(phi);
+		part.r[1] = r*sin(phi);
+
+		// Velocity
+		const FLOAT vphi = 1./sqrt(r);
+		const FLOAT vr=0.0;
+		//const FLOAT vr = -3*nu/2/r + 6*nu/width/width * (r-rcentre);
+
+		part.v[0] = vr*cos(phi)-vphi*sin(phi);
+		part.v[1] = vr*sin(phi)+vphi*cos(phi);
+
+
+		// Density (and mass)
+		const FLOAT sigma = exp (-pow((r-rcentre)/width,2));
+		part.m = 0.01/Nhydro*sigma;
+
+	}
+
+	sim->initial_h_provided = false;
+
+
+}
+
+
+
+//=================================================================================================
 //  Ic::BinaryStar
 /// Create a simple binary star problem
 //=================================================================================================

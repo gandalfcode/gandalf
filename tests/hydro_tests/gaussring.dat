@@ -1,0 +1,73 @@
+#------------------------------------------------------------------
+# Sound wave test
+# Generates and propagates a small linear density perturbation as a
+# sound-wave along a uniform density gas.
+#------------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = GAUSSRING1STATICRIGHT
+Select SPH simulation                       : sim = meshlessfv
+Select shocktube initial conditions         : ic = gaussianring
+1D shocktube test                           : ndim = 2
+Use dimensionless units                     : dimensionless = 1
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 100.0
+Time of first snapshot                      : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.1
+Screen output frequency (in no. of steps)   : noutputstep = 128
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = isothermal
+Temperature				    : temp0 = 1e-6;
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = quintic
+SPH smoothing length iteration tolerance    : h_converge = 0.0001
+: zero_mass_flux = 0
+: static_particles=1
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1
+Artificial viscosity beta value             : beta_visc = 2
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+No. of block timestep levels                : Nlevels = 1
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 1
+SPH neighbour search algorithm              : neib_search = kdtree
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0
