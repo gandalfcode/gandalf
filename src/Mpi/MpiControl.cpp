@@ -741,19 +741,35 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
 
 
   // Now wait for all the communication to be finished
-  // TODO: obviously we should NOT use Waitall here!!!!
-  MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
-  MPI_Waitall(Nmpi-1,req,status);
 
-  // Unpack the received information to update accelerations
-  j=0;
-  for (int i=0; i<Nmpi; i++) {
-	  if (i==rank) continue;
+  int ncompleted=0;
+  int which_finished[Nmpi-1];
+  int niter = 0;
+  while (ncompleted < Nmpi-1) {
+	  int completed_now;
+	  MPI_Waitsome(Nmpi-1,req,&completed_now,which_finished,status);
 
-	  neibsearch->UnpackReturnedExportInfo(receive_buffer[j], hydro, rank, i);
-	  j++;
+	  // Unpack the received information to update accelerations
+	  for (int i=0; i<completed_now; i++) {
+		  j = which_finished[i];
+		  int iproc = j;
+		  if (j >= rank)
+			  iproc +=1;
+		  cout << rank << " " << iproc << " " << j << endl;
+		  neibsearch->UnpackReturnedExportInfo(receive_buffer[j], hydro, rank, iproc);
+	  }
+
+	  ncompleted += completed_now;
+
+	  niter++;
+
   }
 
+  cout << "number iterations " << niter << " on processor " << rank << endl;
+
+  // Vector with sends gets deallocated when the function returns, so need to be sure that the sending request have completed
+  // Probably not a big problem - if the receives have finished, very likely also the sends have
+  MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
 
   return;
 }
