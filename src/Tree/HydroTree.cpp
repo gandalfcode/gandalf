@@ -1880,6 +1880,16 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   //---------------------------------------------------------------------------------------------
 
+
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+//  assert (offset == std::accumulate(Nbytes_exported_from_proc.begin(),
+//                                    Nbytes_exported_from_proc.end(), 0));
+
+
   // Update the hydro counters
   hydro->Ntot += N_received_particles;
   hydro->NImportedParticles += N_received_particles;
@@ -1888,13 +1898,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
   tree->Nimportedcell += N_received_cells;
   tree->Ncelltot      += N_received_cells;
   tree->Ntot           = hydro->Ntot;
-
-}
-  //-----------------------------------------------------------------------------------------------
-
-
-//  assert (offset == std::accumulate(Nbytes_exported_from_proc.begin(),
-//                                    Nbytes_exported_from_proc.end(), 0));
 
   return;
 }
