@@ -354,5 +354,58 @@ private:
 };
 
 
+//=================================================================================================
+//  ParticleCellProxy
+/// Proxy class that we can use to create the Ghosts for the brute force search
+//=================================================================================================
+template<int ndim>
+struct ParticleCellProxy
+: public TreeCellBase<ndim>
+{
+	using TreeCellBase<ndim>::hboxmin ;
+	using TreeCellBase<ndim>::hboxmax ;
+	using TreeCellBase<ndim>::rcell ;
+
+
+	ParticleCellProxy(const Particle<ndim>& p)
+	{
+		FLOAT dr =  sqrt(p.hrangesqd) ;
+		for (int k=0; k<ndim;k++)
+		{
+			rcell[k] = p.r[k] ;
+
+			hboxmax[k] = rcell[k] + dr ;
+			hboxmin[k] = rcell[k] - dr ;
+		}
+	}
+} ;
+
+
+//=================================================================================================
+//  DomainCellProxy
+/// Proxy class that we can use to create the Ghosts for the brute force search
+//=================================================================================================
+template<int ndim>
+struct DomainCellProxy
+: public TreeCellBase<ndim>
+{
+	using TreeCellBase<ndim>::hboxmin ;
+	using TreeCellBase<ndim>::hboxmax ;
+	using TreeCellBase<ndim>::rcell ;
+
+	DomainCellProxy(const DomainBox<ndim>& box)
+	{
+		for (int k=0; k<ndim;k++)
+		{
+			rcell[k] = 0.5 * (box.boxmax[k] + box.boxmin[k]) ;
+			FLOAT dr = 0.6 * (box.boxmax[k] - box.boxmin[k]) ;
+
+			hboxmax[k] = rcell[k] + dr ;
+			hboxmax[k] = rcell[k] - dr ;
+		}
+	}
+} ;
+
+
 
 #endif//_GHOST_NEIGHBOURS_H_
