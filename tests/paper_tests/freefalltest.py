@@ -15,9 +15,9 @@ setupsim()
 run()
 
 # Create Lagrangian radii data for 10%, 50% and 90% mass radii.
-CreateTimeData('lr1',lagrangian_radii,0.1)
-CreateTimeData('lr2',lagrangian_radii,0.5)
-CreateTimeData('lr3',lagrangian_radii,0.9)
+CreateTimeData('lr1',lagrangian_radii,mfrac=0.1)
+CreateTimeData('lr2',lagrangian_radii,mfrac=0.5)
+CreateTimeData('lr3',lagrangian_radii,mfrac=0.9)
 
 # Plot Lagrangian radii as a function of time
 time_plot("t","lr3",linestyle='-')
