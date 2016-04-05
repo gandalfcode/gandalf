@@ -97,6 +97,7 @@ public:
   void CheckInitialConditions(void);
   void ContactDiscontinuity(void);
   void EwaldDensity(void);
+  void GaussianRing(void);
   void GreshoVortex(void);
   void KHI(void);
   void NohProblem(void);
