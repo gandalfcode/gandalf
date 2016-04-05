@@ -4620,103 +4620,135 @@ void Ic<ndim>::InterpolateVelocityField
   return;
 }
 
+
+
+//=================================================================================================
+//  Ic::EvrardCollapse
+/// ...
+//=================================================================================================
 template<int ndim>
 void Ic<ndim>::EvrardCollapse()
 {
-	int i;                               // Particle counter
-	int k;                               // Dimension counter
-	FLOAT rcentre[ndim];                 // Position of sphere centre
-	FLOAT *pos;                            // Positions of all particles
+  int i;                                 // Particle counter
+  int k;                                 // Dimension counter
+  FLOAT rcentre[ndim];                   // Position of sphere centre
+  FLOAT *pos;                            // Positions of all particles
 
-	// Create local copies of initial conditions parameters
-	int Npart      = simparams->intparams["Nhydro"];
-	FLOAT Mtot     = simparams->floatparams["mcloud"];
-	FLOAT U_fac    = simparams->floatparams["thermal_energy"];
-	FLOAT radius   = simparams->floatparams["radius"];
-	string particle_dist = simparams->stringparams["particle_distribution"];
+  // Create local copies of initial conditions parameters
+  bool dusty_collapse  = simparams->stringparams["dust_forces"] != "none";
+  int Npart            = simparams->intparams["Nhydro"];
+  FLOAT Mtot           = simparams->floatparams["mcloud"];
+  FLOAT U_fac          = simparams->floatparams["thermal_energy"];
+  FLOAT radius         = simparams->floatparams["radius"];
+  string particle_dist = simparams->stringparams["particle_distribution"];
 
-	cout << "Setting ICs for Evrard collapse Problem:"
-		 << "\n\tNumPart (desired):\t" << Npart
-		 << "\n\tMass:             \t" << Mtot
-		 << "\n\tRadius:           \t" << radius
-		 << "\n\tInternal Energy:  \t" << U_fac ;
+  cout << "Setting ICs for Evrard collapse Problem:"
+       << "\n\tNumPart (desired):\t" << Npart
+       << "\n\tMass:             \t" << Mtot
+       << "\n\tRadius:           \t" << radius
+       << "\n\tInternal Energy:  \t" << U_fac ;
 
-	for (k =0; k < ndim; k++)
-	  rcentre[k] = 0 ;
+  for (k=0; k < ndim; k++) rcentre[k] = (FLOAT) 0.0;
 
-	// Allocate memory
-	pos = new FLOAT[ndim*Npart];
+  // Allocate memory
+  pos = new FLOAT[ndim*Npart];
 
-    if (particle_dist == "random") {
-	  AddRandomSphere(Npart, rcentre, radius, pos);
+  if (particle_dist == "random") {
+    AddRandomSphere(Npart, rcentre, radius, pos);
+  }
+  else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
+    Npart = AddLatticeSphere(Npart, rcentre, (FLOAT) 1.0, particle_dist, pos) ;
+  }
+  else {
+    string message = "Invalid particle distribution option";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  cout << "\n\tNpart (actual):   \t" << Npart << endl ;
+
+  // Allocate local and main particle memory
+  hydro->Nhydro = Npart;
+  if (dusty_collapse) hydro->Nhydro *= 2 ;
+  sim->AllocateParticleMemory();
+
+  bool unequal_mass = false;
+  FLOAT msum = 0.0;
+
+  if (unequal_mass) {
+
+    // Scale to the correct density profile
+    for (i = 0; i < Npart; i++) {
+      Particle<ndim>& P = hydro->GetParticlePointer(i) ;
+      FLOAT ri[ndim];
+      for (k=0; k<ndim; k++) ri[k] = pos[ndim*i + k];
+      FLOAT r = radius*sqrt(DotProduct(ri, ri, ndim) + small_number);
+      for (k=0; k<ndim; k++){
+        P.r[k] = ri[k];
+        P.v[k] = (FLOAT) 0.0;
+      }
+      P.m = Mtot / (twopi*radius*radius*r);
+      P.u = U_fac * Mtot / radius;
+      P.rho = Mtot / (twopi*radius*radius*r);
+      //P.h = pow(P.m/P.rho, 1./ndim);
+      msum += P.m;
     }
-	else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-	  Npart = AddLatticeSphere(Npart, rcentre, radius, particle_dist, pos) ;
-	}
-	else {
-	  string message = "Invalid particle distribution option";
-	  ExceptionHandler::getIstance().raise(message);
-	}
 
-	cout << "\n\tNpart (actual):   \t" << Npart
-		 << endl ;
+    // Normalise masses to Mtot
+    for (i = 0; i < Npart; i++) {
+      Particle<ndim>& P = hydro->GetParticlePointer(i);
+      P.m *= Mtot/msum;
+    }
 
-	//Allocate local and main particle memory
-	hydro->Nhydro = Npart;
+  }
+  else {
 
-	bool dusty_collapse =
-	    simparams->stringparams["dust_forces"] != "none" ;
+    // Scale to the correct density profile
+    for (i = 0; i < Npart; i++) {
+      Particle<ndim>& P = hydro->GetParticlePointer(i) ;
+      FLOAT ri[ndim];
+      for (k=0; k<ndim; k++) ri[k] = pos[ndim*i + k];
 
-	if (dusty_collapse)
-	  hydro->Nhydro *= 2 ;
+      FLOAT r = sqrt(DotProduct(ri, ri, ndim) + small_number) ;
+      FLOAT rnew = radius * pow(r, (FLOAT) 1.5);
+      for (k=0; k < ndim; k++){
+        P.r[k] = ri[k] * rnew / r;
+        P.v[k] = (FLOAT) 0.0;
+      }
+      P.m = Mtot / Npart ;
+      P.u = U_fac * Mtot / radius ;
+      P.rho = Mtot / (twopi*radius*radius*rnew);
+      P.h = pow(P.m/P.rho, 1./ndim);
+    }
 
-	sim->AllocateParticleMemory();
-
-
-	// Scale to the correct density profile
-	for (i = 0; i < Npart; ++i){
-		Particle<ndim>& P = hydro->GetParticlePointer(i) ;
-
-		FLOAT* ri = pos + ndim * i ;
-
-		FLOAT r = sqrt(DotProduct(ri, ri, ndim) + small_number) ;
-		FLOAT rnew = radius * r * sqrt(r) ;
-		for (k=0; k < ndim; k++){
-			P.r[k] = ri[k] * rnew / r ;
-			P.v[k] = 0 ;
-		}
-		P.m = Mtot / Npart ;
-		P.u = U_fac * Mtot / radius ;
-		P.rho = (Mtot/ (2*pi * pow(radius, ndim))) * (radius/rnew) ;
-		P.h = pow(P.m/P.rho, 1./ndim) ;
-	}
-
-	if (dusty_collapse){
-		FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
-		for (i = 0; i < Npart; ++i){
-		  Particle<ndim>& Pg = hydro->GetParticlePointer(i) ;
-		  Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart) ;
-		  Pd = Pg ;
-		  Pd.m *= d2g ;
+  }
 
 
-		  for (k=0; k < ndim; k++)
-			Pd.r[k] += 0.01 * Pd.h ;
+  if (dusty_collapse) {
+    FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
+    for (i = 0; i < Npart; i++){
+      Particle<ndim>& Pg = hydro->GetParticlePointer(i) ;
+      Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart) ;
+      Pd = Pg ;
+      Pd.m *= d2g ;
 
+      for (k=0; k < ndim; k++) Pd.r[k] += 0.01 * Pd.h ;
 
-		  Pd.h_dust = Pd.h ;
-		  Pd.u = 0 ;
+      Pd.h_dust = Pd.h ;
+      Pd.u = 0 ;
+      Pg.ptype = gas_type ;
+      Pd.ptype = dust_type ;
+    }
+  }
 
-		  Pg.ptype = gas_type ;
-		  Pd.ptype = dust_type ;
-		}
-	}
+  //sim->initial_h_provided = true;
+  sim->initial_h_provided = false;
 
-	sim->initial_h_provided = true;
+  delete[] pos ;
 
-
-	delete[] pos ;
+  return;
 }
+
+
 
 //=================================================================================================
 //  Ic::DustyBox

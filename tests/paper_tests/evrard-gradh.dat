@@ -1,0 +1,105 @@
+#-------------------------------------------------------------
+# Evrard collapse test
+#-------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = EVRARD-GRADHSPH
+Run SPH simulation                          : sim = gradhsph
+Select shocktube initial conditions         : ic = evrard
+Output file format                          : out_file_form = su
+Dimensionality of cube                      : ndim = 3
+No. of SPH particles                        : Nhydro = 24000
+Local arrangement of particles              : particle_distribution = hexagonal_lattice
+Mass                                        : mcloud = 1.0
+Radius of cloud                             : radius = 1.0
+Thermal energy factor                       : thermal_energy = 0.05
+com_frame = 1
+dust_forces = none
+
+
+#---------------------------
+# Simulation units variables
+#---------------------------
+Use physical units                          : dimensionless = 1
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 2.0
+Regular snapshot output frequency           : dt_snap = 0.05
+Time of first snapshot                      : tsnapfirst = 0.0
+Screen output frequency (in no. of steps)   : noutputstep = 16
+Diagnostic output frequency                 : ndiagstep = 16
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666666
+
+
+#----------------
+# Gravity options
+#----------------
+Switch-on self-gravity of gas               : self_gravity = 1
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+Smoothing length neighbour factor           : h_fac = 1.2
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Time-dependent viscosity                    : time_dependent_avisc = 0
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Minimum alpha value                         : alpha_visc_min = 0.05
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#----------------------
+# Sink particle options
+#----------------------
+Use leapfrog N-body integration scheme      : nbody = lfdkd
+Activate sink particles in code             : sink_particles = 0
+Allow creation of new sink particles        : create_sinks = 0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.15
+SPH acceleration condition multiplier       : accel_mult = 0.3
+SPH energy equation timestep multiplier     : energy_mult = 0.4
+N-body timestep multiplier                  : nbody_mult = 0.2
+No. of block timestep levels                : Nlevels = 1
+Max. timestep level difference              : level_diff_max = 1
+
+
+#-------------
+# Tree options
+#-------------
+SPH neighbour search algorithm              : neib_search = kdtree
+Tree re-build frequency                     : ntreebuildstep = 4
+No. of particles in leaf cell               : Nleafmax = 6
+Tree opening angle (squared)                : thetamaxsqd = 0.2
+Multipole option                            : multipole = quadrupole
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 1
