@@ -1848,8 +1848,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
     int i=j;
     if (i>= rank)
       i += 1;
-    copy(&imported_part_from_j[i],&receive_header[j][0]);
-    copy(&imported_cell_from_j[i],&receive_header[j][sizeof(int)]);
+    copy(&imported_part_from_j[i],&receive_header[j][sizeof(int)]);
+    copy(&imported_cell_from_j[i],&receive_header[j][2*sizeof(int)]);
   }
   const vector<int>::iterator nth_part = imported_part_from_j.begin() + iproc;
   const vector<int>::iterator nth_cell = imported_cell_from_j.begin() + iproc;
