@@ -140,13 +140,13 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
       for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.0;
     }
     else {
-      //for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
-      for (k=0; k<ndim; k++) rface[k] = part.r[k] +
-        part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
-      for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
-      //for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
-      for (k=0; k<ndim; k++) vface[k] = part.v[k] +
-        (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
+      for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+      //for (k=0; k<ndim; k++) rface[k] = part.r[k] +
+      //  part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
+      //for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
+      for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
+      //for (k=0; k<ndim; k++) vface[k] = part.v[k] +
+      //  (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
     }
 
     // Compute slope-limited values for LHS

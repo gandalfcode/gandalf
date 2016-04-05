@@ -229,6 +229,9 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   else if (limiter == "gizmo") {
     mfv->limiter = new GizmoLimiter<ndim,MeshlessFVParticle>();
   }
+  else if (limiter == "gizmo2") {
+    mfv->limiter = new Gizmo2Limiter<ndim,MeshlessFVParticle>();
+  }
   else if (limiter == "minmod") {
     mfv->limiter = new MinModLimiter<ndim,MeshlessFVParticle>();
   }

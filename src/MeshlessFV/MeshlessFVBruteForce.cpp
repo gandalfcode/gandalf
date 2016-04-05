@@ -177,7 +177,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
 
   // Compute forces of real and imported particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot)
+#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot,simbox)
   {
     int i,j,k;                           // Particle and dimension counters
     int Nneib;                           // No. of neighbours
@@ -300,7 +300,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Compute forces of real and imported particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot,timestep)
+#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot,timestep,simbox)
   {
     int i,j,k;                             // Particle and dimension counters
     int Nneib;                             // No. of neighbours
