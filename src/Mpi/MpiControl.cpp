@@ -648,7 +648,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
     if (iproc==rank)
       continue;
 
-    header_receive[iproc].resize(header_size);
+    header_receive[j].resize(header_size);
 
     MPI_Irecv(&header_receive[j][0],header_size,MPI_CHAR,iproc,4,MPI_COMM_WORLD,&req_header[j]);
     j++;

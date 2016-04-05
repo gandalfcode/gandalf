@@ -1806,18 +1806,18 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
   typename TreeCell<ndim>::HandlerType handler_cell;
   typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
 
-  assert(hydro->NImportedParticles == 0);
 
   if (first_unpack) {
     tree->Nimportedcell = 0;
     tree->Ncelltot=tree->Ncell;
+    assert(hydro->NImportedParticles == 0);
   }
 
   N_imported_part_per_proc.resize(Nbytes_exported_from_proc.size());
 
 
 
-  int N_received_bytes = Nbytes_exported_from_proc[iproc];
+  int N_received_bytes = received_array.size();
   int N_received_cells;
   int N_received_particles;
 
@@ -1844,7 +1844,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   vector<int> imported_part_from_j(Nmpi);
   vector<int> imported_cell_from_j(Nmpi);
-  for (int j=0; j<Nmpi; j++) {
+  for (int j=0; j<Nmpi-1; j++) {
     int i=j;
     if (i>= rank)
       i += 1;
