@@ -518,7 +518,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         delete[] neiblist;
         Nneibmax                  = 2*Nneibmax;
         Nneibmaxbuf[ithread]      = Nneibmax;
-        Ngravcellmaxbuf[ithread] *= 2;
         neiblist                  = new int[Nneibmax];
         mfvlist                   = new int[Nneibmax];
         dr                        = new FLOAT[Nneibmax*ndim];
