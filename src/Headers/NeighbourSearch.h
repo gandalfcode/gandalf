@@ -103,6 +103,7 @@ protected:
   virtual void GetBackExportInfo(vector<char >& received_array,
                                  vector<int>& N_exported_particles_from_proc,
                                  vector<int>&, Hydrodynamics<ndim> *hydro, const int rank, const int iproc) = 0;
+  virtual vector<char> ExportSize (const int iproc) =0;
   virtual int ExportInfoSize(const int i)=0;
   virtual int GetExportInfo(int Nproc, Hydrodynamics<ndim> *, vector<char >&,
                             MpiNode<ndim>&, int, int) = 0;
@@ -110,7 +111,8 @@ protected:
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &) {return 0;};
   virtual void UnpackExported(vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-                              Hydrodynamics<ndim> *) = 0;
+                              Hydrodynamics<ndim> *, const int,vector< vector<char> >&,
+                              const int, const bool) = 0;
   virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
                                        Nbody<ndim> *, const DomainBox<ndim> &) = 0;
   virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
@@ -195,10 +197,14 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void GetBackExportInfo(vector<char >& received_array,
                                  vector<int>& N_exported_particles_from_proc,
                                  vector<int>&, Hydrodynamics<ndim> *hydro, const int rank, const int iproc);
+  virtual vector<char> ExportSize (const int iproc) {
+    vector<char> result(sizeof(int));
+    int size = ids_active_particles.size()*sizeof(ParticleType<ndim>);
+    copy(&result[0],&size);
+    return result;
+  }
   virtual int ExportInfoSize(const int i) {
-	  typename ParticleType<ndim>::HandlerType handler;
-	  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
-	  return ids_active_particles.size()*sizeof(StreamlinedPart);
+	  return ids_active_particles.size()*sizeof(ParticleType<ndim>);
   }
   virtual int GetExportInfo(int Nproc, Hydrodynamics<ndim> *, vector<char >&,
                             MpiNode<ndim>&, int, int);
@@ -206,7 +212,8 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
   virtual void UnpackExported(vector<char>& arrays, vector<int>& N_received_particles_from_proc,
-                              Hydrodynamics<ndim> *);
+                              Hydrodynamics<ndim> *, const int, vector< vector<char> >&,
+                              const int, const bool);
   virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
                                        Nbody<ndim> *, const DomainBox<ndim> &) {};
   virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
@@ -278,6 +285,31 @@ protected:
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*);
   virtual void GetBackExportInfo(vector<char > &, vector<int> &,
                                  vector<int> &, Hydrodynamics<ndim> *, const int, const int);
+  virtual vector<char> ExportSize (const int iproc) {
+    int cactive = Ncellexport[iproc];
+    int Nactive = Npartexport[iproc];
+
+    typename ParticleType<ndim>::HandlerType handler;
+    typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+
+    typename TreeCell<ndim>::HandlerType handler_cell;
+    typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
+
+    const int size_particles  = Nactive*sizeof(StreamlinedPart);
+    const int size_cells      = cactive*sizeof(StreamlinedCell);
+
+    const int size_header = 2*sizeof(int);
+
+    int size = size_particles + size_cells + size_header;
+
+    vector<char> result(3*sizeof(int));
+    copy(&result[0],&size);
+    copy(&result[sizeof(int)],&Nactive);
+    copy(&result[2*sizeof(int)],&cactive);
+
+
+    return result;
+  };
   virtual int ExportInfoSize(const int i) {
 	  typename ParticleType<ndim>::HandlerType handler;
 	  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
@@ -287,7 +319,8 @@ protected:
   virtual void InitialiseCellWorkCounters(void);
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
-  virtual void UnpackExported(vector<char> &, vector<int> &, Hydrodynamics<ndim> *);
+  virtual void UnpackExported(vector<char> &, vector<int> &, Hydrodynamics<ndim> *,
+      const int, vector< vector<char> >&, const int, const bool);
   virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
                                        Nbody<ndim> *, const DomainBox<ndim> &);
   virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,

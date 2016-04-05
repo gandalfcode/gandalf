@@ -127,6 +127,8 @@ public:
     for (int k=0; k<ndim; k++) {
       p2.r[k]=p.r[k];
       p2.v[k]=p.v[k];
+      p2.a[k]=0;
+      p2.agrav[k]=0;
     }
     p2.m = p.m;
     p2.rho = p.rho;
@@ -147,6 +149,8 @@ public:
     p2.hfactor = pow(p2.invh,ndim+1);
     p2.sound = hydro->eos->SoundSpeed(p2);
     p2.active = true;
+
+    p2.gpot=0;
 
 
 

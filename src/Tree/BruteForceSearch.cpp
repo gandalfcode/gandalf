@@ -441,7 +441,11 @@ template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UnpackExported
  (vector<char > &received_array,
   vector<int> &Nbytes_from_proc,
-  Hydrodynamics<ndim> *hydro)
+  Hydrodynamics<ndim> *hydro,
+  const int iproc,
+  vector< vector<char> >& receive_header,
+  const int rank,
+  const bool first_unpack)
 {
   int offset = 0;
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );

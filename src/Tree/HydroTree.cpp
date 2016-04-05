@@ -1708,7 +1708,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::FindParticlesToTransfer
 //=================================================================================================
 //  HydroTree::GetExportInfo
 /// Get the array with the information that needs to be exported to the given processor
-/// (NB: iproc is ignored at the moment, as we must export all ptcls to all other processors)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
@@ -1792,7 +1791,11 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
  (vector<char >& received_array,
   vector<int>& Nbytes_exported_from_proc,
-  Hydrodynamics<ndim> *hydro)
+  Hydrodynamics<ndim> *hydro,
+  const int iproc,
+  vector< vector<char> >& receive_header,
+  const int rank,
+  const bool first_unpack)
 {
   int offset = 0;
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
@@ -1804,83 +1807,94 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
   typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
 
   assert(hydro->NImportedParticles == 0);
-  tree->Nimportedcell = 0;
-  tree->Ncelltot=tree->Ncell;
+
+  if (first_unpack) {
+    tree->Nimportedcell = 0;
+    tree->Ncelltot=tree->Ncell;
+  }
 
   N_imported_part_per_proc.resize(Nbytes_exported_from_proc.size());
 
 
-  //-----------------------------------------------------------------------------------------------
-  for (int iproc = 0; iproc<Nbytes_exported_from_proc.size(); iproc++) {
 
-    int N_received_bytes = Nbytes_exported_from_proc[iproc];
-    int N_received_cells;
-    int N_received_particles;
+  int N_received_bytes = Nbytes_exported_from_proc[iproc];
+  int N_received_cells;
+  int N_received_particles;
 
-    if (N_received_bytes == 0) {
-      N_imported_part_per_proc[iproc] = 0;
-      continue;
-    }
-
-    copy(&N_received_particles, &received_array[offset]);
-    N_imported_part_per_proc[iproc] = N_received_particles;
-    copy(&N_received_cells, &received_array[offset + sizeof(int)]);
-
-    // Ensure there is enough memory
-    if (hydro->Ntot + N_received_particles > hydro->Nhydromax) {
-      ExceptionHandler::getIstance().raise("Error while receiving imported particles: not enough memory!");
-    }
-    if (tree->Ncelltot + N_received_cells > tree->Ncellmax) {
-      ExceptionHandler::getIstance().raise("Error while receiving imported cells: not enough memory!");
-    }
-
-
-    // Copy received particles inside main arrays and received cells inside the tree array
-    // Also update the linked list
-    int particle_index = hydro->Ntot;
-    offset += 2*sizeof(int);
-
-    //---------------------------------------------------------------------------------------------
-    for (int icell=0; icell<N_received_cells; icell++) {
-      TreeCell<ndim>& dest_cell = tree->celldata[icell + tree->Ncelltot];
-      handler_cell.ReceiveCell(&received_array[offset],dest_cell,hydro->Ntot);
-      offset += sizeof(StreamlinedCell);
-
-      // Now copy the received particles inside the hydro particle main arrays
-      for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
-
-        handler.ReceiveParticle(&received_array[offset],partdata[particle_index],hydro);
-
-        partdata[particle_index].gpot=0;
-        for (int k=0; k<ndim; k++) {
-          partdata[particle_index].a[k]=0;
-          partdata[particle_index].agrav[k]=0;
-        }
-        tree->inext[particle_index] = particle_index + 1;
-        particle_index++;
-        offset += sizeof(StreamlinedPart);
-      }
-
-      handler_cell.ReconstructProperties(dest_cell, partdata, kernrange);
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-    // Update the hydro counters
-    hydro->Ntot += N_received_particles;
-    hydro->NImportedParticles += N_received_particles;
-
-    // Update the tree counters
-    tree->Nimportedcell += N_received_cells;
-    tree->Ncelltot      += N_received_cells;
-    tree->Ntot           = hydro->Ntot;
-
+  if (N_received_bytes == 0) {
+    N_imported_part_per_proc[iproc] = 0;
+    return;
   }
+
+  copy(&N_received_particles, &received_array[offset]);
+  N_imported_part_per_proc[iproc] = N_received_particles;
+  copy(&N_received_cells, &received_array[offset + sizeof(int)]);
+
+  // Ensure there is enough memory
+  if (hydro->Ntot + N_received_particles > hydro->Nhydromax) {
+    ExceptionHandler::getIstance().raise("Error while receiving imported particles: not enough memory!");
+  }
+  if (tree->Ncelltot + N_received_cells > tree->Ncellmax) {
+    ExceptionHandler::getIstance().raise("Error while receiving imported cells: not enough memory!");
+  }
+
+
+  // Copy received particles inside main arrays and received cells inside the tree array
+  // Also update the linked list
+
+  vector<int> imported_part_from_j(Nmpi);
+  vector<int> imported_cell_from_j(Nmpi);
+  for (int j=0; j<Nmpi; j++) {
+    int i=j;
+    if (i>= rank)
+      i += 1;
+    copy(&imported_part_from_j[i],&receive_header[j][0]);
+    copy(&imported_cell_from_j[i],&receive_header[j][sizeof(int)]);
+  }
+  const vector<int>::iterator nth_part = imported_part_from_j.begin() + iproc;
+  const vector<int>::iterator nth_cell = imported_cell_from_j.begin() + iproc;
+  const int offset_part = hydro->Nhydro+hydro->Nghost+std::accumulate(imported_part_from_j.begin(),nth_part,0);
+
+  const int offset_cells = tree->Ncell + std::accumulate(imported_cell_from_j.begin(),nth_cell,0);
+
+  int particle_index = offset_part;
+  offset += 2*sizeof(int);
+
+  //---------------------------------------------------------------------------------------------
+  for (int icell=0; icell<N_received_cells; icell++) {
+    TreeCell<ndim>& dest_cell = tree->celldata[icell + offset_cells];
+    handler_cell.ReceiveCell(&received_array[offset],dest_cell,offset_part);
+    offset += sizeof(StreamlinedCell);
+
+    // Now copy the received particles inside the hydro particle main arrays
+    for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
+
+      handler.ReceiveParticle(&received_array[offset],partdata[particle_index],hydro);
+
+      tree->inext[particle_index] = particle_index + 1;
+      particle_index++;
+      offset += sizeof(StreamlinedPart);
+    }
+
+    handler_cell.ReconstructProperties(dest_cell, partdata, kernrange);
+
+  //---------------------------------------------------------------------------------------------
+
+  // Update the hydro counters
+  hydro->Ntot += N_received_particles;
+  hydro->NImportedParticles += N_received_particles;
+
+  // Update the tree counters
+  tree->Nimportedcell += N_received_cells;
+  tree->Ncelltot      += N_received_cells;
+  tree->Ntot           = hydro->Ntot;
+
+}
   //-----------------------------------------------------------------------------------------------
 
 
-  assert (offset == std::accumulate(Nbytes_exported_from_proc.begin(),
-                                    Nbytes_exported_from_proc.end(), 0));
+//  assert (offset == std::accumulate(Nbytes_exported_from_proc.begin(),
+//                                    Nbytes_exported_from_proc.end(), 0));
 
   return;
 }
