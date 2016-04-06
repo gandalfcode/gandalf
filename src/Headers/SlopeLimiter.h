@@ -293,7 +293,7 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
 
 
 
-      FLOAT d_abs = 0.0;
+      /*FLOAT d_abs = 0.0;
       d_abs += DotProduct(parti.grad[var], parti.grad[var], ndim);
 
       if (d_abs > 0.0) {
@@ -315,15 +315,15 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
           for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
           dW[var] = DotProduct(gradW[var], draux, ndim);
         }
-      }
+      }*/
 
-      /*alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
+      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
                                         (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
       alpha = max((FLOAT) 0.0, alpha);
-      //alpha = 1.0;
+      alpha = 1.0;
 
       dW[var] = alpha*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];*/
+      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
 
 
 

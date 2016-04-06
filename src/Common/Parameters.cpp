@@ -446,8 +446,8 @@ void Parameters::SetDefaultValues(void)
 
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------
-  stringparams["rand_algorithm"] = "none";
-  intparams["randseed"] = 0;
+  stringparams["rand_algorithm"] = "xorshift";
+  intparams["randseed"] = 1;
 
   // MPI parameters
   //-----------------------------------------------------------------------------------------------
