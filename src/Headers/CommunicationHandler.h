@@ -57,7 +57,6 @@ class GradhSphCommunicationHandler {
       iorig = p.iorig;
       itype = p.itype;
       ptype = p.ptype;
-      levelneib = p.levelneib;
       level = p.level;
       for (int k=0; k<ndim; k++) {
         r[k] = p.r[k];
@@ -78,7 +77,6 @@ class GradhSphCommunicationHandler {
     int iorig;
     int itype;
     int ptype;
-    int levelneib;
     int level;
     FLOAT r[ndim];
     FLOAT v[ndim];
@@ -122,7 +120,6 @@ public:
     p2.iorig = p.iorig;
     p2.itype = p.itype;
     p2.ptype = p.ptype;
-    p2.levelneib = p.levelneib;
     p2.level = p.level;
     for (int k=0; k<ndim; k++) {
       p2.r[k]=p.r[k];
@@ -151,7 +148,9 @@ public:
     p2.active = true;
 
     p2.gpot=0;
-
+    p2.div_v=0;
+    p2.dudt = 0;
+    p2.levelneib=0;
 
 
   }
