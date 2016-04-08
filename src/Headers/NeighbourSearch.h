@@ -43,6 +43,7 @@
 #include "Parameters.h"
 #include "KDTree.h"
 #include "OctTree.h"
+#include "BruteForceTree.h"
 #include "Tree.h"
 #if defined MPI_PARALLEL
 #include "MpiExport.h"

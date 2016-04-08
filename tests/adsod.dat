@@ -79,7 +79,7 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = kdtree
+SPH neighbour search algorithm              : neib_search = bruteforce
 Build tree every step                       : ntreebuildstep = 1
 Stock tree every step                       : ntreestockstep = 1
 

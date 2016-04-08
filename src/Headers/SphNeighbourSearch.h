@@ -44,6 +44,7 @@
 #include "Parameters.h"
 #include "KDTree.h"
 #include "OctTree.h"
+#include "BruteForceTree.h"
 #if defined MPI_PARALLEL
 #include "MpiExport.h"
 #include "MpiNode.h"
@@ -351,7 +352,7 @@ class GradhSphTree : public SphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   GradhSphTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-               DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
+               DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister& types);
   virtual ~GradhSphTree();
 
 
@@ -365,70 +366,6 @@ class GradhSphTree : public SphTree<ndim,ParticleType,TreeCell>
                               Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
 
 };
-
-
-
-//=================================================================================================
-//  Class GradhSphKDTree
-/// \brief   Grad-h SPH neighbour searching class using the KD-tree.
-/// \details Grad-h SPH neighbour searching class using the KD-tree.
-/// \author  D. A. Hubber
-/// \date    17/09/2014
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
-{
- public:
-
-  using SphTree<ndim,ParticleType,TreeCell>::tree;
-  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
-#ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
-  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
-#endif
-
-
-  //-----------------------------------------------------------------------------------------------
-  GradhSphKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,
-                 ParticleTypeRegister&);
-
-};
-
-
-
-//=================================================================================================
-//  Class GradhSphOctTree
-/// \brief   Class containing octal tree for computing grad-h SPH force loops.
-/// \details Class containing octal tree for computing grad-h SPH force loops.
-/// \author  D. A. Hubber
-/// \date    17/09/2014
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
-{
- public:
-
-  using SphTree<ndim,ParticleType,TreeCell>::tree;
-  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
-#ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
-  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
-#endif
-
-
-  //-----------------------------------------------------------------------------------------------
-  GradhSphOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-                  DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,
-                  ParticleTypeRegister& types);
-
-};
-
-
 
 //=================================================================================================
 //  Class SM2012SphTree

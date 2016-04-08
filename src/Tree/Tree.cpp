@@ -37,6 +37,7 @@
 #include "Tree.h"
 #include "KDTree.h"
 #include "OctTree.h"
+#include "BruteForceTree.h"
 #include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>
@@ -1673,3 +1674,20 @@ template class Tree<2,GradhSphParticle,TreeRayCell>;
 template class Tree<3,Particle,TreeRayCell>;
 template class Tree<3,SphParticle,TreeRayCell>;
 template class Tree<3,GradhSphParticle,TreeRayCell>;
+
+template class Tree<1,Particle,BruteForceTreeCell>;
+template class Tree<2,Particle,BruteForceTreeCell>;
+template class Tree<3,Particle,BruteForceTreeCell>;
+template class Tree<1,SphParticle,BruteForceTreeCell>;
+template class Tree<2,SphParticle,BruteForceTreeCell>;
+template class Tree<3,SphParticle,BruteForceTreeCell>;
+template class Tree<1,GradhSphParticle,BruteForceTreeCell>;
+template class Tree<2,GradhSphParticle,BruteForceTreeCell>;
+template class Tree<3,GradhSphParticle,BruteForceTreeCell>;
+template class Tree<1,SM2012SphParticle,BruteForceTreeCell>;
+template class Tree<2,SM2012SphParticle,BruteForceTreeCell>;
+template class Tree<3,SM2012SphParticle,BruteForceTreeCell>;
+template class Tree<1,MeshlessFVParticle,BruteForceTreeCell>;
+template class Tree<2,MeshlessFVParticle,BruteForceTreeCell>;
+template class Tree<3,MeshlessFVParticle,BruteForceTreeCell>;
+

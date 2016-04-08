@@ -43,96 +43,165 @@ using namespace std;
 
 
 //=================================================================================================
-//  GradhSphKDTree::GradhSphKDTree
-/// GradhSphKDTree constructor.  Initialises various variables and creates tree objects.
+// Tree constructor factory templates
+///
+/// These are simple functions to construct the correct tree based upon the given arguments.
+///
+/// A thin proxy struct is used to ensure that the template specialization can be done cleanly and
+/// correctly since partial template specialization is needed. The struct template below should be
+/// specialized as required.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
- (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
- NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- GradhSphTree<ndim,ParticleType,TreeCell>
-  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
+
+//=================================================================================================
+// struct __construct_tree_impl
+// The implementation structs for the tree constructor factory functions.
+//=================================================================================================
+template<int ndim, template<int> class ParticleType, template<int> class TreeCell>
+struct __construct_tree_impl
 {
-  // Set-up main tree object
-  tree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                _macerror, _gravity_mac, _multipole, *_box, types);
+	typedef Tree<ndim, ParticleType, TreeCell> return_type ;
 
-  // Set-up ghost-particle tree object
-  ghosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                     _macerror, _gravity_mac, _multipole, *_box, types);
+	static return_type*  construct(int Nleafmaxaux, FLOAT thetamaxsqdaux,
+								   FLOAT kernrangeaux, FLOAT macerroraux,
+								   string gravity_mac_aux, string multipole_aux,
+								   const DomainBox<ndim>& domain,
+								   const ParticleTypeRegister& reg)
+	{
+	  string message = "Tree cell type for GradhSphTree not recognised." ;
+	  ExceptionHandler::getIstance().raise(message);
+	  return NULL ;
+	}
 
-#ifdef MPI_PARALLEL
-  // Set-up ghost-particle tree object
-  mpighosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                        _macerror, _gravity_mac, _multipole, *_box, types);
+	static return_type** construct_array(int NumTrees)
+	{
+	  string message = "Tree cell type for GradhSphTree not recognised." ;
+	  ExceptionHandler::getIstance().raise(message);
+	  return NULL ;
+	}
 
-  // Set-up multiple pruned trees, one for each MPI process
-  KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
-  prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
-  KDTree<ndim,ParticleType,TreeCell>** sendprunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
-  sendprunedtree = (Tree<ndim,ParticleType,TreeCell> **) sendprunedtree_derived;
+};
+//=================================================================================================
+//  new_tree
+/// Construct a single tree based on the template types.
+/// This function is used to construct at KD, Oct or BruteForce as required from the TreeCell type
+/// DO NOT EVER SPECIALIZE THESE TEMPLATES. BAD THINGS ARE GAURANTEED TO HAPPEN. DON'T BLAME ME
+//=================================================================================================
+template<int ndim, template<int> class ParticleType, template<int> class TreeCell>
+Tree<ndim, ParticleType, TreeCell>* new_tree(int Nleafmax, FLOAT thetamaxsqd,
+		   	   	   	   	 	 	 	 	 	 FLOAT kernrange, FLOAT macerror,
+		   	   	   	   	 	 	 	 	 	 string gravity_mac, string multipole,
+		   	   	   	   	 	 	 	 	 	 const DomainBox<ndim>& domain,
+		   	   	   	   	 	 	 	 	 	 const ParticleTypeRegister& reg)
+{
+  return __construct_tree_impl<ndim, ParticleType, TreeCell>::construct
+		  (Nleafmax, thetamaxsqd, kernrange, macerror,
+		  gravity_mac,  multipole,domain, reg) ;
+}
+//=================================================================================================
+//  new_tree_array
+/// Construct an array of pointer to tree based on the template types.
+/// This function is used to construct at KD, Oct or BruteForce as required from the TreeCell type.
+/// DO NOT EVER SPECIALIZE THESE TEMPLATES. BAD THINGS ARE GAURANTEED TO HAPPEN. DON'T BLAME ME
+//=================================================================================================
+template<int ndim, template<int> class ParticleType, template<int> class TreeCell>
+Tree<ndim, ParticleType, TreeCell>** new_tree_array(int NumTrees)
+{
+  typename __construct_tree_impl<ndim, ParticleType, TreeCell>::return_type** derived =
+      __construct_tree_impl<ndim, ParticleType, TreeCell>::construct_array(NumTrees) ;
 
-  for (int i=0; i<Nmpi; i++) {
-    prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-  for (int i=0; i<Nmpi; i++) {
-    sendprunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-#endif
+  return reinterpret_cast<Tree<ndim,ParticleType,TreeCell>**>(derived) ;
 }
 
 
-
 //=================================================================================================
-//  GradhSphOctTree::GradhSphOctTree
-/// SphTree constructor.  Initialises various variables.
+// struct __construct_tree_impl
+// KDTree specialization
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-GradhSphOctTree<ndim,ParticleType,TreeCell>::GradhSphOctTree
- (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
- NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- GradhSphTree<ndim,ParticleType,TreeCell>
-  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
-{
-  // Set-up main tree object
-  tree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                 _macerror, _gravity_mac, _multipole, *_box, types);
+template<int ndim, template<int> class ParticleType>
+struct  __construct_tree_impl<ndim, ParticleType, KDTreeCell> {
+  typedef KDTree<ndim,ParticleType, KDTreeCell> return_type ;
 
-  // Set-up ghost-particle tree object
-  ghosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                      _macerror, _gravity_mac, _multipole, *_box, types);
-
-#ifdef MPI_PARALLEL
-  // Set-up ghost-particle tree object
-  mpighosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                         _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up multiple pruned trees, one for each MPI process
-  //*(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
-  // Set-up multiple pruned trees, one for each MPI process
-  OctTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
-  prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
-  OctTree<ndim,ParticleType,TreeCell>** sendprunedtree_derived = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
-  sendprunedtree = (Tree<ndim,ParticleType,TreeCell> **) sendprunedtree_derived;
-
-  for (int j=0; j<Nmpi; j++) {
-    prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
+  static return_type*  construct(int Nleafmax, FLOAT thetamaxsqd,
+		                         FLOAT kernrange, FLOAT macerror,
+	 	 	 	 	 	         string gravity_mac, string multipole,
+	 	 	 	 	 	         const DomainBox<ndim>& domain,
+	 	 	 	 	 	         const ParticleTypeRegister& reg)
+  {
+	return new return_type(Nleafmax, thetamaxsqd, kernrange, macerror,
+			 	 	 	   gravity_mac,  multipole,domain, reg) ;
   }
-  for (int i=0; i<Nmpi; i++) {
-    sendprunedtree[i] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
+  static return_type** construct_array(int NumTrees)
+  {
+    return new return_type*[NumTrees] ;
   }
-#endif
-}
+} ;
+//=================================================================================================
+// struct __construct_tree_impl
+// OctTree specialization
+//=================================================================================================
+template<int ndim, template<int> class ParticleType>
+struct  __construct_tree_impl<ndim, ParticleType, OctTreeCell> {
+  typedef OctTree<ndim,ParticleType, OctTreeCell> return_type ;
+
+  static return_type*  construct(int Nleafmax, FLOAT thetamaxsqd,
+		                         FLOAT kernrange, FLOAT macerror,
+	 	 	 	 	 	         string gravity_mac, string multipole,
+	 	 	 	 	 	         const DomainBox<ndim>& domain,
+	 	 	 	 	 	         const ParticleTypeRegister& reg)
+  {
+	return new return_type(Nleafmax, thetamaxsqd, kernrange, macerror,
+			 	 	 	   gravity_mac,  multipole,domain, reg) ;
+  }
+  static return_type** construct_array(int NumTrees)
+  {
+    return new return_type*[NumTrees] ;
+  }
+} ;
+//=================================================================================================
+// struct __construct_tree_impl
+// OctTree specialization with TreeRay Cells
+//=================================================================================================
+template<int ndim, template<int> class ParticleType>
+struct  __construct_tree_impl<ndim, ParticleType, TreeRayCell> {
+  typedef OctTree<ndim,ParticleType, TreeRayCell> return_type ;
+
+  static return_type*  construct(int Nleafmax, FLOAT thetamaxsqd,
+		                         FLOAT kernrange, FLOAT macerror,
+	 	 	 	 	 	         string gravity_mac, string multipole,
+	 	 	 	 	 	         const DomainBox<ndim>& domain,
+	 	 	 	 	 	         const ParticleTypeRegister& reg)
+  {
+	return new return_type(Nleafmax, thetamaxsqd, kernrange, macerror,
+			 	 	 	   gravity_mac,  multipole,domain, reg) ;
+  }
+  static return_type** construct_array(int NumTrees)
+  {
+    return new return_type*[NumTrees] ;
+  }
+} ;
+//=================================================================================================
+// struct __construct_tree_impl
+// Brute Force Tree specialization
+//=================================================================================================
+template<int ndim, template<int> class ParticleType>
+struct  __construct_tree_impl<ndim, ParticleType, BruteForceTreeCell> {
+  typedef BruteForceTree<ndim,ParticleType, BruteForceTreeCell> return_type ;
+
+  static return_type*  construct(int Nleafmax, FLOAT thetamaxsqd,
+		                         FLOAT kernrange, FLOAT macerror,
+	 	 	 	 	 	         string gravity_mac, string multipole,
+	 	 	 	 	 	         const DomainBox<ndim>& domain,
+	 	 	 	 	 	         const ParticleTypeRegister& reg)
+  {
+	return new return_type(Nleafmax, thetamaxsqd, kernrange, macerror,
+			 	 	 	   gravity_mac,  multipole,domain, reg) ;
+  }
+  static return_type** construct_array(int NumTrees)
+  {
+    return new return_type*[NumTrees] ;
+  }
+} ;
+
 
 
 
@@ -144,12 +213,40 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 GradhSphTree<ndim,ParticleType,TreeCell>::GradhSphTree
  (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
  SphTree<ndim,ParticleType,TreeCell>
   (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
 {
+  // Set-up main tree object
+  tree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+		  	  	  	  	  	  	  	  	  	  _macerror, _gravity_mac, _multipole, *_box, types);
+
+  // Set-up ghost-particle tree object
+  ghosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+	  	  	  	  	  _macerror, _gravity_mac, _multipole, *_box, types);
+
+#ifdef MPI_PARALLEL
+  // Set-up ghost-particle tree object
+  mpighosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+	  	  	  _macerror, _gravity_mac, _multipole, *_box, types);
+
+  // Set-up multiple pruned trees, one for each MPI process
+  prunedtree = new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
+  sendprunedtree = new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
+
+  for (int i=0; i<Nmpi; i++) {
+    prunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+	  	  	  	  	  	  	  	  	  	  	  	  	  	 _macerror, _gravity_mac, _multipole, *_box, types);
+  }
+  for (int i=0; i<Nmpi; i++) {
+    sendprunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+    														 _macerror, _gravity_mac, _multipole, *_box, types);
+  }
+#endif
+
+
 }
 
 
@@ -820,7 +917,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        bool do_hydro = sph->types[activepart[j].ptype].hydro_forces ;
+        //bool do_hydro = sph->types[activepart[j].ptype].hydro_forces ;
         bool do_grav  = sph->types[activepart[j].ptype].self_gravity ;
 
         Typemask hydromask ;
@@ -1020,7 +1117,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     int Nneib;                                   // No. of neighbours
     int Nhydroaux;                               // ..
     int Nhydroneib;                              // ..
-    int Ngrav ;                                  // --
     FLOAT aperiodic[ndim];                       // ..
     FLOAT macfactor;                             // Gravity MAC factor
     FLOAT draux[ndim];                           // Aux. relative position vector
@@ -1247,20 +1343,15 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 template class GradhSphTree<1,GradhSphParticle,KDTreeCell>;
 template class GradhSphTree<2,GradhSphParticle,KDTreeCell>;
 template class GradhSphTree<3,GradhSphParticle,KDTreeCell>;
-template class GradhSphKDTree<1,GradhSphParticle,KDTreeCell>;
-template class GradhSphKDTree<2,GradhSphParticle,KDTreeCell>;
-template class GradhSphKDTree<3,GradhSphParticle,KDTreeCell>;
 
 template class GradhSphTree<1,GradhSphParticle,OctTreeCell>;
 template class GradhSphTree<2,GradhSphParticle,OctTreeCell>;
 template class GradhSphTree<3,GradhSphParticle,OctTreeCell>;
-template class GradhSphOctTree<1,GradhSphParticle,OctTreeCell>;
-template class GradhSphOctTree<2,GradhSphParticle,OctTreeCell>;
-template class GradhSphOctTree<3,GradhSphParticle,OctTreeCell>;
 
-template class GradhSphOctTree<1, GradhSphParticle, TreeRayCell>;
-template class GradhSphOctTree<2, GradhSphParticle, TreeRayCell>;
-template class GradhSphOctTree<3, GradhSphParticle, TreeRayCell>;
 template class GradhSphTree<1,GradhSphParticle,TreeRayCell>;
 template class GradhSphTree<2,GradhSphParticle,TreeRayCell>;
 template class GradhSphTree<3,GradhSphParticle,TreeRayCell>;
+
+template class GradhSphTree<1,GradhSphParticle,BruteForceTreeCell>;
+template class GradhSphTree<2,GradhSphParticle,BruteForceTreeCell>;
+template class GradhSphTree<3,GradhSphParticle,BruteForceTreeCell>;

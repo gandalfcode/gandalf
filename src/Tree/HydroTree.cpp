@@ -2218,3 +2218,8 @@ template class HydroTree<3,MeshlessFVParticle,OctTreeCell>;
 template class HydroTree<1,GradhSphParticle,TreeRayCell>;
 template class HydroTree<2,GradhSphParticle,TreeRayCell>;
 template class HydroTree<3,GradhSphParticle,TreeRayCell>;
+
+
+template class HydroTree<1,GradhSphParticle,BruteForceTreeCell>;
+template class HydroTree<2,GradhSphParticle,BruteForceTreeCell>;
+template class HydroTree<3,GradhSphParticle,BruteForceTreeCell>;
