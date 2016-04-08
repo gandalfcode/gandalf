@@ -376,8 +376,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
       // In case of extreme movement of the load balancing positions (perhaps due to latency or
       // large movement of active particles between nodes), then set some arbitary position of
       // the first division guess in order to search for correct division
-      if (mpitree->tree[c].boxmin[k] > mpitree->tree[c].r_divide ||
-          mpitree->tree[c].boxmax[k] < mpitree->tree[c].r_divide) {
+      if (mpitree->tree[c].boxmin[k] >= mpitree->tree[c].r_divide ||
+          mpitree->tree[c].boxmax[k] <= mpitree->tree[c].r_divide) {
         mpitree->tree[c].r_divide = 0.5*(mpitree->tree[c].boxmin[k] + mpitree->tree[c].boxmax[k]);
       }
       assert(mpitree->tree[c].boxmin[k] < mpitree->tree[c].r_divide);
