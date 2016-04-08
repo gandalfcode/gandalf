@@ -47,8 +47,8 @@ using namespace std;
 ///
 /// These are simple functions to construct the correct tree based upon the given arguments.
 ///
-/// A thin proxy struct is used to ensure that the template specialization can be done cleanly and
-/// correctly since partial template specialization is needed. The struct template below should be
+/// A thin proxy struct is used to ensure that the template specialisation can be done cleanly and
+/// correctly since partial template specialisation is needed. The struct template below should be
 /// specialized as required.
 //=================================================================================================
 
@@ -84,7 +84,8 @@ struct __construct_tree_impl
 //  new_tree
 /// Construct a single tree based on the template types.
 /// This function is used to construct at KD, Oct or BruteForce as required from the TreeCell type
-/// DO NOT EVER SPECIALIZE THESE TEMPLATES. BAD THINGS ARE GAURANTEED TO HAPPEN. DON'T BLAME ME
+/// DO NOT EVER SPECIALIZE THIS TEMPLATE. BAD THINGS ARE GUARANTEED TO HAPPEN. DON'T BLAME ME.
+///   USE THE __construct_tree_impl STRUCTURE INSTEAD.
 //=================================================================================================
 template<int ndim, template<int> class ParticleType, template<int> class TreeCell>
 Tree<ndim, ParticleType, TreeCell>* new_tree(int Nleafmax, FLOAT thetamaxsqd,
@@ -101,7 +102,8 @@ Tree<ndim, ParticleType, TreeCell>* new_tree(int Nleafmax, FLOAT thetamaxsqd,
 //  new_tree_array
 /// Construct an array of pointer to tree based on the template types.
 /// This function is used to construct at KD, Oct or BruteForce as required from the TreeCell type.
-/// DO NOT EVER SPECIALIZE THESE TEMPLATES. BAD THINGS ARE GAURANTEED TO HAPPEN. DON'T BLAME ME
+/// DO NOT EVER SPECIALIZE THIS TEMPLATE. BAD THINGS ARE GUARANTEED TO HAPPEN. DON'T BLAME ME.
+///   USE THE __construct_tree_impl STRUCTURE INSTEAD.
 //=================================================================================================
 template<int ndim, template<int> class ParticleType, template<int> class TreeCell>
 Tree<ndim, ParticleType, TreeCell>** new_tree_array(int NumTrees)
@@ -115,7 +117,7 @@ Tree<ndim, ParticleType, TreeCell>** new_tree_array(int NumTrees)
 
 //=================================================================================================
 // struct __construct_tree_impl
-// KDTree specialization
+// KDTree specialisation
 //=================================================================================================
 template<int ndim, template<int> class ParticleType>
 struct  __construct_tree_impl<ndim, ParticleType, KDTreeCell> {
@@ -137,7 +139,7 @@ struct  __construct_tree_impl<ndim, ParticleType, KDTreeCell> {
 } ;
 //=================================================================================================
 // struct __construct_tree_impl
-// OctTree specialization
+// OctTree specialisation
 //=================================================================================================
 template<int ndim, template<int> class ParticleType>
 struct  __construct_tree_impl<ndim, ParticleType, OctTreeCell> {
@@ -159,7 +161,7 @@ struct  __construct_tree_impl<ndim, ParticleType, OctTreeCell> {
 } ;
 //=================================================================================================
 // struct __construct_tree_impl
-// OctTree specialization with TreeRay Cells
+// OctTree specialisation with TreeRay Cells
 //=================================================================================================
 template<int ndim, template<int> class ParticleType>
 struct  __construct_tree_impl<ndim, ParticleType, TreeRayCell> {
@@ -181,7 +183,7 @@ struct  __construct_tree_impl<ndim, ParticleType, TreeRayCell> {
 } ;
 //=================================================================================================
 // struct __construct_tree_impl
-// Brute Force Tree specialization
+// Brute Force Tree specialisation
 //=================================================================================================
 template<int ndim, template<int> class ParticleType>
 struct  __construct_tree_impl<ndim, ParticleType, BruteForceTreeCell> {

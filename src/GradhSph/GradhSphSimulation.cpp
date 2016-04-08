@@ -235,14 +235,14 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
    TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
 
   if (stringparams["neib_search"] == "bruteforce") {
-	  /*
     sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
      (sph->kernp->kernrange, &simbox, sph->kernp, timing);
-     */
+     /*
 	  sphneib = new GradhSphTree<ndim,GradhSphParticle,BruteForceTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
+      */
   }
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GradhSphTree<ndim,GradhSphParticle,KDTreeCell>
