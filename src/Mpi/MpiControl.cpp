@@ -871,6 +871,7 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
 	  niter++;
 
   }
+  hydro->FinishReturnExport();
 
 
   // Vector with sends gets deallocated when the function returns, so need to be sure that the sending request have completed

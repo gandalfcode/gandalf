@@ -94,6 +94,10 @@ public:
   };
   virtual Particle<ndim>* GetParticleArray() = 0;
 
+#if defined MPI_PARALLEL
+  virtual void FinishReturnExport() {};
+#endif
+
 
   // Const variables (read in from parameters file)
   //-----------------------------------------------------------------------------------------------
