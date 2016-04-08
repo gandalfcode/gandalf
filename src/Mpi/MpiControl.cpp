@@ -658,15 +658,15 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
   // Send the header to each processor
   j=0;
   MPI_Request sendreq_header[Nmpi-1];
-  vector<char> header(header_size);
+  vector<vector<char> > header(Nmpi-1);
   for (int iproc=0; iproc<Nmpi; iproc++) {
 
     if (iproc==rank)
       continue;
 
-    header = neibsearch->ExportSize(iproc, hydro);
+    header[j] = neibsearch->ExportSize(iproc, hydro);
 
-    MPI_Isend(&header[0],header_size,MPI_CHAR,iproc,4,MPI_COMM_WORLD,&sendreq_header[j]);
+    MPI_Isend(&header[j][0],header_size,MPI_CHAR,iproc,4,MPI_COMM_WORLD,&sendreq_header[j]);
     j++;
 
   }

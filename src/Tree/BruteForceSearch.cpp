@@ -410,6 +410,7 @@ int BruteForceSearch<ndim,ParticleType>::GetExportInfo
       j++;
     }
   }
+  assert(j==ids_active_particles.size());
 
   return size_export;
 }
@@ -511,9 +512,8 @@ void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo
       //Copy the particles inside the send buffer
     ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
     int j=0;
-    int offset_proc = iproc;
-    if (iproc > rank) offset_proc -= 1;
-    const int start_index = hydro->Nhydro + hydro->Nghost + offset_proc*ids_active_particles.size();
+    const vector<int>::iterator nth_part = N_imported_part_per_proc.begin() + iproc;
+    const int start_index = hydro->Nhydro+hydro->Nghost+std::accumulate(N_imported_part_per_proc.begin(),nth_part,0);
     for (int i=start_index; i<start_index + N_received_particles; i++) {
       copy (&send_buffer[(j)*sizeof(ParticleType<ndim>)],&partdata[i]);
       assert(partdata[i].iorig>=0);
