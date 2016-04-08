@@ -157,7 +157,9 @@ protected:
 template <int ndim, template<int> class ParticleType>
 class BruteForceSearch : public virtual NeighbourSearch<ndim>
 {
+#if defined MPI_PARALLEL
 	using NeighbourSearch<ndim>::N_imported_part_per_proc;
+#endif
  public:
 
   using NeighbourSearch<ndim>::neibcheck;
