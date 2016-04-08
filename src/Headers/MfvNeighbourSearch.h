@@ -139,7 +139,7 @@ class MeshlessFVTree: public MeshlessFVNeighbourSearch<ndim>, public HydroTree<n
   vector<vector<int> > ids_sent_particles;
 protected:
   using NeighbourSearch<ndim>::ids_active_particles;
-  vector<int> N_imported_part_per_proc;
+  using NeighbourSearch<ndim>::N_imported_part_per_proc;
 #endif
  public:
 

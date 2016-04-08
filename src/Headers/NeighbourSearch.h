@@ -67,6 +67,7 @@ class NeighbourSearch
 #if defined MPI_PARALLEL
 protected:
   vector<int> ids_active_particles;
+  vector<int> N_imported_part_per_proc;
 #endif
  public:
 
@@ -103,7 +104,7 @@ protected:
   virtual void GetBackExportInfo(vector<char >& received_array,
                                  vector<int>& N_exported_particles_from_proc,
                                  vector<int>&, Hydrodynamics<ndim> *hydro, const int rank, const int iproc) = 0;
-  virtual vector<char> ExportSize (const int iproc) =0;
+  virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) =0;
   virtual int ExportInfoSize(const int i)=0;
   virtual int GetExportInfo(int Nproc, Hydrodynamics<ndim> *, vector<char >&,
                             MpiNode<ndim>&, int, int) = 0;
@@ -156,6 +157,7 @@ protected:
 template <int ndim, template<int> class ParticleType>
 class BruteForceSearch : public virtual NeighbourSearch<ndim>
 {
+	using NeighbourSearch<ndim>::N_imported_part_per_proc;
  public:
 
   using NeighbourSearch<ndim>::neibcheck;
@@ -197,8 +199,17 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void GetBackExportInfo(vector<char >& received_array,
                                  vector<int>& N_exported_particles_from_proc,
                                  vector<int>&, Hydrodynamics<ndim> *hydro, const int rank, const int iproc);
-  virtual vector<char> ExportSize (const int iproc) {
+  virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) {
     vector<char> result(sizeof(int));
+    if (iproc==0) {
+      ids_active_particles.clear();
+      for (int i=0; i<hydro->Nhydro; i++) {
+    	  Particle<ndim>& part = hydro->GetParticlePointer(i);
+        if (part.active) {
+          ids_active_particles.push_back(i);
+        }
+      }
+    }
     int size = ids_active_particles.size()*sizeof(ParticleType<ndim>);
     copy(&result[0],&size);
     return result;
@@ -246,7 +257,7 @@ class HydroTree : public virtual NeighbourSearch<ndim>
   vector<vector<int> > ids_sent_particles;
 protected:
   using NeighbourSearch<ndim>::ids_active_particles;
-  vector<int> N_imported_part_per_proc;
+  using NeighbourSearch<ndim>::N_imported_part_per_proc;
 #endif
  public:
 
@@ -285,7 +296,7 @@ protected:
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*);
   virtual void GetBackExportInfo(vector<char > &, vector<int> &,
                                  vector<int> &, Hydrodynamics<ndim> *, const int, const int);
-  virtual vector<char> ExportSize (const int iproc) {
+  virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) {
     int cactive = Ncellexport[iproc];
     int Nactive = Npartexport[iproc];
 

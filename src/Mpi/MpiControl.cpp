@@ -638,7 +638,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
   vector<vector <char> > receive_buffer(Nmpi-1);
   vector<vector <char> > header_receive(Nmpi-1);
 
-  const int header_size = neibsearch->ExportSize(0).size();
+  const int header_size = neibsearch->ExportSize(0, hydro).size();
 
   // Post the receives for the header
   MPI_Request req_header[Nmpi-1];
@@ -664,7 +664,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
     if (iproc==rank)
       continue;
 
-    header = neibsearch->ExportSize(iproc);
+    header = neibsearch->ExportSize(iproc, hydro);
 
     MPI_Isend(&header[0],header_size,MPI_CHAR,iproc,4,MPI_COMM_WORLD,&sendreq_header[j]);
     j++;
