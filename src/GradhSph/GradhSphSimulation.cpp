@@ -239,9 +239,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
      (sph->kernp->kernrange, &simbox, sph->kernp, timing);
      */
-    int Nleafmax = max(intparams["Nleafmax"], 10000) ;
     sphneib = new GradhSphTree<ndim,GradhSphParticle,BruteForceTreeCell>
-      (Nleafmax, Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
        floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
        stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
        

@@ -126,7 +126,7 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters(TreeCell<ndim> &) {};
-  int GetMaxCellNumber(const int _level) {return _level == 0 ? 1 : gtot ;};
+  int GetMaxCellNumber(const int _level) {return _level == 0 ? 1 : -1 ;};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

@@ -934,7 +934,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (celldata[cc].copen == -1 && celldata[cc].N == 1 && Ndirect + Nleafmax < Nneibmax) {
+      if (celldata[cc].copen == -1 && celldata[cc].N == 1 && Nneib + Nleafmax < Nneibmax) {
         i = celldata[cc].ifirst;
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;

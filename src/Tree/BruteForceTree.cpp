@@ -169,12 +169,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   debug2("[BruteForceTree::BuildTree]");
   //timing->StartTimingSection("BUILD_TREE");
 
-  if (Nleafmax < Ntot) {
-    std::stringstream message ;
-    message << "Error: BruteForceTree requires Nleafmax >=Ntot.\n" ;
-    message << "Nleafmax:" << Nleafmax << " " << "Ntot:" << Ntot << "\n" ;
-    ExceptionHandler::getIstance().raise(message.str());
-  }
 
   // Set tree size and allocate memory: Only one cell.
   gmax = Ncellmax = Ntotmax + 1 ;
