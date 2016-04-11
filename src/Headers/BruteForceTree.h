@@ -61,9 +61,9 @@ struct BruteForceTreeCell : public TreeCellBase<ndim> {
 
 
 //=================================================================================================
-//  Class OctTree
-/// \brief   Class containing Barnes-Hut octal tree.
-/// \details Class containing Barnes-Hut octal tree.
+//  Class BruteForceTree
+/// \brief   Class containing Brute force wrapper tree.
+/// \details Class containing Brute force wrapper tree.
 /// \author  D. A. Hubber
 /// \date    17/08/2014
 //=================================================================================================
@@ -119,6 +119,7 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
   void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
+  void StockTreeProperties(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
@@ -128,13 +129,6 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);
 #endif
-
-
-  // Additional variables for octal tree
-  //-----------------------------------------------------------------------------------------------
-  int *firstCell;                      ///< Array containing first cells in each tree level
-  int *lastCell;                       ///<   "        "     last       "          "
-  FLOAT rootCellSize;                  ///< Length of side of root cell cube
 
 };
 #endif

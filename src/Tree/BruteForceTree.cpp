@@ -26,6 +26,7 @@
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <math.h>
 #include "Precision.h"
 #include "Exception.h"
@@ -168,8 +169,16 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   debug2("[BruteForceTree::BuildTree]");
   //timing->StartTimingSection("BUILD_TREE");
 
+  if (Nleafmax < Ntot) {
+    std::stringstream message ;
+    message << "Error: BruteForceTree requires Nleafmax >=Ntot.\n" ;
+    message << "Nleafmax:" << Nleafmax << " " << "Ntot:" << Ntot << "\n" ;
+    ExceptionHandler::getIstance().raise(message.str());
+  }
+
   // Set tree size and allocate memory: Only one cell.
-  gtot = Ncellmax = 1 ;
+  gmax = Ncellmax = Ntotmax ;
+  gtot = Ncell = Ntot ;
   AllocateTreeMemory();
 
   // Create bounding box of SPH particles
@@ -182,42 +191,42 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
     }
   }
 
-  Ncell = 1 ;
-
   // Set properties for the cell
   ifirst = _ifirst;
   ilast  = _ilast;
-  celldata[0].N      = Npart;
-  celldata[0].ifirst = ifirst;
-  celldata[0].ilast  = ilast;
-  celldata[0].cnext  = Ncellmax;
-  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmin[k];
-  for (k=0; k<ndim; k++) celldata[0].bbmax[k] = bbmax[k];
-  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
-  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
-  for (i=ifirst; i<ilast; i++) inext[i] = i+1;
+  i = ifirst ;
+  for (int c = 0; c < Ntot; c++) {
+	celldata[c].N      = 1 ;
+	celldata[c].ifirst = i;
+	celldata[c].ilast  = i;
+	celldata[c].cnext  = c+1;
+	celldata[c].copen  = -1;
+	celldata[c].id     = c;
+	celldata[c].level  = 0;
+	for (k=0; k<ndim; k++) celldata[0].bbmin[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
+	for (k=0; k<ndim; k++) celldata[0].bbmin[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
+	for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
+	for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
+
+	g2c[c] = c ;
+
+#ifdef MPI_PARALLEL
+  celldata[c].worktot = 0.0;
+#endif
+
+  	ids[i]   = i ;
+	inext[i] = i ;
+	i++ ;
+  }
   inext[ilast] = -1;
 
-  celldata[0].copen  = -1;
-  celldata[0].cnext  = Ncellmax;
-  celldata[0].id     = 0;
-  celldata[0].level  = 0;
   ltot = 0 ;
 
-
-  // If number of particles remains unchanged, use old id list
-  if (Ntot > 0) {
-    if (Ntot != Ntotold) {
-      for (i=ifirst; i<=ilast; i++) ids[i] = i;
-    }
-
-#if defined(VERIFY_ALL)
-    ValidateTree(partdata);
-#endif
-  }
+  StockTree(celldata[0], partdata) ;
 
   return;
 }
+
 
 //=================================================================================================
 //  BruteForceTree::StockTree
@@ -225,6 +234,20 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::StockTree
+ (TreeCell<ndim> &cell,                ///< Reference to current tree cell
+  ParticleType<ndim> *partdata) {
+
+  StockTreeProperties(cell, partdata) ;
+  for (int c = cell.cnext; c < Ncell; c++)
+    StockTreeProperties(celldata[c], partdata) ;
+}
+
+//=================================================================================================
+//  BruteForceTree::StockTreeProperties
+/// Stock cell in BruteForce-tree.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
  (TreeCell<ndim> &cell,                ///< Reference to current tree cell
   ParticleType<ndim> *partdata)        ///< Particle data array
 {
@@ -308,14 +331,15 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTree
     };
 
     // Normalise all cell values
-    if (cell.N > 0) {
+    if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
-    }
+    }  gtot = Ncell = Ntot ;
+
 
     // Compute quadrupole moment terms if selected
     if (multipole == "quadrupole") {
