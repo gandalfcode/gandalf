@@ -177,8 +177,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   }
 
   // Set tree size and allocate memory: Only one cell.
-  gmax = Ncellmax = Ntotmax ;
-  gtot = Ncell = Ntot ;
+  gmax = Ncellmax = Ntotmax + 1 ;
+  gtot = Ncell = Ntot + 1;
   AllocateTreeMemory();
 
   // Create bounding box of SPH particles
@@ -194,35 +194,50 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   // Set properties for the cell
   ifirst = _ifirst;
   ilast  = _ilast;
+  celldata[0].N      = Ntot;
+  celldata[0].ifirst = ifirst;
+  celldata[0].ilast  = ilast ;
+  celldata[0].cnext  = Ncell;
+  celldata[0].copen  = Ntot > 0 ? 1 : -1 ;
+  celldata[0].id     = 0;
+  celldata[0].level  = 0;
+  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmin[k] ;
+  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmax[k] ;
+  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
+  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
+
+  // Now do the leaf cells
   i = ifirst ;
-  for (int c = 0; c < Ntot; c++) {
+  for (int c = 1; c < Ncell; c++) {
 	celldata[c].N      = 1 ;
 	celldata[c].ifirst = i;
 	celldata[c].ilast  = i;
 	celldata[c].cnext  = c+1;
 	celldata[c].copen  = -1;
 	celldata[c].id     = c;
-	celldata[c].level  = 0;
-	for (k=0; k<ndim; k++) celldata[0].bbmin[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
-	for (k=0; k<ndim; k++) celldata[0].bbmin[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
-	for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
-	for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
+	celldata[c].level  = 1;
+	for (k=0; k<ndim; k++) celldata[c].bbmin[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
+	for (k=0; k<ndim; k++) celldata[c].bbmin[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
+	for (k=0; k<ndim; k++) celldata[c].cexit[0][k] = -1; // TODO: Check this
+	for (k=0; k<ndim; k++) celldata[c].cexit[1][k] = -1;
 
-	g2c[c] = c ;
+	g2c[c-1] = c ;
 
 #ifdef MPI_PARALLEL
   celldata[c].worktot = 0.0;
 #endif
 
   	ids[i]   = i ;
-	inext[i] = i ;
+	inext[i] = i+1 ;
 	i++ ;
   }
   inext[ilast] = -1;
 
-  ltot = 0 ;
-
-  StockTree(celldata[0], partdata) ;
+  ltot = 1 ;
+  if (Ntot > 0)
+	StockTree(celldata[0], partdata) ;
+  else
+	ltot = 0 ;
 
   return;
 }
@@ -238,7 +253,10 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTree
   ParticleType<ndim> *partdata) {
 
   StockTreeProperties(cell, partdata) ;
-  for (int c = cell.cnext; c < Ncell; c++)
+
+  int c = cell.copen ;
+  if (c == -1) c = cell.cnext ;
+  for (; c < Ncell; c++)
     StockTreeProperties(celldata[c], partdata) ;
 }
 
@@ -283,91 +301,84 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   for (k=0; k<ndim; k++) cell.vboxmax[k] = -big_number;
 
 
-  // If this is a leaf cell, sum over all particles
-  //-----------------------------------------------------------------------------------------------
-  assert(cell.level == ltot) ;
-  {
-    // First, check if any particles have been accreted and remove them
-    // from the linked list.  If cell no longer contains any live particles,
-    // then set N = 0 to ensure cell is not included in future tree-walks.
-    i = cell.ifirst;
-    cell.ifirst = -1;
-    iaux = -1;
-    while (i != -1) {
-      if (!partdata[i].flags.is_dead()) {
-        if (iaux == -1) cell.ifirst = i;
-        else inext[iaux] = i;
-        iaux = i;
-      }
-      if (i == cell.ilast) break;
-      i = inext[i];
-    };
-    cell.ilast = iaux;
-
-
-    // Loop over all particles in cell summing their contributions
-    i = cell.ifirst;
-    while (i != -1) {
-      if (!partdata[i].flags.is_dead()) {
-        cell.N++;
-        if (partdata[i].active) cell.Nactive++;
-        cell.hmax = max(cell.hmax,partdata[i].h);
-        if (gravmask[partdata[i].ptype]) {
-          cell.m += partdata[i].m;
-          for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-          for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
-        }
-        for (k=0; k<ndim; k++) {
-         if (partdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = partdata[i].r[k];
-         if (partdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = partdata[i].r[k];
-         if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k])
-         cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-         if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
-          cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
-        }
-      }
-      if (i == cell.ilast) break;
-      i = inext[i];
-    };
-
-    // Normalise all cell values
-    if (cell.m > 0) {
-      for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
-      for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-      for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
-      cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
-      cell.rmax = sqrt(DotProduct(dr,dr,ndim));
-    }  gtot = Ncell = Ntot ;
-
-
-    // Compute quadrupole moment terms if selected
-    if (multipole == "quadrupole") {
-      i = cell.ifirst;
-
-      while (i != -1) {
-        if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
-          mi = partdata[i].m;
-          for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
-          drsqd = DotProduct(dr,dr,ndim);
-          if (ndim == 3) {
-            cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
-            cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
-            cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
-            cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
-            cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
-          }
-          else if (ndim == 2) {
-            cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
-            cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
-            cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
-          }
-        }
-        if (i == cell.ilast) break;
-        i = inext[i];
-      }
+  // First, check if any particles have been accreted and remove them
+  // from the linked list.  If cell no longer contains any live particles,
+  // then set N = 0 to ensure cell is not included in future tree-walks.
+  i = cell.ifirst;
+  cell.ifirst = -1;
+  iaux = -1;
+  while (i != -1) {
+    if (!partdata[i].flags.is_dead()) {
+      if (iaux == -1) cell.ifirst = i;
+      else inext[iaux] = i;
+      iaux = i;
     }
+    if (i == cell.ilast) break;
+    i = inext[i];
+  };
+  cell.ilast = iaux;
 
+  // Loop over all particles in cell summing their contributions
+  i = cell.ifirst;
+  while (i != -1) {
+	if (!partdata[i].flags.is_dead()) {
+	  cell.N++;
+	  if (partdata[i].active) cell.Nactive++;
+	  cell.hmax = max(cell.hmax,partdata[i].h);
+	  if (gravmask[partdata[i].ptype]) {
+		cell.m += partdata[i].m;
+		for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
+		for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
+	  }
+	  for (k=0; k<ndim; k++) {
+		if (partdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = partdata[i].r[k];
+		if (partdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = partdata[i].r[k];
+		if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k])
+			cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+		if 	(partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
+			cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+	  }
+	}
+	if (i == cell.ilast) break;
+	i = inext[i];
+  }
+
+  // Normalise all cell values
+  if (cell.m > 0) {
+    for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
+    for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
+    for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
+    for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+    cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
+    cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+  }
+
+
+  // Compute quadrupole moment terms if selected
+  if (multipole == "quadrupole") {
+	i = cell.ifirst;
+
+	while (i != -1) {
+	  if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
+		mi = partdata[i].m;
+		for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
+		drsqd = DotProduct(dr,dr,ndim);
+		if (ndim == 3) {
+		  cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+		  cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+		  cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+		  cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
+		  cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
+		}
+		else if (ndim == 2) {
+		  cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+		  cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+		  cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+		}
+	  }
+	  if (i == cell.ilast) break;
+	  i = inext[i];
+	}
   }
 
   // Calculate eigenvalue MAC criteria
@@ -417,6 +428,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
   return;
 }
 
+
 //=================================================================================================
 //  BruteForceTree::UpdateHmaxValues
 /// Calculate the physical properties (e.g. total mass, centre-of-mass,
@@ -427,9 +439,25 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
  (TreeCell<ndim> &cell,                ///< BruteForce-tree cell
   ParticleType<ndim> *partdata)        ///< SPH particle data array
 {
+  UpdateHmaxValuesCell(cell, partdata) ;
+
+  int c = cell.copen ;
+  if (c == -1) c = cell.cnext ;
+  for (; c < Ncell; c++)
+	UpdateHmaxValuesCell(celldata[c], partdata) ;
+}
+//=================================================================================================
+//  BruteForceTree::UpdateHmaxValuesCell
+/// Calculate the physical properties (e.g. total mass, centre-of-mass,
+/// opening-distance, etc..) of all cells in the tree.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
+ (TreeCell<ndim> &cell,                ///< BruteForce-tree cell
+  ParticleType<ndim> *partdata)        ///< SPH particle data array
+{
   int i;                               // Particle counter
   int k;                               // Dimension counter
-
 
   // Zero all summation variables for all cells
   cell.hmax = (FLOAT) 0.0;
@@ -439,25 +467,23 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
-  assert(cell.level == ltot) ;
-  {
-    i = cell.ifirst;
+  i = cell.ifirst;
 
-    // Loop over all particles in cell summing their contributions
-    while (i != -1) {
-      cell.hmax = max(cell.hmax,partdata[i].h);
-      for (k=0; k<ndim; k++) {
-        if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k]) {
-          cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-        }
-        if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k]) {
-          cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
-        }
+  // Loop over all particles in cell summing their contributions
+  while (i != -1) {
+    cell.hmax = max(cell.hmax,partdata[i].h);
+    for (k=0; k<ndim; k++) {
+      if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k]) {
+    	cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
       }
-      if (i == cell.ilast) break;
-      i = inext[i];
-    };
+      if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k]) {
+    	cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+      }
+    }
+    if (i == cell.ilast) break;
+    i = inext[i];
   }
+
   return;
 }
 
