@@ -833,7 +833,7 @@ void SphSimulation<ndim>::MainLoop(void)
     double hmax = sphneib->GetMaximumSmoothingLength() ;
     hmax *= sph->kernp->kernrange ;
     for (i=0; i < ndim; i++)
-      if (simbox.boxhalf[i] < hmax){
+      if (simbox.boxhalf[i] < 2*hmax){
         string message = "Error: Smoothing length too large, self-interaction will occur" ;
     	ExceptionHandler::getIstance().raise(message);
       }

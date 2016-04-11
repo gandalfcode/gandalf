@@ -223,6 +223,17 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
 
+  /* Check that we have sensible smoothing lengths */
+  if (periodicBoundaries) {
+    double hmax = mfvneib->GetMaximumSmoothingLength() ;
+    hmax *= mfv->kernp->kernrange ;
+    for (i=0; i < ndim; i++)
+      if (simbox.boxhalf[i] < 2*hmax){
+        string message = "Error: Smoothing length too large, self-interaction will occur" ;
+    	ExceptionHandler::getIstance().raise(message);
+      }
+  }
+
   return;
 }
 
