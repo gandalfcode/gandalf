@@ -60,6 +60,19 @@ void BruteForceSearch<ndim,ParticleType>::BuildTree
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
   hydro->DeleteDeadParticles();
+
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+
+  /* Save the maximum smoothing length for later */
+  double hmax = 0 ;
+  for (int n=0; n < Npart; n++)
+    if (partdata[n].h > hmax)
+    	hmax = partdata[n].h ;
+#if defined MPI_PARALLEL
+  double hmax_local = hmax ;
+  	 MPI_Allreduce(&hmax_local, &hmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD) ;
+#endif
+  _Hmax = hmax ;
   return;
 }
 
@@ -232,8 +245,6 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 
   return;
 }
-
-
 
 #if defined MPI_PARALLEL
 //=================================================================================================

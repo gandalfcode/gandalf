@@ -828,6 +828,16 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 
 
+  /* Check that we have sensible smoothing lengths */
+  if (periodicBoundaries) {
+    double hmax = sphneib->GetMaximumSmoothingLength() ;
+    hmax *= sph->kernp->kernrange ;
+    for (i=0; i < ndim; i++)
+      if (simbox.boxhalf[i] < 2*hmax){
+        string message = "Error: Smoothing length too large, self-interaction will occur" ;
+    	ExceptionHandler::getIstance().raise(message);
+      }
+  }
 
   // Iterate for P(EC)^n schemes for N-body particles
   //-----------------------------------------------------------------------------------------------
