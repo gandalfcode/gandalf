@@ -1195,6 +1195,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   MPI_Request req[Nmpi-1];
   MPI_Status status[Nmpi-1];
   int j=0;
+  int size_not_known=0;
   // Post all the receives
   for (int i=0; i<Nmpi; i++) {
 
@@ -1205,9 +1206,21 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 
 	  // Guess the maximum number of cells and allocate memory
 	  treeptr->Ncellmax = treeptr->GetMaxCellNumber(pruning_level_max);
-	  treeptr->AllocateTreeMemory();
 
-	  MPI_Irecv(treeptr->celldata,treeptr->Ncellmax*sizeof(TreeCell<ndim>),MPI_CHAR,i,3,MPI_COMM_WORLD,&req[j] );
+	  if (treeptr->Ncellmax != -1) {
+	    // In this case we have an upper limit on how much data we are receiving
+	    // Post the receive!
+
+        treeptr->AllocateTreeMemory();
+
+        MPI_Irecv(treeptr->celldata,treeptr->Ncellmax*sizeof(TreeCell<ndim>),MPI_CHAR,i,3,MPI_COMM_WORLD,&req[j] );
+	  }
+	  else {
+	    // In this case, no idea on how much data we are receiving. Start to send, and we will come back to this problem later
+	    size_not_known=1;
+	  }
+
+
 	  j++;
   }
 
@@ -1233,6 +1246,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
     treeptr->Ntot     = 0;
     treeptr->gmax     = 0;
     treeptr->Ncellmax = max(treeptr->Ncellmax, treeptr->GetMaxCellNumber(pruning_level_max));
+    treeptr->Ncellmax = max(1,treeptr->Ncellmax);
     treeptr->AllocateTreeMemory();
 
 
@@ -1268,6 +1282,51 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 
   }
   //-----------------------------------------------------------------------------------------------
+
+  // If we didn't know the size of the receives, we still need to post the receives!
+
+
+  if (size_not_known) {
+
+      vector<int> flags(Nmpi-1);
+      int Ncompleted=0;
+      while (Ncompleted<Nmpi-1) {
+        int j=0;
+        for (int i=0; i<Nmpi; i++) {
+
+            if (i==rank)
+                continue;
+
+            if (flags[j]) {
+              j++;
+              continue;
+            }
+
+            Tree<ndim,ParticleType,TreeCell>* treeptr = prunedtree[i];
+
+            // See how much stuff we have received
+            MPI_Status status;
+            MPI_Iprobe(i,3,MPI_COMM_WORLD,&flags[j],&status);
+
+            if (flags[j]) {
+              // We know how much stuff we are receiving
+              // Allocate memory and post the receive
+
+              int Nbytes_received;
+              MPI_Get_count(&status,MPI_CHAR,&Nbytes_received);
+              treeptr->Ncellmax = Nbytes_received/sizeof(TreeCell<ndim>);
+
+              treeptr->AllocateTreeMemory();
+
+              MPI_Irecv(treeptr->celldata,treeptr->Ncellmax*sizeof(TreeCell<ndim>),MPI_CHAR,i,3,MPI_COMM_WORLD,&req[j] );
+              Ncompleted++;
+            }
+
+
+            j++;
+        }
+    }
+  }
 
   // Now wait for all sends to be completed
   MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
