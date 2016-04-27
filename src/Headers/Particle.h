@@ -86,17 +86,17 @@ const int mirror_bound_flags[3][2] = {
 
 class type_flag{
 public:
-  type_flag(int flag = none)
+  type_flag(unsigned int flag = none)
     : _flag(flag)
   { }
 
-  int& set_flag(int flag) {
+  unsigned int& set_flag(unsigned int flag) {
     return _flag |= flag ;
   }
-  int& unset_flag(int flag) {
+  unsigned int& unset_flag(unsigned int flag) {
 	return _flag &= ~flag ;
   }
-  int get() const {
+  unsigned int get() const {
 	return _flag ;
   }
   void reset() {
@@ -118,7 +118,7 @@ public:
   }
 
 private:
-	int _flag ;
+	unsigned int _flag ;
 };
 
 enum ptype {gas, icm, boundary, cdm, dust} ;

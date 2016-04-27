@@ -55,7 +55,7 @@ class GradhSphCommunicationHandler {
 
     GradhSphExportParticle (const GradhSphParticle<ndim>& p) {
       iorig = p.iorig;
-      itype = p.itype;
+      flags = p.flags.get();
       ptype = p.ptype;
       level = p.level;
       for (int k=0; k<ndim; k++) {
@@ -75,7 +75,7 @@ class GradhSphCommunicationHandler {
     }
 
     int iorig;
-    int itype;
+    unsigned int flags;
     int ptype;
     int level;
     FLOAT r[ndim];
@@ -118,7 +118,7 @@ public:
     //GradhSph<ndim>* sph = static_cast<GradhSph<ndim>*>(hydro);
 
     p2.iorig = p.iorig;
-    p2.itype = p.itype;
+    p2.flags = type_flag(p.flags);
     p2.ptype = p.ptype;
     p2.level = p.level;
     for (int k=0; k<ndim; k++) {
@@ -205,7 +205,7 @@ class SM2012CommunicationHandler {
     }
 
     int iorig;
-    int itype;
+    unsigned int flags;
     int ptype;
     int levelneib;
     int level;
