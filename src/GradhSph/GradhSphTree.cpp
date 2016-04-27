@@ -563,7 +563,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
           // Compute distances and the inverse between the current particle and all neighbours here,
           // for both gather and inactive scatter neibs.  Only consider particles with j > i to
           // compute pair forces once unless particle j is inactive.
-          //-----------------------------------------------------------------------------------------
+          //---------------------------------------------------------------------------------------
           for (jj=0; jj<Nneib; jj++) {
 
             // Skip non-hydro particles and the current active particle.
@@ -584,10 +584,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
               Nhydroaux++;
             }
           }
-          //-----------------------------------------------------------------------------------------
+          //---------------------------------------------------------------------------------------
 
           // Compute all neighbour contributions to hydro forces
           sph->ComputeSphHydroForces(i,Nhydroaux,sphlist,drmag,invdrmag,dr,activepart[j],neibpart);
+
         }
       }
       //-------------------------------------------------------------------------------------------
@@ -767,6 +768,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       for (j=0; j<Nactive; j++) {
         activepart[j].div_v     = (FLOAT) 0.0;
         activepart[j].dudt      = (FLOAT) 0.0;
+        activepart[j].dalphadt  = (FLOAT) 0.0;
         activepart[j].levelneib = 0;
         activepart[j].gpot      = activepart[j].m*activepart[j].invh*sph->kernp->wpot(0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
@@ -816,8 +818,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
         Typemask hydromask, gravmask ;
         for (k=0; k< Ntypes; ++k){
-        	hydromask[k] = sph->types[activepart[j].ptype].hydromask[k] ;
-        	gravmask[k]  = sph->types[activepart[j].ptype].gravmask[k] ;
+          hydromask[k] = sph->types[activepart[j].ptype].hydromask[k] ;
+          gravmask[k]  = sph->types[activepart[j].ptype].gravmask[k] ;
         }
 
         Nhydroaux = 0;
@@ -855,13 +857,14 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
 
         // Compute forces between SPH neighbours (hydro and gravity)
-        if (Nhydroaux > 0)
+        if (Nhydroaux > 0) {
           sph->ComputeSphHydroGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
+        }
 
-        if (do_grav){
+        if (do_grav) {
+
           // Compute soften grav forces between non-SPH neighbours (hydro and gravity)
           sph->ComputeSphGravForces(i, Ngrav, gravlist, activepart[j], neibpart);
-
 
           // Compute direct gravity forces between distant particles
           sph->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
@@ -869,7 +872,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
           // Compute gravitational force due to distant cells
           if (multipole == "monopole") {
             this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
-                                          activepart[j].r, Ngravcell, gravcell);
+                                            activepart[j].r, Ngravcell, gravcell);
           }
           else if (multipole == "quadrupole") {
             this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,

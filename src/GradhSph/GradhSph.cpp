@@ -451,8 +451,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
 
     for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-    dvdr = DotProduct(neibpart[j].v,draux, ndim);
-    dvdr -= DotProduct(parti.v,draux,ndim);
+    dvdr = DotProduct(neibpart[j].v, draux, ndim);
+    dvdr -= DotProduct(parti.v, draux, ndim);
 
     // Add contribution to velocity divergence
     parti.div_v -= neibpart[j].m*dvdr*wkerni;
@@ -471,13 +471,13 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
       if (avisc == mon97) {
         vsignal    = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
         paux       -= alpha_visc*vsignal*dvdr*winvrho;
-        parti.dudt -= neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= (FLOAT) 0.5*neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
       }
       else if (avisc == mon97mm97) {
         alpha_mean = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
         vsignal    = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
         paux       -= alpha_mean*vsignal*dvdr*winvrho;
-        parti.dudt -= neibpart[j].m*alpha_mean*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= (FLOAT) 0.5*neibpart[j].m*alpha_mean*vsignal*dvdr*dvdr*winvrho;
       }
 
       // Artificial conductivity term
@@ -503,7 +503,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
   // Set velocity divergence and compressional heating rate terms
   parti.div_v    *= parti.invrho;
-  parti.dudt     *= (FLOAT) 0.5;
+  //parti.dudt     *= (FLOAT) 0.5;
   parti.dudt     -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
   parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*parti.invh +
     max(-parti.div_v, (FLOAT) 0.0)*(alpha_visc - parti.alpha);
@@ -537,7 +537,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   FLOAT alpha_mean;                    // Mean articial viscosity alpha value
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drmag;                         // Distance
-  FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT dvdr;                          // Dot product of dv and dr
   FLOAT invdrmag;                      // 1 / distance
   FLOAT wkerni;                        // Value of w1 kernel function
@@ -549,6 +548,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
   GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
   const FLOAT invhsqdi = parti.invh*parti.invh;
+
+  if (fabs(part.dudt > 1.0e-30)) {
+    std::cout << "WTF?? : " << part.dudt << endl;
+    exit(0);
+  }
 
 
   // Loop over all potential neighbours in the list
@@ -562,11 +566,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     assert(neibpart[j].m > (FLOAT) 0.0);
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
-    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-    drmag = sqrt(DotProduct(dr,dr,ndim) + small_number);
+    drmag = sqrt(DotProduct(dr, dr, ndim) + small_number);
     invdrmag = (FLOAT) 1.0/drmag;
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
-    dvdr = DotProduct(dv,dr,ndim);
+    dvdr = DotProduct(neibpart[j].v, dr, ndim);
+    dvdr -= DotProduct(parti.v, dr, ndim);
 
     wkerni = parti.hfactor*kern.w1(drmag*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh);
@@ -578,19 +582,20 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     //---------------------------------------------------------------------------------------------
     if (dvdr < (FLOAT) 0.0) {
 
+      //winvrho = (FLOAT) (wkerni + wkernj)/(parti.rho + neibpart[j].rho);
       winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(parti.invrho + neibpart[j].invrho);
 
       // Artificial viscosity term
       if (avisc == mon97) {
         vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
         paux       -= alpha_visc*vsignal*dvdr*winvrho;
-        parti.dudt -= neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= (FLOAT) 0.5*neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
       }
       else if (avisc == mon97mm97) {
         alpha_mean  = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
         vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
         paux       -= alpha_mean*vsignal*dvdr*winvrho;
-        parti.dudt -= neibpart[j].m*alpha_mean*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= (FLOAT) 0.5*neibpart[j].m*alpha_mean*vsignal*dvdr*dvdr*winvrho;
       }
 
       // Artificial conductivity term
@@ -629,10 +634,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
 
   // Set velocity divergence and compressional heating rate terms
-  parti.div_v   *= parti.invrho;
-  parti.dudt    -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
-  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*
-    parti.invh + max(parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
+  parti.div_v    *= parti.invrho;
+  //parti.dudt     *= (FLOAT) 0.5;
+  parti.dudt     -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
+  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*parti.invh +
+    max(-parti.div_v, (FLOAT) 0.0)*(alpha_visc - parti.alpha);
 
 
   return;
@@ -679,7 +685,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     //for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
     //dvdr = DotProduct(dv,dr,ndim);
-    drmag = sqrt(DotProduct(dr,dr,ndim) + small_number);
+    drmag = sqrt(DotProduct(dr, dr, ndim) + small_number);
     invdrmag = (FLOAT) 1.0/drmag;
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
 

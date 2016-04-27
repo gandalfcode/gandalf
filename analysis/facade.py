@@ -167,7 +167,7 @@ def plot(x, y, type="default", snap="current", sim="current",
         yunit (str) : Specify the unit to use for the plotting for the quantity
                  on the y-axis.
         **kwargs   : Extra keyword arguments will be passed to matplotlib.
-        
+
     Return:
         Data plotted. The member x_data contains data on the x-axis and the member y_data
             contains data on the y-axis
@@ -235,7 +235,7 @@ def time_plot(x, y, sim="current", overplot=False, autoscale=False,
         typey (str): as the previous one, on the y-axis.
         type (str): as the previous ones, for both axis at the same time. If set,
                      overwrites typex and typey.
-                     
+
     Return:
         Data plotted. The member x_data contains data on the x-axis and the member y_data
             contains data on the y-axis
@@ -278,7 +278,7 @@ def render(x, y, render, snap="current", sim="current", overplot=False,
         autoscalerender: Same as the autoscale, but for the rendered quantity.
         coordlimits: Specify the coordinate limits for the plot. In order of
                           precedence, the limits are set in this way:
-                          
+
                           * What this argument specifies. The value must be an
                             iterable of 4 elements: (xmin, xmax, ymin, ymax).
                           * If this argument is None (default), global settings for
@@ -310,8 +310,8 @@ def render(x, y, render, snap="current", sim="current", overplot=False,
                          matplotlib
         type (str): Specify the type of particles to be used for rendering (defaults to sph)
         **kwarg: Extra keyword arguments will be passed to matplotlib.
-                         
-                         
+
+
     Return:
         Data plotted. The member render_data contains the actual image (2d array).
     '''
@@ -400,15 +400,15 @@ def addrender(x, y, renderq, **kwargs):
 #------------------------------------------------------------------------------
 def make_movie(filename, snapshots='all', window_no=0, fps=24):
     '''Generates movie for plots generated in given window
-    
+
     Args:
         filename (str): filename (with extension, e.g. mp4) of the movie that will
                             be created.
         snapshots (str): currently not used
         window_no (int): currently not used
         fps (int): frames per second
-    
-    
+
+
     '''
 
     # Remove all temporary files in the directory (in case they still exist)
@@ -456,7 +456,7 @@ def limit(quantity, min=None, max=None, auto=False,
         auto (bool): If auto is set to True, then the limits for that quantity are
                      set automatically. Otherwise, use the one given by max and min.
         window (str): By default only the current subplot of the current window is affected.
-                        If this parameter is set to 'all', all the current windows are affected. 
+                        If this parameter is set to 'all', all the current windows are affected.
                         If this parameter is set to 'global', then also future plots are affected.
         subfigure (str): Similarly to window, by default only the current subplot is affected
                             by this command. If this parameter is set to 'all' then all the subfigures
@@ -528,7 +528,7 @@ def snap(no):
 
     Args:
         snapno (int): Snapshot number
-        
+
     Returns:
         The snapshot object
     '''
@@ -637,7 +637,7 @@ def block(message="Press enter to quit..."):
     '''Stops the execution flow until the user presses 'enter'.
     Useful in scripts, allowing to see a plot (which otherwise gets closed
     as soon as the execution flow reaches the end of the script)
-    
+
     Keyword Args:
         message (str): text to print before pausing
     '''
@@ -721,7 +721,7 @@ def plotanalytical(x=None, y=None, ic="default", snap="current", sim="current",
                          on the y-axis.
         time: Plots the analytical solution for the given time.
                      If not set, then reads the time from the sim or snapshot
-                     
+
     Return:
         Data plotted. The member x_data contains data on the x-axis and the member y_data
             contains data on the y-axis
@@ -794,7 +794,7 @@ def set_current_sim(simno):
 
     Keyword Args:
         simno (int): Simulation number
-        
+
     Returns:
         The newly set current simulation
     '''
@@ -818,16 +818,16 @@ Required argument:
 def get_data(quantity, snap="current",type="default",sim="current",unit="default" ):
     '''Returns the array with the data for the given quantity.
     The data is returned scaled to the specified unit
-    
+
     Args:
         quantity (str):The quantity required.
-        
+
     Keyword Args:
         type (str):The type of the particles (e.g. 'star')
         snap:Number of the snapshot. Defaults to 'current'
         sim:Number of the simulation. Defaults to 'current'
         unit (str):Specifies the unit to use to return the data
-        
+
     Returns:
         A numpy array containing the requested data.
     '''
@@ -845,14 +845,14 @@ def get_render_data(x,y,quantity, sim="current",snap="current",
                     renderunit="default",
                     res=64,zslice=None,coordlimits=None):
     '''Return the rendered data for the given quantity. Useful when one needs
-    to grid SPH data. The result is scaled to the specified unit. The options are 
+    to grid SPH data. The result is scaled to the specified unit. The options are
     a subset of the options available to the 'render' function.
-    
+
     Args:
         x (str): Quantity on the x-axis.
         y (str): Quantity on the y-axis.
         quantity (str): Quantity to render.
-        
+
     Keyword Args:
         snap: Number of the snapshot to plot. Defaults to 'current'.
         sim : Number of the simulation to plot. Defaults to 'current'
@@ -864,11 +864,11 @@ def get_render_data(x,y,quantity, sim="current",snap="current",
                            done instead.
         coordlimits: Limits of the coordinates on x and y. See documentation
                      of render.
-                     
+
     Return:
         A numpy 2d array containig the rendered data, scaled to the requested unit.
-        
-    
+
+
     '''
     if zslice is not None:
         zslice = float(zslice)
@@ -885,14 +885,14 @@ def get_render_data(x,y,quantity, sim="current",snap="current",
                                          coordlimits, zslice, "default", "default",
                                          renderunit, res, "nearest")
     data = command.prepareData(Singletons.globallimits)
-    return data.render_data   
-    
+    return data.render_data
+
 
 
 def get_analytical_data (x=None, y=None, ic="default", snap="current", sim="current",
                    xunit="default",
                    yunit="default", time="snaptime"):
-    '''Return the data of the analytical solution (if it exists).  Read the problem type from 
+    '''Return the data of the analytical solution (if it exists).  Read the problem type from
     the \'ic\' parameter.
 
     Keyword Args:
@@ -904,7 +904,7 @@ def get_analytical_data (x=None, y=None, ic="default", snap="current", sim="curr
         yunit (str): Specify the unit for the second quantity.
         time: Return the data for the analytical solution for the given time.
                 If not set, then read the time from the sim or snapshot
-                     
+
     Return:
         Requested data. The member x_data contains the first quantity and the member y_data
             the second quantity
@@ -996,6 +996,7 @@ def init():
     CreateUserQuantity('press','(gamma_eos - 1)*rho*u',scaling_factor='press',label='$P$')
     CreateUserQuantity('sound','sqrt(gamma_eos*(gamma_eos - 1)*u)',scaling_factor='v', label='$c_s$')
     CreateUserQuantity('temp','(gamma_eos - 1)*u*mu_bar',scaling_factor='temp',label='T')
+    CreateUserQuantity('entropy','press/rho^(gamma_eos)',scaling_factor='press',label='$P$')
 
     from data_fetcher import get_time_snapshot
     CreateTimeData('t',get_time_snapshot)
