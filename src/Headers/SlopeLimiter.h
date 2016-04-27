@@ -48,7 +48,7 @@ class SlopeLimiter
  public:
 
   SlopeLimiter() {};
-  ~SlopeLimiter() {};
+  virtual ~SlopeLimiter() {};
 
   virtual void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
                                     FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2]) = 0;
@@ -244,7 +244,6 @@ class Balsara2004Limiter : public SlopeLimiter<ndim,ParticleType>
 };
 
 
-
 //=================================================================================================
 //  Class GizmoLimiter
 /// \brief   ...
@@ -259,6 +258,95 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
 
   GizmoLimiter() {};
   ~GizmoLimiter() {};
+
+  //===============================================================================================
+  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
+  {
+    int var;
+    FLOAT alpha = (FLOAT) 0.0;
+    FLOAT dr[ndim];
+    FLOAT phiminus;
+    FLOAT phiplus;
+    FLOAT phimid;
+    const FLOAT beta = (FLOAT) 0.75;
+    const FLOAT psi1 = (FLOAT) 0.5;
+    const FLOAT psi2 = (FLOAT) 0.25;  //0.25;
+
+    //---------------------------------------------------------------------------------------------
+    for (var=0; var<ndim+2; var++) {
+
+      dW[var] = DotProduct(parti.grad[var], draux, ndim);
+      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
+                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
+      alpha = max((FLOAT) 0.0, alpha);
+
+      dW[var] = alpha*dW[var];
+      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
+
+
+      for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];
+      FLOAT drmag = sqrt(DotProduct(dr, dr, ndim));
+
+      const FLOAT delta1 = psi1*fabs(parti.Wprim[var] - partj.Wprim[var]);
+      const FLOAT delta2 = psi2*fabs(parti.Wprim[var] - partj.Wprim[var]);
+      const FLOAT phimin = min(parti.Wprim[var], partj.Wprim[var]);
+      const FLOAT phimax = max(parti.Wprim[var], partj.Wprim[var]);
+      const FLOAT phibar = parti.Wprim[var] + (partj.Wprim[var] - parti.Wprim[var])*
+        sqrt(DotProduct(draux, draux, ndim))/drmag;
+      const FLOAT phimid0 = parti.Wprim[var] + dW[var]; //DotProduct(gradW[var], draux, ndim);
+
+      if (sgn(phimin - delta1) == sgn(phimin)) {
+        phiminus = phimin - delta1;
+      }
+      else {
+        phiminus = phimin / ((FLOAT) 1.0 + delta1/fabs(phimin));
+      }
+
+      if (sgn(phimax + delta1) == sgn(phimax)) {
+        phiplus = phimax + delta1;
+      }
+      else {
+        phiplus = phimax / ((FLOAT) 1.0 + delta1/fabs(phimax));
+      }
+
+      if (parti.Wprim[var] < partj.Wprim[var]) {
+        phimid = max(phiminus, min(phibar + delta2, phimid0));
+      }
+      else if (parti.Wprim[var] > partj.Wprim[var]) {
+        phimid = min(phiplus, max(phibar - delta2, phimid0));
+      }
+      else {
+        phimid = parti.Wprim[var];
+      }
+
+      FLOAT drsqd = DotProduct(draux, draux, ndim);
+      dW[var] = phimid - parti.Wprim[var];
+      for (int k=0; k<ndim; k++) gradW[var][k] = dW[var]*draux[k]/drsqd;
+
+    }
+    //---------------------------------------------------------------------------------------------
+  }
+
+};
+
+
+
+
+//=================================================================================================
+//  Class GizmoLimiter
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    23/03/2015
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class GizmoLimiter3 : public SlopeLimiter<ndim,ParticleType>
+{
+ public:
+
+  GizmoLimiter3() {};
+  ~GizmoLimiter3() {};
 
   //===============================================================================================
   void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,

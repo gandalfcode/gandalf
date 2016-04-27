@@ -6,7 +6,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = ADSOD-HLLC-MUSCL
+Simulation run id string                    : run_id = ADSOD-MUSCL
 Select SPH simulation                       : sim = mfvmuscl
 Select shocktube initial conditions         : ic = shocktube
 1D shocktube test                           : ndim = 1

@@ -447,7 +447,10 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     FLOAT ekin = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
     part.Qcons[MeshlessFV<ndim>::ietot] = part.u*part.m + (FLOAT) 0.5*part.m*ekin;
+    for (int k=0; k<ndim+2; k++)
+      part.Qcons0[k] = part.Qcons[k] ;
   }
+
 
 
   // If the smoothing lengths have not been provided beforehand, then
@@ -1200,7 +1203,10 @@ void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
   for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
-    for (int var=0; var<ndim+2; var++) part.Qcons[var] += part.dQ[var];
+    // TODO: Check this.
+    //   Qcons is now interpretted as the predicted value of Q at the current time, surely this
+    //   can be used instead without updating?
+    for (int var=0; var<ndim+2; var++) part.Qcons[var] = part.Qcons0[var] + part.dQ[var];
     mfv->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
     mfv->UpdateArrayVariables(part);
   }

@@ -714,6 +714,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     FLOAT* dr         = new FLOAT[Nneibmax*ndim];  // ..
     FLOAT* drmag      = new FLOAT[Nneibmax];       // ..
     FLOAT* invdrmag   = new FLOAT[Nneibmax];       // ..
+    FLOAT (*dQBuffer)[ndim+2]      = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*fluxBuffer)[ndim+2]    = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*rdmdtBuffer)[ndim]     = new FLOAT[Ntot][ndim];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
@@ -722,7 +723,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     for (i=0; i<mfv->Nhydro; i++) levelneib[i] = 0;
     for (i=0; i<Ntot; i++) {
       for (k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) rdmdtBuffer[i][k] = (FLOAT) 0.0;
+      for (k=0; k<ndim+2; k++)   dQBuffer[i][k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++)  rdmdtBuffer[i][k] = (FLOAT) 0.0;
     }
 
 
@@ -843,14 +845,17 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       for (int jj=0; jj<Nneib; jj++) {
         i = neibpart[jj].iorig;
         if (!neibpart[jj].flags.is_mirror()) {
-          for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQ[k];
+	      if (neibpart[jj].active)
+	        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
+          for (k=0; k<ndim+2; k++) dQBuffer[i][k] += neibpart[jj].dQ[k];
           for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
         }
       }
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += activepart[j].dQ[k];
+        for (k=0; k<ndim+2; k++)   dQBuffer[i][k] += activepart[j].dQ[k];
+        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += activepart[j].dQdt[k];
         for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += activepart[j].rdmdt[k];
       }
 
@@ -864,13 +869,16 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
+	    if (mfvdata[i].active)
+	      for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
+        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
       }
     }
 
     // Free-up local memory for OpenMP thread
     delete[] rdmdtBuffer;
+    delete[] dQBuffer;
     delete[] fluxBuffer;
     delete[] invdrmag;
     delete[] drmag;

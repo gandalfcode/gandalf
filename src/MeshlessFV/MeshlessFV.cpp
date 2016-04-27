@@ -271,15 +271,24 @@ void MeshlessFV<ndim>::IntegrateParticles
 
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
-  if (!staticParticles) {
-    for (i=0; i<Nhydro; i++) {
-      MeshlessFVParticle<ndim> &part = partdata[i];
-      dn = n - part.nlast;
-      part.m = part.Qcons[FV<ndim>::irho] + part.dQ[FV<ndim>::irho];
+  for (i=0; i<Nhydro; i++) {
+	MeshlessFVParticle<ndim> &part = partdata[i];
+	dn = n - part.nlast;
 
+	// Predict the conserved quantities
+	for (k=0; k<nvar; k++)
+	  part.Qcons[k] = part.Qcons0[k] + part.dQdt[k] * dn * timestep ;
+	for (k=0; k<ndim; k++)
+	  part.Qcons[k] += part.m * part.a0[k] * dn * timestep ;
+
+    // Compute primitive values and update all main array quantities
+	ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
+	UpdateArrayVariables(part);
+
+	if (!staticParticles) {
       //-------------------------------------------------------------------------------------------
       for (k=0; k<ndim; k++) {
-        part.r[k] = part.r0[k] + part.v0[k]*timestep*(FLOAT) dn;
+        part.r[k] = part.r0[k] + part.v[k]*timestep*(FLOAT) dn;
 
         // Check if particle has crossed LHS boundary
         //-----------------------------------------------------------------------------------------
@@ -374,8 +383,9 @@ void MeshlessFV<ndim>::EndTimestep
 
       // Integrate all conserved quantities to end of the step (adding sums from neighbours)
       for (int var=0; var<nvar; var++) {
-        part.Qcons[var] += part.dQ[var];
-        part.dQ[var]     = (FLOAT) 0.0;
+        part.Qcons[var] = part.Qcons0[var] + part.dQ[var];
+        part.dQ[var]    = (FLOAT) 0.0;
+        part.dQdt[var]  = (FLOAT) 0.0;
       }
 
       // Further update conserved quantities if computing gravitational contributions
@@ -387,9 +397,6 @@ void MeshlessFV<ndim>::EndTimestep
            part.Qcons[irho]*DotProduct(part.v, part.a, ndim) +
            DotProduct(part.a0, part.rdmdt0, ndim) +
            DotProduct(part.a, part.rdmdt, ndim));
-        //part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-        //  (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-        //   part.Qcons[irho]*DotProduct(part.v, part.a, ndim));
       }
 
       // Compute primtive values and update all main array quantities
@@ -444,13 +451,15 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
 {
-  part.m = part.Qcons[irho] + part.dQ[irho];
+  // TODO: Check all callers.
+  //   This now uses the currently predicted value of Qcons, no need to add dQ.
+  part.m = part.Qcons[irho] ;
   part.rho = part.m/part.volume;
-  for (int k=0; k<ndim; k++) part.v[k] = (part.Qcons[k] + part.dQ[k])/part.m;
+  for (int k=0; k<ndim; k++) part.v[k] = part.Qcons[k]/part.m;
 
   FLOAT ekin = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.u = (part.Qcons[ietot] + part.dQ[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
+  part.u = (part.Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
   part.u = eos->SpecificInternalEnergy(part);
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
