@@ -282,8 +282,8 @@ void MeshlessFV<ndim>::IntegrateParticles
 	  part.Qcons[k] += part.m * part.a0[k] * dn * timestep ;
 
     // Compute primitive values and update all main array quantities
-	ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
-	UpdateArrayVariables(part);
+	this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
+	this->UpdateArrayVariables(part);
 
 	if (!staticParticles) {
       //-------------------------------------------------------------------------------------------
