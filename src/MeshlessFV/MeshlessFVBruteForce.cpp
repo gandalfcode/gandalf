@@ -237,19 +237,19 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
 
           int Nsave = Nneib + NumGhosts ;
           while (Nneib < Nsave) {
-          for (k=0; k < ndim; k++) draux[k] = neibdata[Nneib].r[k] - rp[k] ;
-        	drsqd = DotProduct(draux, draux, ndim);
-        	if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && drsqd != 0) {
-        	  neiblist[Nneib] = Nneib ;
-        	  drmag[Nneib] = sqrt(drsqd) + small_number;
-        	  invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
-        	  for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
-        	  Nneib++;
-        	}
-        	else {
-        	  neibdata[Nneib] = neibdata[Nsave-1] ;
-        	  Nsave-- ;
-        	}
+	    for (k=0; k < ndim; k++) draux[k] = neibdata[Nneib].r[k] - rp[k] ;
+	    drsqd = DotProduct(draux, draux, ndim);
+	    if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && drsqd != 0) {
+	      neiblist[Nneib] = Nneib ;
+	      drmag[Nneib] = sqrt(drsqd) + small_number;
+	      invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
+	      for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+	      Nneib++;
+	    }
+	    else {
+	      neibdata[Nneib] = neibdata[Nsave-1] ;
+	      Nsave-- ;
+	    }
           }
         }
         //-----------------------------------------------------------------------------------------
@@ -258,12 +258,12 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
         mfv->ComputePsiFactors(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], neibdata);
         mfv->ComputeGradients(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], neibdata);
       }
-    //---------------------------------------------------------------------------------------------
+      //---------------------------------------------------------------------------------------------
     }
 
     // Free all allocated memory
     delete[] neibdata;
-  	delete[] invdrmag;
+    delete[] invdrmag;
     delete[] drmag;
     delete[] dr;
     delete[] neiblist;
@@ -313,6 +313,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     FLOAT *dr;                             // Array of neib. position vectors
     FLOAT *drmag;                          // Array of neib. distances
     FLOAT *invdrmag;                       // Array of neib. inverse distances
+    FLOAT (*dQBuffer)[ndim+2];             // ..
     FLOAT (*fluxBuffer)[ndim+2];           // ..
     FLOAT (*rdmdtBuffer)[ndim];            // ..
     MeshlessFVParticle<ndim> *neibdata;    // ..
@@ -323,6 +324,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     dr          = new FLOAT[ndim*Ntot];
     drmag       = new FLOAT[Ntot];
     invdrmag    = new FLOAT[Ntot];
+    dQBuffer    = new FLOAT[Ntot][ndim+2];
     fluxBuffer  = new FLOAT[Ntot][ndim+2];
     rdmdtBuffer = new FLOAT[Ntot][ndim];
     neibdata    = new MeshlessFVParticle<ndim>[Ntot];
@@ -333,7 +335,8 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     // Copy all data to temp. neighbour array and zero buffers
     for (i=0; i<Ntot; i++) {
       for (k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) rdmdtBuffer[i][k] = (FLOAT) 0.0;
+      for (k=0; k<ndim+2; k++)   dQBuffer[i][k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++)  rdmdtBuffer[i][k] = (FLOAT) 0.0;
     }
 
     //---------------------------------------------------------------------------------------------
@@ -372,7 +375,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
         // or (iv) neighbour is on same level as current particle but has smaller id. value
         // (to only calculate each pair once).
     	if (hydromask[mfvdata[j].ptype] == false || mfvdata[j].flags.is_dead()) continue ;
-		hrangesqdj = mfvdata[j].hrangesqd;
+	hrangesqdj = mfvdata[j].hrangesqd;
 
     	int NumGhosts = GhostFinder.ConstructGhostsScatterGather(mfvdata[j], neibdata + Nneib) ;
 
@@ -381,26 +384,26 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     	  // Only include neighbours which are within either the gather or scatter kernel, and
     	  // are either on a longer timestep or with a larger i.d. (to prevent repeating each face)
     	  if ((!neibdata[Nneib].flags.is_mirror()) &&
-    		   (j == i || mfvdata[i].level < neibdata[Nneib].level ||
-    		   (neibdata[Nneib].iorig < i && neibdata[Nneib].level == mfvdata[i].level))) {
+	      (j == i || mfvdata[i].level < neibdata[Nneib].level ||
+	       (neibdata[Nneib].iorig < i && neibdata[Nneib].level == mfvdata[i].level))) {
     	    neibdata[Nneib] = neibdata[Nsave-1] ;
     	    Nsave-- ;
     	  }
     	  else {
-    		for (k=0; k<ndim; k++) draux[k] = neibdata[Nneib].r[k] - rp[k];
-    		drsqd = DotProduct(draux, draux, ndim);
+	    for (k=0; k<ndim; k++) draux[k] = neibdata[Nneib].r[k] - rp[k];
+	    drsqd = DotProduct(draux, draux, ndim);
 
-    		if (drsqd < hrangesqdi || drsqd < hrangesqdj) {
-    		  neiblist[Nneib] = Nneib;
-    		  drmag[Nneib]    = sqrt(drsqd) + small_number;
-    		  invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
-    		  for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
-    		  Nneib++;
-    		}
-    		else {
-    		  neibdata[Nneib] = neibdata[Nsave-1] ;
-    		  Nsave-- ;
-    		}
+	    if (drsqd < hrangesqdi || drsqd < hrangesqdj) {
+	      neiblist[Nneib] = Nneib;
+	      drmag[Nneib]    = sqrt(drsqd) + small_number;
+	      invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
+	      for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+	      Nneib++;
+	    }
+	    else {
+	      neibdata[Nneib] = neibdata[Nsave-1] ;
+	      Nsave-- ;
+	    }
     	  }
     	}
       }
@@ -414,7 +417,9 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       for (int jj=0; jj<Nneib; jj++) {
         if (!neibdata[jj].flags.is_mirror()) {
           j = neibdata[jj].iorig;
-          for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[jj].dQ[k];
+	  if (neibdata[jj].active)
+	    for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[jj].dQdt[k];
+          for (k=0; k<ndim+2; k++) dQBuffer[j][k] += neibdata[jj].dQ[k];
           for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibdata[jj].rdmdt[k];
         }
       }
@@ -427,8 +432,9 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
-        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
+	for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
+        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k]   += dQBuffer[i][k];
+        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k]  += rdmdtBuffer[i][k];
       }
     }
 
@@ -436,6 +442,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     delete[] neibdata;
     delete[] rdmdtBuffer;
     delete[] fluxBuffer;
+    delete[] dQBuffer;
     delete[] invdrmag;
     delete[] drmag;
     delete[] dr;

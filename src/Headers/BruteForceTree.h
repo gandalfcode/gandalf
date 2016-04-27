@@ -48,7 +48,7 @@ using namespace std;
 template <int ndim>
 struct BruteForceTreeCell : public TreeCellBase<ndim> {
 #ifdef MPI_PARALLEL
- // typedef TreeCommunicationHandler<ndim> HandlerType;
+  typedef TreeCommunicationHandler<ndim> HandlerType;
 #endif
 };
 
