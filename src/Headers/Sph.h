@@ -238,6 +238,9 @@ public:
   void ComputeDirectGravForces(const int, const int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &);
+#if defined MPI_PARALLEL
+  virtual void FinishReturnExport ();
+#endif
 
   kernelclass<ndim> kern;                  ///< SPH kernel
   GradhSphParticle<ndim> *sphdata;         ///< Pointer to particle data

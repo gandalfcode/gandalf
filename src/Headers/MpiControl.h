@@ -112,7 +112,6 @@ class MpiControl
   void SetNeibSearch(NeighbourSearch<ndim>* _neibsearch) {neibsearch = _neibsearch;}
   void CollateDiagnosticsData(Diagnostics<ndim> &);
   void UpdateAllBoundingBoxes(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *);
-  void CommunicatePrunedTrees() {neibsearch->CommunicatePrunedTrees(my_matches,rank);};
   void ComputeTotalStarGasForces(Nbody<ndim> * nbody);
 
   //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *);

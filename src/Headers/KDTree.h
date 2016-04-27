@@ -52,6 +52,12 @@ struct KDTreeCell : public TreeCellBase<ndim> {
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
   int k_divide;                     ///< Dimension along which cell is split
+
+#ifdef MPI_PARALLEL
+  typedef TreeCommunicationHandler<ndim> HandlerType;
+#endif
+
+
 };
 
 
@@ -126,7 +132,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters(TreeCell<ndim> &);
-  int GetMaxCellNumber(const int _level) {return pow(2,_level);};
+  int GetMaxCellNumber(const int _level) {return pow(2,_level+1)-1;};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

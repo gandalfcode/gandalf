@@ -41,6 +41,7 @@
 #include "SmoothingKernel.h"
 #ifdef MPI_PARALLEL
 #include "MpiNode.h"
+template<int ndim> class TreeCommunicationHandler;
 #endif
 using namespace std;
 

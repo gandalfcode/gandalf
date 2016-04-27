@@ -57,6 +57,12 @@ struct OctTreeCell : public TreeCellBase<ndim> {
   int c1;                              ///< Added just to make it compile - do it properly!!!!
   int c2;                              ///< ..
 #endif
+
+#ifdef MPI_PARALLEL
+  typedef TreeCommunicationHandler<ndim> HandlerType;
+#endif
+
+
 };
 
 

@@ -40,6 +40,7 @@
 #include "MpiControl.h"
 #include "MpiTree.h"
 #include "Sinks.h"
+#include "CommunicationHandler.h"
 using namespace std;
 
 
@@ -333,8 +334,6 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   for (int inode=0; inode<Nmpi; inode++) {
     mpinode[inode].hbox = boxes_buffer[inode];
   }
-
-  MPI_Barrier(MPI_COMM_WORLD);
 
   // Do an all_gather to receive the new array
   MPI_Allgather(&(mpinode[rank].rbox), 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
@@ -635,50 +634,158 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
  (Hydrodynamics<ndim>* hydro)              ///< Pointer to hydrodynamics object
 {
-  int running_counter_recv = 0;            // ..
-  int running_counter_send = 0;            // ..
-  vector<char> send_buffer;                // ..
-  vector<int> displs_recv(Nmpi);           // ..
-  vector<int> displs_send(Nmpi);           // ..
+  vector<vector <char> > send_buffer(Nmpi-1);
+  vector<vector <char> > receive_buffer(Nmpi-1);
+  vector<vector <char> > header_receive(Nmpi-1);
 
-  // Find total number of bytes for particles exported to each other MPI node
-  for (int Nproc=0; Nproc<Nmpi; Nproc++) {
+  const int header_size = neibsearch->ExportSize(0, hydro).size();
+
+  // Post the receives for the header
+  MPI_Request req_header[Nmpi-1];
+  int j=0;
+  for (int iproc=0; iproc<Nmpi; iproc++) {
+
+    if (iproc==rank)
+      continue;
+
+    header_receive[j].resize(header_size);
+
+    MPI_Irecv(&header_receive[j][0],header_size,MPI_CHAR,iproc,4,MPI_COMM_WORLD,&req_header[j]);
+    j++;
+
+  }
+
+  // Send the header to each processor
+  j=0;
+  MPI_Request sendreq_header[Nmpi-1];
+  vector<vector<char> > header(Nmpi-1);
+  for (int iproc=0; iproc<Nmpi; iproc++) {
+
+    if (iproc==rank)
+      continue;
+
+    header[j] = neibsearch->ExportSize(iproc, hydro);
+
+    MPI_Isend(&header[j][0],header_size,MPI_CHAR,iproc,4,MPI_COMM_WORLD,&sendreq_header[j]);
+    j++;
+
+  }
+
+  // Check if all the headers have been received
+  int reqheader_completed=0;
+  int reqheader_complnow;
+  int which_completed[Nmpi-1];
+  MPI_Status status_header[Nmpi-1];
+  MPI_Request req[Nmpi-1];
+  MPI_Status status[Nmpi-1];
+  MPI_Testsome(Nmpi-1,req_header,&reqheader_complnow,which_completed,status_header);
+  // If some requests have finished, post the receive
+  if (reqheader_complnow) {
+    for (int i=0; i< reqheader_complnow; i++) {
+      const int j=which_completed[i];
+      int iproc = j;
+      if (j >= rank)
+        iproc +=1;
+
+      int size_receive;
+      copy(&size_receive,&header_receive[j][0]);
+      receive_buffer[j].resize(size_receive);
+      MPI_Irecv(&receive_buffer[j][0],size_receive,MPI_CHAR,iproc,5,MPI_COMM_WORLD,&req[j]);
+
+    }
+  }
+  reqheader_completed = reqheader_complnow;
+
+
+  // Prepare the information to send
+  j=0;
+  MPI_Request send_req[Nmpi-1];
+  for (int iproc=0; iproc<Nmpi; iproc++) {
 
     // No need to send anything to ourselves
-    if (Nproc == rank) continue;
+    if (iproc == rank) continue;
 
-    // Append at the end of send_vector the information we are sending and get how much it is
-    Nbytes_to_proc[Nproc] = neibsearch->GetExportInfo(Nproc, hydro, send_buffer,
-                                                      mpinode[Nproc], rank, Nmpi);
+    // Pack the information to send
+    Nbytes_to_proc[iproc] = neibsearch->GetExportInfo(iproc, hydro, send_buffer[j],
+                                                      mpinode[iproc], rank, Nmpi);
+
+    // Post the send now that we know what to transmit
+    MPI_Isend(&send_buffer[j][0],send_buffer[j].size(),MPI_CHAR,iproc,5,MPI_COMM_WORLD,&send_req[j]);
+
+    // If we still don't know how much data we are receiving from some processor, check if the
+    // transmission has finished in the meanwhile
+    if (reqheader_completed < Nmpi-1) {
+      MPI_Testsome(Nmpi-1,req_header,&reqheader_complnow,which_completed,status_header);
+      // If some request have finished, post the receive
+      if (reqheader_complnow) {
+        for (int i=0; i< reqheader_complnow; i++) {
+          const int j=which_completed[i];
+          int iproc = j;
+          if (j >= rank)
+            iproc +=1;
+
+          int size_receive;
+          copy(&size_receive,&header_receive[j][0]);
+          receive_buffer[j].resize(size_receive);
+          MPI_Irecv(&receive_buffer[j][0],size_receive,MPI_CHAR,iproc,5,MPI_COMM_WORLD,&req[j]);
+
+        }
+        reqheader_completed += reqheader_complnow;
+      }
+    }
+
+
+    j++;
   }
 
-  int Nbytes_to_be_exported = send_buffer.size();
-  assert(std::accumulate(Nbytes_to_proc.begin(),Nbytes_to_proc.end(),0) == Nbytes_to_be_exported);
 
-  // First need to know how many bytes each processor is sending
-  MPI_Alltoall(&Nbytes_to_proc[0], 1, MPI_INT, &Nbytes_from_proc[0], 1, MPI_INT, MPI_COMM_WORLD);
+  // We have posted all the sends - the only thing to do know is finishing posting all the receives,
+  // if that hasn't happened yet
+  while (reqheader_completed < Nmpi-1) {
+    MPI_Waitsome(Nmpi-1,req_header,&reqheader_complnow,which_completed,status_header);
+    // If some request have finished, post the receive
+    if (reqheader_complnow) {
+      for (int i=0; i< reqheader_complnow; i++) {
+        const int j=which_completed[i];
+        int iproc = j;
+        if (j >= rank)
+          iproc +=1;
 
-  // Can now compute the displacements
-  for (int inode=1; inode<Nmpi; inode++) {
-    running_counter_recv += Nbytes_from_proc[inode-1];
-    running_counter_send += Nbytes_to_proc[inode-1];
-    displs_recv[inode] = running_counter_recv;
-    displs_send[inode] = running_counter_send;
+        int size_receive;
+        copy(&size_receive,&header_receive[j][0]);
+        receive_buffer[j].resize(size_receive);
+        MPI_Irecv(&receive_buffer[j][0],size_receive,MPI_CHAR,iproc,5,MPI_COMM_WORLD,&req[j]);
+
+      }
+      reqheader_completed += reqheader_complnow;
+    }
   }
 
-  // Compute total number of particles to be received (including the ones from ourselves)
-  int Nbytes_received_exported = std::accumulate(Nbytes_from_proc.begin(),
-                                                 Nbytes_from_proc.end(), 0);
+  // Now we can only wait to receive all the information
+  int req_completed=0;
+  bool first_unpack=true;
+  while (req_completed<Nmpi-1) {
+    int completed_now;
+    MPI_Waitsome(Nmpi-1,req,&completed_now,which_completed,status);
 
-  // Allocate memory to receive all the particles
-  vector<char > receive_buffer(Nbytes_received_exported);
+    // Unpack the received information into the main arrays
+    for (int i=0; i<completed_now; i++) {
+        const int j = which_completed[i];
+        int iproc = j;
+        if (j >= rank)
+            iproc +=1;
+        neibsearch->UnpackExported(receive_buffer[j], Nbytes_from_proc, hydro, iproc,
+            header_receive, rank, first_unpack);
+        first_unpack=false;
+    }
 
-  // Perform the actual communication
-  MPI_Alltoallv(&send_buffer[0], &Nbytes_to_proc[0], &displs_send[0], MPI_CHAR, &receive_buffer[0],
-                &Nbytes_from_proc[0], &displs_recv[0], MPI_CHAR, MPI_COMM_WORLD);
+    req_completed += completed_now;
 
-  // Unpack the received arrays
-  neibsearch->UnpackExported(receive_buffer, Nbytes_from_proc, hydro);
+  }
+
+  // Sends are probably finished by now, but we do need to wait so that they can be deallocated
+  MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
+
 
   return;
 }
@@ -693,30 +800,83 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
  (Hydrodynamics<ndim>* hydro)              ///< Pointer to main hydrodynamics object
 {
-  vector<char> send_buffer;                // ..
-  vector<int> recv_displs(Nmpi);           // ..
-  vector<int> send_displs(Nmpi);           // ..
+  vector<vector<char> > send_buffer(Nmpi-1);                // ..
+  vector<vector<char> > receive_buffer(Nmpi-1);
 
-  // Get the array with the acceleration for every other processor.
-  // Quite confusingly, note that the role of the two arays with the number of bytes from/to
+
+  // Post all the receives (for performance)
+  MPI_Request req[Nmpi-1];
+  MPI_Status status[Nmpi-1];
+  int j=0;
+  for (int i=0; i<Nmpi; i++) {
+
+	  if (i==rank)
+		  continue;
+
+	  typename ParticleType<ndim>::HandlerType handler;
+	  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+	  // We know how much data we are going to receive
+	  const int size_receive = neibsearch->ExportInfoSize(i);
+	  receive_buffer[j].resize(size_receive);
+
+	  MPI_Irecv(&receive_buffer[j][0],size_receive,MPI_CHAR,i,5,MPI_COMM_WORLD,&req[j]);
+
+	  j++;
+  }
+
+
+  // Get the accelerations to send to the other processors
+  // Quite confusingly, note that the role of the two arrays with the number of bytes from/to
   // each processor is now reversed (from is to send and to is to receive)
-  neibsearch->GetBackExportInfo(send_buffer, Nbytes_from_proc, Nbytes_to_proc, hydro, rank);
-  compute_displs(send_displs, Nbytes_from_proc);
+  MPI_Request send_req[Nmpi-1];
+  j=0;
+  for (int i=0; i<Nmpi; i++) {
 
-  // Allocate receive buffer
-  const int Nbytes_to_receive = std::accumulate(Nbytes_to_proc.begin(),
-                                                Nbytes_to_proc.end(), 0);
-  vector<char> receive_buffer(Nbytes_to_receive);
+	  if (i==rank)
+		  continue;
 
-  // Prepare receive counts and displacements
-  compute_displs(recv_displs, Nbytes_to_proc);
+	  // Prepare the data to send to each processor
+	  neibsearch->GetBackExportInfo(send_buffer[j], Nbytes_from_proc, Nbytes_to_proc, hydro, rank, i);
 
-  // Do the actual communication
-  MPI_Alltoallv(&send_buffer[0], &Nbytes_from_proc[0], &send_displs[0], MPI_CHAR,
-                &receive_buffer[0], &Nbytes_to_proc[0], &recv_displs[0], MPI_CHAR, MPI_COMM_WORLD);
+	  // Post the send immediately now that we know which data to send
+	  MPI_Isend(&send_buffer[j][0],send_buffer[j].size(),MPI_CHAR,i,5,MPI_COMM_WORLD,&send_req[j]);
 
-  // Unpack the received information to update accelerations
-  neibsearch->UnpackReturnedExportInfo(receive_buffer, recv_displs, hydro, rank);
+	  j++;
+
+  }
+  //Now that we have extracted all the needed information reset the counters
+  neibsearch->ResetCountersExportInfo(hydro);
+
+
+  // Now wait for all the communication to be finished
+
+  int ncompleted=0;
+  int which_finished[Nmpi-1];
+  int niter = 0;
+  while (ncompleted < Nmpi-1) {
+	  int completed_now;
+	  MPI_Waitsome(Nmpi-1,req,&completed_now,which_finished,status);
+
+	  // Unpack the received information to update accelerations
+	  for (int i=0; i<completed_now; i++) {
+		  j = which_finished[i];
+		  int iproc = j;
+		  if (j >= rank)
+			  iproc +=1;
+		  neibsearch->UnpackReturnedExportInfo(receive_buffer[j], hydro, rank, iproc);
+	  }
+
+	  ncompleted += completed_now;
+
+	  niter++;
+
+  }
+  hydro->FinishReturnExport();
+
+
+  // Vector with sends gets deallocated when the function returns, so need to be sure that the sending request have completed
+  // Probably not a big problem - if the receives have finished, very likely also the sends have
+  MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
 
   return;
 }
