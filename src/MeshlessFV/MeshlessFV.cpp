@@ -279,7 +279,7 @@ void MeshlessFV<ndim>::IntegrateParticles
 	for (k=0; k<nvar; k++)
 	  part.Qcons[k] = part.Qcons0[k] + part.dQdt[k] * dn * timestep ;
 	for (k=0; k<ndim; k++)
-	  part.Qcons[k] += part.m * part.a0[k] * dn * timestep ;
+	  part.Qcons[k] += part.Qcons0[irho] * part.a0[k] * dn * timestep ;
 
     // Compute primitive values and update all main array quantities
 	this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
