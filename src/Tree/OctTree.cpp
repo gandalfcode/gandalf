@@ -49,9 +49,10 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                              FLOAT kernrangeaux, FLOAT macerroraux,
                                              string gravity_mac_aux, string multipole_aux,
-                                             const DomainBox<ndim>& domain) :
+                                             const DomainBox<ndim>& domain,
+                                    		 const ParticleTypeRegister& reg) :
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                   macerroraux, gravity_mac_aux, multipole_aux, domain)
+                                   macerroraux, gravity_mac_aux, multipole_aux, domain, reg)
 {
   allocated_tree = false;
   ifirst         = -1;
@@ -453,7 +454,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         cell.ifirst = -1;
         cell.N      = 0;
         while (i != -1) {
-          if (partdata[i].itype != dead) {
+          if (!partdata[i].flags.is_dead()) {
             if (iaux == -1) cell.ifirst = i;
             else inext[iaux] = i;
             iaux = i;
@@ -467,13 +468,15 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         // Loop over all particles in cell summing their contributions
         i = cell.ifirst;
         while (i != -1) {
-          if (partdata[i].itype != dead) {
+          if (!partdata[i].flags.is_dead()) {
             cell.N++;
             if (partdata[i].active) cell.Nactive++;
             cell.hmax = max(cell.hmax, partdata[i].h);
-            cell.m += partdata[i].m;
-            for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-            for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
+            if (gravmask[partdata[i].ptype]) {
+              cell.m += partdata[i].m;
+              for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
+              for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
+            }
             for (k=0; k<ndim; k++) {
               if (partdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = partdata[i].r[k];
               if (partdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = partdata[i].r[k];
@@ -502,7 +505,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           i = cell.ifirst;
 
           while (i != -1) {
-            if (partdata[i].itype != dead) {
+            if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
               mi = partdata[i].m;
               for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
               drsqd = DotProduct(dr,dr,ndim);

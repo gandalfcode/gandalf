@@ -1588,7 +1588,7 @@ void Ic<ndim>::TurbulentCore(void)
     part.m = mp;
     part.h = hydro->h_fac*powf(mp/rho,invndim);
     part.u = temp0/gammaone/mu_bar;
-    part.itype = gas;
+    part.ptype = gas_type;
   }
 
   sim->initial_h_provided = true;

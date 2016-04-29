@@ -48,7 +48,7 @@ class SlopeLimiter
  public:
 
   SlopeLimiter() {};
-  ~SlopeLimiter() {};
+  virtual ~SlopeLimiter() {};
 
   virtual void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
                                     FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2]) = 0;
@@ -244,7 +244,6 @@ class Balsara2004Limiter : public SlopeLimiter<ndim,ParticleType>
 };
 
 
-
 //=================================================================================================
 //  Class GizmoLimiter
 /// \brief   ...
@@ -324,6 +323,235 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
       FLOAT drsqd = DotProduct(draux, draux, ndim);
       dW[var] = phimid - parti.Wprim[var];
       for (int k=0; k<ndim; k++) gradW[var][k] = dW[var]*draux[k]/drsqd;
+
+    }
+    //---------------------------------------------------------------------------------------------
+  }
+
+};
+
+
+
+
+//=================================================================================================
+//  Class GizmoLimiter
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    23/03/2015
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class GizmoLimiter3 : public SlopeLimiter<ndim,ParticleType>
+{
+ public:
+
+  GizmoLimiter3() {};
+  ~GizmoLimiter3() {};
+
+  //===============================================================================================
+  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
+  {
+    int var;
+    FLOAT alpha = (FLOAT) 0.0;
+    FLOAT dr[ndim];
+    FLOAT phiminus;
+    FLOAT phiplus;
+    FLOAT phimid;
+    const FLOAT beta = (FLOAT) 2.0;
+    const FLOAT psi1 = (FLOAT) 0.5;
+    const FLOAT psi2 = (FLOAT) 0.375;  //0.25;
+    FLOAT gradPerp[ndim];
+    FLOAT dr_unit[ndim];
+
+    const FLOAT alim = 0.25;
+    const FLOAT stol = 0.0;
+
+
+    //---------------------------------------------------------------------------------------------
+    for (var=0; var<ndim+2; var++) {
+
+      for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];
+      FLOAT drmag = sqrt(DotProduct(dr, dr, ndim));
+      for (int k=0; k<ndim; k++) dr_unit[k] = dr[k]/drmag;
+
+      dW[var] = DotProduct(parti.grad[var], draux, ndim);
+      for (int k=0; k<ndim; k++) gradPerp[k] = parti.grad[var][k] - DotProduct(parti.grad[var], dr_unit, ndim)*dr_unit[k];
+
+
+
+
+      /*FLOAT d_abs = 0.0;
+      d_abs += DotProduct(parti.grad[var], parti.grad[var], ndim);
+
+      if (d_abs > 0.0) {
+        FLOAT cfac = 1.0 / (alim*sqrt(parti.hrangesqd*d_abs));
+        FLOAT fabs_max = fabs(parti.Wmax[var]);
+        FLOAT fabs_min = fabs(parti.Wmin[var]);
+        FLOAT abs_min = min(fabs_max, fabs_min);
+        if (stol > 0.0) {
+
+        }
+        else {
+          cfac *= abs_min;
+        }
+        if (cfac < 1.0) {
+          for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k]*cfac;
+          dW[var] = DotProduct(gradW[var], draux, ndim);
+        }
+        else {
+          for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
+          dW[var] = DotProduct(gradW[var], draux, ndim);
+        }
+      }*/
+
+      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
+                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
+      alpha = max((FLOAT) 0.0, alpha);
+      alpha = 1.0;
+
+      dW[var] = alpha*dW[var];
+      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
+
+
+
+      const FLOAT delta1 = psi1*fabs(parti.Wprim[var] - partj.Wprim[var]);
+      const FLOAT delta2 = psi2*fabs(parti.Wprim[var] - partj.Wprim[var]);
+      const FLOAT phimin = min(parti.Wprim[var], partj.Wprim[var]);
+      const FLOAT phimax = max(parti.Wprim[var], partj.Wprim[var]);
+      const FLOAT phibar = parti.Wprim[var] + (partj.Wprim[var] - parti.Wprim[var])*
+        sqrt(DotProduct(draux, draux, ndim))/drmag;
+      const FLOAT phimid0 = parti.Wprim[var] + dW[var]; //DotProduct(gradW[var], draux, ndim);
+
+      if (sgn(phimin - delta1) == sgn(phimin)) {
+        phiminus = phimin - delta1;
+      }
+      else {
+        phiminus = phimin / ((FLOAT) 1.0 + delta1/fabs(phimin));
+      }
+
+      if (sgn(phimax + delta1) == sgn(phimax)) {
+        phiplus = phimax + delta1;
+      }
+      else {
+        phiplus = phimax / ((FLOAT) 1.0 + delta1/fabs(phimax));
+      }
+
+      if (parti.Wprim[var] < partj.Wprim[var]) {
+        phimid = max(phiminus, min(phibar + delta2, phimid0));
+      }
+      else if (parti.Wprim[var] > partj.Wprim[var]) {
+        phimid = min(phiplus, max(phibar - delta2, phimid0));
+      }
+      else {
+        phimid = parti.Wprim[var];
+      }
+
+      FLOAT drsqd = DotProduct(draux, draux, ndim);
+      dW[var] = phimid - parti.Wprim[var];
+      for (int k=0; k<ndim; k++) gradW[var][k] = gradPerp[k] + dW[var]*draux[k]/drsqd;
+
+    }
+    //---------------------------------------------------------------------------------------------
+  }
+
+};
+
+
+
+
+//=================================================================================================
+//  Class GizmoLimiter
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    23/03/2015
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class Gizmo2Limiter : public SlopeLimiter<ndim,ParticleType>
+{
+ public:
+
+  Gizmo2Limiter() {};
+  ~Gizmo2Limiter() {};
+
+  //===============================================================================================
+  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
+  {
+    int var;
+    FLOAT alpha = (FLOAT) 0.0;
+    FLOAT dr[ndim];
+    FLOAT phiminus;
+    FLOAT phiplus;
+    FLOAT phimid;
+    const FLOAT beta = (FLOAT) 2.0;
+    const FLOAT psi1 = (FLOAT) 0.5;
+    const FLOAT psi2 = (FLOAT) 0.375;  //0.25;
+    FLOAT gradPerp[ndim];
+    FLOAT dr_unit[ndim];
+
+    const FLOAT alim = 0.25;
+    const FLOAT stol = 0.0;
+
+
+    //---------------------------------------------------------------------------------------------
+    for (var=0; var<ndim+2; var++) {
+
+      for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];
+      FLOAT drmag = sqrt(DotProduct(dr, dr, ndim));
+      for (int k=0; k<ndim; k++) dr_unit[k] = dr[k]/drmag;
+
+      dW[var] = DotProduct(parti.grad[var], draux, ndim);
+      for (int k=0; k<ndim; k++) gradPerp[k] = 0.0; //parti.grad[var][k] - DotProduct(parti.grad[var], dr_unit, ndim)*dr_unit[k];
+
+
+
+      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
+                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
+      alpha = max((FLOAT) 0.0, alpha);
+      //alpha = 1.0;
+
+      dW[var] = alpha*dW[var];
+      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
+
+
+
+      const FLOAT delta1 = psi1*fabs(parti.Wprim[var] - partj.Wprim[var]);
+      const FLOAT delta2 = psi2*fabs(parti.Wprim[var] - partj.Wprim[var]);
+      const FLOAT phimin = min(parti.Wprim[var], partj.Wprim[var]);
+      const FLOAT phimax = max(parti.Wprim[var], partj.Wprim[var]);
+      const FLOAT phibar = parti.Wprim[var] + (partj.Wprim[var] - parti.Wprim[var])*
+        sqrt(DotProduct(draux, draux, ndim))/drmag;
+      const FLOAT phimid0 = parti.Wprim[var] + dW[var]; //DotProduct(gradW[var], draux, ndim);
+
+      if (sgn(phimin - delta1) == sgn(phimin)) {
+        phiminus = phimin - delta1;
+      }
+      else {
+        phiminus = phimin / ((FLOAT) 1.0 + delta1/fabs(phimin));
+      }
+
+      if (sgn(phimax + delta1) == sgn(phimax)) {
+        phiplus = phimax + delta1;
+      }
+      else {
+        phiplus = phimax / ((FLOAT) 1.0 + delta1/fabs(phimax));
+      }
+
+      if (parti.Wprim[var] < partj.Wprim[var]) {
+        phimid = max(phiminus, min(phibar + delta2, phimid0));
+      }
+      else if (parti.Wprim[var] > partj.Wprim[var]) {
+        phimid = min(phiplus, max(phibar - delta2, phimid0));
+      }
+      else {
+        phimid = parti.Wprim[var];
+      }
+
+      FLOAT drsqd = DotProduct(draux, draux, ndim);
+      dW[var] = phimid - parti.Wprim[var];
+      for (int k=0; k<ndim; k++) gradW[var][k] = gradPerp[k] + dW[var]*draux[k]/drsqd;
 
     }
     //---------------------------------------------------------------------------------------------

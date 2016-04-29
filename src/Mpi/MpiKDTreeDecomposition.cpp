@@ -507,7 +507,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
   // Remove transferred particles
   for (int i=0; i<all_particles_to_export.size(); i++) {
-    partdata[all_particles_to_export[i]].itype = dead;
+    partdata[all_particles_to_export[i]].flags.set_flag(dead);
   }
   hydro->DeleteDeadParticles();
 

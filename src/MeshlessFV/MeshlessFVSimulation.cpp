@@ -229,6 +229,9 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   else if (limiter == "gizmo") {
     mfv->limiter = new GizmoLimiter<ndim,MeshlessFVParticle>();
   }
+  else if (limiter == "gizmo2") {
+    mfv->limiter = new Gizmo2Limiter<ndim,MeshlessFVParticle>();
+  }
   else if (limiter == "minmod") {
     mfv->limiter = new MinModLimiter<ndim,MeshlessFVParticle>();
   }
@@ -248,13 +251,13 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
     mfvneib = new MeshlessFVKDTree<ndim,MeshlessFVParticle,KDTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
   }
   else if (stringparams["neib_search"] == "octtree") {
     mfvneib = new MeshlessFVOctTree<ndim,MeshlessFVParticle,OctTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing,  mfv->types);
   }
   else {
     string message = "Unrecognised parameter : neib_search = "
@@ -435,6 +438,20 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfv->Nghostmax = mfv->Nhydromax - mfv->Nhydro;
   mfv->Ntot = mfv->Nhydro;
   for (i=0; i<mfv->Nhydro; i++) partdata[i].active = true;
+
+  // Initialise conserved variables
+  for (i=0; i<mfv->Nhydro; i++) {
+    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+    part.Qcons[MeshlessFV<ndim>::irho] = part.m;
+    for (int k=0; k<ndim; k++) part.Qcons[k] = part.m*part.v[k];
+    FLOAT ekin = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
+    part.Qcons[MeshlessFV<ndim>::ietot] = part.u*part.m + (FLOAT) 0.5*part.m*ekin;
+    for (int k=0; k<ndim+2; k++)
+      part.Qcons0[k] = part.Qcons[k] ;
+  }
+
+
 
   // If the smoothing lengths have not been provided beforehand, then
   // calculate the initial values here
@@ -749,7 +766,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 #pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         dt         = mfv->Timestep(part);
         dt_min_aux = min(dt_min_aux, dt);
         dt_hydro   = min(dt_hydro, dt);
@@ -823,7 +840,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.active    = true;
         part.level     = level_max_hydro;
         part.levelneib = level_max_hydro;
@@ -836,7 +853,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     else {
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         dt              = part.dt;
         level           = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
         level           = max(level, 0);
@@ -881,7 +898,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 #pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.active = false;
 
         if (part.nlast == n) {
@@ -993,7 +1010,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   /*#pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
         SphParticle<ndim>& part = mfv->GetSphParticlePointer(i);
-        if (part.itype == dead || part.nlast != n) continue;
+        if (part.flags.is_dead() || part.nlast != n) continue;
         if (part.sinkid != -1) {
           if (sinks.sink[part.sinkid].star->level - part.level > level_diff_max) {
             part.level = sinks.sink[part.sinkid].star->level - level_diff_max;
@@ -1019,7 +1036,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         if (part.nlast == n) part.level = level_max_hydro;
       }
     }
@@ -1034,7 +1051,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       n *= nfactor;
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.nstep *= nfactor;
         part.nlast *= nfactor;
       }
@@ -1049,7 +1066,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       n /= nfactor;
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         part.nlast /= nfactor;
         part.nstep /= nfactor;
       }
@@ -1069,7 +1086,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     // Update values of nstep for both hydro and star particles
     for (i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-      if (part.itype == dead) continue;
+      if (part.flags.is_dead()) continue;
       if (part.nlast == n) part.nstep = pow(2,level_step - part.level);
     }
     for (i=0; i<nbody->Nnbody; i++) {
@@ -1092,7 +1109,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   assert(n <= nresync);
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
     assert(part.level <= level_max);
     assert(part.nlast <= n);
     assert(part.tlast <= t);
@@ -1185,8 +1202,11 @@ void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
 
   for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
-    if (part.itype == dead) continue;
-    for (int var=0; var<ndim+2; var++) part.Qcons[var] += part.dQ[var];
+    if (part.flags.is_dead()) continue;
+    // TODO: Check this.
+    //   Qcons is now interpretted as the predicted value of Q at the current time, surely this
+    //   can be used instead without updating?
+    for (int var=0; var<ndim+2; var++) part.Qcons[var] = part.Qcons0[var] + part.dQ[var];
     mfv->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
     mfv->UpdateArrayVariables(part);
   }

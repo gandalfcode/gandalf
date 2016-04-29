@@ -58,6 +58,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   self_gravity(self_gravity_aux),
   gas_eos(_gas_eos),
   h_fac(h_fac_aux),
+  types(params),
   kerntab(TabulatedKernel<ndim>(KernelName))
 {
   // Local references to parameter variables for brevity
@@ -76,44 +77,6 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   Nmpighost          = 0;
   NPeriodicGhost     = 0;
   create_sinks       = intparams["create_sinks"];
-
-  for (int itype = 0; itype < Ntypes; ++itype) types[itype] = ParticleTypeInfo();
-
-
-  // Set flags for gas particle type
-  //-----------------------------------------------------------------------------------------------
-  types[gas_type].hydro_forces        = true;
-  types[gas_type].self_gravity        = true;
-  types[gas_type].drag_forces         = true;
-  types[gas_type].hmask[gas_type]     = true;
-  types[gas_type].hmask[cdm_type]     = true;
-  types[gas_type].hydromask[gas_type] = true;
-  types[gas_type].gravmask[gas_type]  = true;
-  types[gas_type].gravmask[cdm_type]  = true;
-  types[gas_type].gravmask[dust_type] = true;
-  types[gas_type].dragmask[dust_type] = true;
-
-
-  // Set flags for cdm particle type
-  //-----------------------------------------------------------------------------------------------
-  types[cdm_type].self_gravity        = true;
-  types[cdm_type].hmask[gas_type]     = true;
-  types[cdm_type].hmask[cdm_type]     = true;
-  types[cdm_type].gravmask[gas_type]  = true;
-  types[cdm_type].gravmask[cdm_type]  = true;
-  types[cdm_type].gravmask[dust_type] = true;
-
-
-  // Set flags for dust particle type
-  //-----------------------------------------------------------------------------------------------
-  types[dust_type].self_gravity        = true;
-  types[dust_type].drag_forces         = true;
-  types[dust_type].hmask[dust_type]    = true;
-  types[dust_type].gravmask[gas_type]  = true;
-  types[dust_type].gravmask[cdm_type]  = true;
-  types[dust_type].gravmask[dust_type] = true;
-  types[dust_type].dragmask[gas_type]  = true;
-
 
   // Select and construct equation of state object from given parameters
   //-----------------------------------------------------------------------------------------------
@@ -204,20 +167,20 @@ void Hydrodynamics<ndim>::CheckXBoundaryGhostParticle
   if (part.r[0] + min((FLOAT) 0.0, part.v[0]*tghost) <
       simbox.boxmin[0] + ghost_range*kernrange*part.h) {
     if (simbox.boundary_lhs[0] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, 0, x_lhs_periodic, part.r[0] + simbox.boxsize[0], part.v[0]);
+      CreateBoundaryGhostParticle(i, 0, x_periodic_lhs, part.r[0] + simbox.boxsize[0], part.v[0]);
     }
     if (simbox.boundary_lhs[0] == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i, 0, x_lhs_mirror,
+      CreateBoundaryGhostParticle(i, 0, x_mirror_lhs,
                                   (FLOAT) 2.0*simbox.boxmin[0] - part.r[0], -part.v[0]);
     }
   }
   if (part.r[0] + max((FLOAT) 0.0, part.v[0]*tghost) >
       simbox.boxmax[0] - ghost_range*kernrange*part.h) {
     if (simbox.boundary_rhs[0] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, 0, x_rhs_periodic, part.r[0] - simbox.boxsize[0], part.v[0]);
+      CreateBoundaryGhostParticle(i, 0, x_periodic_rhs, part.r[0] - simbox.boxsize[0], part.v[0]);
     }
     if (simbox.boundary_rhs[0] == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i, 0, x_rhs_mirror,
+      CreateBoundaryGhostParticle(i, 0, x_mirror_rhs,
                                   (FLOAT) 2.0*simbox.boxmax[0] - part.r[0], -part.v[0]);
     }
   }
@@ -244,20 +207,20 @@ void Hydrodynamics<ndim>::CheckYBoundaryGhostParticle
     if (part.r[1] + min((FLOAT) 0.0, part.v[1]*tghost) <
         simbox.boxmin[1] + ghost_range*kernrange*part.h) {
       if (simbox.boundary_lhs[1] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 1, y_lhs_periodic, part.r[1] + simbox.boxsize[1], part.v[1]);
+        CreateBoundaryGhostParticle(i, 1, y_periodic_lhs, part.r[1] + simbox.boxsize[1], part.v[1]);
       }
       if (simbox.boundary_lhs[1] == mirrorBoundary) {
-        CreateBoundaryGhostParticle(i, 1, y_lhs_mirror,
+        CreateBoundaryGhostParticle(i, 1, y_mirror_lhs,
                                     (FLOAT) 2.0*simbox.boxmin[1] - part.r[1], -part.v[1]);
       }
     }
     if (part.r[1] + max((FLOAT) 0.0, part.v[1]*tghost) >
         simbox.boxmax[1] - ghost_range*kernrange*part.h) {
       if (simbox.boundary_rhs[1] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 1, y_rhs_periodic, part.r[1] - simbox.boxsize[1], part.v[1]);
+        CreateBoundaryGhostParticle(i, 1, y_periodic_rhs, part.r[1] - simbox.boxsize[1], part.v[1]);
       }
       if (simbox.boundary_rhs[1] == mirrorBoundary) {
-        CreateBoundaryGhostParticle(i, 1, y_rhs_mirror,
+        CreateBoundaryGhostParticle(i, 1, y_mirror_rhs,
                                     (FLOAT) 2.0*simbox.boxmax[1] - part.r[1], -part.v[1]);
       }
     }
@@ -285,20 +248,20 @@ void Hydrodynamics<ndim>::CheckZBoundaryGhostParticle
     if (part.r[2] + min((FLOAT) 0.0, part.v[2]*tghost) <
         simbox.boxmin[2] + ghost_range*kernrange*part.h) {
       if (simbox.boundary_lhs[2] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 2, z_lhs_periodic, part.r[2] + simbox.boxsize[2], part.v[2]);
+        CreateBoundaryGhostParticle(i, 2, z_periodic_lhs, part.r[2] + simbox.boxsize[2], part.v[2]);
       }
       if (simbox.boundary_lhs[2] == mirrorBoundary) {
-        CreateBoundaryGhostParticle(i, 2, z_lhs_mirror,
+        CreateBoundaryGhostParticle(i, 2, z_mirror_lhs,
                                     (FLOAT) 2.0*simbox.boxmin[2] - part.r[2], -part.v[2]);
       }
     }
     if (part.r[2] + max((FLOAT) 0.0, part.v[2]*tghost) >
         simbox.boxmax[2] - ghost_range*kernrange*part.h) {
       if (simbox.boundary_rhs[2] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 2, z_rhs_periodic, part.r[2] - simbox.boxsize[2], part.v[2]);
+        CreateBoundaryGhostParticle(i, 2, z_periodic_rhs, part.r[2] - simbox.boxsize[2], part.v[2]);
       }
       if (simbox.boundary_rhs[2] == mirrorBoundary) {
-        CreateBoundaryGhostParticle(i, 2, z_rhs_mirror,
+        CreateBoundaryGhostParticle(i, 2, z_mirror_rhs,
                                     (FLOAT) 2.0*simbox.boxmax[2] - part.r[2], -part.v[2]);
       }
     }
@@ -339,7 +302,7 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart.r[k]   = rk;
   ghostpart.v[k]   = vk;
   ghostpart.active = false;
-  ghostpart.itype  = ghosttype;
+  ghostpart.flags.set_flag(ghosttype); // Allow ghost to have multiple ghost flags
   ghostpart.iorig  = i;
 
   Nghost = Nghost + 1;

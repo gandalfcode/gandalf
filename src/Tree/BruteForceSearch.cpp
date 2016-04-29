@@ -105,7 +105,7 @@ int BruteForceSearch<ndim,ParticleType>::GetGatherNeighbourList
   for (i=0; i<Nhydro; i++) {
 
     // Skip over dead particles
-    if (partdata[i].itype == dead) continue;
+    if (partdata[i].flags.is_dead()) continue;
 
     for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rp[k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -225,7 +225,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Nhydro];
   for (i=0; i<Nhydro; i++) {
-    if (partdata[i].itype != dead) neiblist[Nneib++] = i;
+    if (!partdata[i].flags.is_dead()) neiblist[Nneib++] = i;
   }
 
   // Compute smoothing lengths of all SPH particles

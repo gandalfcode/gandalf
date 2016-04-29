@@ -174,10 +174,12 @@ class Tree : public TreeBase<ndim>
 
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-       string _gravity_mac, string _multipole, const DomainBox<ndim>& domain) :
+       string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
+       const ParticleTypeRegister& pt_reg) :
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
-    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd), _domain(domain)
+    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd), _domain(domain),
+    gravmask(pt_reg.gravmask)
     {};
 
   virtual ~Tree() { } ;
@@ -284,6 +286,8 @@ class Tree : public TreeBase<ndim>
   int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
   const DomainBox<ndim>& _domain ;     ///< Whole simulation domain
+  Typemask gravmask ;                  ///< Particle types that contribute to gravity
+
 
 #if defined MPI_PARALLEL
   int Nimportedcell;                      ///< No. of imported cells

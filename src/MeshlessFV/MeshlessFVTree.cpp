@@ -50,24 +50,24 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 MeshlessFVKDTree<ndim,ParticleType,TreeCell>::MeshlessFVKDTree
  (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
  MeshlessFVTree<ndim,ParticleType,TreeCell>
   (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 {
   // Set-up main tree object
   tree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                _macerror, _gravity_mac, _multipole, *_box);
+                                                _macerror, _gravity_mac, _multipole, *_box, types);
 
   // Set-up ghost-particle tree object
   ghosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                     _macerror, _gravity_mac, _multipole, *_box);
+                                                     _macerror, _gravity_mac, _multipole, *_box, types);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
   mpighosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                        _macerror, _gravity_mac, _multipole, *_box);
+                                                        _macerror, _gravity_mac, _multipole, *_box, types);
 
   // Set-up multiple pruned trees, one for each MPI process
   KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
@@ -77,11 +77,11 @@ MeshlessFVKDTree<ndim,ParticleType,TreeCell>::MeshlessFVKDTree
 
   for (int i=0; i<Nmpi; i++) {
     prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
   }
   for (int i=0; i<Nmpi; i++) {
     sendprunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
   }
 #endif
 }
@@ -96,24 +96,24 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 MeshlessFVOctTree<ndim,ParticleType,TreeCell>::MeshlessFVOctTree
  (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
  MeshlessFVTree<ndim,ParticleType,TreeCell>
   (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 {
   // Set-up main tree object
   tree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                 _macerror, _gravity_mac, _multipole, *_box);
+                                                 _macerror, _gravity_mac, _multipole, *_box, types);
 
   // Set-up ghost-particle tree object
   ghosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                      _macerror, _gravity_mac, _multipole, *_box);
+                                                      _macerror, _gravity_mac, _multipole, *_box, types);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
   mpighosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                         _macerror, _gravity_mac, _multipole, *_box);
+                                                         _macerror, _gravity_mac, _multipole, *_box, types);
 
   // Set-up multiple pruned trees, one for each MPI process
   //*(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
@@ -125,11 +125,11 @@ MeshlessFVOctTree<ndim,ParticleType,TreeCell>::MeshlessFVOctTree
 
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
   }
   for (int i=0; i<Nmpi; i++) {
     sendprunedtree[i] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box);
+     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
   }
 #endif
 }
@@ -144,7 +144,7 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 MeshlessFVTree<ndim,ParticleType,TreeCell>::MeshlessFVTree
  (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
  MeshlessFVNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
  HydroTree<ndim,ParticleType,TreeCell>
@@ -518,7 +518,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         delete[] neiblist;
         Nneibmax                  = 2*Nneibmax;
         Nneibmaxbuf[ithread]      = Nneibmax;
-        Ngravcellmaxbuf[ithread] *= 2;
         neiblist                  = new int[Nneibmax];
         mfvlist                   = new int[Nneibmax];
         dr                        = new FLOAT[Nneibmax*ndim];
@@ -541,7 +540,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         if (!mfv->types[activepart[j].ptype].hydro_forces) continue;
 
         // Make local copy of hmask for active particle
-        for (k=0; k<Ntypes; k++) hmask[k] = mfv->types[activepart[j].ptype].hmask[k];
+        hmask = mfv->types[activepart[j].ptype].hmask;
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
@@ -562,7 +561,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
           if (hmask[neibpart[jj].ptype] == false) continue ;
 
           // Skip current active particle
-          if (neiblist[jj] == i) continue;
+          if (!neibpart[jj].flags.is_mirror() && neiblist[jj] == i) continue;
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim) + small_number;
@@ -607,7 +606,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 
     }
     //=============================================================================================
-
 
     // Free-up local memory for OpenMP thread
     delete[] invdrmag;
@@ -716,6 +714,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     FLOAT* dr         = new FLOAT[Nneibmax*ndim];  // ..
     FLOAT* drmag      = new FLOAT[Nneibmax];       // ..
     FLOAT* invdrmag   = new FLOAT[Nneibmax];       // ..
+    FLOAT (*dQBuffer)[ndim+2]      = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*fluxBuffer)[ndim+2]    = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*rdmdtBuffer)[ndim]     = new FLOAT[Ntot][ndim];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
@@ -724,7 +723,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     for (i=0; i<mfv->Nhydro; i++) levelneib[i] = 0;
     for (i=0; i<Ntot; i++) {
       for (k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) rdmdtBuffer[i][k] = (FLOAT) 0.0;
+      for (k=0; k<ndim+2; k++)   dQBuffer[i][k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++)  rdmdtBuffer[i][k] = (FLOAT) 0.0;
     }
 
 
@@ -761,7 +761,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         delete[] neiblist;
         Nneibmax                  = 2*Nneibmax;
         Nneibmaxbuf[ithread]      = Nneibmax;
-        Ngravcellmaxbuf[ithread] *= 2;
         neiblist                  = new int[Nneibmax];
         mfvlist                   = new int[Nneibmax];
         dr                        = new FLOAT[Nneibmax*ndim];
@@ -774,7 +773,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
           (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
       };
 
-      for (j=0; j<Nneibmax; j++) {
+      for (j=0; j<Nneib; j++) {
         for (k=0; k<ndim+2; k++) neibpart[j].dQ[k]   = (FLOAT) 0.0;
         for (k=0; k<ndim+2; k++) neibpart[j].dQdt[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) neibpart[j].rdmdt[k]  = (FLOAT) 0.0;
@@ -790,7 +789,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         if (mfv->types[activepart[j].ptype].hydro_forces == false) continue;
 
         // Make a local copy of the hydro neighbour mask
-        for (k=0; k<Ntypes; k++) hydromask[k] = mfv->types[activepart[j].ptype].hydromask[k];
+        hydromask = mfv->types[activepart[j].ptype].hydromask;
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
@@ -812,9 +811,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
           // particle, (iv) neighbour is on lower timestep level (i.e. timestep is shorter),
           // or (v) neighbour is on same level as current particle but has larger id. value
           // (to only calculate each pair once).
-          if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].itype == dead ||
-              neiblist[jj] == i || activepart[j].level < neibpart[jj].level ||
-              (neibpart[jj].iorig < i && neibpart[jj].level == activepart[j].level)) continue;
+          if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].flags.is_dead()) continue ;
+          if ((!neibpart[jj].flags.is_mirror()) &&
+              (neiblist[jj] == i || activepart[j].level < neibpart[jj].level ||
+              (neibpart[jj].iorig < i && neibpart[jj].level == activepart[j].level))) continue;
 
           // Compute relative position and distance quantities for pair
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
@@ -844,19 +844,18 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       // Accumulate fluxes for neighbours (only currently works for real and periodic neighbours)
       for (int jj=0; jj<Nneib; jj++) {
         i = neibpart[jj].iorig;
-        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQ[k];
-        for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
+        if (!neibpart[jj].flags.is_mirror()) {
+	      if (neibpart[jj].active)
+	        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
+          for (k=0; k<ndim+2; k++) dQBuffer[i][k] += neibpart[jj].dQ[k];
+          for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
+        }
       }
-      /*for (int jj=0; jj<Nneib; jj++) {
-        j = neiblist[jj];
-        for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibpart[jj].dQ[k];
-        for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibpart[jj].rdmdt[k];
-      }*/
-
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += activepart[j].dQ[k];
+        for (k=0; k<ndim+2; k++)   dQBuffer[i][k] += activepart[j].dQ[k];
+        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += activepart[j].dQdt[k];
         for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += activepart[j].rdmdt[k];
       }
 
@@ -865,23 +864,21 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
 
     // Add all buffers back to main arrays
+    // Could be simply atomic?
 #pragma omp barrier
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
+	    if (mfvdata[i].active)
+	      for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
+        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
-      }
-      for (j=Nhydro; j<Nhydro+mfv->NPeriodicGhost; j++) {
-        i = mfvdata[j].iorig;
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[j][k];
-        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[j][k];
       }
     }
 
-
     // Free-up local memory for OpenMP thread
     delete[] rdmdtBuffer;
+    delete[] dQBuffer;
     delete[] fluxBuffer;
     delete[] invdrmag;
     delete[] drmag;
@@ -925,7 +922,7 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
-  MeshlessFVParticle<ndim> *part_gen,  ///< [inout] Pointer to SPH ptcl array
+  MeshlessFVParticle<ndim> *partdata,  ///< [inout] Pointer to SPH ptcl array
   MeshlessFV<ndim> *mfv,               ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
@@ -933,7 +930,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 {
   int cactive;                         // No. of active cells
   TreeCell<ndim> *celllist;            // List of active tree cells
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  //ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[MeshlessFVTree::UpdateAllGravForces]");
   timing->StartTimingSection("MFV_GRAV_FORCES");
@@ -1062,6 +1059,16 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
            Ndirect, Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
       };
 
+      // Prune the directlist of non-gravitating particles
+      Typemask gravmask;
+      gravmask = mfv->types.gravmask;
+
+      for (j=0, i=0; j<Ndirect; j++)
+    	if (gravmask[neibpart[directlist[j]].ptype]) {
+    	 if (i != j) directlist[i] = directlist[j] ;
+    	 i++ ;
+    	}
+      Ndirect = i ;
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
@@ -1070,9 +1077,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
         // Only calculate gravity for active particle types that have self-gravity activated
         if (mfv->types[activepart[j].ptype].self_gravity){
-
-          Typemask gravmask;
-          for (k=0; k < Ntypes; k++) gravmask[k] = mfv->types[activepart[j].ptype].gravmask[k];
 
           Nhydroaux = 0;
           Ndirectaux = Ndirect;
@@ -1177,7 +1181,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       partdata[i].levelneib = max(partdata[i].levelneib, levelneib[i]);
     }
 
+
     // Free-up local memory for OpenMP thread
+    delete[] gravlist;
     delete[] directlist;
     delete[] mfvauxlist;
     delete[] mfvlist;

@@ -151,17 +151,17 @@ void MeshlessFV<ndim>::DeleteDeadParticles(void)
   // Determine new order of particles in arrays.
   // First all live particles and then all dead particles.
   for (i=0; i<Nhydro; i++) {
-    itype = hydrodata[i].itype;
-    while (itype == dead) {
+    itype = hydrodata[i].flags.get();
+    while (itype & dead) {
       Ndead++;
       ilast--;
       if (i < ilast) {
         hydrodata[i] = hydrodata[ilast];
-        hydrodata[ilast].itype = dead;
+        hydrodata[ilast].flags.set_flag(dead);
         hydrodata[ilast].m = (FLOAT) 0.0;
       }
       else break;
-      itype = hydrodata[i].itype;
+      itype = hydrodata[i].flags.get();
     };
     if (i >= ilast - 1) break;
   }
@@ -174,7 +174,7 @@ void MeshlessFV<ndim>::DeleteDeadParticles(void)
   Ntot -= Ndead;
   for (i=0; i<Nhydro; i++) {
     iorder[i] = i;
-    assert(hydrodata[i].itype != dead);
+    assert(!hydrodata[i].flags.is_dead());
   }
 
   return;
@@ -218,8 +218,9 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 
   FLOAT ekin = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.Qcons[ietot] = part.press*part.volume/(gamma_eos - (FLOAT) 1.0) +
-    (FLOAT) 0.5*part.rho*part.volume*ekin;
+  part.Qcons[ietot] = part.m*part.u + (FLOAT) 0.5*part.m*ekin;
+  //part.Qcons[ietot] = part.press*part.volume/(gamma_eos - (FLOAT) 1.0) +
+  //  (FLOAT) 0.5*part.rho*part.volume*ekin;
 
   assert(part.u > (FLOAT) 0.0);
   assert(part.sound > (FLOAT) 0.0);
@@ -270,15 +271,24 @@ void MeshlessFV<ndim>::IntegrateParticles
 
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
-  if (!staticParticles) {
-    for (i=0; i<Nhydro; i++) {
-      MeshlessFVParticle<ndim> &part = partdata[i];
-      dn = n - part.nlast;
-      part.m = part.Qcons[FV<ndim>::irho] + part.dQ[FV<ndim>::irho];
+  for (i=0; i<Nhydro; i++) {
+	MeshlessFVParticle<ndim> &part = partdata[i];
+	dn = n - part.nlast;
 
+	// Predict the conserved quantities
+	for (k=0; k<nvar; k++)
+	  part.Qcons[k] = part.Qcons0[k] + part.dQdt[k] * dn * timestep ;
+	for (k=0; k<ndim; k++)
+	  part.Qcons[k] += part.Qcons0[irho] * part.a0[k] * dn * timestep ;
+
+    // Compute primitive values and update all main array quantities
+	this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
+	this->UpdateArrayVariables(part);
+
+	if (!staticParticles) {
       //-------------------------------------------------------------------------------------------
       for (k=0; k<ndim; k++) {
-        part.r[k] = part.r0[k] + part.v0[k]*timestep*(FLOAT) dn;
+        part.r[k] = part.r0[k] + part.v[k]*timestep*(FLOAT) dn;
 
         // Check if particle has crossed LHS boundary
         //-----------------------------------------------------------------------------------------
@@ -364,7 +374,7 @@ void MeshlessFV<ndim>::EndTimestep
     int k;                                           // Dimension counter
     int nstep = part.nstep;                          // Particle (integer) step size
 
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
 
 
     // If particle is at the end of its timestep
@@ -373,25 +383,24 @@ void MeshlessFV<ndim>::EndTimestep
 
       // Integrate all conserved quantities to end of the step (adding sums from neighbours)
       for (int var=0; var<nvar; var++) {
-        part.Qcons[var] += part.dQ[var];
-        part.dQ[var]     = (FLOAT) 0.0;
+        part.Qcons[var] = part.Qcons0[var] + part.dQ[var];
+        part.dQ[var]    = (FLOAT) 0.0;
+        part.dQdt[var]  = (FLOAT) 0.0;
       }
 
-      // Further update conserved quantities if computing gravitational contributions
-      if (self_gravity == 1) {
-        for (k=0; k<ndim; k++) part.Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-          (part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
-        part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-          (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-           part.Qcons[irho]*DotProduct(part.v, part.a, ndim) +
-           DotProduct(part.a0, part.rdmdt0, ndim) +
-           DotProduct(part.a, part.rdmdt, ndim));
-        //part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-        //  (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-        //   part.Qcons[irho]*DotProduct(part.v, part.a, ndim));
+      // Further update conserved quantities if computing gravitational/nbody  contributions
+      for (k=0; k<ndim; k++) {
+    	part.Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+    			(part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
+        part.v[k] = part.Qcons[k] / part.Qcons[irho] ;
       }
+      part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+    	(part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
+         part.Qcons[irho]*DotProduct(part.v, part.a, ndim) +
+         DotProduct(part.a0, part.rdmdt0, ndim) +
+         DotProduct(part.a, part.rdmdt, ndim));
 
-      // Compute primtive values and update all main array quantities
+      // Compute primitive values and update all main array quantities
       this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
       this->UpdateArrayVariables(part);
 
@@ -438,18 +447,21 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 
 //=================================================================================================
 //  MeshlessFV::UpdateArrayVariables
-/// Updates all particle quantities based on the primmitive/conserved variables.
+/// Updates all particle quantities based on the primitive/conserved variables.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
 {
-  part.m = part.Qcons[irho] + part.dQ[irho];
+  // TODO: Check all callers.
+  //   This now uses the currently predicted value of Qcons, no need to add dQ.
+  part.m = part.Qcons[irho] ;
   part.rho = part.m/part.volume;
-  for (int k=0; k<ndim; k++) part.v[k] = (part.Qcons[k] + part.dQ[k])/part.m;
+  for (int k=0; k<ndim; k++) part.v[k] = part.Qcons[k]/part.m;
 
   FLOAT ekin = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.u = (part.Qcons[ietot] + part.dQ[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
+  part.u = (part.Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
+  part.u = eos->SpecificInternalEnergy(part);
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
 
@@ -463,7 +475,7 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
 
 //=================================================================================================
 //  MfvMuscl::InitialSmoothingLengthGuess
-/// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess
+/// Perform initial guess of smoothing.  In the absence of more sophisticated techniques, we guess
 /// the smoothing length assuming a uniform density medium with the same volume and total mass.
 //=================================================================================================
 template <int ndim>

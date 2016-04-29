@@ -121,6 +121,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::theta;
   using Tree<ndim,ParticleType,TreeCell>::thetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
+  using Tree<ndim,ParticleType,TreeCell>::gravmask ;
 #ifdef MPI_PARALLEL
   using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
   using Tree<ndim,ParticleType,TreeCell>::Ncelltot;
@@ -129,7 +130,8 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  OctTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&);
+  OctTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
+		  const ParticleTypeRegister&);
   ~OctTree();
 
 

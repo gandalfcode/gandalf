@@ -184,7 +184,7 @@ protected:
   MeshlessFVTree(int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
                  FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
                  string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
-                 SmoothingKernel<ndim> *_kern, CodeTiming *_timing); //:
+                 SmoothingKernel<ndim> *_kern, CodeTiming *_timing, ParticleTypeRegister&); //:
     /*NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     MeshlessFVNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     HydroTree<ndim,ParticleType,TreeCell>(_Nleafmax, _Nmpi, _thetamaxsqd, _kernrange, _macerror,
@@ -230,7 +230,7 @@ class MeshlessFVKDTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   MeshlessFVKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
+                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister&);
 
 };
 
@@ -260,7 +260,7 @@ class MeshlessFVOctTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   MeshlessFVOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
+                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister&);
 
 };
 #endif

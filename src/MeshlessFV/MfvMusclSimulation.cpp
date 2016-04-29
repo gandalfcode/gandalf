@@ -74,6 +74,12 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   }
   mfv->CopyDataToGhosts(simbox, partdata);
 
+  // Calculate all matrices and gradients (and copy updated data to ghost particles)
+  // TODO:
+  //   Compute gradients for all cells neighbouring active ones (use levelneib?).
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox, partdata);
+
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
     mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
@@ -125,6 +131,8 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     }
 
     // Update all array variables now accretion has probably removed some mass
+    // TODO:
+    //  This appears to be undoing the change in mass due to accretion. This needs fixing.
     for (i=0; i<mfv->Nhydro; i++) partdata[i].m = partdata[i].Qcons[FV<ndim>::irho] + partdata[i].dQ[FV<ndim>::irho];
 
     // Re-build/re-stock tree now particles have moved
@@ -134,6 +142,11 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
                             mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
 
   }
+
+  // Calculate all properties (and copy updated data to ghost particles)
+  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox, partdata);
+
 
   // Calculate terms due to self-gravity
   if (mfv->self_gravity == 1) {
@@ -198,30 +211,10 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfv->EndTimestep(n, mfv->Nhydro, t, timestep, partdata);
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
-
-  // Rebuild or update local neighbour and gravity tree
-  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                     mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
-
-  // Search for new ghost particles and create on local processor
-  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    tghost = timestep*(FLOAT) (ntreebuildstep - 1);
-    mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-    mfv->CopyDataToGhosts(simbox, partdata);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
-  }
-
   // Update all active cell counters in the tree
   mfvneib->UpdateActiveParticleCounters(partdata, mfv);
 
-  // Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
 
-  // Calculate all matrices and gradients (and copy updated data to ghost particles)
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
 
   /* Check that we have sensible smoothing lengths */
   if (periodicBoundaries) {

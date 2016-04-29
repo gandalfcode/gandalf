@@ -143,7 +143,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       Particle<ndim>& part = hydro->GetParticlePointer(i);
 
       // Make sure we don't include dead particles
-      if (part.itype == dead) continue;
+      if (part.flags.is_dead()) continue;
 
       // Only consider hydro particles located at a local potential minimum
       if (!part.potmin) continue;
@@ -211,7 +211,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       sink[Nsink].mmax = (FLOAT) 0.0;
       for (i=0; i<hydro->Nhydro; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         for (k=0; k<ndim; k++) dr[k] = sink[Nsink].star->r[k] - part.r[k];
         drsqd = DotProduct(dr,dr,ndim);
         if (drsqd < pow(sink[Nsink].radius,2)) sink[Nsink].mmax += part.m;
@@ -320,7 +320,7 @@ void Sinks<ndim>::CreateNewSinkParticle
   // Remove SPH particle from main arrays
   part.m      = (FLOAT) 0.0;
   part.active = false;
-  part.itype  = dead;
+  part.flags.set_flag(dead);
 
   return;
 }
@@ -422,7 +422,7 @@ void Sinks<ndim>::AccreteMassToSinks
       for (j=0; j<Nlist; j++) {
         i = neiblist[j];
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
         drsqd = DotProduct(dr, dr, ndim);
@@ -481,7 +481,7 @@ void Sinks<ndim>::AccreteMassToSinks
       for (j=0; j<Nlist; j++) {
         i = neiblist[j];
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         if (part.sinkid == s) {
           for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
@@ -505,7 +505,7 @@ void Sinks<ndim>::AccreteMassToSinks
       for (j=0; j<Nneib; j++) {
         i = ilist[j];
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
         drsqd = DotProduct(dr,dr,ndim);
@@ -597,7 +597,7 @@ void Sinks<ndim>::AccreteMassToSinks
         i = ilist[j];
 
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         mtemp = min(part.m, macc_temp);
         dt = part.dt;
@@ -656,7 +656,7 @@ void Sinks<ndim>::AccreteMassToSinks
         i = ilist[j];
 
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         mtemp = min(part.m, macc);
         dt = part.dt;
@@ -666,7 +666,7 @@ void Sinks<ndim>::AccreteMassToSinks
             dt < smooth_accrete_dt*sink[s].trot) {
           mtemp       = part.m;
           part.m      = (FLOAT) 0.0;
-          part.itype  = dead;
+          part.flags.set_flag(dead);
           part.active = false;
         }
         else {
@@ -727,12 +727,12 @@ void Sinks<ndim>::AccreteMassToSinks
   // Quick sanity-check for accreted particles
   for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    if (!(part.itype == dead || part.m > 0.0)) {
-      cout << "Accretion problem? : " << i << "   " << part.itype << "   " << part.m
+    if (!(part.flags.is_dead() || part.m > 0.0)) {
+      cout << "Accretion problem? : " << i << "   " << part.flags.get() << "   " << part.m
            << "   " << part.h << "   " << part.sinkid << "   " << hydro->mmean << endl;
       ExceptionHandler::getIstance().raise("Error : sink accreting dead or zero-mass particles");
     }
-    assert(part.itype == dead || part.m > 0.0);
+    assert(part.flags.is_dead() || part.m > 0.0);
   }
 
   timing->EndTimingSection("SINK_ACCRETE_MASS");

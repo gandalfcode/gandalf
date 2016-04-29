@@ -113,7 +113,7 @@ int MfvCommon<ndim, kernelclass>::ComputeH
   // Some basic sanity-checking in case of invalid input into routine
   assert(Nneib > 0);
   assert(hmax > (FLOAT) 0.0);
-  assert(part.itype != dead);
+  assert(!part.flags.is_dead());
   assert(part.m > (FLOAT) 0.0);
 
 
@@ -189,7 +189,7 @@ int MfvCommon<ndim, kernelclass>::ComputeH
   //===============================================================================================
 
 
-  // Normalise all SPH sums correctly
+  // Compute other terms once number density and smoothing length are known
   part.h         = max(h_fac*powf(part.volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
   part.invh      = (FLOAT) 1.0/part.h;
   part.hfactor   = pow(part.invh, ndim+1);
@@ -211,6 +211,7 @@ int MfvCommon<ndim, kernelclass>::ComputeH
   // Set important thermal variables here
   this->ComputeThermalProperties(part);
   this->UpdatePrimitiveVector(part);
+  //this->UpdateArrayVariables(part);
 
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
@@ -247,7 +248,7 @@ void MfvCommon<ndim, kernelclass>::ComputePsiFactors
   for (k=0; k<ndim; k++) {
     for (int kk=0; kk<ndim; kk++) {
       E[k][kk] = (FLOAT) 0.0;
-      part.B[k][kk] = 0.0;
+      part.B[k][kk] = (FLOAT) 0.0;
     }
   }
 
@@ -271,19 +272,19 @@ void MfvCommon<ndim, kernelclass>::ComputePsiFactors
 
   // Invert the matrix (depending on dimensionality)
   if (ndim == 1) {
-    part.B[0][0] = 1.0/E[0][0];
+    part.B[0][0] = (FLOAT) 1.0/E[0][0];
   }
   else if (ndim == 2) {
-    const FLOAT invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
+    const FLOAT invdet = (FLOAT) 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
     part.B[0][0] = invdet*E[1][1];
-    part.B[0][1] = -1.0*invdet*E[0][1];
-    part.B[1][0] = -1.0*invdet*E[1][0];
+    part.B[0][1] = -(FLOAT) 1.0*invdet*E[0][1];
+    part.B[1][0] = -(FLOAT) 1.0*invdet*E[1][0];
     part.B[1][1] = invdet*E[0][0];
   }
   else if (ndim == 3) {
-    const FLOAT invdet = 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
-                              E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
-                              E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
+    const FLOAT invdet = (FLOAT) 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
+                                      E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
+                                      E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
     part.B[0][0] = (E[1][1]*E[2][2] - E[2][1]*E[1][2])*invdet;
     part.B[0][1] = (E[0][2]*E[2][1] - E[0][1]*E[2][2])*invdet;
     part.B[0][2] = (E[0][1]*E[1][2] - E[0][2]*E[1][1])*invdet;
@@ -382,6 +383,7 @@ void MfvCommon<ndim, kernelclass>::ComputeGradients
   for (k=0; k<ndim; k++) part.vreg[k] *= part.invh*part.sound;  //pow(part.invh, ndim);
 
 
+
   // Find all max and min values for meshless slope limiters
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
@@ -445,57 +447,72 @@ void MfvCommon<ndim, kernelclass>::CopyDataToGhosts
   for (j=0; j<this->NPeriodicGhost; j++) {
     i = this->Nhydro + j;
     iorig = partdata[i].iorig;
-    itype = partdata[i].itype;
+    itype = partdata[i].flags.get();
+    assert(itype != none) ;
 
     partdata[i]        = partdata[iorig];
     partdata[i].iorig  = iorig;
-    partdata[i].itype  = itype;
+    partdata[i].flags  = type_flag(itype);
     partdata[i].active = false;
 
+
     // Modify ghost position based on ghost type
-    if (itype == x_lhs_periodic) {
-      partdata[i].r[0] += simbox.boxsize[0];
+    // Ghosts of ghosts refer only to their previous ghosts not the base cell, so
+    // only update one direction.
+    if (ndim > 2) {
+      if (itype & z_periodic_lhs) {
+        partdata[i].r[2] += simbox.boxsize[2];
+        continue ;
+      }
+      else if (itype & z_periodic_rhs) {
+    	partdata[i].r[2] -= simbox.boxsize[2];
+        continue ;
+      }
+      else if (itype & z_mirror_lhs) {
+    	partdata[i].reflect(2, simbox.boxmin[2]) ;
+        continue ;
+      }
+      else if (itype & z_mirror_rhs) {
+      	partdata[i].reflect(2, simbox.boxmax[2]) ;
+        continue ;
+      }
+
     }
-    else if (itype == x_rhs_periodic) {
-      partdata[i].r[0] -= simbox.boxsize[0];
-    }
-    else if (itype == x_lhs_mirror) {
-      partdata[i].r[0] = 2.0*simbox.boxmin[0] - partdata[i].r[0];
-      partdata[i].v[0] = -partdata[i].v[0];
-    }
-    else if (itype == x_rhs_mirror) {
-      partdata[i].r[0] = 2.0*simbox.boxmax[0] - partdata[i].r[0];
-      partdata[i].v[0] = -partdata[i].v[0];
-    }
-    else if (ndim > 1 && itype == y_lhs_periodic) {
-      partdata[i].r[1] += simbox.boxsize[1];
-    }
-    else if (ndim > 1 && itype == y_rhs_periodic) {
-      partdata[i].r[1] -= simbox.boxsize[1];
-    }
-    else if (ndim > 1 && itype == y_lhs_mirror) {
-      partdata[i].r[1] = 2.0*simbox.boxmin[1] - partdata[i].r[1];
-      partdata[i].v[1] = -partdata[i].v[1];
-    }
-    else if (ndim > 1 && itype == y_rhs_mirror) {
-      partdata[i].r[1] = 2.0*simbox.boxmax[1] - partdata[i].r[1];
-      partdata[i].v[1] = -partdata[i].v[1];
-    }
-    else if (ndim == 3 && itype == z_lhs_periodic) {
-      partdata[i].r[2] += simbox.boxsize[2];
-    }
-    else if (ndim == 3 && itype == z_rhs_periodic) {
-      partdata[i].r[2] -= simbox.boxsize[2];
-    }
-    else if (ndim == 3 && itype == z_lhs_mirror) {
-      partdata[i].r[2] = 2.0*simbox.boxmin[2] - partdata[i].r[2];
-      partdata[i].v[2] = -partdata[i].v[2];
-    }
-    else if (ndim == 3 && itype == z_rhs_mirror) {
-      partdata[i].r[2] = 2.0*simbox.boxmax[2] - partdata[i].r[2];
-      partdata[i].v[2] = -partdata[i].v[2];
+    if (ndim > 1) {
+      if (itype & y_periodic_lhs) {
+    	partdata[i].r[1] += simbox.boxsize[1];
+    	continue ;
+      }
+      else if (itype & y_periodic_rhs) {
+    	partdata[i].r[1] -= simbox.boxsize[1];
+    	continue ;
+      }
+      else if (itype & y_mirror_lhs) {
+      	partdata[i].reflect(1, simbox.boxmin[1]) ;
+    	continue ;
+      }
+      else if (itype & y_mirror_rhs) {
+    	partdata[i].reflect(1, simbox.boxmax[1]) ;
+        continue ;
+      }
     }
 
+    if (itype & x_periodic_lhs) {
+      partdata[i].r[0] += simbox.boxsize[0];
+      continue ;
+    }
+    else if (itype & x_periodic_rhs) {
+      partdata[i].r[0] -= simbox.boxsize[0];
+      continue ;
+    }
+    else if (itype & x_mirror_lhs) {
+      partdata[i].reflect(0, simbox.boxmin[0]) ;
+      continue ;
+    }
+    else if (itype & x_mirror_rhs) {
+      partdata[i].reflect(0, simbox.boxmax[0]) ;
+      continue ;
+    }
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -538,7 +555,7 @@ void MfvCommon<ndim, kernelclass>::ComputeSmoothedGravForces
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
-    assert(neibpart[j].itype != dead);
+    assert(!neibpart[j].flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     drmag = sqrt(DotProduct(dr, dr, ndim) + small_number);
@@ -594,7 +611,7 @@ void MfvCommon<ndim, kernelclass>::ComputeDirectGravForces
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
-    assert(neibdata[j].itype != dead);
+    assert(!neibdata[j].flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - parti.r[k];
     drsqd    = DotProduct(dr,dr,ndim) + small_number;

@@ -242,7 +242,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sphneib = new GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
     typedef GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell> TreeType ;
     TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
@@ -255,7 +255,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sphneib = new GradhSphOctTree<ndim,GradhSphParticle,TreeRayCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
     typedef GradhSphOctTree<ndim,GradhSphParticle,TreeRayCell> TreeType ;
     TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
@@ -268,7 +268,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sphneib = new GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
     typedef GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell> TreeType ;
     TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;

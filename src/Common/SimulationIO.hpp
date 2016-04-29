@@ -896,7 +896,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
       for (int k=0; k < ntype; k++) {
         Particle<ndim>& p = hydro->GetParticlePointer(n) ;
         p.ptype = ptype ;
-        p.itype = gas ;
+        p.flags = none ;
         n++;
       }
     }
@@ -1532,7 +1532,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 	  for (int k=0; k < ntype; k++) {
 		Particle<ndim>& p = hydro->GetParticlePointer(n) ;
 		p.ptype = ptype ;
-		p.itype = gas ;
+		p.flags = none ;
 		n++;
 	  }
     }

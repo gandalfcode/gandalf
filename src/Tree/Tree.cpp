@@ -63,7 +63,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
-    if (i < Ntot && partdata[i].active && partdata[i].itype != dead) activelist[Nactive++] = i;
+    if (i < Ntot && partdata[i].active && !partdata[i].flags.is_dead()) activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
     assert(i < Ntot);
@@ -261,7 +261,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
         while (i != -1) {
           for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rp[k];
           drsqd = DotProduct(dr,dr,ndim);
-          if (drsqd < rsearchsqd && partdata[i].itype != dead) neiblist[Nneib++] = i;
+          if (drsqd < rsearchsqd && !partdata[i].flags.is_dead()) neiblist[Nneib++] = i;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
         };
@@ -378,7 +378,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   assert(Ntemp <= Nneibmax);
   for (j=Nneib; j<Ntemp; j++) {
     i = neiblist[j];
-    if (partdata[i].itype == dead) continue;
+    if (partdata[i].flags.is_dead()) continue;
     for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr, dr, ndim);
     //cout << "Checking neighbour : " << j << "   " << Nneib << "   " << drsqd << "   " << hrangemaxsqd << endl;
@@ -485,7 +485,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
     assert(j < Nneibmax);
     assert(neiblist[j] >= 0);
     i = neiblist[j];
-    if (partdata[i].itype == dead) continue;
+    if (partdata[i].flags.is_dead()) continue;
 
     for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -503,7 +503,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
 
 //=================================================================================================
-//  Tree::ComputeGravityInteractionAndGhostList
+//  Tree::ComputeNeighbourAndGhostList
 /// Computes and returns number of SPH neighbours (Nneib), including lists of ids, from the
 /// tree walk for all active particles inside cell c.  If the interaction list array overflows,
 /// returns with error code (-1) to reallocate more memory.
@@ -536,14 +536,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Declare objects/variables required for creating ghost particles
-  GhostNeighbourFinder<ndim> GhostFinder(_domain) ;
-  GhostFinder.SetTargetCell(cell) ;
+  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
   int MaxGhosts = GhostFinder.MaxNumGhosts() ;
-  /*std::vector<FLOAT> _r_ghost(ndim *pow(3,ndim)) ;
-  std::vector<int>   _sign(ndim *pow(3,ndim)) ;
-  FLOAT *r_ghost = &(_r_ghost[0]) ;
-  int   *sign    = &(_sign[0]) ;*/
-
 
   // Start with root cell and walk through entire tree
   Nneib = 0;
@@ -583,7 +577,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
           else {
             int NumGhosts = GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Ntemp);
 
-            for (int n(0); n < NumGhosts; ++n) {
+            int Nmax = NumGhosts + Ntemp;
+            while (Ntemp < Nmax) {
               neibpart[Ntemp].iorig = i;
               for (k=0; k<ndim; k++) dr[k] = neibpart[Ntemp].r[k] - rc[k];
               drsqd = DotProduct(dr, dr, ndim);
@@ -592,9 +587,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
                 neiblist[Ntemp] = i;
                 Ntemp++ ;
               }
-              else if (NumGhosts > 1) {
-                neibpart[Ntemp] = neibpart[Ntemp+NumGhosts-1];
-                NumGhosts-- ;
+              else if (Nmax > Ntemp) {
+            	if (Nmax > Ntemp + 1)
+                  neibpart[Ntemp] = neibpart[Nmax-1];
+                Nmax-- ;
               }
             } // Loop over Ghosts
 
@@ -792,7 +788,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   for (j=Nhydroneibtemp; j<Nhydroneib; j++) {
     assert(j < Nneibmax);
     i = hydroneiblist[j];
-    if (neibpart[i].itype == dead) continue;
+    if (neibpart[i].flags.is_dead()) continue;
     for (k=0; k<ndim; k++) dr[k] = neibpart[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemaxsqd || drsqd <
@@ -862,8 +858,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   assert(neibpart != NULL);
   assert(partdata != NULL);
 
-  GhostNeighbourFinder<ndim> GhostFinder(_domain) ;
-  GhostFinder.SetTargetCell(cell) ;
+  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
 
   assert(GhostFinder.MaxNumGhosts() == 1) ;
 
@@ -1012,7 +1007,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   // If not an SPH neighbour, then add to direct gravity sum list.
   for (j=Nhydroneibtemp; j<Nhydroneib; j++) {
     i = hydroneiblist[j];
-    if (neibpart[i].itype == dead) continue;
+    if (neibpart[i].flags.is_dead()) continue;
     for (k=0; k<ndim; k++) dr[k] = neibpart[i].r[k] - rc[k];
     drsqd = DotProduct(dr, dr, ndim);
     if (drsqd < hrangemaxsqd ||
@@ -1107,7 +1102,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
         i = celldata[cc].ifirst;
         while (i != -1) {
-          if (partdata[i].itype != dead) neiblist[Nneib++] = i;
+          if (!partdata[i].flags.is_dead()) neiblist[Nneib++] = i;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
         };
@@ -1128,7 +1123,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (celldata[cc].copen == -1 && celldata[cc].N == 1 && Ndirect + Nneib < Ndirectmax) {
-        if (partdata[celldata[cc].ifirst].itype != dead) {
+        if (!partdata[celldata[cc].ifirst].flags.is_dead()) {
           directlist[Ndirect++] = celldata[cc].ifirst;
         }
       }
@@ -1156,7 +1151,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
       else if (celldata[cc].copen == -1 && Ndirect + Nleafmax <= Ndirectmax) {
         i = celldata[cc].ifirst;
         while (i != -1) {
-          if (partdata[i].itype != dead) directlist[Ndirect++] = i;
+          if (!partdata[i].flags.is_dead()) directlist[Ndirect++] = i;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
         };

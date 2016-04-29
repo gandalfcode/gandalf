@@ -27,6 +27,7 @@
 #include <math.h>
 #include "MfvNeighbourSearch.h"
 #include "NeighbourSearch.h"
+#include "GhostNeighbours.hpp"
 #include "Sph.h"
 #include "Parameters.h"
 #include "Particle.h"
@@ -103,7 +104,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
   m        = new FLOAT[Ntot];
   neiblist = new int[Ntot];
   for (i=0; i<Ntot; i++) {
-    if (mfvdata[i].itype == dead) continue;
+    if (mfvdata[i].flags.is_dead()) continue;
     neiblist[Nneib] = i;
     gpot[Nneib] = mfvdata[i].gpot;
     m[Nneib] = mfvdata[i].m;
@@ -123,11 +124,11 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
     for (i=0; i<Nhydro; i++) {
 
       // Skip over inactive particles
-      if (!mfvdata[i].active || mfvdata[i].itype == dead) continue;
+      if (!mfvdata[i].active || mfvdata[i].flags.is_dead()) continue;
 
       for (k=0; k<ndim; k++) rp[k] = mfvdata[i].r[k];
 
-      // Compute distances and the reciprical between the current particle and all neighbours here
+      // Compute distances and the reciprocal between the current particle and all neighbours here
       //-------------------------------------------------------------------------------------------
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
@@ -176,11 +177,12 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
 
   // Compute forces of real and imported particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot)
+#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot,simbox)
   {
     int i,j,k;                           // Particle and dimension counters
     int Nneib;                           // No. of neighbours
     int *neiblist;                       // List of neighbour ids
+    MeshlessFVParticle<ndim>* neibdata;  // List of neigbour particles
     FLOAT draux[ndim];                   // Relative distance vector
     FLOAT drsqd;                         // Distance squared
     FLOAT hrangesqdi;                    // Gather kernel extent (squared)
@@ -195,8 +197,11 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
     dr       = new FLOAT[ndim*Ntot];
     drmag    = new FLOAT[Ntot];
     invdrmag = new FLOAT[Ntot];
+    neibdata = new MeshlessFVParticle<ndim>[Ntot] ;
 
     const int offset_imported = 0; //mfv->Nghost;
+
+    GhostNeighbourFinder<ndim> GhostFinder(simbox) ;
 
     // Compute forces of real and imported particles
     //---------------------------------------------------------------------------------------------
@@ -207,42 +212,58 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
       else i = ipart + offset_imported;
 
       // Skip over inactive particles
-      if (!mfvdata[i].active || mfvdata[i].itype == dead) continue;
+      if (!mfvdata[i].active || mfvdata[i].flags.is_dead()) continue;
 
-      for (k=0; k<ndim; k++) rp[k] = mfvdata[i].r[k];
-      hrangesqdi = mfvdata[i].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[i].h,2);
-      Nneib = 0;
+      bool do_hydro = mfv->types[mfvdata[i].ptype].hydro_forces ;
+      if (do_hydro){
+        Typemask hydromask = mfv->types[mfvdata[i].ptype].hydromask ;
 
+        for (k=0; k<ndim; k++) rp[k] = mfvdata[i].r[k];
+        hrangesqdi = mfvdata[i].hrangesqd;
+        Nneib = 0;
 
-      // Compute distances and the reciprical between the current particle and all neighbours here
-      //-------------------------------------------------------------------------------------------
-      for (j=0; j<mfv->Nhydro + mfv->NPeriodicGhost; j++) {
-        if (mfvdata[j].itype == dead) continue;
-        hrangesqdj = mfvdata[j].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[j].h,2);
-        for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
-        drsqd = DotProduct(draux, draux, ndim);
+        GhostFinder.SetTargetCell(ParticleCellProxy<ndim>(mfvdata[i])) ;
 
-        if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j) {
-          neiblist[Nneib] = j;
-          drmag[Nneib] = sqrt(drsqd);
-          invdrmag[Nneib] = (FLOAT) 1.0/(drmag[Nneib] + small_number);
-          for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
-          Nneib++;
+        // Compute distances and the reciprocal between the current particle and all neighbours here
+        //-------------------------------------------------------------------------------------------
+        for (j=0; j<mfv->Nhydro; j++) {
+    	  // Only include particles of appropriate types in density calculation
+    	  if (hydromask[mfvdata[j].ptype] == false) continue ;
+          if (mfvdata[j].flags.is_dead()) continue;
+
+          hrangesqdj = mfvdata[j].hrangesqd;
+
+          int NumGhosts = GhostFinder.ConstructGhostsScatterGather(mfvdata[j], neibdata + Nneib) ;
+
+          int Nsave = Nneib + NumGhosts ;
+          while (Nneib < Nsave) {
+          for (k=0; k < ndim; k++) draux[k] = neibdata[Nneib].r[k] - rp[k] ;
+        	drsqd = DotProduct(draux, draux, ndim);
+        	if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && drsqd != 0) {
+        	  neiblist[Nneib] = Nneib ;
+        	  drmag[Nneib] = sqrt(drsqd) + small_number;
+        	  invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
+        	  for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+        	  Nneib++;
+        	}
+        	else {
+        	  neibdata[Nneib] = neibdata[Nsave-1] ;
+        	  Nsave-- ;
+        	}
+          }
         }
+        //-----------------------------------------------------------------------------------------
+
+        // Compute all SPH hydro forces
+        mfv->ComputePsiFactors(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], neibdata);
+        mfv->ComputeGradients(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], neibdata);
       }
-      //-------------------------------------------------------------------------------------------
-
-
-      // Compute all SPH hydro forces
-      mfv->ComputePsiFactors(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], mfvdata);
-      mfv->ComputeGradients(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], mfvdata);
-
-    }
     //---------------------------------------------------------------------------------------------
-
+    }
 
     // Free all allocated memory
-    delete[] invdrmag;
+    delete[] neibdata;
+  	delete[] invdrmag;
     delete[] drmag;
     delete[] dr;
     delete[] neiblist;
@@ -279,7 +300,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Compute forces of real and imported particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot,timestep)
+#pragma omp parallel default(none) shared(mfv,mfvdata,Nhydro,Ntot,timestep,simbox)
   {
     int i,j,k;                             // Particle and dimension counters
     int Nneib;                             // No. of neighbours
@@ -306,8 +327,10 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     rdmdtBuffer = new FLOAT[Ntot][ndim];
     neibdata    = new MeshlessFVParticle<ndim>[Ntot];
 
+    GhostNeighbourFinder<ndim> GhostFinder(simbox) ;
+
+
     // Copy all data to temp. neighbour array and zero buffers
-    for (i=0; i<Ntot; i++) neibdata[i] = mfvdata[i];
     for (i=0; i<Ntot; i++) {
       for (k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) rdmdtBuffer[i][k] = (FLOAT) 0.0;
@@ -321,7 +344,15 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       else i = ipart + offset_imported;
 
       // Skip over inactive particles
-      if (!mfvdata[i].active || mfvdata[i].itype == dead) continue;
+      if (!mfvdata[i].active || mfvdata[i].flags.is_dead()) continue;
+
+      // If particle is not a hydro particle (e.g. cdm), then skip to next active particle
+      if (mfv->types[mfvdata[i].ptype].hydro_forces == false) continue;
+
+      // Make a local copy of the hydro neighbour mask
+      Typemask hydromask = mfv->types[mfvdata[i].ptype].hydromask;
+
+      GhostFinder.SetTargetCell(ParticleCellProxy<ndim>(mfvdata[i])) ;
 
       for (k=0; k<ndim; k++) rp[k] = mfvdata[i].r[k];
       hrangesqdi = mfvdata[i].hrangesqd;
@@ -334,32 +365,46 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
       // Compute distances and the reciprical between the current particle and all neighbours here
       //-------------------------------------------------------------------------------------------
-      for (j=0; j<mfv->Nhydro + mfv->NPeriodicGhost; j++) {
+      for (j=0; j<mfv->Nhydro; j++) {
 
         // Skip if (i) neighbour is a dead (e.g. accreted) particle (ii) same i.d. as current
         // active particle, (iii) neighbour is on lower timestep level (i.e. timestep is shorter),
         // or (iv) neighbour is on same level as current particle but has smaller id. value
         // (to only calculate each pair once).
-        if (neibdata[j].itype == dead || j == i ||
-            (mfvdata[i].level < neibdata[j].level) ||
-            (neibdata[j].iorig < i && mfvdata[i].level == neibdata[j].level)) continue;
+    	if (hydromask[mfvdata[j].ptype] == false || mfvdata[j].flags.is_dead()) continue ;
+		hrangesqdj = mfvdata[j].hrangesqd;
 
-        hrangesqdj = mfvdata[j].hrangesqd;
-        for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
-        drsqd = DotProduct(draux, draux, ndim);
+    	int NumGhosts = GhostFinder.ConstructGhostsScatterGather(mfvdata[j], neibdata + Nneib) ;
 
-        // Only include neighbours which are within either the gather or scatter kernel, and
-        // are either on a longer timestep or with a larger i.d. (to prevent repeating each face)
-        if (drsqd < hrangesqdi || drsqd < hrangesqdj) {
-          neiblist[Nneib] = j;
-          drmag[Nneib]    = sqrt(drsqd) + small_number;
-          invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
-          for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
-          Nneib++;
-        }
+        int Nsave = Nneib + NumGhosts ;
+        while (Nneib < Nsave) {
+    	  // Only include neighbours which are within either the gather or scatter kernel, and
+    	  // are either on a longer timestep or with a larger i.d. (to prevent repeating each face)
+    	  if ((!neibdata[Nneib].flags.is_mirror()) &&
+    		   (j == i || mfvdata[i].level < neibdata[Nneib].level ||
+    		   (neibdata[Nneib].iorig < i && neibdata[Nneib].level == mfvdata[i].level))) {
+    	    neibdata[Nneib] = neibdata[Nsave-1] ;
+    	    Nsave-- ;
+    	  }
+    	  else {
+    		for (k=0; k<ndim; k++) draux[k] = neibdata[Nneib].r[k] - rp[k];
+    		drsqd = DotProduct(draux, draux, ndim);
+
+    		if (drsqd < hrangesqdi || drsqd < hrangesqdj) {
+    		  neiblist[Nneib] = Nneib;
+    		  drmag[Nneib]    = sqrt(drsqd) + small_number;
+    		  invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
+    		  for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+    		  Nneib++;
+    		}
+    		else {
+    		  neibdata[Nneib] = neibdata[Nsave-1] ;
+    		  Nsave-- ;
+    		}
+    	  }
+    	}
       }
       //-------------------------------------------------------------------------------------------
-
 
       // Compute all flux terms
       mfv->ComputeGodunovFlux(i, Nneib, timestep, neiblist, drmag,
@@ -367,9 +412,11 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
       // Accumulate fluxes
       for (int jj=0; jj<Nneib; jj++) {
-        j = neiblist[jj];
-        for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[j].dQ[k];
-        for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibdata[j].rdmdt[k];
+        if (!neibdata[jj].flags.is_mirror()) {
+          j = neibdata[jj].iorig;
+          for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[jj].dQ[k];
+          for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibdata[jj].rdmdt[k];
+        }
       }
 
     }
@@ -382,11 +429,6 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       for (i=0; i<Nhydro; i++) {
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
-      }
-      for (j=Nhydro; j<Nhydro+mfv->NPeriodicGhost; j++) {
-        i = mfvdata[j].iorig;
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[j][k];
-        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[j][k];
       }
     }
 
@@ -443,7 +485,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllGravForces
     else i = iparticle + offset_imported;
 
     // Skip over inactive particles
-    if (!partdata[i].active || partdata[i].itype == dead) continue;
+    if (!partdata[i].active || partdata[i].flags.is_dead()) continue;
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
@@ -459,7 +501,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllGravForces
     // forces twice)
     Nneib = 0;
     for (j=0; j<Nhydro; j++) {
-      if (i != j && partdata[j].itype != dead) neiblist[Nneib++] = j;
+      if (i != j && !partdata[j].flags.is_dead()) neiblist[Nneib++] = j;
     }
 
     // Compute forces between SPH neighbours (hydro and gravity)

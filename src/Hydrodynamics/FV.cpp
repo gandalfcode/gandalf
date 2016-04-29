@@ -183,32 +183,51 @@ void FV<ndim>::CalculatePrimitiveTimeDerivative
   FLOAT Wdot[nvar])                    ///< [out] Time derivatives of primitive quantities
 {
   if (ndim == 1) {
-    Wdot[irho]   = Wprim[ivx]*gradW[irho][0] + Wprim[irho]*gradW[ivx][0];
-    Wdot[ivx]    = Wprim[ivx]*gradW[ivx][0] + gradW[ipress][0]/Wprim[irho];
-    Wdot[ipress] = gamma_eos*Wprim[ipress]*gradW[ivx][0] + Wprim[ivx]*gradW[ipress][0];
+    Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[irho]*gradW[ivx][0];
+    Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - gradW[ipress][0]/Wprim[irho];
+    Wdot[ipress] = -gamma_eos*Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
   }
   else if (ndim == 2) {
-    Wdot[irho]   = Wprim[ivx]*gradW[irho][0] + Wprim[ivy]*gradW[irho][1] +
+    Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[ivy]*gradW[irho][1] -
       Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1]);
-    Wdot[ivx]    = Wprim[ivx]*gradW[ivx][0] + Wprim[ivy]*gradW[ivx][1] + gradW[ipress][0]/Wprim[irho];
-    Wdot[ivy]    = Wprim[ivx]*gradW[ivy][0] + Wprim[ivy]*gradW[ivy][1] + gradW[ipress][1]/Wprim[irho];
-    Wdot[ipress] = Wprim[ivx]*gradW[ipress][0] + Wprim[ivy]*gradW[ipress][1] +
+    Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] - gradW[ipress][0]/Wprim[irho];
+    Wdot[ivy]    = -Wprim[ivx]*gradW[ivy][0] - Wprim[ivy]*gradW[ivy][1] - gradW[ipress][1]/Wprim[irho];
+    Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
       gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
   }
   else if (ndim == 3) {
-    Wdot[irho]   = Wprim[ivx]*gradW[irho][0] + Wprim[ivy]*gradW[irho][1] +
-      Wprim[ivz]*gradW[irho][2] + Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
-    Wdot[ivx]    = Wprim[ivx]*gradW[ivx][0] + Wprim[ivy]*gradW[ivx][1] +
-      Wprim[ivz]*gradW[ivx][2] + gradW[ipress][0]/Wprim[irho];
-    Wdot[ivy]    = Wprim[ivx]*gradW[ivy][0] + Wprim[ivy]*gradW[ivy][1] +
-      Wprim[ivz]*gradW[ivy][2] + gradW[ipress][1]/Wprim[irho];
-    Wdot[ivz]    = Wprim[ivx]*gradW[ivz][0] + Wprim[ivy]*gradW[ivz][1] +
-      Wprim[ivz]*gradW[ivz][2] + gradW[ipress][2]/Wprim[irho];
-    Wdot[ipress] = Wprim[ivx]*gradW[ipress][0] + Wprim[ivy]*gradW[ipress][1] +
-      Wprim[ivz]*gradW[ipress][2] +
+    Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[ivy]*gradW[irho][1] -
+      Wprim[ivz]*gradW[irho][2] - Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
+    Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] -
+      Wprim[ivz]*gradW[ivx][2] - gradW[ipress][0]/Wprim[irho];
+    Wdot[ivy]    = -Wprim[ivx]*gradW[ivy][0] - Wprim[ivy]*gradW[ivy][1] -
+      Wprim[ivz]*gradW[ivy][2] - gradW[ipress][1]/Wprim[irho];
+    Wdot[ivz]    = -Wprim[ivx]*gradW[ivz][0] - Wprim[ivy]*gradW[ivz][1] -
+      Wprim[ivz]*gradW[ivz][2] - gradW[ipress][2]/Wprim[irho];
+    Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
+      Wprim[ivz]*gradW[ipress][2] -
       gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
   }
-
+  /*
+  if (ndim == 1) {
+    Wdot[irho]   = - Wprim[irho]*gradW[ivx][0];
+    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
+    Wdot[ipress] = - gamma_eos*Wprim[ipress]*gradW[ivx][0];
+  }
+  else if (ndim == 2) {
+    Wdot[irho]   = - Wprim[irho]*(gradW[ivx][0] - gradW[ivy][1]);
+    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
+    Wdot[ivy]    = - gradW[ipress][1]/Wprim[irho];
+    Wdot[ipress] = - gamma_eos*Wprim[ipress]*(gradW[ivx][0] - gradW[ivy][1]);
+  }
+  else if (ndim == 3) {
+    Wdot[irho]   = - Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
+    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
+    Wdot[ivy]    = - gradW[ipress][1]/Wprim[irho];
+    Wdot[ivz]    = - gradW[ipress][2]/Wprim[irho];
+    Wdot[ipress] = - gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
+  }
+  */
   return;
 }
 

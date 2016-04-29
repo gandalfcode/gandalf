@@ -144,58 +144,76 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
   for (j=0; j<hydro->NPeriodicGhost; j++) {
     i = hydro->Nhydro + j;
     iorig = sphdata[i].iorig;
-    itype = sphdata[i].itype;
+    itype = sphdata[i].flags.get();
 
     sphdata[i] = sphdata[iorig];
     sphdata[i].iorig = iorig;
-    sphdata[i].itype = itype;
+    sphdata[i].flags = type_flag(itype);
     sphdata[i].active = false;
 
     // Modify ghost position based on ghost type
-    if (itype == x_lhs_periodic) {
+    // Ghosts of ghosts refer only to their previous ghosts not the base cell, so
+    // only update one direction.
+    if (ndim > 2) {
+      if (itype & z_periodic_lhs) {
+        sphdata[i].r[2] += simbox.boxsize[2];
+        continue ;
+      }
+      else if (itype & z_periodic_rhs) {
+    	sphdata[i].r[2] -= simbox.boxsize[2];
+        continue ;
+      }
+      else if (itype & z_mirror_lhs) {
+        sphdata[i].r[2] = 2.0*simbox.boxmin[2] - sphdata[i].r[2];
+        sphdata[i].v[2] *= -1 ;
+        continue ;
+      }
+      else if (itype & z_mirror_rhs) {
+    	sphdata[i].r[2] = 2.0*simbox.boxmax[2] - sphdata[i].r[2];
+    	sphdata[i].v[2] *= -1 ;
+        continue ;
+      }
+
+    }
+    if (ndim > 1) {
+      if (itype & y_periodic_lhs) {
+    	sphdata[i].r[1] += simbox.boxsize[1];
+    	continue ;
+      }
+      else if (itype & y_periodic_rhs) {
+    	sphdata[i].r[1] -= simbox.boxsize[1];
+    	continue ;
+      }
+      else if (itype & y_mirror_lhs) {
+    	sphdata[i].r[1] = 2.0*simbox.boxmin[1] - sphdata[i].r[1];
+    	sphdata[i].v[1] *= -1 ;
+    	continue ;
+      }
+      else if (itype & y_mirror_rhs) {
+        sphdata[i].r[1] = 2.0*simbox.boxmax[1] - sphdata[i].r[1];
+        sphdata[i].v[1] *= -1 ;
+        continue ;
+      }
+    }
+
+    if (itype & x_periodic_lhs) {
       sphdata[i].r[0] += simbox.boxsize[0];
+      continue ;
     }
-    else if (itype == x_rhs_periodic) {
+    else if (itype & x_periodic_rhs) {
       sphdata[i].r[0] -= simbox.boxsize[0];
+      continue ;
     }
-    else if (itype == x_lhs_mirror) {
+    else if (itype & x_mirror_lhs) {
       sphdata[i].r[0] = 2.0*simbox.boxmin[0] - sphdata[i].r[0];
       sphdata[i].v[0] *= -1 ;
+      continue ;
     }
-    else if (itype == x_rhs_mirror) {
+    else if (itype & x_mirror_rhs) {
       sphdata[i].r[0] = 2.0*simbox.boxmax[0] - sphdata[i].r[0];
       sphdata[i].v[0] *= -1 ;
+      continue ;
     }
-    else if (ndim > 1 && itype == y_lhs_periodic) {
-      sphdata[i].r[1] += simbox.boxsize[1];
-    }
-    else if (ndim > 1 && itype == y_rhs_periodic) {
-      sphdata[i].r[1] -= simbox.boxsize[1];
-    }
-    else if (ndim > 1 && itype == y_lhs_mirror) {
-      sphdata[i].r[1] = 2.0*simbox.boxmin[1] - sphdata[i].r[1];
-      sphdata[i].v[1] *= -1 ;
-    }
-    else if (ndim > 1 && itype == y_rhs_mirror) {
-      sphdata[i].r[1] = 2.0*simbox.boxmax[1] - sphdata[i].r[1];
-      sphdata[i].v[1] *= -1 ;
-
-    }
-    else if (ndim == 3 && itype == z_lhs_periodic) {
-      sphdata[i].r[2] += simbox.boxsize[2];
-    }
-    else if (ndim == 3 && itype == z_rhs_periodic) {
-      sphdata[i].r[2] -= simbox.boxsize[2];
-    }
-    else if (ndim == 3 && itype == z_lhs_mirror) {
-      sphdata[i].r[2] = 2.0*simbox.boxmin[2] - sphdata[i].r[2];
-      sphdata[i].v[2] *= -1 ;
-    }
-    else if (ndim == 3 && itype == z_rhs_mirror) {
-      sphdata[i].r[2] = 2.0*simbox.boxmax[2] - sphdata[i].r[2];
-      sphdata[i].v[2] *= -1 ;
-    }
-
   }
   //-----------------------------------------------------------------------------------------------
 
