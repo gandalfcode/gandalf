@@ -388,18 +388,19 @@ void MeshlessFV<ndim>::EndTimestep
         part.dQdt[var]  = (FLOAT) 0.0;
       }
 
-      // Further update conserved quantities if computing gravitational contributions
-      if (self_gravity == 1) {
-        for (k=0; k<ndim; k++) part.Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-          (part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
-        part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-          (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-           part.Qcons[irho]*DotProduct(part.v, part.a, ndim) +
-           DotProduct(part.a0, part.rdmdt0, ndim) +
-           DotProduct(part.a, part.rdmdt, ndim));
+      // Further update conserved quantities if computing gravitational/nbody  contributions
+      for (k=0; k<ndim; k++) {
+    	part.Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+    			(part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
+        part.v[k] = part.Qcons[k] / part.Qcons[irho] ;
       }
+      part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+    	(part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
+         part.Qcons[irho]*DotProduct(part.v, part.a, ndim) +
+         DotProduct(part.a0, part.rdmdt0, ndim) +
+         DotProduct(part.a, part.rdmdt, ndim));
 
-      // Compute primtive values and update all main array quantities
+      // Compute primitive values and update all main array quantities
       this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
       this->UpdateArrayVariables(part);
 
@@ -446,7 +447,7 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 
 //=================================================================================================
 //  MeshlessFV::UpdateArrayVariables
-/// Updates all particle quantities based on the primmitive/conserved variables.
+/// Updates all particle quantities based on the primitive/conserved variables.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
@@ -474,7 +475,7 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
 
 //=================================================================================================
 //  MfvMuscl::InitialSmoothingLengthGuess
-/// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess
+/// Perform initial guess of smoothing.  In the absence of more sophisticated techniques, we guess
 /// the smoothing length assuming a uniform density medium with the same volume and total mass.
 //=================================================================================================
 template <int ndim>
