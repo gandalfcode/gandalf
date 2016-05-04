@@ -20,7 +20,7 @@
 #==================================================================================================
 
 
-CPP                = mpic++
+CPP                =
 PYTHON             = python
 COMPILER_MODE      = DEBUG
 PRECISION          = DOUBLE

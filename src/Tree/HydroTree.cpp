@@ -2219,10 +2219,13 @@ template class HydroTree<1,GradhSphParticle,TreeRayCell>;
 template class HydroTree<2,GradhSphParticle,TreeRayCell>;
 template class HydroTree<3,GradhSphParticle,TreeRayCell>;
 
-
 template class HydroTree<1,GradhSphParticle,BruteForceTreeCell>;
 template class HydroTree<2,GradhSphParticle,BruteForceTreeCell>;
 template class HydroTree<3,GradhSphParticle,BruteForceTreeCell>;
 template class HydroTree<1,SM2012SphParticle,BruteForceTreeCell>;
 template class HydroTree<2,SM2012SphParticle,BruteForceTreeCell>;
 template class HydroTree<3,SM2012SphParticle,BruteForceTreeCell>;
+template class HydroTree<1,MeshlessFVParticle,BruteForceTreeCell>;
+template class HydroTree<2,MeshlessFVParticle,BruteForceTreeCell>;
+template class HydroTree<3,MeshlessFVParticle,BruteForceTreeCell>;
+

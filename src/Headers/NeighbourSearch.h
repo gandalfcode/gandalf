@@ -420,4 +420,147 @@ protected:
 #endif
 
 };
+
+//=================================================================================================
+// Tree constructor factory templates
+///
+/// These are simple functions to construct the correct tree based upon the given arguments.
+///
+/// A thin proxy struct is used to ensure that the template specialisation can be done cleanly and
+/// correctly since partial template specialisation is needed. The struct template below should be
+/// specialized as required.
+//=================================================================================================
+
+//=================================================================================================
+// struct __construct_tree_impl
+// The implementation structs for the tree constructor factory functions.
+//=================================================================================================
+template<int ndim, template<int> class ParticleType, template<int> class TreeCell>
+struct __construct_tree_impl
+{
+	typedef Tree<ndim, ParticleType, TreeCell> return_type ;
+
+	static return_type*  construct(int Nleafmaxaux, FLOAT thetamaxsqdaux,
+								   FLOAT kernrangeaux, FLOAT macerroraux,
+								   string gravity_mac_aux, string multipole_aux,
+								   const DomainBox<ndim>& domain,
+								   const ParticleTypeRegister& reg)
+	{
+	  string message = "Tree cell type for GradhSphTree not recognised." ;
+	  ExceptionHandler::getIstance().raise(message);
+	  return NULL ;
+	}
+};
+
+
+//=================================================================================================
+//  new_tree
+/// Construct a single tree based on the template types.
+/// This function is used to construct at KD, Oct or BruteForce as required from the TreeCell type
+/// DO NOT EVER SPECIALIZE THIS TEMPLATE. BAD THINGS ARE GUARANTEED TO HAPPEN. DON'T BLAME ME.
+///   USE THE __construct_tree_impl STRUCTURE INSTEAD.
+//=================================================================================================
+template<int ndim, template<int> class ParticleType, template<int> class TreeCell>
+Tree<ndim, ParticleType, TreeCell>* new_tree(int Nleafmax, FLOAT thetamaxsqd,
+		   	   	   	   	 	 	 	 	 	 FLOAT kernrange, FLOAT macerror,
+		   	   	   	   	 	 	 	 	 	 string gravity_mac, string multipole,
+		   	   	   	   	 	 	 	 	 	 const DomainBox<ndim>& domain,
+		   	   	   	   	 	 	 	 	 	 const ParticleTypeRegister& reg)
+{
+  return __construct_tree_impl<ndim, ParticleType, TreeCell>::construct
+		  (Nleafmax, thetamaxsqd, kernrange, macerror,
+		  gravity_mac,  multipole,domain, reg) ;
+}
+//=================================================================================================
+//  new_tree_array
+/// Construct an array of pointer to tree based on the template types.
+/// This function is used to construct at KD, Oct or BruteForce as required from the TreeCell type.
+/// DO NOT EVER SPECIALIZE THIS TEMPLATE. BAD THINGS ARE GUARANTEED TO HAPPEN. DON'T BLAME ME.
+///   USE THE __construct_tree_impl STRUCTURE INSTEAD.
+//=================================================================================================
+template<int ndim, template<int> class ParticleType, template<int> class TreeCell>
+Tree<ndim, ParticleType, TreeCell>** new_tree_array(int NumTrees)
+{
+  typename __construct_tree_impl<ndim, ParticleType, TreeCell>::return_type** derived =
+      __construct_tree_impl<ndim, ParticleType, TreeCell>::construct_array(NumTrees) ;
+
+  return reinterpret_cast<Tree<ndim,ParticleType,TreeCell>**>(derived) ;
+}
+
+
+//=================================================================================================
+// struct __construct_tree_impl
+// KDTree specialisation
+//=================================================================================================
+template<int ndim, template<int> class ParticleType>
+struct  __construct_tree_impl<ndim, ParticleType, KDTreeCell> {
+  typedef KDTree<ndim,ParticleType, KDTreeCell> return_type ;
+
+  static return_type*  construct(int Nleafmax, FLOAT thetamaxsqd,
+		                         FLOAT kernrange, FLOAT macerror,
+	 	 	 	 	 	         string gravity_mac, string multipole,
+	 	 	 	 	 	         const DomainBox<ndim>& domain,
+	 	 	 	 	 	         const ParticleTypeRegister& reg)
+  {
+	return new return_type(Nleafmax, thetamaxsqd, kernrange, macerror,
+			 	 	 	   gravity_mac,  multipole,domain, reg) ;
+  }
+} ;
+//=================================================================================================
+// struct __construct_tree_impl
+// OctTree specialisation
+//=================================================================================================
+template<int ndim, template<int> class ParticleType>
+struct  __construct_tree_impl<ndim, ParticleType, OctTreeCell> {
+  typedef OctTree<ndim,ParticleType, OctTreeCell> return_type ;
+
+  static return_type*  construct(int Nleafmax, FLOAT thetamaxsqd,
+		                         FLOAT kernrange, FLOAT macerror,
+	 	 	 	 	 	         string gravity_mac, string multipole,
+	 	 	 	 	 	         const DomainBox<ndim>& domain,
+	 	 	 	 	 	         const ParticleTypeRegister& reg)
+  {
+	return new return_type(Nleafmax, thetamaxsqd, kernrange, macerror,
+			 	 	 	   gravity_mac,  multipole,domain, reg) ;
+  }
+} ;
+//=================================================================================================
+// struct __construct_tree_impl
+// OctTree specialisation with TreeRay Cells
+//=================================================================================================
+template<int ndim, template<int> class ParticleType>
+struct  __construct_tree_impl<ndim, ParticleType, TreeRayCell> {
+  typedef OctTree<ndim,ParticleType, TreeRayCell> return_type ;
+
+  static return_type*  construct(int Nleafmax, FLOAT thetamaxsqd,
+		                         FLOAT kernrange, FLOAT macerror,
+	 	 	 	 	 	         string gravity_mac, string multipole,
+	 	 	 	 	 	         const DomainBox<ndim>& domain,
+	 	 	 	 	 	         const ParticleTypeRegister& reg)
+  {
+	return new return_type(Nleafmax, thetamaxsqd, kernrange, macerror,
+			 	 	 	   gravity_mac,  multipole,domain, reg) ;
+  }
+} ;
+//=================================================================================================
+// struct __construct_tree_impl
+// Brute Force Tree specialisation
+//=================================================================================================
+template<int ndim, template<int> class ParticleType>
+struct  __construct_tree_impl<ndim, ParticleType, BruteForceTreeCell> {
+  typedef BruteForceTree<ndim,ParticleType, BruteForceTreeCell> return_type ;
+
+  static return_type*  construct(int Nleafmax, FLOAT thetamaxsqd,
+		                         FLOAT kernrange, FLOAT macerror,
+	 	 	 	 	 	         string gravity_mac, string multipole,
+	 	 	 	 	 	         const DomainBox<ndim>& domain,
+	 	 	 	 	 	         const ParticleTypeRegister& reg)
+  {
+	return new return_type(Nleafmax, thetamaxsqd, kernrange, macerror,
+			 	 	 	   gravity_mac,  multipole,domain, reg) ;
+  }
+} ;
+
+
+
 #endif
