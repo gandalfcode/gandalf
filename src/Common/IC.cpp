@@ -3783,7 +3783,7 @@ int Ic<ndim>::CutSphere
     // If it's impossible to converge on the desired number of particles, due
     // to lattice configurations, then exit iteration with approximate number
     // of particles (must be less than Nsphere due to memory).
-    if (Ninterior < Nsphere && fabs(r_high - r_low)/radius < 1.e-8) break;
+    if (Ninterior < Nsphere && fabs(r_high - r_low)/radius < 1.e-6) break;
 
     // Otherwise, continue bisection iteration to find radius
     if (Ninterior > Nsphere) r_high = radius;
@@ -3804,6 +3804,8 @@ int Ic<ndim>::CutSphere
       Ninterior++;
     }
   }
+
+  std::cout << "DONE!!" << endl;
 
   return Ninterior;
 }

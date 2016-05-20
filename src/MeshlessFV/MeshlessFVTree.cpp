@@ -686,7 +686,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Nhydro,Ntot,timestep)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
