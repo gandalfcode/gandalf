@@ -1607,7 +1607,7 @@ void Ic<ndim>::BlobTest(void)
     Particle<ndim>& part = hydro->GetParticlePointer(i);
 
     part.m = mpart;
-    if (i<Nsphere) {
+    if (i < Nsphere) {
       for (int k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
       part.rho = rhosphere;
     }
@@ -1619,7 +1619,7 @@ void Ic<ndim>::BlobTest(void)
     part.h = hydro->h_fac*pow(part.m/part.rho,invndim);
     // IC are in pressure equilibrium
     part.u = press/part.rho/gammaone;
-    if (i>Nsphere) {
+    if (i >= Nsphere) {
       const FLOAT sound = sqrt(gamma*gammaone*part.u);
       const FLOAT v_back = mach*sound;
       part.v[0] = v_back;

@@ -27,7 +27,7 @@ PRECISION          = DOUBLE
 OPENMP             = 1
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 1
-BUILD_DEPENDENCIES = 1
+BUILD_DEPENDENCIES = 0
 
 
 # FFTW libary flags and paths.  If paths are empty, tries standard default linux paths.

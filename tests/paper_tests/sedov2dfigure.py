@@ -21,6 +21,7 @@ vmin  = 0.001
 vmax  = 2.2
 umin   = 0.02
 umax   = 2000.0
+stride = 8
 
 # Extract data from Grad-h SPH simulation
 loadsim('SEDOV2D-GRADHSPH')
@@ -62,50 +63,50 @@ fig.subplots_adjust(bottom=0.1, top=0.98, left=0.06, right=0.99)
 axarr[0,0].set_ylabel(r"$\rho$", fontsize=20)
 axarr[0,0].set_xlim([xmin, xmax])
 axarr[0,0].set_ylim([rhomin, rhomax])
-axarr[0,0].scatter(x0, rho0, color='black', marker='.', s=1.0, label='Gradh-SPH')
+axarr[0,0].scatter(x0[::stride], rho0[::stride], color='black', marker='.', s=1.0, label='Gradh-SPH')
 axarr[0,0].plot(rhodata.x_data, rhodata.y_data, color="red", label='Solution')
 axarr[0,0].legend(fontsize=12)
 
 axarr[1,0].set_ylabel(r"$v_{_R}$", fontsize=20)
 axarr[1,0].set_xlabel(r"$x$", fontsize=20)
 axarr[1,0].set_ylim([vmin, vmax])
-axarr[1,0].scatter(x0, v0, color='black', marker='.', s=1.0)
+axarr[1,0].scatter(x0[::stride], v0[::stride], color='black', marker='.', s=1.0)
 axarr[1,0].plot(vxdata.x_data, vxdata.y_data, color="red")
 
 
 # Static MFV simulation
 axarr[0,1].set_xlim([xmin, xmax])
 axarr[0,1].set_ylim([rhomin, rhomax])
-axarr[0,1].scatter(x1, rho1, color='black', marker='.', s=1.0, label='MFV-static')
+axarr[0,1].scatter(x1[::stride], rho1[::stride], color='black', marker='.', s=1.0, label='MFV-static')
 axarr[0,1].plot(rhodata.x_data, rhodata.y_data, color="red", label='Solution')
 axarr[0,1].legend(fontsize=12)
 
 axarr[1,1].set_xlabel(r"$x$", fontsize=20)
-axarr[1,1].scatter(x1, v1, color='black', marker='.', s=1.0)
+axarr[1,1].scatter(x1[::stride], v1[::stride], color='black', marker='.', s=1.0)
 axarr[1,1].plot(vxdata.x_data, vxdata.y_data, color="red")
 
 
 # Moving MFV simulation
 axarr[0,2].set_xlim([xmin, xmax])
 axarr[0,2].set_ylim([rhomin, rhomax])
-axarr[0,2].scatter(x2, rho2, color='black', marker='.', s=1.0, label='MFV-moving')
+axarr[0,2].scatter(x2[::stride], rho2[::stride], color='black', marker='.', s=1.0, label='MFV-moving')
 axarr[0,2].plot(rhodata.x_data, rhodata.y_data, color="red", label='Solution')
 axarr[0,2].legend(fontsize=12)
 
 axarr[1,2].set_xlabel(r"$x$", fontsize=20)
-axarr[1,2].scatter(x2, v2, color='black', marker='.', s=1.0)
+axarr[1,2].scatter(x2[::stride], v2[::stride], color='black', marker='.', s=1.0)
 axarr[1,2].plot(vxdata.x_data, vxdata.y_data, color="red")
 
 
 # Moving MFM simulation
 axarr[0,3].set_xlim([xmin, xmax])
 axarr[0,3].set_ylim([rhomin, rhomax])
-axarr[0,3].scatter(x3, rho3, color='black', marker='.', s=1.0, label='MFM-moving')
+axarr[0,3].scatter(x3[::stride], rho3[::stride], color='black', marker='.', s=1.0, label='MFM-moving')
 axarr[0,3].plot(rhodata.x_data, rhodata.y_data, color="red", label='Solution')
 axarr[0,3].legend(fontsize=12)
 
 axarr[1,3].set_xlabel(r"$x$", fontsize=20)
-axarr[1,3].scatter(x3, v3, color='black', marker='.', s=1.0)
+axarr[1,3].scatter(x3[::stride], v3[::stride], color='black', marker='.', s=1.0)
 axarr[1,3].plot(vxdata.x_data, vxdata.y_data, color="red")
 
 

@@ -17,7 +17,7 @@ Pressure of RHS fluid                       : press2 = 0.1795
 Density of LHS fluid                        : rhofluid1 = 1.0
 Density of RHS fluid                        : rhofluid2 = 0.25
 No. of particles in LHS fluid               : Nlattice1[0] = 512
-No. of particles in RHS fluid               : Nlattice2[0] = 128
+No. of particles in RHS fluid               : Nlattice2[0] = 512
 Dimensionless units                         : dimensionless = 1
 asdas : Nhydromax = 2000
 #adsas : Nstepsmax = 16
@@ -27,8 +27,8 @@ asdas : pruning_level = 2
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = -2.0
-RHS position of boundary in x-dimension     : boxmax[0] = 2.0
+LHS position of boundary in x-dimension     : boxmin[0] = -20.0
+RHS position of boundary in x-dimension     : boxmax[0] = 20.0
 LHS boundary type in x-dimension            : boundary_lhs[0] = mirror
 RHS boundary type in x-dimension            : boundary_rhs[0] = mirror
 
@@ -36,12 +36,12 @@ RHS boundary type in x-dimension            : boundary_rhs[0] = mirror
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 1.5
-Regular snapshot output frequency           : dt_snap = 0.1
+Simulation end time                         : tend = 5.0
+Regular snapshot output frequency           : dt_snap = 0.05
 Time for first snapshot                     : tsnapfirst = 0.0
-Screen output frequency (in no. of steps)   : noutputstep = 128
-Diagnostic output integer step              : ndiagstep = 1024
-Output file format                          : out_file_form = su
+Screen output frequency (in no. of steps)   : noutputstep = 1
+Diagnostic output integer step              : ndiagstep = 1
+Output file format                          : out_file_form = column
 
 
 #------------------------
@@ -67,10 +67,10 @@ Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Minimum value of avisc                      : alpha_visc_min = 0.1
 Artificial viscosity beta value             : beta_visc = 2.0
-Riemann solver                              : riemann_solver = exact
+Riemann solver                              : riemann_solver = hllc
 Order of Riemann solver                     : riemann_order = 2
 Slope limiter                               : slope_limiter = gizmo
-Finite mass scheme?                         : zero_mass_flux = 0
+Finite mass scheme?                         : zero_mass_flux = 1
 
 
 #-------------------------
