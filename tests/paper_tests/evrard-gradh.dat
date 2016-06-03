@@ -1,12 +1,13 @@
 #-------------------------------------------------------------
-# Evrard collapse test
+# Boss-Bodenheimer test
+# Boss & Bodenheimer (1979) rotating core collapse test
 #-------------------------------------------------------------
 
 
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = EVRARD-GRADHSPH
+Simulation run id string                    : run_id = EVRARD-GRADH
 Run SPH simulation                          : sim = gradhsph
 Select shocktube initial conditions         : ic = evrard
 Output file format                          : out_file_form = su
@@ -16,8 +17,8 @@ Local arrangement of particles              : particle_distribution = hexagonal_
 Mass                                        : mcloud = 1.0
 Radius of cloud                             : radius = 1.0
 Thermal energy factor                       : thermal_energy = 0.05
-com_frame = 1
-dust_forces = none
+rand_algorithm = xorshift
+randseed = 1
 
 
 #---------------------------
@@ -30,10 +31,10 @@ Use physical units                          : dimensionless = 1
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 2.0
-Regular snapshot output frequency           : dt_snap = 0.05
-Time of first snapshot                      : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.2
+Time of first snapshot                      : tsnapfirst = 0.00
 Screen output frequency (in no. of steps)   : noutputstep = 16
-Diagnostic output frequency                 : ndiagstep = 16
+Diagnostic output frequency                 : ndiagstep = 64
 
 
 #------------------------
@@ -55,7 +56,7 @@ Switch-on self-gravity of gas               : self_gravity = 1
 #----------------------------------------
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
-Smoothing length neighbour factor           : h_fac = 1.2
+h_fac = 1.0
 
 
 #---------------------------------
@@ -63,16 +64,14 @@ Smoothing length neighbour factor           : h_fac = 1.2
 #---------------------------------
 Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
-Time-dependent viscosity                    : time_dependent_avisc = 0
 Artificial viscosity alpha value            : alpha_visc = 1.0
-Minimum alpha value                         : alpha_visc_min = 0.05
 Artificial viscosity beta value             : beta_visc = 2.0
 
 
 #----------------------
 # Sink particle options
 #----------------------
-Use leapfrog N-body integration scheme      : nbody = lfdkd
+Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 0
 Allow creation of new sink particles        : create_sinks = 0
 
@@ -83,9 +82,9 @@ Allow creation of new sink particles        : create_sinks = 0
 SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
-SPH energy equation timestep multiplier     : energy_mult = 0.4
+SPH energy equation timestep multiplier     : energy_mult = 0.5
 N-body timestep multiplier                  : nbody_mult = 0.2
-No. of block timestep levels                : Nlevels = 1
+No. of block timestep levels                : Nlevels = 3
 Max. timestep level difference              : level_diff_max = 1
 
 
@@ -93,9 +92,9 @@ Max. timestep level difference              : level_diff_max = 1
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = kdtree
-Tree re-build frequency                     : ntreebuildstep = 4
+Tree re-build frequency                     : ntreebuildstep = 1
 No. of particles in leaf cell               : Nleafmax = 6
-Tree opening angle (squared)                : thetamaxsqd = 0.2
+Tree opening angle (squared)                : thetamaxsqd = 0.15
 Multipole option                            : multipole = quadrupole
 
 
