@@ -527,7 +527,12 @@ void MeshlessFV<ndim>::InitialSmoothingLengthGuess(void)
 }
 
 
-
+#if defined(NDIM_1)
 template class MeshlessFV<1>;
+#endif
+#if defined(NDIM_2)
 template class MeshlessFV<2>;
+#endif
+#if defined(NDIM_3)
 template class MeshlessFV<3>;
+#endif

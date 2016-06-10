@@ -4695,6 +4695,13 @@ void Ic<ndim>::DustyBox(void)
   return;
 }
 
+
+#if defined(NDIM_1)
 template class Ic<1>;
+#endif
+#if defined(NDIM_2)
 template class Ic<2>;
+#endif
+#if defined(NDIM_3)
 template class Ic<3>;
+#endif

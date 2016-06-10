@@ -152,6 +152,7 @@ void SphIntegration<ndim>::CheckBoundaries
   Sph<ndim> *sph)                      ///< Pointer to SPH object
 {
   debug2("[SphIntegration::CheckBoundaries]");
+  timing->StartTimingSection("SPH_CHECK_BOUNDARIES");
 
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
@@ -214,12 +215,20 @@ void SphIntegration<ndim>::CheckBoundaries
   }
   //===============================================================================================
 
+  timing->EndTimingSection("SPH_CHECK_BOUNDARIES");
+
   return;
 }
 
 
 
 // Create instances of SphIntegration templates for all dimensions (1,2 and 3)
+#if defined(NDIM_1)
 template class SphIntegration<1>;
+#endif
+#if defined(NDIM_2)
 template class SphIntegration<2>;
+#endif
+#if defined(NDIM_3)
 template class SphIntegration<3>;
+#endif

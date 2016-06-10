@@ -33,11 +33,15 @@ using namespace std;
 
 
 
-
+#if defined(NDIM_1)
 template class NeighbourSearch<1>;
-template class NeighbourSearch<2>;
-template class NeighbourSearch<3>;
-
 template class SphNeighbourSearch<1>;
+#endif
+#if defined(NDIM_2)
+template class NeighbourSearch<2>;
 template class SphNeighbourSearch<2>;
+#endif
+#if defined(NDIM_3)
+template class NeighbourSearch<3>;
 template class SphNeighbourSearch<3>;
+#endif

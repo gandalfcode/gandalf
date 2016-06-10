@@ -64,8 +64,8 @@ SM2012SphTree<ndim,ParticleType,TreeCell>::SM2012SphTree
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
-  mpighosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-		  _macerror, _gravity_mac, _multipole, *_box, types);
+  mpighosttree = new_tree<ndim,ParticleType,TreeCell>
+   (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
 
   // Set-up multiple pruned trees, one for each MPI process
   prunedtree = new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
@@ -87,13 +87,19 @@ SM2012SphTree<ndim,ParticleType,TreeCell>::SM2012SphTree
 
 
 
-template class SM2012SphTree<1,SM2012SphParticle,BruteForceTreeCell>;
-template class SM2012SphTree<2,SM2012SphParticle,BruteForceTreeCell>;
-template class SM2012SphTree<3,SM2012SphParticle,BruteForceTreeCell>;
-template class SM2012SphTree<1,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphTree<2,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphTree<3,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphTree<1,SM2012SphParticle,OctTreeCell>;
-template class SM2012SphTree<2,SM2012SphParticle,OctTreeCell>;
-template class SM2012SphTree<3,SM2012SphParticle,OctTreeCell>;
 
+#if defined(NDIM_1)
+template class SM2012SphTree<1,SM2012SphParticle,BruteForceTreeCell>;
+template class SM2012SphTree<1,SM2012SphParticle,KDTreeCell>;
+template class SM2012SphTree<1,SM2012SphParticle,OctTreeCell>;
+#endif
+#if defined(NDIM_2)
+template class SM2012SphTree<2,SM2012SphParticle,BruteForceTreeCell>;
+template class SM2012SphTree<2,SM2012SphParticle,KDTreeCell>;
+template class SM2012SphTree<2,SM2012SphParticle,OctTreeCell>;
+#endif
+#if defined(NDIM_3)
+template class SM2012SphTree<3,SM2012SphParticle,BruteForceTreeCell>;
+template class SM2012SphTree<3,SM2012SphParticle,KDTreeCell>;
+template class SM2012SphTree<3,SM2012SphParticle,OctTreeCell>;
+#endif

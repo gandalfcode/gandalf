@@ -300,9 +300,15 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
 
 
 // Template class instances for each dimensionality value (1, 2 and 3) and particle type
+#if defined(NDIM_1)
 template class SphLeapfrogKDK<1, GradhSphParticle>;
-template class SphLeapfrogKDK<2, GradhSphParticle>;
-template class SphLeapfrogKDK<3, GradhSphParticle>;
 template class SphLeapfrogKDK<1, SM2012SphParticle>;
+#endif
+#if defined(NDIM_2)
+template class SphLeapfrogKDK<2, GradhSphParticle>;
 template class SphLeapfrogKDK<2, SM2012SphParticle>;
+#endif
+#if defined(NDIM_3)
+template class SphLeapfrogKDK<3, GradhSphParticle>;
 template class SphLeapfrogKDK<3, SM2012SphParticle>;
+#endif

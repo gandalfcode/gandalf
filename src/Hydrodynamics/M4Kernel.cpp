@@ -66,6 +66,12 @@ M4Kernel<ndim>::~M4Kernel()
 
 
 
+#if defined(NDIM_1)
 template class M4Kernel<1>;
+#endif
+#if defined(NDIM_2)
 template class M4Kernel<2>;
+#endif
+#if defined(NDIM_3)
 template class M4Kernel<3>;
+#endif

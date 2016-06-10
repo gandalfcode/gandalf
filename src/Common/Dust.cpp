@@ -1181,6 +1181,13 @@ TreeBase<ndim>* mpi_tree)
 	return dust_forces ;
 }
 
+
+#if defined(NDIM_1)
 template class DustFactory<1, GradhSphParticle> ;
+#endif
+#if defined(NDIM_2)
 template class DustFactory<2, GradhSphParticle> ;
+#endif
+#if defined(NDIM_3)
 template class DustFactory<3, GradhSphParticle> ;
+#endif

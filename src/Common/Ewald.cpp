@@ -985,6 +985,12 @@ DOUBLE Ewald<ndim>::AccLong3pPer
 
 
 // Create template class instances of the NbodySimulation object for each dimension (1, 2 and 3)
+#if defined(NDIM_1)
 template class Ewald<1>;
+#endif
+#if defined(NDIM_2)
 template class Ewald<2>;
+#endif
+#if defined(NDIM_3)
 template class Ewald<3>;
+#endif

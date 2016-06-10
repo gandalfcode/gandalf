@@ -903,27 +903,27 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
 
 
 
+#if defined(NDIM_1)
 template class OctTree<1, Particle, OctTreeCell>;
-template class OctTree<2, Particle, OctTreeCell>;
-template class OctTree<3, Particle, OctTreeCell>;
-
 template class OctTree<1, SphParticle, OctTreeCell>;
-template class OctTree<2, SphParticle, OctTreeCell>;
-template class OctTree<3, SphParticle, OctTreeCell>;
-
 template class OctTree<1, GradhSphParticle, OctTreeCell>;
-template class OctTree<2, GradhSphParticle, OctTreeCell>;
-template class OctTree<3, GradhSphParticle, OctTreeCell>;
-
 template class OctTree<1, SM2012SphParticle, OctTreeCell>;
-template class OctTree<2, SM2012SphParticle, OctTreeCell>;
-template class OctTree<3, SM2012SphParticle, OctTreeCell>;
-
 template class OctTree<1, MeshlessFVParticle, OctTreeCell>;
-template class OctTree<2, MeshlessFVParticle, OctTreeCell>;
-template class OctTree<3, MeshlessFVParticle, OctTreeCell>;
-
 template class OctTree<1, GradhSphParticle, TreeRayCell>;
+#endif
+#if defined(NDIM_2)
+template class OctTree<2, Particle, OctTreeCell>;
+template class OctTree<2, SphParticle, OctTreeCell>;
+template class OctTree<2, GradhSphParticle, OctTreeCell>;
+template class OctTree<2, SM2012SphParticle, OctTreeCell>;
+template class OctTree<2, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<2, GradhSphParticle, TreeRayCell>;
+#endif
+#if defined(NDIM_3)
+template class OctTree<3, Particle, OctTreeCell>;
+template class OctTree<3, SphParticle, OctTreeCell>;
+template class OctTree<3, GradhSphParticle, OctTreeCell>;
+template class OctTree<3, SM2012SphParticle, OctTreeCell>;
+template class OctTree<3, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<3, GradhSphParticle, TreeRayCell>;
-//template class OctTree<3, MeshlessFVParticle, TreeRayCell>;
+#endif

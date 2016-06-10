@@ -1178,18 +1178,21 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
 
 
-template class GradhSphTree<1,GradhSphParticle,KDTreeCell>;
-template class GradhSphTree<2,GradhSphParticle,KDTreeCell>;
-template class GradhSphTree<3,GradhSphParticle,KDTreeCell>;
-
-template class GradhSphTree<1,GradhSphParticle,OctTreeCell>;
-template class GradhSphTree<2,GradhSphParticle,OctTreeCell>;
-template class GradhSphTree<3,GradhSphParticle,OctTreeCell>;
-
-template class GradhSphTree<1,GradhSphParticle,TreeRayCell>;
-template class GradhSphTree<2,GradhSphParticle,TreeRayCell>;
-template class GradhSphTree<3,GradhSphParticle,TreeRayCell>;
-
+#if defined(NDIM_1)
 template class GradhSphTree<1,GradhSphParticle,BruteForceTreeCell>;
+template class GradhSphTree<1,GradhSphParticle,KDTreeCell>;
+template class GradhSphTree<1,GradhSphParticle,OctTreeCell>;
+template class GradhSphTree<1,GradhSphParticle,TreeRayCell>;
+#endif
+#if defined(NDIM_2)
 template class GradhSphTree<2,GradhSphParticle,BruteForceTreeCell>;
+template class GradhSphTree<2,GradhSphParticle,KDTreeCell>;
+template class GradhSphTree<2,GradhSphParticle,OctTreeCell>;
+template class GradhSphTree<2,GradhSphParticle,TreeRayCell>;
+#endif
+#if defined(NDIM_3)
 template class GradhSphTree<3,GradhSphParticle,BruteForceTreeCell>;
+template class GradhSphTree<3,GradhSphParticle,KDTreeCell>;
+template class GradhSphTree<3,GradhSphParticle,OctTreeCell>;
+template class GradhSphTree<3,GradhSphParticle,TreeRayCell>;
+#endif

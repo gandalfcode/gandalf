@@ -43,9 +43,15 @@ using namespace std;
 
 
 // Create template class instances of the NbodySimulation object for each dimension (1, 2 and 3)
+#if defined(NDIM_1)
 template class NbodySimulation<1>;
+#endif
+#if defined(NDIM_2)
 template class NbodySimulation<2>;
+#endif
+#if defined(NDIM_3)
 template class NbodySimulation<3>;
+#endif
 
 
 

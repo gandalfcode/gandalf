@@ -401,15 +401,21 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
 // Template class instances for each dimensionality value (1, 2 and 3) and
 // employed kernel (M4, Quintic, Gaussian and tabulated).
-template class NbodyHermite4TS<1, M4Kernel>;
-template class NbodyHermite4TS<1, QuinticKernel>;
-template class NbodyHermite4TS<1, GaussianKernel>;
-template class NbodyHermite4TS<1, TabulatedKernel>;
-template class NbodyHermite4TS<2, M4Kernel>;
-template class NbodyHermite4TS<2, QuinticKernel>;
-template class NbodyHermite4TS<2, GaussianKernel>;
-template class NbodyHermite4TS<2, TabulatedKernel>;
-template class NbodyHermite4TS<3, M4Kernel>;
-template class NbodyHermite4TS<3, QuinticKernel>;
-template class NbodyHermite4TS<3, GaussianKernel>;
-template class NbodyHermite4TS<3, TabulatedKernel>;
+#if defined(NDIM_1)
+template class NbodyHermite4TS<1,M4Kernel>;
+template class NbodyHermite4TS<1,QuinticKernel>;
+template class NbodyHermite4TS<1,GaussianKernel>;
+template class NbodyHermite4TS<1,TabulatedKernel>;
+#endif
+#if defined(NDIM_2)
+template class NbodyHermite4TS<2,M4Kernel>;
+template class NbodyHermite4TS<2,QuinticKernel>;
+template class NbodyHermite4TS<2,GaussianKernel>;
+template class NbodyHermite4TS<2,TabulatedKernel>;
+#endif
+#if defined(NDIM_3)
+template class NbodyHermite4TS<3,M4Kernel>;
+template class NbodyHermite4TS<3,QuinticKernel>;
+template class NbodyHermite4TS<3,GaussianKernel>;
+template class NbodyHermite4TS<3,TabulatedKernel>;
+#endif

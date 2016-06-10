@@ -832,6 +832,12 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
 
 
 
+#if defined(NDIM_1)
 template class MonochromaticIonisationMonteCarlo<1,1,GradhSphParticle,MonoIonTreeCell>;
+#endif
+#if defined(NDIM_2)
 template class MonochromaticIonisationMonteCarlo<2,1,GradhSphParticle,MonoIonTreeCell>;
+#endif
+#if defined(NDIM_3)
 template class MonochromaticIonisationMonteCarlo<3,1,GradhSphParticle,MonoIonTreeCell>;
+#endif

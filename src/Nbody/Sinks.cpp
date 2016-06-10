@@ -744,6 +744,12 @@ void Sinks<ndim>::AccreteMassToSinks
 
 // Create template class instances of the main SphSimulation object for
 // each dimension used (1, 2 and 3)
+#if defined(NDIM_1)
 template class Sinks<1>;
+#endif
+#if defined(NDIM_2)
 template class Sinks<2>;
+#endif
+#if defined(NDIM_3)
 template class Sinks<3>;
+#endif

@@ -519,9 +519,15 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
 
 // Template class for each particle type
-template class MpiKDTreeDecomposition<1, GradhSphParticle>;
-template class MpiKDTreeDecomposition<2, GradhSphParticle>;
-template class MpiKDTreeDecomposition<3, GradhSphParticle>;
-template class MpiKDTreeDecomposition<1, SM2012SphParticle>;
-template class MpiKDTreeDecomposition<2, SM2012SphParticle>;
-template class MpiKDTreeDecomposition<3, SM2012SphParticle>;
+#if defined(NDIM_1)
+template class MpiKDTreeDecomposition<1,GradhSphParticle>;
+template class MpiKDTreeDecomposition<1,SM2012SphParticle>;
+#endif
+#if defined(NDIM_2)
+template class MpiKDTreeDecomposition<2,GradhSphParticle>;
+template class MpiKDTreeDecomposition<2,SM2012SphParticle>;
+#endif
+#if defined(NDIM_3)
+template class MpiKDTreeDecomposition<3,GradhSphParticle>;
+template class MpiKDTreeDecomposition<3,SM2012SphParticle>;
+#endif

@@ -331,24 +331,34 @@ void MpiGhostsSpecific<ndim, ParticleType>::CopyHydroDataToGhosts
 
 // Create template class instances of the main SphSimulation object for
 // each dimension used (1, 2 and 3)
+#if defined(NDIM_1)
 template class NullGhosts<1>;
-template class NullGhosts<2>;
-template class NullGhosts<3>;
 template class PeriodicGhostsSpecific<1, GradhSphParticle>;
-template class PeriodicGhostsSpecific<2, GradhSphParticle>;
-template class PeriodicGhostsSpecific<3, GradhSphParticle>;
 template class PeriodicGhostsSpecific<1, SM2012SphParticle>;
-template class PeriodicGhostsSpecific<2, SM2012SphParticle>;
-template class PeriodicGhostsSpecific<3, SM2012SphParticle>;
-
-#ifdef MPI_PARALLEL
+#if defined(MPI_PARALLEL)
 template class MpiGhosts<1>;
-template class MpiGhosts<2>;
-template class MpiGhosts<3>;
 template class MpiGhostsSpecific<1, GradhSphParticle>;
-template class MpiGhostsSpecific<2, GradhSphParticle>;
-template class MpiGhostsSpecific<3, GradhSphParticle>;
 template class MpiGhostsSpecific<1, SM2012SphParticle>;
+#endif
+#endif
+#if defined(NDIM_2)
+template class NullGhosts<2>;
+template class PeriodicGhostsSpecific<2, GradhSphParticle>;
+template class PeriodicGhostsSpecific<2, SM2012SphParticle>;
+#if defined(MPI_PARALLEL)
+template class MpiGhosts<2>;
+template class MpiGhostsSpecific<2, GradhSphParticle>;
 template class MpiGhostsSpecific<2, SM2012SphParticle>;
+#endif
+#endif
+#if defined(NDIM_3)
+template class NullGhosts<3>;
+template class PeriodicGhostsSpecific<3, GradhSphParticle>;
+template class PeriodicGhostsSpecific<3, SM2012SphParticle>;
+#if defined(MPI_PARALLEL)
+template class MpiGhosts<3>;
+template class MpiGhostsSpecific<3, GradhSphParticle>;
 template class MpiGhostsSpecific<3, SM2012SphParticle>;
 #endif
+#endif
+

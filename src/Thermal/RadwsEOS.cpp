@@ -111,6 +111,12 @@ FLOAT Radws<ndim>::Temperature(Particle<ndim> &part)
 
 
 
+#if defined(NDIM_1)
 template class Radws<1>;
+#endif
+#if defined(NDIM_2)
 template class Radws<2>;
+#endif
+#if defined(NDIM_3)
 template class Radws<3>;
+#endif

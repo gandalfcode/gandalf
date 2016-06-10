@@ -139,6 +139,12 @@ void MpiNode<ndim>::UpdateBoundingBoxData
 
 
 // Template class instances for each dimensionality value (1, 2 and 3)
+#if defined(NDIM_1)
 template class MpiNode<1>;
+#endif
+#if defined(NDIM_2)
 template class MpiNode<2>;
+#endif
+#if defined(NDIM_3)
 template class MpiNode<3>;
+#endif

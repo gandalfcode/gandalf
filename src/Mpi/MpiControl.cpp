@@ -1171,14 +1171,18 @@ void MpiControl<ndim>::CollateDiagnosticsData
 
 
 // Template class instances for each dimensionality value (1, 2 and 3)
+#if defined(NDIM_1)
 template class MpiControl<1>;
+template class MpiControlType<1,GradhSphParticle>;
+template class MpiControlType<1,SM2012SphParticle>;
+#endif
+#if defined(NDIM_2)
 template class MpiControl<2>;
+template class MpiControlType<2,GradhSphParticle>;
+template class MpiControlType<2,SM2012SphParticle>;
+#endif
+#if defined(NDIM_3)
 template class MpiControl<3>;
-
-// Template class for each particle type
-template class MpiControlType<1, GradhSphParticle>;
-template class MpiControlType<2, GradhSphParticle>;
-template class MpiControlType<3, GradhSphParticle>;
-template class MpiControlType<1, SM2012SphParticle>;
-template class MpiControlType<2, SM2012SphParticle>;
-template class MpiControlType<3, SM2012SphParticle>;
+template class MpiControlType<3,GradhSphParticle>;
+template class MpiControlType<3,SM2012SphParticle>;
+#endif

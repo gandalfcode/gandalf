@@ -688,13 +688,18 @@ void MfvCommon<ndim, kernelclass>::ComputeStarGravForces
 }
 
 
-
-template class MfvCommon<1, M4Kernel>;
-template class MfvCommon<2, M4Kernel>;
-template class MfvCommon<3, M4Kernel>;
-template class MfvCommon<1, QuinticKernel>;
-template class MfvCommon<2, QuinticKernel>;
-template class MfvCommon<3, QuinticKernel>;
-template class MfvCommon<1, TabulatedKernel>;
-template class MfvCommon<2, TabulatedKernel>;
-template class MfvCommon<3, TabulatedKernel>;
+#if defined(NDIM_1)
+template class MfvCommon<1,M4Kernel>;
+template class MfvCommon<1,QuinticKernel>;
+template class MfvCommon<1,TabulatedKernel>;
+#endif
+#if defined(NDIM_2)
+template class MfvCommon<2,M4Kernel>;
+template class MfvCommon<2,QuinticKernel>;
+template class MfvCommon<2,TabulatedKernel>;
+#endif
+#if defined(NDIM_3)
+template class MfvCommon<3,M4Kernel>;
+template class MfvCommon<3,QuinticKernel>;
+template class MfvCommon<3,TabulatedKernel>;
+#endif

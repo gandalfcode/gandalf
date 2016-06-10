@@ -1135,14 +1135,19 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 }
 
 
-template class MeshlessFVTree<1,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,KDTreeCell>;
 
-template class MeshlessFVTree<1,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,OctTreeCell>;
-
+#if defined(NDIM_1)
 template class MeshlessFVTree<1,MeshlessFVParticle,BruteForceTreeCell>;
+template class MeshlessFVTree<1,MeshlessFVParticle,KDTreeCell>;
+template class MeshlessFVTree<1,MeshlessFVParticle,OctTreeCell>;
+#endif
+#if defined(NDIM_2)
 template class MeshlessFVTree<2,MeshlessFVParticle,BruteForceTreeCell>;
+template class MeshlessFVTree<2,MeshlessFVParticle,KDTreeCell>;
+template class MeshlessFVTree<2,MeshlessFVParticle,OctTreeCell>;
+#endif
+#if defined(NDIM_3)
 template class MeshlessFVTree<3,MeshlessFVParticle,BruteForceTreeCell>;
+template class MeshlessFVTree<3,MeshlessFVParticle,KDTreeCell>;
+template class MeshlessFVTree<3,MeshlessFVParticle,OctTreeCell>;
+#endif

@@ -337,15 +337,21 @@ DOUBLE NbodyLeapfrogDKD<ndim, kernelclass>::Timestep
 
 // Template class instances for each dimensionality value (1, 2 and 3) and
 // employed kernel (M4, Quintic, Gaussian and tabulated).
-template class NbodyLeapfrogDKD<1, M4Kernel>;
-template class NbodyLeapfrogDKD<1, QuinticKernel>;
-template class NbodyLeapfrogDKD<1, GaussianKernel>;
-template class NbodyLeapfrogDKD<1, TabulatedKernel>;
-template class NbodyLeapfrogDKD<2, M4Kernel>;
-template class NbodyLeapfrogDKD<2, QuinticKernel>;
-template class NbodyLeapfrogDKD<2, GaussianKernel>;
-template class NbodyLeapfrogDKD<2, TabulatedKernel>;
-template class NbodyLeapfrogDKD<3, M4Kernel>;
-template class NbodyLeapfrogDKD<3, QuinticKernel>;
-template class NbodyLeapfrogDKD<3, GaussianKernel>;
-template class NbodyLeapfrogDKD<3, TabulatedKernel>;
+#if defined(NDIM_1)
+template class NbodyLeapfrogDKD<1,M4Kernel>;
+template class NbodyLeapfrogDKD<1,QuinticKernel>;
+template class NbodyLeapfrogDKD<1,GaussianKernel>;
+template class NbodyLeapfrogDKD<1,TabulatedKernel>;
+#endif
+#if defined(NDIM_2)
+template class NbodyLeapfrogDKD<2,M4Kernel>;
+template class NbodyLeapfrogDKD<2,QuinticKernel>;
+template class NbodyLeapfrogDKD<2,GaussianKernel>;
+template class NbodyLeapfrogDKD<2,TabulatedKernel>;
+#endif
+#if defined(NDIM_3)
+template class NbodyLeapfrogDKD<3,M4Kernel>;
+template class NbodyLeapfrogDKD<3,QuinticKernel>;
+template class NbodyLeapfrogDKD<3,GaussianKernel>;
+template class NbodyLeapfrogDKD<3,TabulatedKernel>;
+#endif

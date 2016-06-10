@@ -125,8 +125,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
     cellbuf         = new TreeCell<ndim>*[Nthreads];
 
     for (int ithread=0; ithread<Nthreads; ithread++) {
-      Nneibmaxbuf[ithread]     = max(1, 8*Ngather);
-      Ngravcellmaxbuf[ithread] = max(1, 16*Ngather);
+      Nneibmaxbuf[ithread]     = max(1, 16*Ngather);
+      Ngravcellmaxbuf[ithread] = max(1, 32*Ngather);
       activelistbuf[ithread]   = new int[Nleafmax];
       levelneibbuf[ithread]    = new int[Ntotmax];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
@@ -411,6 +411,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 
 
   debug2("[HydroTree::SearchBoundaryGhostParticles]");
+  timing->StartTimingSection("TREE_SEARCH_GHOSTS");
 
 
   // Create ghost particles in x-dimension
@@ -578,6 +579,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
   }
 
   hydro->NPeriodicGhost = hydro->Nghost;
+
+  timing->EndTimingSection("TREE_SEARCH_GHOSTS");
 
   return;
 }
@@ -2187,45 +2190,40 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
 #endif
 
 
-//template class HydroTree<1,SphParticle,KDTreeCell>;
-//template class HydroTree<2,SphParticle,KDTreeCell>;
-//template class HydroTree<3,SphParticle,KDTreeCell>;
-//template class HydroTree<1,SphParticle,OctTreeCell>;
-//template class HydroTree<2,SphParticle,OctTreeCell>;
-//template class HydroTree<3,SphParticle,OctTreeCell>;
 
-template class HydroTree<1,GradhSphParticle,KDTreeCell>;
-template class HydroTree<2,GradhSphParticle,KDTreeCell>;
-template class HydroTree<3,GradhSphParticle,KDTreeCell>;
-template class HydroTree<1,GradhSphParticle,OctTreeCell>;
-template class HydroTree<2,GradhSphParticle,OctTreeCell>;
-template class HydroTree<3,GradhSphParticle,OctTreeCell>;
-
-template class HydroTree<1,SM2012SphParticle,KDTreeCell>;
-template class HydroTree<2,SM2012SphParticle,KDTreeCell>;
-template class HydroTree<3,SM2012SphParticle,KDTreeCell>;
-template class HydroTree<1,SM2012SphParticle,OctTreeCell>;
-template class HydroTree<2,SM2012SphParticle,OctTreeCell>;
-template class HydroTree<3,SM2012SphParticle,OctTreeCell>;
-
-template class HydroTree<1,MeshlessFVParticle,KDTreeCell>;
-template class HydroTree<2,MeshlessFVParticle,KDTreeCell>;
-template class HydroTree<3,MeshlessFVParticle,KDTreeCell>;
-template class HydroTree<1,MeshlessFVParticle,OctTreeCell>;
-template class HydroTree<2,MeshlessFVParticle,OctTreeCell>;
-template class HydroTree<3,MeshlessFVParticle,OctTreeCell>;
-
-template class HydroTree<1,GradhSphParticle,TreeRayCell>;
-template class HydroTree<2,GradhSphParticle,TreeRayCell>;
-template class HydroTree<3,GradhSphParticle,TreeRayCell>;
-
+#if defined(NDIM_1)
 template class HydroTree<1,GradhSphParticle,BruteForceTreeCell>;
-template class HydroTree<2,GradhSphParticle,BruteForceTreeCell>;
-template class HydroTree<3,GradhSphParticle,BruteForceTreeCell>;
+template class HydroTree<1,GradhSphParticle,KDTreeCell>;
+template class HydroTree<1,GradhSphParticle,OctTreeCell>;
 template class HydroTree<1,SM2012SphParticle,BruteForceTreeCell>;
-template class HydroTree<2,SM2012SphParticle,BruteForceTreeCell>;
-template class HydroTree<3,SM2012SphParticle,BruteForceTreeCell>;
+template class HydroTree<1,SM2012SphParticle,KDTreeCell>;
+template class HydroTree<1,SM2012SphParticle,OctTreeCell>;
 template class HydroTree<1,MeshlessFVParticle,BruteForceTreeCell>;
+template class HydroTree<1,MeshlessFVParticle,KDTreeCell>;
+template class HydroTree<1,MeshlessFVParticle,OctTreeCell>;
+template class HydroTree<1,GradhSphParticle,TreeRayCell>;
+#endif
+#if defined(NDIM_2)
+template class HydroTree<2,GradhSphParticle,BruteForceTreeCell>;
+template class HydroTree<2,GradhSphParticle,KDTreeCell>;
+template class HydroTree<2,GradhSphParticle,OctTreeCell>;
+template class HydroTree<2,SM2012SphParticle,BruteForceTreeCell>;
+template class HydroTree<2,SM2012SphParticle,KDTreeCell>;
+template class HydroTree<2,SM2012SphParticle,OctTreeCell>;
 template class HydroTree<2,MeshlessFVParticle,BruteForceTreeCell>;
+template class HydroTree<2,MeshlessFVParticle,KDTreeCell>;
+template class HydroTree<2,MeshlessFVParticle,OctTreeCell>;
+template class HydroTree<2,GradhSphParticle,TreeRayCell>;
+#endif
+#if defined(NDIM_3)
+template class HydroTree<3,GradhSphParticle,BruteForceTreeCell>;
+template class HydroTree<3,GradhSphParticle,KDTreeCell>;
+template class HydroTree<3,GradhSphParticle,OctTreeCell>;
+template class HydroTree<3,SM2012SphParticle,BruteForceTreeCell>;
+template class HydroTree<3,SM2012SphParticle,KDTreeCell>;
+template class HydroTree<3,SM2012SphParticle,OctTreeCell>;
 template class HydroTree<3,MeshlessFVParticle,BruteForceTreeCell>;
-
+template class HydroTree<3,MeshlessFVParticle,KDTreeCell>;
+template class HydroTree<3,MeshlessFVParticle,OctTreeCell>;
+template class HydroTree<3,GradhSphParticle,TreeRayCell>;
+#endif

@@ -834,12 +834,18 @@ void ShocktubeSolution::ComputeShocktubeSolution
 
 
 
+#if defined(NDIM_1)
 template class RiemannSolver<1>;
-template class RiemannSolver<2>;
-template class RiemannSolver<3>;
 template class ExactRiemannSolver<1>;
-template class ExactRiemannSolver<2>;
-template class ExactRiemannSolver<3>;
 template class HllcRiemannSolver<1>;
+#endif
+#if defined(NDIM_2)
+template class RiemannSolver<2>;
+template class ExactRiemannSolver<2>;
 template class HllcRiemannSolver<2>;
+#endif
+#if defined(NDIM_3)
+template class RiemannSolver<3>;
+template class ExactRiemannSolver<3>;
 template class HllcRiemannSolver<3>;
+#endif
