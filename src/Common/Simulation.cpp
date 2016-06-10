@@ -63,11 +63,31 @@ SimulationBase* SimulationBase::SimulationFactory
   debug1("[SimulationBase::SimulationFactory]");
 
   // Check ndim is valid
+#if defined(NDIM_ALL)
   if (ndim < 1 || ndim > 3) {
     stringstream msg;
     msg << "Error: ndim must be either 1, 2, 3; the value " << ndim << "is not allowed!";
     ExceptionHandler::getIstance().raise(msg.str());
   }
+#elif defined(NDIM_1)
+  if (ndim != 1)
+    stringstream msg;
+    msg << "Error: ndim must 1; the value " << ndim << "is not allowed!";
+    ExceptionHandler::getIstance().raise(msg.str());
+  }
+#elif defined(NDIM_2)
+  if (ndim != 2) {
+    stringstream msg;
+    msg << "Error: ndim must 2; the value " << ndim << "is not allowed!";
+    ExceptionHandler::getIstance().raise(msg.str());
+  }
+#elif defined(NDIM_3)
+  if (ndim != 3) {
+    stringstream msg;
+    msg << "Error: ndim must 3; the value " << ndim << "is not allowed!";
+    ExceptionHandler::getIstance().raise(msg.str());
+  }
+#endif
 
   // Check simulation type is valid
   if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" &&
@@ -85,6 +105,7 @@ SimulationBase* SimulationBase::SimulationFactory
 
   // Create and return Simulation object depending on the chosen algorithm
   // and the dimensionality.
+#if defined(NDIM_1)
   if (ndim == 1) {
     if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<1>(params);
@@ -102,7 +123,9 @@ SimulationBase* SimulationBase::SimulationFactory
       return new NbodySimulation<1>(params);
     }
   }
-  else if (ndim == 2) {
+#endif
+#if defined(NDIM_2)
+  if (ndim == 2) {
     if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<2>(params);
     }
@@ -119,7 +142,9 @@ SimulationBase* SimulationBase::SimulationFactory
       return new NbodySimulation<2>(params);
     }
   }
-  else if (ndim == 3) {
+#endif
+#if defined(NDIM_3)
+  if (ndim == 3) {
     if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<3>(params);
     }
@@ -136,6 +161,7 @@ SimulationBase* SimulationBase::SimulationFactory
       return new NbodySimulation<3>(params);
     }
   }
+#endif
   return NULL;
 }
 
@@ -1434,7 +1460,12 @@ void Simulation<ndim>::UpdateDiagnostics(void)
 }
 
 
-
+#if defined(NDIM_1)
 template class Simulation<1>;
+#endif
+#if defined(NDIM_2)
 template class Simulation<2>;
+#endif
+#if defined(NDIM_3)
 template class Simulation<3>;
+#endif

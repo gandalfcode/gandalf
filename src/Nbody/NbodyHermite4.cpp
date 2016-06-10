@@ -541,15 +541,21 @@ DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
 
 // Template class instances for each dimensionality value (1, 2 and 3) and
 // employed kernel (M4, Quintic, Gaussian and tabulated).
-template class NbodyHermite4<1, M4Kernel>;
-template class NbodyHermite4<1, QuinticKernel>;
-template class NbodyHermite4<1, GaussianKernel>;
-template class NbodyHermite4<1, TabulatedKernel>;
-template class NbodyHermite4<2, M4Kernel>;
-template class NbodyHermite4<2, QuinticKernel>;
-template class NbodyHermite4<2, GaussianKernel>;
-template class NbodyHermite4<2, TabulatedKernel>;
-template class NbodyHermite4<3, M4Kernel>;
-template class NbodyHermite4<3, QuinticKernel>;
-template class NbodyHermite4<3, GaussianKernel>;
-template class NbodyHermite4<3, TabulatedKernel>;
+#if defined(NDIM_1)
+template class NbodyHermite4<1,M4Kernel>;
+template class NbodyHermite4<1,QuinticKernel>;
+template class NbodyHermite4<1,GaussianKernel>;
+template class NbodyHermite4<1,TabulatedKernel>;
+#endif
+#if defined(NDIM_2)
+template class NbodyHermite4<2,M4Kernel>;
+template class NbodyHermite4<2,QuinticKernel>;
+template class NbodyHermite4<2,GaussianKernel>;
+template class NbodyHermite4<2,TabulatedKernel>;
+#endif
+#if defined(NDIM_3)
+template class NbodyHermite4<3,M4Kernel>;
+template class NbodyHermite4<3,QuinticKernel>;
+template class NbodyHermite4<3,GaussianKernel>;
+template class NbodyHermite4<3,TabulatedKernel>;
+#endif

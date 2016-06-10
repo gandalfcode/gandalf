@@ -520,6 +520,12 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 // Create template class instances of the main MfvRungeKuttaSimulation object for
 // each dimension used (1, 2 and 3)
+#if defined(NDIM_1)
 template class MfvRungeKuttaSimulation<1>;
+#endif
+#if defined(NDIM_2)
 template class MfvRungeKuttaSimulation<2>;
+#endif
+#if defined(NDIM_3)
 template class MfvRungeKuttaSimulation<3>;
+#endif

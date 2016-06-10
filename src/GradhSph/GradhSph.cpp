@@ -821,15 +821,21 @@ void GradhSph<ndim, kernelclass>::FinishReturnExport () {
 
 
 
+#if defined(NDIM_1)
 template class GradhSph<1, M4Kernel>;
-template class GradhSph<2, M4Kernel>;
-template class GradhSph<3, M4Kernel>;
 template class GradhSph<1, QuinticKernel>;
-template class GradhSph<2, QuinticKernel>;
-template class GradhSph<3, QuinticKernel>;
 template class GradhSph<1, GaussianKernel>;
-template class GradhSph<2, GaussianKernel>;
-template class GradhSph<3, GaussianKernel>;
 template class GradhSph<1, TabulatedKernel>;
+#endif
+#if defined(NDIM_2)
+template class GradhSph<2, M4Kernel>;
+template class GradhSph<2, QuinticKernel>;
+template class GradhSph<2, GaussianKernel>;
 template class GradhSph<2, TabulatedKernel>;
+#endif
+#if defined(NDIM_3)
+template class GradhSph<3, M4Kernel>;
+template class GradhSph<3, QuinticKernel>;
+template class GradhSph<3, GaussianKernel>;
 template class GradhSph<3, TabulatedKernel>;
+#endif

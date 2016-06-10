@@ -232,7 +232,7 @@ struct Particle
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
   FLOAT agrav[ndim];                ///< Gravitational acceleration
-  FLOAT a_dust[ndim];                ///< Gravitational acceleration
+  FLOAT a_dust[ndim];               ///< Gravitational acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
   FLOAT h_dust ;                    ///< Gas Smoothing length for dust

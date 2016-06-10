@@ -827,7 +827,6 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
  (const TreeCell<ndim> &cell,          ///< [in] Pointer to cell
   const Particle<ndim> *part_gen,      ///< [in] Particle data array
-  //const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
   const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
@@ -841,8 +840,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   TreeCell<ndim> *gravcell,            ///< [out] Array of local copies of tree cells
   Particle<ndim> *neib_out)            ///< [out] Array of local copies of neighbour particles
 {
-  const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
-  ParticleType<ndim>* neibpart = reinterpret_cast<ParticleType<ndim>* >(neib_out) ;
   int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int j;                               // Aux. particle counter
@@ -852,24 +849,22 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
+  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
+  const FLOAT rmax = cell.rmax;
+  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
+  const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
+  ParticleType<ndim>* neibpart = reinterpret_cast<ParticleType<ndim>* >(neib_out) ;
+
   assert(directlist != NULL);
   assert(gravcell != NULL);
   assert(hydroneiblist != NULL);
   assert(neibpart != NULL);
   assert(partdata != NULL);
-
-  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
-
   assert(GhostFinder.MaxNumGhosts() == 1) ;
 
-  //FLOAT r_ghost[ndim] ;
-  //int   sign[ndim] ;
-
   // Make local copies of important cell properties
-  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
-  const FLOAT rmax = cell.rmax;
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
-  for (k=0; k<ndim; k++) dr_corr[k] = 0 ;
+  for (k=0; k<ndim; k++) dr_corr[k] = (FLOAT) 0.0;
 
   // Start with root cell and walk through entire tree
   Nneib      = 0;
@@ -1630,46 +1625,48 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
 #endif
 
 
-
+#if defined(NDIM_1)
 template class Tree<1,Particle,KDTreeCell>;
-template class Tree<2,Particle,KDTreeCell>;
-template class Tree<3,Particle,KDTreeCell>;
 template class Tree<1,SphParticle,KDTreeCell>;
-template class Tree<2,SphParticle,KDTreeCell>;
-template class Tree<3,SphParticle,KDTreeCell>;
 template class Tree<1,GradhSphParticle,KDTreeCell>;
-template class Tree<2,GradhSphParticle,KDTreeCell>;
-template class Tree<3,GradhSphParticle,KDTreeCell>;
 template class Tree<1,SM2012SphParticle,KDTreeCell>;
-template class Tree<2,SM2012SphParticle,KDTreeCell>;
-template class Tree<3,SM2012SphParticle,KDTreeCell>;
 template class Tree<1,MeshlessFVParticle,KDTreeCell>;
-template class Tree<2,MeshlessFVParticle,KDTreeCell>;
-template class Tree<3,MeshlessFVParticle,KDTreeCell>;
-
-
 template class Tree<1,Particle,OctTreeCell>;
-template class Tree<2,Particle,OctTreeCell>;
-template class Tree<3,Particle,OctTreeCell>;
 template class Tree<1,SphParticle,OctTreeCell>;
-template class Tree<2,SphParticle,OctTreeCell>;
-template class Tree<3,SphParticle,OctTreeCell>;
 template class Tree<1,GradhSphParticle,OctTreeCell>;
-template class Tree<2,GradhSphParticle,OctTreeCell>;
-template class Tree<3,GradhSphParticle,OctTreeCell>;
 template class Tree<1,SM2012SphParticle,OctTreeCell>;
-template class Tree<2,SM2012SphParticle,OctTreeCell>;
-template class Tree<3,SM2012SphParticle,OctTreeCell>;
 template class Tree<1,MeshlessFVParticle,OctTreeCell>;
-template class Tree<2,MeshlessFVParticle,OctTreeCell>;
-template class Tree<3,MeshlessFVParticle,OctTreeCell>;
-
 template class Tree<1,Particle,TreeRayCell>;
 template class Tree<1,SphParticle,TreeRayCell>;
 template class Tree<1,GradhSphParticle,TreeRayCell>;
+#endif
+#if defined(NDIM_2)
+template class Tree<2,Particle,KDTreeCell>;
+template class Tree<2,SphParticle,KDTreeCell>;
+template class Tree<2,GradhSphParticle,KDTreeCell>;
+template class Tree<2,SM2012SphParticle,KDTreeCell>;
+template class Tree<2,MeshlessFVParticle,KDTreeCell>;
+template class Tree<2,Particle,OctTreeCell>;
+template class Tree<2,SphParticle,OctTreeCell>;
+template class Tree<2,GradhSphParticle,OctTreeCell>;
+template class Tree<2,SM2012SphParticle,OctTreeCell>;
+template class Tree<2,MeshlessFVParticle,OctTreeCell>;
 template class Tree<2,Particle,TreeRayCell>;
 template class Tree<2,SphParticle,TreeRayCell>;
 template class Tree<2,GradhSphParticle,TreeRayCell>;
+#endif
+#if defined(NDIM_3)
+template class Tree<3,Particle,KDTreeCell>;
+template class Tree<3,SphParticle,KDTreeCell>;
+template class Tree<3,GradhSphParticle,KDTreeCell>;
+template class Tree<3,SM2012SphParticle,KDTreeCell>;
+template class Tree<3,MeshlessFVParticle,KDTreeCell>;
+template class Tree<3,Particle,OctTreeCell>;
+template class Tree<3,SphParticle,OctTreeCell>;
+template class Tree<3,GradhSphParticle,OctTreeCell>;
+template class Tree<3,SM2012SphParticle,OctTreeCell>;
+template class Tree<3,MeshlessFVParticle,OctTreeCell>;
 template class Tree<3,Particle,TreeRayCell>;
 template class Tree<3,SphParticle,TreeRayCell>;
 template class Tree<3,GradhSphParticle,TreeRayCell>;
+#endif

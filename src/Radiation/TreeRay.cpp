@@ -998,6 +998,12 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::FinaliseCell
 }
 
 
-template class TreeRay<3, 1, GradhSphParticle, TreeRayCell>;
-template class TreeRay<2, 1, GradhSphParticle, TreeRayCell>;
+#if defined(NDIM_1)
 template class TreeRay<1, 1, GradhSphParticle, TreeRayCell>;
+#endif
+#if defined(NDIM_2)
+template class TreeRay<2, 1, GradhSphParticle, TreeRayCell>;
+#endif
+#if defined(NDIM_3)
+template class TreeRay<3, 1, GradhSphParticle, TreeRayCell>;
+#endif

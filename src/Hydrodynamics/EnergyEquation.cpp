@@ -60,9 +60,15 @@ EnergyEquation<ndim>::~EnergyEquation()
 
 
 // Class instances for each dimensionality (1, 2 and 3)
+#if defined(NDIM_1)
 template class EnergyEquation<1>;
-template class EnergyEquation<2>;
-template class EnergyEquation<3>;
 template class NullEnergy<1>;
+#endif
+#if defined(NDIM_2)
+template class EnergyEquation<2>;
 template class NullEnergy<2>;
+#endif
+#if defined(NDIM_3)
+template class EnergyEquation<3>;
 template class NullEnergy<3>;
+#endif

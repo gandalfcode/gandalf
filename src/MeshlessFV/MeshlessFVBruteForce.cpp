@@ -522,7 +522,12 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllGravForces
 }
 
 
-
+#if defined(NDIM_1)
 template class MeshlessFVBruteForce<1,MeshlessFVParticle>;
+#endif
+#if defined(NDIM_2)
 template class MeshlessFVBruteForce<2,MeshlessFVParticle>;
+#endif
+#if defined(NDIM_3)
 template class MeshlessFVBruteForce<3,MeshlessFVParticle>;
+#endif

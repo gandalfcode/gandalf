@@ -736,9 +736,15 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
 
 
+#if defined(NDIM_1)
 template class SphBruteForceSearch<1,GradhSphParticle>;
-template class SphBruteForceSearch<2,GradhSphParticle>;
-template class SphBruteForceSearch<3,GradhSphParticle>;
 template class SphBruteForceSearch<1,SM2012SphParticle>;
+#endif
+#if defined(NDIM_2)
+template class SphBruteForceSearch<2,GradhSphParticle>;
 template class SphBruteForceSearch<2,SM2012SphParticle>;
+#endif
+#if defined(NDIM_3)
+template class SphBruteForceSearch<3,GradhSphParticle>;
 template class SphBruteForceSearch<3,SM2012SphParticle>;
+#endif

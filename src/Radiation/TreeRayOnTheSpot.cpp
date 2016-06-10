@@ -207,6 +207,12 @@ void TreeRayOnTheSpot<ndim,nfreq,TreeCell>::FinaliseCell
 }
 
 
+#if defined(NDIM_1)
 template class TreeRayOnTheSpot<1, 1, TreeRayCell>;
+#endif
+#if defined(NDIM_2)
 template class TreeRayOnTheSpot<2, 1, TreeRayCell>;
+#endif
+#if defined(NDIM_3)
 template class TreeRayOnTheSpot<3, 1, TreeRayCell>;
+#endif

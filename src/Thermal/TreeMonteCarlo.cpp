@@ -391,9 +391,12 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::ScatterPhotonPacket
 
 
 
+#if defined(NDIM_1)
 template class TreeMonteCarlo<1,1,GradhSphParticle,KDRadTreeCell>;
+#endif
+#if defined(NDIM_2)
 template class TreeMonteCarlo<2,1,GradhSphParticle,KDRadTreeCell>;
+#endif
+#if defined(NDIM_3)
 template class TreeMonteCarlo<3,1,GradhSphParticle,KDRadTreeCell>;
-//template class TreeMonteCarlo<1,SM2012SphParticle>;
-//template class TreeMonteCarlo<2,SM2012SphParticle>;
-//template class TreeMonteCarlo<3,SM2012SphParticle>;
+#endif

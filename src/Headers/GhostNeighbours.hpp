@@ -20,6 +20,7 @@
 //  General Public License (http://www.gnu.org/licenses) for more details.
 //=================================================================================================
 
+
 #ifndef _GHOST_NEIGHBOURS_H_
 #define _GHOST_NEIGHBOURS_H_
 
@@ -27,6 +28,7 @@
 #include "Precision.h"
 #include "Particle.h"
 #include "Tree.h"
+
 
 //=================================================================================================
 /// \brief  Make the ghost particles based upon the boundary conditions
@@ -50,8 +52,7 @@ private:
   void 	SetBoundaryFlags() {
     for (int k=0; k <ndim; k++) {
       _periodic_bound[k] = _domain.boundary_lhs[k] == periodicBoundary ;
-      if (_periodic_bound[k])
-    	  assert(_domain.boundary_rhs[k] == periodicBoundary) ;
+      if (_periodic_bound[k]) assert(_domain.boundary_rhs[k] == periodicBoundary) ;
 
       _mirror_bound[k][0] = _domain.boundary_lhs[k] == mirrorBoundary ;
       _mirror_bound[k][1] = _domain.boundary_rhs[k] == mirrorBoundary ;
@@ -190,20 +191,17 @@ public:
 	{
 	  // First find the nearest periodic mirror
 	  ngbs[0] = p ;
-	  if (_any_periodic)
-		_MakePeriodicGhost(ngbs[0]) ;
-
+	  if (_any_periodic) _MakePeriodicGhost(ngbs[0]) ;
 
 	  // Number of Ghost cells
 	  int Nghost = 1 ;
 
-	  if (_any_mirror)
-		Nghost = _MakeReflectedScatterGatherGhosts(ngbs) ;
+	  if (_any_mirror) Nghost = _MakeReflectedScatterGatherGhosts(ngbs) ;
 
 	  return Nghost ;
 	}
 
-    //=================================================================================================
+        //===============================================================================================
 	/// \brief Construct the centres and reflection signs of a cell. This list will include the
 	///        original cell or the periodic neighbour of the original cell.
 	/// \author R. A. Booth
@@ -242,7 +240,7 @@ public:
 	}
 
 private:
-    //=================================================================================================
+        //===============================================================================================
 	//  _MakePeriodicGhost
 	/// \brief Do the actual construction of the nearest periodic ghost.
 	/// \author R. A. Booth
@@ -264,7 +262,7 @@ private:
 
 	}
 
-    //=================================================================================================
+        //===============================================================================================
 	//  _MakeReflectedGhostsGather
 	/// \brief Do the actual construction of the mirror ghosts within the gather range. Assumes the
 	/// first particle is already saved in ngbs.
@@ -319,6 +317,7 @@ private:
 	int _MakeReflectedScatterGatherGhosts(ParticleType<ndim>* ngbs) const {
 	  int nc = 1 ;
 	  double h2 = ngbs[0].hrangesqd ;
+
 	  // Loop over the possible directions for reflections
 	  for (int k = 0; k < ndim; k++){
 		// Save the current number of images

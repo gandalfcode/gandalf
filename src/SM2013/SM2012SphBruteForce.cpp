@@ -158,6 +158,12 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 
 
 
+#if defined(NDIM_1)
 template class SM2012SphBruteForce<1,SM2012SphParticle>;
+#endif
+#if defined(NDIM_2)
 template class SM2012SphBruteForce<2,SM2012SphParticle>;
+#endif
+#if defined(NDIM_3)
 template class SM2012SphBruteForce<3,SM2012SphParticle>;
+#endif

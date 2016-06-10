@@ -190,13 +190,18 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGodunovFlux
 }
 
 
-
-template class MfvRungeKutta<1, M4Kernel>;
-template class MfvRungeKutta<2, M4Kernel>;
-template class MfvRungeKutta<3, M4Kernel>;
-template class MfvRungeKutta<1, QuinticKernel>;
-template class MfvRungeKutta<2, QuinticKernel>;
-template class MfvRungeKutta<3, QuinticKernel>;
-template class MfvRungeKutta<1, TabulatedKernel>;
-template class MfvRungeKutta<2, TabulatedKernel>;
-template class MfvRungeKutta<3, TabulatedKernel>;
+#if defined(NDIM_1)
+template class MfvRungeKutta<1,M4Kernel>;
+template class MfvRungeKutta<1,QuinticKernel>;
+template class MfvRungeKutta<1,TabulatedKernel>;
+#endif
+#if defined(NDIM_2)
+template class MfvRungeKutta<2,M4Kernel>;
+template class MfvRungeKutta<2,QuinticKernel>;
+template class MfvRungeKutta<2,TabulatedKernel>;
+#endif
+#if defined(NDIM_3)
+template class MfvRungeKutta<3,M4Kernel>;
+template class MfvRungeKutta<3,QuinticKernel>;
+template class MfvRungeKutta<3,TabulatedKernel>;
+#endif

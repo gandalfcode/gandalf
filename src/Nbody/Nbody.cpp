@@ -681,7 +681,12 @@ void Nbody<ndim>::UpdateChildStars
 }
 
 
-
+#if defined(NDIM_1)
 template class Nbody<1>;
+#endif
+#if defined(NDIM_2)
 template class Nbody<2>;
+#endif
+#if defined(NDIM_3)
 template class Nbody<3>;
+#endif

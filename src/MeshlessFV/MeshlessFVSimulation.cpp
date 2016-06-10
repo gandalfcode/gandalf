@@ -49,9 +49,15 @@ using namespace std;
 
 // Create template class instances of the main MeshlessFVSimulation object for
 // each dimension used (1, 2 and 3)
+#if defined(NDIM_1)
 template class MeshlessFVSimulation<1>;
+#endif
+#if defined(NDIM_2)
 template class MeshlessFVSimulation<2>;
+#endif
+#if defined(NDIM_3)
 template class MeshlessFVSimulation<3>;
+#endif
 
 
 

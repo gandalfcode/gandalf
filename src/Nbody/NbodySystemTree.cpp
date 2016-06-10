@@ -940,7 +940,12 @@ void NbodySystemTree<ndim>::OutputBinaryProperties
 }
 
 
-
+#if defined(NDIM_1)
 template class NbodySystemTree<1>;
+#endif
+#if defined(NDIM_2)
 template class NbodySystemTree<2>;
+#endif
+#if defined(NDIM_3)
 template class NbodySystemTree<3>;
+#endif

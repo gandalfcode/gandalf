@@ -1068,9 +1068,15 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::SumRadiationField
 
 
 
+#if defined(NDIM_1)
 template class KDRadiationTree<1,1,GradhSphParticle,KDRadTreeCell>;
-template class KDRadiationTree<2,1,GradhSphParticle,KDRadTreeCell>;
-template class KDRadiationTree<3,1,GradhSphParticle,KDRadTreeCell>;
 template class KDRadiationTree<1,1,GradhSphParticle,MonoIonTreeCell>;
+#endif
+#if defined(NDIM_2)
+template class KDRadiationTree<2,1,GradhSphParticle,KDRadTreeCell>;
 template class KDRadiationTree<2,1,GradhSphParticle,MonoIonTreeCell>;
+#endif
+#if defined(NDIM_3)
+template class KDRadiationTree<3,1,GradhSphParticle,KDRadTreeCell>;
 template class KDRadiationTree<3,1,GradhSphParticle,MonoIonTreeCell>;
+#endif

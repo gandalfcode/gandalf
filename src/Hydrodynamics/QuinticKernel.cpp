@@ -65,6 +65,12 @@ QuinticKernel<ndim>::~QuinticKernel()
 
 
 
+#if defined(NDIM_1)
 template class QuinticKernel<1>;
+#endif
+#if defined(NDIM_2)
 template class QuinticKernel<2>;
+#endif
+#if defined(NDIM_3)
 template class QuinticKernel<3>;
+#endif

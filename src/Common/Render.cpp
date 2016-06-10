@@ -406,6 +406,12 @@ int Render<ndim>::CreateSliceRenderingGrid
 
 
 
+#if defined(NDIM_1)
 template class Render<1>;
+#endif
+#if defined(NDIM_2)
 template class Render<2>;
+#endif
+#if defined(NDIM_3)
 template class Render<3>;
+#endif

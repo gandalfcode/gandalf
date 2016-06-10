@@ -20,14 +20,19 @@
 #==================================================================================================
 
 
-CPP                = 
+CPP                = g++
 PYTHON             = python
 COMPILER_MODE      = DEBUG
-PRECISION          = DOUBLE
-OPENMP             = 1
+PRECISION          = SINGLE
+OPENMP             = 0
 OUTPUT_LEVEL       = 1
-DEBUG_LEVEL        = 1
-BUILD_DEPENDENCIES = 1
+DEBUG_LEVEL        = 0
+BUILD_DEPENDENCIES = 0
+
+
+# Experimental optimisations
+#--------------------------------------------------------------------------------------------------
+NDIM               = 3
 
 
 # FFTW libary flags and paths.  If paths are empty, tries standard default linux paths.

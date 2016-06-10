@@ -1423,18 +1423,24 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 
 
 
+#if defined(NDIM_1)
 template class KDTree<1,Particle,KDTreeCell>;
-template class KDTree<2,Particle,KDTreeCell>;
-template class KDTree<3,Particle,KDTreeCell>;
 template class KDTree<1,SphParticle,KDTreeCell>;
-template class KDTree<2,SphParticle,KDTreeCell>;
-template class KDTree<3,SphParticle,KDTreeCell>;
 template class KDTree<1,GradhSphParticle,KDTreeCell>;
-template class KDTree<2,GradhSphParticle,KDTreeCell>;
-template class KDTree<3,GradhSphParticle,KDTreeCell>;
 template class KDTree<1,SM2012SphParticle,KDTreeCell>;
-template class KDTree<2,SM2012SphParticle,KDTreeCell>;
-template class KDTree<3,SM2012SphParticle,KDTreeCell>;
 template class KDTree<1,MeshlessFVParticle,KDTreeCell>;
+#endif
+#if defined(NDIM_2)
+template class KDTree<2,Particle,KDTreeCell>;
+template class KDTree<2,SphParticle,KDTreeCell>;
+template class KDTree<2,GradhSphParticle,KDTreeCell>;
+template class KDTree<2,SM2012SphParticle,KDTreeCell>;
 template class KDTree<2,MeshlessFVParticle,KDTreeCell>;
+#endif
+#if defined(NDIM_3)
+template class KDTree<3,Particle,KDTreeCell>;
+template class KDTree<3,SphParticle,KDTreeCell>;
+template class KDTree<3,GradhSphParticle,KDTreeCell>;
+template class KDTree<3,SM2012SphParticle,KDTreeCell>;
 template class KDTree<3,MeshlessFVParticle,KDTreeCell>;
+#endif

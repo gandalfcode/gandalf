@@ -157,6 +157,12 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 
 
 
+#if defined(NDIM_1)
 template class GradhSphBruteForce<1,GradhSphParticle>;
+#endif
+#if defined(NDIM_2)
 template class GradhSphBruteForce<2,GradhSphParticle>;
+#endif
+#if defined(NDIM_3)
 template class GradhSphBruteForce<3,GradhSphParticle>;
+#endif

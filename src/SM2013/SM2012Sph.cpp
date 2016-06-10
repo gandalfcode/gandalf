@@ -486,16 +486,21 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
 }
 
 
-
+#if defined(NDIM_1)
 template class SM2012Sph<1, M4Kernel>;
 template class SM2012Sph<1, QuinticKernel>;
 template class SM2012Sph<1, GaussianKernel>;
 template class SM2012Sph<1, TabulatedKernel>;
+#endif
+#if defined(NDIM_2)
 template class SM2012Sph<2, M4Kernel>;
 template class SM2012Sph<2, QuinticKernel>;
 template class SM2012Sph<2, GaussianKernel>;
 template class SM2012Sph<2, TabulatedKernel>;
+#endif
+#if defined(NDIM_3)
 template class SM2012Sph<3, M4Kernel>;
 template class SM2012Sph<3, QuinticKernel>;
 template class SM2012Sph<3, GaussianKernel>;
 template class SM2012Sph<3, TabulatedKernel>;
+#endif

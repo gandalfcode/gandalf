@@ -203,12 +203,18 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
 
 
 
-template class MfvMuscl<1, M4Kernel>;
-template class MfvMuscl<2, M4Kernel>;
-template class MfvMuscl<3, M4Kernel>;
-template class MfvMuscl<1, QuinticKernel>;
-template class MfvMuscl<2, QuinticKernel>;
-template class MfvMuscl<3, QuinticKernel>;
-template class MfvMuscl<1, TabulatedKernel>;
-template class MfvMuscl<2, TabulatedKernel>;
-template class MfvMuscl<3, TabulatedKernel>;
+#if defined(NDIM_1)
+template class MfvMuscl<1,M4Kernel>;
+template class MfvMuscl<1,QuinticKernel>;
+template class MfvMuscl<1,TabulatedKernel>;
+#endif
+#if defined(NDIM_2)
+template class MfvMuscl<2,M4Kernel>;
+template class MfvMuscl<2,QuinticKernel>;
+template class MfvMuscl<2,TabulatedKernel>;
+#endif
+#if defined(NDIM_3)
+template class MfvMuscl<3,M4Kernel>;
+template class MfvMuscl<3,QuinticKernel>;
+template class MfvMuscl<3,TabulatedKernel>;
+#endif

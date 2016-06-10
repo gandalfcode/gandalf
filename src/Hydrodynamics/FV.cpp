@@ -233,6 +233,12 @@ void FV<ndim>::CalculatePrimitiveTimeDerivative
 
 
 
+#if defined(NDIM_1)
 template class FV<1>;
+#endif
+#if defined(NDIM_2)
 template class FV<2>;
+#endif
+#if defined(NDIM_3)
 template class FV<3>;
+#endif

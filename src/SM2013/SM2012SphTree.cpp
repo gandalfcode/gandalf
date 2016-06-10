@@ -169,16 +169,21 @@ SM2012SphTree<ndim,ParticleType,TreeCell>::~SM2012SphTree()
 
 
 
+#if defined(NDIM_1)
 template class SM2012SphTree<1,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphTree<2,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphTree<3,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphKDTree<1,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphKDTree<2,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphKDTree<3,SM2012SphParticle,KDTreeCell>;
-
 template class SM2012SphTree<1,SM2012SphParticle,OctTreeCell>;
-template class SM2012SphTree<2,SM2012SphParticle,OctTreeCell>;
-template class SM2012SphTree<3,SM2012SphParticle,OctTreeCell>;
+template class SM2012SphKDTree<1,SM2012SphParticle,KDTreeCell>;
 template class SM2012SphOctTree<1,SM2012SphParticle,OctTreeCell>;
+#endif
+#if defined(NDIM_2)
+template class SM2012SphTree<2,SM2012SphParticle,KDTreeCell>;
+template class SM2012SphTree<2,SM2012SphParticle,OctTreeCell>;
+template class SM2012SphKDTree<2,SM2012SphParticle,KDTreeCell>;
 template class SM2012SphOctTree<2,SM2012SphParticle,OctTreeCell>;
+#endif
+#if defined(NDIM_3)
+template class SM2012SphTree<3,SM2012SphParticle,KDTreeCell>;
+template class SM2012SphTree<3,SM2012SphParticle,OctTreeCell>;
+template class SM2012SphKDTree<3,SM2012SphParticle,KDTreeCell>;
 template class SM2012SphOctTree<3,SM2012SphParticle,OctTreeCell>;
+#endif

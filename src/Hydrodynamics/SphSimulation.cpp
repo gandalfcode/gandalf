@@ -50,9 +50,15 @@ using namespace std;
 
 // Create template class instances of the main SphSimulation object for
 // each dimension used (1, 2 and 3)
+#if defined(NDIM_1)
 template class SphSimulation<1>;
+#endif
+#if defined(NDIM_2)
 template class SphSimulation<2>;
+#endif
+#if defined(NDIM_3)
 template class SphSimulation<3>;
+#endif
 
 
 
@@ -776,7 +782,7 @@ void SphSimulation<ndim>::MainLoop(void)
       }
 
       // Checking if acceleration or other values are invalid
-      for (i=0; i<sph->Nhydro; i++) {
+      /*for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         if (part.active) {
           for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
@@ -784,7 +790,7 @@ void SphSimulation<ndim>::MainLoop(void)
           for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
           assert(part.gpot == part.gpot);
         }
-      }
+	}*/
 
 #if defined MPI_PARALLEL
       mpicontrol->GetExportedParticlesAccelerations(sph);

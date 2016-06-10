@@ -608,12 +608,18 @@ void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo
 
 
 
+#if defined(NDIM_1)
 template class BruteForceSearch<1,GradhSphParticle>;
-template class BruteForceSearch<2,GradhSphParticle>;
-template class BruteForceSearch<3,GradhSphParticle>;
 template class BruteForceSearch<1,SM2012SphParticle>;
-template class BruteForceSearch<2,SM2012SphParticle>;
-template class BruteForceSearch<3,SM2012SphParticle>;
 template class BruteForceSearch<1,MeshlessFVParticle>;
+#endif
+#if defined(NDIM_2)
+template class BruteForceSearch<2,GradhSphParticle>;
+template class BruteForceSearch<2,SM2012SphParticle>;
 template class BruteForceSearch<2,MeshlessFVParticle>;
+#endif
+#if defined(NDIM_3)
+template class BruteForceSearch<3,GradhSphParticle>;
+template class BruteForceSearch<3,SM2012SphParticle>;
 template class BruteForceSearch<3,MeshlessFVParticle>;
+#endif

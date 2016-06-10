@@ -183,6 +183,12 @@ void TabulatedKernel<ndim>::initializeTableLOS()
 
 
 
+#if defined(NDIM_1)
 template class TabulatedKernel<1>;
+#endif
+#if defined(NDIM_2)
 template class TabulatedKernel<2>;
+#endif
+#if defined(NDIM_3)
 template class TabulatedKernel<3>;
+#endif

@@ -67,7 +67,12 @@ GaussianKernel<ndim>::~GaussianKernel()
 
 
 
+#if defined(NDIM_1)
 template class GaussianKernel<1>;
+#endif
+#if defined(NDIM_2)
 template class GaussianKernel<2>;
+#endif
+#if defined(NDIM_3)
 template class GaussianKernel<3>;
-
+#endif

@@ -58,6 +58,7 @@ ICCOPT   += -O3 -fast -fPIC -fno-exceptions
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
+GCCOPT   += -pg -fprofile-arcs -ftest-coverage
 ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
 CLANGOPT += -O3 -g -pg -Wall
 else ifeq ($(COMPILER_MODE),STANDARD)
@@ -90,12 +91,26 @@ ifeq ($(CXX),clang++)
  OPT += -D__extern_always_inline=inline
 endif
 
+
 # Precision options
 # -------------------------------------------------------------------------------------------------
 ifeq ($(PRECISION),SINGLE)
 CFLAGS += -DGANDALF_SINGLE_PRECISION
 else ifeq ($(PRECISION),DOUBLE)
 CFLAGS += -DGANDALF_DOUBLE_PRECISION
+endif
+
+
+# Experimental optimisations
+# -------------------------------------------------------------------------------------------------
+ifeq ($(NDIM),1)
+CFLAGS += -DNDIM_1
+else ifeq ($(NDIM),2)
+CFLAGS += -DNDIM_2
+else ifeq ($(NDIM),3)
+CFLAGS += -DNDIM_3
+else
+CFLAGS += -DNDIM_ALL -DNDIM_1 -DNDIM_2 -DNDIM_3
 endif
 
 

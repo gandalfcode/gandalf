@@ -1201,17 +1201,21 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
 
 
-
+#if defined(NDIM_1)
 template class MeshlessFVTree<1,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVKDTree<1,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVKDTree<2,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVKDTree<3,MeshlessFVParticle,KDTreeCell>;
-
 template class MeshlessFVTree<1,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,OctTreeCell>;
+template class MeshlessFVKDTree<1,MeshlessFVParticle,KDTreeCell>;
 template class MeshlessFVOctTree<1,MeshlessFVParticle,OctTreeCell>;
+#endif
+#if defined(NDIM_2)
+template class MeshlessFVTree<2,MeshlessFVParticle,KDTreeCell>;
+template class MeshlessFVTree<2,MeshlessFVParticle,OctTreeCell>;
+template class MeshlessFVKDTree<2,MeshlessFVParticle,KDTreeCell>;
 template class MeshlessFVOctTree<2,MeshlessFVParticle,OctTreeCell>;
+#endif
+#if defined(NDIM_3)
+template class MeshlessFVTree<3,MeshlessFVParticle,KDTreeCell>;
+template class MeshlessFVTree<3,MeshlessFVParticle,OctTreeCell>;
+template class MeshlessFVKDTree<3,MeshlessFVParticle,KDTreeCell>;
 template class MeshlessFVOctTree<3,MeshlessFVParticle,OctTreeCell>;
+#endif

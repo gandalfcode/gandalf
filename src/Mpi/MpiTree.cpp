@@ -519,10 +519,15 @@ void MpiTree<ndim,ParticleType>::UpdateBoundingBoxes(void)
 
 
 
-
+#if defined(NDIM_1)
 template class MpiTree<1,GradhSphParticle>;
-template class MpiTree<2,GradhSphParticle>;
-template class MpiTree<3,GradhSphParticle>;
 template class MpiTree<1,SM2012SphParticle>;
+#endif
+#if defined(NDIM_2)
+template class MpiTree<2,GradhSphParticle>;
 template class MpiTree<2,SM2012SphParticle>;
+#endif
+#if defined(NDIM_3)
+template class MpiTree<3,GradhSphParticle>;
 template class MpiTree<3,SM2012SphParticle>;
+#endif
