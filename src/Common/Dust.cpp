@@ -203,21 +203,19 @@ public:
 
 	ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
 
-	for (int i(0); i < Ntot; ++i){
-	  if (sphdata[i].active && _types[sphdata[i].ptype].drag_forces){
-		for (int k=0; k < ndim; k++)
-		  sphdata[i].a_dust[k] = 0 ;
+	/*for (int i(0); i < Ntot; ++i){
+	  if (sphdata[i].active && _types[sphdata[i].ptype].drag_forces) {
+	    for (int k=0; k < ndim; k++) sphdata[i].a_dust[k] = 0 ;
 	  }
 	}
 
 	FindNeibAndDoForces(NPart, Ntot, sphdata, _types, _Forces) ;
 
 	for (int i(0); i < Ntot; ++i){
-	  if (sphdata[i].active && _types[sphdata[i].ptype].drag_forces){
-	    for (int k=0; k < ndim; k++)
-		  sphdata[i].a[k] += sphdata[i].a_dust[k] ;
-		}
+	  if (sphdata[i].active && _types[sphdata[i].ptype].drag_forces) {
+	    for (int k=0; k < ndim; k++) sphdata[i].a[k] += sphdata[i].a_dust[k] ;
 	  }
+	}*/
   }
 private:
   ParticleTypeRegister _types ;
@@ -256,11 +254,11 @@ public:
 
 		FindNeibAndDoInterp(NPart, Ntot, sphdata, mask, _interp) ;
 
-		for (int i(0); i < Ntot; ++i)
+		/*for (int i(0); i < Ntot; ++i)
 			if (sphdata[i].active && sphdata[i].ptype == dust_type){
 			    for (int k(0); k < ndim; ++k)
 			        sphdata[i].a[k] += sphdata[i].a_dust[k] ;
-			}
+				}*/
 	}
 private:
   DI _interp ;
@@ -310,11 +308,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,cout,sphdata, mask, Interp)
  {
-#if defined _OPENMP
-    const int ithread = omp_get_thread_num();
-#else
-    const int ithread = 0;
-#endif
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
     int i;                                     // Particle id
@@ -547,11 +540,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot)
   {
-#if defined _OPENMP
-    const int ithread = omp_get_thread_num();
-#else
-    const int ithread = 0;
-#endif
     int cc;                                      // Aux. cell counter
     int i;                                       // Particle id
     int j;                                       // Aux. particle counter
@@ -672,7 +660,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
     	i = activelist[j];
-    	for (k=0; k<ndim; k++) sphdata[i].a_dust[k] = activepart[j].a_dust[k] ;
+    	//for (k=0; k<ndim; k++) sphdata[i].a_dust[k] = activepart[j].a_dust[k] ;
+        for (k=0; k<ndim; k++) sphdata[i].a[k] = activepart[j].a[k];
     	sphdata[i].dudt = activepart[j].dudt ;
     	sphdata[i].div_v = activepart[j].div_v ;
     	sphdata[i].sound = activepart[j].sound ;
@@ -739,7 +728,9 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   FLOAT gsound ;                       // Gas Sound Speed
   FLOAT dv[ndim] ;                     // Velocity difference
   FLOAT da[ndim] ;                     // Acceleration difference
-
+  
+  FLOAT dt = (FLOAT) 1.0;
+  assert(dt > 0.0);
 
   // Some basic sanity-checking in case of invalid input into routine
   assert(Nneib > 0);
@@ -860,8 +851,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   parti.sound *= parti.h / parti.h_dust ;
 
   // Predict the relative velocity
-  for (k=0; k<ndim; k++)
-    dv[k] += da[k] * parti.dt ;
+  for (k=0; k<ndim; k++) dv[k] += da[k] * dt ;
 
   //===============================================================================================
   // Compute the drag acceleration
@@ -870,10 +860,10 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   assert(t_s != 0) ;
 
   FLOAT Xi, Lambda ;
-  FLOAT tau = parti.dt / t_s ;
+  FLOAT tau = dt / t_s ;
   if (tau > 1e-3) {
-    Xi      = (1 - exp(- tau)) / parti.dt ;
-    Lambda  = (parti.dt + t_s) * Xi - 1;
+    Xi      = (1 - exp(- tau)) / dt ;
+    Lambda  = (dt + t_s) * Xi - 1;
   }
   else {
 	Xi = (1 - 0.5 * tau * (1 - tau/3.)) ;
@@ -881,8 +871,8 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 	Xi /= t_s ;
   }
 
-  for (k=0; k<ndim; k++)
-    parti.a_dust[k] = - dv[k] * Xi  + da[k] * Lambda ;
+  for (k=0; k<ndim; k++) parti.a[k] += - dv[k]*Xi + da[k]*Lambda;
+    //parti.a_dust[k] = - dv[k] * Xi  + da[k] * Lambda ;
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
@@ -922,13 +912,16 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
   FLOAT dadr;                          // Dot product of da and dr
   FLOAT wkern;                         // Value of drag kernel function for part i
   FLOAT S ;                            // Drag term
+ 
+  DOUBLE dt = (FLOAT) 0.0;
+  assert(dt > 0.0);
 
   // Some basic sanity-checking in case of invalid input into routine
   assert(!parti.flags.is_dead());
 
   if (parti.ptype == dust_type){
-	  parti.sound = 0;
-	  parti.div_v = 0;
+    parti.sound = 0;
+    parti.div_v = 0;
   }
 
 
@@ -976,11 +969,11 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     //---------------------------------------------------------------------------------------------
     // Evaluate the drag term
     FLOAT rho = drho + grho ;
-    FLOAT tau = parti.dt / t_s ;
+    FLOAT tau = dt / t_s ;
     FLOAT Xi, Lambda ;
     if (tau > 1e-3) {
-      Xi = (1 - exp(- tau)) / (parti.dt * rho) ;
-      Lambda = (parti.dt + t_s)*Xi - 1 / rho ;
+      Xi = (1 - exp(- tau)) / (dt * rho) ;
+      Lambda = (dt + t_s)*Xi - 1 / rho ;
     } else {
       Xi = (1 - 0.5 * tau * (1 - tau/3.)) / rho ;
       Lambda = (1 + tau) * Xi - 1 / rho;
@@ -988,16 +981,16 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     }
 
     // Predict the relative velocity
-    dvdr += parti.dt * dadr ;
+    dvdr += dt * dadr ;
 
     S = (dvdr * Xi - dadr * Lambda) ;
 
-    for (k=0; k<ndim;k++)
-    	parti.a_dust[k] += ndim * neibpart[j].rho * S * draux[k] * wkern ;
+    for (k=0; k<ndim;k++) parti.a[k] += ndim * neibpart[j].rho * S * draux[k] * wkern;
+      //parti.a_dust[k] += ndim * neibpart[j].rho * S * draux[k] * wkern ;
 
     // Add Change in K.E to thermal energy generation
     if (_use_energy_term && parti.ptype == gas_type)
-    	parti.dudt += ndim * neibpart[j].rho * S *(dvdr - 0.5*rho*S*parti.dt)* wkern ;
+    	parti.dudt += ndim * neibpart[j].rho * S *(dvdr - 0.5*rho*S*dt)* wkern ;
   }
   //-----------------------------------------------------------------------------------------------
 

@@ -20,11 +20,11 @@
 #==================================================================================================
 
 
-CPP                = g++
+CPP                = icpc
 PYTHON             = python
-COMPILER_MODE      = DEBUG
+COMPILER_MODE      = FAST
 PRECISION          = SINGLE
-OPENMP             = 0
+OPENMP             = 1
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
 BUILD_DEPENDENCIES = 0

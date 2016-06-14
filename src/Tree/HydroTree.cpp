@@ -765,9 +765,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 
     for (j=0; j<Nactive; j++) {
       for (k=0; k<ndim; k++) dr[k] = activepart[j].r[k] - rc[k];
-      activepart[j].agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
-      activepart[j].agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
-      activepart[j].agrav[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
+      activepart[j].a[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
+      activepart[j].a[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
+      activepart[j].a[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
       activepart[j].gpot += cellpot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
     }
 

@@ -485,11 +485,7 @@ bool MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
         cell->temp       = temp_ion*cell->Xion;
         cell->opacity[0] = ((FLOAT) 1.0 - cell->Xion)*across*cell->rho*invmh;
 
-        /*cout << "Xion : " << cell->Xion << "    " << cell->Xold << endl;
-        cout << "nums : " << ionconst << "    " << cell->lsum[0] << "    " << Nphoton*cell->volume*cell->rho*cell->Xold << endl;
-        int jj;
-        cin >> jj;*/
-
+ 
         if (nfrac != nfrac || cell->Xion != cell->Xion) {
           cout << "NaN detected while computing Xion : " << c << "    " << nfrac << "   "
                << cell->Xion << "   " << cell->Xold << "   " << cell->lsum[0] << "    "
@@ -682,7 +678,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 
     // Loop over all particles in cell summing their contributions
     while (i != -1) {
-      cell.Xion += partdata[i].m*partdata[i].Xion;  //ionfrac;
+      cell.Xion += partdata[i].m*partdata[i].ionfrac;
       if (i == cell.ilast) break;
       i = radtree->inext[i];
     };
@@ -816,8 +812,8 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
         else {
           part.ionfrac = xion/xionNorm;
         }
-        part.Xion = radtree->radcell[c].Xion;
-        part.ionfrac = part.Xion;
+        part.ionfrac = radtree->radcell[c].Xion;
+        //part.ionfrac = part.Xion;
 
 
         if (i == radtree->radcell[c].ilast) break;
