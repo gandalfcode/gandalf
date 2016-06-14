@@ -20,11 +20,15 @@
 #==================================================================================================
 
 
+<<<<<<< 9a47e1ca97b155107246601721c8fe9773c9f86c
 CPP                = g++
+=======
+CPP                = g++-5
+>>>>>>> Testing neighbour finding without GhostFinder routines (to test any possible latency)
 PYTHON             = python
-COMPILER_MODE      = FAST
+COMPILER_MODE      = DEBUG
 PRECISION          = SINGLE
-OPENMP             = 1
+OPENMP             = 0
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
 BUILD_DEPENDENCIES = 0
