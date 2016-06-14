@@ -616,7 +616,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     paux = (FLOAT) 0.5*(invhsqdi*kern.wgrav(drmag*parti.invh) + parti.zeta*wkerni +
                         neibpart[j].invh*neibpart[j].invh*kern.wgrav(drmag*neibpart[j].invh) +
                         neibpart[j].zeta*wkernj);
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += (FLOAT) 0.5*neibpart[j].m*(parti.invh*kern.wpot(drmag*parti.invh) +
                                              neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
 
@@ -693,7 +693,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
                         neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
   }
@@ -741,7 +741,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     invdr3   = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.agrav[k] += sphdata[j].m*dr[k]*invdr3;
+    for (k=0; k<ndim; k++) parti.a[k] += sphdata[j].m*dr[k]*invdr3;
     parti.gpot += sphdata[j].m*invdrmag;
 
     // Sanity-checkt to ensure particles are really un-softened direct-sum neighbours
@@ -795,7 +795,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
+    for (k=0; k<ndim; k++) parti.a[k] += paux*dr[k];
     //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
     //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
@@ -811,11 +811,11 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
 #if defined MPI_PARALLEL
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::FinishReturnExport () {
-	for (int i=0; i<Nhydro; i++) {
-		GradhSphParticle<ndim>& part = sphdata[i];
-		part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)*part.invh +
-			    max(-part.div_v, (FLOAT) 0.0)*(alpha_visc - part.alpha);
-	}
+  for (int i=0; i<Nhydro; i++) {
+    GradhSphParticle<ndim>& part = sphdata[i];
+    part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)*part.invh +
+      max(-part.div_v, (FLOAT) 0.0)*(alpha_visc - part.alpha);
+  }
 }
 #endif
 

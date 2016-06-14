@@ -214,14 +214,12 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
     partdata[i].gpot      = (FLOAT) 0.0;
     partdata[i].dudt      = (FLOAT) 0.0;
     partdata[i].levelneib = 0;
 
     for (k=0; k<ndim; k++) rp[k] = partdata[i].r[k];
     hrangesqdi = partdata[i].hrangesqd;
-    //hrangesqdi = pow(kernp->kernrange*partdata[i].h,2); //pow(kernfac*kernp->kernrange*partdata[i].h,2);
     Nneib = 0;
 
     // Compute distances and the reciprical between the current particle
@@ -306,7 +304,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
     partdata[i].gpot      = (FLOAT) 0.0;
     partdata[i].dudt      = (FLOAT) 0.0;
     partdata[i].levelneib = 0;
@@ -325,8 +322,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
 
     // Compute all star forces
     if (ipart < Nhydro) sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, partdata[i]);
-
-    for (k=0; k<ndim; k++) partdata[i].a[k] += partdata[i].agrav[k];
     partdata[i].active = false;
 
   }
@@ -375,7 +370,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
     partdata[i].gpot      = (FLOAT) 0.0;
     partdata[i].dudt      = (FLOAT) 0.0;
     partdata[i].levelneib = 0;
@@ -394,8 +388,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
     // Compute all star forces
     if (iparticle < Nhydro) sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i]);
-
-    for (k=0; k<ndim; k++) partdata[i].a[k] += partdata[i].agrav[k];
     partdata[i].active = false;
 
   }
@@ -457,8 +449,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
-
     partdata[i].gpot = (FLOAT) 0.0;
     partdata[i].dudt = (FLOAT) 0.0;
     partdata[i].levelneib = 0;
@@ -501,15 +491,12 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
       for (j=0; j<Nneib; j++) {
         for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
         ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
-        for (k=0; k<ndim; k++) partdata[i].agrav[k] += aperiodic[k];
         partdata[i].gpot += potperiodic;
       }
     }
 
     // Compute all star forces
     sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i]);
-
-    for (k=0; k<ndim; k++) partdata[i].a[k] += partdata[i].agrav[k];
     partdata[i].active = false;
 
   }
@@ -582,7 +569,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 
       // Zero all arrays to be updated
       for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
       partdata[i].gpot      = (FLOAT) 0.0;
       partdata[i].dudt      = (FLOAT) 0.0;
       partdata[i].levelneib = 0;
@@ -683,7 +669,6 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
       // Zero all arrays to be updated
       for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
       partdata[i].gpot = (FLOAT) 0.0;
       partdata[i].dudt = (FLOAT) 0.0;
       partdata[i].levelneib = 0;
@@ -714,15 +699,12 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
         for (j=0; j<Nneib; j++) {
           for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - partdata[i].r[k];
           ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
-          for (k=0; k<ndim; k++) partdata[i].agrav[k] += aperiodic[k];
           partdata[i].gpot += potperiodic;
         }
       }
     }
     // Compute all star forces
     sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i]);
-
-    for (k=0; k<ndim; k++) partdata[i].a[k] += partdata[i].agrav[k];
     partdata[i].active = false;
 
   }

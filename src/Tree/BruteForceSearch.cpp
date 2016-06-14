@@ -480,10 +480,7 @@ void BruteForceSearch<ndim,ParticleType>::UnpackExported
       copy( &partdata[i+offset_part] , &received_array[i*sizeof(ParticleType<ndim>)+offset]);
       ParticleType<ndim>& p2 = partdata[i+offset_part];
       assert(p2.iorig>=0);
-      for (int k=0; k<ndim; k++) {
-        p2.a[k]=0;
-        p2.agrav[k]=0;
-      }
+      for (int k=0; k<ndim; k++) p2.a[k] = (FLOAT) 0.0;
       p2.gpot=0;
       p2.div_v=0;
       p2.dudt = 0;
@@ -590,10 +587,7 @@ void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo
      assert(received_particle->iorig>=0);
       assert(partdata[j].iorig == received_particle->iorig);
 
-      for (int k=0; k<ndim; k++) {
-        partdata[j].a[k] += received_particle->a[k];
-        partdata[j].agrav[k] += received_particle->agrav[k];
-      }
+      for (int k=0; k<ndim; k++) partdata[j].a[k] += received_particle->a[k];
       partdata[j].gpot += received_particle->gpot;
       partdata[j].dudt += received_particle->dudt;
       partdata[j].div_v += received_particle->div_v;

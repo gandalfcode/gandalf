@@ -442,7 +442,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         activepart[j].gpot      = (FLOAT) 0.0;
         activepart[j].levelneib = 0;
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
       }
 
       // Compute neighbour list for cell from real and periodic ghost particles
@@ -540,8 +539,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].a[k] + activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) sphdata[i].agrav[k] += activepart[j].agrav[k];
+        for (k=0; k<ndim; k++) sphdata[i].a[k] += activepart[j].a[k];
         sphdata[i].gpot     += activepart[j].gpot;
         sphdata[i].dudt     += activepart[j].dudt;
         sphdata[i].dalphadt += activepart[j].dalphadt;
@@ -704,7 +702,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
         activepart[j].levelneib = 0;
         activepart[j].gpot      = activepart[j].m*activepart[j].invh*sph->kernp->wpot(0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
       }
 
       // Compute neighbour list for cell depending on physics options
@@ -811,12 +808,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
           // Compute gravitational force due to distant cells
           if (multipole == "monopole") {
-            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
-                                          activepart[j].r, Ngravcell, gravcell);
+            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
+                                            activepart[j].r, Ngravcell, gravcell);
           }
           else if (multipole == "quadrupole") {
-            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
-                                            activepart[j].r, Ngravcell, gravcell);
+            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
+                                              activepart[j].r, Ngravcell, gravcell);
          }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
@@ -827,7 +824,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
               for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
 
@@ -835,7 +832,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
             for (jj=0; jj<Ngravcell; jj++) {
               for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
           }
@@ -858,8 +855,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].a[k] + activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) sphdata[i].agrav[k] += activepart[j].agrav[k];
+        for (k=0; k<ndim; k++) sphdata[i].a[k] += activepart[j].a[k];
         sphdata[i].gpot  += activepart[j].gpot;
         sphdata[i].dudt  += activepart[j].dudt;
         sphdata[i].div_v += activepart[j].div_v;
@@ -1005,7 +1001,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
         activepart[j].levelneib = 0;
         activepart[j].gpot      = activepart[j].m*activepart[j].invh*sph->kernp->wpot(0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
       }
 
       // Compute neighbour list for cell depending on physics options
@@ -1098,11 +1093,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
           // Compute gravitational force due to distant cells
           if (multipole == "monopole") {
-            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
+            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
                                             activepart[j].r, Ngravcell, gravcell);
           }
           else if (multipole == "quadrupole") {
-            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
                                               activepart[j].r, Ngravcell, gravcell);
           }
 
@@ -1111,7 +1106,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
             for (jj=0; jj<Nneib; jj++) {
               for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
 
@@ -1119,7 +1114,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
             for (jj=0; jj<Ngravcell; jj++) {
               for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
           }
@@ -1141,8 +1136,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].a[k] + activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) sphdata[i].agrav[k] += activepart[j].agrav[k];
+        for (k=0; k<ndim; k++) sphdata[i].a[k] += activepart[j].a[k];
         sphdata[i].gpot  += activepart[j].gpot;
         sphdata[i].dudt  += activepart[j].dudt;
         sphdata[i].div_v += activepart[j].div_v;

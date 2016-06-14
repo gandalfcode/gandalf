@@ -206,6 +206,8 @@ private:
   ParticleTypeInfo _types[Ntypes] ;
 };
 
+
+
 //=================================================================================================
 //  Structure Particle
 /// \brief  Main base particle data structure.
@@ -231,11 +233,10 @@ struct Particle
   FLOAT r0[ndim];                   ///< Position at beginning of step
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
-  FLOAT agrav[ndim];                ///< Gravitational acceleration
-  FLOAT a_dust[ndim];               ///< Gravitational acceleration
+  //FLOAT a_dust[ndim];               ///< Gravitational acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
-  FLOAT h_dust ;                    ///< Gas Smoothing length for dust
+  FLOAT h_dust;                     ///< Gas Smoothing length for dust
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
   FLOAT invh;                       ///< 1 / h
   FLOAT hfactor;                    ///< invh^(ndim + 1)
@@ -247,14 +248,12 @@ struct Particle
   FLOAT dudt0;                      ///< dudt at beginning of step
   FLOAT dudt;                       ///< Compressional heating rate
   FLOAT gpot;                       ///< Gravitational potential
-  DOUBLE dt;                        ///< Particle timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
   FLOAT ionfrac;                    ///< Ionisation fraction
-  FLOAT Xion;                       ///< Ionisation fraciton (from tree)
   FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
-  FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
+  //FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
   int ionstate;                     ///< States current ionisation state of the particle
                                     ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
@@ -274,8 +273,7 @@ struct Particle
     for (int k=0; k<ndim; k++) r0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) a_dust[k] = (FLOAT) 0.0;
+    //for (int k=0; k<ndim; k++) a_dust[k] = (FLOAT) 0.0;
     m         = (FLOAT) 0.0;
     h         = (FLOAT) 0.0;
     h_dust    = (FLOAT) 0.0;
@@ -290,10 +288,8 @@ struct Particle
     dudt      = (FLOAT) 0.0;
     dudt0     = (FLOAT) 0.0;
     gpot      = (FLOAT) 0.0;
-    dt        = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
     ionfrac   = (FLOAT) 0.999;
-    Xion      = (FLOAT) 0.999;
     mu_bar    = (FLOAT) 1.0;
   }
 
@@ -347,12 +343,10 @@ struct GradhSphParticle : public SphParticle<ndim>
 {
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
-  //FLOAT chi;                        ///< grad-h star-gravity correction term
 
   GradhSphParticle () {
     invomega = (FLOAT) 1.0;
     zeta = (FLOAT) 0.0;
-    //chi = (FLOAT) 0.0;
   }
 
 #ifdef MPI_PARALLEL
@@ -419,9 +413,14 @@ struct SM2012SphParticle : public SphParticle<ndim>
 template <int ndim>
 struct MeshlessFVParticle : public Particle<ndim>
 {
-  using Particle<ndim>::r ;
-  using Particle<ndim>::v ;
-  using Particle<ndim>::a ;
+  using Particle<ndim>::r;
+  using Particle<ndim>::v;
+  using Particle<ndim>::a;
+
+
+DOUBLE dt;
+FLOAT agrav[ndim];
+
 
   FLOAT invh;                          ///< 1 / h
   FLOAT hfactor;                       ///< invh^(ndim + 1)
@@ -489,12 +488,11 @@ struct MeshlessFVParticle : public Particle<ndim>
 	  dQdt[k] *= -1 ;
 
 	  // Gradients
-	  for (int j=0; j < ndim+2; j++)
-	    grad[j][k] *= -1 ;
+	  for (int j=0; j < ndim+2; j++) grad[j][k] *= -1 ;
 	  for (int j=0; j < ndim; j++) {
-		grad[k][j] *= -1 ;
-		B[j][k] *= -1 ;
-		B[k][j] *= -1 ;
+            grad[k][j] *= -1 ;
+            B[j][k] *= -1 ;
+            B[k][j] *= -1 ;
 	  }
 
 	  // Max/Min values

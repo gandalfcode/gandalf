@@ -30,10 +30,7 @@ class GradhSphCommunicationHandler {
   struct GradSphForcesParticle {
 
     GradSphForcesParticle (const GradhSphParticle<ndim>& p) {
-      for (int k=0; k<ndim; k++) {
-        a[k] = p.a[k];
-        agrav[k] = p.agrav[k];
-      }
+      for (int k=0; k<ndim; k++) a[k] = p.a[k];
       gpot = p.gpot;
       dudt = p.dudt;
       div_v = p.div_v;
@@ -42,7 +39,6 @@ class GradhSphCommunicationHandler {
     }
 
     FLOAT a[ndim];
-    FLOAT agrav[ndim];
     FLOAT gpot;
     FLOAT dudt;
     FLOAT div_v;
@@ -101,10 +97,7 @@ public:
 
     const ReturnDataType& p = *pointer;
 
-    for (int k=0; k<ndim; k++) {
-      p2.a[k] += p.a[k];
-      p2.agrav[k] += p.agrav[k];
-    }
+    for (int k=0; k<ndim; k++) p2.a[k] += p.a[k];
 
     p2.gpot += p.gpot;
     p2.dudt += p.dudt;
@@ -122,10 +115,9 @@ public:
     p2.ptype = p.ptype;
     p2.level = p.level;
     for (int k=0; k<ndim; k++) {
-      p2.r[k]=p.r[k];
-      p2.v[k]=p.v[k];
-      p2.a[k]=0;
-      p2.agrav[k]=0;
+      p2.r[k] = p.r[k];
+      p2.v[k] = p.v[k];
+      p2.a[k] = (FLOAT) 0.0;
     }
     p2.m = p.m;
     p2.rho = p.rho;
