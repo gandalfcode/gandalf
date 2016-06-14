@@ -185,19 +185,16 @@ class Tree : public TreeBase<ndim>
   virtual ~Tree() { } ;
 
   //-----------------------------------------------------------------------------------------------
-  int MaxNumPartInLeafCell() const
-  { return Nleafmax ; }
-  virtual FLOAT MaxKernelRange() const
-  { return kernrange ; }
-  virtual int MaxNumCells() const
-  { return gtot ; }
+  int MaxNumPartInLeafCell() const {return Nleafmax;}
+  virtual FLOAT MaxKernelRange() const {return kernrange;}
+  virtual int MaxNumCells() const {return gtot;}
 
   virtual void ExtrapolateCellProperties(const FLOAT);
   bool BoxOverlap(const FLOAT box1min[ndim], const FLOAT box1max[ndim],
-		          const FLOAT box2min[ndim], const FLOAT box2max[ndim])
+                  const FLOAT box2min[ndim], const FLOAT box2max[ndim])
   {
-    using ::BoxOverlap ;
-    return BoxOverlap(ndim, box1min, box1max, box2min, box2max) ;
+    using ::BoxOverlap;
+    return BoxOverlap(ndim, box1min, box1max, box2min, box2max);
   }
 
   int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
@@ -285,8 +282,8 @@ class Tree : public TreeBase<ndim>
   int *ids;                            ///< Particle ids
   int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
-  const DomainBox<ndim>& _domain ;     ///< Whole simulation domain
-  Typemask gravmask ;                  ///< Particle types that contribute to gravity
+  const DomainBox<ndim>& _domain;      ///< Whole simulation domain
+  Typemask gravmask;                   ///< Particle types that contribute to gravity
 
 
 #if defined MPI_PARALLEL

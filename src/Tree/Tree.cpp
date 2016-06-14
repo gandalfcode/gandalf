@@ -851,7 +851,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   FLOAT rc[ndim];                      // Position of cell
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
   const FLOAT rmax = cell.rmax;
-  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
+  //const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
   ParticleType<ndim>* neibpart = reinterpret_cast<ParticleType<ndim>* >(neib_out) ;
 
@@ -860,7 +860,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   assert(hydroneiblist != NULL);
   assert(neibpart != NULL);
   assert(partdata != NULL);
-  assert(GhostFinder.MaxNumGhosts() == 1) ;
+  //assert(GhostFinder.MaxNumGhosts() == 1);
 
   // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
@@ -879,7 +879,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
     // Calculate closest periodic replica of cell
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    GhostFinder.NearestPeriodicVector(dr);
+    //GhostFinder.NearestPeriodicVector(dr);
     drsqd = DotProduct(dr, dr, ndim);
 
     // Check if bounding spheres overlap with each other (for potential SPH neibs)
@@ -905,7 +905,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
           hydroneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
 
-          GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
+          neibpart[Nneib] = partdata[i];
+          //GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
 
           Nneib++;
           if (i == celldata[cc].ilast) break;
@@ -933,16 +934,17 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;
 
-        GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
+        neibpart[Nneib] = partdata[i];
+        //GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
 
         Nneib++;
       }
       else if (Ngravcell < Ngravcellmax) {
         gravcell[Ngravcell] = celldata[cc];
-        for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k] ;
-        GhostFinder.PeriodicDistanceCorrection(dr, dr_corr);
-        for (k=0; k<ndim; k++) gravcell[Ngravcell].r[k] += dr_corr[k] ;
-        for (k=0; k<ndim; k++) gravcell[Ngravcell].rcell[k] += dr_corr[k];
+        //for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k] ;
+        //GhostFinder.PeriodicDistanceCorrection(dr, dr_corr);
+        //for (k=0; k<ndim; k++) gravcell[Ngravcell].r[k] += dr_corr[k] ;
+        //for (k=0; k<ndim; k++) gravcell[Ngravcell].rcell[k] += dr_corr[k];
         Ngravcell++;
       }
       else {
@@ -970,9 +972,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
           directlist[Ndirect++] = Nneib;
           neiblist[Nneib] = i;
           neibpart[Nneib] = partdata[i];
-          for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
-          GhostFinder.NearestPeriodicVector(dr);
-          for (k=0; k<ndim; k++) neibpart[Nneib].r[k] = rc[k] + dr[k] ;
+          //for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
+          //GhostFinder.NearestPeriodicVector(dr);
+          //for (k=0; k<ndim; k++) neibpart[Nneib].r[k] = rc[k] + dr[k] ;
 
           Nneib++;
           if (i == celldata[cc].ilast) break;
