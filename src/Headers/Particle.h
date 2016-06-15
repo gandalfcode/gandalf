@@ -39,49 +39,49 @@ template<int ndim> class SM2012CommunicationHandler;
 
 
 enum flags {
-	none = 0,
-	dead = 1 << 0,
+  none = 0,
+  dead = 1 << 0,
 
-	x_periodic_lhs = 1 << 1,
-	y_periodic_lhs = 1 << 2,
-	z_periodic_lhs = 1 << 3,
+  x_periodic_lhs = 1 << 1,
+  y_periodic_lhs = 1 << 2,
+  z_periodic_lhs = 1 << 3,
 
-	x_periodic_rhs = 1 << 4,
-	y_periodic_rhs = 1 << 5,
-	z_periodic_rhs = 1 << 6,
+  x_periodic_rhs = 1 << 4,
+  y_periodic_rhs = 1 << 5,
+  z_periodic_rhs = 1 << 6,
 
-	x_periodic = x_periodic_lhs | x_periodic_rhs,
-	y_periodic = y_periodic_lhs | y_periodic_rhs,
-	z_periodic = z_periodic_lhs | z_periodic_rhs,
+  x_periodic = x_periodic_lhs | x_periodic_rhs,
+  y_periodic = y_periodic_lhs | y_periodic_rhs,
+  z_periodic = z_periodic_lhs | z_periodic_rhs,
 
-	x_mirror_lhs = 1 << 7,
-	y_mirror_lhs = 1 << 8,
-	z_mirror_lhs = 1 << 9,
+  x_mirror_lhs = 1 << 7,
+  y_mirror_lhs = 1 << 8,
+  z_mirror_lhs = 1 << 9,
 
-	x_mirror_rhs = 1 << 10,
-	y_mirror_rhs = 1 << 11,
-	z_mirror_rhs = 1 << 12,
+  x_mirror_rhs = 1 << 10,
+  y_mirror_rhs = 1 << 11,
+  z_mirror_rhs = 1 << 12,
 
-	x_mirror = x_mirror_lhs | x_mirror_rhs,
-	y_mirror = y_mirror_lhs | y_mirror_rhs,
-	z_mirror = z_mirror_lhs | z_mirror_rhs,
+  x_mirror = x_mirror_lhs | x_mirror_rhs,
+  y_mirror = y_mirror_lhs | y_mirror_rhs,
+  z_mirror = z_mirror_lhs | z_mirror_rhs,
 
-	periodic_boundary = x_periodic | y_periodic | z_periodic,
-	mirror_boundary   = x_mirror   | y_mirror   | z_mirror,
+  periodic_boundary = x_periodic | y_periodic | z_periodic,
+  mirror_boundary   = x_mirror   | y_mirror   | z_mirror,
 
-	any_boundary = periodic_boundary | mirror_boundary,
+  any_boundary = periodic_boundary | mirror_boundary,
 };
 
 const int periodic_bound_flags[3][2] = {
-	 { x_periodic_lhs, x_periodic_rhs},
-	 { y_periodic_lhs, y_periodic_rhs},
-	 { z_periodic_lhs, z_periodic_rhs},
+   { x_periodic_lhs, x_periodic_rhs},
+   { y_periodic_lhs, y_periodic_rhs},
+   { z_periodic_lhs, z_periodic_rhs},
 };
 
 const int mirror_bound_flags[3][2] = {
-	 { x_mirror_lhs, x_mirror_rhs},
-	 { y_mirror_lhs, y_mirror_rhs},
-	 { z_mirror_lhs, z_mirror_rhs},
+   { x_mirror_lhs, x_mirror_rhs},
+   { y_mirror_lhs, y_mirror_rhs},
+   { z_mirror_lhs, z_mirror_rhs},
 };
 
 class type_flag{
@@ -94,13 +94,13 @@ public:
     return _flag |= flag ;
   }
   unsigned int& unset_flag(unsigned int flag) {
-	return _flag &= ~flag ;
+  return _flag &= ~flag ;
   }
   unsigned int get() const {
-	return _flag ;
+  return _flag ;
   }
   void reset() {
-	_flag = none ;
+  _flag = none ;
   }
 
   bool is_dead() const {
@@ -111,14 +111,14 @@ public:
     return _flag & any_boundary ;
   }
   bool is_periodic() const {
-	return _flag & periodic_boundary ;
+  return _flag & periodic_boundary ;
   }
   bool is_mirror() const {
-	return _flag & mirror_boundary ;
+  return _flag & mirror_boundary ;
   }
 
 private:
-	unsigned int _flag ;
+  unsigned int _flag ;
 };
 
 enum ptype {gas, icm, boundary, cdm, dust} ;
@@ -143,14 +143,14 @@ public:
   }
 
   const bool& operator[](int i) const {
-	return _data[i] ;
+  return _data[i] ;
   }
   bool& operator[](int i) {
-	return _data[i] ;
+  return _data[i] ;
   }
 
   int size() const {
-	return Ntypes ;
+  return Ntypes ;
   }
 
 private:
@@ -194,10 +194,10 @@ public:
   ParticleTypeRegister(Parameters *params) ;
 
   ParticleTypeInfo& operator[](int i) {
-	return _types[i] ;
+  return _types[i] ;
   }
   const ParticleTypeInfo& operator[](int i) const {
-	return _types[i] ;
+  return _types[i] ;
   }
 
   Typemask gravmask ;       ///< Does the particle type contribute to gravitational forces?
@@ -295,8 +295,8 @@ struct Particle
 
   /* reflect the particle in a given direction about a mirror */
   void reflect(int k, double x_mirror) {
-	  r[k] = 2*x_mirror - r[k] ;
-	  v[k]*= -1 ;
+    r[k] = 2*x_mirror - r[k] ;
+    v[k]*= -1 ;
   }
 
 };
@@ -477,33 +477,33 @@ FLOAT agrav[ndim];
 #endif
 
   void reflect(int k, double x_mirror) {
-	  using std::swap ;
+    using std::swap ;
 
-	  Particle<ndim>::reflect(k, x_mirror) ;
+    Particle<ndim>::reflect(k, x_mirror) ;
 
-	  a[k] *= -1 ;
+    a[k] *= -1 ;
 
-	  Wprim[k] *= -1 ;
-	  Qcons[k] *= -1 ;
-	  dQ[k] *= -1 ;
-	  dQdt[k] *= -1 ;
+    Wprim[k] *= -1 ;
+    Qcons[k] *= -1 ;
+    dQ[k] *= -1 ;
+    dQdt[k] *= -1 ;
 
-	  // Gradients
-	  for (int j=0; j < ndim+2; j++) grad[j][k] *= -1 ;
-	  for (int j=0; j < ndim; j++) {
+    // Gradients
+    for (int j=0; j < ndim+2; j++) grad[j][k] *= -1 ;
+    for (int j=0; j < ndim; j++) {
             grad[k][j] *= -1 ;
             B[j][k] *= -1 ;
             B[k][j] *= -1 ;
-	  }
+    }
 
-	  // Max/Min values
-	  Wmin[k] *= -1;
-	  Wmax[k] *= -1;
-	  swap(Wmin[k], Wmax[k]) ;
+    // Max/Min values
+    Wmin[k] *= -1;
+    Wmax[k] *= -1;
+    swap(Wmin[k], Wmax[k]) ;
 
-	  Wmidmin[k] *= -1;
-	  Wmidmax[k] *= -1;
-	  swap(Wmidmin[k], Wmidmax[k]) ;
+    Wmidmin[k] *= -1;
+    Wmidmax[k] *= -1;
+    swap(Wmidmin[k], Wmidmax[k]) ;
    }
 
 };

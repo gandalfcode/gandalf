@@ -851,7 +851,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   FLOAT rc[ndim];                      // Position of cell
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
   const FLOAT rmax = cell.rmax;
-  //const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
+  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
   ParticleType<ndim>* neibpart = reinterpret_cast<ParticleType<ndim>* >(neib_out) ;
 
@@ -860,7 +860,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   assert(hydroneiblist != NULL);
   assert(neibpart != NULL);
   assert(partdata != NULL);
-  //assert(GhostFinder.MaxNumGhosts() == 1);
+  assert(GhostFinder.MaxNumGhosts() == 1);
 
   // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
@@ -905,8 +905,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
           hydroneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
 
-          neibpart[Nneib] = partdata[i];
-          //GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
+          //neibpart[Nneib] = partdata[i];
+          GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
 
           Nneib++;
           if (i == celldata[cc].ilast) break;
@@ -934,8 +934,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;
 
-        neibpart[Nneib] = partdata[i];
-        //GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
+        //neibpart[Nneib] = partdata[i];
+        GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
 
         Nneib++;
       }
