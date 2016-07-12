@@ -94,8 +94,12 @@ std::cout << "IC : " << ic << "  " << std::endl;
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
+  else if (ic == "polytrope") {
+    icGenerator = new PolytropeIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
+  }
+  //-----------------------------------------------------------------------------------------------
   else if (ic == "silcc") {
-    std::cout << "SILCC? : " << ic << "  " << std::endl;
     icGenerator = new SilccIc<ndim>(this, hydro, invndim);
     icGenerator->Generate();
   }
