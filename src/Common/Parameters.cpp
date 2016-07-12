@@ -264,6 +264,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["mu_bar"] = 1.0;
   floatparams["rho_bary"] = 1.0e-14;
   floatparams["eta_eos"] = 1.4;
+  floatparams["Kpoly"] = 1.0;
   stringparams["radws_table"] = "eos.bell.cc.dat";
   floatparams["temp_ambient"] = 5.0;
 

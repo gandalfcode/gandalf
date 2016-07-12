@@ -82,14 +82,13 @@ public:
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) = 0;
+  virtual void ZeroAccelerations() = 0;
+
   void ComputeBoundingBox(FLOAT *, FLOAT *, const int);
   void CheckBoundaryGhostParticle(const int, const int, const FLOAT, const DomainBox<ndim> &);
   void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
   Particle<ndim>& CreateNewParticle(const enum ptype, const enum parttype, const FLOAT,
                                     const FLOAT, const FLOAT*, const FLOAT*, SimulationBase*);
-
-  virtual void ZeroAccelerations() = 0;
-
 
 
   // Functions needed to hide some implementation details
