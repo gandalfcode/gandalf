@@ -27,6 +27,7 @@
 
 #include "Precision.h"
 #include "Hydrodynamics.h"
+#include "InlineFuncs.h"
 #include "Simulation.h"
 #include "RandomNumber.h"
 #if defined(FFTW_TURBULENCE)
@@ -86,6 +87,7 @@ public:
     simparams(_sim->simparams), randnumb(_sim->randnumb)
   {
   };
+  virtual ~Ic() {};
 
 
   // Virtual functions
@@ -93,13 +95,27 @@ public:
   virtual void CalculateMassTable(std::string, FLOAT, FLOAT);
   virtual FLOAT FindMassIntegratedPosition(FLOAT);
   virtual void Generate(void) {};
-  virtual FLOAT GetValue(std::string, FLOAT *) {return (FLOAT) 0.0;}
-  virtual FLOAT GetDensity(FLOAT) {return (FLOAT) 0.0;}
+  virtual FLOAT GetValue(const std::string, const FLOAT *) {return (FLOAT) 0.0;}
+  virtual FLOAT GetDensity(const FLOAT) {return (FLOAT) 0.0;}
 
 
   // Other common functions
   //-----------------------------------------------------------------------------------------------
   void CheckInitialConditions(void);
+
+
+  // Static functions which can be used outside of Ic class
+  // (e.g. generating new particles on the fly in simulations)
+  //-----------------------------------------------------------------------------------------------
+  static void AddCubicLattice(const int, const int *, const DomainBox<ndim> &, const bool, FLOAT *);
+  static void AddHexagonalLattice(const int, const int *, const DomainBox<ndim> &, const bool, FLOAT *);
+  static int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *, RandomNumber *);
+  static void AddRandomBox(const int, const DomainBox<ndim> &, FLOAT *, RandomNumber *);
+  static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
+  static void ComputeIsothermalLaneEmdenSolution(const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
+  static void ComputeLaneEmdenSolution(const int, const FLOAT, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
+  static int CutSphere(const int, const int, const DomainBox<ndim> &, const bool, FLOAT *);
+
 
 
   // Initial conditions routines
@@ -135,17 +151,6 @@ public:
   void EvrardCollapse(void);
   void DustyBox(void);
 
-
-  // Static functions which can be used outside of Ic class
-  // (e.g. generating new particles on the fly in simulations)
-  //-----------------------------------------------------------------------------------------------
-  static void AddCubicLattice(const int, const int *, const DomainBox<ndim> &, const bool, FLOAT *);
-  static void AddHexagonalLattice(const int, const int *, const DomainBox<ndim> &, const bool, FLOAT *);
-  static int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *, RandomNumber *);
-  static void AddRandomBox(const int, const DomainBox<ndim>, FLOAT *, RandomNumber *);
-  static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
-  static int CutSphere(const int, const int, const DomainBox<ndim>, const bool, FLOAT *);
-
 };
 
 
@@ -168,9 +173,50 @@ public:
 };
 
 
-static FLOAT sech(FLOAT arg) {
-  return (FLOAT) 2.0 / (exp(arg) + exp(-arg));
-}
+
+//=================================================================================================
+//  Class PolytropeIc
+/// \brief   Class to generate initial conditions with a Polytrope density profile
+/// \details Class to generate initial conditions with a Polytrope density profile
+/// \author  D. A. Hubber
+/// \date    22/06/2016
+//=================================================================================================
+template <int ndim>
+class PolytropeIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+  int Ntablemax;
+  FLOAT *xiArray;
+  FLOAT *psiArray;
+  FLOAT *phiArray;
+  FLOAT *muArray;
+  FLOAT *pressArray;
+  FLOAT *rhoArray;
+  FLOAT *thetaArray;
+  FLOAT *massArray;
+
+
+public:
+
+  PolytropeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  virtual ~PolytropeIc();
+
+  virtual void Generate(void);
+  virtual FLOAT GetValue(const std::string, const FLOAT *);
+  virtual FLOAT GetDensity(const FLOAT);
+
+};
+
+
 
 //=================================================================================================
 //  Class SilccIc
@@ -183,6 +229,7 @@ template <int ndim>
 class SilccIc : public Ic<ndim>
 {
 protected:
+
   using Ic<ndim>::hydro;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
@@ -191,30 +238,29 @@ protected:
   using Ic<ndim>::simparams;
   using Ic<ndim>::simunits;
 
-  FLOAT a_midplane;                    // ..
+  FLOAT a_midplane;                    // Location of midplane
   FLOAT box_area;                      // Area of x-y plane of simulation box
-  FLOAT h_midplane;                    // ..
+  FLOAT h_midplane;                    // Scale-height of midplane density region
   FLOAT m_box;                         // Total gas mass in box
   FLOAT m_exp;                         // Total gas mass in exponential profile region
   FLOAT m_uniform;                     // Total gas mass in uniform density region
   FLOAT rho_a;                         // Density at edge of exponential midplane profile
-  FLOAT rho_midplane;                  // ..
+  FLOAT rho_midplane;                  // Density at the midplane
   FLOAT rho_star;                      // Stellar density at the midplane
-  FLOAT sigma_star;                    // ..
-  FLOAT temp0;                         // ..
-  FLOAT u0;                            // ..
-  FLOAT z_d;                           // ..
+  FLOAT sigma_star;                    // Surface density of stars
+  FLOAT temp0;                         // Temperature
+  FLOAT u0;                            // ??
+  FLOAT z_d;                           // ??
 
 
 public:
-
 
   SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   virtual ~SilccIc() {};
 
   virtual void Generate(void);
-  virtual FLOAT GetValue(std::string, FLOAT *);
-  virtual FLOAT GetDensity(FLOAT);
+  virtual FLOAT GetValue(const std::string, const FLOAT *);
+  virtual FLOAT GetDensity(const FLOAT);
 
 };
 #endif

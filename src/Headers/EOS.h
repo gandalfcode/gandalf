@@ -47,8 +47,8 @@ template <int ndim>
 class EOS;
 
 
-enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
-             constant_temp, radws, Nhydroeos};
+enum eosenum{noeos, isothermal, polytropic, barotropic, barotropic2,
+             energy_eqn, constant_temp, radws, Nhydroeos};
 
 
 
@@ -113,6 +113,39 @@ class Isothermal: public EOS<ndim>
 
   const FLOAT temp0;
   const FLOAT mu_bar;
+
+};
+
+
+
+//=================================================================================================
+//  Class Polytropic
+/// \brief   Polytropic equation of state
+/// \details Polytropic equation of state
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    12/07/2016
+//=================================================================================================
+template <int ndim>
+class Polytropic: public EOS<ndim>
+{
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+  using EOS<ndim>::gammaMinusOne;
+  using EOS<ndim>::oneMinusGamma;
+
+ public:
+
+  Polytropic(FLOAT, FLOAT, FLOAT, SimUnits *);
+  ~Polytropic();
+
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+
+  const FLOAT eta;
+  const FLOAT Kpoly;
 
 };
 

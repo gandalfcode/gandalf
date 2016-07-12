@@ -578,6 +578,7 @@ static inline int ComputeTimestepLevel
   return (int) level;
 }
 
+
 static inline bool isPowerOfTwo (int x)
 {
  while (((x % 2) == 0) && x > 1) /* While x is even and > 1 */
@@ -634,6 +635,7 @@ inline void InvertMatrix(const FLOAT A[ndim][ndim], FLOAT B[ndim][ndim])
 }
 
 
+
 template<class T>
 inline void append_bytes(std::vector<char>& buffer, const T* element) {
 
@@ -653,4 +655,13 @@ inline int unpack_bytes(T* element, std::vector<char>::const_iterator& it) {
   return sizeof(T) ;
 }
 
+
+
+//=================================================================================================
+//  sech
+/// Small inline function to compute the sech of a given argument
+//=================================================================================================
+static inline FLOAT sech(FLOAT arg) {
+  return (FLOAT) 2.0 / (exp(arg) + exp(-arg));
+}
 #endif

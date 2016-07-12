@@ -1498,8 +1498,8 @@ template <int ndim>
 void SphSimulation<ndim>::RegulariseParticleDistribution
  (const int Nreg)                                  ///< [in] No. of regularisation steps
 {
-  FLOAT alphaReg = 0.0;                      // Particle displacement magnitude
-  FLOAT rhoReg = 0.8;                        // ..
+  FLOAT alphaReg = 0.0;                            // Particle displacement magnitude
+  FLOAT rhoReg = 0.8;                              // ..
   FLOAT *rreg = new FLOAT[ndim*sph->Nhydromax];    // Array of particle positions
   SphParticle<ndim> *partdata = sph->GetSphParticleArray();
 
@@ -1557,8 +1557,8 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
           //cout << "rhotrue : " << icGenerator->GetValue("rho", neibpart.r) << "   " << neibpart.rho << endl;
 
           for (k=0; k<ndim; k++) {
-            rreg[ndim*i + k] -= dr[k]*sph->kernp->w0_s2(drsqd*invhsqd)*
-              (rhoReg*rhofrac + alphaReg);
+            rreg[ndim*i + k] -=
+              dr[k]*sph->kernp->w0_s2(drsqd*invhsqd)*(rhoReg*rhofrac + alphaReg);
           }
 
         }

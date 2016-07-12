@@ -88,7 +88,6 @@ public:
   Particle<ndim>& CreateNewParticle(const enum ptype, const enum parttype, const FLOAT,
                                     const FLOAT, const FLOAT*, const FLOAT*, SimulationBase*);
 
-
   // Functions needed to hide some implementation details
   //-----------------------------------------------------------------------------------------------
   Particle<ndim>& GetParticlePointer(const int i) {

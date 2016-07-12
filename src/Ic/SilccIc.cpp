@@ -1,6 +1,6 @@
 //=================================================================================================
 //  SilccIc.cpp
-//  ...
+//  Class for generating initial conditions for SILCC-like simulations.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -141,7 +141,7 @@ void SilccIc<ndim>::Generate(void)
       part.m = mp;
       part.u = (FLOAT) 1.5;
       //part.h = hydro->h_fac*powf(mp/rho,invndim);
-      part.itype = gas;
+      part.ptype = gas_type;
 
     }
 
@@ -155,11 +155,11 @@ void SilccIc<ndim>::Generate(void)
 
 //=================================================================================================
 //  Silcc::GetDensity
-/// ...
+/// Returns the value of the density from the required analytical expression.
 //=================================================================================================
 template <int ndim>
 FLOAT SilccIc<ndim>::GetDensity
- (FLOAT r)
+ (const FLOAT r)
 {
   if (fabs(r) <= a_midplane) {
     return rho_midplane*exp(-r*r/h_midplane/h_midplane);
@@ -170,14 +170,15 @@ FLOAT SilccIc<ndim>::GetDensity
 }
 
 
+
 //=================================================================================================
 //  Silcc::GetValue
-/// ...
+/// Returns the value of the requested quantity at the given position.
 //=================================================================================================
 template <int ndim>
 FLOAT SilccIc<ndim>::GetValue
- (std::string var,
-  FLOAT r[ndim])
+ (const std::string var,
+  const FLOAT r[ndim])
 {
   if (var == "x") {
     return r[0];
