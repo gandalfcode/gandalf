@@ -496,7 +496,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
     }
 
     // Compute all star forces
-    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i]);
+    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i],simbox,ewald);
     partdata[i].active = false;
 
   }
@@ -524,7 +524,8 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
   SphParticle<ndim> *part_gen,         ///< [inout] Pointer to SPH ptcl array
   Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
-  DomainBox<ndim> &simbox)             ///< [in] Simulation box with periodic information
+  DomainBox<ndim> &simbox,             ///< [in] Simulation box with periodic information
+  Ewald<ndim> *ewald)                  ///< [in] ..
 {
   int i,j,k;                           // Particle and dimension counters
   int Nneib;                           // No. of neighbours
@@ -605,7 +606,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 
     // Compute all star forces
     if (ipart < Nhydro) {
-      sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, partdata[i]);
+      sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, partdata[i], simbox, ewald);
     }
 
     partdata[i].active = false;
@@ -704,7 +705,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
       }
     }
     // Compute all star forces
-    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i]);
+    sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, partdata[i], simbox, ewald);
     partdata[i].active = false;
 
   }

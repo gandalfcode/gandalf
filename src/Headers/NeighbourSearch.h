@@ -32,22 +32,22 @@
 #include "Precision.h"
 #include "Constants.h"
 #include "CodeTiming.h"
-#include "Hydrodynamics.h"
-#include "InlineFuncs.h"
-#include "Nbody.h"
-#include "SmoothingKernel.h"
-#include "Particle.h"
-#include "MeshlessFV.h"
 #include "DomainBox.h"
 #include "Ewald.h"
-#include "Parameters.h"
+#include "Hydrodynamics.h"
+#include "InlineFuncs.h"
 #include "KDTree.h"
+#include "MeshlessFV.h"
+#include "Nbody.h"
 #include "OctTree.h"
+#include "Parameters.h"
+#include "Particle.h"
+#include "SmoothingKernel.h"
 #include "Tree.h"
 #if defined MPI_PARALLEL
+#include "CommunicationHandler.h"
 #include "MpiExport.h"
 #include "MpiNode.h"
-#include "CommunicationHandler.h"
 #endif
 using namespace std;
 
@@ -91,8 +91,8 @@ protected:
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *) = 0;
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) = 0;
-  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
-                                      Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                      Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual double GetMaximumSmoothingLength() = 0 ;
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
@@ -189,8 +189,8 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
-  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
-                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                      Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   virtual double GetMaximumSmoothingLength() { return _Hmax ; }
 
 #ifdef MPI_PARALLEL
@@ -291,8 +291,8 @@ protected:
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
-                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+                                      Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   virtual double GetMaximumSmoothingLength() ;
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,

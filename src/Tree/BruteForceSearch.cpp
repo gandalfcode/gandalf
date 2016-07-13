@@ -212,7 +212,9 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
   int Ntot,                            ///< [in] Total no. of SPH particles (incl. ghosts)
   Particle<ndim> *part_gen,            ///< [in] SPH particle array pointer
   Hydrodynamics<ndim> *hydro,          ///< [inout] Pointer to SPH ptcl array
-  Nbody<ndim> *nbody)                  ///< [inout] Pointer to N-body object
+  Nbody<ndim> *nbody,                  ///< [inout] Pointer to N-body object
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int i;                               // Particle and dimension counters
   int Nneib = 0;                       // No. of (non-dead) neighbours

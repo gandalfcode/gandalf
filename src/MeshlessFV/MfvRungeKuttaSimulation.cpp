@@ -164,7 +164,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
 
     if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
-      mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+      mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox, ewald);
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);

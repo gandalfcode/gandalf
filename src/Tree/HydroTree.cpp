@@ -786,17 +786,18 @@ void HydroTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  Particle<ndim> *part_gen,            ///< [inout] Pointer to SPH ptcl array
-  Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+ (int Nhydro,                              ///< [in] No. of SPH particles
+  int Ntot,                                ///< [in] No. of SPH + ghost particles
+  Particle<ndim> *part_gen,                ///< [inout] Pointer to SPH ptcl array
+  Hydrodynamics<ndim> *hydro,              ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox,                 ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                      ///< [in] Ewald gravity object pointer
 {
-  int Nactive;                         // No. of active particles in cell
-  int *activelist;                     // List of active particle ids
-  NbodyParticle<ndim> *star;           // Pointer to star particle
+  int Nactive;                             // No. of active particles in cell
+  int *activelist;                         // List of active particle ids
+  NbodyParticle<ndim> *star;               // Pointer to star particle
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
-
 
   debug2("[GradhSphTree::UpdateAllStarGasForces]");
   timing->StartTimingSection("STAR_GAS_GRAV_FORCES");
@@ -812,7 +813,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) private(star)\
-  shared(activelist,hydro,Nactive,Ntot,nbody,partdata,cout)
+  shared(activelist,ewald,hydro,Nactive,Ntot,nbody,partdata,simbox,cout)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -828,6 +829,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
     int Nneibmax = Ntot; //Nneibmaxbuf[ithread];
     int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
     FLOAT macfactor;                             // Gravity MAC factor
+    FLOAT potperiodic;                           // ..
+    FLOAT aperiodic[ndim];                       // ..
+    FLOAT draux[ndim];                           // ..
     int* neiblist = new int[Nneibmax];           // ..
     int* directlist = new int[Nneibmax];         // ..
     TreeCell<ndim>* gravcell = new TreeCell<ndim>[Ngravcellmax];   // ..
@@ -870,6 +874,33 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
         this->ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
 
+      // Add the periodic correction force for SPH and direct-sum neighbours
+      if (simbox.PeriodicGravity){
+        for (int jj=0; jj<Nneib; jj++) {
+          int ii = neiblist[jj];
+          for (int k=0; k<ndim; k++) draux[k] = partdata[ii].r[k] - star->r[k];
+          ewald->CalculatePeriodicCorrection(partdata[ii].m, draux, aperiodic, potperiodic);
+          for (int k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+          star->gpot += potperiodic;
+        }
+
+        for (int jj=0; jj<Ndirect; jj++) {
+          int ii = directlist[jj];
+          for (int k=0; k<ndim; k++) draux[k] = partdata[ii].r[k] - star->r[k];
+          ewald->CalculatePeriodicCorrection(partdata[ii].m, draux, aperiodic, potperiodic);
+          for (int k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+          star->gpot += potperiodic;
+        }
+
+        // Now add the periodic correction force for all cell COMs
+        for (int jj=0; jj<Ngravcell; jj++) {
+          for (int k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - star->r[k];
+          ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
+          for (int k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+          star->gpot += potperiodic;
+        }
+      }
+
 
     }
     //=============================================================================================
@@ -898,8 +929,9 @@ double HydroTree<ndim,ParticleType,TreeCell>::GetMaximumSmoothingLength()
   double hmax = tree->celldata[0].hmax ;
 
 #if defined MPI_PARALLEL
-  for (int n = 0; n < Nmpi; n++)
-	hmax = std::max(hmax, prunedtree[n]->celldata[0].hmax) ;
+  for (int n = 0; n < Nmpi; n++) {
+    hmax = std::max(hmax, prunedtree[n]->celldata[0].hmax) ;
+  }
 #endif
   return hmax ;
 }

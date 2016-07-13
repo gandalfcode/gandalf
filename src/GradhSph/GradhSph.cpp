@@ -763,11 +763,14 @@ template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeStarGravForces
  (const int N,                         ///< [in] No. of stars
   NbodyParticle<ndim> **nbodydata,     ///< [in] Array of star pointers
-  SphParticle<ndim> &part)             ///< [inout] SPH particle reference
+  SphParticle<ndim> &part,             ///< [inout] SPH particle reference
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int j;                               // Star counter
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // ..
   FLOAT drmag;                         // Distance
   FLOAT drsqd;                         // Distance squared
   //FLOAT drdt;                          // Rate of change of relative distance
@@ -786,22 +789,32 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     else ms = nbodydata[j]->m;
 
     for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
-    //for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
+
+    NearestPeriodicVector(simbox, dr, dr_corr);
+
     drsqd    = DotProduct(dr,dr,ndim) + small_number;
     drmag    = sqrt(drsqd);
     invdrmag = (FLOAT) 1.0/drmag;
     invhmean = (FLOAT) 2.0/(parti.h + nbodydata[j]->h);
-    //drdt     = DotProduct(dv,dr,ndim)*invdrmag;
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.a[k] += paux*dr[k];
-    //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
-    //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
 
     assert(invhmean > (FLOAT) 0.0);
 
+    // Add the periodic correction force for SPH and direct-sum neighbours
+    if (ewald) {
+      FLOAT aperiodic[ndim];
+      FLOAT potperiodic;
+      if (simbox.PeriodicGravity) {
+        //std::cout << "dr : " << dr[0] << "   " << dr[1] << "    " << dr[2] << std::endl;
+        ewald->CalculatePeriodicCorrection(ms, dr, aperiodic, potperiodic);
+        for (k=0; k<ndim; k++) parti.a[k] += aperiodic[k];
+        parti.gpot += potperiodic;
+      }
+    }
   }
   //-----------------------------------------------------------------------------------------------
 

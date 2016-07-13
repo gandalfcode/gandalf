@@ -31,6 +31,7 @@
 #include "Constants.h"
 #include "DomainBox.h"
 #include "EOS.h"
+#include "Ewald.h"
 #include "ExternalPotential.h"
 #include "Hydrodynamics.h"
 #include "Particle.h"
@@ -130,7 +131,8 @@ class Sph : public Hydrodynamics<ndim>
                                   SphParticle<ndim> &, SphParticle<ndim> *) = 0;
   virtual void ComputeSphDerivatives(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                      SphParticle<ndim> &, SphParticle<ndim> *) = 0;
-  virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) = 0;
+  virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &,
+                                     DomainBox<ndim> &, Ewald<ndim> *) = 0;
 
 
   // SPH array memory allocation functions
@@ -237,7 +239,8 @@ public:
                              SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeDirectGravForces(const int, const int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &);
+  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &,
+                             DomainBox<ndim> &, Ewald<ndim> *);
 #if defined MPI_PARALLEL
   virtual void FinishReturnExport ();
 #endif
@@ -311,7 +314,8 @@ class SM2012Sph: public Sph<ndim>
                              SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeDirectGravForces(const int, const int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) {};
+  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &,
+                             DomainBox<ndim> &, Ewald<ndim> *) {};
 
   kernelclass<ndim> kern;                   ///< SPH kernel
   SM2012SphParticle<ndim> *sphdata;         ///< Pointer to particle data
@@ -386,7 +390,8 @@ class NullSph: public Sph<ndim>
                              SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeDirectGravForces(const int, const int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &) {};
+  void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &,
+                             DomainBox<ndim> &, Ewald<ndim> *) {};
 
   //kernelclass<ndim> kern;               ///< SPH kernel
   SphParticle<ndim> *sphdata;           ///< Pointer to particle data

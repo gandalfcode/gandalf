@@ -285,6 +285,7 @@ void Parameters::SetDefaultValues(void)
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------
+  intparams["gravity"] = 0;
   intparams["self_gravity"] = 0;
   intparams["kgrav"] = 1;
   stringparams["grav_kernel"] = "mean_h";
