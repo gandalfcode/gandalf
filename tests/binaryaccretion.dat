@@ -7,8 +7,8 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BINACC-V2-A1-E0
-Select SPH simulation                       : sim = sph
+Simulation run id string                    : run_id = BINACC-V2-A0-E0.5-THETA0
+Select SPH simulation                       : sim = gradhsph
 Select shocktube initial conditions         : ic = binaryacc
 Use seren format for output                 : out_file_form = su
 1D shocktube test                           : ndim = 3
@@ -16,8 +16,8 @@ Pressure of LHS fluid                       : press1 = 0.001
 Density of LHS fluid                        : rhofluid1 = 0.001
 Density of RHS fluid                        : rhofluid2 = 0.001
 No. of particles in LHS fluid               : Nlattice1[0] = 256
-No. of particles in LHS fluid               : Nlattice1[1] = 32
-No. of particles in LHS fluid               : Nlattice1[2] = 32
+No. of particles in LHS fluid               : Nlattice1[1] = 64
+No. of particles in LHS fluid               : Nlattice1[2] = 64
 No. of particles in RHS fluid               : Nlattice2[0] = 0
 No. of particles in RHS fluid               : Nlattice2[1] = 0
 No. of particles in RHS fluid               : Nlattice2[2] = 0
@@ -34,6 +34,7 @@ Mass of star 2                              : m2 = 0.5
 Semi-major axis of binary                   : abin = 1.0
 Eccentricity of binary                      : ebin = 0.0
 Velocity of binary COM through gas          : vmachbin = 2.0
+Binary inclination angle                    : thetarot = 0.0
 
 
 #---------------------------
@@ -53,8 +54,8 @@ Angular velocity unit                       : angveloutunit = rad_s
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = -16.0
-LHS position of boundary in x-dimension     : boxmax[0] = 16.0
+LHS position of boundary in x-dimension     : boxmin[0] = -8.0
+LHS position of boundary in x-dimension     : boxmax[0] = 8.0
 RHS position of boundary in x-dimension     : boxmin[1] = -2.0
 LHS position of boundary in x-dimension     : boxmax[1] = 2.0
 RHS position of boundary in x-dimension     : boxmin[2] = -2.0
@@ -70,7 +71,7 @@ RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 8.0
+Simulation end time                         : tend = 16.0
 Regular snapshot output frequency           : dt_snap = 0.05
 Time for first snapshot                     : tsnapfirst = 0.05
 Screen output frequency (in no. of steps)   : noutputstep = 8
@@ -88,7 +89,6 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
-SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
 Tabulate SPH kernel                         : tabulated_kernel = 1
@@ -121,23 +121,25 @@ Output binary statistics                    : binary_stats = 1
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-SPH Courant timestep condition multiplier   : courant_mult = 0.15
-SPH acceleration condition multiplier       : accel_mult = 0.3
+SPH Courant timestep condition multiplier   : courant_mult = 0.2
+SPH acceleration condition multiplier       : accel_mult = 0.4
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 N-body timestep multiplier                  : nbody_mult = 0.15
-No. of block timestep levels                : Nlevels = 4
+No. of block timestep levels                : Nlevels = 5
+Max. timestep level difference              : level_diff_max = 2
 
 
 #---------------------
 # Optimisation options
 #---------------------
 SPH neighbour search algorithm              : neib_search = kdtree
-Tree re-build frequency                     : ntreebuildstep = 16
+Tree re-build frequency                     : ntreebuildstep = 1
 Tree stock frequency                        : ntreestockstep = 1
-No. of particles in leaf cell               : Nleafmax = 8
+No. of particles in leaf cell               : Nleafmax = 6
 
 
 #--------------
 # Misc. options
 #--------------
+Switch on gravity (for Star-Ewald gravity)  : gravity = 1
 Switch-off self-gravity of gas              : self_gravity = 0
