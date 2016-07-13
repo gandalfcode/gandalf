@@ -163,7 +163,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Create Ewald periodic gravity object
   periodicBoundaries = IsAnyBoundaryPeriodic(simbox);
-  if (periodicBoundaries && intparams["self_gravity"] == 1) {
+  if (periodicBoundaries && intparams["gravity"] == 1) {
     ewaldGravity = true;
     ewald = new Ewald<ndim>
       (simbox, intparams["gr_bhewaldseriesn"], intparams["in"], intparams["nEwaldGrid"],
@@ -542,7 +542,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
   }
   else if (sph->hydro_forces == 1) {
-    sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
+    sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
   }
   else{
     ExceptionHandler::getIstance().raise("Error: No forces included in simulation");
@@ -586,7 +586,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (sph->self_gravity == 1 && sph->Nhydro > 0) {
-    sphneib->UpdateAllStarGasForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
+    sphneib->UpdateAllStarGasForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
 #if defined MPI_PARALLEL
     // We need to sum up the contributions from the different domains
     mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -773,7 +773,7 @@ void SphSimulation<ndim>::MainLoop(void)
         sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
       }
       else if (sph->hydro_forces == 1) {
-        sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox);
+        sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
       }
 
       // Add external potential for all active SPH particles
@@ -869,7 +869,7 @@ void SphSimulation<ndim>::MainLoop(void)
     }
 
     if (sph->self_gravity == 1 && sph->Nhydro > 0) {
-      sphneib->UpdateAllStarGasForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllStarGasForces(sph->Nhydro, sph->Ntot, partdata, sph, nbody, simbox, ewald);
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);

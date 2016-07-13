@@ -313,12 +313,12 @@ void Ic<ndim>::BinaryAccretion(void)
       for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = (FLOAT) 0.0;
       if (vmachbin < small_number) {
-        nbody->stardata[0].r[0] = simbox.boxmin[0] + (FLOAT) 0.5*simbox.boxsize[0];
+        nbody->stardata[0].r[0] = (FLOAT) 0.0; //simbox.boxmin[0] + (FLOAT) 0.5*simbox.boxsize[0];
       }
       else {
-        nbody->stardata[0].r[0] = simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
+        nbody->stardata[0].r[0] = (FLOAT) 0.0; //simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
       }
-      nbody->stardata[0].v[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
+      nbody->stardata[0].v[0] = (FLOAT) 0.0;  //vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
       nbody->stardata[0].m = m1 + m2;
       nbody->stardata[0].h = hsink;
       nbody->stardata[0].radius = rsink;
@@ -331,12 +331,12 @@ void Ic<ndim>::BinaryAccretion(void)
       for (k=0; k<ndim; k++) rbinary[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) vbinary[k] = (FLOAT) 0.0;
       if (vmachbin < small_number) {
-        rbinary[0] = simbox.boxmin[0] + (FLOAT) 0.5*simbox.boxsize[0];
+        rbinary[0] = (FLOAT) 0.0; //simbox.boxmin[0] + (FLOAT) 0.5*simbox.boxsize[0];
       }
       else {
-        rbinary[0] = simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
+        rbinary[0] = (FLOAT) 0.0; //simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
       }
-      vbinary[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
+      vbinary[0] = (FLOAT) 0.0;  //vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
       AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,phirot,thetarot,psirot,0.0,
                     rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
       sinks->sink[0].star = &(nbody->stardata[0]);
@@ -350,6 +350,12 @@ void Ic<ndim>::BinaryAccretion(void)
     else {
       string message = "Invalid number of star particles";
       ExceptionHandler::getIstance().raise(message);
+    }
+
+    // Set Gas particle velocity
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      part.v[0] += vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
     }
 
   }

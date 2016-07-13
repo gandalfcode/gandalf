@@ -355,7 +355,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
   Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
-  DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
+  DomainBox<ndim> &simbox,                 ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                      ///< [in] Ewald gravity object pointer
 {
   int cactive;                             // No. of active cells
   TreeCell<ndim> *celllist;                // List of active tree cells
@@ -390,7 +391,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,nbody,simbox,sph,sphdata)
+#pragma omp parallel default(none) shared(cactive,celllist,ewald,nbody,simbox,sph,sphdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -530,7 +531,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
       if (nbody->Nnbody > 0) {
         for (j=0; j<Nactive; j++) {
           if (activelist[j] < sph->Nhydro) {
-            sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
+            sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j],simbox,ewald);
           }
         }
       }
@@ -798,10 +799,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
         if (Nhydroaux > 0)
           sph->ComputeSphHydroGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
 
-        if (do_grav){
+        if (do_grav) {
+
           // Compute soften grav forces between non-SPH neighbours (hydro and gravity)
           sph->ComputeSphGravForces(i, Ngrav, gravlist, activepart[j], neibpart);
-
 
           // Compute direct gravity forces between distant particles
           sph->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
@@ -817,11 +818,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
          }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
-          if (simbox.PeriodicGravity){
+          if (simbox.PeriodicGravity) {
+
             for (jj=0; jj<Nneib; jj++) {
-
-        	  if (!gravmask[neibpart[jj].ptype]) continue ;
-
+              if (!gravmask[neibpart[jj].ptype]) continue;
               for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
               for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
@@ -849,7 +849,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {
-        sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+        sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j], simbox, ewald);
       }
 
       // Add all active particles contributions to main array
@@ -1039,11 +1039,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
       Typemask gravmask;
       gravmask = sph->types.gravmask;
 
-      for (j=0, i=0; j<Ndirect; j++)
-      	if (gravmask[neibpart[directlist[j]].ptype]) {
-      	  if (i != j) directlist[i] = directlist[j] ;
-            i++ ;
-      	}
+      for (j=0, i=0; j<Ndirect; j++) {
+        if (gravmask[neibpart[directlist[j]].ptype]) {
+          if (i != j) directlist[i] = directlist[j];
+            i++;
+        }
+      }
       Ndirect = i ;
 
       // Loop over all active particles in the cell
@@ -1130,7 +1131,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {
-        sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+        sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j], simbox, ewald);
       }
 
       // Add all active particles contributions to main array
