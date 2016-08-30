@@ -288,7 +288,8 @@ void MeshlessFV<ndim>::IntegrateParticles
 	if (!staticParticles) {
       //-------------------------------------------------------------------------------------------
       for (k=0; k<ndim; k++) {
-        part.r[k] = part.r0[k] + part.v[k]*timestep*(FLOAT) dn;
+        //part.r[k] = part.r0[k] + part.v[k]*timestep*(FLOAT) dn;
+        part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*timestep*(FLOAT) dn;
 
         // Check if particle has crossed LHS boundary
         //-----------------------------------------------------------------------------------------
