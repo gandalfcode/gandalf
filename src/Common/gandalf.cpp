@@ -63,6 +63,12 @@ int main(int argc, char** argv)
   // Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
 
+  if (!isPowerOfTwo(n_mpi_cpus)) {
+    string message = "Error: currently in GANDALF the number of processes "
+        "needs to be a power of two!";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 #ifdef _OPENMP
   // Check that OpenMP and MPI can work together
   if (mpi_thread_support == MPI_THREAD_SINGLE)
@@ -100,7 +106,8 @@ int main(int argc, char** argv)
     paramfile = string(argv[1]);
   }
   else {
-    ExceptionHandler::getIstance().raise("Error : no parameter file specified; aborting...");
+    string message = "No parameter file specified, aborting...";
+    ExceptionHandler::getIstance().raise(message);
   }
 
   // Create empty file (used for automatic restarts on clusters)
