@@ -91,46 +91,6 @@ protected:
 };
 
 
-
-//=================================================================================================
-//  Class MeshlessFVBruteForceSearch
-/// \brief   MeshlessFVBruteForceSearch class definition.
-/// \details MeshlessFVBruteForceSearch class definition.
-/// \author  D. A. Hubber
-/// \date    21/04/2015
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class MeshlessFVBruteForce : public MeshlessFVNeighbourSearch<ndim>, public BruteForceSearch<ndim,ParticleType>
-{
- public:
-
-  using NeighbourSearch<ndim>::neibcheck;
-  using NeighbourSearch<ndim>::timing;
-  using NeighbourSearch<ndim>::kernp;
-  using NeighbourSearch<ndim>::kernfac;
-  using NeighbourSearch<ndim>::kernrange;
-  using NeighbourSearch<ndim>::kernrangesqd;
-
-
-  //-----------------------------------------------------------------------------------------------
-  MeshlessFVBruteForce(FLOAT, DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
-  virtual ~MeshlessFVBruteForce();
-
-
-  //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
-                                   Nbody<ndim> *, DomainBox<ndim> &);
-  virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
-                                      Nbody<ndim> *, DomainBox<ndim> &);
-  virtual void UpdateGodunovFluxes(int, int, FLOAT, MeshlessFVParticle<ndim> *,
-                                   MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
-  virtual void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
-                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
-
-};
-
-
-
 //=================================================================================================
 //  Class MeshlessFVTree
 /// \brief   MeshlessFVTree class definition.
@@ -205,62 +165,4 @@ protected:
 };
 
 
-
-//=================================================================================================
-//  Class MeshlessFVKDTree
-/// \brief   MeshlessFVKDTree class definition.
-/// \details MeshlessFVKDTree class definition.
-/// \author  D. A. Hubber
-/// \date    17/09/2014
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class MeshlessFVKDTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
-{
- public:
-
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::tree;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::ghosttree;
-#ifdef MPI_PARALLEL
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::prunedtree;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::sendprunedtree;
-#endif
-
-
-  //-----------------------------------------------------------------------------------------------
-  MeshlessFVKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister&);
-
-};
-
-
-
-//=================================================================================================
-//  Class MeshlessFVOctTree
-/// \brief   MeshlessFVOctTree class definition.
-/// \details MeshlessFVOctTree class definition.
-/// \author  D. A. Hubber
-/// \date    17/09/2014
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class MeshlessFVOctTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
-{
- public:
-
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::tree;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::ghosttree;
-#ifdef MPI_PARALLEL
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::prunedtree;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::sendprunedtree;
-#endif
-
-
-  //-----------------------------------------------------------------------------------------------
-  MeshlessFVOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister&);
-
-};
 #endif

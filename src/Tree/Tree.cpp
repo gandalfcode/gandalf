@@ -37,6 +37,7 @@
 #include "Tree.h"
 #include "KDTree.h"
 #include "OctTree.h"
+#include "BruteForceTree.h"
 #include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>
@@ -933,7 +934,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (celldata[cc].copen == -1 && celldata[cc].N == 1 && Ndirect + Nleafmax < Nneibmax) {
+      if (celldata[cc].copen == -1 && celldata[cc].N == 1 && Nneib + Nleafmax < Nneibmax) {
         i = celldata[cc].ifirst;
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;
@@ -1673,3 +1674,20 @@ template class Tree<2,GradhSphParticle,TreeRayCell>;
 template class Tree<3,Particle,TreeRayCell>;
 template class Tree<3,SphParticle,TreeRayCell>;
 template class Tree<3,GradhSphParticle,TreeRayCell>;
+
+template class Tree<1,Particle,BruteForceTreeCell>;
+template class Tree<2,Particle,BruteForceTreeCell>;
+template class Tree<3,Particle,BruteForceTreeCell>;
+template class Tree<1,SphParticle,BruteForceTreeCell>;
+template class Tree<2,SphParticle,BruteForceTreeCell>;
+template class Tree<3,SphParticle,BruteForceTreeCell>;
+template class Tree<1,GradhSphParticle,BruteForceTreeCell>;
+template class Tree<2,GradhSphParticle,BruteForceTreeCell>;
+template class Tree<3,GradhSphParticle,BruteForceTreeCell>;
+template class Tree<1,SM2012SphParticle,BruteForceTreeCell>;
+template class Tree<2,SM2012SphParticle,BruteForceTreeCell>;
+template class Tree<3,SM2012SphParticle,BruteForceTreeCell>;
+template class Tree<1,MeshlessFVParticle,BruteForceTreeCell>;
+template class Tree<2,MeshlessFVParticle,BruteForceTreeCell>;
+template class Tree<3,MeshlessFVParticle,BruteForceTreeCell>;
+

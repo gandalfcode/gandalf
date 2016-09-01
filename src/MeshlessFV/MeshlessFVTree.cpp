@@ -43,100 +43,6 @@ using namespace std;
 
 
 //=================================================================================================
-//  MeshlessFVKDTree::MeshlessFVKDTree
-/// MeshlessFVKDTree constructor.  Initialises various variables and creates tree objects.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-MeshlessFVKDTree<ndim,ParticleType,TreeCell>::MeshlessFVKDTree
- (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
- NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- MeshlessFVTree<ndim,ParticleType,TreeCell>
-  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
-{
-  // Set-up main tree object
-  tree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up ghost-particle tree object
-  ghosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                     _macerror, _gravity_mac, _multipole, *_box, types);
-
-#ifdef MPI_PARALLEL
-  // Set-up ghost-particle tree object
-  mpighosttree = new KDTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                        _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up multiple pruned trees, one for each MPI process
-  KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
-  prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
-  KDTree<ndim,ParticleType,TreeCell>** sendprunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
-  sendprunedtree = (Tree<ndim,ParticleType,TreeCell> **) sendprunedtree_derived;
-
-  for (int i=0; i<Nmpi; i++) {
-    prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-  for (int i=0; i<Nmpi; i++) {
-    sendprunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-#endif
-}
-
-
-
-//=================================================================================================
-//  MeshlessFVOctTree::MeshlessFVOctTree
-/// SphTree constructor.  Initialises various variables.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-MeshlessFVOctTree<ndim,ParticleType,TreeCell>::MeshlessFVOctTree
- (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
- NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- MeshlessFVTree<ndim,ParticleType,TreeCell>
-  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
-{
-  // Set-up main tree object
-  tree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                 _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up ghost-particle tree object
-  ghosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                      _macerror, _gravity_mac, _multipole, *_box, types);
-
-#ifdef MPI_PARALLEL
-  // Set-up ghost-particle tree object
-  mpighosttree = new OctTree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-                                                         _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up multiple pruned trees, one for each MPI process
-  //*(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
-  // Set-up multiple pruned trees, one for each MPI process
-  OctTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
-  prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
-  OctTree<ndim,ParticleType,TreeCell>** sendprunedtree_derived = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
-  sendprunedtree = (Tree<ndim,ParticleType,TreeCell> **) sendprunedtree_derived;
-
-  for (int j=0; j<Nmpi; j++) {
-    prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-  for (int i=0; i<Nmpi; i++) {
-    sendprunedtree[i] = new OctTree<ndim,ParticleType,TreeCell>
-     (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-#endif
-}
-
-
-
-//=================================================================================================
 //  MeshlessFVTree::MeshlessFVTree
 /// MeshlessFVTree constructor.  Initialises various variables.
 //=================================================================================================
@@ -151,6 +57,35 @@ MeshlessFVTree<ndim,ParticleType,TreeCell>::MeshlessFVTree
   (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
 {
+  tree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+		                                      _macerror, _gravity_mac, _multipole, *_box, types);
+
+  // Set-up ghost-particle tree object
+  ghosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+		  	  	  	  	  	  	  	  	  	       _macerror, _gravity_mac, _multipole, *_box, types);
+
+#ifdef MPI_PARALLEL
+  // Set-up ghost-particle tree object
+  mpighosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+		                                              _macerror, _gravity_mac, _multipole, *_box, types);
+
+  // Set-up multiple pruned trees, one for each MPI process
+  prunedtree = new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
+  // new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
+  sendprunedtree =  new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
+  //new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
+
+  for (int i=0; i<Nmpi; i++) {
+	prunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+														 _macerror, _gravity_mac, _multipole, *_box, types);
+  }
+  for (int i=0; i<Nmpi; i++) {
+	sendprunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
+	    													 _macerror, _gravity_mac, _multipole, *_box, types);
+  }
+#endif
+
+
 }
 
 
@@ -845,8 +780,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       for (int jj=0; jj<Nneib; jj++) {
         i = neibpart[jj].iorig;
         if (!neibpart[jj].flags.is_mirror()) {
-	      if (neibpart[jj].active)
-	        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
+	  if (neibpart[jj].active)
+	    for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
           for (k=0; k<ndim+2; k++) dQBuffer[i][k] += neibpart[jj].dQ[k];
           for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
         }
@@ -1200,18 +1135,14 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 }
 
 
-
-
 template class MeshlessFVTree<1,MeshlessFVParticle,KDTreeCell>;
 template class MeshlessFVTree<2,MeshlessFVParticle,KDTreeCell>;
 template class MeshlessFVTree<3,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVKDTree<1,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVKDTree<2,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVKDTree<3,MeshlessFVParticle,KDTreeCell>;
 
 template class MeshlessFVTree<1,MeshlessFVParticle,OctTreeCell>;
 template class MeshlessFVTree<2,MeshlessFVParticle,OctTreeCell>;
 template class MeshlessFVTree<3,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVOctTree<1,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVOctTree<2,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVOctTree<3,MeshlessFVParticle,OctTreeCell>;
+
+template class MeshlessFVTree<1,MeshlessFVParticle,BruteForceTreeCell>;
+template class MeshlessFVTree<2,MeshlessFVParticle,BruteForceTreeCell>;
+template class MeshlessFVTree<3,MeshlessFVParticle,BruteForceTreeCell>;

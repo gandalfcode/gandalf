@@ -349,7 +349,7 @@ private:
 		  }
 		}
 	  }
-	return nc ;
+	  return nc ;
 	}
 };
 
@@ -376,6 +376,7 @@ struct ParticleCellProxy
 
 			hboxmax[k] = rcell[k] + dr ;
 			hboxmin[k] = rcell[k] - dr ;
+
 		}
 	}
 } ;
@@ -405,7 +406,6 @@ struct DomainCellProxy
 		}
 	}
 } ;
-
 
 
 #endif//_GHOST_NEIGHBOURS_H_

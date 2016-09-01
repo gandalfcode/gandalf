@@ -235,16 +235,26 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
    TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
 
   if (stringparams["neib_search"] == "bruteforce") {
-    sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
-     (sph->kernp->kernrange, &simbox, sph->kernp, timing);
+    sphneib = new GradhSphTree<ndim,GradhSphParticle,BruteForceTreeCell>
+      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
+       
+    typedef GradhSphTree<ndim,GradhSphParticle,BruteForceTreeCell> TreeType ;
+    TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
+    t = pTree->tree ; gt = pTree->ghosttree ;
+#ifdef MPI_PARALLEL
+    mpit = pTree->mpighosttree ;
+#endif
+    
   }
   else if (stringparams["neib_search"] == "kdtree") {
-    sphneib = new GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell>
+    sphneib = new GradhSphTree<ndim,GradhSphParticle,KDTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
-    typedef GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell> TreeType ;
+    typedef GradhSphTree<ndim,GradhSphParticle,KDTreeCell> TreeType ;
     TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
     t = pTree->tree ; gt = pTree->ghosttree ;
 #ifdef MPI_PARALLEL
@@ -252,12 +262,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #endif
   }
   else if (stringparams["neib_search"] == "octtree" && gas_radiation == "treeray" && ndim == 3) {
-    sphneib = new GradhSphOctTree<ndim,GradhSphParticle,TreeRayCell>
+    sphneib = new GradhSphTree<ndim,GradhSphParticle,TreeRayCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
-    typedef GradhSphOctTree<ndim,GradhSphParticle,TreeRayCell> TreeType ;
+    typedef GradhSphTree<ndim,GradhSphParticle,TreeRayCell> TreeType ;
     TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
     t = pTree->tree ; gt = pTree->ghosttree ;
 #ifdef MPI_PARALLEL
@@ -265,12 +275,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #endif
   }
   else if (stringparams["neib_search"] == "octtree") {
-    sphneib = new GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell>
+    sphneib = new GradhSphTree<ndim,GradhSphParticle,OctTreeCell>
      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
-    typedef GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell> TreeType ;
+    typedef GradhSphTree<ndim,GradhSphParticle,OctTreeCell> TreeType ;
     TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
     t = pTree->tree ; gt = pTree->ghosttree ;
 #ifdef MPI_PARALLEL

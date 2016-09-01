@@ -102,7 +102,7 @@ public:
   MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
              FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
              string KernelName, int size_mfv_part, SimUnits &units, Parameters *params);
-  ~MeshlessFV();
+ virtual ~MeshlessFV();
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
@@ -241,7 +241,7 @@ class MfvCommon : public MeshlessFV<ndim>
   MfvCommon(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
            FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
            string KernelName, int size_MeshlessFV_part, SimUnits &units, Parameters *params);
-  ~MfvCommon();
+  virtual ~MfvCommon();
 
   virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
                                   MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
@@ -330,8 +330,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
-                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
+		  	  	  	  	  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
 
 };
 
@@ -394,7 +394,7 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   MfvRungeKutta(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
                 FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
                 string KernelName, int size_MeshlessFV_part, SimUnits &units, Parameters *params);
-  ~MfvRungeKutta();
+  ~MfvRungeKutta() {};
 
 
   // ..
