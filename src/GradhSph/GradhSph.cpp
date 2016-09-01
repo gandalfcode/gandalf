@@ -630,6 +630,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
   // Set velocity divergence and compressional heating rate terms
   parti.div_v   *= parti.invrho;
+  parti.dudt    *= (FLOAT) 0.5;
   parti.dudt    -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
   parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*
     parti.invh + max(parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
