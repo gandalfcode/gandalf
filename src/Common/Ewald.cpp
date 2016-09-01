@@ -85,6 +85,13 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     debug2("[Ewald::Ewald]");
     timing->StartTimingSection("EWALD");
 
+    // First check that we don't have any reflecting boundaries
+    if (IsAnyBoundaryReflecting(simbox)){
+      ExceptionHandler::getIstance().raise("Ewald gravity does not work with "
+    		                               "reflecting boundaries");
+    }
+
+
 
     // set ewald_periodicity for given type of boundary conditions
     ewald_periodicity = 0;
@@ -97,6 +104,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     if (simbox.boundary_lhs[2] == periodicBoundary && simbox.boundary_rhs[2] == periodicBoundary) {
       ewald_periodicity+=4;
     }
+
 
 
     // prepare useful constants for generating Ewald field
@@ -126,7 +134,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     if (EFratio > 1.5) {
       printf("Use lower value of EFratio !\n");
       printf("Current value of EFratio is %4.2f \n",EFratio);
-      exit(0);
+      ExceptionHandler::getIstance().raise("Problem with EFratio in Ewald::Ewald");
     }
 
     //---------------------------------------------------------------------------------------------
@@ -522,7 +530,6 @@ void Ewald<ndim>::CalculatePeriodicCorrection
     if ((ip[0] > nEwaldGrid) && (ewald_periodicity == 3)) {
       printf("wrong integer %6d  %6d %6d %16.8lf %16.8lf %16.8lf \n",
              ip[0],ip[1],ip[2],dr[0],dr[1],dr[2]);
-      //  exit(0);
     }
 
 

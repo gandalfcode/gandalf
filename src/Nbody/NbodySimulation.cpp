@@ -93,7 +93,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   // Set-up dummy SPH object in order to have valid pointers in N-body object
   hydro = new NullHydrodynamics<ndim>
     (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-     stringparams["gas_eos"], KernelName, sizeof(Particle<ndim>));
+     stringparams["gas_eos"], KernelName, sizeof(Particle<ndim>), simunits, simparams);
 
 
   // Process all N-body parameters and set-up main N-body objects
@@ -454,14 +454,14 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                                     // Particle counter
   int istep;                                 // Aux. variable for changing steps
-  int level;                        // Particle timestep level
-  int last_level;                   // Previous timestep level
-  int level_max_aux;                // Aux. maximum level variable
-  int level_max_old;                // Old level_max
-  int level_max_nbody = 0;          // level_max for star particles only
-  int level_nbody;                  // local thread var. for N-body level
-  int nfactor;                      // Increase/decrease factor of n
-  int nstep;                        // Particle integer step-size
+  int level;                                 // Particle timestep level
+  int last_level;                            // Previous timestep level
+  int level_max_aux;                         // Aux. maximum level variable
+  int level_max_old;                         // Old level_max
+  int level_max_nbody = 0;                   // level_max for star particles only
+  int level_nbody;                           // local thread var. for N-body level
+  int nfactor;                               // Increase/decrease factor of n
+  int nstep;                                 // Particle integer step-size
   DOUBLE dt;                                 // Aux. timestep variable
   DOUBLE dt_min = big_number_dp;             // Minimum timestep
   DOUBLE dt_min_aux;                         // Aux. minimum timestep variable

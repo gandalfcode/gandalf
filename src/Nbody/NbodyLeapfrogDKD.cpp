@@ -160,7 +160,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
     j = hydrolist[jj];
 
     Particle<ndim>& part = hydro->GetParticlePointer(j);
-    assert(part.itype != dead);
+    assert(!part.flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -184,7 +184,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
     j = directlist[jj];
 
     Particle<ndim>& part = hydro->GetParticlePointer(j);
-    assert(part.itype != dead);
+    assert(!part.flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     drsqd = DotProduct(dr,dr,ndim);

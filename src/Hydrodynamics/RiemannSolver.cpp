@@ -279,7 +279,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
       std::cout << "rho : " << dl << "   " << dr << "     vel : " << ul << "    "
                 << ur << "    press : " << pl << "    " << pr << std::endl;
       std::cout << "f/fprime : " << fl << "   " << fr << "   " << flprime << "   " << frprime << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error : Invalid star values in Riemann solver");
     }
 
 
@@ -448,7 +448,7 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
   if (p < 0.0) {
     cout << "s : " << s << "   " << ustar << "   " << pstar << "   " << pl << "    " << pr << endl;
     cout << "p : " << p << "    d : " << d << "    c : " << c << "    u : " << u << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : Negative pstar in Riemann solver");
   }
 
   return;
@@ -470,7 +470,6 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 {
   const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);      // LHS sound speed
   const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);    // RHS sound speed
-
   int k,kv;                            // Dimension counters
   FLOAT pstar;                         // Pressure in star region
   FLOAT ustar;                         // Velocity in star region
@@ -507,7 +506,7 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
     assert(p >= 0.0);
     assert(d >= 0.0);
 
-    for (kv=0; kv<ndim; kv++) Wface[kv] = 0.0;
+    for (kv=0; kv<ndim; kv++) Wface[kv] = (FLOAT) 0.0;
     Wface[irho]   = d;
     Wface[ivx]    = u;
     Wface[ipress] = p;
@@ -526,7 +525,7 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
       if (u > 0.0) {
         for (k=1; k<ndim; k++) Wface[k] = uleft[k];
       }
-      else if (u < 0.0) {
+      else {
         for (k=1; k<ndim; k++) Wface[k] = uright[k];
       }
     }
@@ -536,14 +535,27 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
     this->RotateVector(rotMat, Wface);
 
 
+    for (k=0; k<ndim; k++) Wface[k] += vface[k];
+    FLOAT etot = (FLOAT) 0.0;
+    for (kv=0; kv<ndim; kv++) etot += Wface[kv]*Wface[kv];
+    etot = (FLOAT) 0.5*etot + Wface[ipress]/(gamma - (FLOAT) 1.0)/Wface[irho];
+    for (k=0; k<ndim; k++) {
+      for (kv=0; kv<ndim; kv++) flux[kv][k] = Wface[irho]*(Wface[k] - vface[k])*Wface[kv];
+      flux[k][k]     = Wface[irho]*Wface[k]*(Wface[k] - vface[k]) + Wface[ipress];
+      flux[irho][k]  = Wface[irho]*(Wface[k] - vface[k]);
+      flux[ietot][k] = Wface[irho]*etot*(Wface[k] - vface[k]) + Wface[ipress]*Wface[k];
+      //(Wface[ipress]/(gamma - 1.0) + 0.5*Wface[irho]*ekin)*(Wface[k])
+    }
+
+
     // Compute fluxes in moving frame
-    FLOAT ekin = 0.0;
+    /*FLOAT ekin = (FLOAT) 0.0;
     for (kv=0; kv<ndim; kv++) ekin += Wface[kv]*Wface[kv];
     for (k=0; k<ndim; k++) {
       for (kv=0; kv<ndim; kv++) flux[kv][k] = Wface[irho]*Wface[k]*Wface[kv];
       flux[k][k]     = Wface[irho]*Wface[k]*Wface[k] + Wface[ipress];
-      flux[irho][k]  = Wface[irho]*(Wface[k]);
-      flux[ietot][k] = (Wface[ipress]/(gamma - 1.0) + 0.5*Wface[irho]*ekin)*(Wface[k])
+      flux[irho][k]  = Wface[irho]*Wface[k];
+      flux[ietot][k] = (Wface[ipress]/(gamma - (FLOAT) 1.0) + (FLOAT) 0.5*Wface[irho]*ekin)*Wface[k]
         + Wface[ipress]*Wface[k];
     }
 
@@ -554,7 +566,7 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
     }
     for (k=0; k<ndim; k++) {
       for (kv=0; kv<ndim; kv++) flux[kv][k] += vface[kv]*flux[irho][k];
-    }
+    }*/
 
   }
   // Otherwise assume vacuum state conditions
@@ -594,7 +606,10 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
 
   int k,kv;                            // ..
   FLOAT ekin;                          // ..
-  FLOAT etotl, etotr, Sl, Sr, ddu, dstarl, dstarr, etotstarl, etotstarr, df, uf, pf, etotf;
+  FLOAT etotl, etotr, Sl, Sr, ddu, dstarl, dstarr;
+  //FLOAT etotstarl, etotstarr,
+  FLOAT df, uf, pf;
+  //FLOAT etotf;
   FLOAT pstar;                         // Pressure in star region
   FLOAT ustar;                         // Velocity in star region
   //FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
@@ -655,36 +670,36 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
 
     // Left star region variables
     dstarl = dl*(Sl - ul)/(Sl - ustar);
-    etotstarl = dstarl*(etotl/dl + (ustar - ul)*(ustar + pl/(dl*(Sl - ul))));
+    //etotstarl = dstarl*(etotl/dl + (ustar - ul)*(ustar + pl/(dl*(Sl - ul))));
 
     // Right star region variables
     dstarr = dr*(Sr - ur)/(Sr - ustar);
-    etotstarr = dstarr*(etotr/dr + (ustar - ur)*(ustar + pr/(dr*(Sr - ur))));
+    //etotstarr = dstarr*(etotr/dr + (ustar - ur)*(ustar + pr/(dr*(Sr - ur))));
 
     // Sample solution at x/t=0
     if( Sl > 0.0 ) {
       df = dl;
       uf = ul;
       pf = pl;
-      etotf = etotl;
+      //etotf = etotl;
     }
     else if( ustar > 0.0 ) {
       df = dstarl;
       uf = ustar;
       pf = pstar;
-      etotf = etotstarl;
+      //etotf = etotstarl;
     }
     else if( Sr > 0.0 ) {
       df = dstarr;
       uf = ustar;
       pf = pstar;
-      etotf = etotstarr;
+      //etotf = etotstarr;
     }
     else {
       df = dr;
       uf = ur;
       pf = pr;
-      etotf = etotr;
+      //etotf = etotr;
     }
     assert(pf >= 0.0);
     assert(df >= 0.0);
@@ -727,7 +742,8 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
 
     // Add corrections for transforming back to original lab frame
     for (k=0; k<ndim; k++) {
-      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] + DotProduct(vface, flux[k], ndim);
+      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] +
+        DotProduct(vface, flux[k], ndim);
     }
     for (k=0; k<ndim; k++) {
       for (kv=0; kv<ndim; kv++) flux[kv][k] += vface[kv]*flux[irho][k];

@@ -143,17 +143,17 @@ void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
   // Determine new order of particles in arrays.
   // First all live particles and then all dead particles
   for (i=0; i<Nhydro; i++) {
-    itype = sphdata[i].itype;
-    while (itype == dead) {
+    itype = sphdata[i].flags.get();
+    while (itype & dead) {
       Ndead++;
       ilast--;
       if (i < ilast) {
         sphdata[i] = sphdata[ilast];
-        sphdata[ilast].itype = dead;
+        sphdata[ilast].flags.set_flag(dead);
         sphdata[ilast].m = (FLOAT) 0.0;
       }
       else break;
-      itype = sphdata[i].itype;
+      itype = sphdata[i].flags.get();
     };
     if (i >= ilast - 1) break;
   }

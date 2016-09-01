@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include "Exception.h"
 #include "Precision.h"
 using namespace std;
 
@@ -81,6 +82,7 @@ struct DomainBox {
   FLOAT boxmax[3];                     ///< Maximum bounding box extent
   FLOAT boxsize[3];                    ///< Side-lengths of bounding box
   FLOAT boxhalf[3];                    ///< Half side-lengths of bounding box
+  bool PeriodicGravity ;               ///< Whether the domain is using periodic gravity.
 };
 
 
@@ -114,6 +116,40 @@ bool IsAnyBoundarySpecial(const DomainBox<ndim>& box)
   return false;
 }
 
+//=================================================================================================
+/// \brief  Helper function to find if any of the boundaries is periodic
+/// \author R. A. Booth
+/// \date   28/10/2015
+/// \return A boolean saying whether any periodic boundary was found
+//=================================================================================================
+template <int ndim>
+bool IsAnyBoundaryPeriodic(const DomainBox<ndim>& box)
+{
+  for (int k=0; k < ndim; k++){
+	if(box.boundary_lhs[k] == periodicBoundary || box.boundary_rhs[k] == periodicBoundary)
+		return true ;
+  }
+
+  return false;
+}
+
+
+//=================================================================================================
+/// \brief  Helper function to find if any of the boundaries is periodic
+/// \author R. A. Booth
+/// \date   28/10/2015
+/// \return A boolean saying whether any periodic boundary was found
+//=================================================================================================
+template <int ndim>
+bool IsAnyBoundaryReflecting(const DomainBox<ndim>& box)
+{
+  for (int k=0; k < ndim; k++){
+	if(box.boundary_lhs[k] == mirrorBoundary || box.boundary_rhs[k] == mirrorBoundary)
+		return true ;
+  }
+
+  return false;
+}
 
 
 //=================================================================================================
@@ -126,7 +162,8 @@ inline boundaryEnum setBoundaryType(string boundaryString)
   else if (boundaryString == "mirror") return mirrorBoundary;
   else if (boundaryString == "wall") return wallBoundary;
   else {
-    exit(0);
+    ExceptionHandler::getIstance().raise("Invalid boundary type chosen");
+    return Nboundarytypes;
   }
 }
 
@@ -193,5 +230,30 @@ static inline void NearestPeriodicVector
   return;
 }
 
+
+//=================================================================================================
+/// \brief  Helper function to find if two boxes overlap
+/// \author D. A. Hubber, G. Rosotti
+/// \date   12/11/2013
+/// \return A boolean saying whether the boxes overlap
+//=================================================================================================
+template <int ndim>
+inline bool FractionalBoxOverlap
+ (Box<ndim> &box1,                     ///< ..
+  Box<ndim> &box2,                     ///< ..
+  DomainBox<ndim> &simbox,             ///< ..
+  FLOAT &overlapfrac)                  ///< ..
+{
+  int k;
+  FLOAT dr[ndim];
+
+  // First, calculate relative position vector between boxes
+  for (k=0; k<ndim; k++) dr[k] = box2.r[k] - box1.r[k];
+
+  // Calculate closest position vector to nearest
+
+
+  return false;
+}
 
 #endif

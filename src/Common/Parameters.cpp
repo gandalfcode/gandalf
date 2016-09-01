@@ -367,10 +367,10 @@ void Parameters::SetDefaultValues(void)
   stringparams["boundary_lhs[2]"] = "open";
   stringparams["boundary_rhs[2]"] = "open";
   floatparams["boxmin[0]"] = -9.9e30;
-  floatparams["boxmin[1]"] = 9.9e30;
+  floatparams["boxmin[1]"] = -9.9e30;
   floatparams["boxmin[2]"] = -9.9e30;
   floatparams["boxmax[0]"] = 9.9e30;
-  floatparams["boxmax[1]"] = -9.9e30;
+  floatparams["boxmax[1]"] = 9.9e30;
   floatparams["boxmax[2]"] = 9.9e30;
 
   // Ewald periodic gravity parameters
@@ -442,11 +442,12 @@ void Parameters::SetDefaultValues(void)
   floatparams["power_turb"] = -4.0;
   floatparams["asound"] = 1.0;
   floatparams["zmax"] = 1.0;
+  floatparams["thermal_energy"] = 1.0;
 
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------
-  stringparams["rand_algorithm"] = "none";
-  intparams["randseed"] = 0;
+  stringparams["rand_algorithm"] = "xorshift";
+  intparams["randseed"] = 1;
 
   // MPI parameters
   //-----------------------------------------------------------------------------------------------
@@ -457,6 +458,14 @@ void Parameters::SetDefaultValues(void)
   // Python parameters
   //-----------------------------------------------------------------------------------------------
   floatparams["dt_python"] = 8.0;
+
+  // Dust Parameters
+  //-----------------------------------------------------------------------------------------------
+  stringparams["dust_forces"] = "none" ;
+  stringparams["drag_law"] = "none" ;
+  floatparams["drag_coeff"] = 0 ;
+  floatparams["dust_mass_factor"] = 1 ;
+
 
   return;
 }

@@ -100,7 +100,7 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
   m = new FLOAT[Ntot];
   neiblist = new int[Ntot];
   for (i=0; i<Ntot; i++) {
-    if (sphdata[i].itype == dead) continue;
+    if (sphdata[i].flags.is_dead()) continue;
     neiblist[Nneib] = i;
     gpot[Nneib] = sphdata[i].gpot;
     m[Nneib] = sphdata[i].m;
@@ -120,14 +120,17 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
     for (i=0; i<Nhydro; i++) {
 
       // Skip over inactive particles
-      if (!sphdata[i].active || sphdata[i].itype == dead) continue;
+      if (!sphdata[i].active || sphdata[i].flags.is_dead()) continue;
 
       for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
+      Typemask hmask = sph->types[sphdata[i].ptype].hmask ;
 
       // Compute distances and the reciprical between the current particle and all neighbours here
       //-------------------------------------------------------------------------------------------
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
+    	if (!hmask[sphdata[j].ptype]) continue ;
+
         for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
         drsqd[jj] = DotProduct(dr,dr,ndim);
       }

@@ -67,24 +67,6 @@ SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory
 SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename): units(_units)
 {
   allocated        = false;
-  allocatedbinary  = false;
-  allocatedstar    = false;
-  allocatedsph     = false;
-  computedbinary   = false;
-  computedsph      = false;
-  computednbody    = false;
-  nallocatedbinary = 0;
-  nallocatedsph    = 0;
-  nallocatedstar   = 0;
-  Nbinary          = 0;
-  Norbit           = 0;
-  Norbitmax        = 0;
-  Nquadruple       = 0;
-  Ntriple          = 0;
-  Nhydro           = 0;
-  Nhydromax        = 0;
-  Nstar            = 0;
-  Nstarmax         = 0;
   t                = 0.0;
   LastUsed         = time(NULL);
   if (auxfilename != "") filename = auxfilename;
@@ -107,16 +89,79 @@ SphSnapshot<ndims>::SphSnapshot
   this->fileform = sim->GetParam("out_file_form");
 
   // Computes how numbers we need to store for each sph/star particle
-  nneededsph = 3*ndims + 5;
-  nneededstar = 3*ndims + 2;
-  nneededbinary = 5;
+//  nneededsph = 3*ndims + 5;
+//  nneededstar = 3*ndims + 2;
+//  nneededbinary = 5;
 
   if (filename != "") {
     HeaderInfo info;
     info = sim->ReadHeaderSnapshotFile(filename, this->fileform);
     this->t = info.t;
-    this->Nstar = info.Nstar;
-    this->Nhydro = info.Nhydro;
+    int Nhydro = info.Nhydro;
+    if (Nhydro>0) {
+      this->data["sph"]=Species(Nhydro,"sph");
+      Species::maptype& sph_values=data["sph"].values;
+      sph_values["x"]=vector<float>();
+      sph_values["vx"]=vector<float>();
+      sph_values["ax"]=vector<float>();
+      sph_values["m"]=vector<float>();
+      sph_values["h"]=vector<float>();
+      sph_values["rho"]=vector<float>();
+      sph_values["u"]=vector<float>();
+      sph_values["dudt"]=vector<float>();
+      if (ndim>1) {
+        sph_values["y"]=vector<float>();
+        sph_values["vy"]=vector<float>();
+        sph_values["ay"]=vector<float>();
+      }
+      if (ndim>2) {
+        sph_values["z"]=vector<float>();
+        sph_values["vz"]=vector<float>();
+        sph_values["az"]=vector<float>();
+      }
+    }
+    int Ndust = info.Ndust;
+    if (Ndust>0) {
+      this->data["dust"]=Species(Ndust,"dust");
+      Species::maptype& dust_values=data["dust"].values;
+      dust_values["x"]=vector<float>();
+      dust_values["vx"]=vector<float>();
+      dust_values["ax"]=vector<float>();
+      dust_values["m"]=vector<float>();
+      dust_values["h"]=vector<float>();
+      dust_values["rho"]=vector<float>();
+      if (ndim>1) {
+        dust_values["y"]=vector<float>();
+        dust_values["vy"]=vector<float>();
+        dust_values["ay"]=vector<float>();
+      }
+      if (ndim>2) {
+        dust_values["z"]=vector<float>();
+        dust_values["vz"]=vector<float>();
+        dust_values["az"]=vector<float>();
+      }
+    }
+    int Nstar = info.Nstar;
+    if (Nstar>0) {
+      this->data["star"]=Species(Nstar,"star");
+      Species& star = data["star"];
+      Species::maptype& star_values = data["star"].values;
+      star_values["x"]=vector<float>(Nstar);
+      star_values["vx"]=vector<float>(Nstar);
+      star_values["ax"]=vector<float>(Nstar);
+      star_values["m"]=vector<float>(Nstar);
+      star_values["h"]=vector<float>(Nstar);
+      if (ndim>1) {
+        star_values["y"]=vector<float>(Nstar);
+        star_values["vy"]=vector<float>(Nstar);
+        star_values["ay"]=vector<float>(Nstar);
+      }
+      if (ndim>2) {
+        star_values["z"]=vector<float>(Nstar);
+        star_values["vz"]=vector<float>(Nstar);
+        star_values["az"]=vector<float>(Nstar);
+      }
+    }
   }
 }
 
@@ -126,10 +171,10 @@ SphSnapshot<ndims>::SphSnapshot
 //  SphSnapshotBase::~SphSnapshotBase
 /// Deallocate any heap arrays to avoid leaking memory.
 //=================================================================================================
-SphSnapshotBase::~SphSnapshotBase()
-{
-  DeallocateBufferMemory();
-}
+//SphSnapshotBase::~SphSnapshotBase()
+//{
+//  DeallocateBufferMemory();
+//}
 
 
 
@@ -139,18 +184,18 @@ SphSnapshotBase::~SphSnapshotBase()
 /// to minimise memory use, even if compiled with double precision.
 /// Wrapper around AllocateBufferMemoryStar and AllocateBufferMemorySph.
 //=================================================================================================
-void SphSnapshotBase::AllocateBufferMemory(void)
-{
-  debug2("[SphSnapshotBase::AllocateBufferMemory]");
-
-  AllocateBufferMemoryStar();
-  AllocateBufferMemorySph();
-  AllocateBufferMemoryBinary();
-
-  allocated = true;
-
-  return;
-}
+//void SphSnapshotBase::AllocateBufferMemory(void)
+//{
+//  debug2("[SphSnapshotBase::AllocateBufferMemory]");
+//
+//  AllocateBufferMemoryStar();
+//  AllocateBufferMemorySph();
+//  AllocateBufferMemoryBinary();
+//
+//  allocated = true;
+//
+//  return;
+//}
 
 
 
@@ -158,56 +203,56 @@ void SphSnapshotBase::AllocateBufferMemory(void)
 //  SphSnapshotBase::AllocateBufferMemoryStar
 /// Allocate memory for stars in current snapshot.
 //=================================================================================================
-void SphSnapshotBase::AllocateBufferMemoryStar(void)
-{
-  // If memory is already allocated and more memory is needed for more
-  // particles, deallocate now before reallocating.
-  if (allocatedstar) {
-    if (Nstar > Nstarmax) {
-      DeallocateBufferMemoryStar();
-    }
-    else {
-      return;
-    }
-  }
-
-  // Allocate memory for all vector quantities depending on dimensionality
-  if (ndim == 1) {
-    xstar = new float[Nstar];
-    vxstar = new float[Nstar];
-    axstar = new float[Nstar];
-  }
-  else if (ndim == 2) {
-    xstar = new float[Nstar];
-    ystar = new float[Nstar];
-    vxstar = new float[Nstar];
-    vystar = new float[Nstar];
-    axstar = new float[Nstar];
-    aystar = new float[Nstar];
-  }
-  else if (ndim == 3) {
-    xstar = new float[Nstar];
-    ystar = new float[Nstar];
-    zstar = new float[Nstar];
-    vxstar = new float[Nstar];
-    vystar = new float[Nstar];
-    vzstar = new float[Nstar];
-    axstar = new float[Nstar];
-    aystar = new float[Nstar];
-    azstar = new float[Nstar];
-  }
-
-  // Stars scalar quantities
-  mstar = new float[Nstar];
-  hstar = new float[Nstar];
-
-  // Record 3 vectors of size ndim (r,v,a) and 2 scalars (m,h)
-  nallocatedstar = 3*ndim + 2;
-  allocatedstar  = true;
-  Nstarmax       = Nstar;
-
-  return;
-}
+//void SphSnapshotBase::AllocateBufferMemoryStar(void)
+//{
+//  // If memory is already allocated and more memory is needed for more
+//  // particles, deallocate now before reallocating.
+//  if (allocatedstar) {
+//    if (Nstar > Nstarmax) {
+//      DeallocateBufferMemoryStar();
+//    }
+//    else {
+//      return;
+//    }
+//  }
+//
+//  // Allocate memory for all vector quantities depending on dimensionality
+//  if (ndim == 1) {
+//    xstar = new float[Nstar];
+//    vxstar = new float[Nstar];
+//    axstar = new float[Nstar];
+//  }
+//  else if (ndim == 2) {
+//    xstar = new float[Nstar];
+//    ystar = new float[Nstar];
+//    vxstar = new float[Nstar];
+//    vystar = new float[Nstar];
+//    axstar = new float[Nstar];
+//    aystar = new float[Nstar];
+//  }
+//  else if (ndim == 3) {
+//    xstar = new float[Nstar];
+//    ystar = new float[Nstar];
+//    zstar = new float[Nstar];
+//    vxstar = new float[Nstar];
+//    vystar = new float[Nstar];
+//    vzstar = new float[Nstar];
+//    axstar = new float[Nstar];
+//    aystar = new float[Nstar];
+//    azstar = new float[Nstar];
+//  }
+//
+//  // Stars scalar quantities
+//  mstar = new float[Nstar];
+//  hstar = new float[Nstar];
+//
+//  // Record 3 vectors of size ndim (r,v,a) and 2 scalars (m,h)
+//  nallocatedstar = 3*ndim + 2;
+//  allocatedstar  = true;
+//  Nstarmax       = Nstar;
+//
+//  return;
+//}
 
 
 
@@ -215,59 +260,59 @@ void SphSnapshotBase::AllocateBufferMemoryStar(void)
 //  SphSnapshotBase::AllocateBufferMemorySph
 /// Allocate memory for sph particles in current snapshot.
 //=================================================================================================
-void SphSnapshotBase::AllocateBufferMemorySph(void)
-{
-  // If memory already allocated and more memory is needed for more particles,
-  // deallocate now before reallocating.
-  if (allocatedsph) {
-    if (Nhydro > Nhydromax) {
-      DeallocateBufferMemorySph();
-    }
-    else {
-      return;
-    }
-  }
-
-  // Allocate memory for all vector quantities depending on dimensionality
-  if (ndim == 1) {
-    x = new float[Nhydro];
-    vx = new float[Nhydro];
-    ax = new float[Nhydro];
-  }
-  else if (ndim == 2) {
-    x = new float[Nhydro];
-    y = new float[Nhydro];
-    vx = new float[Nhydro];
-    vy = new float[Nhydro];
-    ax = new float[Nhydro];
-    ay = new float[Nhydro];
-  }
-  else if (ndim == 3) {
-    x = new float[Nhydro];
-    y = new float[Nhydro];
-    z = new float[Nhydro];
-    vx = new float[Nhydro];
-    vy = new float[Nhydro];
-    vz = new float[Nhydro];
-    ax = new float[Nhydro];
-    ay = new float[Nhydro];
-    az = new float[Nhydro];
-  }
-
-  // Allocate memory for other scalar quantities
-  m    = new float[Nhydro];
-  h    = new float[Nhydro];
-  rho  = new float[Nhydro];
-  u    = new float[Nhydro];
-  dudt = new float[Nhydro];
-
-  // Record 3 vectors of size ndim (r,v,a) and 5 scalars (m,h,rho,u,dudt)
-  nallocatedsph = 3*ndim + 5;
-  allocatedsph  = true;
-  Nhydromax       = Nhydro;
-
-  return;
-}
+//void SphSnapshotBase::AllocateBufferMemorySph(void)
+//{
+//  // If memory already allocated and more memory is needed for more particles,
+//  // deallocate now before reallocating.
+//  if (allocatedsph) {
+//    if (Nhydro > Nhydromax) {
+//      DeallocateBufferMemorySph();
+//    }
+//    else {
+//      return;
+//    }
+//  }
+//
+//  // Allocate memory for all vector quantities depending on dimensionality
+//  if (ndim == 1) {
+//    x = new float[Nhydro];
+//    vx = new float[Nhydro];
+//    ax = new float[Nhydro];
+//  }
+//  else if (ndim == 2) {
+//    x = new float[Nhydro];
+//    y = new float[Nhydro];
+//    vx = new float[Nhydro];
+//    vy = new float[Nhydro];
+//    ax = new float[Nhydro];
+//    ay = new float[Nhydro];
+//  }
+//  else if (ndim == 3) {
+//    x = new float[Nhydro];
+//    y = new float[Nhydro];
+//    z = new float[Nhydro];
+//    vx = new float[Nhydro];
+//    vy = new float[Nhydro];
+//    vz = new float[Nhydro];
+//    ax = new float[Nhydro];
+//    ay = new float[Nhydro];
+//    az = new float[Nhydro];
+//  }
+//
+//  // Allocate memory for other scalar quantities
+//  m    = new float[Nhydro];
+//  h    = new float[Nhydro];
+//  rho  = new float[Nhydro];
+//  u    = new float[Nhydro];
+//  dudt = new float[Nhydro];
+//
+//  // Record 3 vectors of size ndim (r,v,a) and 5 scalars (m,h,rho,u,dudt)
+//  nallocatedsph = 3*ndim + 5;
+//  allocatedsph  = true;
+//  Nhydromax       = Nhydro;
+//
+//  return;
+//}
 
 
 
@@ -275,33 +320,33 @@ void SphSnapshotBase::AllocateBufferMemorySph(void)
 //  SphSnapshotBase::AllocateBufferMemoryBinary
 /// Allocate memory for binary orbits in current snapshot.
 //=============================================================================
-void SphSnapshotBase::AllocateBufferMemoryBinary(void)
-{
-  // If memory already allocated and more memory is needed for more particles,
-  // deallocate now before reallocating.
-  if (allocatedbinary) {
-    if (Norbit > Norbitmax) {
-      DeallocateBufferMemoryBinary();
-    }
-    else {
-      return;
-    }
-  }
-
-  // Allocate arrays for orbital quantities
-  ecc    = new float[Norbit];
-  mbin   = new float[Norbit];
-  period = new float[Norbit];
-  qbin   = new float[Norbit];
-  sma    = new float[Norbit];
-
-  // Record 5 floats
-  nallocatedbinary = 5;
-  allocatedbinary  = true;
-  Norbitmax        = Norbit;
-
-  return;
-}
+//void SphSnapshotBase::AllocateBufferMemoryBinary(void)
+//{
+//  // If memory already allocated and more memory is needed for more particles,
+//  // deallocate now before reallocating.
+//  if (allocatedbinary) {
+//    if (Norbit > Norbitmax) {
+//      DeallocateBufferMemoryBinary();
+//    }
+//    else {
+//      return;
+//    }
+//  }
+//
+//  // Allocate arrays for orbital quantities
+//  ecc    = new float[Norbit];
+//  mbin   = new float[Norbit];
+//  period = new float[Norbit];
+//  qbin   = new float[Norbit];
+//  sma    = new float[Norbit];
+//
+//  // Record 5 floats
+//  nallocatedbinary = 5;
+//  allocatedbinary  = true;
+//  Norbitmax        = Norbit;
+//
+//  return;
+//}
 
 
 
@@ -313,138 +358,13 @@ void SphSnapshotBase::DeallocateBufferMemory(void)
 {
   debug2("[SphSnapshotBase::DeallocateBufferMemory]");
 
-  DeallocateBufferMemoryBinary();
-  DeallocateBufferMemorySph();
-  DeallocateBufferMemoryStar();
+  for (DataIterator it=data.begin(); it != data.end(); it++) {
+    it->second.DeallocateMemory();
+  }
 
   allocated = false;
   return;
 }
-
-
-
-//=================================================================================================
-//  SphSnapshotBase::DeallocateBufferMemorySph
-/// Deallocate sph particles memory for current snapshot.
-//=================================================================================================
-void SphSnapshotBase::DeallocateBufferMemorySph(void)
-{
-  // If we are not allocated, return immediately,
-  // to avoid double deleting a pointer
-  if (!allocatedsph) return;
-
-  // Deallocate scalar array memory
-  delete[] dudt;
-  delete[] u;
-  delete[] rho;
-  delete[] h;
-  delete[] m;
-
-  // Deallocate vector array memory
-  if (ndim == 1) {
-    delete[] ax;
-    delete[] vx;
-    delete[] x;
-  }
-  else if (ndim == 2) {
-    delete[] ay;
-    delete[] ax;
-    delete[] vy;
-    delete[] vx;
-    delete[] y;
-    delete[] x;
-  }
-  else if (ndim == 3) {
-    delete[] az;
-    delete[] ay;
-    delete[] ax;
-    delete[] vz;
-    delete[] vy;
-    delete[] vx;
-    delete[] z;
-    delete[] y;
-    delete[] x;
-  }
-
-  allocatedsph = false;
-  nallocatedsph = 0;
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  SphSnapshotBase::DeallocateBufferMemoryStar
-/// Deallocate star particles memory for current snapshot.
-//=================================================================================================
-void SphSnapshotBase::DeallocateBufferMemoryStar(void)
-{
-  // If we are not allocated, return immediately,
-  // to avoid double deleting a pointer
-  if (!allocatedstar) return;
-
-  // Deallocate scalar array memory
-  delete[] hstar;
-  delete[] mstar;
-
-  // Deallocate vector array memory
-  if (ndim == 1) {
-    delete[] axstar;
-    delete[] vxstar;
-    delete[] xstar;
-  }
-  else if (ndim == 2) {
-    delete[] aystar;
-    delete[] axstar;
-    delete[] vystar;
-    delete[] vxstar;
-    delete[] ystar;
-    delete[] xstar;
-  }
-  else if (ndim == 3) {
-    delete[] azstar;
-    delete[] aystar;
-    delete[] axstar;
-    delete[] vzstar;
-    delete[] vystar;
-    delete[] vxstar;
-    delete[] zstar;
-    delete[] ystar;
-    delete[] xstar;
-  }
-
-  allocatedstar = false;
-  nallocatedstar = 0;
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  SphSnapshotBase::DeallocateBufferMemoryBinary
-/// Deallocate binary orbit memory for current snapshot.
-//=================================================================================================
-void SphSnapshotBase::DeallocateBufferMemoryBinary(void)
-{
-  // If we are not allocated, return immediately,
-  // to avoid double deleting a pointer
-  if (!allocatedbinary)
-    return;
-
-  delete[] sma;
-  delete[] qbin;
-  delete[] period;
-  delete[] mbin;
-  delete[] ecc;
-
-  allocatedbinary = false;
-  nallocatedbinary = 0;
-
-  return;
-}
-
 
 
 //=================================================================================================
@@ -453,9 +373,11 @@ void SphSnapshotBase::DeallocateBufferMemoryBinary(void)
 //=================================================================================================
 int SphSnapshotBase::CalculateMemoryUsage(void)
 {
-  return Nhydro*nallocatedsph*sizeof(float) +
-    Nstar*nallocatedstar*sizeof(float) +
-    Norbit*nallocatedbinary*sizeof(float);
+  int result=0;
+  for (DataIterator it=data.begin(); it != data.end(); it++) {
+    result += it->second.CalculateMemoryUsage();
+  }
+  return result;
 }
 
 
@@ -466,8 +388,11 @@ int SphSnapshotBase::CalculateMemoryUsage(void)
 //=================================================================================================
 int SphSnapshotBase::CalculatePredictedMemoryUsage(void)
 {
-  return Nhydro*nneededsph*sizeof(float) + Nstar*nneededstar*sizeof(float) +
-    Norbit*nneededbinary*sizeof(float);
+  int result=0;
+  for (DataIterator it=data.begin(); it != data.end(); it++) {
+    result += it->second.CalculatePredictedMemoryUsage();
+  }
+  return result;
 }
 
 
@@ -482,106 +407,202 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   StarParticle<ndims>* staraux = 0;    ///< ..
   BinaryOrbit *orbitaux = 0;           ///< ..
 
+  int Nhydro=0;
+  int Nstar=0;
+  int Ndust=0;
+
   debug2("[SphSnapshotBase::CopyDataFromSimulation]");
 
   // Reset the species
   _species.clear();
+  data.clear();
 
   // Read which species are there
   if (simulation->hydro != NULL && simulation->hydro->GetParticleArray() != NULL) {
+    // Compute Ndust - note that here Nhydro is Ngas+Ndust
     Nhydro = simulation->hydro->Nhydro;
-    if (Nhydro != 0) _species.push_back("sph");
+    for (int n=0; n < Nhydro; n++){
+        int itype = simulation->hydro->GetParticlePointer(n).ptype ;
+        itype = parttype_converter[itype];
+        if (itype==dust) Ndust++;
+    }
+    // And now Nhydro becomes Ngas
+    Nhydro -= Ndust;
+    if (Nhydro != 0) {
+      _species.push_back("sph");
+      data["sph"]=Species(Nhydro,"sph");
+
+      Species& sph = data["sph"];
+      Species::maptype& sph_values = data["sph"].values;
+      sph_values["x"]=vector<float>(sph.N);
+      sph_values["vx"]=vector<float>(sph.N);
+      sph_values["ax"]=vector<float>(sph.N);
+      sph_values["m"]=vector<float>(sph.N);
+      sph_values["h"]=vector<float>(sph.N);
+      sph_values["rho"]=vector<float>(sph.N);
+      sph_values["u"]=vector<float>(sph.N);
+      sph_values["dudt"]=vector<float>(sph.N);
+      if (ndim>1) {
+        sph_values["y"]=vector<float>(sph.N);
+        sph_values["vy"]=vector<float>(sph.N);
+        sph_values["ay"]=vector<float>(sph.N);
+      }
+      if (ndim>2) {
+        sph_values["z"]=vector<float>(sph.N);
+        sph_values["vz"]=vector<float>(sph.N);
+        sph_values["az"]=vector<float>(sph.N);
+      }
+    }
+    if (Ndust != 0) {
+      _species.push_back("dust");
+      data["dust"]=Species(Ndust,"dust");
+
+      Species& dust = data["dust"];
+      Species::maptype& dust_values = data["dust"].values;
+      dust_values["x"]=vector<float>(Ndust);
+      dust_values["vx"]=vector<float>(Ndust);
+      dust_values["ax"]=vector<float>(Ndust);
+      dust_values["m"]=vector<float>(Ndust);
+      dust_values["h"]=vector<float>(Ndust);
+      dust_values["rho"]=vector<float>(Ndust);
+      if (ndim>1) {
+        dust_values["y"]=vector<float>(Ndust);
+        dust_values["vy"]=vector<float>(Ndust);
+        dust_values["ay"]=vector<float>(Ndust);
+      }
+      if (ndim>2) {
+        dust_values["z"]=vector<float>(Ndust);
+        dust_values["vz"]=vector<float>(Ndust);
+        dust_values["az"]=vector<float>(Ndust);
+      }
+    }
   }
   if (simulation->nbody != NULL && simulation->nbody->stardata != NULL) {
     staraux  = simulation->nbody->stardata;
-    orbitaux = simulation->nbodytree.orbit;
+//    orbitaux = simulation->nbodytree.orbit;
     Nstar    = simulation->nbody->Nstar;
-    Norbit   = simulation->nbodytree.Norbit;
-    if (Nstar != 0) _species.push_back("star");
-    if (Norbit != 0) _species.push_back("binary");
+//    int Norbit   = simulation->nbodytree.Norbit;
+    if (Nstar != 0) {
+      _species.push_back("star");
+      data["star"]=Species(Nstar,"star");
+
+      Species& star = data["star"];
+      Species::maptype& star_values = data["star"].values;
+      star_values["x"]=vector<float>(Nstar);
+      star_values["vx"]=vector<float>(Nstar);
+      star_values["ax"]=vector<float>(Nstar);
+      star_values["m"]=vector<float>(Nstar);
+      star_values["h"]=vector<float>(Nstar);
+      if (ndim>1) {
+        star_values["y"]=vector<float>(Nstar);
+        star_values["vy"]=vector<float>(Nstar);
+        star_values["ay"]=vector<float>(Nstar);
+      }
+      if (ndim>2) {
+        star_values["z"]=vector<float>(Nstar);
+        star_values["vz"]=vector<float>(Nstar);
+        star_values["az"]=vector<float>(Nstar);
+      }
+
+    }
+//    if (Norbit != 0) {
+//      _species.push_back("binary");
+//      data["binary"]=Species(Norbit,"binary");
+//    }
   }
 
-  AllocateBufferMemory();
 
 
   // Loop over all SPH particles and record particle data
   //-----------------------------------------------------------------------------------------------
-  for (int i=0; i<Nhydro; i++) {
+  int igas=0; int idust=0;
+  for (int i=0; i<simulation->hydro->Nhydro; i++) {
     Particle<ndims>& part = simulation->hydro->GetParticlePointer(i);
+    int itype=part.ptype;
+    itype = parttype_converter[itype];
 
-    if (ndims == 1) {
-      x[i] = (float) part.r[0];
-      vx[i] = (float) part.v[0];
-      ax[i] = (float) pow(2,simulation->level_step - part.level)*simulation->timestep;
+    if (itype==gas) {
+      Species& sph = data["sph"];
+      Species::maptype& sph_values = data["sph"].values;
+      sph_values["x"][igas] = (float) part.r[0];
+      sph_values["vx"][igas] = (float) part.v[0];
+      sph_values["ax"][igas] = (float) part.a[0];
+      if (ndims > 1) {
+        sph_values["y"][igas] = (float) part.r[1];
+        sph_values["vy"][igas] = (float) part.v[1];
+        sph_values["ay"][igas] = (float) part.a[1];
+      }
+      if (ndims > 2) {
+        sph_values["z"][igas] = (float) part.r[2];
+        sph_values["vz"][igas] = (float) part.v[2];
+        sph_values["az"][igas] = (float) part.a[2];
+      }
+      sph_values["m"][igas]    = (float) part.m;
+      sph_values["h"][igas]    = (float) part.h;
+      sph_values["rho"][igas]  = (float) part.rho;
+      sph_values["u"][igas]    = (float) part.u;
+      sph_values["dudt"][igas] = (float) part.dudt;
+      igas++;
     }
-    else if (ndims == 2) {
-      x[i] = (float) part.r[0];
-      y[i] = (float) part.r[1];
-      vx[i] = (float) part.v[0];
-      vy[i] = (float) part.v[1];
-      ax[i] = (float) part.a[0];
-      ay[i] = (float) part.a[1];
+    else if (itype==dust) {
+      Species& dust = data["dust"];
+      Species::maptype& dust_values = data["dust"].values;
+      dust_values["x"][idust] = (float) part.r[0];
+      dust_values["vx"][idust] = (float) part.v[0];
+      dust_values["ax"][idust] = (float) part.a[0];
+      if (ndims > 1) {
+        dust_values["y"][idust] = (float) part.r[1];
+        dust_values["vy"][idust] = (float) part.v[1];
+        dust_values["ay"][idust] = (float) part.a[1];
+      }
+      if (ndims > 2) {
+        dust_values["z"][idust] = (float) part.r[2];
+        dust_values["vz"][idust] = (float) part.v[2];
+        dust_values["az"][idust] = (float) part.a[2];
+      }
+      dust_values["m"][idust]    = (float) part.m;
+      dust_values["h"][idust]    = (float) part.h;
+      dust_values["rho"][idust]  = (float) part.rho;
+      idust++;
     }
-    else if (ndims == 3) {
-      x[i] = (float) part.r[0];
-      y[i] = (float) part.r[1];
-      z[i] = (float) part.r[2];
-      vx[i] = (float) part.v[0];
-      vy[i] = (float) part.v[1];
-      vz[i] = (float) part.v[2];
-      ax[i] = (float) part.a[0];
-      ay[i] = (float) part.a[1];
-      az[i] = (float) part.a[2];
-    }
-    m[i]    = (float) part.m;
-    h[i]    = (float) part.h;
-    rho[i]  = (float) part.rho;
-    u[i]    = (float) part.u;
-    dudt[i] = (float) part.dudt;
 
   }
 
   // Loop over star particles and record particle data
   for (int i=0; i<Nstar; i++) {
-    if (ndims == 1) {
-      xstar[i] = (float) staraux[i].r[0];
-      vxstar[i] = (float) staraux[i].v[0];
-      axstar[i] = (float) staraux[i].a[0];
+    Species& star = data["star"];
+    Species::maptype& star_values = data["star"].values;
+    star_values["x"][i] = (float) staraux[i].r[0];
+    star_values["vx"][i] = (float) staraux[i].v[0];
+    star_values["ax"][i] = (float) staraux[i].a[0];
+    if (ndims > 1) {
+      star_values["y"][i] = (float) staraux[i].r[1];
+      star_values["vy"][i] = (float) staraux[i].v[1];
+      star_values["ay"][i] = (float) staraux[i].a[1];
     }
-    else if (ndims == 2) {
-      xstar[i] = (float) staraux[i].r[0];
-      ystar[i] = (float) staraux[i].r[1];
-      vxstar[i] = (float) staraux[i].v[0];
-      vystar[i] = (float) staraux[i].v[1];
-      axstar[i] = (float) staraux[i].a[0];
-      aystar[i] = (float) staraux[i].a[1];
-    }
-    else if (ndims == 3) {
-      xstar[i] = (float) staraux[i].r[0];
-      ystar[i] = (float) staraux[i].r[1];
-      zstar[i] = (float) staraux[i].r[2];
-      vxstar[i] = (float) staraux[i].v[0];
-      vystar[i] = (float) staraux[i].v[1];
-      vzstar[i] = (float) staraux[i].v[2];
-      axstar[i] = (float) staraux[i].a[0];
-      aystar[i] = (float) staraux[i].a[1];
-      azstar[i] = (float) staraux[i].a[2];
+    if (ndims > 2) {
+      star_values["z"][i] = (float) staraux[i].r[2];
+      star_values["vz"][i] = (float) staraux[i].v[2];
+      star_values["az"][i] = (float) staraux[i].a[2];
     }
 
-    mstar[i] = (float) staraux[i].m;
-    hstar[i] = (float) staraux[i].h;
+    star_values["m"][i] = (float) staraux[i].m;
+    star_values["h"][i] = (float) staraux[i].h;
   }
 
   // Loop over all binary orbits and record data
-  for (int i=0; i<Norbit; i++) {
-    ecc[i]    = (float) orbitaux[i].ecc;
-    mbin[i]   = (float) orbitaux[i].m;
-    period[i] = (float) orbitaux[i].period;
-    qbin[i]   = (float) orbitaux[i].q;
-    sma[i]    = (float) orbitaux[i].sma;
-  }
+//  for (int i=0; i<Norbit; i++) {
+//    ecc[i]    = (float) orbitaux[i].ecc;
+//    mbin[i]   = (float) orbitaux[i].m;
+//    period[i] = (float) orbitaux[i].period;
+//    qbin[i]   = (float) orbitaux[i].q;
+//    sma[i]    = (float) orbitaux[i].sma;
+//  }
 
   LastUsed = time(NULL);
+
+  allocated=true;
+
   return;
 }
 
@@ -619,17 +640,7 @@ string SphSnapshotBase::GetRealType(string type)
 int SphSnapshotBase::GetNparticlesType(string type)
 {
   type = GetRealType(type);
-  if (type == "sph")
-    return Nhydro;
-  else if (type == "star")
-    return Nstar;
-  else if (type == "binary")
-    return Norbit;
-  else {
-    string message="Error: we do not know the type " + type + " that you are requesting!!!";
-    ExceptionHandler::getIstance().raise(message);
-  }
-  return 0;
+  return data[type].N;
 }
 
 
@@ -671,98 +682,69 @@ UnitInfo SphSnapshotBase::ExtractArray
   type = GetRealType(type);
 
   // Check type
-  if (type != "sph" && type != "star" && type != "binary") {
+  if (type != "sph" && type != "star" && type != "binary" && type != "dust") {
     string message = "Error: the type " + type + " was not recognized!";
     ExceptionHandler::getIstance().raise(message);
   }
 
+  *out_array=&(data[type].values[name][0]);
 
   // If array type and name is valid, pass pointer to array and also set unit
   if (name == "x") {
-    if (type == "sph") *out_array = x;
-    else if (type == "star") *out_array = xstar;
     unit = &(units->r);
   }
   else if (name == "y") {
-    if (type == "sph") *out_array = y;
-    else if (type == "star") *out_array = ystar;
     unit = &(units->r);
   }
   else if (name == "z") {
-    if (type == "sph") *out_array = z;
-    else if (type == "star") *out_array = zstar;
     unit = &(units->r);
   }
   else if (name == "vx") {
-    if (type == "sph") *out_array = vx;
-    else if (type == "star") *out_array= vxstar;
     unit = &(units->v);
   }
   else if (name == "vy") {
-    if (type == "sph") *out_array = vy;
-    else if (type == "star") *out_array = vystar;
     unit = &(units->v);
   }
   else if (name == "vz") {
-    if (type == "sph") *out_array = vz;
-    else if (type == "star") *out_array = vzstar;
     unit = &(units->v);
   }
   else if (name == "ax") {
-    if (type == "sph") *out_array = ax;
-    else if (type == "star") *out_array = axstar;
     unit = &(units->a);
   }
   else if (name == "ay") {
-    if (type == "sph") *out_array = ay;
-    else if (type == "star") *out_array = aystar;
     unit = &(units->a);
   }
   else if (name == "az") {
-    if (type == "sph") *out_array = az;
-    else if (type == "star") *out_array = azstar;
     unit = &(units->a);
   }
   else if (name == "m") {
-    if (type == "sph") *out_array = m;
-    else if (type == "star") *out_array = mstar;
     unit = &(units->m);
   }
   else if (name == "h") {
-    if (type == "sph") *out_array = h;
-    else if (type == "star") *out_array = hstar;
     unit = &(units->r);
   }
   else if (name == "rho") {
-    if (type == "sph") *out_array = rho;
     unit = &(units->rho);
   }
   else if (name == "u") {
-    if (type == "sph") *out_array = u;
     unit = &(units->u);
   }
   else if (name == "dudt") {
-    if (type == "sph") *out_array = dudt;
     unit = &(units->dudt);
   }
   else if (name == "ecc") {
-    if (type == "binary") *out_array = ecc;
     unit = &(units->nounits);
   }
   else if (name == "mbin") {
-    if (type == "binary") *out_array = mbin;
     unit = &(units->m);
   }
   else if (name == "period") {
-    if (type == "binary") *out_array = period;
     unit = &(units->t);
   }
   else if (name == "qbin") {
-    if (type == "binary") *out_array = qbin;
     unit = &(units->nounits);
   }
   else if (name == "sma") {
-    if (type == "binary") *out_array = sma;
     unit = &(units->r);
   }
   else {
@@ -783,16 +765,9 @@ UnitInfo SphSnapshotBase::ExtractArray
     ExceptionHandler::getIstance().raise(message);
   }
 
+
   // Set the size now that we have the array
-  if (type == "sph") {
-    *size_array = Nhydro;
-  }
-  else if (type == "star") {
-    *size_array = Nstar;
-  }
-  else if (type == "binary") {
-    *size_array = Norbit;
-  }
+  *size_array = data[type].N;
 
   // If no new unit is requested, pass the default scaling values.
   // Otherwise, calculate new scaling factor plus latex label.

@@ -143,7 +143,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       Particle<ndim>& part = hydro->GetParticlePointer(i);
 
       // Make sure we don't include dead particles
-      if (part.itype == dead) continue;
+      if (part.flags.is_dead()) continue;
 
       // Only consider hydro particles located at a local potential minimum
       if (!part.potmin) continue;
@@ -211,7 +211,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       sink[Nsink].mmax = (FLOAT) 0.0;
       for (i=0; i<hydro->Nhydro; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
         for (k=0; k<ndim; k++) dr[k] = sink[Nsink].star->r[k] - part.r[k];
         drsqd = DotProduct(dr,dr,ndim);
         if (drsqd < pow(sink[Nsink].radius,2)) sink[Nsink].mmax += part.m;
@@ -269,7 +269,7 @@ void Sinks<ndim>::CreateNewSinkParticle
   // If we've reached the maximum number of sinks, then throw exception
   if (Nsink == Nsinkmax || nbody->Nstar == nbody->Nstarmax) {
     cout << "Run out of memory : " << Nsink << "    " << Nsinkmax << endl;
-    exit(0);
+    ExceptionHandler::getIstance().raise("Error : run out of memory for new sinks");
   }
 
   // First create new star and set N-body pointer to star
@@ -320,7 +320,7 @@ void Sinks<ndim>::CreateNewSinkParticle
   // Remove SPH particle from main arrays
   part.m      = (FLOAT) 0.0;
   part.active = false;
-  part.itype  = dead;
+  part.flags.set_flag(dead);
 
   return;
 }
@@ -356,12 +356,9 @@ void Sinks<ndim>::AccreteMassToSinks
   // Set-up all parallel threads for computing sink accretion
   //===============================================================================================
 #if defined MPI_PARALLEL
-#pragma omp parallel default(none) \
-shared(mydomain,ghosts_accreted) \
-shared(hydro,nbody,partdata)
+#pragma omp parallel default(none) shared(ghosts_accreted,hydro,mydomain,nbody,partdata)
 #else
-#pragma omp parallel default(none) \
-shared(hydro,nbody,partdata)
+#pragma omp parallel default(none) shared(hydro,nbody,partdata)
 #endif
   {
     int i,j,k;                               // Particle and dimension counters
@@ -386,9 +383,9 @@ shared(hydro,nbody,partdata)
     FLOAT rold[ndim];                        // Old sink position
     FLOAT vold[ndim];                        // Old sink velocity
     FLOAT wnorm;                             // Kernel normalisation factor
-    int *ilist;                              // ..
+    int *ilist = new int[Nneibmax];          // ..
     int *neiblist = new int[Nneibmax];       // List of particle ids
-    FLOAT *rsqdlist;                         // Array of particle-sink distances
+    FLOAT *rsqdlist= new FLOAT[Nneibmax];    // Array of particle-sink distances
 
 
     // Determine which sink each SPH particle accretes to.  If none, flag -1
@@ -409,10 +406,14 @@ shared(hydro,nbody,partdata)
 
         // If there are too many neighbours so the buffers are filled,
         // reallocate the arrays and recompute the neighbour lists.
-        while (Nlist == -1) {
+        if (Nlist == -1) {
+          delete[] rsqdlist;
           delete[] neiblist;
+          delete[] ilist;
           Nneibmax *= 2;
+          ilist = new int[Nneibmax];
           neiblist = new int[Nneibmax];
+          rsqdlist = new FLOAT[Nneibmax];
         };
 
       } while (Nlist == -1);
@@ -421,7 +422,7 @@ shared(hydro,nbody,partdata)
       for (j=0; j<Nlist; j++) {
         i = neiblist[j];
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
         drsqd = DotProduct(dr, dr, ndim);
@@ -436,11 +437,6 @@ shared(hydro,nbody,partdata)
 
     }
     //---------------------------------------------------------------------------------------------
-
-
-    // Allocate additional memory
-    ilist = new int[Nneibmax];
-    rsqdlist = new FLOAT[Nneibmax];
 
 
     // Calculate the accretion timescale and the total mass accreted from all ptcls for each sink.
@@ -463,7 +459,9 @@ shared(hydro,nbody,partdata)
       //if (sink[s].Ngas == 0 || !sink[s].star->active) continue;
       //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
       //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != sink[s].star->nstep/2) continue;
-      if (sink[s].Ngas == 0 || sink[s].star->nlast != n) continue;
+
+      //if (sink[s].Ngas == 0 || sink[s].star->nlast != n) continue;
+      if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
 
 
       // Initialise all variables for current sink
@@ -483,7 +481,7 @@ shared(hydro,nbody,partdata)
       for (j=0; j<Nlist; j++) {
         i = neiblist[j];
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         if (part.sinkid == s) {
           for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
@@ -507,7 +505,7 @@ shared(hydro,nbody,partdata)
       for (j=0; j<Nneib; j++) {
         i = ilist[j];
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
         drsqd = DotProduct(dr,dr,ndim);
@@ -599,7 +597,7 @@ shared(hydro,nbody,partdata)
         i = ilist[j];
 
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         mtemp = min(part.m, macc_temp);
         dt = part.dt;
@@ -658,7 +656,7 @@ shared(hydro,nbody,partdata)
         i = ilist[j];
 
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.itype == dead) continue;
+        if (part.flags.is_dead()) continue;
 
         mtemp = min(part.m, macc);
         dt = part.dt;
@@ -668,11 +666,12 @@ shared(hydro,nbody,partdata)
             dt < smooth_accrete_dt*sink[s].trot) {
           mtemp       = part.m;
           part.m      = (FLOAT) 0.0;
-          part.itype  = dead;
+          part.flags.set_flag(dead);
           part.active = false;
         }
         else {
-          part.m -= mtemp;
+          //part.m -= mtemp;
+          hydro->AccreteMassFromParticle(mtemp, part);
         }
 #if defined MPI_PARALLEL
         if (i > hydro->Nhydro) {
@@ -728,12 +727,12 @@ shared(hydro,nbody,partdata)
   // Quick sanity-check for accreted particles
   for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    if (!(part.itype == dead || part.m > 0.0)) {
-      cout << "Accretion problem? : " << i << "   " << part.itype << "   " << part.m
+    if (!(part.flags.is_dead() || part.m > 0.0)) {
+      cout << "Accretion problem? : " << i << "   " << part.flags.get() << "   " << part.m
            << "   " << part.h << "   " << part.sinkid << "   " << hydro->mmean << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error : sink accreting dead or zero-mass particles");
     }
-    assert(part.itype == dead || part.m > 0.0);
+    assert(part.flags.is_dead() || part.m > 0.0);
   }
 
   timing->EndTimingSection("SINK_ACCRETE_MASS");

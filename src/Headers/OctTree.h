@@ -57,6 +57,12 @@ struct OctTreeCell : public TreeCellBase<ndim> {
   int c1;                              ///< Added just to make it compile - do it properly!!!!
   int c2;                              ///< ..
 #endif
+
+#ifdef MPI_PARALLEL
+  typedef TreeCommunicationHandler<ndim> HandlerType;
+#endif
+
+
 };
 
 
@@ -115,6 +121,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::theta;
   using Tree<ndim,ParticleType,TreeCell>::thetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
+  using Tree<ndim,ParticleType,TreeCell>::gravmask ;
 #ifdef MPI_PARALLEL
   using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
   using Tree<ndim,ParticleType,TreeCell>::Ncelltot;
@@ -123,7 +130,8 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  OctTree(int, FLOAT, FLOAT, FLOAT, string, string);
+  OctTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
+		  const ParticleTypeRegister&);
   ~OctTree();
 
 
@@ -131,8 +139,8 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void BuildTree(const int, const int, const int, const int, const FLOAT, ParticleType<ndim> *);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
-  bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
-  void ExtrapolateCellProperties(FLOAT);
+  //bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
+  //void ExtrapolateCellProperties(FLOAT);
   void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);

@@ -1,6 +1,6 @@
 //=================================================================================================
 //  MfvNeighbourSearch.h
-//  Header file containing class definitions for all SPH neighbour searching
+//  Header file containing class definitions for all Meshless Finite-Volume neighbour searching
 //  data structures and algorithms.
 //
 //  This file is part of GANDALF :
@@ -57,7 +57,7 @@ using namespace std;
 //=================================================================================================
 //  Class MeshlessFVNeighbourSearch
 /// \brief   MeshlessFVNeighbourSearch class definition.
-/// \details ..
+/// \details MeshlessFVNeighbourSearch class definition.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=================================================================================================
@@ -79,11 +79,14 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
-  virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
-  virtual void UpdateGodunovFluxes(const int, const int, const FLOAT, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
-  virtual void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
-  //virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, MeshlessFV<ndim> *) = 0;
+  virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                   Nbody<ndim> *, DomainBox<ndim> &) = 0;
+  virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                      Nbody<ndim> *, DomainBox<ndim> &) = 0;
+  virtual void UpdateGodunovFluxes(int, int, FLOAT, MeshlessFVParticle<ndim> *,
+                                   MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
+  virtual void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
 
 };
 
@@ -91,8 +94,8 @@ protected:
 
 //=================================================================================================
 //  Class MeshlessFVBruteForceSearch
-/// \brief   ..
-/// \details ..
+/// \brief   MeshlessFVBruteForceSearch class definition.
+/// \details MeshlessFVBruteForceSearch class definition.
 /// \author  D. A. Hubber
 /// \date    21/04/2015
 //=================================================================================================
@@ -115,11 +118,14 @@ class MeshlessFVBruteForce : public MeshlessFVNeighbourSearch<ndim>, public Brut
 
 
   //-----------------------------------------------------------------------------------------------
-  void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
-  void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
-  void UpdateGodunovFluxes(const int, const int, const FLOAT,
-                           MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
-  void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                   Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                      Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateGodunovFluxes(int, int, FLOAT, MeshlessFVParticle<ndim> *,
+                                   MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
 
 };
 
@@ -127,8 +133,8 @@ class MeshlessFVBruteForce : public MeshlessFVNeighbourSearch<ndim>, public Brut
 
 //=================================================================================================
 //  Class MeshlessFVTree
-/// \brief   ..
-/// \details ..
+/// \brief   MeshlessFVTree class definition.
+/// \details MeshlessFVTree class definition.
 /// \author  D. A. Hubber
 /// \date    21/04/2015
 //=================================================================================================
@@ -139,7 +145,7 @@ class MeshlessFVTree: public MeshlessFVNeighbourSearch<ndim>, public HydroTree<n
   vector<vector<int> > ids_sent_particles;
 protected:
   using NeighbourSearch<ndim>::ids_active_particles;
-  vector<int> N_imported_part_per_proc;
+  using NeighbourSearch<ndim>::N_imported_part_per_proc;
 #endif
  public:
 
@@ -178,7 +184,7 @@ protected:
   MeshlessFVTree(int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
                  FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
                  string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
-                 SmoothingKernel<ndim> *_kern, CodeTiming *_timing); //:
+                 SmoothingKernel<ndim> *_kern, CodeTiming *_timing, ParticleTypeRegister&); //:
     /*NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     MeshlessFVNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     HydroTree<ndim,ParticleType,TreeCell>(_Nleafmax, _Nmpi, _thetamaxsqd, _kernrange, _macerror,
@@ -187,11 +193,14 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
-  void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
-  void UpdateGodunovFluxes(const int, const int, const FLOAT,
-                           MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
-  void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                   Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                      Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateGodunovFluxes(int, int, FLOAT, MeshlessFVParticle<ndim> *,
+                                   MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
 
 };
 
@@ -199,8 +208,8 @@ protected:
 
 //=================================================================================================
 //  Class MeshlessFVKDTree
-/// \brief   ...
-/// \details ...
+/// \brief   MeshlessFVKDTree class definition.
+/// \details MeshlessFVKDTree class definition.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
 //=================================================================================================
@@ -221,7 +230,7 @@ class MeshlessFVKDTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   MeshlessFVKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
+                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister&);
 
 };
 
@@ -229,8 +238,8 @@ class MeshlessFVKDTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
 
 //=================================================================================================
 //  Class MeshlessFVOctTree
-/// \brief   Class containing octal tree for computing grad-h SPH force loops.
-/// \details ...
+/// \brief   MeshlessFVOctTree class definition.
+/// \details MeshlessFVOctTree class definition.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
 //=================================================================================================
@@ -251,7 +260,7 @@ class MeshlessFVOctTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   MeshlessFVOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
+                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister&);
 
 };
 #endif

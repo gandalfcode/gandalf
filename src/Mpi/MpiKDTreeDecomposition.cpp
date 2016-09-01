@@ -347,6 +347,11 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   // Sum-up total work on all MPI nodes
   for (inode=0; inode<Nmpi; inode++) worktot += 0.0;
 
+  // Set MPI tree root node to size of particle bounding box (so load balancing division on
+  // each level are iterated in a valid range).
+  for (k=0; k<ndim; k++) mpitree->tree[0].boxmin[k] = partbox.boxmin[k];
+  for (k=0; k<ndim; k++) mpitree->tree[0].boxmax[k] = partbox.boxmax[k];
+
 
   // Starting with the highest MpiTree division, start adjusting divisional positions to achieve
   // equal amounts of work on each side of the divide.  Use the extrapolated cells from each
@@ -356,7 +361,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
     // Loop over all MPI tree cells on current balancing level
     for (c=0; c<mpitree->Ncell; c++) {
-      continue;
+
       if (mpitree->tree[c].level != l) continue;
       c2   = mpitree->tree[c].c2;
       k    = mpitree->tree[c].k_divide;
@@ -371,8 +376,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
       // In case of extreme movement of the load balancing positions (perhaps due to latency or
       // large movement of active particles between nodes), then set some arbitary position of
       // the first division guess in order to search for correct division
-      if (mpitree->tree[c].boxmin[k] > mpitree->tree[c].r_divide ||
-          mpitree->tree[c].boxmax[k] < mpitree->tree[c].r_divide) {
+      if (mpitree->tree[c].boxmin[k] >= mpitree->tree[c].r_divide ||
+          mpitree->tree[c].boxmax[k] <= mpitree->tree[c].r_divide) {
         mpitree->tree[c].r_divide = 0.5*(mpitree->tree[c].boxmin[k] + mpitree->tree[c].boxmax[k]);
       }
       assert(mpitree->tree[c].boxmin[k] < mpitree->tree[c].r_divide);
@@ -502,7 +507,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
   // Remove transferred particles
   for (int i=0; i<all_particles_to_export.size(); i++) {
-    partdata[all_particles_to_export[i]].itype = dead;
+    partdata[all_particles_to_export[i]].flags.set_flag(dead);
   }
   hydro->DeleteDeadParticles();
 

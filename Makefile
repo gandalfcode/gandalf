@@ -22,11 +22,11 @@
 
 CPP                = 
 PYTHON             = python
-COMPILER_MODE      = FAST
+COMPILER_MODE      = DEBUG
 PRECISION          = DOUBLE
-OPENMP             = 0
+OPENMP             = 1
 OUTPUT_LEVEL       = 1
-DEBUG_LEVEL        = 0
+DEBUG_LEVEL        = 1
 BUILD_DEPENDENCIES = 1
 
 
@@ -78,3 +78,8 @@ clean:
 depends:
 	@+$(MAKE) depends -C src
 
+installpython:
+	./setup.py install
+
+install:
+	cp bin/gandalf /usr/local/bin

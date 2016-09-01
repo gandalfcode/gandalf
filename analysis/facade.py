@@ -255,7 +255,8 @@ def time_plot(x, y, sim="current", overplot=False, autoscale=False,
 def render(x, y, render, snap="current", sim="current", overplot=False,
            autoscale=False, autoscalerender=False, coordlimits=None,
            zslice=None, xunit="default", yunit="default",
-           renderunit="default", res=64, interpolation='nearest',lognorm=False,**kwargs):
+           renderunit="default", res=64, interpolation='nearest',lognorm=False,
+           type='sph',**kwargs):
     '''Create a rendered plot from selected particle data.
 
     Args:
@@ -307,6 +308,7 @@ def render(x, y, render, snap="current", sim="current", overplot=False,
                          logarithmic (default: linear). If you want to customise the
                          limits, use the vmin and vmax flags which are passed to
                          matplotlib
+        type (str): Specify the type of particles to be used for rendering (defaults to sph)
         **kwarg: Extra keyword arguments will be passed to matplotlib.
                          
                          
@@ -328,7 +330,7 @@ def render(x, y, render, snap="current", sim="current", overplot=False,
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot,
                                          autoscale, autoscalerender,
                                          coordlimits, zslice, xunit, yunit,
-                                         renderunit, res, interpolation,lognorm,**kwargs)
+                                         renderunit, res, interpolation,lognorm,type,**kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.place_command([command, data])
     return data

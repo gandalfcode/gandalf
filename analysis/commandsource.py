@@ -414,7 +414,8 @@ class ParticlePlotCommand (PlotCommand):
 
     sphstyle = {}
     starstyle = {'color': 'red'}
-    typestyle = {'sph': sphstyle, 'star': starstyle}
+    duststyle = {'color': 'green'}
+    typestyle = {'sph': sphstyle, 'star': starstyle, 'dust': duststyle}
 
 
     #--------------------------------------------------------------------------
@@ -533,7 +534,8 @@ class RenderPlotCommand (PlotCommand):
     def __init__(self, xquantity, yquantity, renderquantity, snap, simno,
                  overplot, autoscale, autoscalerender, coordlimits,
                  zslice=None, xunit="default", yunit="default",
-                 renderunit="default", res=64, interpolation='nearest',lognorm=False,**kwargs):
+                 renderunit="default", res=64, interpolation='nearest',lognorm=False,
+                 type='sph',**kwargs):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno,
                              overplot, autoscale, xunit, yunit)
         self.renderquantity = renderquantity
@@ -547,6 +549,7 @@ class RenderPlotCommand (PlotCommand):
         self.res = res
         self.interpolation = interpolation
         self.lognorm=lognorm
+        self.type=type
 	self._kwargs = kwargs
 
     #--------------------------------------------------------------------------
@@ -661,7 +664,7 @@ class RenderPlotCommand (PlotCommand):
         if sim.ndims < 3 or self.zslice is None:
             returncode, renderscaling_factor = rendering.CreateColumnRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
-                                                 self.ymin, self.ymax, rendered, snap)
+                                                 self.ymin, self.ymax, rendered, snap, self.type)
         else:
             quantities = ['x','y','z']
             quantities.pop(quantities.index(self.xquantity))
@@ -670,7 +673,7 @@ class RenderPlotCommand (PlotCommand):
             zunitinfo, z_data, z_scaling_factor, zlabel = self.get_array('z', snap)
             returncode, renderscaling_factor = rendering.CreateSliceRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.zquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
-                                                 self.ymin, self.ymax, self.zslice, rendered, snap)
+                                                 self.ymin, self.ymax, self.zslice, rendered, snap, self.type)
         rendered = rendered.reshape(yres,xres)
         #data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
         data = Data(None, None, rendered*renderscaling_factor)

@@ -595,6 +595,7 @@ void SimulationBase::RestartSnapshot(void)
 void SimulationBase::SetupSimulation(void)
 {
   debug1("[SimulationBase::Setup]");
+
   timing->StartTimingSection("SETUP");
 
   if (setup) {

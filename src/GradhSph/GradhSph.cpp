@@ -149,17 +149,17 @@ void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
   // Determine new order of particles in arrays.
   // First all live particles and then all dead particles.
   for (i=0; i<Nhydro; i++) {
-    itype = sphdata[i].itype;
-    while (itype == dead) {
+    itype = sphdata[i].flags.get();
+    while (itype & dead) {
       Ndead++;
       ilast--;
       if (i < ilast) {
         sphdata[i] = sphdata[ilast];
-        sphdata[ilast].itype = dead;
+        sphdata[ilast].flags.set_flag(dead);
         sphdata[ilast].m = (FLOAT) 0.0;
       }
       else break;
-      itype = sphdata[i].itype;
+      itype = sphdata[i].flags.get();
     };
     if (i >= ilast - 1) break;
   }
@@ -172,7 +172,7 @@ void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
   Ntot -= Ndead;
   for (i=0; i<Nhydro; i++) {
     iorder[i] = i;
-    assert(sphdata[i].itype != dead);
+    assert(!sphdata[i].flags.is_dead());
   }
 
   return;
@@ -245,7 +245,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // Some basic sanity-checking in case of invalid input into routine
   assert(Nneib > 0);
   assert(hmax > (FLOAT) 0.0);
-  assert(parti.itype != dead);
+  assert(!parti.flags.is_dead());
   assert(parti.m > (FLOAT) 0.0);
 
 
@@ -312,6 +312,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
            << "   rho : " << parti.rho << "   h_upper " << h_upper_bound << "    hmax :  " << hmax
            << "   h_lower : " << h_lower_bound << "    " << parti.hfactor << "    m : " << parti.m
            << "     " << parti.m*parti.hfactor*kern.w0(0.0) << "    " << Nneib << endl;
+
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }
@@ -438,13 +439,13 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
   // Some basic sanity-checking in case of invalid input into routine
   assert(neibpart_gen != NULL);
-  assert(parti.itype != dead);
+  assert(!parti.flags.is_dead());
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
-    assert(neibpart[j].itype != dead);
+    assert(!neibpart[j].flags.is_dead());
 
     wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
@@ -555,7 +556,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
-    assert(neibpart[j].itype != dead);
+    assert(!neibpart[j].flags.is_dead());
     assert(neibpart[j].h > (FLOAT) 0.0);
     assert(neibpart[j].rho > (FLOAT) 0.0);
     assert(neibpart[j].m > (FLOAT) 0.0);
@@ -673,7 +674,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
-    assert(neibpart[j].itype != dead);
+    assert(!neibpart[j].flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     //for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
@@ -732,7 +733,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
-    assert(sphdata[j].itype != dead);
+    assert(!sphdata[j].flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - parti.r[k];
     drsqd    = DotProduct(dr,dr,ndim) + small_number;
@@ -806,6 +807,17 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
 
   return;
 }
+
+#if defined MPI_PARALLEL
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::FinishReturnExport () {
+	for (int i=0; i<Nhydro; i++) {
+		GradhSphParticle<ndim>& part = sphdata[i];
+		part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)*part.invh +
+			    max(-part.div_v, (FLOAT) 0.0)*(alpha_visc - part.alpha);
+	}
+}
+#endif
 
 
 

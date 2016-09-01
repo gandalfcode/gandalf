@@ -72,8 +72,10 @@ class Sph : public Hydrodynamics<ndim>
 
  public:
   using Hydrodynamics<ndim>::allocated;
+  using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::eos;
   using Hydrodynamics<ndim>::h_fac;
+  using Hydrodynamics<ndim>::hmin_sink;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
   using Hydrodynamics<ndim>::invndim;
   using Hydrodynamics<ndim>::kernfac;
@@ -100,11 +102,13 @@ class Sph : public Hydrodynamics<ndim>
       tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName, int size_sph_part,
       SimUnits &units, Parameters *params);
 
+  virtual ~Sph() {} ;
 
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
   virtual void ReorderParticles(void) = 0;
+  virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {part.m -= dm;}
 
 
   // SPH functions for computing SPH sums with neighbouring particles
@@ -155,12 +159,10 @@ class Sph : public Hydrodynamics<ndim>
 
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
-  int create_sinks;                    ///< Create new sink particles?
   int fixed_sink_mass;                 ///< Fix masses of sink particles
   //int Ngather;                         ///< Average no. of gather neighbours
   FLOAT alpha_visc_min;                ///< Min. time-dependent viscosity alpha
   FLOAT msink_fixed;                   ///< Fixed sink mass value
-  FLOAT hmin_sink;                     ///< Minimum smoothing length of sinks
   string riemann_solver;               ///< Selected Riemann solver
   string slope_limiter;                ///< Selected slope limiter
 
@@ -211,7 +213,7 @@ public:
 
   GradhSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
            aviscenum, acondenum, tdaviscenum, string, string, SimUnits &, Parameters *);
-  ~GradhSph();
+  virtual ~GradhSph();
 
   virtual Particle<ndim>* GetParticleArray() {return sphdata;};
   virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
@@ -236,6 +238,9 @@ public:
   void ComputeDirectGravForces(const int, const int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &);
+#if defined MPI_PARALLEL
+  virtual void FinishReturnExport ();
+#endif
 
   kernelclass<ndim> kern;                  ///< SPH kernel
   GradhSphParticle<ndim> *sphdata;         ///< Pointer to particle data
@@ -281,7 +286,7 @@ class SM2012Sph: public Sph<ndim>
 
   SM2012Sph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
             aviscenum, acondenum, tdaviscenum, string, string, SimUnits &, Parameters *);
-  ~SM2012Sph();
+  virtual ~SM2012Sph();
 
   virtual Particle<ndim>* GetParticleArray() {return sphdata;};
   virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
@@ -353,7 +358,10 @@ class NullSph: public Sph<ndim>
           string gas_eos_aux, string KernelName, int size_sph_part, SimUnits &units, Parameters *):
     Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux,
               beta_visc_aux, h_fac_aux, h_converge_aux, avisc_aux, acond_aux,
-              tdavisc_aux, gas_eos_aux, KernelName, size_sph_part, units) {};
+              tdavisc_aux, gas_eos_aux, KernelName, size_sph_part, units),
+   sphdata(NULL) {};
+
+  virtual ~NullSph() ;
 
   virtual Particle<ndim>* GetParticleArray() {return sphdata;};
   virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};

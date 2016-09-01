@@ -96,6 +96,7 @@ class MpiControl
   int rank;                                ///< MPI rank of process
   int Nmpi;                                ///< No. of MPI processes
   int Nloadbalance;                        ///< No. of steps between load-balancing
+  Box<ndim> partbox;                       ///< Box containing all particles (from all nodes)
   DomainBox<ndim> mpibox;                  ///< Full domain box known to all MPI processes
   MpiNode<ndim> *mpinode;                  ///< Data for all MPI nodes
   CodeTiming *timing;                      ///< Simulation timing object (pointer)
@@ -111,7 +112,6 @@ class MpiControl
   void SetNeibSearch(NeighbourSearch<ndim>* _neibsearch) {neibsearch = _neibsearch;}
   void CollateDiagnosticsData(Diagnostics<ndim> &);
   void UpdateAllBoundingBoxes(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *);
-  void CommunicatePrunedTrees() {neibsearch->CommunicatePrunedTrees(my_matches,rank);};
   void ComputeTotalStarGasForces(Nbody<ndim> * nbody);
 
   //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *);
@@ -158,6 +158,7 @@ public:
   using MpiControl<ndim>::ExportParticleType;
   using MpiControl<ndim>::ExportBackParticleType;
   using MpiControl<ndim>::neibsearch;
+  using MpiControl<ndim>::partbox;
 
 
   // Buffers needed to send and receive particles
@@ -235,12 +236,13 @@ public:
   using MpiControl<ndim>::ExportParticleType;
   using MpiControl<ndim>::ExportBackParticleType;
   using MpiControl<ndim>::neibsearch;
+  using MpiControl<ndim>::partbox;
   using MpiControlType<ndim,ParticleType>::particles_to_export_per_node;
   using MpiControlType<ndim,ParticleType>::particles_to_export;
   using MpiControlType<ndim,ParticleType>::particles_receive;
   using MpiControlType<ndim,ParticleType>::sendbuffer;
   using MpiControlType<ndim,ParticleType>::particle_type;
-  
+
 
   MpiTree<ndim,ParticleType> *mpitree;                 ///< Main MPI load balancing tree
 

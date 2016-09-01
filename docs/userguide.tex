@@ -1,4 +1,5 @@
 \documentclass[a4paper]{article}
+\usepackage{amsmath}
 \usepackage{txfonts}
 
 \usepackage{graphicx}
@@ -13,7 +14,7 @@
 \newcommand{\VERNO}{0.4.0 }
 \newcommand{\var}[1]{\texttt{#1}}
 \newcommand{\singlecommand}[1]{\\ \newline \indent \var{#1} \\ \newline \noindent}
-
+\renewcommand{\vec}[1]{\ensuremath{\mathbf{#1}}}
 \usepackage{listings}
 
 \textheight 9.2in
@@ -97,11 +98,15 @@ For Mac users, all programs can be installed with either fink, MacPorts or homeb
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Command-line code compilation}
 
-To compile GANDALF only as a C++ executable to be run from the command line without visualisation via the python program, first set the chosen C++ compiler in the Makefile and type \\
+To compile GANDALF only as a C++ executable to be run from the command line without visualisation via the python program, first set the chosen C++ compiler in the Makefile (see section \ref{S:MAKEFILE} for a full list of the variables you can change) by setting the variable \var{CPP} (if you leave it blank, you will get the default c++ compiler as defined by your system) and type \\
 \newline
 \noindent \var{make executable} \\
 
-\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.  If you do not have python installed on your system, or are having trouble getting the python components to function correctly, then the C++ executable can still be compiled and run stand-alone.
+\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.  If you do not have python installed on your system, or are having trouble getting the python components to function correctly, then the C++ executable can still be compiled and run stand-alone. Differently from other codes, in GANDALF we adopt the philosophy that the code should be compiled only once. If you need to change parameters, you can do it by setting them via the parameter files; in most cases no recompilation is needed. For this reason, if your physical set up does not require modifying the code, it could be that you need to compile GANDALF only once. If that is the case, you might want to copy the executable to one of your system directories. In this case, the command\\
+\newline
+\noindent \var{make install} \\
+
+will copy the executable (provided you have already compiled the code) to your \var{/usr/local/bin} folder. In this way you should be able to invoke GANDALF from the command line just typing \var{gandalf} (i.e. without the need to specify the full path). Note that you might need to be root to write to that folder (in this case, use the sudo command).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,6 +121,17 @@ To compile all code elements including the python components, then complete the 
 \item For Mac OS X, python is installed by default.  However, it does not have directly compatible versions of all the required libraries.  Therefore, it is required to install an additional version of python 2.7 using a 3rd party package manager like fink, Macports or homebrew.
 \end{itemize}
 
+\item Set the required version of python in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  This is set using the \var{PYTHON} variable in the Makefile.
+
+Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically (see description of Makefile options in section \ref{S:MAKEFILE}).  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.
+
+
+\item To compile all components of the code, including the python libraries with swig, type \\
+\newline
+\noindent \var{make} or (equivalently) \var{make all}\\
+
+\item You now need to tell python how to find GANDALF when you want to use it. You have two options:
+\begin{itemize}
 \item Add the location of the folder containing the main GANDALF directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add the line \\
 \newline
 \noindent \var{export PYTHONPATH=XXX/YYY:\$PYTHONPATH} \\
@@ -124,16 +140,79 @@ To compile all code elements including the python components, then complete the 
 \newline
 \noindent \var{setenv PYTHONPATH ``XXX/YYY:\$PYTHONPATH''} \\
 
-\noindent to your relevant shell configuration file. Remember that you have to close and reopen the shell for this change to take effect, or to \var{source} the shell configuration file.
+\noindent to your relevant shell configuration file. Remember that you have to close and reopen the shell for this change to take effect, or to \var{source} the shell configuration file. In this case, python will use the version of GANDALF present in the folder you specified. Note that this \textit{requires} the folder to be called \var{gandalf}; if you give another name, python will not be able to find GANDALF.
 
-\item Set the required version of python in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  This is set using the \var{PYTHON} variable in the Makefile.
-
-Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically (see description of Makefile options).  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.
-
-
-\item Finally, to compile all components of the code, including the python libraries with swig, type \\
+\item If you know you will not be making changes to GANDALF, consider installing GANDALF in one of your system folders. In this case, just type \\
 \newline
-\noindent \var{make} or \var{make all} \\
+\var{make installpython}
+\\
+
+\noindent and the GANDALF python library will be installed (this requires that you have already used \var{make} to compile the code). In this case, there is no need to set the variable \var{PYTHONPATH}. Also, the folder where you keep your original code does not need to have any special name. If later you do make changes to the code, remember to re-run this command - otherwise the installed version remains the old one! Note that you might need to be root (or to use sudo) to run this command.
+
+\end{itemize}
+
+\end{itemize}
+
+
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Makefile options} \label{S:MAKEFILE}
+The GANDALF Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean} and then \var{make}.  For users of SEREN, the GANDALF Makefile has been simplified with many options either not present (since various specialist algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
+
+Note that the Makefile in the root folder is just a convenience to set the variables you need - the actual Makefile is contained in the \var{src} folder.
+
+\begin{itemize}
+
+\item CPP : C++ compiler. If left blank (default), uses the default defined by your system. Depending on the values set here, we try to guess the compiler flags for your system. If you want to use a compiler different from the ones we support, you need to manually set the flags in the Makefile in the \var{src} folder. Note also that when using MPI we assume that you use g++/clang. If this is not the case, you need to manually edit the compiler flags in the Makefile in the \var{src} folder.\\
+\begin{tabular}{ll}
+g++ & : GCC C++ compiler \\
+icpc & : Intel C++ compiler \\
+clang & : CLANG compiler\\
+mpic++ & : Compiles the code with MPI.
+\end{tabular}
+
+\item PYTHON : name of python command-line executable (e.g. python, python2.7)
+
+\item COMPILER\_MODE : Set compiler flags for production or debug runs \\
+\begin{tabular}{ll}
+DEBUG & : Set all debug compiler options, including flags to use gdb debugger and full warning output (-Wall) \\
+STANDARD & : Standard optimisation options (-O3) \\
+FAST & : -O3 + fast flag options.  Uses 'potentially unsafe' fast maths optimisation.
+\end{tabular}
+
+\item PRECISION : Floating point precision \\
+\begin{tabular}{ll}
+SINGLE & : 32-bit precision floating point variables \\
+DOUBLE & : 64-bit precision floating point variables
+\end{tabular}
+
+\item OPENMP : Activate OpenMP directives during compilation (0 or 1)
+
+\item OUTPUT\_LEVEL : Amount of output produced by code \\
+\begin{tabular}{ll}
+0 & : No additional output \\
+1 & : Minimal output of main-loop routines \\
+2 & : Code routine marker output for all steps
+\end{tabular}
+
+\item DEBUG\_LEVEL : Amount of extra debug checking done by code \\
+\begin{tabular}{ll}
+0 & : No extra debugging computations and output \\
+1 & : Activate assert debug statements in code \\
+2 & : Activate extra (expensive) debugging computations in code
+\end{tabular}
+
+\item FFTW : Include FFTW (Fast Fourier transform) library for initial conditions (0 or 1).  The FFTW\_LIBRARY and FFTW\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
+
+\item GSL : Include GSL (GNU Scientific library) which is required for Ewald forces (0 or 1). The GSL\_LIBRARY and GSL\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
+
+\item PYLIB : Path to directory that includes prefered python libraries.  If left blank, {\var make} will use python routines to locate the libraries automatically.
+
+\item NUMPY : Path to directory that includes prefered numpy libraries.  Ase with PYLIB, If left blank, {\var make} will use python routines to locate the library locations automatically.
+
+\item GTEST : Path to directory containing Google test suite library for unit testing (Currently set witu environment variable)
 
 \end{itemize}
 
@@ -201,66 +280,6 @@ or, depending on the default version of python on your system (e.g. installing m
 \var{plot x y} \\
 \newline
 \noindent For a list on available commands, type \var{help} in the command line.  For more detailed information on the functionality of a particular command, type \var{help command}.  For more information on interactive python commands, see Section \ref{S:PYTHONSCRIPT}.
-
-\newpage
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Makefile options} \label{S:MAKEFILE}
-The GANDALF Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean} and then \var{make}.  For users of SEREN, the GANDALF Makefile has been simplified with many options either not present (since various specialist algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
-
-\begin{itemize}
-
-\item CPP : C++ compiler \\
-\begin{tabular}{ll}
-g++ & : GCC C++ compiler \\
-icpc & : Intel C++ compiler \\
-clang & : CLANG compiler (Mac OS X only)
-\end{tabular}
-
-\item PYTHON : name of python command-line executable (e.g. python, python2.7)
-
-\item COMPILER\_MODE : Set compiler flags for production or debug runs \\
-\begin{tabular}{ll}
-DEBUG & : Set all debug compiler options, including flags to use gdb debugger and full warning output (-Wall) \\
-STANDARD & : Standard optimisation options (-O3) \\
-FAST & : -O3 + fast flag options.  Uses 'potentially unsafe' fast maths optimisation.
-\end{tabular}
-
-\item PRECISION : Floating point precision \\
-\begin{tabular}{ll}
-SINGLE & : 32-bit precision floating point variables \\
-DOUBLE & : 64-bit precision floating point variables
-\end{tabular}
-
-\item OPENMP : Activate OpenMP directives during compilation (0 or 1)
-
-\item OUTPUT\_LEVEL : Amount of output produced by code \\
-\begin{tabular}{ll}
-0 & : No additional output \\
-1 & : Minimal output of main-loop routines \\
-2 & : Code routine marker output for all steps
-\end{tabular}
-
-\item DEBUG\_LEVEL : Amount of extra debug checking done by code \\
-\begin{tabular}{ll}
-0 & : No extra debugging computations and output \\
-1 & : Activate assert debug statements in code \\
-2 & : Activate extra (expensive) debugging computations in code
-\end{tabular}
-
-\item FFTW : Include FFTW (Fast Fourier transform) library for initial conditions (0 or 1).  The FFTW\_LIBRARY and FFTW\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
-
-\item GSL : Include GSL (GNU Scientific library) which is required for Ewald forces (0 or 1). The GSL\_LIBRARY and GSL\_INCLUDE variables should contain the library links and include directory if different from the standard Linux directories (otherwise leave blank).
-
-\item PYLIB : Path to directory that includes prefered python libraries.  If left blank, {\var make} will use python routines to locate the libraries automatically.
-
-\item NUMPY : Path to directory that includes prefered numpy libraries.  Ase with PYLIB, If left blank, {\var make} will use python routines to locate the library locations automatically.
-
-\item GTEST : Path to directory containing Google test suite library for unit testing (Currently set witu environment variable)
-
-\end{itemize}
 
 \newpage
 
@@ -1054,6 +1073,7 @@ Since the column format was only designed for simple IO and plotting, it is a ra
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 \subsection{SEREN format}
+\label{Sec:SerenForm}
 The SEREN format is a legacy format from the original SEREN code which is currently the main format for use in GANDALF.  There are two different version of the SEREN format; 
 \begin{itemize}
 \item \var{seren\_form} or \var{sf} : `Formatted' (i.e. ASCII)
@@ -1840,6 +1860,118 @@ You might notice that the matplotlib window freezes when you are running a simul
 
 \newpage
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Dust Dynamics}
+
+\subsection{Theory}
+The equations of motion for the mutual dynamics of gas and dust coupled by drag forces are 
+\begin{align}
+\rho_g \frac{\mathrm{D}_g \vec{v}_g}{\mathrm{D} t} &= -\nabla P  + \rho_g \vec{a}_{g, \mathrm{ext}} 
+                                                     + K (\vec{v}_d - \vec{v}_g),  \\
+\rho_d \frac{\mathrm{D}_d \vec{v}_d}{\mathrm{D} t} &= \rho_d \vec{a}_{d, \mathrm{ext}} 
+                                                     - K (\vec{v}_d - \vec{v}_g),
+\end{align}
+where $\frac{\mathrm{D}_g}{\mathrm{D} t}$ is the Lagrangian derivative with respect to the gas. The external accelerations are included to take into account additional forces, which may either be the same for both the gas and dust particles (such as gravity) or affect just one species (e.g. viscosity). These equations can be re-written in terms of an equation of motion for the relative and barocentric velocities, $\vec{v} = (\rho_g \vec{v}_g + \rho_d \vec{v}_d)/(\rho_g + \rho_d)$ and $\Delta \vec{v} = \vec{v}_d - \vec{v}_g$, (Youdin \& Goodmann, 2005; Laibe \& Price, 2014; Lor\'en-Aguilar \& Bate, 2015),
+\begin{align}
+\frac{\mathrm{D} \vec{v}}{\mathrm{D} t} &= \frac{-\nabla P + \rho_g \vec{a}_{g, \mathrm{ext}} + \rho_d \vec{a}_{d, \mathrm{ext}}}{\rho_g + \rho_d} - \vec{F}, \\
+\frac{\mathrm{D} \Delta \vec{v}}{\mathrm{D} t} &= -  \frac{\Delta \vec{v}}{t_s}+  \vec{a}_{d, \mathrm{ext}} + \frac{\nabla P}{\rho_g}  - \vec{a}_{g, \mathrm{ext}} - (\Delta \vec{v} \cdot \nabla) \vec{v} - \vec{G},
+\end{align}
+where $t_s = \rho_g \rho_d / K(\rho_g + \rho_d)$. The functions $\vec{F}$ and $\vec{G}$ are
+\begin{align}
+\vec{F} &= \frac{1}{\rho_d + \rho_g} \nabla \cdot \left(\frac{\rho_d \rho_d}{\rho_d + \rho_d} \Delta \vec{v} \Delta \vec{v} \right), \\
+\vec{G} &= \frac{1}{\rho_d + \rho_g} \left[ 
+ \rho_g \Delta \vec{v} \cdot \nabla \left(\frac{\rho_g}{\rho_g + \rho_d} \Delta \vec{v} \right) - 
+ \rho_d \Delta \vec{v} \cdot \nabla \left(\frac{\rho_d}{\rho_g + \rho_d} \Delta \vec{v} \right) \right].
+\end{align}
+These two formulations naturally lead to two different numerical approaches (in the same spirit as Eulerian vs. Lagrangian hydro codes), with equations (1) and (2) naturally represented by two different particle types representing fluid (gas) particles and dust particles. Equations (3) -- (6) are more naturally represented as a single fluid that moves with the barycentric velocity, on top of which the dust fraction is advected relative to the barycentre at velocity $\Delta \vec{v}$ (see Laibe \& Price 2014 for more details). 
+
+In GANDALF we solve directly equations (1) and (2) using a multi-fluid approach, using the semi-implicit time-stepping following Booth, Sijacki \& Clarke (2015) and Lor\'en-Aguilar \& Bate (2015). In these approaches we use of $\langle \Delta \vec{v} \rangle$, the average of the relative velocity in the time-step $\left[ t,t + \Delta t\right]$. This is found by solving equation (4) under the approximation that the densities, accelerations and $t_s$ are constant in both time and space. We find 
+\begin{equation}
+\langle \Delta \vec{v} \rangle \frac{\Delta t}{t_s} = \Delta \vec{v}(t+\Delta t) \left(1 - \exp(-\Delta t/ t_s\right) -
+\left(\vec{a}_{d, \mathrm{ext}} + \frac{\nabla P}{\rho_g}  - \vec{a}_{g, \mathrm{ext}}\right)\left[(\Delta t + t_s)\left(1 - \exp(-\Delta t/ t_s)\right) - \Delta t \right],
+\end{equation}
+where $ \Delta \vec{v}(t+\Delta t) = \Delta \vec{v} (t) + \left(\vec{a}_{d, \mathrm{ext}} + \nabla P/\rho_g  - \vec{a}_{g, \mathrm{ext}}\right) \Delta t$. From equation (7) the gas and dust accelerations can be found to be
+\begin{align}
+\vec{a}_{g,\mathrm{drag}} &= + \frac{\rho_d}{\rho_d + \rho_g} \frac{\langle \Delta \vec{v} \rangle}{t_s}, \\
+\vec{a}_{d,\mathrm{drag}} &= - \frac{\rho_g}{\rho_d + \rho_g} \frac{\langle \Delta \vec{v} \rangle}{t_s}.
+\end{align}
+When the approximations made above hold exactly the resulting accelerations are exact since equations (1) and (2) are linear as long as the drag coefficient does not depend on $\Delta v$. The change in internal energy is computed directly from the change in kinetic energy to ensure conservation.
+
+\subsection{Implementations}
+
+GANDALF now includes two implementations of combined dust-gas dynamics, based upon equations (1) \& (2) and  (7) -- (9). Currently these are only implemented for the grad-h SPH algorithm. In both implementations the dust and gas are represented by separate particle types (which are identified in the code via the \lstinline{ptype} particle attribute). In the first implementation the back-reaction of the dust on the gas is neglected (equivalent to  $\rho_d \rightarrow 0$) -- the gas dynamics are not modified when dust is included (test-particle limit). While in the second implementation the back-reaction on the gas is included (full two-fluid). The advantages and disadvantages of the methods are discussed below. These implementations can be found in src/Common/Dust.cpp
+
+\subsubsection{Test-particle implementation}
+
+The test-particle implementation closely follows Booth et al (2015). Since in general the gas particles and dust particles will not be at the same locations, the gas properties needed for evaluating equation (7) must be interpolated to the location of the dust particle. This is done in the standard SPH way. For each dust particle we compute a `gas smoothing length' set by the local number density of gas particles, in a similar way to that of the gas. The gas properties are then interpolated to the location of the dust particles using a the standard kernel sum and the interpolated values are used in evaluating the drag acceleration.
+
+\subsubsection{Full two-fluid algorithm}
+
+The full two-fluid algorithm follows the improved semi-implicit algorithm of Lor\'en-Aguilar \& Bate (2015). In order to ensure conservation of both energy and angular momentum the forces must: (1) change sign under the exchange of particles, (2) be directed along the lines between interacting particles (Laibe \& Price 2012). (1) can be achieved simply by interpolation, but (2) requires forces to be directed between particles rather than in the direction of the velocity difference. Following Laibe \& Price (2012) and Lor\'en-Aguilar \& Bate (2015) we project the drag force between pairs of particles and evaluate the total acceleration using a kernel sum:
+\begin{align*}
+ \vec{a}_{d,\mathrm{drag}} &= - \sum_i^\mathrm{gas} \frac{m_i}{\rho_{g,i}} ( \vec{S}_{id}  \cdot \vec{\hat r}_{id}) \vec{\hat r}_{id} D(\vec{r}_{id}, h_i) \\
+ \vec{a}_{g,\mathrm{drag}} &= - \sum_i^\mathrm{dust} \frac{m_i}{\rho_{d,i}} ( \vec{S}_{ig} \cdot \vec{\hat r}_{ig}) \vec{\hat r}_{ig} D(\vec{r}_{ig}, h_g),
+\end{align*}
+where $\vec{\hat r}_{ij} = (\vec{r}_i - \vec{r}_j) / |\vec{r}_i - \vec{r}_j|$ and 
+\begin{equation}
+ \vec{S}_{ij} = \frac{\rho_i}{\rho_i + \rho_j} \frac{\langle \Delta \vec{v}_{ij} \rangle}{t_s}.
+\end{equation}
+For the kernel $D$ we use the double hump version of the kernel used for the SPH forces $D(r,h) \propto (r/h)^2 W(r,h)$, which reduces the bias in the direction of the force estimate from nearby neighbours when compared with bell-shaped kernels (Laibe \& Price, 2012).
+
+\subsubsection{Advantages, limitations and reasons for caution}
+
+\begin{itemize}
+\item \emph{Conservation} -- The full fluid has the advantage that the total energy, momentum and angular momentum
+are conserved explicitly, while in the test-particle limit these are conserved for the gas particles, but not for the dust. In some problems, such as when radial drift is important the explicit conservation can help maintain the correct solution.
+
+\item \emph{Dissipation} -- The full two-fluid system is a dissipative system, with the drag forces converting kinetic energy into thermal energy. If the smoothing length, $h < c_s t_s$, this can lead to massive numerical dissipation especially when $\rho_d \approx \rho_g$. The semi-implicit algorithms help to reduce the dissipation (see Lor\'en-Aguilar \& Bate, 2014), but this can still be an issue. For $\rho_d \ll \rho_g$ the dissipation is weak, with no dissipation occurring in the test particle limit. 
+
+\item \emph{Force Errors} -- The standard SPH interpolation used in the test-particle implementation is generally accurate to $\sim 0.1$ per cent for the cubic spline, and even more accurate for smoother kernels (e.g. the Quintic spline). However, the projected interpolation is considerably more sensitive to the particle distribution. The double hump kernels help reduce the errors due to the particle distribution, but even for regular particle distributions the error can be $\sim 1$ per cent. When strong density gradients are present (e.g. the vertical structure of discs), the errors can be much larger (c.f the settling test, Lor\'en-Aguilar \& Bate, 2014). For this reason smoother kernels are highly recommended when using the full-two fluid implementation. 
+
+\item \emph{Individual particle time-steps} -- Individual particle time-steps are implemented for both dust algorithms, but typically the full-two fluid algorithm should not be used with individual particle time-steps, since the time averaged drag force is only correct once the time-step has been completed. Order unity errors can arise even the simplest dustybox tests when the time-step for the gas and dust differ for this reason, making it clear the exact conservation is necessary for accurate simulations with this algorithm. Development of a robust multi-step scheme for the full two-fluid scheme is being considered. Conversely, individual particle time-steps have been used in Booth, Sijacki \& Clarke (2015) and Booth \& Clarke (2016) with the test-particle limit algorithm and prove to be robust because the predicted velocities are not needed for force calculations. Individual particle time-steps have not been tested extensively in the GANDALF test-particle implementation, but preliminary tests have been successful.
+
+\item \emph{Sinks} -- The sink routines have not been modified to support dust, but in principal should work. However, I would recommend checking this when both dust and sink particles are needed in the same simulation. Accretion using  the `vacuum cleaner' type sinks \emph{should} work properly, but has not been rigourously tested. The smoothed accretion mode is more likely to give issues since it removes mass from the particle closest to the sink only so it is possible that mass would end up being removed from the gas or dust particles only. 
+
+\end{itemize}
+
+\subsection{Drag Laws}
+Several drag laws have been implemented in via functions form of $t_s \equiv t_s (\rho_g , \rho_d , c_s)$. The different functional forms currently available can be chosen via the parameter options and are described below. The drag laws are defined in src/Headers/DragLaws.h. Currently only dimensionless units are supported when setting the stopping time.
+
+\subsection{IO and initial conditions}
+Dust particles are currently supported only in the SEREN formats (both formatted and unformatted), with the dust particles following the gas particles on the disc. The number of dust particles is stored in the header, as described in section \ref{Sec:SerenForm}. The column format is \emph{not} formally supported, but if used it will currently still contain the dust particles after the gas particles as long as MPI is not used. However, the number of dust particles is not currently saved in the column format.
+
+Currently the only systematic way to generate initial conditions that include dust is to provide an IC file in the SEREN format that includes dust. For the test problems currently included, when dust is turned  on (via setting the drag\_forces parameter) the initial conditions generated are identical to those for the gas, although dust-to-gas ratio can be varied. Currently, generating multi-species initial conditions in python is also not supported (with the exception of star particles), although we hope to support this soon.
+
+\subsection{Test Problems}
+Some simple two-fluid test problems have been included in the directory tests/dust tests. Most of these are straight-forward modifications of classic hydrodynamics test problems to include dust particles. A description of a number of these can be found in Laibe \& Price (2012 a,b), including the \textsc{dustybox}, \textsc{dustywave}, \textsc{dustyshock} and \textsc{dustysedov} problems. The dust to gas ratio can be verified, but otherwise the dust initial conditions are identical to the those in the gas in all the problems provided.
+
+\subsection{Dust parameter options}
+\begin{itemize}
+
+\item \var{drag\_forces} : Select the drag force algorithm
+
+\begin{tabular}{ll}
+none              & = No drag forces \\
+test particle     & = Test particle limit drag regime \\
+full twofluid     & = Full two fluid drag regime
+\end{tabular} 
+
+\item \var{drag\_law} : Select the drag law
+
+\begin{tabular}{ll}
+fixed             & $t_s = 1 / K_D$ \\
+density           & $t_s = 1 / (K_D(\rho_d + \rho_g))$ \\
+epstein           & $t_s = 1 / (K_D(\rho_d + \rho_g)c_s)$ \\
+LB2012            & $t_s = \rho_d \rho_g / (K_D(\rho_d + \rho_g))$ \\
+\end{tabular} 
+
+\item \var{drag\_coeff} : Sets $K_D$
+
+\item \var{dust\_mass\_factor} : Sets the dust-to-gas mass ratio for the test problems
+
+\end{itemize}
+
+\newpage
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Developer notes}

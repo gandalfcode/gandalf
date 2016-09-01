@@ -117,7 +117,7 @@ void SinkTest::SetUp(void)
     part.m      = 1.0 / (FLOAT) Npart;
     part.h      = 0.1;
     part.active = true;
-    part.itype  = gas;
+    part.ptype  = gas_type;
     part.potmin = false;
     part.gpot   = 0.0;
     part.nstep  = 1;
@@ -191,7 +191,7 @@ void SinkTest::CalculateCom(FLOAT &mtot, FLOAT rcom[3], FLOAT vcom[3], FLOAT aco
 
   for (int i=0; i<sph->Nhydro; i++) {
     SphParticle<3> &part = sph->GetSphParticlePointer(i);
-    if (part.itype == dead) continue;
+    if (part.flags.is_dead()) continue;
     for (int k=0; k<3; k++) {
       rcom[k] += part.m*part.r[k];
       vcom[k] += part.m*part.v[k];

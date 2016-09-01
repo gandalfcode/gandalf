@@ -48,9 +48,11 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                              FLOAT kernrangeaux, FLOAT macerroraux,
-                                             string gravity_mac_aux, string multipole_aux) :
+                                             string gravity_mac_aux, string multipole_aux,
+                                             const DomainBox<ndim>& domain,
+                                    		 const ParticleTypeRegister& reg) :
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                   macerroraux, gravity_mac_aux, multipole_aux)
+                                   macerroraux, gravity_mac_aux, multipole_aux, domain, reg)
 {
   allocated_tree = false;
   ifirst         = -1;
@@ -363,7 +365,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
       // Check we have not reached maximum level
       if (ltot >= lmax) {
         cout << "Reached maximum Oct-tree level.  Exitting program" << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Error : reached maximum oct-tree level");
       }
 
     }
@@ -452,7 +454,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         cell.ifirst = -1;
         cell.N      = 0;
         while (i != -1) {
-          if (partdata[i].itype != dead) {
+          if (!partdata[i].flags.is_dead()) {
             if (iaux == -1) cell.ifirst = i;
             else inext[iaux] = i;
             iaux = i;
@@ -466,13 +468,15 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         // Loop over all particles in cell summing their contributions
         i = cell.ifirst;
         while (i != -1) {
-          if (partdata[i].itype != dead) {
+          if (!partdata[i].flags.is_dead()) {
             cell.N++;
             if (partdata[i].active) cell.Nactive++;
             cell.hmax = max(cell.hmax, partdata[i].h);
-            cell.m += partdata[i].m;
-            for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-            for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
+            if (gravmask[partdata[i].ptype]) {
+              cell.m += partdata[i].m;
+              for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
+              for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
+            }
             for (k=0; k<ndim; k++) {
               if (partdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = partdata[i].r[k];
               if (partdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = partdata[i].r[k];
@@ -501,7 +505,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           i = cell.ifirst;
 
           while (i != -1) {
-            if (partdata[i].itype != dead) {
+            if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
               mi = partdata[i].m;
               for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
               drsqd = DotProduct(dr,dr,ndim);
@@ -799,28 +803,24 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
     if (ccount[c] != 1) {
       cout << "Error in cell walk count : " << ccount[c] << endl;
       PrintArray("ccount     : ",Ncell,ccount);
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error in cell walk count in OctTree");
     }
     if (celldata[c].level < 0 || celldata[c].level > ltot) {
       cout << "Problem with cell levels : " << celldata[c].level << "    " << ltot << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with cell levels in OctTree");
     }
     if (celldata[c].Nactive > 0 && celldata[c].copen != -1) {
       cout << "Problem with active counters : " << celldata[c].Nactive << "    "
            << celldata[c].N << "    " << celldata[c].level << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with active counters in OctTree");
     }
   }
 
   // Check inext linked list values and ids array are all valid
   for (i=ifirst; i<=ilast; i++) {
-    //if (!(ids[i] >= ifirst && ids[i] <= ilast)) {
-    //  cout << "Problem with ids array : " << i << "   " << ids[i] << endl;
-    //  exit(0);
-    //}
     if (!(inext[i] >= -1)) {
       cout << "Problem with inext linked lists : " << i << "   " << inext[i] << endl;
-      exit(0);
+      ExceptionHandler::getIstance().raise("Error with inext linked lists in OctTree");
     }
   }
 
@@ -844,13 +844,13 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
         if (partdata[i].h > cell.hmax) {
           cout << "hmax flag error : " << c << "    "
                << partdata[i].h << "   " << cell.hmax << endl;
-          exit(0);
+          ExceptionHandler::getIstance().raise("hmax flag error in OctTree");
         }
         for (k=0; k<ndim; k++) {
           if (partdata[i].r[k] < cell.bbmin[k] || partdata[i].r[k] > cell.bbmax[k]) {
             cout << "Bounding box error : " << c << "   " << i << "    " << k << "    r : "
                  << partdata[i].r[k] << "    " << cell.bbmin[k] << "    " << cell.bbmax[k] << endl;
-            exit(0);
+            ExceptionHandler::getIstance().raise("Bounding box error in OctTree");
           }
         }
         if (i == cell.ilast) break;
@@ -858,11 +858,11 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
       }
       if (leafcount > Nleafmax) {
         cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Leaf particle counter error in OctTree");
       }
       if (activecount > leafcount) {
         cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
-        exit(0);
+        ExceptionHandler::getIstance().raise("Leaf particle count error in OctTree");
       }
     }
 
@@ -893,7 +893,9 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
   delete[] pcount;
   delete[] ccount;
 
-  if (kill_flag) exit(0);
+  if (kill_flag) {
+    ExceptionHandler::getIstance().raise("kill_flag in OctTree");
+  }
 
   return;
 }

@@ -52,6 +52,12 @@ struct KDTreeCell : public TreeCellBase<ndim> {
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
   int k_divide;                     ///< Dimension along which cell is split
+
+#ifdef MPI_PARALLEL
+  typedef TreeCommunicationHandler<ndim> HandlerType;
+#endif
+
+
 };
 
 
@@ -98,6 +104,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::Ntotold;
   using Tree<ndim,ParticleType,TreeCell>::theta;
   using Tree<ndim,ParticleType,TreeCell>::thetamaxsqd;
+  using Tree<ndim,ParticleType,TreeCell>::gravmask ;
 #ifdef MPI_PARALLEL
   using Tree<ndim,ParticleType,TreeCell>::Ncelltot;
   using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
@@ -106,7 +113,8 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  KDTree(int, FLOAT, FLOAT, FLOAT, string, string);
+  KDTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
+		 const ParticleTypeRegister&);
   ~KDTree();
 
 
@@ -117,7 +125,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, TreeCell<ndim> &);
-  void ExtrapolateCellProperties(FLOAT);
+  void ExtrapolateCellProperties(const FLOAT);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   FLOAT QuickSelectSort(int, int, int, int, ParticleType<ndim> *);
   void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
@@ -126,7 +134,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters(TreeCell<ndim> &);
-  int GetMaxCellNumber(const int _level) {return pow(2,_level);};
+  int GetMaxCellNumber(const int _level) {return pow(2,_level+1)-1;};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

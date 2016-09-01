@@ -62,12 +62,12 @@ public:
   virtual int CreateColumnRenderingGrid(const int, const int, const string, const string,
                                         const string, const string, const float, const float,
                                         const float, const float, float* values, const int Ngrid,
-                                        SphSnapshotBase &, float& scaling_factor)=0;
+                                        SphSnapshotBase &, const string , float& scaling_factor)=0;
   virtual int CreateSliceRenderingGrid(const int, const int, const string, const string,
                                        const string, const string, const string, const float,
                                        const float, const float, const float, const float,
                                        float* values, const int Ngrid, SphSnapshotBase &,
-                                       float& scaling_factor)=0;
+                                       const string , float& scaling_factor)=0;
 };
 
 
@@ -94,11 +94,11 @@ class Render : public RenderBase
   int CreateColumnRenderingGrid(const int, const int, const string, const string, const string,
                                 const string, const float, const float, const float, const float,
                                 float* values, const int Ngrid, SphSnapshotBase &,
-                                float& scaling_factor);
+                                const string, float& scaling_factor);
   int CreateSliceRenderingGrid(const int, const int, const string, const string, const string,
                                const string, const string, const float, const float, const float,
                                const float, const float, float* values, const int Ngrid,
-                               SphSnapshotBase &, float& scaling_factor);
+                               SphSnapshotBase &, const string, float& scaling_factor);
 
   Hydrodynamics<ndim>* hydro;          ///< Pointer to Hydrodynamics object to be rendered
 

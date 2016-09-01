@@ -37,12 +37,21 @@ template <int ndim>
 GaussianKernel<ndim>::GaussianKernel(string kernelname):
   SmoothingKernel<ndim>()
 {
-  this->kernrange = (FLOAT) 3.0;
-  this->invkernrange = onethird;
-  this->kernrangesqd = (FLOAT) 9.0;
-  if (ndim == 1) this->kernnorm = sqrt(invpi);
-  else if (ndim == 2) this->kernnorm = invpi;
-  else if (ndim == 3) this->kernnorm = invpi*sqrt(invpi);
+  kernrange = (FLOAT) 3.0;
+  invkernrange = onethird;
+  kernrangesqd = (FLOAT) 9.0;
+  if (ndim == 1) {
+	  kernnorm = sqrt(invpi);
+	  kernnormdrag = 2.0 ;
+  }
+  else if (ndim == 2) {
+	  kernnorm = invpi;
+	  kernnormdrag = 1.0 ;
+  }
+  else if (ndim == 3){
+	  kernnorm = invpi*sqrt(invpi);
+	  kernnormdrag = 2. / 3 ;
+  }
 }
 
 

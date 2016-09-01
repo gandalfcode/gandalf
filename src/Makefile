@@ -59,7 +59,7 @@ CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
 ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
-CLANGOPT += -g -pg -Wall
+CLANGOPT += -O3 -g -pg -Wall
 else ifeq ($(COMPILER_MODE),STANDARD)
 GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
@@ -71,7 +71,6 @@ GCCOPT   += -fopenmp
 ICCOPT   += -openmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
-
 
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
@@ -174,7 +173,7 @@ OBJ += Simulation.o Hydrodynamics.o
 OBJ += SphSimulation.o Sph.o
 OBJ += GradhSphSimulation.o GradhSph.o
 OBJ += SM2012SphSimulation.o SM2012Sph.o
-OBJ += MeshlessFVSimulation.o FV.o MeshlessFV.o
+OBJ += MeshlessFVSimulation.o FV.o MeshlessFV.o MfvCommon.o
 OBJ += MfvMusclSimulation.o MfvMuscl.o
 OBJ += MfvRungeKuttaSimulation.o MfvRungeKutta.o
 OBJ += NbodySimulation.o
@@ -205,6 +204,9 @@ OBJ += Ghosts.o
 OBJ += SphSnapshot.o
 OBJ += CodeTiming.o
 OBJ += IC.o
+OBJ += Dust.o
+OBJ += Particle.o
+
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
@@ -284,7 +286,7 @@ WHICH_GPP   = which g++
 
 ifeq ($(findstring g++,$(WHICH_GPP)),g++)
 BUILD_DEPS = @set -e; g++ -MM -MG -I$(INCLUDE) $< |\
-	 sed 's;\($*\)\.o[ :]*;$(call get_dir_str, $@)/\1.o $@ : ;g' > $@ 
+	 sed 's;\($*\)\.o[ :]*;$(call get_dir_str, $@)/\1.o $@ : ;g' > $@
 else
 BUILD_DEPS = @echo "Warning: Cannot build dependencies for $(notdir $<)"
 endif
@@ -296,10 +298,12 @@ endif
 
 # Compute the list of .cpp files from the OBJ files
 #    Note: chealpix is a .c file, so handle the special case
-CPP_TGT := $(patsubst %.o,  %.cpp, $(OBJ)) 
-CPP_TGT := $(patsubst chealpix.cpp, chealpix.c, $(CPP_TGT)) 
-REL_DEPS := $(patsubst %.cpp,  %.d, $(CPP_TGT)) 
-REL_DEPS := $(patsubst %.c,  %.d, $(REL_DEPS)) 
+CPP_TGT := $(patsubst %.o,  %.cpp, $(OBJ))
+CPP_TGT := $(patsubst chealpix.cpp, chealpix.c, $(CPP_TGT))
+REL_DEPS := $(patsubst %.cpp,  %.d, $(CPP_TGT))
+REL_DEPS := $(patsubst %.c,  %.d, $(REL_DEPS))
+
+
 
 %.o : %.d
 
