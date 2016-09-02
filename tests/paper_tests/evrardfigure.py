@@ -103,8 +103,8 @@ else:
 
 
 # Extract data from Grad-h SPH simulation
-snapno = 4
-loadsim('EVRARD-GRADH')
+snapno = 16
+loadsim('EVRARD-GRADHSPH')
 x0   = get_data('r', sim=0, snap=snapno)
 rho0 = get_data('rho', sim=0, snap=snapno)
 v0   = get_data('vr', sim=0, snap=snapno)
@@ -124,7 +124,7 @@ entropy1 = get_data('entropy', sim=1, snap=snapno)
 # Create matplotlib figure object with shared x-axis
 fig, axarr = plt.subplots(3, 2, sharex='col', sharey='row', figsize=(8,8))
 fig.subplots_adjust(hspace=0.001, wspace=0.001)
-fig.subplots_adjust(bottom=0.08, top=0.99, left=0.12, right=0.97)
+fig.subplots_adjust(bottom=0.08, top=0.99, left=0.08, right=0.99)
 
 
 print 'r   : ',np.min(r),np.max(r)
@@ -174,6 +174,7 @@ axarr[2,1].set_xlim([xmin, xmax])
 axarr[2,1].set_ylim([entropymin, entropymax])
 axarr[2,1].scatter(x1[::stride], entropy1[::stride], color='black', marker='.', s=1.0, label='MFM moving')
 axarr[2,1].plot(r, entropy, color="red", label='PPM solution')
+
 
 
 #fig.tight_layout()

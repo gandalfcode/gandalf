@@ -1,13 +1,12 @@
 #-------------------------------------------------------------
-# Boss-Bodenheimer test
-# Boss & Bodenheimer (1979) rotating core collapse test
+# Evrard collapse test
 #-------------------------------------------------------------
 
 
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = EVRARD-GRADH
+Simulation run id string                    : run_id = EVRARD-GRADHSPH
 Run SPH simulation                          : sim = gradhsph
 Select shocktube initial conditions         : ic = evrard
 Output file format                          : out_file_form = su
@@ -19,6 +18,8 @@ Radius of cloud                             : radius = 1.0
 Thermal energy factor                       : thermal_energy = 0.05
 rand_algorithm = xorshift
 randseed = 1
+com_frame = 1
+dust_forces = none
 
 
 #---------------------------
@@ -56,7 +57,7 @@ Switch-on self-gravity of gas               : self_gravity = 1
 #----------------------------------------
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
-h_fac = 1.0
+Smoothing length neighbour factor           : h_fac = 1.2
 
 
 #---------------------------------
@@ -64,7 +65,9 @@ h_fac = 1.0
 #---------------------------------
 Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
+Time-dependent viscosity                    : time_dependent_avisc = 0
 Artificial viscosity alpha value            : alpha_visc = 1.0
+Minimum alpha value                         : alpha_visc_min = 0.05
 Artificial viscosity beta value             : beta_visc = 2.0
 
 
@@ -92,9 +95,9 @@ Max. timestep level difference              : level_diff_max = 1
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = kdtree
-Tree re-build frequency                     : ntreebuildstep = 1
+Tree re-build frequency                     : ntreebuildstep = 4
 No. of particles in leaf cell               : Nleafmax = 6
-Tree opening angle (squared)                : thetamaxsqd = 0.15
+Tree opening angle (squared)                : thetamaxsqd = 0.2
 Multipole option                            : multipole = quadrupole
 
 

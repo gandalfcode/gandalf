@@ -762,8 +762,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
         Typemask hydromask ;
         for (k=0; k< Ntypes; ++k){
-          hydromask[k] = sph->types[activepart[j].ptype].hydromask[k] ;
-          //gravmask[k]  = sph->types[activepart[j].ptype].gravmask[k] ;
+          hydromask[k] = sph->types[activepart[j].ptype].hydromask[k];
+          gravmask[k]  = sph->types[activepart[j].ptype].gravmask[k];
         }
 
         Nhydroaux = 0;

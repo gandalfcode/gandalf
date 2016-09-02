@@ -12,16 +12,18 @@ import time
 rc('font', **{'family': 'normal', 'weight' : 'bold', 'size' : 11})
 rc('text', usetex=True)
 
+
 # Set all plot limits
 xmin   = 0.002
 xmax   = 0.39
 rhomin = 0.01
 rhomax = 5.4
-vmin  = 0.001
-vmax  = 2.2
+vmin   = 0.001
+vmax   = 2.2
 umin   = 0.02
 umax   = 2000.0
 stride = 8
+
 
 # Extract data from Grad-h SPH simulation
 loadsim('SEDOV2D-GRADHSPH')
@@ -52,6 +54,7 @@ v3   = get_data('vR2d', sim=3, snap=1)
 rhodata = get_analytical_data("R","rho",sim=0,snap=1)
 vxdata = get_analytical_data("R","vR2d",sim=0,snap=1)
 udata = get_analytical_data("R","u",sim=0,snap=1)
+
 
 # Create matplotlib figure object with shared x-axis
 fig, axarr = plt.subplots(2, 4, sharex='col', sharey='row', figsize=(12,5.5))
