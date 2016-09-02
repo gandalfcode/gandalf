@@ -380,9 +380,7 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
   using MfvCommon<ndim,kernelclass>::kern;
-  using Hydrodynamics<ndim>::create_sinks;
-  using Hydrodynamics<ndim>::hmin_sink;
-  
+
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
