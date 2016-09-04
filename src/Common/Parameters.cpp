@@ -263,7 +263,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["temp0"] = 1.0;
   floatparams["mu_bar"] = 1.0;
   floatparams["rho_bary"] = 1.0e-14;
-  floatparams["eta_eos"] = 1.4;
+  floatparams["eta_eos"] = 1.66666666666666;
   stringparams["radws_table"] = "eos.bell.cc.dat";
   floatparams["temp_ambient"] = 5.0;
 
@@ -443,6 +443,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["asound"] = 1.0;
   floatparams["zmax"] = 1.0;
   floatparams["thermal_energy"] = 1.0;
+  floatparams["mach"]=2.7;
 
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------

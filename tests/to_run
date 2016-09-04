@@ -1,0 +1,10 @@
+hydro_tests/adshock.dat
+hydro_tests/adsod.dat
+hydro_tests/khi.dat
+misc_tests/randomcube.dat
+grav_tests/freefall.dat
+gravhydro_tests/hybridplummer.dat
+dust_tests/dustybox.dat
+dust_tests/dustysedov.dat
+dust_tests/dustyshock.dat
+dust_tests/dustywave.dat

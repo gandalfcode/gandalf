@@ -1,0 +1,98 @@
+#--------------------------------------------------------------
+# Sedov Blast Wave test
+# Creates Sedov blast wave test
+#--------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = SEDOV2D-MFM-MOVING
+Select SPH simulation                       : sim = mfvmuscl
+Select shocktube initial conditions         : ic = sedov
+Dimensionality of cube                      : ndim = 2
+Pressure of fluid 1                         : press1 = 1.0
+Density of fluid 1                          : rhofluid1 = 1.0
+No. of x-particles in fluid 1               : Nlattice1[0] = 64
+No. of y-particles in fluid 1               : Nlattice1[1] = 64
+No. of y-particles in fluid 1               : Nlattice1[2] = 64
+Local arrangement of particles              : particle_distribution = hexagonal_lattice
+Smooth explosion                            : smooth_ic = 1
+Use dimensionless units                     : dimensionless = 1
+out_file_form = column
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = -0.5
+RHS position of boundary in x-dimension     : boxmax[0] = 0.5
+LHS position of boundary in y-dimension     : boxmin[1] = -0.433
+RHS position of boundary in y-dimension     : boxmax[1] = 0.433
+LHS position of boundary in z-dimension     : boxmin[2] = -0.4082
+RHS position of boundary in z-dimension     : boxmax[2] = 0.4082
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+LHS boundary type in z-dimension            : boundary_lhs[2] = periodic
+RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 0.06
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.06
+Screen output frequency (in no. of steps)   : noutputstep = 1
+Diagnostic step frequency                   : ndiagstep = 1
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+Smoothing length parameter                  : h_fac = 1.0
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Riemann solver                              : riemann_solver = exact
+Order of Riemann solver                     : riemann_order = 2
+Slope limiter                               : slope_limiter = gizmo
+Finite mass scheme?                         : zero_mass_flux = 1
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.15
+SPH acceleration condition multiplier       : accel_mult = 0.15
+SPH energy equation timestep multiplier     : energy_mult = 0.2
+No. of block timestep levels                : Nlevels = 5
+Maximum timestep level difference           : level_diff_max = 1
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 0
+SPH neighbour search algorithm              : neib_search = kdtree
+No. of particles per leaf cell              : Nleafmax = 6
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0

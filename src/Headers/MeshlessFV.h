@@ -151,7 +151,8 @@ public:
   // Functions needed to hide some implementation details
   //-----------------------------------------------------------------------------------------------
   MeshlessFVParticle<ndim>& GetMeshlessFVParticlePointer(const int i) {
-    return *((MeshlessFVParticle<ndim>*)((unsigned char*) hydrodata_unsafe + i*size_hydro_part));
+	  long int numBytes = (long int) i * (long int) size_hydro_part;
+    return *((MeshlessFVParticle<ndim>*)((unsigned char*) hydrodata_unsafe + numBytes));
   }
   MeshlessFVParticle<ndim>* GetMeshlessFVParticleArray() {return hydrodata;}
   virtual Particle<ndim>* GetParticleArray() {return hydrodata;};
@@ -379,6 +380,7 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
   using MfvCommon<ndim,kernelclass>::kern;
+
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
