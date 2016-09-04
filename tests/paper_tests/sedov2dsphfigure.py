@@ -94,4 +94,4 @@ axarr[1,2].plot(vxdata.x_data, vxdata.y_data, color="red")
 
 #fig.tight_layout()
 plt.show()
-fig.savefig('sedov2dsph.eps', dpi=50)
+fig.savefig('sedov2dsph.pdf', dpi=50)

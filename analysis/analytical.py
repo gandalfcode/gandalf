@@ -98,30 +98,31 @@ class gresho (AnalyticalSolution):
         self.ndim   = sim.ndims
         self.iMAX   = 1000
         self.gamma  = simfloatparams["gamma_eos"]
+        self.rho    = 1.0
 
     def compute(self, ix, iy):
         '''Computes the exact solution of the Gresho vortex problem.'''
         R = np.arange(0.0,self.radius,1.0/self.iMAX)
         press = self.rho*np.ones(self.iMAX)
-        vR = np.zeros(self.iMAX)
+        vphi = np.zeros(self.iMAX)
 
         i = 0
         while i < self.iMAX:
             if R[i] < 0.2:
-                vR[i] = 5.0*R[i]
+                vphi[i] = 5.0*R[i]
                 press[i] = 5.0 + 12.5*R[i]*R[i]
             elif R[i] < 0.4:
-                vR[i] = 2.0 - 5.0*R[i]
-                press[i] = 9.0 + 12.5*R[i]*R[i] - 20.0*R[i] + 4.0*log10(R[i]/0.2)
+                vphi[i] = 2.0 - 5.0*R[i]
+                press[i] = 9.0 + 12.5*R[i]*R[i] - 20.0*R[i] + 4.0*np.log10(R[i]/0.2)
             else:
-                vR[i] = 0.0
-                press[i] = 3.0 + 4.0*log10(2.0)
+                vphi[i] = 0.0
+                press[i] = 3.0 + 4.0*np.log10(2.0)
             i = i + 1
 
         if ix == "R" and iy == "press":
             return R,press
-        elif ix == "R" and iy == "vR":
-            return R,vR
+        elif ix == "R" and iy == "vphi":
+            return R,vphi
         else:
             raise KeyError("There were errors in the quantity you requested")
 
