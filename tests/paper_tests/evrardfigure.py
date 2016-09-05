@@ -35,33 +35,15 @@ stride = 8
 
 if richardSolution == True:
 
+    solution_file = 'evrard-solution-t0.8.dat'
+    # Read in the header:
+    with open(solution_file, 'r') as f:
+        header = f.readline()[1].split()
 
-    # Read in solution file (Non-pythonic way!!)
-    with open('snap_008', 'r') as f:
-        firstline = f.readline()
-        header = firstline.split()
-        Ntot = 1000
-        r = np.zeros(Ntot)
-        v = np.zeros(Ntot)
-        rho = np.zeros(Ntot)
-        u = np.zeros(Ntot)
-        press = np.zeros(Ntot)
-        entropy = np.zeros(Ntot)
-
-
-        read_data = f.readlines()
-        i = 0
-
-        for line in read_data:
-            data = line.split()
-            r[i]     = float(data[0])
-            rho[i]   = float(data[1])
-            u[i]     = float(data[2])
-            v[i]     = float(data[3])
-            press[i] = 0.66666666*u[i]*rho[i]
-            entropy[i] = press[i]/math.pow(rho[i], 1.666666);
-            #entropy[i] = 0.66666666*0.05*math.pow(2.0*pi*r[i], 0.6666666)
-            i += 1
+    # Get the rest of the data:
+    r, rho, u, v = np.genfromtxt(solution_file).T
+    press = (2/3.) * rho*u
+    entropy = press / rho**(5/3.)
 
 else:
 
@@ -110,7 +92,8 @@ rho0 = get_data('rho', sim=0, snap=snapno)
 v0   = get_data('vr', sim=0, snap=snapno)
 u0   = get_data('u', sim=0, snap=snapno)
 p0   = get_data('press', sim=0, snap=snapno)
-entropy0 = get_data('entropy', sim=0, snap=snapno)
+#entropy0 = get_data('entropy', sim=0, snap=snapno)
+entropy0 = p0 / rho0**(5/3.)
 
 loadsim('EVRARD-MFM-MOVING')
 x1   = get_data('r', sim=1, snap=snapno)
@@ -118,8 +101,8 @@ rho1 = get_data('rho', sim=1, snap=snapno)
 v1   = get_data('vr', sim=1, snap=snapno)
 u1   = get_data('u', sim=1, snap=snapno)
 p1   = get_data('press', sim=1, snap=snapno)
-entropy1 = get_data('entropy', sim=1, snap=snapno)
-
+#entropy1 = get_data('entropy', sim=1, snap=snapno)
+entropy1 = p1 / rho1**(5/3.)
 
 # Create matplotlib figure object with shared x-axis
 fig, axarr = plt.subplots(3, 2, sharex='col', sharey='row', figsize=(8,8))
