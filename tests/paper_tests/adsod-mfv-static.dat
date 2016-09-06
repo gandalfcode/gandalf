@@ -54,6 +54,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.4
 #----------------------------------------
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
+h_fac = 1.0
 
 
 #---------------------------------

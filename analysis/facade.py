@@ -986,6 +986,7 @@ def init():
     CreateUserQuantity('theta','arccos(z/r)', label='$\\theta$')
     CreateUserQuantity('vr','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy+cos(theta)*vz',scaling_factor='v',label='$v_r$')
     CreateUserQuantity('vR','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy',scaling_factor='v',label='$v_R$')
+    CreateUserQuantity('vR2d','cos(phi)*vx+sin(phi)*vy',scaling_factor='v',label='$v_R$')
     CreateUserQuantity('vphi','cos(phi)*vy-sin(phi)*vx',scaling_factor='v',label='$v_\\phi$')
     CreateUserQuantity('vtheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz',scaling_factor='v', label='$v_\\theta$')
     CreateUserQuantity('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az',scaling_factor='a',label='$a_r$')

@@ -8,7 +8,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = KHI-MFV-MOVING
+Simulation run id string                    : run_id = KHI-MFV-STATIC
 Select SPH simulation                       : sim = mfvmuscl
 Select Kelvin-Helmholtz initial conditions  : ic = khi
 Select 2D                                   : ndim = 2
@@ -20,10 +20,10 @@ Density of fluid 1                          : rhofluid1 = 1.0
 Density of fluid 2                          : rhofluid2 = 2.0
 Velocity perturbation amplitude             : amp = 0.1
 Velocity perturbation wavelength            : lambda = 0.5
-No. of x-particles in fluid 1               : Nlattice1[0] = 64
-No. of y-particles in fluid 1               : Nlattice1[1] = 32
-No. of x-particles in fluid 2               : Nlattice2[0] = 64
-No. of y-particles in fluid 2               : Nlattice2[1] = 32
+No. of x-particles in fluid 1               : Nlattice1[0] = 128
+No. of y-particles in fluid 1               : Nlattice1[1] = 64
+No. of x-particles in fluid 2               : Nlattice2[0] = 128
+No. of y-particles in fluid 2               : Nlattice2[1] = 64
 Dimensionless units                         : dimensionless = 1
 
 
@@ -64,6 +64,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 #----------------------------------------
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
+h_fac = 1.0
 
 
 #---------------------------------
@@ -74,16 +75,15 @@ Artificial viscosity alpha value            : alpha_visc = 0.1
 Artificial viscosity beta value             : beta_visc = 0.2
 Riemann solver                              : riemann_solver = exact
 Order of Riemann solver                     : riemann_order = 2
-Slope limiter                               : slope_limiter = springel2009
+Slope limiter                               : slope_limiter = gizmo
+static_particles = 1
 
 
 #-------------------------
 # Time integration options
 #-------------------------
-SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
-SPH Courant timestep condition multiplier   : courant_mult = 0.45
-SPH acceleration condition multiplier       : accel_mult = 0.45
+SPH Courant timestep condition multiplier   : courant_mult = 0.25
+SPH acceleration condition multiplier       : accel_mult = 0.25
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
 

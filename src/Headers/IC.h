@@ -97,6 +97,7 @@ public:
   void CheckInitialConditions(void);
   void ContactDiscontinuity(void);
   void EwaldDensity(void);
+  void GaussianRing(void);
   void GreshoVortex(void);
   void KHI(void);
   void NohProblem(void);
@@ -109,6 +110,7 @@ public:
   void SoundWave(void);
   void SpitzerExpansion(void);
   void TripleStar(void);
+  void BlobTest(void);
   void TurbulentCore(void);
   void UniformBox(void);
   void UniformSphere(void);

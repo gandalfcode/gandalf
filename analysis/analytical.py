@@ -85,6 +85,49 @@ class freefall (AnalyticalSolution):
 
 
 #------------------------------------------------------------------------------
+class gresho (AnalyticalSolution):
+    '''Analytical solution for the Gresho-Chan vortex problem test.'''
+
+    def __init__(self, sim, time):
+        AnalyticalSolution.__init__(self)
+        self.time = time
+
+        # Extract the parameters
+        simfloatparams = sim.simparams.floatparams
+        self.radius = simfloatparams["boxmax[0]"] - simfloatparams["boxmin[0]"]
+        self.ndim   = sim.ndims
+        self.iMAX   = 1000
+        self.gamma  = simfloatparams["gamma_eos"]
+        self.rho    = 1.0
+
+    def compute(self, ix, iy):
+        '''Computes the exact solution of the Gresho vortex problem.'''
+        R = np.arange(0.0,self.radius,1.0/self.iMAX)
+        press = self.rho*np.ones(self.iMAX)
+        vphi = np.zeros(self.iMAX)
+
+        i = 0
+        while i < self.iMAX:
+            if R[i] < 0.2:
+                vphi[i] = 5.0*R[i]
+                press[i] = 5.0 + 12.5*R[i]*R[i]
+            elif R[i] < 0.4:
+                vphi[i] = 2.0 - 5.0*R[i]
+                press[i] = 9.0 + 12.5*R[i]*R[i] - 20.0*R[i] + 4.0*np.log10(R[i]/0.2)
+            else:
+                vphi[i] = 0.0
+                press[i] = 3.0 + 4.0*np.log10(2.0)
+            i = i + 1
+
+        if ix == "R" and iy == "press":
+            return R,press
+        elif ix == "R" and iy == "vphi":
+            return R,vphi
+        else:
+            raise KeyError("There were errors in the quantity you requested")
+
+
+#------------------------------------------------------------------------------
 class noh (AnalyticalSolution):
     '''Analytical solution for the Noh problem test.'''
 
@@ -104,22 +147,21 @@ class noh (AnalyticalSolution):
     def compute(self, x, y):
         '''Computes the exact solution of the Noh problem for
         1, 2 and 3 dimensions'''
-        r = np.arange(0.0,self.radius,1.0/self.iMAX)
+        r = np.linspace(0.0,self.radius,self.iMAX)
         rho = self.rho*np.ones(self.iMAX)
         if self.time > 0:
             bound = 0.3333333333333*self.time
-            i = 0
-            while i < self.iMAX:
-                if self.ndim == 1:
-                    if r[i] < bound: rho[i] = 4.0*self.rho
-                    else: rho[i] = self.rho
-                elif self.ndim == 2:
-                    if r[i] < bound: rho[i] = 16.0*self.rho
-                    else: rho[i] = self.rho*(1.0 + self.time/r[i])
-                elif self.ndim == 3:
-                    if r[i] < bound: rho[i] = 64.0*self.rho
-                    else: rho[i] = self.rho*pow(1.0 + self.time/r[i],2.0)
-                i = i + 1
+            inside = r<bound
+            outside = r>bound
+            if self.ndim ==1:
+                rho[inside]=4.0*self.rho
+                rho[outside]=self.rho
+            elif self.ndim ==2:
+                rho[inside]=16.0*self.rho
+                rho[outside]=self.rho*(1.0 + self.time/r[outside])
+            elif self.ndim ==3:
+                rho[inside]=64.0*self.rho
+                rho[outside]=self.rho*(1.0 + self.time/r[outside])**2.0
         return r,rho
 
 
@@ -165,7 +207,7 @@ class shocktube (AnalyticalSolution):
         ydata = shocktube.ComputeShocktubeSolution(y, self.iMAX)
 
         return xdata, ydata
-        
+
 
 
 #------------------------------------------------------------------------------
@@ -196,10 +238,7 @@ class soundwave (AnalyticalSolution):
         self.omega = 2.0*np.pi*self.csound/self.wlambda
         self.time = time
         self.iMAX = 1000
-        if sim.simparams.stringparams["gas_eos"] == "isothermal":
-            self.gamma = 1.0 + 1e-5
-        else:
-            self.gamma = simfloatparams["gamma_eos"]
+
 
     def compute(self, ix, iy):
         x = np.arange(self.xL,self.xR,1.0/self.iMAX)
@@ -215,16 +254,17 @@ class soundwave (AnalyticalSolution):
         else:
             raise KeyError("There were errors in the quantity you requested")
 
+
 #-------------------------------------------------------------------------------
 class SedovSolution(object):
     """Class for simple approximations to the Sedov (1959) solution
-    for point explosion. 
-    
+    for point explosion.
+
     Solutions are taken from Book (1991), who present solutions by KorobeYnikov
     et al. (1961)
 
     args:
-        E : float 
+        E : float
             explosion energy
         rho : float
               density of the medium (initially constant everywhere)
@@ -233,18 +273,18 @@ class SedovSolution(object):
         nu : int, default=3
                number of dimensions which the explosion occurs in
         w : float, default=0
-               power in the density law, rho=rho0 r^-w       
+               power in the density law, rho=rho0 r^-w
     """
     def __init__(self, E, rho, gamma=1.4, nu=3,w=0., tiny=1e-50):
         self._tiny = tiny
-        self._E = E 
-        self._gamma = gamma 
-        
+        self._E = E
+        self._gamma = gamma
+
         self._rho0 = rho
         self._rho1 = ((gamma + 1.)/(gamma - 1.))*rho
 
-        self._nDim = nu 
-        self._w = w 
+        self._nDim = nu
+        self._w = w
 
         # Constants for the parametic equations:
         w1 = (3*nu - 2 + gamma*(2-nu))/(gamma + 1.)
@@ -262,7 +302,7 @@ class SedovSolution(object):
         b8 = nu*b6
 
         # C0 is surface area function in ndim. Use approx:
-        if any(nu == np.array([1,2,3])): 
+        if any(nu == np.array([1,2,3])):
             C0 = 2*(nu-1)*np.pi + (nu-2)*(nu-3)
         else: # General form requires Gamma function
             from scipy.special import gamma as GammaF
@@ -285,7 +325,7 @@ class SedovSolution(object):
             Fmin = C2
         else:
             Fmin = C6
-        
+
         F = np.logspace(np.log10(Fmin),0,1e5)
 
         # Sort the etas for our interpolation function
@@ -307,16 +347,16 @@ class SedovSolution(object):
             eta = np.concatenate([np.array(e01),eta])
             d   = np.concatenate([np.array(d01),  d])
             p   = np.concatenate([np.array(p01),  p])
-            v   = np.concatenate([np.array(v01),  v])      
+            v   = np.concatenate([np.array(v01),  v])
 
         # Set up our interpolation functions
         self._d = interp1d(eta,d,bounds_error=False, fill_value=1./self._rho1)
         self._p = interp1d(eta,p,bounds_error=False, fill_value=0.)
         self._v = interp1d(eta,v,bounds_error=False, fill_value=0.)
-        
+
         # Finally Calculate the normalization of R_s:
         I = eta**(nu-1)*(d*v**2 + p)
-        
+
         I    = 0.5*(I[1: ]  +   I[:-1])
         deta =     (eta[1:] - eta[:-1])
 
@@ -367,7 +407,7 @@ class SedovSolution(object):
     def Entropy(self,r,t):
         """Entropy at radius, r, and time, t."""
         return self.P(r,t)/self.rho(r,t)**self.gamma
-    
+
     # Other properties
     @property
     def E(self):
@@ -383,8 +423,8 @@ class SedovSolution(object):
     def rho0(self):
         """Background density"""
         return self._rho0
-        
-        
+
+
 
 class sedov (AnalyticalSolution):
     '''Analytical solution for the sedov blast wave problem'''
@@ -404,10 +444,10 @@ class sedov (AnalyticalSolution):
         # Save domain
         Rmax = 0;
         for i in range(ndim):
-            Rmax += (0.5*(fparams['boxmax['+str(i)+']'] - 
+            Rmax += (0.5*(fparams['boxmax['+str(i)+']'] -
                           fparams['boxmin['+str(i)+']']))**2
         Rmax = Rmax**0.5
-        
+
         self._r = np.linspace(0, Rmax, 1001)[1:]
         self._t = time
 
@@ -416,7 +456,9 @@ class sedov (AnalyticalSolution):
 
     def _get_data(self, x):
         if x == 'R':
-            return self._r 
+            return self._r
+        elif x == 'vR2d':
+            return self._sol.v(self._r, self._t)
         elif x == 'vr':
             return self._sol.v(self._r, self._t)
         elif x == 'rho':

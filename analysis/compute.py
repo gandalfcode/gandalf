@@ -49,18 +49,18 @@ return a scalar quantity only for the given particle.
 
 #------------------------------------------------------------------------------
 def time_derivative(snap, quantity, type="default", unit="default", id=None):
-    '''Return for a given snapshot, the time derivative of a given quantity 
+    '''Return for a given snapshot, the time derivative of a given quantity
     of a given type. If possible, use central difference. Otherwise, use
-    forward/backward difference. If id is not specified, return an array with 
-    the quantity for each particle. Otherwise, return a scalar quantity only 
+    forward/backward difference. If id is not specified, return an array with
+    the quantity for each particle. Otherwise, return a scalar quantity only
     for the given particle.
     '''
     from data_fetcher import get_time_snapshot
-    
+
     if unit != "default":
         raise NotImplementedError("""time_derivative implemented only with default units
         at the moment!""")
-    
+
     # Find previous and next snapshots.  If first or last snapshot, then
     # return the current snapshot to compute a value
     try:
@@ -99,20 +99,20 @@ def COM(snap, quantity='x', type="default", unit="default"):
     ''' Computes the centre-of-mass value of a given vector component'''
     xunitinfo, x, xscaling_factor, xlabel = UserQuantity(quantity).fetch(type, snap, unit)
     m = UserQuantity('m').fetch(type, snap)[1]
-    
+
     com = (x*m).sum()/m.sum()
-    
+
     return xunitinfo, com, xscaling_factor, xlabel+'_COM'
 
 
 #------------------------------------------------------------------------------
-def L1errornorm(ic, x=None, y=None, xmin=None, xmax=None, 
+def L1errornorm(ic, x=None, y=None, xmin=None, xmax=None, normalise=None,
                 sim="current", snap="current"):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
-    
+
     # Get the simulation number from the buffer
     simno = get_sim_no(snap)
-    
+
     # Instantiate and setup the command object to retrieve analytical solution
     command1 = Commands.AnalyticalPlotCommand(x, y, ic, snap, simno)
     adata = command1.prepareData(Singletons.globallimits)
@@ -130,7 +130,12 @@ def L1errornorm(ic, x=None, y=None, xmin=None, xmax=None,
                                     pdata.x_data < adata.x_data.max() )
         pdata.x_data = pdata.x_data[pindex]
         pdata.y_data = pdata.y_data[pindex]
-   
+
+    # Normalise quantity to given average value (if one is given)
+    if normalise != None:
+        av = sum(pdata.y_data)/pdata.y_data.size
+        pdata.y_data = pdata.y_data/av/normalise
+
     # Prepare interpolation function from analytical data
     #f = interpolate.interp1d(adata.x_data[::-1], adata.y_data[::-1], kind = 'linear', axis=0, bounds_error = False)
     f = interpolate.interp1d(adata.x_data[::], adata.y_data[::], kind = 'linear', axis=0, bounds_error = False)
@@ -155,4 +160,3 @@ def lagrangian_radii(snap, mfrac=0.5, type="default", unit="default"):
     index = np.searchsorted(mcumulative,mlag)
     lag_radius = 0.5*(r[porder[index-1]] + r[porder[index]])
     return runitinfo, lag_radius, rscaling_factor, 'lag_radius_' + str(mfrac)
-

@@ -104,6 +104,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "blastwave") {
     icGenerator.BlastWave();
   }
+  else if (ic == "blob") {
+    icGenerator.BlobTest();
+  }
   else if (ic == "bondi") {
     icGenerator.BondiAccretion();
   }
@@ -116,6 +119,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
            ic == "ewaldslab" ||  ic == "ewaldcylinder") {
     icGenerator.EwaldDensity();
+  }
+  else if (ic == "gaussianring") {
+	  icGenerator.GaussianRing();
   }
   else if (ic == "gresho") {
     icGenerator.GreshoVortex();
