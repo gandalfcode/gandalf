@@ -173,8 +173,8 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   for (int k=0; k<ndim; k++) part.v0[k] = v[k];
   for (int k=0; k<ndim; k++) part.a0[k] = (FLOAT) 0.0;
 
-  cout << "CREATING NEW PARTICLE : " << inew << "   " << Nhydro << "   m : " << m << "   v : "
-       << part.r[0] << "   " << part.r[1] << endl;
+  //cout << "CREATING NEW PARTICLE : " << inew << "   " << Nhydro << "   m : " << m << "   v : "
+  //     << part.r[0] << "   " << part.r[1] << endl;
 
   return part;
 }
