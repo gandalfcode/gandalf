@@ -855,15 +855,16 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 
 
-  /* Check that we have sensible smoothing lengths */
+  // Check that we have sensible smoothing lengths
   if (periodicBoundaries) {
     double hmax = sphneib->GetMaximumSmoothingLength() ;
     hmax *= sph->kernp->kernrange ;
-    for (i=0; i < ndim; i++)
-      if (simbox.half[i] < 2*hmax){
-        string message = "Error: Smoothing length too large, self-interaction will occur" ;
-    	ExceptionHandler::getIstance().raise(message);
+    for (int k=0; k<ndim; k++) {
+      if (simbox.half[k] < 2*hmax) {
+        string message = "Error: Smoothing length too large, self-interaction will occur";
+        ExceptionHandler::getIstance().raise(message);
       }
+    }
   }
 
   // Iterate for P(EC)^n schemes for N-body particles
@@ -1144,8 +1145,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max  = Nlevels - 1;
     level_step = level_max + integration_step - 1;
     dt_max     = timestep*powf(2.0, level_max);
-
-    cout << "LEVEL_MAX : " << level_max << "   " << dt_max << "   " << dt_min_hydro << endl;
 
     // Calculate the maximum level occupied by all SPH particles
     level_max_sph   = min(ComputeTimestepLevel(dt_min_hydro, dt_max), level_max);

@@ -1538,7 +1538,7 @@ void Ic<ndim>::BlobTest(void)
   }
   vector<FLOAT> r_background(ndim*Nbox);
   if (particle_dist == "random") {
-    AddRandomBox(Nbox, simbox, &r_background[0]);
+    AddRandomBox(Nbox, simbox, &r_background[0], sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
     AddCubicLattice(Nbox, Nlattice, simbox, true, &r_background[0]);
@@ -1574,10 +1574,10 @@ void Ic<ndim>::BlobTest(void)
   vector<FLOAT> r(ndim*Nsphere);
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Nsphere, rcentre, radius, &r[0]);
+    AddRandomSphere(Nsphere, rcentre, radius, &r[0], sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Nsphere, rcentre, radius, particle_dist, &r[0]);
+    Nsphere = AddLatticeSphere(Nsphere, rcentre, radius, particle_dist, &r[0], sim->randnumb);
 //    if (Nsphere != Npart) cout << "Warning! Unable to converge to required "
 //                               << "no. of ptcls due to lattice symmetry" << endl;
   }
