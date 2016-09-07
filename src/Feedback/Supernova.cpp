@@ -109,7 +109,6 @@ void Supernova<ndim>::SupernovaInjection
   pos = new FLOAT[ndim*Ninject];
   Ic<ndim>::AddRandomSphere(Ninject, SNpos, Rinj, pos, randnumb);
   //Ninject = Ic<ndim>::AddLatticeSphere(Ninject, SNpos, Rinj, "hexagonal_lattice", pos, randnumb);
-  //FLOAT mnew = Minj/(FLOAT) Ninject;
 
   // Do a neighbour search to find existing particles inside sphere.  If memory is not large
   // enough, then increase the size.
@@ -135,7 +134,9 @@ void Supernova<ndim>::SupernovaInjection
   cout << "etot : " << (1.0/(1.0 + 1.0/R_therm_kin))*Einj
        << "    etherm_mag : " << etherm_mag << "     uinj : " << uinj << endl;
 
+
   // Loop over existing particles and accelerate them
+  //-----------------------------------------------------------------------------------------------
   for (j=0; j<Nneib; j++) {
     i = neiblist[j];
 
@@ -151,11 +152,12 @@ void Supernova<ndim>::SupernovaInjection
       part.v[k] = (part.r[k] - SNpos[k])/drmag * vrad_mag;
 
       // reset acceleration to 0??
-      part.a[k]=(FLOAT) 0.0;
+      part.a[k] = (FLOAT) 0.0;
     }
   }
 
   // Loop over all new particles, create them one by one and initialize
+  //-----------------------------------------------------------------------------------------------
   for (j=0; j<Ninject; j++){
 
     for (k=0; k<ndim; k++) rpart[k] = pos[ndim*j+k];

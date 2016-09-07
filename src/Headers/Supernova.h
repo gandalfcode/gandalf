@@ -30,6 +30,7 @@
 #include <string>
 #include "Precision.h"
 #include "Constants.h"
+#include "DomainBox.h"
 #include "Hydrodynamics.h"
 #include "NeighbourSearch.h"
 #include "Particle.h"
@@ -123,6 +124,34 @@ public:
 
   SedovTestDriver(Parameters *params, SimUnits &units);
   ~SedovTestDriver();
+
+  virtual void Update(const int, const int, const int, const FLOAT,
+                      Hydrodynamics<ndim> *, NeighbourSearch<ndim> *, RandomNumber *);
+
+};
+
+
+
+//=================================================================================================
+//  Class RandomSedovTestDriver
+/// \brief   Random supernova driver to test multiple explosion with block timesteps.
+/// \details Random supernova driver to test multiple explosion with block timesteps.
+/// \author  D. A. Hubber
+/// \date    06/09/2016
+//=================================================================================================
+template <int ndim>
+class RandomSedovTestDriver : public SupernovaDriver<ndim>
+{
+public:
+  using SupernovaDriver<ndim>::Nsupernova;
+
+  FLOAT tnext;                                   ///< Time for next supernova explosion
+  FLOAT tsupernova;                              ///< Average time inbetween supernovae
+  Supernova<ndim> supernova;                     ///< Instance of supernova class
+  DomainBox<ndim> *simbox;                       ///< Pointer to simulation domain box
+
+  RandomSedovTestDriver(Parameters *params, SimUnits &units, DomainBox<ndim> &);
+  ~RandomSedovTestDriver();
 
   virtual void Update(const int, const int, const int, const FLOAT,
                       Hydrodynamics<ndim> *, NeighbourSearch<ndim> *, RandomNumber *);
