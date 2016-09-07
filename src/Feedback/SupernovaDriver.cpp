@@ -76,8 +76,7 @@ void SedovTestDriver<ndim>::Update
   // Create supernova at requested time (and ensure that only one is made)
   //-----------------------------------------------------------------------------------------------
   if (Nsupernova == 0 && t >= tsupernova) {
-
-    cout << "ADDING SUPERNOVA!!" << endl;
+    //cout << "ADDING SUPERNOVA!!" << endl;
 
     FLOAT SNpos[ndim];
     FLOAT Einj        = (FLOAT) 0.01;
@@ -96,6 +95,73 @@ void SedovTestDriver<ndim>::Update
 }
 
 
+
+
+//=================================================================================================
+//  RandomSedovTestDriver::SedovTestDriver
+/// ...
+//=================================================================================================
+template <int ndim>
+RandomSedovTestDriver<ndim>::RandomSedovTestDriver
+ (Parameters *params, SimUnits &units, DomainBox<ndim> &_simbox) : SupernovaDriver<ndim>()
+{
+  // Local references to parameter variables for brevity
+  map<string, int> &intparams = params->intparams;
+  map<string, double> &floatparams = params->floatparams;
+  map<string, string> &stringparams = params->stringparams;
+
+  tsupernova = 0.5;
+  tnext = 0.5*tsupernova;
+  simbox = &(_simbox);
+}
+
+
+
+//=================================================================================================
+//  SedovTestDriver::Update
+/// ...
+//=================================================================================================
+template <int ndim>
+void RandomSedovTestDriver<ndim>::Update
+ (const int n,                               ///< Current integer time
+  const int level_step,                      ///< ..
+  const int level_max,                       ///< Max. block timestep level
+  const FLOAT t,                             ///< Physical simulation time
+  Hydrodynamics<ndim> *hydro,                ///< Pointer to hydrodynamics object
+  NeighbourSearch<ndim> *neibsearch,         ///< Pointer to neighbour search object
+  RandomNumber *randnumb)                    ///< Pointer to random number generator
+{
+
+  // Use random number generator to decide if new supernova should be created or not
+  //-----------------------------------------------------------------------------------------------
+  if (t >= tnext) {
+
+    FLOAT SNpos[ndim];
+    FLOAT Einj        = (FLOAT) 0.01;
+    FLOAT R_therm_kin = (FLOAT) 100000.0;
+    FLOAT Minj        = (FLOAT) 0.005;
+    FLOAT Rinj        = hydro->GetParticlePointer(0).h; //(FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) SNpos[k] = simbox->boxmin[k] + randnumb->floatrand()*simbox->boxsize[k];
+
+    supernova.SupernovaInjection(n, level_step, level_max, Nsupernova, t, SNpos, Einj,
+                                 R_therm_kin, Minj, Rinj, hydro, neibsearch, randnumb);
+    Nsupernova++;
+    cout << "ADDING SUPERNOVA!   Nsupernova : " << Nsupernova << endl;
+
+    tnext = ((FLOAT) Nsupernova + 0.5)*tsupernova;
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
 template class SedovTestDriver<1>;
+template class RandomSedovTestDriver<1>;
+
 template class SedovTestDriver<2>;
+template class RandomSedovTestDriver<2>;
+
 template class SedovTestDriver<3>;
+template class RandomSedovTestDriver<3>;

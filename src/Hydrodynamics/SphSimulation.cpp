@@ -238,6 +238,9 @@ void SphSimulation<ndim>::ProcessParameters(void)
   else if (stringparams["supernova_feedback"] == "single") {
     snDriver = new SedovTestDriver<ndim>(simparams, simunits);
   }
+  else if (stringparams["supernova_feedback"] == "random") {
+    snDriver = new RandomSedovTestDriver<ndim>(simparams, simunits, simbox);
+  }
   else {
     string message = "Unrecognised parameter : external_potential = "
       + simparams->stringparams["supernova_feedback"];
