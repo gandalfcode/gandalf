@@ -103,15 +103,10 @@ DOUBLE SphIntegration<ndim>::Timestep
     timestep = courant_mult*part.h/(part.h*fabs(part.div_v) + small_number_dp);
   }
 
-  //cout << part.iorig << " " << part.ptype << ", "
-  //		  << part.h << " " <<part.h_dust << " " << part.sound << " " << part.div_v << endl ;
 
-  //cout << timestep << " " ;
   // Acceleration condition
   amag = sqrt(DotProduct(part.a, part.a, ndim));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
-
-  //cout << timestep << " " ;
 
 
   // Explicit energy integration timestep condition
@@ -120,8 +115,6 @@ DOUBLE SphIntegration<ndim>::Timestep
         timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
   }
 
-  //cout << timestep << endl;
-  //cout << "\t" << amag << endl ;
 
   // If stars are included, calculate the timestep due to the jerk
   //adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
@@ -132,7 +125,7 @@ DOUBLE SphIntegration<ndim>::Timestep
          << part.sound << "    " << part.h*fabs(part.div_v) << endl;
     cout << "tcourant : " << courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp)
          << "    taccel : " << accel_mult*sqrt(part.h/(amag + small_number_dp))
-         << "    tenergy : " << part.u << endl;
+         << "    tenergy : " << energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)) << endl;
     ExceptionHandler::getIstance().raise("Error : Hydro timestep too large");
   }
 
