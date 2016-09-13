@@ -41,26 +41,31 @@ template<int ndim> class SM2012CommunicationHandler;
 enum flags {
 	none = 0,
 	dead = 1 << 0,
+	active = 1 << 1,  // Not used
+	potmin = 1 << 2,  // Not used
 
-	x_periodic_lhs = 1 << 1,
-	y_periodic_lhs = 1 << 2,
-	z_periodic_lhs = 1 << 3,
+	update_density = 1 << 3, // For meshless
 
-	x_periodic_rhs = 1 << 4,
-	y_periodic_rhs = 1 << 5,
-	z_periodic_rhs = 1 << 6,
+
+	x_periodic_lhs = 1 << 7,
+	y_periodic_lhs = 1 << 8,
+	z_periodic_lhs = 1 << 9,
+
+	x_periodic_rhs = 1 << 10,
+	y_periodic_rhs = 1 << 11,
+	z_periodic_rhs = 1 << 12,
 
 	x_periodic = x_periodic_lhs | x_periodic_rhs,
 	y_periodic = y_periodic_lhs | y_periodic_rhs,
 	z_periodic = z_periodic_lhs | z_periodic_rhs,
 
-	x_mirror_lhs = 1 << 7,
-	y_mirror_lhs = 1 << 8,
-	z_mirror_lhs = 1 << 9,
+	x_mirror_lhs = 1 << 13,
+	y_mirror_lhs = 1 << 14,
+	z_mirror_lhs = 1 << 15,
 
-	x_mirror_rhs = 1 << 10,
-	y_mirror_rhs = 1 << 11,
-	z_mirror_rhs = 1 << 12,
+	x_mirror_rhs = 1 << 16,
+	y_mirror_rhs = 1 << 17,
+	z_mirror_rhs = 1 << 18,
 
 	x_mirror = x_mirror_lhs | x_mirror_rhs,
 	y_mirror = y_mirror_lhs | y_mirror_rhs,
@@ -101,6 +106,11 @@ public:
   }
   void reset() {
 	_flag = none ;
+  }
+
+
+  bool check_flag(unsigned int flag) const {
+    return (_flag & flag) ;
   }
 
   bool is_dead() const {

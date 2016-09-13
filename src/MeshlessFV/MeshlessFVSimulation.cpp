@@ -475,7 +475,10 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
                           mfv->Nhydromax, timestep, partdata, mfv);
 
   // Zero accelerations
-  for (i=0; i<mfv->Nhydro; i++) partdata[i].active = true;
+  for (i=0; i<mfv->Nhydro; i++) {
+    partdata[i].active = true;
+    partdata[i].flags.set_flag(update_density) ;
+  }
 
   // Update neighbour tree
   rebuild_tree = true;

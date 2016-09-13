@@ -191,6 +191,19 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
       celldone = 1;
       hmax = cell.hmax;
 
+      // Find list of active particles in current cell
+      Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
+      // Skip particles that have an up-to-date density estimate
+      for (j=0; j< Nactive; j++) {
+        if (mfvdata[activelist[j]].flags.check_flag(update_density)) {
+          activepart[j] = mfvdata[activelist[j]] ;
+        } else {
+          activelist[j] = activelist[--Nactive] ;
+          j-- ;
+        }
+      }
+
+      if (Nactive == 0) continue ;
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
@@ -199,9 +212,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
         hmax = (FLOAT) 1.05*hmax;
         celldone = 1;
 
-        // Find list of active particles in current cell
-        Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
-        for (j=0; j<Nactive; j++) activepart[j] = mfvdata[activelist[j]];
 
         // Compute neighbour list for cell from particles on all trees
         Nneib = 0;
@@ -302,8 +312,12 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
       } while (celldone == 0);
       //-------------------------------------------------------------------------------------------
 
-      // Once cell is finished, copy all active particles back to main memory
-      for (j=0; j<Nactive; j++) mfvdata[activelist[j]] = activepart[j];
+      // Once cell is finished, copy all active particles back to main memory and record that we
+      // have done a density update
+      for (j=0; j<Nactive; j++) {
+        activepart[j].flags.unset_flag(update_density) ;
+        mfvdata[activelist[j]] = activepart[j];
+      }
 
 
     }
