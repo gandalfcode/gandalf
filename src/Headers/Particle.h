@@ -41,8 +41,8 @@ template<int ndim> class SM2012CommunicationHandler;
 enum flags {
 	none = 0,
 	dead = 1 << 0,
-	active = 1 << 1,  // Not used
-	potmin = 1 << 2,  // Not used
+	active = 1 << 1,
+	potmin = 1 << 2,
 
 	update_density = 1 << 3, // For meshless
 
@@ -225,8 +225,6 @@ private:
 template <int ndim>
 struct Particle
 {
-  bool active;                      ///< Flag if active (i.e. recompute step)
-  bool potmin;                      ///< Is particle at a potential minima?
   int iorig;                        ///< Original particle i.d.
   type_flag flags;                  ///< SPH particle flags (eg boundary/dead)
   int ptype;                        ///< SPH particle type (gas/cdm/dust)
@@ -269,8 +267,6 @@ struct Particle
                                     ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
   Particle() {
-    active = false;
-    potmin = false;
     iorig = -1;
     flags = none;
     ptype = gas_type;

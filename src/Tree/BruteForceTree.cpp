@@ -317,7 +317,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   while (i != -1) {
 	if (!partdata[i].flags.is_dead()) {
 	  cell.N++;
-	  if (partdata[i].active) cell.Nactive++;
+	  if (partdata[i].flags.check_flag(active)) cell.Nactive++;
 	  cell.hmax = max(cell.hmax,partdata[i].h);
 	  if (gravmask[partdata[i].ptype]) {
 		cell.m += partdata[i].m;
@@ -414,7 +414,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
   // Else walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
-    if (i < Ntot && partdata[i].active && !partdata[i].flags.is_dead()) celldata[0].Nactive++;
+    if (i < Ntot && partdata[i].flags.check_flag(active) && !partdata[i].flags.is_dead())
+      celldata[0].Nactive++;
     if (i == ilast) break;
     i = inext[i];
   };

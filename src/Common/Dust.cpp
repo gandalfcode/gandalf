@@ -204,7 +204,7 @@ public:
 	ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
 
 	for (int i(0); i < Ntot; ++i){
-	  if (sphdata[i].active && _types[sphdata[i].ptype].drag_forces){
+	  if (sphdata[i].flags.check_flag(active) && _types[sphdata[i].ptype].drag_forces){
 		for (int k=0; k < ndim; k++)
 		  sphdata[i].a_dust[k] = 0 ;
 	  }
@@ -213,7 +213,7 @@ public:
 	FindNeibAndDoForces(NPart, Ntot, sphdata, _types, _Forces) ;
 
 	for (int i(0); i < Ntot; ++i){
-	  if (sphdata[i].active && _types[sphdata[i].ptype].drag_forces){
+	  if (sphdata[i].flags.check_flag(active) && _types[sphdata[i].ptype].drag_forces){
 	    for (int k=0; k < ndim; k++)
 		  sphdata[i].a[k] += sphdata[i].a_dust[k] ;
 		}
@@ -257,7 +257,7 @@ public:
 		FindNeibAndDoInterp(NPart, Ntot, sphdata, mask, _interp) ;
 
 		for (int i(0); i < Ntot; ++i)
-			if (sphdata[i].active && sphdata[i].ptype == dust_type){
+			if (sphdata[i].flags.check_flag(active) && sphdata[i].ptype == dust_type){
 			    for (int k(0); k < ndim; ++k)
 			        sphdata[i].a[k] += sphdata[i].a_dust[k] ;
 			}

@@ -794,8 +794,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       for (int jj=0; jj<Nneib; jj++) {
         i = neibpart[jj].iorig;
         if (!neibpart[jj].flags.is_mirror()) {
-	  if (neibpart[jj].active)
-	    for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
+	        if (neibpart[jj].flags.check_flag(active))
+	          for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
           for (k=0; k<ndim+2; k++) dQBuffer[i][k] += neibpart[jj].dQ[k];
           for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
         }
@@ -818,7 +818,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-	    if (mfvdata[i].active)
+	    if (mfvdata[i].flags.check_flag(active))
 	      for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];

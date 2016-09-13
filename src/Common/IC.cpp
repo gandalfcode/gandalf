@@ -494,7 +494,7 @@ void Ic<ndim>::ShockTube(void)
       hydro->Nghost = 0;
       hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
       hydro->Ntot = hydro->Nhydro;
-      for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
+      for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
       //hydro->InitialSmoothingLengthGuess();
       sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
@@ -861,7 +861,7 @@ void Ic<ndim>::ContactDiscontinuity(void)
   hydro->Nghost = 0;
   hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
   hydro->Ntot = hydro->Nhydro;
-  for (int i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
+  for (int i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
   sim->initial_h_provided = true;
   /*sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
@@ -1096,7 +1096,7 @@ void Ic<ndim>::KHI(void)
     hydro->Nghost = 0;
     hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
     hydro->Ntot = hydro->Nhydro;
-    for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
+    for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
     sim->initial_h_provided = true;
 
@@ -1327,7 +1327,7 @@ void Ic<ndim>::RTI(void)
     hydro->Nghost = 0;
     hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
     hydro->Ntot = hydro->Nhydro;
-    for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
+    for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
     sim->initial_h_provided = true;
 
@@ -2488,7 +2488,7 @@ void Ic<ndim>::BlastWave(void)
   hydro->Nghost = 0;
   hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
   hydro->Ntot = hydro->Nhydro;
-  for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
+  for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
   // Search ghost particles
   //sim->sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
@@ -2617,7 +2617,7 @@ void Ic<ndim>::SedovBlastWave(void)
   hydro->Nghost = 0;
   hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
   hydro->Ntot = hydro->Nhydro;
-  for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
+  for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
   // Search ghost particles
   //sim->sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);

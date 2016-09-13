@@ -121,11 +121,11 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
     if (gas_eos == energy_eqn) part.u = part.u0 + part.dudt*dt;
 
     // Set particle as active at end of step
-    if (dn == nstep/2) part.active = true;
-    else part.active = false;
+    if (dn == nstep/2) part.flags.set_flag(active);
+    else part.flags.unset_flag(active);
 
     // Flag all dead particles as inactive here
-    if (part.flags.is_dead()) part.active = false;
+    if (part.flags.is_dead()) part.flags.unset_flag(active);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
       part.nlast = n;
       part.tlast = t;
-      part.active = false;
+      part.flags.unset_flag(active);
       if (gas_eos == energy_eqn) {
         part.u0 = part.u;
       }
@@ -233,7 +233,7 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
       if ((2*dn)%nnewstep == 0) {
         if (dn > 0) part.nstep = dn;
         part.level = level_new;
-        part.active = true;
+        part.flags.set_flag(active);
         activecount++;
       }
     }

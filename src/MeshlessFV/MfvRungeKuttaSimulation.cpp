@@ -416,7 +416,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    part.active = true;
+    part.flags.set_flag(active);
   }
   mfv->CopyDataToGhosts(simbox, partdata);
 

@@ -412,7 +412,7 @@ void MeshlessFV<ndim>::EndTimestep
       // Update all values to the beginning of the next step
       part.nlast  = n;
       part.tlast  = t;
-      part.active = true;
+      part.flags.set_flag(active);
       for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
@@ -422,7 +422,7 @@ void MeshlessFV<ndim>::EndTimestep
     }
     //---------------------------------------------------------------------------------------------
     else {
-      part.active = false;
+      part.flags.unset_flag(active);
     }
     //---------------------------------------------------------------------------------------------
 
