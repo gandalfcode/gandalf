@@ -328,7 +328,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   sph->Nghost = 0;
   sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
   sph->Ntot = sph->Nhydro;
-  for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
+  for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).flags.set_flag(active);
 
   // Set initial artificial viscosity alpha values
   if (simparams->stringparams["time_dependent_avisc"] == "none") {
@@ -384,7 +384,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
   // Zero accelerations
-  for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
+  for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).flags.set_flag(active);
 
   // Update neighbour tree
   rebuild_tree = true;
@@ -465,7 +465,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<sph->Ntot; i++) {
     SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     part.tlast     = t;
-    part.active    = false;
+    part.flags.unset_flag(active);
     part.level     = 0;
     part.levelneib = 0;
     part.nstep     = 0;
@@ -478,7 +478,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
   }
-  for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
+  for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).flags.set_flag(active);
 
   // Copy all other data from real SPH particles to ghosts
   LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
@@ -569,7 +569,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
-      part.active = false;
+      part.flags.unset_flag(active);
     }
 
   LocalGhosts->CopyHydroDataToGhosts(simbox,sph);
@@ -717,7 +717,7 @@ void SphSimulation<ndim>::MainLoop(void)
       // Zero accelerations (here for now)
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.active) {
+        if (part.flags.check_flag(active)) {
           part.levelneib = 0;
           part.dalphadt  = (FLOAT) 0.0;
           part.div_v     = (FLOAT) 0.0;
@@ -775,7 +775,7 @@ void SphSimulation<ndim>::MainLoop(void)
       // Add external potential for all active SPH particles
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.active) {
+        if (part.flags.check_flag(active)) {
           sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
         }
       }
@@ -783,7 +783,7 @@ void SphSimulation<ndim>::MainLoop(void)
       // Checking if acceleration or other values are invalid
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.active) {
+        if (part.flags.check_flag(active)) {
           for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
           for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
           for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
@@ -809,7 +809,7 @@ void SphSimulation<ndim>::MainLoop(void)
     // Zero all active flags once accelerations have been computed
     for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      part.active = false;
+      part.flags.unset_flag(active);
     }
 
     // Check if all neighbouring timesteps are acceptable.  If not, then set any
@@ -1496,7 +1496,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   for (int l=0; l<=level_max; l++) ninlevel[l] = 0;
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-    if (part.active) Nactive++;
+    if (part.flags.check_flag(active)) Nactive++;
     ninlevel[part.level]++;
   }
   cout << "No. of active SPH particles : " << Nactive << endl;

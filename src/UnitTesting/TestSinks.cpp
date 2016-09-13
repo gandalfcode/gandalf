@@ -116,9 +116,9 @@ void SinkTest::SetUp(void)
     }
     part.m      = 1.0 / (FLOAT) Npart;
     part.h      = 0.1;
-    part.active = true;
+    part.flags.set_flag(active);
     part.ptype  = gas_type;
-    part.potmin = false;
+    part.flags.unset_flag(potmin);
     part.gpot   = 0.0;
     part.nstep  = 1;
   }

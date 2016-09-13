@@ -149,7 +149,7 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     sphdata[i] = sphdata[iorig];
     sphdata[i].iorig = iorig;
     sphdata[i].flags = type_flag(itype);
-    sphdata[i].active = false;
+    sphdata[i].flags.unset_flag(active);
 
     // Modify ghost position based on ghost type
     // Ghosts of ghosts refer only to their previous ghosts not the base cell, so
@@ -287,7 +287,7 @@ void MpiGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
   for (j=0; j<Nmpighosts; j++) {
     i = start_index + j;
     main_array[i] = ghost_array[j];
-    main_array[i].active = false;
+    main_array[i].flags.unset_flag(active);
   }
 
   hydro->Nmpighost = Nmpighosts;
@@ -321,7 +321,7 @@ void MpiGhostsSpecific<ndim, ParticleType>::CopyHydroDataToGhosts
   for (int j=0; j<Nmpighosts; j++) {
     int i = start_index + j;
     main_array[i] = ghost_array[j];
-    main_array[i].active = false;
+    main_array[i].flags.unset_flag(active);
   }
 
 }

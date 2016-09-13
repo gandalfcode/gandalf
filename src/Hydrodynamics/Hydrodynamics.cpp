@@ -301,7 +301,7 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart        = origpart;
   ghostpart.r[k]   = rk;
   ghostpart.v[k]   = vk;
-  ghostpart.active = false;
+  ghostpart.flags.unset_flag(active);
   ghostpart.flags.set_flag(ghosttype); // Allow ghost to have multiple ghost flags
   ghostpart.iorig  = i;
 

@@ -74,11 +74,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   }
   mfv->CopyDataToGhosts(simbox, partdata);
 
-  // Calculate all matrices and gradients (and copy updated data to ghost particles)
-  // TODO:
-  //   Compute gradients for all cells neighbouring active ones (use levelneib?).
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
 
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
@@ -104,6 +99,14 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
                      mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
   mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                           mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    tghost = timestep*(FLOAT) (ntreebuildstep - 1);
+    mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+    mfv->CopyDataToGhosts(simbox, partdata);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+  }
 
 
   // Search for new sink particles (if activated) and accrete to existing sinks
@@ -143,13 +146,14 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   }
 
-  // Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
 
 
   // Calculate terms due to self-gravity
   if (mfv->self_gravity == 1) {
+    // Update the density to get the correct softening & grad-h terms.
+    mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+    mfv->CopyDataToGhosts(simbox, partdata);
+
     mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox, ewald);
   }
 
@@ -214,6 +218,16 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Update all active cell counters in the tree
   mfvneib->UpdateActiveParticleCounters(partdata, mfv);
 
+
+  //Calculate all properties (and copy updated data to ghost particles)
+  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox, partdata);
+
+  // Calculate all matrices and gradients (and copy updated data to ghost particles)
+  // TODO:
+  //   Compute gradients for all cells neighbouring active ones (use levelneib?).
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox, partdata);
 
 
   /* Check that we have sensible smoothing lengths */

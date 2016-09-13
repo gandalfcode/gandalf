@@ -439,7 +439,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfv->Nghost = 0;
   mfv->Nghostmax = mfv->Nhydromax - mfv->Nhydro;
   mfv->Ntot = mfv->Nhydro;
-  for (i=0; i<mfv->Nhydro; i++) partdata[i].active = true;
+  for (i=0; i<mfv->Nhydro; i++) partdata[i].flags.set_flag(active);
 
   // Initialise conserved variables
   for (i=0; i<mfv->Nhydro; i++) {
@@ -475,7 +475,10 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
                           mfv->Nhydromax, timestep, partdata, mfv);
 
   // Zero accelerations
-  for (i=0; i<mfv->Nhydro; i++) partdata[i].active = true;
+  for (i=0; i<mfv->Nhydro; i++) {
+    partdata[i].flags.set_flag(active);
+    partdata[i].flags.set_flag(update_density) ;
+  }
 
   // Update neighbour tree
   rebuild_tree = true;
@@ -542,9 +545,9 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     part.nstep  = 0;
     part.nlast  = 0;
     part.tlast  = t;
-    part.active = false;
+    part.flags.unset_flag(active);
   }
-  for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).active = true;
+  for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set_flag(active);
 
   // Copy all other data from real hydro particles to ghosts
   mfv->CopyDataToGhosts(simbox, partdata);
@@ -562,7 +565,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
     for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
     for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
-    part.active = true;
+    part.flags.set_flag(active);
   }
 
   mfv->CopyDataToGhosts(simbox, partdata);
@@ -843,7 +846,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
-        part.active    = true;
+        part.flags.set_flag(active);
         part.level     = level_max_hydro;
         part.levelneib = level_max_hydro;
         part.nlast     = n;
@@ -859,7 +862,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
         dt              = part.dt;
         level           = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
         level           = max(level, 0);
-        part.active     = true;
+        part.flags.set_flag(active);
         part.level      = level;
         part.levelneib  = level;
         part.nlast      = n;
@@ -901,7 +904,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       for (i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
-        part.active = false;
+        part.flags.unset_flag(active);
 
         if (part.nlast == n) {
           nstep      = part.nstep;
@@ -923,7 +926,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
             part.level = last_level;
           }
 
-          part.active    = true;
+          part.flags.set_flag(active);
           part.levelneib = level;
           part.dt        = dt;
           part.nlast     = n;
@@ -1156,7 +1159,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   for (int l=0; l<=level_max; l++) ninlevel[l] = 0;
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    if (part.active) Nactive++;
+    if (part.flags.check_flag(active)) Nactive++;
     ninlevel[part.level]++;
   }
   cout << "No. of active Hydro particles : " << Nactive << endl;

@@ -146,7 +146,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       if (part.flags.is_dead()) continue;
 
       // Only consider hydro particles located at a local potential minimum
-      if (!part.potmin) continue;
+      if (!part.flags.check_flag(potmin)) continue;
 
       // If density of a hydro particle is too low, skip to next particle
       if (part.rho < rho_sink) continue;
@@ -301,7 +301,7 @@ void Sinks<ndim>::CreateNewSinkParticle
   sink[Nsink].star->nstep        = part.nstep;
   sink[Nsink].star->nlast        = part.nlast;
   sink[Nsink].star->level        = part.level;
-  sink[Nsink].star->active       = part.active;
+  sink[Nsink].star->active       = part.flags.check_flag(active);
   sink[Nsink].star->Ncomp        = 1;
   for (k=0; k<ndim; k++) sink[Nsink].star->r[k]     = part.r[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->v[k]     = part.v[k];
@@ -319,7 +319,7 @@ void Sinks<ndim>::CreateNewSinkParticle
 
   // Remove SPH particle from main arrays
   part.m      = (FLOAT) 0.0;
-  part.active = false;
+  part.flags.unset_flag(active);
   part.flags.set_flag(dead);
 
   return;
@@ -667,7 +667,7 @@ void Sinks<ndim>::AccreteMassToSinks
           mtemp       = part.m;
           part.m      = (FLOAT) 0.0;
           part.flags.set_flag(dead);
-          part.active = false;
+          part.flags.unset_flag(active);
         }
         else {
           //part.m -= mtemp;

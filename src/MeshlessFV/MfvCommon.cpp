@@ -201,10 +201,10 @@ int MfvCommon<ndim, kernelclass>::ComputeH
 
   // Calculate the minimum neighbour potential (used later to identify new sinks)
   if (create_sinks == 1) {
-    part.potmin = true;
+    part.flags.set_flag(potmin);
     for (j=0; j<Nneib; j++) {
       if (gpot[j] > (FLOAT) 1.000000001*part.gpot &&
-          drsqd[j]*invhsqd < kern.kernrangesqd) part.potmin = false;
+          drsqd[j]*invhsqd < kern.kernrangesqd) part.flags.unset_flag(potmin);
     }
   }
 
@@ -453,7 +453,7 @@ void MfvCommon<ndim, kernelclass>::CopyDataToGhosts
     partdata[i]        = partdata[iorig];
     partdata[i].iorig  = iorig;
     partdata[i].flags  = type_flag(itype);
-    partdata[i].active = false;
+    partdata[i].flags.unset_flag(active);
 
 
     // Modify ghost position based on ghost type

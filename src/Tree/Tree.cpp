@@ -64,7 +64,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
-    if (i < Ntot && partdata[i].active && !partdata[i].flags.is_dead()) activelist[Nactive++] = i;
+    if (i < Ntot && partdata[i].flags.check_flag(active) && !partdata[i].flags.is_dead())
+      activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
     assert(i < Ntot);
