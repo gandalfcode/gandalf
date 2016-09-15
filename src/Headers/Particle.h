@@ -443,16 +443,11 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT zeta;                          ///< ..
   FLOAT B[ndim][ndim];                 ///< Inverse matrix for gradient calculations
   FLOAT Wprim[ndim+2];                 ///< ..
-  FLOAT Wmin[ndim+2];                  ///< ..
-  FLOAT Wmax[ndim+2];                  ///< ..
-  FLOAT Wmidmax[ndim+2];               ///< ..
-  FLOAT Wmidmin[ndim+2];               ///< ..
   FLOAT Qcons[ndim+2];                 ///< ..
   FLOAT Qcons0[ndim+2];                ///< ..
   FLOAT grad[ndim+2][ndim];            ///< ..
   FLOAT dQ[ndim+2];                    ///< ..
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
-  FLOAT alpha_slope[ndim+2];           ///< ..
   FLOAT Utot;                          ///< ..
   FLOAT rdmdt[ndim];                   ///< ..
   FLOAT rdmdt0[ndim];                  ///< ..
@@ -502,15 +497,6 @@ struct MeshlessFVParticle : public Particle<ndim>
 		B[j][k] *= -1 ;
 		B[k][j] *= -1 ;
 	  }
-
-	  // Max/Min values
-	  Wmin[k] *= -1;
-	  Wmax[k] *= -1;
-	  swap(Wmin[k], Wmax[k]) ;
-
-	  Wmidmin[k] *= -1;
-	  Wmidmax[k] *= -1;
-	  swap(Wmidmin[k], Wmidmax[k]) ;
    }
 
 };

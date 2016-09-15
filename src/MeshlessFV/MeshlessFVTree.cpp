@@ -544,10 +544,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         }
         for (int var=0; var<ndim+2; var++) {
           for (k=0; k<ndim; k++) mfvdata[i].grad[var][k] = activepart[j].grad[var][k];
-          mfvdata[i].Wmin[var] = activepart[j].Wmin[var];
-          mfvdata[i].Wmax[var] = activepart[j].Wmax[var];
-          mfvdata[i].Wmidmin[var] = activepart[j].Wmidmin[var];
-          mfvdata[i].Wmidmax[var] = activepart[j].Wmidmax[var];
         }
         mfvdata[i].vsig_max = activepart[j].vsig_max;
       }

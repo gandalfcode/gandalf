@@ -217,23 +217,17 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   else if (limiter == "zeroslope") {
     mfv->limiter = new ZeroSlopeLimiter<ndim,MeshlessFVParticle>();
   }
-  else if (limiter == "balsara2004") {
-    mfv->limiter = new Balsara2004Limiter<ndim,MeshlessFVParticle>();
+  else if (limiter == "tvdscalar" || limiter == "tess2011") {
+    mfv->limiter = new TVDScalarLimiter<ndim,MeshlessFVParticle>() ;
+  }
+  else if (limiter == "scalar" || limiter == "balsara2004") {
+    mfv->limiter = new ScalarLimiter<ndim,MeshlessFVParticle>() ;
   }
   else if (limiter == "springel2009") {
     mfv->limiter = new Springel2009Limiter<ndim,MeshlessFVParticle>();
   }
-  else if (limiter == "tess2011") {
-    mfv->limiter = new TESS2011Limiter<ndim,MeshlessFVParticle>();
-  }
   else if (limiter == "gizmo") {
     mfv->limiter = new GizmoLimiter<ndim,MeshlessFVParticle>();
-  }
-  else if (limiter == "gizmo2") {
-    mfv->limiter = new Gizmo2Limiter<ndim,MeshlessFVParticle>();
-  }
-  else if (limiter == "minmod") {
-    mfv->limiter = new MinModLimiter<ndim,MeshlessFVParticle>();
   }
   else {
     string message = "Unrecognised parameter : slope_limiter = " + limiter;
