@@ -319,8 +319,11 @@ private:
 
 //=================================================================================================
 //  Class GizmoLimiter
-/// \brief   ...
-/// \details ...
+/// \brief   Slope limiter from the GIZMO paper.
+/// \details This limiter consists of first applying the non-TVD ScalarLimiter to limit the
+///          gradient for a given particle. Subsequently a per-face limiter is applied that ensures
+///          each of the 1D Riemann problems are (approximately) TVD, even if the full problem is
+//           not.
 /// \author  D. A. Hubber
 /// \date    23/03/2015
 //=================================================================================================
