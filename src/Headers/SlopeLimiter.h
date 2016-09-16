@@ -346,7 +346,7 @@ class GizmoLimiter : public ScalarLimiter<ndim,ParticleType>
     FLOAT phiplus;
     FLOAT phimid;
     const FLOAT psi1 = (FLOAT) 0.5;
-    const FLOAT psi2 = (FLOAT) 0.25;
+    const FLOAT psi2 = (FLOAT) 0.375;
 
     //---------------------------------------------------------------------------------------------
     for (var=0; var<ndim+2; var++) {
