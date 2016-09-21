@@ -244,10 +244,6 @@ void MeshlessFV<ndim>::IntegrateParticles
   const DomainBox<ndim> &simbox,       ///< [in] Simulation box
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
 {
-  int dn;                              // Integer time since beginning of step
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
-
   debug2("[MeshlessFV::IntegrateParticles]");
 
   // Integrate all conserved variables to end of timestep
@@ -334,9 +330,9 @@ void MeshlessFV<ndim>::IntegrateParticles
         //-----------------------------------------------------------------------------------------
 
       }
-      //-------------------------------------------------------------------------------------------
-
     }
+    //---------------------------------------------------------------------------------------------
+
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -358,22 +354,19 @@ void MeshlessFV<ndim>::EndTimestep
   const FLOAT timestep,                ///< [in] Base timestep value
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
 {
-  int i;                               // Particle counter
-
   debug2("[MeshlessFV::EndTimestep]");
   //timing->StartTimingSection("MFV_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(partdata)
-  for (i=0; i<Npart; i++) {
-
+  for (int i=0; i<Npart; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];    // Local reference to particle
+    if (part.flags.is_dead()) continue;
+
     int dn = n - part.nlast;                         // Integer time since beginning of step
     int k;                                           // Dimension counter
     int nstep = part.nstep;                          // Particle (integer) step size
-
-    if (part.flags.is_dead()) continue;
 
 
     // If particle is at the end of its timestep
@@ -454,11 +447,11 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOA
   part.u = eos->SpecificInternalEnergy(part);
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
-
   assert(part.m > (FLOAT) 0.0);
   assert(part.u > (FLOAT) 0.0);
   assert(part.press > (FLOAT) 0.0);
 
+  return;
 }
 
 

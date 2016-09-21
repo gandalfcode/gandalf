@@ -55,7 +55,8 @@ MeshlessFVTree<ndim,ParticleType>::MeshlessFVTree
  HydroTree<ndim,ParticleType>
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
-{ }
+{
+}
 
 
 
@@ -1096,4 +1097,3 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 template class MeshlessFVTree<1,MeshlessFVParticle>;
 template class MeshlessFVTree<2,MeshlessFVParticle>;
 template class MeshlessFVTree<3,MeshlessFVParticle>;
-

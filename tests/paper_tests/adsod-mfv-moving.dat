@@ -53,16 +53,18 @@ Ratio of specific heats of gas              : gamma_eos = 1.4
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
-SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.01
-h_fac = 1.0
+Smoothing kernel choice                     : kernel = m4
+Smoothing length iteration tolerance        : h_converge = 0.01
+Smoothing length iteration factor           : h_fac = 1.0
 
 
 #---------------------------------
-# SPH artificial viscosity options
+# Finite-Volume options
 #---------------------------------
 Riemann solver                              : riemann_solver = exact
 Slope limiter                               : slope_limiter = gizmo
+Finite mass scheme?                         : zero_mass_flux = 0
+Fix particle positions?                     : static_particles = 0
 
 
 #-------------------------
