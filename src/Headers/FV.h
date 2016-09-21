@@ -63,7 +63,6 @@ public:
   using Hydrodynamics<ndim>::eos;
   using Hydrodynamics<ndim>::h_fac;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
-  using Hydrodynamics<ndim>::iorder;
   using Hydrodynamics<ndim>::kernfac;
   using Hydrodynamics<ndim>::kernfacsqd;
   using Hydrodynamics<ndim>::kernp;
@@ -107,7 +106,6 @@ public:
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
-  virtual void ReorderParticles(void) = 0;
 
   // Other functions
   //-----------------------------------------------------------------------------------------------

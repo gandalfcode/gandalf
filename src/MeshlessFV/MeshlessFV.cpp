@@ -102,7 +102,6 @@ void MeshlessFV<ndim>::AllocateMemory(int N)
       Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 16.0*kernp->kernrange,ndim);
     }
 
-    iorder    = new int[Nhydromax];
     hydrodata = new struct MeshlessFVParticle<ndim>[Nhydromax];
     allocated = true;
     hydrodata_unsafe = hydrodata;
@@ -124,7 +123,6 @@ void MeshlessFV<ndim>::DeallocateMemory(void)
 
   if (allocated) {
     delete[] hydrodata;
-    delete[] iorder;
   }
   allocated = false;
 
@@ -173,31 +171,8 @@ void MeshlessFV<ndim>::DeleteDeadParticles(void)
   Nhydro -= Ndead;
   Ntot -= Ndead;
   for (i=0; i<Nhydro; i++) {
-    iorder[i] = i;
     assert(!hydrodata[i].flags.is_dead());
   }
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  MeshlessFV::ReorderParticles
-/// Reorder particles in main arrays according to order given in iorder array.
-//=================================================================================================
-template <int ndim>
-void MeshlessFV<ndim>::ReorderParticles(void)
-{
-  int i;                                   // Particle counter
-  MeshlessFVParticle<ndim> *hydrodataaux;  // Aux. SPH particle array
-
-  hydrodataaux = new MeshlessFVParticle<ndim>[Nhydro];
-
-  for (i=0; i<Nhydro; i++) hydrodataaux[i] = hydrodata[i];
-  for (i=0; i<Nhydro; i++) hydrodata[i] = hydrodataaux[iorder[i]];
-
-  delete[] hydrodataaux;
 
   return;
 }

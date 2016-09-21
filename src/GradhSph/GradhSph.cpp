@@ -95,7 +95,6 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
       Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 16.0*kernp->kernrange,ndim);
     }
 
-    iorder           = new int[Nhydromax];
     sphdata          = new struct GradhSphParticle<ndim>[Nhydromax];
     allocated        = true;
     hydrodata_unsafe = sphdata;
@@ -103,7 +102,6 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
   }
 
   assert(Nhydromax > Nhydro);
-  assert(iorder);
   assert(sphdata);
 
   return;
@@ -122,7 +120,6 @@ void GradhSph<ndim, kernelclass>::DeallocateMemory(void)
 
   if (allocated) {
     delete[] sphdata;
-    delete[] iorder;
   }
   allocated = false;
 
@@ -171,31 +168,8 @@ void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
   Nhydro -= Ndead;
   Ntot -= Ndead;
   for (i=0; i<Nhydro; i++) {
-    iorder[i] = i;
     assert(!sphdata[i].flags.is_dead());
   }
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  GradhSph::ReorderParticles
-/// Delete selected SPH particles from the main arrays.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void GradhSph<ndim, kernelclass>::ReorderParticles(void)
-{
-  int i;                               // Particle counter
-  GradhSphParticle<ndim> *sphdataaux;  // Aux. SPH particle array
-
-  sphdataaux = new GradhSphParticle<ndim>[Nhydro];
-
-  for (i=0; i<Nhydro; i++) sphdataaux[i] = sphdata[i];
-  for (i=0; i<Nhydro; i++) sphdata[i] = sphdataaux[iorder[i]];
-
-  delete[] sphdataaux;
 
   return;
 }

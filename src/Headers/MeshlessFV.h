@@ -67,7 +67,6 @@ public:
   using Hydrodynamics<ndim>::hydrodata_unsafe;
   using Hydrodynamics<ndim>::hydro_forces;
   using Hydrodynamics<ndim>::invndim;
-  using Hydrodynamics<ndim>::iorder;
   using Hydrodynamics<ndim>::kernfac;
   using Hydrodynamics<ndim>::kernfacsqd;
   using Hydrodynamics<ndim>::kernp;
@@ -107,7 +106,6 @@ public:
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
   virtual void DeleteDeadParticles(void);
-  virtual void ReorderParticles(void);
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {
     MeshlessFVParticle<ndim>& mfvpart = static_cast<MeshlessFVParticle<ndim>& > (part);
     mfvpart.m -= dm;
