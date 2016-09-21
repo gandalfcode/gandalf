@@ -175,7 +175,6 @@ public:
   string slope_limiter;                ///< Selected slope limiter
   //MeshlessFVType MeshlessFVtype[Ntypes];        ///< Array of MeshlessFV types
 
-  SlopeLimiter<ndim,MeshlessFVParticle> *limiter;
   MeshlessFVParticle<ndim> *hydrodata;
 
 };
@@ -190,7 +189,7 @@ public:
 /// \date    25/02/2015
 //=================================================================================================
 //template <int ndim>
-template <int ndim, template<int> class kernelclass>
+template <int ndim, template<int> class kernelclass, class SlopeLimiterType>
 class MfvCommon : public MeshlessFV<ndim>
 {
  public:
@@ -207,7 +206,6 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
-  using MeshlessFV<ndim>::limiter;
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
@@ -231,6 +229,7 @@ class MfvCommon : public MeshlessFV<ndim>
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
+  SlopeLimiterType limiter;
 
 
   // Constructor
@@ -273,8 +272,8 @@ class MfvCommon : public MeshlessFV<ndim>
 /// \date    25/02/2015
 //=================================================================================================
 //template <int ndim>
-template <int ndim, template<int> class kernelclass>
-class MfvMuscl : public MfvCommon<ndim,kernelclass>
+template <int ndim, template<int> class kernelclass, class SlopeLimiterType>
+class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 {
  public:
 
@@ -292,7 +291,6 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
-  using MeshlessFV<ndim>::limiter;
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
@@ -305,7 +303,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
-  using MfvCommon<ndim,kernelclass>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -341,8 +340,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
 /// \date    25/02/2015
 //=================================================================================================
 //template <int ndim>
-template <int ndim, template<int> class kernelclass>
-class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
+template <int ndim, template<int> class kernelclass, class SlopeLimiterType>
+class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 {
  public:
 
@@ -360,7 +359,6 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
-  using MeshlessFV<ndim>::limiter;
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
@@ -373,7 +371,8 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
-  using MfvCommon<ndim,kernelclass>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;

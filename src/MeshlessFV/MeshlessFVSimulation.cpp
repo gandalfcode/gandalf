@@ -55,6 +55,119 @@ template class MeshlessFVSimulation<3>;
 
 
 
+// Construct the meshless integration object.
+template<int ndim, class MeshlessType>
+MeshlessFV<ndim>* MeshlessFactoryFull
+(Parameters* simparams,
+ SimUnits& simunits)
+{
+  // Local references to parameter variables for brevity
+  map<string, int> &intparams = simparams->intparams;
+  map<string, double> &floatparams = simparams->floatparams;
+  map<string, string> &stringparams = simparams->stringparams;
+
+  string KernelName = stringparams["kernel"];
+
+  return new MeshlessType
+          (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
+           floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
+           floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
+           sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
+}
+
+
+// Select the slope limiter
+template<int ndim, template<int> class Kernel, template<int, template<int> class, class> class MeshlessType>
+MeshlessFV<ndim>*  _MeshlessFactorySlopes
+(Parameters* simparams,
+ SimUnits& simunits)
+{
+  string limiter = simparams->stringparams["slope_limiter"];
+
+  if (limiter == "null") {
+    typedef NullLimiter<ndim, MeshlessFVParticle> Limiter;
+    return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
+  }
+  else if (limiter == "zeroslope") {
+    typedef ZeroSlopeLimiter<ndim, MeshlessFVParticle> Limiter;
+    return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
+  }
+  else if (limiter == "tvdscalar" || limiter == "tess2011") {
+    typedef TVDScalarLimiter<ndim, MeshlessFVParticle> Limiter;
+    return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
+  }
+  else if (limiter == "scalar" || limiter == "balsara2004") {
+    typedef ScalarLimiter<ndim, MeshlessFVParticle> Limiter;
+    return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
+  }
+  else if (limiter == "springel2009") {
+    typedef Springel2009Limiter<ndim, MeshlessFVParticle> Limiter;
+    return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
+  }
+  else if (limiter == "gizmo") {
+    typedef GizmoLimiter<ndim, MeshlessFVParticle> Limiter;
+    return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
+  }
+
+  string message = "Unrecognised parameter : slope_limiter = " + limiter;
+  ExceptionHandler::getIstance().raise(message);
+
+  return NULL ;
+}
+
+// Select the Meshless time integration type.
+template<int ndim, template<int> class Kernel>
+MeshlessFV<ndim>* _MeshlessTimeIntegFactory
+(Parameters* simparams,
+ SimUnits& simunits)
+{
+  string sim = simparams->stringparams["sim"];
+
+  if (sim == "meshlessfv" || sim == "mfvmuscl") {
+    return _MeshlessFactorySlopes<ndim, Kernel, MfvMuscl>(simparams, simunits) ;
+  }
+  else if (sim == "mfvrk") {
+    return _MeshlessFactorySlopes<ndim, Kernel, MfvRungeKutta>(simparams, simunits) ;
+  }
+
+  string message = "Invalid option for the simulation type parameter: " + sim;
+  ExceptionHandler::getIstance().raise(message);
+
+  return NULL ;
+}
+
+
+// Create the full Meshless forces object in a type by type way.
+template <int ndim>
+MeshlessFV<ndim>* MeshlessFactory
+(Parameters* simparams,
+ SimUnits& simunits)
+{
+  // Local references to parameter variables for brevity
+  map<string, int> &intparams = simparams->intparams;
+  map<string, string> &stringparams = simparams->stringparams;
+  string KernelName = stringparams["kernel"];
+
+  if (intparams["tabulated_kernel"] == 1) {
+     return _MeshlessTimeIntegFactory<ndim, TabulatedKernel>(simparams, simunits) ;
+   }
+   else {
+     if (KernelName == "m4") {
+       return _MeshlessTimeIntegFactory<ndim, M4Kernel>(simparams, simunits) ;
+     }
+     else if (KernelName == "quintic") {
+       return _MeshlessTimeIntegFactory<ndim, QuinticKernel>(simparams, simunits) ;
+     }
+   }
+
+  string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
+  ExceptionHandler::getIstance().raise(message);
+
+  return NULL ;
+
+}
+
+
 //=================================================================================================
 //  MeshlessFVSimulation::ProcessParameters
 /// Process all the options chosen in the parameters file, setting various
@@ -129,111 +242,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   // Create Meshless Finite-Volume object depending on choice of kernel
   //===============================================================================================
-  if (sim == "meshlessfv" || sim == "mfvmuscl") {
-    if (intparams["tabulated_kernel"] == 1) {
-      mfv = new MfvMuscl<ndim, TabulatedKernel>
-       (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
-        floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
-        floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
-        sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
-    }
-    else if (intparams["tabulated_kernel"] == 0) {
-      if (KernelName == "m4") {
-        mfv = new MfvMuscl<ndim, M4Kernel>
-         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
-          floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
-          floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
-          sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
-      }
-      else if (KernelName == "quintic") {
-        mfv = new MfvMuscl<ndim, QuinticKernel>
-         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
-          floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
-          floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
-          sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
-      }
-      else {
-        string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
-        ExceptionHandler::getIstance().raise(message);
-      }
-    }
-    else {
-      string message = "Invalid option for the tabulated_kernel parameter: " +
-        stringparams["tabulated_kernel"];
-      ExceptionHandler::getIstance().raise(message);
-    }
-  }
-  //===============================================================================================
-  else if (sim == "mfvrk") {
-    if (intparams["tabulated_kernel"] == 1) {
-      mfv = new MfvRungeKutta<ndim, TabulatedKernel>
-       (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
-        floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
-        floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
-        sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
-    }
-    else if (intparams["tabulated_kernel"] == 0) {
-      if (KernelName == "m4") {
-        mfv = new MfvRungeKutta<ndim, M4Kernel>
-         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
-          floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
-          floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
-          sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
-      }
-      else if (KernelName == "quintic") {
-        mfv = new MfvRungeKutta<ndim, QuinticKernel>
-         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
-          floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
-          floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
-          sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
-      }
-      else {
-        string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
-        ExceptionHandler::getIstance().raise(message);
-      }
-    }
-    else {
-      string message = "Invalid option for the tabulated_kernel parameter: " +
-        stringparams["tabulated_kernel"];
-      ExceptionHandler::getIstance().raise(message);
-    }
-  }
-  //===============================================================================================
-  else {
-    string message = "Invalid option for the simulation type parameter: " + sim;
-    ExceptionHandler::getIstance().raise(message);
-  }
-  //===============================================================================================
-
-  hydro = mfv;
-
-
-  // Slope limiter
-  //-----------------------------------------------------------------------------------------------
-  string limiter = stringparams["slope_limiter"];
-  if (limiter == "null") {
-    mfv->limiter = new NullLimiter<ndim,MeshlessFVParticle>();
-  }
-  else if (limiter == "zeroslope") {
-    mfv->limiter = new ZeroSlopeLimiter<ndim,MeshlessFVParticle>();
-  }
-  else if (limiter == "tvdscalar" || limiter == "tess2011") {
-    mfv->limiter = new TVDScalarLimiter<ndim,MeshlessFVParticle>() ;
-  }
-  else if (limiter == "scalar" || limiter == "balsara2004") {
-    mfv->limiter = new ScalarLimiter<ndim,MeshlessFVParticle>() ;
-  }
-  else if (limiter == "springel2009") {
-    mfv->limiter = new Springel2009Limiter<ndim,MeshlessFVParticle>();
-  }
-  else if (limiter == "gizmo") {
-    mfv->limiter = new GizmoLimiter<ndim,MeshlessFVParticle>();
-  }
-  else {
-    string message = "Unrecognised parameter : slope_limiter = " + limiter;
-    ExceptionHandler::getIstance().raise(message);
-  }
-
+  hydro = mfv = MeshlessFactory<ndim>(simparams, simunits) ;
 
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
