@@ -57,31 +57,29 @@ MeshlessFVTree<ndim,ParticleType,TreeCell>::MeshlessFVTree
   (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
 {
-  tree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-		                                      _macerror, _gravity_mac, _multipole, *_box, types);
+  tree = new_tree<ndim,ParticleType,TreeCell>
+    (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
 
   // Set-up ghost-particle tree object
-  ghosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-		  	  	  	  	  	  	  	  	  	       _macerror, _gravity_mac, _multipole, *_box, types);
+  ghosttree = new_tree<ndim,ParticleType,TreeCell>
+    (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
-  mpighosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-		                                              _macerror, _gravity_mac, _multipole, *_box, types);
+  mpighosttree = new_tree<ndim,ParticleType,TreeCell>
+    (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
 
   // Set-up multiple pruned trees, one for each MPI process
   prunedtree = new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
-  // new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
   sendprunedtree =  new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
-  //new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
 
   for (int i=0; i<Nmpi; i++) {
-	prunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-														 _macerror, _gravity_mac, _multipole, *_box, types);
+    prunedtree[i] = new_tree<ndim,ParticleType,TreeCell>
+      (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
   }
   for (int i=0; i<Nmpi; i++) {
-	sendprunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-	    													 _macerror, _gravity_mac, _multipole, *_box, types);
+    sendprunedtree[i] = new_tree<ndim,ParticleType,TreeCell>
+      (_Nleafmax, _thetamaxsqd, _kernrange, _macerror, _gravity_mac, _multipole, *_box, types);
   }
 #endif
 

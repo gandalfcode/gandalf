@@ -1983,7 +1983,6 @@ void Ic<ndim>::EwaldDensity(void)
     FLOAT a2inv;                         // Squared inverse scale height for cylinder
     FLOAT lambda;                        // Wavelength of perturbation
     FLOAT kwave;                         // Wave number of perturbing sound wave
-    //FLOAT omegawave;                     // Angular frequency of sound wave
     FLOAT ugas;                          // Internal energy of gas
     FLOAT volume;                        // Simulation box volume
     FLOAT *r;                            // Particle positions
@@ -2052,15 +2051,13 @@ void Ic<ndim>::EwaldDensity(void)
 
     // 1D sinusoidal density perturbation
     //=============================================================================================
-    if (ic == "ewaldsine") {
+    if (ic == "ewaldsine" || ic == "jeans") {
 
-      lambda    = simbox.boxmax[0] - simbox.boxmin[0];
-      kwave     = twopi/lambda;
-      //omegawave = twopi*csound/lambda;
+      lambda = simbox.boxmax[0] - simbox.boxmin[0];
+      kwave  = twopi/lambda;
 
       // Add regular distribution of SPH particles
       AddCubicLattice(Npart, Nlattice1, simbox, false, r);
-      //AddRandomBox(Npart,r,simbox);
 
       // Add sinusoidal density perturbation to particle distribution
       AddSinusoidalDensityPerturbation(Npart, amp, lambda, r);

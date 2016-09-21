@@ -128,6 +128,69 @@ class gresho (AnalyticalSolution):
 
 
 #------------------------------------------------------------------------------
+class jeans (AnalyticalSolution):
+    '''Analytical solution for the Jeans instability test with 1D sinusoidal perturbation.'''
+
+    def __init__(self, sim, time):
+        AnalyticalSolution.__init__(self)
+        self.time = time
+
+        # Extract the parameters
+        simfloatparams = sim.simparams.floatparams
+        self.rho     = simfloatparams["rhofluid1"]
+        self.press   = simfloatparams["press1"]
+        self.temp0   = simfloatparams["temp0"]
+        self.mu_bar  = simfloatparams["mu_bar"]
+        self.time    = time
+        self.ndim    = sim.ndims
+        self.iMAX    = 1000
+        self.amp     = simfloatparams["amp"]
+        self.xL      = simfloatparams["boxmin[0]"]
+        self.xR      = simfloatparams["boxmax[0]"]
+        self.wlambda = self.xR - self.xL
+        self.kwave   = 2.0*3.14159/self.wlambda
+
+        if sim.simparams.stringparams["gas_eos"] == "isothermal":
+            self.gamma = 1.0
+            self.csound = np.sqrt(self.temp0/self.mu_bar)
+        else:
+            self.gamma = simfloatparams["gamma_eos"]
+            self.csound = np.sqrt(self.gamma*self.press/self.rho)
+
+        self.wlambdaJeans = np.sqrt(3.14159*self.csound*self.csound/self.rho)
+        if self.wlambda < self.wlambdaJeans:
+            self.omega = 2.0*3.14159*self.csound*np.sqrt(1.0/self.wlambda/self.wlambda - 1.0/self.wlambdaJeans/self.wlambdaJeans)
+        elif self.wlambdaJeans < self.wlambda:
+            self.omega = 2.0*3.14159*self.csound*np.sqrt(1.0/self.wlambdaJeans/self.wlambdaJeans - 1.0/self.wlambda/self.wlambda)
+        else:
+            self.omega = 0.0
+
+    def compute(self, ix, iy):
+        x = np.arange(self.xL,self.xR,1.0/self.iMAX)
+        if self.wlambda < self.wlambdaJeans:
+            rho = self.rho*(1.0 + self.amp*np.sin(self.kwave*x)*np.cos(self.omega*self.time))
+            vx = -self.amp*self.omega*np.cos(self.kwave*x)*np.sin(self.omega*self.time)/self.kwave
+            ax = -self.amp*self.omega*self.omega*np.cos(self.kwave*x)*np.cos(self.omega*self.time)/self.kwave
+        elif self.wlambdaJeans < self.wlambda:
+            rho = self.rho*(1.0 + self.amp*np.sin(self.kwave*x)*np.cosh(self.omega*self.time))
+            vx = self.amp*self.omega*np.cos(self.kwave*x)*np.sinh(self.omega*self.time)/self.kwave
+            ax = self.amp*self.omega*self.omega*np.cos(self.kwave*x)*np.cosh(self.omega*self.time)/self.kwave
+        else:
+            rho = self.amp*self.rho*np.cos(self.kwave*x)
+            vx = 0
+            ax = 0
+
+        if ix == "x" and iy == "rho":
+            return x,rho
+        elif ix == "x" and iy == "vx":
+            return x,vx
+        elif ix == "x" and iy == "ax":
+            return x,ax
+        else:
+            raise KeyError("There were errors in the quantity you requested")
+
+
+#------------------------------------------------------------------------------
 class noh (AnalyticalSolution):
     '''Analytical solution for the Noh problem test.'''
 
