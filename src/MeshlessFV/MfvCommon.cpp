@@ -53,8 +53,8 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
   MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult, _h_fac,
                    h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
   kern(kernelclass<ndim>(KernelName)),
-  riemannExact(gamma_aux, params->floatparams["zero_mass_flux"]),
-  riemannHLLC(gamma_aux, params->floatparams["zero_mass_flux"])
+  riemannExact(gamma_aux, params->intparams["zero_mass_flux"]),
+  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"])
 {
   this->kernp      = &kern;
   this->kernfac    = (FLOAT) 1.0;
@@ -264,12 +264,13 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   FLOAT dvdr ;                                 // Delta v , Delta r
   FLOAT E[ndim][ndim];                         // E-matrix for computing normalised B-matrix
   const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
+  FLOAT grad_tmp[nvar][ndim] ;                 // Workspace for computing gradient
 
   // Initialise/zero all variables to be updated in this routine
   part.vsig_max = (FLOAT) 0.0;
   for (var=0; var<nvar; var++) {
     for (k=0; k<ndim; k++) {
-      part.grad[var][k] = (FLOAT) 0.0;
+      grad_tmp[var][k] = (FLOAT) 0.0;
     }
   }
   for (k=0; k<ndim; k++) {
@@ -297,10 +298,11 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
         E[k][kk] += draux[k]*draux[kk]*w ;
       }
     }
-    // To save a loop over neighbours use part.grad as a temporary:
-    for (var=0; var <ndim+2; var++) {
+
+    // Compute the first part of gradient, we do the matrix mult later, when part.B is available.
+    for (var=0; var <nvar; var++) {
       for (k=0; k<ndim; k++) {
-        part.grad[var][k] += (neibpart[j].Wprim[var] - part.Wprim[var])*draux[k]*w ;
+        grad_tmp[var][k] += draux[k]*(neibpart[j].Wprim[var] - part.Wprim[var])*w ;
       }
     }
 
@@ -339,15 +341,10 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   }
 
   // Complete the calculation of the gradients:
-  FLOAT temp[ndim] ;
-  for (var=0; var <ndim+2; var++) {
+  for (var=0; var<nvar; var++) {
     for (k=0; k<ndim; k++) {
-      for (int kk=0; kk<ndim; kk++) {
-        temp[k] = part.B[k][kk] * part.grad[var][kk] ;
-      }
+      part.grad[var][k] = DotProduct(part.B[k], grad_tmp[var], ndim) ;
     }
-    for (k=0; k<ndim; k++)
-      part.grad[var][k] = temp[k] ;
   }
 
   // Finally apply the slope limiter
