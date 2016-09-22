@@ -245,7 +245,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
 /// Compute Psi factors required for computing derivatives needed in Meshess FV equations.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
-void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputePsiFactors
+void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
  (const int i,                                 ///< [in] id of particle
   const int Nneib,                             ///< [in] No. of neins in neibpart array
   int *neiblist,                               ///< [in] id of gather neibs in neibpart
@@ -258,12 +258,20 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputePsiFactors
   int j;                                       // Neighbour list id
   int jj;                                      // Aux. neighbour loop counter
   int k;                                       // Dimension counter
-  FLOAT draux[ndim];                           // Relative position vector
+  int var;                                     // Primitive variable counter
+  FLOAT draux[ndim], dv[ndim];                 // Relative position / velocity vector
   FLOAT drsqd;                                 // Distance squared
+  FLOAT dvdr ;                                 // Delta v , Delta r
   FLOAT E[ndim][ndim];                         // E-matrix for computing normalised B-matrix
   const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
 
-  // Zero all matrices
+  // Initialise/zero all variables to be updated in this routine
+  part.vsig_max = (FLOAT) 0.0;
+  for (var=0; var<nvar; var++) {
+    for (k=0; k<ndim; k++) {
+      part.grad[var][k] = (FLOAT) 0.0;
+    }
+  }
   for (k=0; k<ndim; k++) {
     for (int kk=0; kk<ndim; kk++) {
       E[k][kk] = (FLOAT) 0.0;
@@ -278,13 +286,28 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputePsiFactors
     j = neiblist[jj];
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
+    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - part.v[k];
     drsqd = DotProduct(draux, draux, ndim);
+    dvdr = DotProduct(dv, draux, ndim);
+
+    double w = part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
 
     for (k=0; k<ndim; k++) {
       for (int kk=0; kk<ndim; kk++) {
-        E[k][kk] += draux[k]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
+        E[k][kk] += draux[k]*draux[kk]*w ;
       }
     }
+    // To save a loop over neighbours use part.grad as a temporary:
+    for (var=0; var <ndim+2; var++) {
+      for (k=0; k<ndim; k++) {
+        part.grad[var][k] += (neibpart[j].Wprim[var] - part.Wprim[var])*draux[k]*w ;
+      }
+    }
+
+    // Calculate maximum signal velocity
+    part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
+        min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
+    part.levelneib = max(part.levelneib, neibpart[j].level) ;
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -315,97 +338,26 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputePsiFactors
     part.B[2][2] = (E[0][0]*E[1][1] - E[1][0]*E[0][1])*invdet;
   }
 
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  MfvCommon::ComputeDerivatives
-/// Compute derivatives required for Meshless FV equations.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass, class SlopeLimiter>
-void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  FLOAT *drmag,                        ///< [in] Distances of gather neighbours
-  FLOAT *invdrmag,                     ///< [in] Inverse distances of gather neibs
-  FLOAT *dr,                           ///< [in] Position vector of gather neibs
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
-{
-  int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
-  int k;                               // Dimension counter
-  int var;                             // Particle state vector summation variable
-  FLOAT draux[ndim];                   // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT dv[ndim];                      // Relative velocity vector
-  FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT psitilda[ndim];                // Normalised gradient psi factor
-  const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
-
-
-  // Initialise/zero all variables to be updated in this routine
-  part.vsig_max = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) part.vreg[k] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) {
-    for (var=0; var<nvar; var++) {
-      part.grad[var][k] = (FLOAT) 0.0;
-    }
-  }
-
-  // Loop over all potential neighbours in the list
-  //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
-
-    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
-    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - part.v[k];
-    dvdr = DotProduct(dv, draux, ndim);
-    drsqd = DotProduct(draux, draux, ndim);
-
-    // Calculate psitilda values
-    for (k=0; k<ndim; k++) psitilda[k] = (FLOAT) 0.0;
+  // Complete the calculation of the gradients:
+  FLOAT temp[ndim] ;
+  for (var=0; var <ndim+2; var++) {
     for (k=0; k<ndim; k++) {
       for (int kk=0; kk<ndim; kk++) {
-        psitilda[k] += part.B[k][kk]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
+        temp[k] = part.B[k][kk] * part.grad[var][kk] ;
       }
     }
-
-    // Calculate contribution to gradient from neighbour
-    for (var=0; var<nvar; var++) {
-      for (k=0; k<ndim; k++) {
-        part.grad[var][k] += (neibpart[j].Wprim[var] - part.Wprim[var])*psitilda[k];
-      }
-    }
-
-    // Calculate maximum signal velocity
-    part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
-                                       min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
-    part.levelneib = max(part.levelneib, neibpart[j].level) ;
-
-    for (k=0; k<ndim; k++) part.vreg[k] -= draux[k]*kern.w0_s2(drsqd*invhsqd);
-
+    for (k=0; k<ndim; k++)
+      part.grad[var][k] = temp[k] ;
   }
-  //-----------------------------------------------------------------------------------------------
 
-  for (k=0; k<ndim; k++) part.vreg[k] *= part.invh*part.sound;  //pow(part.invh, ndim);
-
-
-
-  // Apply the slope limiter
+  // Finally apply the slope limiter
   //-----------------------------------------------------------------------------------------------
   limiter.CellLimiter(part, neibpart, neiblist, Nneib) ;
-
 
   assert(part.vsig_max >= part.sound);
 
   return;
 }
-
 
 
 //=================================================================================================

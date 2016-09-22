@@ -521,7 +521,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         //-----------------------------------------------------------------------------------------
 
         // Compute all neighbour contributions to hydro forces
-        mfv->ComputePsiFactors(i, Nhydroaux, mfvlist, drmag, invdrmag, dr, activepart[j], neibpart);
         mfv->ComputeGradients(i, Nhydroaux, mfvlist, drmag, invdrmag, dr, activepart[j], neibpart);
 
       }

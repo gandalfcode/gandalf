@@ -118,8 +118,6 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                        MeshlessFVParticle<ndim> &, Nbody<ndim> *) = 0;
-  virtual void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
@@ -243,8 +241,6 @@ class MfvCommon : public MeshlessFV<ndim>
   //-----------------------------------------------------------------------------------------------
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                MeshlessFVParticle<ndim> &, Nbody<ndim> *);
-  void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                         MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                     MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);

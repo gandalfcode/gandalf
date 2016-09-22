@@ -451,8 +451,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT Utot;                          ///< ..
   FLOAT rdmdt[ndim];                   ///< ..
   FLOAT rdmdt0[ndim];                  ///< ..
-  FLOAT vreg[ndim];                    ///< ..
-
 
   // SPH particle constructor to initialise all values
   //-----------------------------------------------------------------------------------------------
