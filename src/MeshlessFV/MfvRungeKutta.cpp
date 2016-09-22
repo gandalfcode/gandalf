@@ -150,7 +150,10 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     assert(Wright[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    if (RiemannSolverType == 1)
+      riemannExact.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    else
+      riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
@@ -174,7 +177,10 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     assert(Wright[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    if (RiemannSolverType == 1)
+      riemannExact.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    else
+      riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {

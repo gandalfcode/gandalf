@@ -177,7 +177,10 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     assert(Wj[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    riemann->ComputeFluxes(Wj, Wi, Aunit, vface, flux);
+    if (RiemannSolverType == 1)
+      riemannExact.ComputeFluxes(Wj, Wi, Aunit, vface, flux);
+    else
+      riemannHLLC.ComputeFluxes(Wj, Wi, Aunit, vface, flux);
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {

@@ -80,7 +80,6 @@ public:
   using Hydrodynamics<ndim>::Nmpighost;
   using Hydrodynamics<ndim>::NPeriodicGhost;
   using Hydrodynamics<ndim>::Ntot;
-  using Hydrodynamics<ndim>::riemann;
   using Hydrodynamics<ndim>::self_gravity;
   using Hydrodynamics<ndim>::size_hydro_part;
   using FV<ndim>::gamma_eos;
@@ -215,7 +214,6 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::Nmpighost;
   using MeshlessFV<ndim>::NPeriodicGhost;
   using MeshlessFV<ndim>::Ntot;
-  using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
   using Hydrodynamics<ndim>::create_sinks;
@@ -228,8 +226,6 @@ class MfvCommon : public MeshlessFV<ndim>
   static const int irho = ndim;
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
-
-  SlopeLimiterType limiter;
 
 
   // Constructor
@@ -259,6 +255,12 @@ class MfvCommon : public MeshlessFV<ndim>
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
+  SlopeLimiterType limiter;
+  ExactRiemannSolver<ndim> riemannExact ;
+  HllcRiemannSolver<ndim> riemannHLLC ;
+  int RiemannSolverType ;
+
+
 
 };
 
@@ -300,11 +302,13 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MeshlessFV<ndim>::Nmpighost;
   using MeshlessFV<ndim>::NPeriodicGhost;
   using MeshlessFV<ndim>::Ntot;
-  using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -368,11 +372,13 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MeshlessFV<ndim>::Nmpighost;
   using MeshlessFV<ndim>::NPeriodicGhost;
   using MeshlessFV<ndim>::Ntot;
-  using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;

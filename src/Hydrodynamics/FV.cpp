@@ -59,27 +59,6 @@ FV<ndim>::FV(int _hydro_forces, int _self_gravity, FLOAT _accel_mult, FLOAT _cou
   gamma_eos(_gamma),
   gammam1(_gamma - 1.0)
 {
-
-  // Local references to parameter variables for brevity
-  map<string, int> &intparams = params->intparams;
-  map<string, double> &floatparams = params->floatparams;
-  map<string, string> &stringparams = params->stringparams;
-
-
-  // Riemann solver object
-  //-----------------------------------------------------------------------------------------------
-  string riemann_solver = stringparams["riemann_solver"];
-  if (riemann_solver == "exact") {
-    riemann = new ExactRiemannSolver<ndim>(floatparams["gamma_eos"], intparams["zero_mass_flux"]);
-  }
-  else if (riemann_solver == "hllc") {
-    riemann = new HllcRiemannSolver<ndim>(floatparams["gamma_eos"], intparams["zero_mass_flux"]);
-  }
-  else {
-    string message = "Unrecognised parameter : riemann_solver = " + riemann_solver;
-    ExceptionHandler::getIstance().raise(message);
-  }
-
 }
 
 
@@ -90,9 +69,7 @@ FV<ndim>::FV(int _hydro_forces, int _self_gravity, FLOAT _accel_mult, FLOAT _cou
 //=================================================================================================
 template <int ndim>
 FV<ndim>::~FV()
-{
-  delete riemann;
-}
+{ }
 
 
 

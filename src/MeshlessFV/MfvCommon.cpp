@@ -52,12 +52,32 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
    int size_part, SimUnits &units, Parameters *params):
   MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult, _h_fac,
                    h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
-  kern(kernelclass<ndim>(KernelName))
+  kern(kernelclass<ndim>(KernelName)),
+  riemannExact(gamma_aux, params->floatparams["zero_mass_flux"]),
+  riemannHLLC(gamma_aux, params->floatparams["zero_mass_flux"])
 {
   this->kernp      = &kern;
   this->kernfac    = (FLOAT) 1.0;
   this->kernfacsqd = (FLOAT) 1.0;
   this->kernrange  = this->kernp->kernrange;
+
+  // Local references to parameter variables for brevity
+  map<string, string> &stringparams = params->stringparams;
+
+
+  // Riemann solver object
+  //-----------------------------------------------------------------------------------------------
+  string riemann_solver = stringparams["riemann_solver"];
+  if (riemann_solver == "exact") {
+    RiemannSolverType = 1 ;
+  }
+  else if (riemann_solver == "hllc") {
+   RiemannSolverType = 2 ;
+  }
+  else {
+    string message = "Unrecognised parameter : riemann_solver = " + riemann_solver;
+    ExceptionHandler::getIstance().raise(message);
+  }
 }
 
 
@@ -68,8 +88,7 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 MfvCommon<ndim, kernelclass,SlopeLimiter>::~MfvCommon()
-{
-}
+{ } ;
 
 
 

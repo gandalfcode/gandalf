@@ -76,7 +76,6 @@ public:
   using Hydrodynamics<ndim>::Nmpighost;
   using Hydrodynamics<ndim>::NPeriodicGhost;
   using Hydrodynamics<ndim>::Ntot;
-  using Hydrodynamics<ndim>::riemann;
   using Hydrodynamics<ndim>::size_hydro_part;
 
 
@@ -98,7 +97,7 @@ public:
   FV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
      FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
      string KernelName, int size_mfv_part, SimUnits &units, Parameters *params);
-  ~FV();
+  virtual ~FV();
 
   // Pure virtual functions (implemented by child classes)
   //-----------------------------------------------------------------------------------------------
