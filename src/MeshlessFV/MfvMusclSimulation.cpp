@@ -133,11 +133,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       rebuild_tree = true;
     }
 
-    // Update all array variables now accretion has probably removed some mass
-    // TODO:
-    //  This appears to be undoing the change in mass due to accretion. This needs fixing.
-    //for (i=0; i<mfv->Nhydro; i++) partdata[i].m = partdata[i].Qcons[FV<ndim>::irho] + partdata[i].dQ[FV<ndim>::irho];
-
     // Re-build/re-stock tree now particles have moved
     mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                        mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
