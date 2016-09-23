@@ -196,7 +196,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].id     = 0;
   celldata[0].level  = 0;
   for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmin[k] ;
-  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmax[k] ;
+  for (k=0; k<ndim; k++) celldata[0].bbmax[k] = bbmax[k] ;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
@@ -211,7 +211,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
 	celldata[c].id     = c;
 	celldata[c].level  = 1;
 	for (k=0; k<ndim; k++) celldata[c].bbmin[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
-	for (k=0; k<ndim; k++) celldata[c].bbmin[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
+	for (k=0; k<ndim; k++) celldata[c].bbmax[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
 	for (k=0; k<ndim; k++) celldata[c].cexit[0][k] = -1; // TODO: Check this
 	for (k=0; k<ndim; k++) celldata[c].cexit[1][k] = -1;
 
