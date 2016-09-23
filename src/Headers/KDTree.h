@@ -95,13 +95,10 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::multipole;
   using Tree<ndim,ParticleType,TreeCell>::Ncell;
   using Tree<ndim,ParticleType,TreeCell>::Ncellmax;
-  using Tree<ndim,ParticleType,TreeCell>::Ncellmaxold;
   using Tree<ndim,ParticleType,TreeCell>::Nleafmax;
   using Tree<ndim,ParticleType,TreeCell>::Nthreads;
   using Tree<ndim,ParticleType,TreeCell>::Ntot;
   using Tree<ndim,ParticleType,TreeCell>::Ntotmax;
-  using Tree<ndim,ParticleType,TreeCell>::Ntotmaxold;
-  using Tree<ndim,ParticleType,TreeCell>::Ntotold;
   using Tree<ndim,ParticleType,TreeCell>::theta;
   using Tree<ndim,ParticleType,TreeCell>::thetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::gravmask ;
@@ -120,7 +117,8 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   void BuildTree(const int, const int, const int, const int, const FLOAT, ParticleType<ndim> *);
-  void AllocateTreeMemory(void);
+  void AllocateTreeMemory(int,int,bool);
+  void ReallocateMemory(int,int);
   void DeallocateTreeMemory(void);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);

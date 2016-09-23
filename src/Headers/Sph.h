@@ -85,7 +85,6 @@ class Sph : public Hydrodynamics<ndim>
   using Hydrodynamics<ndim>::mmean;
   using Hydrodynamics<ndim>::Ngather;
   using Hydrodynamics<ndim>::Nghost;
-  using Hydrodynamics<ndim>::Nghostmax;
   using Hydrodynamics<ndim>::NImportedParticles;
   using Hydrodynamics<ndim>::Nhydro;
   using Hydrodynamics<ndim>::Nhydromax;

@@ -114,8 +114,7 @@ public:
   bool allocated;                      ///< Is memory allocated?
   int create_sinks;                    ///< Create new sink particles?
   int Ngather;                         ///< No. of gather neighbours
-  int Nghost;                          ///< No. of ghost particles
-  int Nghostmax;                       ///< Max. allowed no. of ghost particles
+  int Nghost;                          ///< No. of ghost particles (total among all kinds of ghosts)
   int NImportedParticles;              ///< No. of imported particles
                                        ///< (to compute forces on behalf of other processors)
   int Nmpighost;                       ///< No. of MPI ghost particles

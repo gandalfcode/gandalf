@@ -163,7 +163,7 @@ public:
 
   // Buffers needed to send and receive particles
   //-----------------------------------------------------------------------------------------------
-  vector<vector<ParticleType<ndim>* > > particles_to_export_per_node;  ///< ..
+  vector<vector<int > > particles_to_export_per_node;  ///< ..
   vector<ParticleType<ndim> > particles_to_export;   ///< Particles to be exported to other nodes
   vector<ParticleType<ndim> > particles_receive;     ///< Particles to be received from other nodes
   vector<ParticleType<ndim> > sendbuffer;            ///< Used by the SendParticles routine
@@ -184,7 +184,7 @@ public:
   void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>*);
   void ReceiveParticles(int Node, int& Nparticles, ParticleType<ndim>** array);
   int SendReceiveGhosts(const FLOAT, Hydrodynamics<ndim> *,ParticleType<ndim>**);
-  int UpdateGhostParticles(ParticleType<ndim>**);
+  int UpdateGhostParticles(ParticleType<ndim>*, ParticleType<ndim>**);
 
 };
 

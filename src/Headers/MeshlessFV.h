@@ -74,7 +74,6 @@ public:
   using Hydrodynamics<ndim>::mmean;
   using Hydrodynamics<ndim>::Ngather;
   using Hydrodynamics<ndim>::Nghost;
-  using Hydrodynamics<ndim>::Nghostmax;
   using Hydrodynamics<ndim>::NImportedParticles;
   using Hydrodynamics<ndim>::Nhydro;
   using Hydrodynamics<ndim>::Nhydromax;
@@ -212,7 +211,6 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
-  using MeshlessFV<ndim>::Nghostmax;
   using MeshlessFV<ndim>::NImportedParticles;
   using MeshlessFV<ndim>::Nhydro;
   using MeshlessFV<ndim>::Nhydromax;
@@ -298,7 +296,6 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
-  using MeshlessFV<ndim>::Nghostmax;
   using MeshlessFV<ndim>::NImportedParticles;
   using MeshlessFV<ndim>::Nhydro;
   using MeshlessFV<ndim>::Nhydromax;
@@ -367,7 +364,6 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
-  using MeshlessFV<ndim>::Nghostmax;
   using MeshlessFV<ndim>::NImportedParticles;
   using MeshlessFV<ndim>::Nhydro;
   using MeshlessFV<ndim>::Nhydromax;

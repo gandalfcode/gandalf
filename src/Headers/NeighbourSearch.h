@@ -261,6 +261,7 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class HydroTree : public virtual NeighbourSearch<ndim>
 {
+	void ReallocateMemory(void);
 #if defined MPI_PARALLEL
   vector<vector<int> > ids_sent_particles;
 protected:

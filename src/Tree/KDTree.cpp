@@ -67,11 +67,8 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
   ltot_old       = -1;
   Ncell          = 0;
   Ncellmax       = 0;
-  Ncellmaxold    = 0;
   Ntot           = 0;
   Ntotmax        = 0;
-  Ntotmaxold     = 0;
-  Ntotold        = -1;
   hmax           = 0.0;
 #if defined _OPENMP
   Nthreads       = omp_get_max_threads();
@@ -104,34 +101,91 @@ KDTree<ndim,ParticleType,TreeCell>::~KDTree()
 /// than currently allocated, tree is deallocated and reallocated here.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
+void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(int Nparticles, int Ncells, bool force_realloc)
 {
   debug2("[KDTree::AllocateTreeMemory]");
 
   //ComputeTreeSize();
 
-  if (!allocated_tree || Ntotmax > Ntotmaxold || Ntot > Ntotmax || Ncellmax > Ncellmaxold) {
+  if (!allocated_tree || Nparticles > Ntotmax ||  Ncells > Ncellmax || force_realloc) {
     if (allocated_tree) DeallocateTreeMemory();
-    Ntotmax     = max(Ntotmax, Ntot);
-    Ntotmaxold  = Ntotmax;
-    Ncellmaxold = Ncellmax;
+
+    Ncells = max(Ncells,Ncellmax);
+    Nparticles = max(Nparticles,Ntotmax);
 
     g2c      = new int[gmax];
-    ids      = new int[Ntotmax];
-    inext    = new int[Ntotmax];
-    celldata = new struct TreeCell<ndim>[Ncellmax];
+    ids      = new int[Nparticles];
+    inext    = new int[Nparticles];
+    celldata = new struct TreeCell<ndim>[Ncells];
 
     allocated_tree = true;
+
+    Ntotmax = Nparticles;
+    Ncellmax = Ncells;
 
     //CreateTreeStructure();
 
   }
+
+  assert(Ntotmax>=Ntot);
+  assert(Ncell<=Ncellmax);
 
   //CreateTreeStructure();
 
   return;
 }
 
+//=================================================================================================
+//  KDTree::ReallocateMemory
+/// Reallocate memory for KD-tree (when we need to grow the tree) as requested. Preserves the existing
+/// information in the tree, differently from the previous function
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void KDTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int Ncells)
+{
+  debug2("[KDTree::ReallocateMemory]");
+
+  if (!allocated_tree) {
+	  ExceptionHandler::getIstance().raise("This function should not be called if the tree has not been allocated yet!");
+  }
+
+
+  if (Nparticles > Ntotmax ) {
+
+	  int* idsold = ids;
+	  int* inextold = inext;
+
+	  ids = new int[Nparticles];
+	  inext    = new int[Nparticles];
+
+	  std::copy(idsold,idsold+Ntotmax,ids);
+	  std::copy(inextold,inextold+Ntotmax,inext);
+
+	  delete[] idsold;
+	  delete[] inextold;
+
+	  Ntotmax = Ntot;
+  }
+
+  if (Ncells > Ncellmax) {
+
+
+    TreeCell<ndim>* celldataold = celldata;
+
+    celldata = new struct TreeCell<ndim>[Ncells];
+
+    std::copy(celldataold,celldataold+Ncellmax,celldata);
+
+    delete[] celldataold;
+
+	Ncellmax=Ncells;
+
+
+  }
+
+
+  return;
+}
 
 
 //=================================================================================================
@@ -188,11 +242,21 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   gtot = 0;
   ltot_old = ltot;
 
+  bool force_realloc=false;
+  if (Npartmax > Ntotmax)
+	  force_realloc=true;
+
+  Ntotmax = Npartmax;
+
   // Compute the size of all tree-related arrays now we know number of points
+  const int gmax_old = gmax;
+  const int Ncellmax_old = Ncellmax;
   ComputeTreeSize();
 
   // Allocate (or reallocate if needed) all tree memory
-  AllocateTreeMemory();
+  if (gmax_old<gmax || Ncellmax>Ncellmax_old)
+	  force_realloc=true;
+  AllocateTreeMemory(Npartmax,0,force_realloc);
 
 
   // If the number of levels in the tree has changed (due to destruction or
@@ -234,9 +298,9 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   // If number of particles remains unchanged, use old id list
   // (nearly sorted list should be faster for quick select).
   if (Ntot > 0) {
-    if (Ntot != Ntotold) {
+//    if (Ntot != Ntotold) {
       for (i=ifirst; i<=ilast; i++) ids[i] = i;
-    }
+//    }
 
     // Recursively build tree from root node down
     DivideTreeCell(ifirst, ilast, partdata, celldata[0]);

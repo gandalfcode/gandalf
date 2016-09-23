@@ -28,6 +28,7 @@
 #include <cassert>
 #include <iostream>
 #include <math.h>
+#include <algorithm>
 #include "Precision.h"
 #include "Sph.h"
 #include "Particle.h"
@@ -78,8 +79,7 @@ GradhSph<ndim, kernelclass>::~GradhSph()
 
 //=================================================================================================
 //  GradhSph::AllocateMemory
-/// Allocate main SPH particle array.  Estimates the maximum number of boundary ghost particles
-/// assuming a roughly uniform depth of ghosts at each boundary.
+/// Allocate main SPH particle array
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
@@ -87,21 +87,29 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
   debug2("[GradhSph::AllocateMemory]");
 
   if (N > Nhydromax || !allocated) {
-    if (allocated) DeallocateMemory();
 
-    // Set conservative estimate for maximum number of particles, assuming
-    // extra space required for periodic ghost particles
-    if (Nhydromax < N) {
-      Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 16.0*kernp->kernrange,ndim);
+	GradhSphParticle<ndim>* oldsphdata;
+	if (allocated) {
+		oldsphdata = sphdata;
+	}
+	else {
+	}
+
+
+    sphdata          = new struct GradhSphParticle<ndim>[N];
+    if (allocated) {
+    	std::copy(oldsphdata,oldsphdata+Nhydromax,sphdata);
+        delete[] oldsphdata;
     }
 
-    sphdata          = new struct GradhSphParticle<ndim>[Nhydromax];
+	Nhydromax=N;
     allocated        = true;
     hydrodata_unsafe = sphdata;
     sphdata_unsafe   = sphdata;
+
   }
 
-  assert(Nhydromax > Nhydro);
+  assert(Nhydromax >= Nhydro);
   assert(sphdata);
 
   return;

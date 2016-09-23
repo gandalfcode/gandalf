@@ -326,7 +326,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Set initial smoothing lengths and create initial ghost particles
   //-----------------------------------------------------------------------------------------------
   sph->Nghost = 0;
-  sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
   sph->Ntot = sph->Nhydro;
   for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
 
@@ -370,6 +369,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Search ghost particles
   sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
   sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                           sph->Nhydromax, timestep, partdata, sph);
 #ifdef MPI_PARALLEL
@@ -379,6 +380,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     parti.hrangesqd = sph->kernfacsqd*sph->kernp->kernrangesqd*parti.h*parti.h;
   }
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
   sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                              sph->Nhydromax, timestep, partdata, sph);
 #endif
@@ -410,11 +413,15 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Search ghost particles
   sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
   sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                           sph->Nhydromax, timestep, partdata, sph);
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
   sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                              sph->Nhydromax, timestep, partdata, sph);
 #endif
@@ -424,6 +431,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep,
                      sph->Ntot, sph->Nhydromax, timestep, partdata, sph);
   sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
   sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                           sph->Nhydromax, timestep, partdata, sph);
   //sphneib->neibcheck = true;
@@ -486,11 +495,15 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   sphneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                      sph->Nhydromax, timestep, partdata, sph);
   sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
   sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                           sph->Nhydromax, timestep, partdata, sph);
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
   sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                              sph->Nhydromax, timestep, partdata, sph);
 #endif
@@ -508,6 +521,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
   mpicontrol->ExportParticlesBeforeForceLoop(sph);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
 #endif
 
 
@@ -668,6 +683,8 @@ void SphSimulation<ndim>::MainLoop(void)
     sphneib->BuildPrunedTree(rank, sph->Nhydromax, simbox, mpicontrol->mpinode, partdata);
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->LoadBalancing(sph, nbody);
+    // Update pointer in case there has been a reallocation
+    partdata = sph->GetSphParticleArray();
     sphneib->InitialiseCellWorkCounters();
   }
 #endif
@@ -682,6 +699,8 @@ void SphSimulation<ndim>::MainLoop(void)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     tghost = timestep*(FLOAT)(ntreebuildstep - 1);
     sphneib->SearchBoundaryGhostParticles(tghost, simbox, sph);
+    // Update pointer in case there has been a reallocation
+    partdata = sph->GetSphParticleArray();
     sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                             sph->Ntot, sph->Nhydromax, timestep, partdata, sph);
 
@@ -691,6 +710,8 @@ void SphSimulation<ndim>::MainLoop(void)
     sphneib->BuildPrunedTree(rank, sph->Nhydromax, simbox, mpicontrol->mpinode, partdata);
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
+    // Update pointer in case there has been a reallocation
+    partdata = sph->GetSphParticleArray();
     sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                                sph->Ntot, sph->Nhydromax, timestep, partdata, sph);
 #endif
@@ -758,6 +779,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // If active particles need forces from other domains, export particles
       mpicontrol->ExportParticlesBeforeForceLoop(sph);
+      // Update pointer in case there has been a reallocation
+      partdata = sph->GetSphParticleArray();
 #endif
 
 
@@ -1601,6 +1624,8 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
     sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep,
                        sph->Ntot, sph->Nhydromax, timestep, partdata, sph);
     sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
+    // Update pointer in case there has been a reallocation
+    partdata = sph->GetSphParticleArray();
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                             sph->Nhydromax, timestep, partdata, sph);
     sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);

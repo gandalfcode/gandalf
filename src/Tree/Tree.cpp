@@ -83,11 +83,17 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
- (TreeCell<ndim> *celllist)            ///< Array containing copies of cells with active ptcls
+ (TreeCell<ndim>** celllistaux)            ///< Array containing copies of cells with active ptcls
 {
   int c;                               // Cell counter
   int Nactive = 0;                     // No. of active leaf cells in tree
 
+  TreeCell<ndim>* celllist = *celllistaux;
+#if defined (MPI_PARALLEL)
+  celllist = new TreeCell<ndim>[Ncellmax];
+#else
+  celllist = new TreeCell<ndim>[gtot];
+#endif
   for (c=0; c<Ncell; c++) {
     if (celldata[c].N <= Nleafmax && celldata[c].copen == -1 && celldata[c].Nactive > 0) {
       celllist[Nactive++] = celldata[c];
@@ -100,6 +106,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
   }
 #endif
 
+  *celllistaux = celllist;
   return Nactive;
 }
 
@@ -1274,7 +1281,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   for (c=0; c<Ncellmax+1; c++) newCellIds[c] = -1;
   //newCellIds[Ncell] = Ncell;
   //newCellIds[Ncellmax] = Ncellmax;
-  assert(Nprunedcellmax <= Ncellmax);
+  //assert(Nprunedcellmax <= Ncellmax);
 
   for (k=0; k<ndim; k++) rmin[k] = mpinode.hbox.boxmin[k];
   for (k=0; k<ndim; k++) rmax[k] = mpinode.hbox.boxmax[k];

@@ -276,9 +276,7 @@ void MpiGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
   int Nmpighosts = mpicontrol->SendReceiveGhosts(tghost, hydro, &ghost_array);
 
   if (hydro->Ntot + Nmpighosts > hydro->Nhydromax) {
-    cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts
-         << " " << hydro->Ntot << " " << hydro->Nhydromax<<endl;
-    ExceptionHandler::getIstance().raise("");
+	  hydro->AllocateMemory(hydro->Ntot + Nmpighosts);
   }
 
   ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
@@ -294,11 +292,6 @@ void MpiGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
   hydro->Nghost += Nmpighosts;
   hydro->Ntot += Nmpighosts;
 
-  if (hydro->Nghost > hydro->Nghostmax || hydro->Ntot > hydro->Nhydromax) {
-    cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts
-             << " " << hydro->Ntot << " " << hydro->Nhydromax<<endl;
-    ExceptionHandler::getIstance().raise("");
-  }
 
 }
 
@@ -315,7 +308,7 @@ void MpiGhostsSpecific<ndim, ParticleType>::CopyHydroDataToGhosts
 {
   ParticleType<ndim>* ghost_array;
   ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
-  int Nmpighosts = mpicontrol->UpdateGhostParticles(&ghost_array);
+  int Nmpighosts = mpicontrol->UpdateGhostParticles(main_array,&ghost_array);
   int start_index = hydro->Nhydro + hydro->NPeriodicGhost;
 
   for (int j=0; j<Nmpighosts; j++) {

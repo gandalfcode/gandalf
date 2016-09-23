@@ -131,8 +131,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCell<ndim>[tree->gtot];
-  cactive = tree->ComputeActiveCellList(celllist);
+  cactive = tree->ComputeActiveCellList(&celllist);
   assert(cactive <= tree->gtot);
 
   // If there are no active cells, return to main loop
@@ -369,12 +368,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   timing->StartTimingSection("SPH_HYDRO_FORCES");
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
-  cactive = tree->ComputeActiveCellList(celllist);
+  cactive = tree->ComputeActiveCellList(&celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
@@ -615,12 +609,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
-  cactive = tree->ComputeActiveCellList(celllist);
+  cactive = tree->ComputeActiveCellList(&celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
@@ -918,12 +907,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
-  cactive = tree->ComputeActiveCellList(celllist);
+  cactive = tree->ComputeActiveCellList(&celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {

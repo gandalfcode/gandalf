@@ -121,7 +121,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active tree cells
-  TreeCell<ndim> *celllist;                // List of active tree cells
+  TreeCell<ndim>* celllist;                // List of active tree cells
   //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
   int Nactivetot = 0;                      // Total number of active particles
@@ -133,8 +133,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCell<ndim>[tree->gtot];
-  cactive = tree->ComputeActiveCellList(celllist);
+  cactive = tree->ComputeActiveCellList(&celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
@@ -370,12 +369,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
-  cactive = tree->ComputeActiveCellList(celllist);
+  cactive = tree->ComputeActiveCellList(&celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
@@ -600,12 +594,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
-  cactive = tree->ComputeActiveCellList(celllist);
+  cactive = tree->ComputeActiveCellList(&celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
@@ -874,12 +863,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
   tree->UpdateHmaxValues(tree->celldata[0], partdata);
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
-  cactive = tree->ComputeActiveCellList(celllist);
+  cactive = tree->ComputeActiveCellList(&celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {

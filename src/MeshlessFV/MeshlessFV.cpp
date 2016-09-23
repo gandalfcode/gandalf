@@ -94,18 +94,29 @@ void MeshlessFV<ndim>::AllocateMemory(int N)
   debug2("[MeshlessFV::AllocateMemory]");
 
   if (N > Nhydromax || !allocated) {
-    if (allocated) DeallocateMemory();
 
-    // Set conservative estimate for maximum number of particles, assuming
-    // extra space required for (periodic) ghost particles
-    if (Nhydromax < N) {
-      Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 16.0*kernp->kernrange,ndim);
-    }
+	  MeshlessFVParticle<ndim>* oldhydrodata;
+		if (allocated) {
+			oldhydrodata = hydrodata;
+		}
+		else {
+		}
 
-    hydrodata = new struct MeshlessFVParticle<ndim>[Nhydromax];
-    allocated = true;
-    hydrodata_unsafe = hydrodata;
-  }
+
+		hydrodata          = new struct MeshlessFVParticle<ndim>[N];
+	    if (allocated) {
+	    	std::copy(oldhydrodata,oldhydrodata+Nhydromax,hydrodata);
+	        delete[] oldhydrodata;
+	    }
+
+		Nhydromax=N;
+	    allocated        = true;
+	    hydrodata_unsafe = hydrodata;
+	  }
+
+  assert(Nhydromax >= Nhydro);
+  assert(hydrodata);
+
 
   return;
 }

@@ -786,7 +786,6 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
   // Sends are probably finished by now, but we do need to wait so that they can be deallocated
   MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
 
-
   return;
 }
 
@@ -935,7 +934,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
                                                   hydro, ghost_export_list);
     for (j=0; j<ghost_export_list.size(); j++) {
       i = ghost_export_list[j];
-      particles_to_export_per_node[inode].push_back(&partdata[i]);
+      particles_to_export_per_node[inode].push_back(i);
     }
 #ifdef OUTPUT_ALL
     cout << "Nexport : " << Nexport << "     size : " << ghost_export_list.size() << endl;
@@ -982,13 +981,13 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   particles_to_export.resize(Nexport);
 
   for (inode=0; inode<Nmpi; inode++) {
-    vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
+    vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
 
     for (iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
-      particles_to_export[index] = *particles_on_this_node[iparticle];
+      particles_to_export[index] = partdata[particles_on_this_node[iparticle]];
 
       // Record in iorig the location in memory of the particle
-      particles_to_export[index].iorig = particles_on_this_node[iparticle] - partdata;
+      particles_to_export[index].iorig = particles_on_this_node[iparticle];
       index++;
     }
   }
@@ -1021,7 +1020,8 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
- (ParticleType<ndim>** array)          ///< Main SPH particle array
+ (		 ParticleType<ndim>* partdata,			  ///< Main array of particles
+		 ParticleType<ndim>** array)          ///< Will contain a pointer to the array of ghosts
 {
   int index = 0;                       // ..
   int inode;                           // MPI node counter
@@ -1029,9 +1029,9 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
 
   // Update the local buffer of particles to send
   for (inode=0; inode<Nmpi; inode++) {
-    vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
+    vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
     for (ipart=0; ipart<particles_on_this_node.size(); ipart++) {
-      particles_to_export[index] = *particles_on_this_node[ipart];
+      particles_to_export[index] = partdata[particles_on_this_node[ipart]];
       index++;
     }
   }
