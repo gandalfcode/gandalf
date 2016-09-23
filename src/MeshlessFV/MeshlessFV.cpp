@@ -282,14 +282,16 @@ void MeshlessFV<ndim>::IntegrateParticles
 	  part.Qcons[k] += part.Qcons0[irho] * part.a0[k] * dn * timestep ;
 
     // Compute primitive values and update all main array quantities
-	this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
-	this->UpdateArrayVariables(part);
+  this->UpdateArrayVariables(part);
+  this->ComputeThermalProperties(part);
+  this->UpdatePrimitiveVector(part) ;
 
 	if (!staticParticles) {
       //-------------------------------------------------------------------------------------------
       for (k=0; k<ndim; k++) {
         //part.r[k] = part.r0[k] + part.v[k]*timestep*(FLOAT) dn;
         part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*timestep*(FLOAT) dn;
+        part.flags.set_flag(update_density) ;
 
         // Check if particle has crossed LHS boundary
         //-----------------------------------------------------------------------------------------
@@ -402,13 +404,15 @@ void MeshlessFV<ndim>::EndTimestep
          DotProduct(part.a, part.rdmdt, ndim));
 
       // Compute primitive values and update all main array quantities
-      this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
+      //this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
       this->UpdateArrayVariables(part);
+      this->ComputeThermalProperties(part);
+      this->UpdatePrimitiveVector(part) ;
 
       // Update all values to the beginning of the next step
       part.nlast  = n;
       part.tlast  = t;
-      part.active = true;
+      part.flags.set_flag(active);
       for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
@@ -418,7 +422,7 @@ void MeshlessFV<ndim>::EndTimestep
     }
     //---------------------------------------------------------------------------------------------
     else {
-      part.active = false;
+      part.flags.unset_flag(active);
     }
     //---------------------------------------------------------------------------------------------
 

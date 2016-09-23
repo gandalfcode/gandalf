@@ -50,9 +50,18 @@ class SlopeLimiter
   SlopeLimiter() {};
   virtual ~SlopeLimiter() {};
 
+
+  virtual void CellLimiter(ParticleType<ndim> &parti,
+                           const ParticleType<ndim>* neibpart, const int* neiblist, int Nneib) {} ;
+
   virtual void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
-                                    FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2]) = 0;
-  virtual void ComputeAlphaSlope(ParticleType<ndim> &parti, ParticleType<ndim> &partj, FLOAT draux[ndim]) {};
+                                    FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2]) {
+    for (int var=0; var<ndim+2; var++) {
+      dW[var] = DotProduct(parti.grad[var], draux, ndim);
+      for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
+    }
+  }
+
 };
 
 
@@ -100,159 +109,226 @@ class NullLimiter : public SlopeLimiter<ndim,ParticleType>
 
   NullLimiter() {};
   ~NullLimiter() {};
-
-  //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
-                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
-  {
-    for (int var=0; var<ndim+2; var++) {
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
-    }
-  }
-
 };
 
 
-
 //=================================================================================================
-//  Class Springel2009Limiter
-/// \brief   ...
-/// \details ...
-/// \author  D. A. Hubber
-/// \date    23/03/2015
+//  Class TVDScalarLimiter
+/// \brief   TVD Scalar limiter.
+/// \details The standard generalisation of the minmod or monotized central slope limiters to
+///          multiple dimensions. For each neighbour, the slope is reconstructed to either the
+///          neighbouring particle (minmod) or to the face (monotized central slopes). The slope is
+///          is then limited to ensure the reconstruction lies between the values for the particle
+///          and it's neighbour. This repeated for each primitive variable and each neighbour.
+///          The TESS slope limiter (Hess & Springel, 2011) is equivalent to this limiter.
+/// \author  R. A. Booth
+/// \date    14/09/2016
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-class Springel2009Limiter : public SlopeLimiter<ndim,ParticleType>
+class TVDScalarLimiter : public SlopeLimiter<ndim,ParticleType>
 {
  public:
 
-  Springel2009Limiter() {};
-  ~Springel2009Limiter() {};
+  TVDScalarLimiter(bool limit_at_edge=true)
+    : _edge_limit(limit_at_edge)
+  {};
 
   //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
-                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
-  {
-    for (int var=0; var<ndim+2; var++) {
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      dW[var] = parti.alpha_slope[var]*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = parti.alpha_slope[var]*parti.grad[var][k];
+  void CellLimiter(ParticleType<ndim> &parti,
+                   const ParticleType<ndim>* neibpart, const int* neiblist, int Nneib) {
+    double dr[ndim] ;
+    double alpha[ndim+2] ;
+    int j, jj, k, var ;
+
+    for (var=0; var<ndim+2; var++) alpha[var] = 1.0 ;
+
+    for (jj=0; jj<Nneib; jj++) {
+      j = neiblist[jj];
+
+      for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
+
+      // Calculate min and max values of primitives for slope limiters
+      for (var=0; var<ndim+2; var++) {
+        // Reconstruct slope to cell edge or neighbouring particle.
+        double dW = DotProduct(parti.grad[var], dr, ndim) ;
+        if (_edge_limit) dW *= 0.51 ;
+
+        double dWcell = neibpart[j].Wprim[var] - parti.Wprim[var] ;
+
+        // Limit the reconstructive value to be between the two cell values
+        if (dW != 0)
+          alpha[var] = min(alpha[var], max(0., min(1., dWcell / dW))) ;
+      }
     }
+
+    for (var=0; var<ndim+2; var++)
+      for (int k=0; k<ndim; k++)
+        parti.grad[var][k] *= alpha[var] ;
   }
 
-  virtual void ComputeAlphaSlope(ParticleType<ndim> &parti, ParticleType<ndim> &partj, FLOAT draux[ndim])
-  {
-    FLOAT psi;
-    FLOAT dW[ndim+2];
-
-    for (int var=0; var<ndim+2; var++) {
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      if (dW[var] > (FLOAT) 0.0) psi = (parti.Wmax[var] - parti.Wprim[var])/dW[var];
-      else if (dW[var] < (FLOAT) 0.0) psi = (parti.Wmin[var] - parti.Wprim[var])/dW[var];
-      else psi = (FLOAT) 1.0;
-      parti.alpha_slope[var] = min(parti.alpha_slope[var], psi);
-    }
-  }
-
+private:
+  bool _edge_limit ;
 };
 
-
-
 //=================================================================================================
-//  Class TESS2011Limiter
-/// \brief   ...
-/// \details ...
-/// \author  D. A. Hubber
-/// \date    23/03/2015
+//  Class ScalarLimiter.
+/// \brief   Scalar limiter with relaxed constraints. The limiter merely assures that the maximum
+///          and minimum reconstructed values lie within the maximum / minimum values of all of the
+///          neighbours. Slopes can either be reconstructed to particle locations (minmod style) or
+///          or cell faces (mon-cen style, preferred).
+///          The Balsara (2004) limiter with psi = 0.5 or 1 (minmod or mon-cen style) and the
+///          original Gaburov & Nitadori (2011) limiter are of this form.
+/// \details
+/// \author  R. A. Booth
+/// \date    14/09/2016
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-class TESS2011Limiter : public SlopeLimiter<ndim,ParticleType>
+class ScalarLimiter: public SlopeLimiter<ndim,ParticleType>
 {
  public:
 
-  TESS2011Limiter() {};
-  ~TESS2011Limiter() {};
+  ScalarLimiter(bool limit_at_edge=true)
+    : _edge_limit(limit_at_edge)
+  {};
 
   //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
-                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
-  {
-    for (int var=0; var<ndim+2; var++) {
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      dW[var] = parti.alpha_slope[var]*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = parti.alpha_slope[var]*parti.grad[var][k];
+  void CellLimiter(ParticleType<ndim> &parti,
+                   const ParticleType<ndim>* neibpart, const int* neiblist, int Nneib) {
+    double dr[ndim], drmax ;
+    double Wmax[ndim+2], Wmin[ndim+2] ;
+    int j, jj, k, var ;
+
+    // Get the max / min values over the neighbours
+    for (var=0; var<ndim+2; var++) {
+      Wmax[var] = Wmin[var] = parti.Wprim[var] ;
     }
-  }
 
-  virtual void ComputeAlphaSlope(ParticleType<ndim> &parti, ParticleType<ndim> &partj, FLOAT draux[ndim])
-  {
-    const FLOAT theta = (FLOAT) 0.5;
-    FLOAT psi;
-    FLOAT dW[ndim+2];
+    // Compute the maximum particle volume and max/min values in
+    // that volume.
+    drmax = 0 ;
+    for (jj=0; jj<Nneib; jj++) {
+      j = neiblist[jj];
 
-    for (int var=0; var<ndim+2; var++) {
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      if (dW[var] > (FLOAT) 0.0) psi = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], (FLOAT) 0.0);
-      else if (dW[var] < 0.0) psi = max(theta*(partj.Wprim[var] - parti.Wprim[var])/dW[var], (FLOAT) 0.0);
-      else psi = (FLOAT) 1.0;
-      parti.alpha_slope[var] = min(parti.alpha_slope[var], psi);
+      for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
+
+      for (var=0; var<ndim+2; var++) {
+        Wmax[var] = max(Wmax[var], neibpart[j].Wprim[var]) ;
+        Wmin[var] = min(Wmin[var], neibpart[j].Wprim[var]) ;
+        drmax = max(drmax, sqrt(DotProduct(dr,dr, ndim))) ;
+      }
     }
-  }
 
-};
-
-
-
-//=================================================================================================
-//  Class Balsara2004Limiter
-/// \brief   ...
-/// \details ...
-/// \author  D. A. Hubber
-/// \date    23/03/2015
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class Balsara2004Limiter : public SlopeLimiter<ndim,ParticleType>
-{
- public:
-
-  Balsara2004Limiter() {};
-  ~Balsara2004Limiter() {};
-
-  //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
-                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
-  {
-    int var;
-    FLOAT alpha = (FLOAT) 0.0;
-    const FLOAT beta = (FLOAT) 1.0;
+    // TODO:
+    //   Factor of 2 here is a hack assuming m4 kernel
+    drmax = max(drmax, 2 * parti.h) ;
+    if (_edge_limit) drmax *= 0.51 ;
 
     for (var=0; var<ndim+2; var++) {
+      double gradW = sqrt(DotProduct(parti.grad[var], parti.grad[var], ndim)) ;
+      double dW = drmax * gradW ;
 
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
-                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
-      alpha = max((FLOAT) 0.0, alpha);
+      double dWmax = Wmax[var] - parti.Wprim[var] ;
+      double dWmin = parti.Wprim[var] - Wmin[var] ;
 
-      dW[var] = alpha*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
+      double alpha = 1 ;
+      if (dW != 0)
+        alpha = max(0., min(1., min(dWmax/dW, dWmin/dW))) ;
 
-      assert(alpha >= (FLOAT) 0.0 && alpha <= (FLOAT) 1.0);
+      for (int k=0; k<ndim; k++)
+        parti.grad[var][k] *= alpha ;
     }
   }
 
+private:
+  bool _edge_limit ;
+};
+
+//=================================================================================================
+//  Class Springel2009Limiter.
+/// \brief   Limiter used in the AREPO paper. The limiter is similar to the ScalarLimiter, except it
+///          only limits the gradients based on values that are actually reconstructed rather than
+///          all possible values that could be reconstructed, making it slightly less diffusive.
+/// \details
+/// \author  R. A. Booth, D. A. Hubber
+/// \date    14/09/2016
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class Springel2009Limiter: public SlopeLimiter<ndim,ParticleType>
+{
+ public:
+
+  Springel2009Limiter(bool limit_at_edge=true)
+    : _edge_limit(limit_at_edge)
+  {};
+
+  //===============================================================================================
+  void CellLimiter(ParticleType<ndim> &parti,
+                   const ParticleType<ndim>* neibpart, const int* neiblist, int Nneib) {
+    double dr[ndim] ;
+    double dWmax[ndim+2], dWmin[ndim+2] ;
+    double alpha[ndim+2] ;
+    int j, jj, k, var ;
+
+    // Get the max / min values over the neighbours
+    for (var=0; var<ndim+2; var++) {
+      alpha[var] = 1.0 ;
+      dWmax[var] = dWmin[var] = parti.Wprim[var] ;
+    }
+
+    // Compute the maximum particle volume and max/min values in
+    // that volume.
+    for (jj=0; jj<Nneib; jj++) {
+      j = neiblist[jj];
+      for (var=0; var<ndim+2; var++) {
+        dWmax[var] = max(dWmax[var], neibpart[j].Wprim[var]) ;
+        dWmin[var] = min(dWmin[var], neibpart[j].Wprim[var]) ;
+      }
+    }
+    for (var=0; var<ndim+2; var++) {
+      dWmax[var] -= parti.Wprim[var] ;
+      dWmin[var] -= parti.Wprim[var] ;
+    }
+
+
+    for (jj=0; jj<Nneib; jj++) {
+      j = neiblist[jj];
+
+      for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
+
+      for (var=0; var<ndim+2; var++) {
+        double dW = DotProduct(parti.grad[var], dr, ndim) ;
+
+        if (_edge_limit) dW *= 0.51 ;
+
+        if (dW > 0)
+          alpha[var] = min(alpha[var], dWmax[var] / dW) ;
+        else if (dW < 0)
+          alpha[var] = min(alpha[var], dWmin[var] / dW) ;
+      }
+    }
+
+    for (var=0; var<ndim+2; var++)
+     for (k =0; k < ndim; k++)
+       parti.grad[var][k] *= alpha[var] ;
+  }
+
+private:
+  bool _edge_limit ;
 };
 
 
 //=================================================================================================
 //  Class GizmoLimiter
-/// \brief   ...
-/// \details ...
+/// \brief   Slope limiter from the GIZMO paper.
+/// \details This limiter consists of first applying the non-TVD ScalarLimiter to limit the
+///          gradient for a given particle. Subsequently a per-face limiter is applied that ensures
+///          each of the 1D Riemann problems are (approximately) TVD, even if the full problem is
+//           not.
 /// \author  D. A. Hubber
 /// \date    23/03/2015
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
+class GizmoLimiter : public ScalarLimiter<ndim,ParticleType>
 {
  public:
 
@@ -269,20 +345,14 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
     FLOAT phiminus;
     FLOAT phiplus;
     FLOAT phimid;
-    const FLOAT beta = (FLOAT) 0.75;
     const FLOAT psi1 = (FLOAT) 0.5;
-    const FLOAT psi2 = (FLOAT) 0.25;  //0.25;
+    const FLOAT psi2 = (FLOAT) 0.375;
 
     //---------------------------------------------------------------------------------------------
     for (var=0; var<ndim+2; var++) {
 
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
-                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
-      alpha = max((FLOAT) 0.0, alpha);
-
-      dW[var] = alpha*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
+      dW[var] = DotProduct(parti.grad[var], draux, ndim) ;
+      for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
 
 
       for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];
@@ -294,7 +364,7 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
       const FLOAT phimax = max(parti.Wprim[var], partj.Wprim[var]);
       const FLOAT phibar = parti.Wprim[var] + (partj.Wprim[var] - parti.Wprim[var])*
         sqrt(DotProduct(draux, draux, ndim))/drmag;
-      const FLOAT phimid0 = parti.Wprim[var] + dW[var]; //DotProduct(gradW[var], draux, ndim);
+      const FLOAT phimid0 = parti.Wprim[var] + dW[var];
 
       if (sgn(phimin - delta1) == sgn(phimin)) {
         phiminus = phimin - delta1;
@@ -322,293 +392,10 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
 
       FLOAT drsqd = DotProduct(draux, draux, ndim);
       dW[var] = phimid - parti.Wprim[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = dW[var]*draux[k]/drsqd;
-
     }
     //---------------------------------------------------------------------------------------------
   }
 
 };
 
-
-
-
-//=================================================================================================
-//  Class GizmoLimiter
-/// \brief   ...
-/// \details ...
-/// \author  D. A. Hubber
-/// \date    23/03/2015
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class GizmoLimiter3 : public SlopeLimiter<ndim,ParticleType>
-{
- public:
-
-  GizmoLimiter3() {};
-  ~GizmoLimiter3() {};
-
-  //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
-                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
-  {
-    int var;
-    FLOAT alpha = (FLOAT) 0.0;
-    FLOAT dr[ndim];
-    FLOAT phiminus;
-    FLOAT phiplus;
-    FLOAT phimid;
-    const FLOAT beta = (FLOAT) 2.0;
-    const FLOAT psi1 = (FLOAT) 0.5;
-    const FLOAT psi2 = (FLOAT) 0.375;  //0.25;
-    FLOAT gradPerp[ndim];
-    FLOAT dr_unit[ndim];
-
-    const FLOAT alim = 0.25;
-    const FLOAT stol = 0.0;
-
-
-    //---------------------------------------------------------------------------------------------
-    for (var=0; var<ndim+2; var++) {
-
-      for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];
-      FLOAT drmag = sqrt(DotProduct(dr, dr, ndim));
-      for (int k=0; k<ndim; k++) dr_unit[k] = dr[k]/drmag;
-
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      for (int k=0; k<ndim; k++) gradPerp[k] = parti.grad[var][k] - DotProduct(parti.grad[var], dr_unit, ndim)*dr_unit[k];
-
-
-
-
-      /*FLOAT d_abs = 0.0;
-      d_abs += DotProduct(parti.grad[var], parti.grad[var], ndim);
-
-      if (d_abs > 0.0) {
-        FLOAT cfac = 1.0 / (alim*sqrt(parti.hrangesqd*d_abs));
-        FLOAT fabs_max = fabs(parti.Wmax[var]);
-        FLOAT fabs_min = fabs(parti.Wmin[var]);
-        FLOAT abs_min = min(fabs_max, fabs_min);
-        if (stol > 0.0) {
-
-        }
-        else {
-          cfac *= abs_min;
-        }
-        if (cfac < 1.0) {
-          for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k]*cfac;
-          dW[var] = DotProduct(gradW[var], draux, ndim);
-        }
-        else {
-          for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
-          dW[var] = DotProduct(gradW[var], draux, ndim);
-        }
-      }*/
-
-      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
-                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
-      alpha = max((FLOAT) 0.0, alpha);
-      alpha = 1.0;
-
-      dW[var] = alpha*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
-
-
-
-      const FLOAT delta1 = psi1*fabs(parti.Wprim[var] - partj.Wprim[var]);
-      const FLOAT delta2 = psi2*fabs(parti.Wprim[var] - partj.Wprim[var]);
-      const FLOAT phimin = min(parti.Wprim[var], partj.Wprim[var]);
-      const FLOAT phimax = max(parti.Wprim[var], partj.Wprim[var]);
-      const FLOAT phibar = parti.Wprim[var] + (partj.Wprim[var] - parti.Wprim[var])*
-        sqrt(DotProduct(draux, draux, ndim))/drmag;
-      const FLOAT phimid0 = parti.Wprim[var] + dW[var]; //DotProduct(gradW[var], draux, ndim);
-
-      if (sgn(phimin - delta1) == sgn(phimin)) {
-        phiminus = phimin - delta1;
-      }
-      else {
-        phiminus = phimin / ((FLOAT) 1.0 + delta1/fabs(phimin));
-      }
-
-      if (sgn(phimax + delta1) == sgn(phimax)) {
-        phiplus = phimax + delta1;
-      }
-      else {
-        phiplus = phimax / ((FLOAT) 1.0 + delta1/fabs(phimax));
-      }
-
-      if (parti.Wprim[var] < partj.Wprim[var]) {
-        phimid = max(phiminus, min(phibar + delta2, phimid0));
-      }
-      else if (parti.Wprim[var] > partj.Wprim[var]) {
-        phimid = min(phiplus, max(phibar - delta2, phimid0));
-      }
-      else {
-        phimid = parti.Wprim[var];
-      }
-
-      FLOAT drsqd = DotProduct(draux, draux, ndim);
-      dW[var] = phimid - parti.Wprim[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = gradPerp[k] + dW[var]*draux[k]/drsqd;
-
-    }
-    //---------------------------------------------------------------------------------------------
-  }
-
-};
-
-
-
-
-//=================================================================================================
-//  Class GizmoLimiter
-/// \brief   ...
-/// \details ...
-/// \author  D. A. Hubber
-/// \date    23/03/2015
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class Gizmo2Limiter : public SlopeLimiter<ndim,ParticleType>
-{
- public:
-
-  Gizmo2Limiter() {};
-  ~Gizmo2Limiter() {};
-
-  //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
-                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
-  {
-    int var;
-    FLOAT alpha = (FLOAT) 0.0;
-    FLOAT dr[ndim];
-    FLOAT phiminus;
-    FLOAT phiplus;
-    FLOAT phimid;
-    const FLOAT beta = (FLOAT) 2.0;
-    const FLOAT psi1 = (FLOAT) 0.5;
-    const FLOAT psi2 = (FLOAT) 0.375;  //0.25;
-    FLOAT gradPerp[ndim];
-    FLOAT dr_unit[ndim];
-
-    const FLOAT alim = 0.25;
-    const FLOAT stol = 0.0;
-
-
-    //---------------------------------------------------------------------------------------------
-    for (var=0; var<ndim+2; var++) {
-
-      for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];
-      FLOAT drmag = sqrt(DotProduct(dr, dr, ndim));
-      for (int k=0; k<ndim; k++) dr_unit[k] = dr[k]/drmag;
-
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      for (int k=0; k<ndim; k++) gradPerp[k] = 0.0; //parti.grad[var][k] - DotProduct(parti.grad[var], dr_unit, ndim)*dr_unit[k];
-
-
-
-      alpha = min((FLOAT) 1.0, beta*min((parti.Wmax[var] - parti.Wprim[var])/(parti.Wmidmax[var] - parti.Wprim[var]),
-                                        (parti.Wprim[var] - parti.Wmin[var])/(parti.Wprim[var] - parti.Wmidmin[var])));
-      alpha = max((FLOAT) 0.0, alpha);
-      //alpha = 1.0;
-
-      dW[var] = alpha*dW[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = alpha*parti.grad[var][k];
-
-
-
-      const FLOAT delta1 = psi1*fabs(parti.Wprim[var] - partj.Wprim[var]);
-      const FLOAT delta2 = psi2*fabs(parti.Wprim[var] - partj.Wprim[var]);
-      const FLOAT phimin = min(parti.Wprim[var], partj.Wprim[var]);
-      const FLOAT phimax = max(parti.Wprim[var], partj.Wprim[var]);
-      const FLOAT phibar = parti.Wprim[var] + (partj.Wprim[var] - parti.Wprim[var])*
-        sqrt(DotProduct(draux, draux, ndim))/drmag;
-      const FLOAT phimid0 = parti.Wprim[var] + dW[var]; //DotProduct(gradW[var], draux, ndim);
-
-      if (sgn(phimin - delta1) == sgn(phimin)) {
-        phiminus = phimin - delta1;
-      }
-      else {
-        phiminus = phimin / ((FLOAT) 1.0 + delta1/fabs(phimin));
-      }
-
-      if (sgn(phimax + delta1) == sgn(phimax)) {
-        phiplus = phimax + delta1;
-      }
-      else {
-        phiplus = phimax / ((FLOAT) 1.0 + delta1/fabs(phimax));
-      }
-
-      if (parti.Wprim[var] < partj.Wprim[var]) {
-        phimid = max(phiminus, min(phibar + delta2, phimid0));
-      }
-      else if (parti.Wprim[var] > partj.Wprim[var]) {
-        phimid = min(phiplus, max(phibar - delta2, phimid0));
-      }
-      else {
-        phimid = parti.Wprim[var];
-      }
-
-      FLOAT drsqd = DotProduct(draux, draux, ndim);
-      dW[var] = phimid - parti.Wprim[var];
-      for (int k=0; k<ndim; k++) gradW[var][k] = gradPerp[k] + dW[var]*draux[k]/drsqd;
-
-    }
-    //---------------------------------------------------------------------------------------------
-  }
-
-};
-
-
-
-//=================================================================================================
-//  Class MinModLimiter
-/// \brief   Null slope limiter.  Extrapolates variables fully without limiting their values.
-/// \details Null slope limiter.  Extrapolates variables fully without limiting their values.
-/// \author  D. A. Hubber
-/// \date    23/03/2015
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class MinModLimiter : public SlopeLimiter<ndim,ParticleType>
-{
- public:
-
-  MinModLimiter() {};
-  ~MinModLimiter() {};
-
-  //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
-                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
-  {
-    for (int var=0; var<ndim+2; var++) {
-
-      FLOAT dr[ndim], dr_unit[ndim];
-      for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];
-      FLOAT drmag = sqrt(DotProduct(dr, dr, ndim));
-      for (int k=0; k<ndim; k++) dr_unit[k] = dr[k] / drmag;
-
-      FLOAT D = DotProduct(parti.grad[var], dr_unit, ndim);
-
-      if (D == (FLOAT) 0.0 && partj.Wprim[var] == parti.Wprim[var]) {
-        dW[var] = (FLOAT) 0.0;
-        for (int k=0; k<ndim; k++) gradW[var][k] = (FLOAT) 0.0;
-        continue;
-      }
-
-      FLOAT r = (partj.Wprim[var] - parti.Wprim[var]) /
-        (parti.Wprim[var] - partj.Wprim[var] + 2.0*D*drmag);
-      r = max(r, (FLOAT) 0.0);
-
-      //FLOAT phi = min(2.0/(1.0 + r), 2.0*r/(1.0 + r));
-      //FLOAT phi = min(1.0, min(4.0/(1.0 + r), 4.0*r/(1.0 + r)));
-      //FLOAT phi = 2.0*r/(r*r + 1.0);
-      FLOAT phi = (FLOAT) 4.0*r/pow(r + (FLOAT) 1.0, 2);
-
-      dW[var] = (FLOAT) 0.5*phi*D*drmag;
-      for (int k=0; k<ndim; k++) gradW[var][k] = dW[var]*dr_unit[k];
-
-    }
-  }
-
-};
 #endif

@@ -145,7 +145,7 @@ public:
     p2.hrangesqd = hydro->kernfacsqd*hydro->kernrange*hydro->kernrange*p2.h*p2.h;
     p2.hfactor = pow(p2.invh,ndim+1);
     p2.sound = hydro->eos->SoundSpeed(p2);
-    p2.active = true;
+    p2.flags.set_flag(active);
 
     p2.gpot=0;
     p2.div_v=0;

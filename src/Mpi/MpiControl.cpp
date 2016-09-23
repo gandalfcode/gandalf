@@ -616,7 +616,7 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
     const FLOAT received_mass = buffer_receive[i];
     partdata[iorig_ghost].m = received_mass ;
     if (received_mass == 0.0) {
-      partdata[iorig_ghost].active = false;
+      partdata[iorig_ghost].flags.unset_flag(active);
       partdata[iorig_ghost].flags.set_flag(dead);
     }
   }

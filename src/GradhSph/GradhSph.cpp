@@ -336,10 +336,10 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
   // Calculate the minimum neighbour potential (used later to identify new sinks)
   if (create_sinks == 1) {
-    parti.potmin = true;
+    parti.flags.set_flag(potmin);
     for (j=0; j<Nneib; j++) {
       if (gpot[j] > (FLOAT) 1.000000001*parti.gpot &&
-          drsqd[j]*invhsqd < kern.kernrangesqd) parti.potmin = false;
+          drsqd[j]*invhsqd < kern.kernrangesqd) parti.flags.unset_flag(potmin);
     }
   }
 

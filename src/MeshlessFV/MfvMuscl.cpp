@@ -177,7 +177,6 @@ void MfvMuscl<ndim, kernelclass>::ComputeGodunovFlux
     assert(Wj[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    //riemann->ComputeFluxes(Wj, Wi, dr_unit, vface, flux);
     riemann->ComputeFluxes(Wj, Wi, Aunit, vface, flux);
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators

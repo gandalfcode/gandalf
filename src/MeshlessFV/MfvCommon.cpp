@@ -201,10 +201,10 @@ int MfvCommon<ndim, kernelclass>::ComputeH
 
   // Calculate the minimum neighbour potential (used later to identify new sinks)
   if (create_sinks == 1) {
-    part.potmin = true;
+    part.flags.set_flag(potmin);
     for (j=0; j<Nneib; j++) {
       if (gpot[j] > (FLOAT) 1.000000001*part.gpot &&
-          drsqd[j]*invhsqd < kern.kernrangesqd) part.potmin = false;
+          drsqd[j]*invhsqd < kern.kernrangesqd) part.flags.unset_flag(potmin);
     }
   }
 
@@ -337,14 +337,6 @@ void MfvCommon<ndim, kernelclass>::ComputeGradients
       part.grad[var][k] = (FLOAT) 0.0;
     }
   }
-  for (var=0; var<nvar; var++) {
-    part.Wmin[var] = part.Wprim[var];
-    part.Wmax[var] = part.Wprim[var];
-    part.Wmidmin[var] = big_number;
-    part.Wmidmax[var] = -big_number;
-    part.alpha_slope[var] = (FLOAT) 1.0;
-  }
-
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
@@ -384,38 +376,9 @@ void MfvCommon<ndim, kernelclass>::ComputeGradients
 
 
 
-  // Find all max and min values for meshless slope limiters
+  // Apply the slope limiter
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
-
-    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
-
-    // Calculate min and max values of primitives for slope limiters
-    for (var=0; var<nvar; var++) {
-      part.Wmin[var] = min(part.Wmin[var], neibpart[j].Wprim[var]);
-      part.Wmax[var] = max(part.Wmax[var], neibpart[j].Wprim[var]);
-      part.Wmidmin[var] = min(part.Wmidmin[var],
-        part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
-      part.Wmidmax[var] = max(part.Wmidmax[var],
-        part.Wprim[var] + (FLOAT) 0.5*DotProduct(part.grad[var], draux, ndim));
-      assert(part.Wmidmax[var] >= part.Wmidmin[var]);
-      assert(part.Wmax[var] >= part.Wmin[var]);
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-
-
-  // Compute the alpha slope term for certain slope limiters
-  //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
-    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
-    limiter->ComputeAlphaSlope(part, neibpart[j], draux);
-  }
-  //-----------------------------------------------------------------------------------------------
+  limiter->CellLimiter(part, neibpart, neiblist, Nneib) ;
 
 
   assert(part.vsig_max >= part.sound);
@@ -453,7 +416,7 @@ void MfvCommon<ndim, kernelclass>::CopyDataToGhosts
     partdata[i]        = partdata[iorig];
     partdata[i].iorig  = iorig;
     partdata[i].flags  = type_flag(itype);
-    partdata[i].active = false;
+    partdata[i].flags.unset_flag(active);
 
 
     // Modify ghost position based on ghost type

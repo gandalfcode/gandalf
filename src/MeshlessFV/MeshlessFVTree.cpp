@@ -191,6 +191,19 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
       celldone = 1;
       hmax = cell.hmax;
 
+      // Find list of active particles in current cell
+      Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
+      // Skip particles that have an up-to-date density estimate
+      for (j=0; j< Nactive; j++) {
+        if (mfvdata[activelist[j]].flags.check_flag(update_density)) {
+          activepart[j] = mfvdata[activelist[j]] ;
+        } else {
+          activelist[j] = activelist[--Nactive] ;
+          j-- ;
+        }
+      }
+
+      if (Nactive == 0) continue ;
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
@@ -199,9 +212,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
         hmax = (FLOAT) 1.05*hmax;
         celldone = 1;
 
-        // Find list of active particles in current cell
-        Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
-        for (j=0; j<Nactive; j++) activepart[j] = mfvdata[activelist[j]];
 
         // Compute neighbour list for cell from particles on all trees
         Nneib = 0;
@@ -302,8 +312,12 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
       } while (celldone == 0);
       //-------------------------------------------------------------------------------------------
 
-      // Once cell is finished, copy all active particles back to main memory
-      for (j=0; j<Nactive; j++) mfvdata[activelist[j]] = activepart[j];
+      // Once cell is finished, copy all active particles back to main memory and record that we
+      // have done a density update
+      for (j=0; j<Nactive; j++) {
+        activepart[j].flags.unset_flag(update_density) ;
+        mfvdata[activelist[j]] = activepart[j];
+      }
 
 
     }
@@ -530,10 +544,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         }
         for (int var=0; var<ndim+2; var++) {
           for (k=0; k<ndim; k++) mfvdata[i].grad[var][k] = activepart[j].grad[var][k];
-          mfvdata[i].Wmin[var] = activepart[j].Wmin[var];
-          mfvdata[i].Wmax[var] = activepart[j].Wmax[var];
-          mfvdata[i].Wmidmin[var] = activepart[j].Wmidmin[var];
-          mfvdata[i].Wmidmax[var] = activepart[j].Wmidmax[var];
         }
         mfvdata[i].vsig_max = activepart[j].vsig_max;
       }
@@ -780,8 +790,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       for (int jj=0; jj<Nneib; jj++) {
         i = neibpart[jj].iorig;
         if (!neibpart[jj].flags.is_mirror()) {
-	  if (neibpart[jj].active)
-	    for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
+	        if (neibpart[jj].flags.check_flag(active))
+	          for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
           for (k=0; k<ndim+2; k++) dQBuffer[i][k] += neibpart[jj].dQ[k];
           for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
         }
@@ -804,7 +814,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-	    if (mfvdata[i].active)
+	    if (mfvdata[i].flags.check_flag(active))
 	      for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
