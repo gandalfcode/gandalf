@@ -135,40 +135,41 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   assert(!part.flags.is_dead());
   assert(part.m > (FLOAT) 0.0);
 
+  FLOAT ndens, rho, volume, invomega, zeta, h, invh, hfactor ;
 
+  h = part.h ;
   // Main smoothing length iteration loop
   //===============================================================================================
   do {
 
     // Initialise all variables for this value of h
     iteration++;
-    part.ndens    = (FLOAT) 0.0;
-    part.invomega = (FLOAT) 0.0;
-    part.zeta     = (FLOAT) 0.0;
-    part.invh     = (FLOAT) 1.0/part.h;
-    part.hfactor  = pow(part.invh,ndim);
-    invhsqd       = part.invh*part.invh;
+    ndens    = 0;
+    invomega = 0;
+    zeta     = 0;
+    invh     = 1/h;
+    hfactor  = pow(invh,ndim);
+    invhsqd  = invh*invh ;
 
     // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
-      ssqd           = drsqd[j]*invhsqd;
-      part.ndens    += kern.w0_s2(ssqd);
-      part.invomega += part.invh*kern.womega_s2(ssqd);
-      part.zeta     += m[j]*kern.wzeta_s2(ssqd);
+      ssqd      = drsqd[j]*invhsqd;
+      ndens    += kern.w0_s2(ssqd);
+      invomega += invh*kern.womega_s2(ssqd);
+      zeta     += m[j]*kern.wzeta_s2(ssqd);
     }
     //---------------------------------------------------------------------------------------------
 
-    part.ndens    *= part.hfactor;
-    part.invomega *= part.hfactor;
-    part.zeta     *= invhsqd;
-    part.volume    = (FLOAT) 1.0/part.ndens;
-    part.rho       = part.m*part.ndens;
-    if (part.rho > (FLOAT) 0.0) part.invrho = (FLOAT) 1.0/part.rho;
+    ndens    *= hfactor;
+    invomega *= hfactor;
+    zeta     *= invhsqd;
+    volume    = 1/ndens;
+    rho       = part.m*ndens;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (part.rho > (FLOAT) 0.0 && part.h > h_lower_bound &&
-        fabs(part.h - h_fac*pow(part.volume,MeshlessFV<ndim>::invndim)) < h_converge) break;
+        fabs(part.h - h_fac*pow(volume,MeshlessFV<ndim>::invndim)) < h_converge) break;
 
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
@@ -177,41 +178,42 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
     // more slowly.  (N.B. will implement Newton-Raphson soon)
     //---------------------------------------------------------------------------------------------
     if (iteration < iteration_max) {
-      part.h = h_fac*pow(part.volume,MeshlessFV<ndim>::invndim);
+      h = h_fac*pow(volume,MeshlessFV<ndim>::invndim);
     }
     else if (iteration == iteration_max) {
-      part.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
+      h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else if (iteration < 5*iteration_max) {
-      if (part.ndens < small_number || part.ndens*pow(part.h,ndim) > pow(h_fac,ndim)) {
-        h_upper_bound = part.h;
+      if (ndens < small_number || ndens*pow(h,ndim) > pow(h_fac,ndim)) {
+        h_upper_bound = h;
       }
       else {
-        h_lower_bound = part.h;
+        h_lower_bound = h;
       }
-      part.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
+      h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else {
-      cout << "H ITERATION : " << iteration << "    h : " << part.h
-           << "   rho : " << part.rho << "   h_upper " << h_upper_bound << "    hmax :  " << hmax
-           << "   h_lower : " << h_lower_bound << "    " << part.hfactor << "    m : " << part.m
-           << "     " << part.m*part.hfactor*kern.w0(0.0) << "    " << Nneib << endl;
+      cout << "H ITERATION : " << iteration << "    h : " << h
+           << "   rho : " << rho << "   h_upper " << h_upper_bound << "    hmax :  " << hmax
+           << "   h_lower : " << h_lower_bound << "    " << hfactor << "    m : " << part.m
+           << "     " << part.m*hfactor*kern.w0(0.0) << "    " << Nneib << endl;
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }
 
     // If the smoothing length is too large for the neighbour list, exit routine and flag neighbour
     // list error in order to generate a larger neighbour list (not properly implemented yet).
-    if (part.h > hmax) return 0;
+    if (h > hmax) return 0;
 
-  } while (part.h > h_lower_bound && part.h < h_upper_bound);
+  } while (h > h_lower_bound && h < h_upper_bound);
   //===============================================================================================
 
 
   // Compute other terms once number density and smoothing length are known
-  part.h         = max(h_fac*powf(part.volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
-  part.invh      = (FLOAT) 1.0/part.h;
-  part.hfactor   = pow(part.invh, ndim+1);
+  part.ndens     = ndens ;
+  part.rho       = rho ;
+  part.h         = max(h_fac*powf(volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
+  part.hfactor   = pow(1/part.h, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
   part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
@@ -230,7 +232,6 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   // Set important thermal variables here
   this->ComputeThermalProperties(part);
   this->UpdatePrimitiveVector(part);
-  //this->UpdateArrayVariables(part);
 
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
@@ -263,7 +264,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   FLOAT drsqd;                                 // Distance squared
   FLOAT dvdr ;                                 // Delta v , Delta r
   FLOAT E[ndim][ndim];                         // E-matrix for computing normalised B-matrix
-  const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
+  const FLOAT invhsqd = 1/(part.h*part.h);     // Local copy of 1/h^2
   FLOAT grad_tmp[nvar][ndim] ;                 // Workspace for computing gradient
 
   // Initialise/zero all variables to be updated in this routine
@@ -315,30 +316,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
 
 
   // Invert the matrix (depending on dimensionality)
-  if (ndim == 1) {
-    part.B[0][0] = (FLOAT) 1.0/E[0][0];
-  }
-  else if (ndim == 2) {
-    const FLOAT invdet = (FLOAT) 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
-    part.B[0][0] = invdet*E[1][1];
-    part.B[0][1] = -(FLOAT) 1.0*invdet*E[0][1];
-    part.B[1][0] = -(FLOAT) 1.0*invdet*E[1][0];
-    part.B[1][1] = invdet*E[0][0];
-  }
-  else if (ndim == 3) {
-    const FLOAT invdet = (FLOAT) 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
-                                      E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
-                                      E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
-    part.B[0][0] = (E[1][1]*E[2][2] - E[2][1]*E[1][2])*invdet;
-    part.B[0][1] = (E[0][2]*E[2][1] - E[0][1]*E[2][2])*invdet;
-    part.B[0][2] = (E[0][1]*E[1][2] - E[0][2]*E[1][1])*invdet;
-    part.B[1][0] = (E[1][2]*E[2][0] - E[1][0]*E[2][2])*invdet;
-    part.B[1][1] = (E[0][0]*E[2][2] - E[0][2]*E[2][0])*invdet;
-    part.B[1][2] = (E[1][0]*E[0][2] - E[0][0]*E[1][2])*invdet;
-    part.B[2][0] = (E[1][0]*E[2][1] - E[2][0]*E[1][1])*invdet;
-    part.B[2][1] = (E[2][0]*E[0][1] - E[0][0]*E[2][1])*invdet;
-    part.B[2][2] = (E[0][0]*E[1][1] - E[1][0]*E[0][1])*invdet;
-  }
+  InvertMatrix<ndim>(E,part.B) ;
 
   // Complete the calculation of the gradients:
   for (var=0; var<nvar; var++) {
@@ -401,11 +379,11 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::CopyDataToGhosts
         continue ;
       }
       else if (itype & z_mirror_lhs) {
-    	partdata[i].reflect(2, simbox.boxmin[2]) ;
+    	reflect(partdata[i], 2, simbox.boxmin[2]) ;
         continue ;
       }
       else if (itype & z_mirror_rhs) {
-      	partdata[i].reflect(2, simbox.boxmax[2]) ;
+      	reflect(partdata[i], 2, simbox.boxmax[2]) ;
         continue ;
       }
 
@@ -420,11 +398,11 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::CopyDataToGhosts
     	continue ;
       }
       else if (itype & y_mirror_lhs) {
-      	partdata[i].reflect(1, simbox.boxmin[1]) ;
+        reflect(partdata[i], 1, simbox.boxmin[1]) ;
     	continue ;
       }
       else if (itype & y_mirror_rhs) {
-    	partdata[i].reflect(1, simbox.boxmax[1]) ;
+        reflect(partdata[i], 1, simbox.boxmax[1]) ;
         continue ;
       }
     }
@@ -438,11 +416,11 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::CopyDataToGhosts
       continue ;
     }
     else if (itype & x_mirror_lhs) {
-      partdata[i].reflect(0, simbox.boxmin[0]) ;
+      reflect(partdata[i], 0, simbox.boxmin[0]) ;
       continue ;
     }
     else if (itype & x_mirror_rhs) {
-      partdata[i].reflect(0, simbox.boxmax[0]) ;
+      reflect(partdata[i], 0, simbox.boxmax[0]) ;
       continue ;
     }
   }
@@ -482,12 +460,15 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
   //MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
   //MeshlessFVParticle<ndim>* neibpart = static_cast<MeshlessFVParticle<ndim>* > (neib_gen);
 
+  FLOAT invh_i = 1/parti.h ;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     assert(!neibpart[j].flags.is_dead());
+
+    FLOAT invh_j = 1/neibpart[j].h;
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     drmag = sqrt(DotProduct(dr, dr, ndim) + small_number);
@@ -496,12 +477,12 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
 
     // Main SPH gravity terms
     //---------------------------------------------------------------------------------------------
-    paux = (FLOAT) 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
-                        parti.zeta*parti.hfactor*kern.w1(drmag*parti.invh) +
-                        neibpart[j].invh*neibpart[j].invh*kern.wgrav(drmag*neibpart[j].invh) +
-                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh));
-    gaux = (FLOAT) 0.5*(parti.invh*kern.wpot(drmag*parti.invh) +
-                        neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
+    paux = (FLOAT) 0.5*(invh_i*invh_i*kern.wgrav(drmag*invh_i) +
+                        parti.zeta*parti.hfactor*kern.w1(drmag*invh_i) +
+                        invh_j*invh_j*kern.wgrav(drmag*invh_j) +
+                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*invh_j));
+    gaux = (FLOAT) 0.5*(invh_i*kern.wpot(drmag*invh_i) +
+                        invh_j*kern.wpot(drmag*invh_j));
 
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;

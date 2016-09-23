@@ -514,7 +514,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
         sink[s].menc += part.m;
         wnorm += part.m*hydro->kernp->w0(drmag*sink[s].star->invh)*
-          pow(sink[s].star->invh,ndim)*part.invrho;
+          pow(sink[s].star->invh,ndim)/part.rho;
 
         // Sum total grav. potential energy of all particles inside sink
         sink[s].gpetot += (FLOAT) 0.5*part.m*(sink[s].star->m + sink[s].menc)*
@@ -526,9 +526,9 @@ void Sinks<ndim>::AccreteMassToSinks
 
         // Compute total and rotational kinetic energies
         sink[s].ketot += part.m*DotProduct(dv,dv,ndim)*
-          hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)*part.invrho;
+          hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)/part.rho;
         sink[s].rotketot += part.m*DotProduct(dvtang,dvtang,ndim)*
-          hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)*part.invrho;
+          hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)/part.rho;
 
         // Add contributions to average timescales from particles
         sink[s].tvisc *= pow(sqrt(drmag)/part.sound/part.sound,part.m);

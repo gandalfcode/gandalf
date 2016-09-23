@@ -947,7 +947,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
-        activepart[j].gpot      = activepart[j].m*activepart[j].invh*mfv->kernp->wpot((FLOAT) 0.0);
+        activepart[j].levelneib = 0;
+        activepart[j].gpot      = (activepart[j].m/activepart[j].h)*mfv->kernp->wpot((FLOAT) 0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
       }

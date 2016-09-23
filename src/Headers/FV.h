@@ -112,5 +112,6 @@ public:
   void ConvertConservedToPrimitive(const FLOAT, const FLOAT Qcons[nvar], FLOAT Wprim[nvar]);
   void ConvertPrimitiveToConserved(const FLOAT, const FLOAT Wprim[nvar], FLOAT Qcons[nvar]);
 
+
 };
 #endif

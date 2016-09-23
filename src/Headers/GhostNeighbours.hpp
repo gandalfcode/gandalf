@@ -285,7 +285,7 @@ private:
 			double rk = 2*_domain.boxmin[k] - ngbs[n].r[k] ;
 			if (rk > _cell.boxmin[k]) {
 			  ngbs[nc] = ngbs[n] ;
-			  ngbs[nc].reflect(k, _domain.boxmin[k]) ;
+			  reflect(ngbs[nc], k, _domain.boxmin[k]) ;
 			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][0]) ;
 			  nc++ ;
 			}
@@ -297,7 +297,7 @@ private:
 			double rk = 2*_domain.boxmax[k] - ngbs[n].r[k] ;
 			if (rk < _cell.boxmax[k]) {
 			  ngbs[nc] = ngbs[n] ;
-			  ngbs[nc].reflect(k, _domain.boxmax[k]) ;
+			  reflect(ngbs[nc], k, _domain.boxmax[k]) ;
 			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][1]) ;
 			  nc++ ;
 			}
@@ -330,7 +330,7 @@ private:
 		  if (dx*dx < h2){
 			for (int n=0; n < Nghost; n++){
 			  ngbs[nc] = ngbs[n] ;
-			  ngbs[nc].reflect(k, _domain.boxmin[k]) ;
+			  reflect(ngbs[nc], k, _domain.boxmin[k]) ;
 			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][0]) ;
 			  nc++;
 			}
@@ -342,7 +342,7 @@ private:
 		  if (dx*dx < h2){
 			for (int n=0; n < Nghost; n++){
 			 ngbs[nc] = ngbs[n] ;
-			 ngbs[nc].reflect(k, _domain.boxmax[k]) ;
+			 reflect(ngbs[nc], k, _domain.boxmax[k]) ;
 			 ngbs[nc].flags.set_flag(mirror_bound_flags[k][1]) ;
 			 nc++ ;
 			}

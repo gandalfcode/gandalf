@@ -94,11 +94,16 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   FLOAT dW[nvar];                      // Change in primitive quantities
   const FLOAT dt = timestep*(FLOAT) part.nstep;    // Timestep of given particle
 
+  FLOAT invh_i   = 1/part.h;
+  FLOAT volume_i = 1/part.ndens;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
+
+    FLOAT invh_j   = 1/neibpart[j].h;
+    FLOAT volume_j = 1/neibpart[j].ndens;
 
     for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
     drsqd = DotProduct(draux, draux, ndim);
@@ -111,11 +116,11 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
       psitildaj[k] = (FLOAT) 0.0;
       for (int kk=0; kk<ndim; kk++) {
         psitildai[k] += neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*
-          kern.w0_s2(drsqd*neibpart[j].invh*neibpart[j].invh)/neibpart[j].ndens;
+            kern.w0_s2(drsqd*invh_j*invh_j)*volume_j;
         psitildaj[k] -= part.B[k][kk]*draux[kk]*part.hfactor*
-          kern.w0_s2(drsqd*part.invh*part.invh)/part.ndens;
+            kern.w0_s2(drsqd*invh_i*invh_i)*volume_i;
       }
-      Aij[k] = part.volume*psitildaj[k] - neibpart[j].volume*psitildai[k];
+      Aij[k] = volume_i*psitildaj[k] - volume_j*psitildai[k];
     }
 
     // Calculate position and velocity of the face

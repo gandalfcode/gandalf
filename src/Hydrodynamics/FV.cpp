@@ -79,19 +79,19 @@ FV<ndim>::~FV()
 //=================================================================================================
 template <int ndim>
 void FV<ndim>::ConvertConservedToPrimitive
- (const FLOAT volume,                  ///< [in] Effective volume of particle
+ (const FLOAT ndens,                   ///< [in] Inverse Effective volume of particle
   const FLOAT Qcons[nvar],             ///< [in] Conserved vector, Qcons, of particle
   FLOAT Wprim[nvar])                   ///< [out] Primitive vector, Wprim, of particle
 {
   int k;
   FLOAT ekin = 0.0;
 
-  Wprim[irho] = Qcons[irho]/volume;
+  Wprim[irho] = Qcons[irho]*ndens;
   for (k=0; k<ndim; k++) {
     Wprim[k] = Qcons[k]/Qcons[irho];
     ekin += Wprim[k]*Wprim[k];
   }
-  Wprim[ipress] = (gamma_eos - 1.0)*(Qcons[ietot] - 0.5*Qcons[irho]*ekin)/volume;
+  Wprim[ipress] = (gamma_eos - 1.0)*(Qcons[ietot] - 0.5*Qcons[irho]*ekin)*ndens;
 
   return;
 }
@@ -104,18 +104,18 @@ void FV<ndim>::ConvertConservedToPrimitive
 //=================================================================================================
 template <int ndim>
 void FV<ndim>::ConvertPrimitiveToConserved
- (const FLOAT volume,                  ///< [in] Effective volume of particle
+ (const FLOAT ndens,                   ///< [in] Inverse Effective volume of particle
   const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
   FLOAT Qcons[nvar])                   ///< [out] Conserved vector, Qcons, of particle
 {
   FLOAT ekin = (FLOAT) 0.0;
 
-  Qcons[irho] = Wprim[irho]*volume;
+  Qcons[irho] = Wprim[irho]/ndens;
   for (int k=0; k<ndim; k++) {
-    Qcons[k] = Wprim[k]*Wprim[irho]*volume;
+    Qcons[k] = Wprim[k]*Wprim[irho]/ndens;
     ekin += Wprim[k]*Wprim[k];
   }
-  Qcons[ietot] = Wprim[ipress]*volume/(gamma_eos - 1.0) + (FLOAT) 0.5*Wprim[irho]*volume*ekin;
+  Qcons[ietot] = (Wprim[ipress]/(gamma_eos - 1.0) + (FLOAT) 0.5*Wprim[irho]*ekin)/ndens;
 
   return;
 }
@@ -153,58 +153,52 @@ void FV<ndim>::CalculateFluxVectorFromPrimitive
 /// Calculate the time derivative of the primitive variables, dWprim/dt.  Used for extrapolating
 /// the primitive variables forward in time for, e.g. the half-step for the MUSCL scheme.
 //=================================================================================================
-template <int ndim>
-void FV<ndim>::CalculatePrimitiveTimeDerivative
+template <>
+void FV<1>::CalculatePrimitiveTimeDerivative
  (const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
-  const FLOAT gradW[nvar][ndim],       ///< [in] Gradients of primitive quantities
+  const FLOAT gradW[nvar][1],          ///< [in] Gradients of primitive quantities
   FLOAT Wdot[nvar])                    ///< [out] Time derivatives of primitive quantities
 {
-  if (ndim == 1) {
-    Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[irho]*gradW[ivx][0];
-    Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - gradW[ipress][0]/Wprim[irho];
-    Wdot[ipress] = -gamma_eos*Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
-  }
-  else if (ndim == 2) {
-    Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[ivy]*gradW[irho][1] -
-      Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1]);
-    Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] - gradW[ipress][0]/Wprim[irho];
-    Wdot[ivy]    = -Wprim[ivx]*gradW[ivy][0] - Wprim[ivy]*gradW[ivy][1] - gradW[ipress][1]/Wprim[irho];
-    Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
-      gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
-  }
-  else if (ndim == 3) {
-    Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[ivy]*gradW[irho][1] -
-      Wprim[ivz]*gradW[irho][2] - Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
-    Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] -
-      Wprim[ivz]*gradW[ivx][2] - gradW[ipress][0]/Wprim[irho];
-    Wdot[ivy]    = -Wprim[ivx]*gradW[ivy][0] - Wprim[ivy]*gradW[ivy][1] -
-      Wprim[ivz]*gradW[ivy][2] - gradW[ipress][1]/Wprim[irho];
-    Wdot[ivz]    = -Wprim[ivx]*gradW[ivz][0] - Wprim[ivy]*gradW[ivz][1] -
-      Wprim[ivz]*gradW[ivz][2] - gradW[ipress][2]/Wprim[irho];
-    Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
-      Wprim[ivz]*gradW[ipress][2] -
-      gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
-  }
-  /*
-  if (ndim == 1) {
-    Wdot[irho]   = - Wprim[irho]*gradW[ivx][0];
-    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
-    Wdot[ipress] = - gamma_eos*Wprim[ipress]*gradW[ivx][0];
-  }
-  else if (ndim == 2) {
-    Wdot[irho]   = - Wprim[irho]*(gradW[ivx][0] - gradW[ivy][1]);
-    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
-    Wdot[ivy]    = - gradW[ipress][1]/Wprim[irho];
-    Wdot[ipress] = - gamma_eos*Wprim[ipress]*(gradW[ivx][0] - gradW[ivy][1]);
-  }
-  else if (ndim == 3) {
-    Wdot[irho]   = - Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
-    Wdot[ivx]    = - gradW[ipress][0]/Wprim[irho];
-    Wdot[ivy]    = - gradW[ipress][1]/Wprim[irho];
-    Wdot[ivz]    = - gradW[ipress][2]/Wprim[irho];
-    Wdot[ipress] = - gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
-  }
-  */
+  Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[irho]*gradW[ivx][0];
+  Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - gradW[ipress][0]/Wprim[irho];
+  Wdot[ipress] = -gamma_eos*Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
+
+  return;
+}
+template <>
+void FV<2>::CalculatePrimitiveTimeDerivative
+ (const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
+  const FLOAT gradW[nvar][2],          ///< [in] Gradients of primitive quantities
+  FLOAT Wdot[nvar])                    ///< [out] Time derivatives of primitive quantities
+{
+  Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[ivy]*gradW[irho][1] -
+    Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1]);
+  Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] - gradW[ipress][0]/Wprim[irho];
+  Wdot[ivy]    = -Wprim[ivx]*gradW[ivy][0] - Wprim[ivy]*gradW[ivy][1] - gradW[ipress][1]/Wprim[irho];
+  Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
+    gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
+
+  return;
+}
+template <>
+void FV<3>::CalculatePrimitiveTimeDerivative
+ (const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
+  const FLOAT gradW[nvar][3],          ///< [in] Gradients of primitive quantities
+  FLOAT Wdot[nvar])                    ///< [out] Time derivatives of primitive quantities
+{
+
+  Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[ivy]*gradW[irho][1] -
+   Wprim[ivz]*gradW[irho][2] - Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
+  Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] -
+    Wprim[ivz]*gradW[ivx][2] - gradW[ipress][0]/Wprim[irho];
+  Wdot[ivy]    = -Wprim[ivx]*gradW[ivy][0] - Wprim[ivy]*gradW[ivy][1] -
+    Wprim[ivz]*gradW[ivy][2] - gradW[ipress][1]/Wprim[irho];
+  Wdot[ivz]    = -Wprim[ivx]*gradW[ivz][0] - Wprim[ivy]*gradW[ivz][1] -
+    Wprim[ivz]*gradW[ivz][2] - gradW[ipress][2]/Wprim[irho];
+  Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
+    Wprim[ivz]*gradW[ipress][2] -
+    gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]) ;
+
   return;
 }
 

@@ -108,10 +108,16 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   const FLOAT dt = timestep*(FLOAT) part.nstep;    // Timestep of given particle
 
 
+  FLOAT invh_i   = 1/part.h;
+  FLOAT volume_i = 1/part.ndens;
+
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
+
+    FLOAT invh_j   = 1/neibpart[j].h;
+    FLOAT volume_j = 1/neibpart[j].ndens;
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     drsqd = DotProduct(draux, draux, ndim);
@@ -124,11 +130,11 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
       psitildaj[k] = (FLOAT) 0.0;
       for (int kk=0; kk<ndim; kk++) {
         psitildai[k] += neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*
-          kern.w0_s2(drsqd*neibpart[j].invh*neibpart[j].invh)/neibpart[j].ndens;
+          kern.w0_s2(drsqd*invh_j*invh_j)*volume_j;
         psitildaj[k] -= part.B[k][kk]*draux[kk]*part.hfactor*
-          kern.w0_s2(drsqd*part.invh*part.invh)/part.ndens;
+          kern.w0_s2(drsqd*invh_i*invh_i)*volume_i;
       }
-      Aij[k] = part.volume*psitildaj[k] - neibpart[j].volume*psitildai[k];
+      Aij[k] = volume_i*psitildaj[k] - volume_j*psitildai[k];
     }
 
     FLOAT Amag = sqrt(DotProduct(Aij, Aij, ndim));
@@ -141,12 +147,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     }
     else {
       for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
-      //for (k=0; k<ndim; k++) rface[k] = part.r[k] +
-      //  part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
-      //for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
       for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
-      //for (k=0; k<ndim; k++) vface[k] = part.v[k] +
-      //  (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
     }
 
     // Compute slope-limited values for LHS

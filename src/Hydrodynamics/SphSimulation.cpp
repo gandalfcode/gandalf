@@ -1662,7 +1662,7 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
 #pragma omp for
       for (int i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim> &part = sph->GetSphParticlePointer(i);
-        FLOAT invhsqd = part.invh*part.invh;
+        FLOAT invhsqd = 1/(part.h*part.h) ;
         for (k=0; k<ndim; k++) rreg[ndim*i + k] = (FLOAT) 0.0;
 
         // Find list of gather neighbours

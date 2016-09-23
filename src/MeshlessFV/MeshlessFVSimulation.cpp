@@ -446,13 +446,11 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Initialise conserved variables
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    part.Qcons[MeshlessFV<ndim>::irho] = part.m;
-    for (int k=0; k<ndim; k++) part.Qcons[k] = part.m*part.v[k];
+    part.Qcons0[MeshlessFV<ndim>::irho] = part.m;
+    for (int k=0; k<ndim; k++) part.Qcons0[k] = part.m*part.v[k];
     FLOAT ekin = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-    part.Qcons[MeshlessFV<ndim>::ietot] = part.u*part.m + (FLOAT) 0.5*part.m*ekin;
-    for (int k=0; k<ndim+2; k++)
-      part.Qcons0[k] = part.Qcons[k] ;
+    part.Qcons0[MeshlessFV<ndim>::ietot] = part.u*part.m + (FLOAT) 0.5*part.m*ekin;
   }
 
 
@@ -587,8 +585,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<mfv->Ntot; i++) {
     mfv->ComputeThermalProperties(partdata[i]);
     mfv->UpdatePrimitiveVector(partdata[i]);
-    mfv->ConvertPrimitiveToConserved(partdata[i].volume, partdata[i].Wprim, partdata[i].Qcons);
-    partdata[i].Utot = partdata[i].u*partdata[i].m;
+    mfv->ConvertPrimitiveToConserved(partdata[i].ndens, partdata[i].Wprim, partdata[i].Qcons0);
     for (k=0; k<ndim+2; k++) partdata[i].dQ[k] = (FLOAT) 0.0;
   }
 
@@ -1213,6 +1210,7 @@ void MeshlessFVSimulation<ndim>::WriteExtraSinkOutput(void)
 template <int ndim>
 void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
 {
+    /*
   MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
 
   for (int i=0; i<mfv->Nhydro; i++) {
@@ -1222,9 +1220,9 @@ void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
     //   Qcons is now interpretted as the predicted value of Q at the current time, surely this
     //   can be used instead without updating?
     for (int var=0; var<ndim+2; var++) part.Qcons[var] = part.Qcons0[var] + part.dQ[var];
-    mfv->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
+    mfv->ConvertConservedToPrimitive(part.ndens, part.Qcons, part.Wprim);
     mfv->UpdateArrayVariables(part);
   }
-
+  */
   return;
 }

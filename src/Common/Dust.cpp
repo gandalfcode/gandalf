@@ -310,11 +310,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,cout,sphdata, mask, Interp)
  {
-#if defined _OPENMP
-    const int ithread = omp_get_thread_num();
-#else
-    const int ithread = 0;
-#endif
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
     int i;                                     // Particle id
@@ -547,11 +542,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot)
   {
-#if defined _OPENMP
-    const int ithread = omp_get_thread_num();
-#else
-    const int ithread = 0;
-#endif
     int cc;                                      // Aux. cell counter
     int i;                                       // Particle id
     int j;                                       // Aux. particle counter
@@ -931,6 +921,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 	  parti.div_v = 0;
   }
 
+  FLOAT invh_i =  1/parti.h ;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
@@ -938,10 +929,12 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     j = neiblist[jj];
     assert(!neibpart[j].flags.is_dead());
 
+    FLOAT invh_j =  1/neibpart[j].h ;
+
     if (parti.ptype == gas_type)
-      wkern = pow(parti.invh, ndim)*kern.wdrag(drmag[jj]*parti.invh);
+      wkern = pow(invh_i, ndim)*kern.wdrag(drmag[jj]*invh_i);
     else
-      wkern = pow(neibpart[j].invh, ndim)*kern.wdrag(drmag[jj]*neibpart[j].invh);
+      wkern = pow(invh_j, ndim)*kern.wdrag(drmag[jj]*invh_j);
 
     wkern *= neibpart[j].m / neibpart[j].rho ;
 

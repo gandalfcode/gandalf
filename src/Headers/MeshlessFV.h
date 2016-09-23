@@ -139,7 +139,7 @@ public:
                           const DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
   FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
-  void UpdateArrayVariables(MeshlessFVParticle<ndim> &);
+  void UpdateArrayVariables(MeshlessFVParticle<ndim> &, FLOAT [nvar]);
 
 
   // Functions needed to hide some implementation details
