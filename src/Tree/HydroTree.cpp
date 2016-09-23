@@ -2257,4 +2257,3 @@ template class HydroTree<3,SM2012SphParticle,BruteForceTreeCell>;
 template class HydroTree<1,MeshlessFVParticle,BruteForceTreeCell>;
 template class HydroTree<2,MeshlessFVParticle,BruteForceTreeCell>;
 template class HydroTree<3,MeshlessFVParticle,BruteForceTreeCell>;
-

@@ -172,6 +172,12 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
     for (var=0; var<nvar; var++) Wj[var] += (FLOAT) 0.5*Wdot[var]*dt;
 
+    // Pressure and density floors incase of very strong gradients/shocks or pathological cases
+    Wi[irho] = max(Wi[irho], small_number);
+    Wj[irho] = max(Wj[irho], small_number);
+    Wi[ipress] = max(Wi[ipress], small_number);
+    Wj[ipress] = max(Wj[ipress], small_number);
+
     assert(Wi[irho] > 0.0);
     assert(Wi[ipress] > 0.0);
     assert(Wj[irho] > 0.0);
@@ -185,11 +191,11 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      double f = DotProduct(flux[var], Aij, ndim) ;
-      part.dQ[var] += f * dt ;
-      neibpart[j].dQ[var] -= f * dt ;
-      part.dQdt[var] +=  f ;
-      neibpart[j].dQdt[var] -= f ;
+      double f = DotProduct(flux[var], Aij, ndim);
+      part.dQ[var] += f*dt;
+      neibpart[j].dQ[var] -= f*dt;
+      part.dQdt[var] += f;
+      neibpart[j].dQdt[var] -= f;
     }
 
     // Compute mass-loss moments for gravitational correction terms
