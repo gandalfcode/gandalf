@@ -22,7 +22,7 @@ import numpy as np
 from swig_generated.SphSim import UnitInfo
 from facade import SimBuffer
 
-direct = ['x', 'y', 'z', 'vx', 'vy', 'vz', 'ax', 'ay', 'az',
+direct = ['iorig', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'ax', 'ay', 'az',
           'm', 'h', 'rho', 'u', 'dudt','sma','ecc', 'mbin','period',
           'qbin']
 
@@ -166,7 +166,7 @@ def check_requested_quantity(quantity, snap):
 #------------------------------------------------------------------------------
 class DirectDataFetcher:
     
-    quantitylabels = {'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
+    quantitylabels = {'iorig': '', 'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
                       'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
                       'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
                       'm': 'm', 'h': 'h', 'u': 'u', 't': 't',
