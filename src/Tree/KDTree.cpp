@@ -164,7 +164,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int Nc
 	  delete[] idsold;
 	  delete[] inextold;
 
-	  Ntotmax = Ntot;
+	  Ntotmax = Nparticles;
   }
 
   if (Ncells > Ncellmax) {

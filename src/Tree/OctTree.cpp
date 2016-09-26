@@ -142,36 +142,36 @@ void OctTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int N
   }
 
 
-  if (Ntot > Ntotmax ) {
-	  Ntotmax = Ntot;
+  if (Nparticles > Ntotmax ) {
 
 	  int* idsold = ids;
 	  int* inextold = inext;
 
-	  ids = new int[Ntotmax];
-	  inext    = new int[Ntotmax];
+	  ids = new int[Nparticles];
+	  inext    = new int[Nparticles];
 
-	  std::copy(idsold,idsold,ids);
-	  std::copy(inextold,inextold,inext);
+	  std::copy(idsold,idsold+Ntotmax,ids);
+	  std::copy(inextold,inextold+Ntotmax,inext);
 
 	  delete[] idsold;
 	  delete[] inextold;
 
+	  Ntotmax = Nparticles;
+
   }
 
-  if (Ncelltot > Ncellmax) {
+  if (Ncells > Ncellmax) {
 
-	Ncellmax=Ncelltot;
 
     TreeCell<ndim>* celldataold = celldata;
 
-    celldata = new struct TreeCell<ndim>[Ncellmax];
+    celldata = new struct TreeCell<ndim>[Ncells];
 
-    std::copy(celldataold,celldataold,celldata);
+    std::copy(celldataold,celldataold+Ncellmax,celldata);
 
     delete[] celldataold;
 
-
+    Ncellmax = Ncells;
 
   }
 
