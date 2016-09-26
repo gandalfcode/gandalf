@@ -437,9 +437,6 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       Species& sph = data["sph"];
       Species::maptype& sph_values = data["sph"].values;
       sph_values["iorig"]=vector<float>(sph.N);
-      // Because we are storing ints with a float, we can recover back the original integer only if it is small enough
-      if (sph.N>16777216)
-    	  cout << "Warning: you have a lot of particles. Iorig will not be correct!" << endl;
       sph_values["x"]=vector<float>(sph.N);
       sph_values["vx"]=vector<float>(sph.N);
       sph_values["ax"]=vector<float>(sph.N);
@@ -465,8 +462,6 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
       Species& dust = data["dust"];
       Species::maptype& dust_values = data["dust"].values;
-      if (Ndust>16777216)
-    	  cout << "Warning: you have a lot of particles. Iorig will not be correct!" << endl;
       dust_values["iorig"]=vector<float>(Ndust);
       dust_values["x"]=vector<float>(Ndust);
       dust_values["vx"]=vector<float>(Ndust);
@@ -533,7 +528,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     if (itype==gas) {
       Species& sph = data["sph"];
       Species::maptype& sph_values = data["sph"].values;
-      sph_values["iorig"][igas] = (float) part.iorig;
+      sph_values["iorig"][igas] = reinterpret_cast<float&>( part.iorig);
       sph_values["x"][igas] = (float) part.r[0];
       sph_values["vx"][igas] = (float) part.v[0];
       sph_values["ax"][igas] = (float) part.a[0];
@@ -557,7 +552,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     else if (itype==dust) {
       Species& dust = data["dust"];
       Species::maptype& dust_values = data["dust"].values;
-      dust_values["iorig"][idust] = (float) part.iorig;
+      dust_values["iorig"][idust] = reinterpret_cast<float&>( part.iorig);
       dust_values["x"][idust] = (float) part.r[0];
       dust_values["vx"][idust] = (float) part.v[0];
       dust_values["ax"][idust] = (float) part.a[0];

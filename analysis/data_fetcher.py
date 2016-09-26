@@ -193,7 +193,7 @@ class DirectDataFetcher:
         returned = snap.ExtractArray(self._quantity, type, unit) + [self.quantitylabels[self._quantity]]
         
         if self._quantity=='iorig':
-            returned[1]=returned[1].astype('int')
+            returned[1]=returned[1].view(dtype=np.int32)
         
         return returned
 
