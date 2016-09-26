@@ -510,7 +510,7 @@ void Ewald<ndim>::CalculatePeriodicCorrection
     static double dr1=0.0, dr2=0.0, dr3=0.0;
     static int basemax;
 
-    if (fabs(dr[0]) > 0.55*lx_per || fabs(dr[1]) > 0.55*ly_per || fabs(dr[2]) > 0.55*lz_per) {
+    if (fabs(dr[0]) > 0.6*lx_per || fabs(dr[1]) > 0.6*ly_per || fabs(dr[2]) > 0.6*lz_per) {
       cout << "Ewald problem : " << dr[0]/lx_per << "   " << dr[1]/ly_per << "   "
            << dr[2]/lz_per << endl;
     }
