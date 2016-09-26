@@ -190,7 +190,12 @@ class DirectDataFetcher:
         if kind != "direct":
             raise Exception ("Error: the quantity" + quantity + " is not a direct quantity!")
         
-        return snap.ExtractArray(self._quantity, type, unit) + [self.quantitylabels[self._quantity]]
+        returned = snap.ExtractArray(self._quantity, type, unit) + [self.quantitylabels[self._quantity]]
+        
+        if self._quantity=='iorig':
+            returned[1]=returned[1].astype('int')
+        
+        return returned
 
 
 #------------------------------------------------------------------------------
