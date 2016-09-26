@@ -218,7 +218,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   part.div_v     = (FLOAT) 0.0;
   part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
   part.invomega  = (FLOAT) 1.0/part.invomega;
-  part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.h*part.zeta*part.invomega/part.ndens;
+  part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.m*part.h*part.zeta*part.invomega/part.ndens;
 
   // Calculate the minimum neighbour potential (used later to identify new sinks)
   if (create_sinks == 1) {
@@ -457,10 +457,9 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
   FLOAT invdrmag;                      // 1 / distance
   FLOAT gaux;                          // Aux. grav. potential variable
   FLOAT paux;                          // Aux. pressure force variable
-  //MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
-  //MeshlessFVParticle<ndim>* neibpart = static_cast<MeshlessFVParticle<ndim>* > (neib_gen);
+  const FLOAT invh_i = 1.0/parti.h;
+  const FLOAT invm = 1.0/parti.m;
 
-  FLOAT invh_i = 1/parti.h ;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
@@ -468,7 +467,8 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
     j = neiblist[jj];
     assert(!neibpart[j].flags.is_dead());
 
-    FLOAT invh_j = 1/neibpart[j].h;
+    const FLOAT mj = neibpart[j].m;
+    const FLOAT invh_j = 1/neibpart[j].h;
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     drmag = sqrt(DotProduct(dr, dr, ndim) + small_number);
@@ -477,15 +477,14 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
 
     // Main SPH gravity terms
     //---------------------------------------------------------------------------------------------
-    paux = (FLOAT) 0.5*(invh_i*invh_i*kern.wgrav(drmag*invh_i) +
-                        parti.zeta*parti.hfactor*kern.w1(drmag*invh_i) +
-                        invh_j*invh_j*kern.wgrav(drmag*invh_j) +
-                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*invh_j));
-    gaux = (FLOAT) 0.5*(invh_i*kern.wpot(drmag*invh_i) +
-                        invh_j*kern.wpot(drmag*invh_j));
+    paux = (FLOAT) 0.5*(mj*invh_i*invh_i*kern.wgrav(drmag*invh_i) +
+                        mj*invh_j*invh_j*kern.wgrav(drmag*invh_j) +
+                        invm*parti.zeta*parti.hfactor*kern.w1(drmag*invh_i) +
+                        invm*neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*invh_j));
+    gaux = (FLOAT) 0.5*(invh_i*kern.wpot(drmag*invh_i) + invh_j*kern.wpot(drmag*invh_j));
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.a[k] += dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
   }
@@ -662,4 +661,3 @@ template class MfvCommon<3, QuinticKernel, GizmoLimiter<3,MeshlessFVParticle> >;
 template class MfvCommon<1, TabulatedKernel, GizmoLimiter<1,MeshlessFVParticle> >;
 template class MfvCommon<2, TabulatedKernel, GizmoLimiter<2,MeshlessFVParticle> >;
 template class MfvCommon<3, TabulatedKernel, GizmoLimiter<3,MeshlessFVParticle> >;
-
