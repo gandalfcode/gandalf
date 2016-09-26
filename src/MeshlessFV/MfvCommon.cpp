@@ -485,7 +485,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
                         invh_j*kern.wpot(drmag*invh_j));
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
   }
@@ -532,7 +532,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
     invdr3   = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibdata[j].m*dr[k]*invdr3;
+    for (k=0; k<ndim; k++) parti.a[k] += neibdata[j].m*dr[k]*invdr3;
     parti.gpot += neibdata[j].m*invdrmag;
 
     assert(drsqd >= parti.hrangesqd && drsqd >= neibdata[j].hrangesqd);
@@ -586,7 +586,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeStarGravForces
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
+    for (k=0; k<ndim; k++) parti.a[k] += paux*dr[k];
     //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
     //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);

@@ -60,6 +60,7 @@
 #include "Ghosts.h"
 #include "Sinks.h"
 #include "HeaderInfo.h"
+#include "TimeStepControl.h"
 using namespace std;
 #ifdef MPI_PARALLEL
 #include "mpi.h"
@@ -210,6 +211,7 @@ class SimulationBase
   Parameters* simparams;               ///< Simulation parameters object (pointer)
   SimUnits simunits;                   ///< Simulation units object
   CodeTiming *timing;                  ///< Simulation timing object (pointer)
+  TimeStepController timestep_control; ///< Controls the time-step hierarchy
 
 };
 

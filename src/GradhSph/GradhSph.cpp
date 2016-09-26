@@ -609,7 +609,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     paux = (FLOAT) 0.5*(invhsqdi*kern.wgrav(drmag*invh_i) + parti.zeta*wkerni +
                         invh_j*invh_j*kern.wgrav(drmag*invh_j) +
                         neibpart[j].zeta*wkernj);
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += (FLOAT) 0.5*neibpart[j].m*(invh_i*kern.wpot(drmag*invh_i) +
                                              invh_j*kern.wpot(drmag*invh_j));
 
@@ -689,7 +689,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
                         invh_j*kern.wpot(drmag*invh_j));
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
   }
@@ -737,7 +737,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     invdr3   = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.agrav[k] += sphdata[j].m*dr[k]*invdr3;
+    for (k=0; k<ndim; k++) parti.a[k] += sphdata[j].m*dr[k]*invdr3;
     parti.gpot += sphdata[j].m*invdrmag;
 
     // Sanity-checkt to ensure particles are really un-softened direct-sum neighbours
@@ -794,7 +794,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
+    for (k=0; k<ndim; k++) parti.a[k] += paux*dr[k];
     //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
     //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);

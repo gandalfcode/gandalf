@@ -163,8 +163,9 @@ public:
   { } ;
 
   void ComputeDragForces(const int, const int, const std::vector<int>&,
-		                 const std::vector<FLOAT>&, const std::vector<FLOAT>&,
-		                 ParticleType<ndim>&, const std::vector<ParticleType<ndim> >&) ;
+		                     const std::vector<FLOAT>&, const std::vector<FLOAT>&,
+		                     ParticleType<ndim>&, const std::vector<ParticleType<ndim> >&,
+		                     std::vector<FLOAT>&) ;
 
 
 private:
@@ -199,25 +200,11 @@ public:
 
   void UpdateAllDragForces(int NPart, int Ntot, Particle<ndim> *sph_gen){
 
-	debug2("[DustFull::UpdateAllDragForces]") ;
+    debug2("[DustFull::UpdateAllDragForces]") ;
 
-	ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
+    ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
 
-	for (int i(0); i < Ntot; ++i){
-	  if (sphdata[i].flags.check_flag(active) && _types[sphdata[i].ptype].drag_forces){
-		for (int k=0; k < ndim; k++)
-		  sphdata[i].a_dust[k] = 0 ;
-	  }
-	}
-
-	FindNeibAndDoForces(NPart, Ntot, sphdata, _types, _Forces) ;
-
-	for (int i(0); i < Ntot; ++i){
-	  if (sphdata[i].flags.check_flag(active) && _types[sphdata[i].ptype].drag_forces){
-	    for (int k=0; k < ndim; k++)
-		  sphdata[i].a[k] += sphdata[i].a_dust[k] ;
-		}
-	  }
+    FindNeibAndDoForces(NPart, Ntot, sphdata, _types, _Forces) ;
   }
 private:
   ParticleTypeRegister _types ;
@@ -255,12 +242,6 @@ public:
 		mask[gas_type] = true ;
 
 		FindNeibAndDoInterp(NPart, Ntot, sphdata, mask, _interp) ;
-
-		for (int i(0); i < Ntot; ++i)
-			if (sphdata[i].flags.check_flag(active) && sphdata[i].ptype == dust_type){
-			    for (int k(0); k < ndim; ++k)
-			        sphdata[i].a[k] += sphdata[i].a_dust[k] ;
-			}
 	}
 private:
   DI _interp ;
@@ -448,12 +429,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
           }
           //---------------------------------------------------------------------------------------
 
-          // Validate that gather neighbour list is correct
-#if defined(VERIFY_ALL)
-          // if (neibcheck)
-          //    this->CheckValidNeighbourList(i, Ntot, Nneib, neiblist, sphdata, "gather");
-#endif
-
           // Compute smoothing length and other gather properties for ptcl i
           okflag = Interp.DoInterpolate(i, Ngather, hmax, m2, drsqd, data2, activepart[j]) ;
 
@@ -540,7 +515,9 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot)
+  vector<FLOAT> a_drag(ndim*Ntot) ;            // temporary to hold the drag accelerations
+
+#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag)
   {
     int cc;                                      // Aux. cell counter
     int i;                                       // Particle id
@@ -649,12 +626,15 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       		  levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
       		  sphlist[Nhydroaux] = jj;
       		  Nhydroaux++;
-      		}
+      	    }
       	  }
       	  //-----------------------------------------------------------------------------------------
 
       	  // Compute all neighbour contributions to hydro forces
-          Forces.ComputeDragForces(i,Nhydroaux,sphlist,drmag,dr,activepart[j],neibpart);
+      	  vector<FLOAT> acc(ndim) ;
+          Forces.ComputeDragForces(i,Nhydroaux,sphlist,drmag,dr,activepart[j],neibpart, acc);
+          for (k=0; k<ndim; k++)
+            a_drag[i*ndim + k] = acc[k] ;
 
         }   // Skip current active particle or if neighbour type is not active for hydro forces
       }
@@ -662,7 +642,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
     	i = activelist[j];
-    	for (k=0; k<ndim; k++) sphdata[i].a_dust[k] = activepart[j].a_dust[k] ;
     	sphdata[i].dudt = activepart[j].dudt ;
     	sphdata[i].div_v = activepart[j].div_v ;
     	sphdata[i].sound = activepart[j].sound ;
@@ -671,7 +650,11 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     //===============================================================================================
 
 #pragma omp for schedule(guided)
-    for (i=0; i<Nhydro; i++) sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+    for (i=0; i<Nhydro; i++) {
+      sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+      for (k=0; k<ndim; k++)
+        sphdata[i].a[k] += a_drag[i*ndim + k] ;
+    }
   }
 
   // Compute time spent in routine and in each cell for load balancing
@@ -872,7 +855,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   }
 
   for (k=0; k<ndim; k++)
-    parti.a_dust[k] = - dv[k] * Xi  + da[k] * Lambda ;
+    parti.a[k] += - dv[k] * Xi  + da[k] * Lambda ;
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
@@ -886,7 +869,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 /// \details Compute the drag acceleration on a particles due to its neighbours using a pair-wise
 ///          force projected along the line joining the particles in an angular-momentum conserving
 ///          way. The drag acceleration is averaged over the particle's time-step. If the particle
-///          is a dust particle the maximum sound-speed of it's neighbours and dust-gas relative
+///          is a dust particle the maximum sound-speed of its neighbours and dust-gas relative
 ///          velocity are stored for the time-step computation. For gas particles, the change in
 ///          kinetic energy is added to the internal energy to conserve energy.
 /// \author  R. A. Booth
@@ -900,7 +883,8 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
  const std::vector<FLOAT>& drmag,                   ///< [in] Distances of gather neighbours
  const std::vector<FLOAT>& dr,                      ///< [in] Position vector of gather neibs
  ParticleType<ndim>& parti,                         ///< [inout] Particle i data
- const std::vector<ParticleType<ndim> >& neibpart)  ///< [inout] Neighbour particle data
+ const std::vector<ParticleType<ndim> >& neibpart,  ///< [in] Neighbour particle data
+ std::vector<FLOAT>& a_drag)                        ///< [out] drag acceleration
 {
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
@@ -938,8 +922,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 
     wkern *= neibpart[j].m / neibpart[j].rho ;
 
-    for (k=0; k<ndim; k++)
-    {
+    for (k=0; k<ndim; k++) {
     	draux[k] = dr[jj*ndim + k] / drmag[jj];
     	dv[k] = neibpart[j].v[k] - parti.v[k] ;
     	da[k] = neibpart[j].a[k] - parti.a[k] ;
@@ -955,11 +938,11 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
       grho = parti.rho ;
       drho = neibpart[j].rho ;
     } else {
-     gsound = neibpart[j].sound ;
-     grho = neibpart[j].rho ;
-     drho = parti.rho ;
-     parti.sound = max(parti.sound, gsound) ;
-     parti.div_v = max(parti.div_v, sqrt(DotProduct(dv,dv,ndim))/parti.h);
+      gsound = neibpart[j].sound ;
+      grho = neibpart[j].rho ;
+      drho = parti.rho ;
+      parti.sound = max(parti.sound, gsound) ;
+      parti.div_v = max(parti.div_v, sqrt(DotProduct(dv,dv,ndim))/parti.h);
     }
 
 
@@ -985,8 +968,8 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 
     S = (dvdr * Xi - dadr * Lambda) ;
 
-    for (k=0; k<ndim;k++)
-    	parti.a_dust[k] += ndim * neibpart[j].rho * S * draux[k] * wkern ;
+    for (k=0; k<ndim; k++)
+    	a_drag[k] += ndim * neibpart[j].rho * S * draux[k] * wkern ;
 
     // Add Change in K.E to thermal energy generation
     if (_use_energy_term && parti.ptype == gas_type)
@@ -1014,7 +997,6 @@ public:
 DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeRegister& types,
 							      TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
 {
-	map<string, int> &intparams = simparams->intparams;
 	map<string, double> &floatparams = simparams->floatparams;
 	map<string, string> &stringparams = simparams->stringparams;
 	string KernelName = stringparams["kernel"];
@@ -1026,7 +1008,7 @@ DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeRegister& t
 	{
 		typedef  DustTestParticle<ndim, ParticleType, StoppingTime, Kernel> dust ;
 		typename dust::DI interp(StoppingTime(K_D), Kernel(KernelName),
-				                 floatparams["h_fac"], floatparams["h_converge"]) ;
+				                     floatparams["h_fac"], floatparams["h_converge"]) ;
 
 		DustSphNgbFinder<ndim, ParticleType>* d = new dust(interp, t, ghost) ;
 #ifdef MPI_PARALLEL
@@ -1072,7 +1054,6 @@ DustBase<ndim>* ProcessParameters(Parameters * simparams, ParticleTypeRegister& 
 							      TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
 {
 	map<string, int> &intparams = simparams->intparams;
-	map<string, double> &floatparams = simparams->floatparams;
 	map<string, string> &stringparams = simparams->stringparams;
 	string KernelName = stringparams["kernel"];
 
@@ -1127,9 +1108,8 @@ TreeBase<ndim>* t,
 TreeBase<ndim>* ghost,
 TreeBase<ndim>* mpi_tree)
 {
-	map<string, int> &intparams = simparams->intparams;
-	map<string, double> &floatparams = simparams->floatparams;
-	map<string, string> &stringparams = simparams->stringparams;
+  map<string, int> &intparams = simparams->intparams;
+  map<string, string> &stringparams = simparams->stringparams;
 	string DragLaw = stringparams["drag_law"];
 
 	if (stringparams["dust_forces"] == "none")

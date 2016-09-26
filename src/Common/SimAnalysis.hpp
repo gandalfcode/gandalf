@@ -70,8 +70,6 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   for (k=0; k<ndim; k++) diag.vcom[k]        = 0.0;
   for (k=0; k<ndim; k++) diag.mom[k]         = 0.0;
   for (k=0; k<ndim; k++) diag.force[k]       = 0.0;
-  for (k=0; k<ndim; k++) diag.force_hydro[k] = 0.0;
-  for (k=0; k<ndim; k++) diag.force_grav[k]  = 0.0;
   for (k=0; k<3; k++) diag.angmom[k] = 0.0;
 
   // Loop over all hydro particles and add contributions to all quantities
@@ -90,8 +88,6 @@ void Simulation<ndim>::CalculateDiagnostics(void)
       diag.vcom[k]        += part.m*part.v[k];
       diag.mom[k]         += part.m*part.v[k];
       diag.force[k]       += part.m*part.a[k];
-      diag.force_hydro[k] += part.m*(part.a[k] - part.agrav[k]);
-      diag.force_grav[k]  += part.m*part.agrav[k];
     }
   }
 
@@ -129,7 +125,6 @@ void Simulation<ndim>::CalculateDiagnostics(void)
       diag.vcom[k]       += nbody->stardata[i].m*nbody->stardata[i].v[k];
       diag.mom[k]        += nbody->stardata[i].m*nbody->stardata[i].v[k];
       diag.force[k]      += nbody->stardata[i].m*nbody->stardata[i].a[k];
-      diag.force_grav[k] += nbody->stardata[i].m*nbody->stardata[i].a[k];
     }
 
   // Add contributions to angular momentum depending on dimensionality
@@ -154,8 +149,6 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 	if (!ParticleInBox(nbody->stardata[sinks->sink[i].istar], mydomain )  ) continue;
 #endif
     for (k=0; k<3; k++) diag.angmom[k]         += sinks->sink[i].angmom[k];
-    for (k=0; k<ndim; k++) diag.force_grav[k]  -= sinks->sink[i].fhydro[k];
-    for (k=0; k<ndim; k++) diag.force_hydro[k] += sinks->sink[i].fhydro[k];
   }
 
   // Normalise all quantities and sum all contributions to total energy
@@ -215,10 +208,6 @@ void Simulation<ndim>::OutputDiagnostics(void)
     cout << "vcom        : " << diag.vcom[0] << endl;
     cout << "mom         : " << diag.mom[0] << endl;
     cout << "force       : " << diag.force[0] << endl;
-    if (hydro->self_gravity == 1 || nbody->Nstar > 0)
-      cout << "force_grav  : " << diag.force_grav[0] << endl;
-    if (hydro->hydro_forces == 1)
-      cout << "force_hydro : " << diag.force_hydro[0] << endl;
   }
   else if (ndim == 2) {
     cout << "rcom        : " << diag.rcom[0] << "   " << diag.rcom[1] << endl;
@@ -226,12 +215,6 @@ void Simulation<ndim>::OutputDiagnostics(void)
     cout << "ang mom     : " << diag.angmom[2] << endl;
     cout << "mom         : " << diag.mom[0] << "   " << diag.mom[1] << endl;
     cout << "force       : " << diag.force[0] << "   " << diag.force[1] << endl;
-    if (hydro->self_gravity == 1 || nbody->Nstar > 0)
-      cout << "force_grav  : " << diag.force_grav[0] << "   "
-	   << diag.force_grav[1] << endl;
-    if (hydro->hydro_forces == 1)
-      cout << "force_hydro : " << diag.force_hydro[0] << "   "
-           << diag.force_hydro[1] << endl;
   }
   else if (ndim == 3) {
     cout << "rcom        : " << diag.rcom[0] << "   "
@@ -244,14 +227,6 @@ void Simulation<ndim>::OutputDiagnostics(void)
          << diag.mom[1] << "   " << diag.mom[2] << endl;
     cout << "force       : " << diag.force[0] << "   "
          << diag.force[1] << "   " << diag.force[2] << endl;
-    if (hydro->self_gravity == 1 || nbody->Nstar > 0) {
-      cout << "force_grav  : " << diag.force_grav[0] << "   "
-           << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
-    }
-    if (hydro->hydro_forces == 1) {
-      cout << "force_hydro : " << diag.force_hydro[0] << "   "
-           << diag.force_hydro[1] << "   " << diag.force_hydro[2] << endl;
-    }
   }
 
   // Calculate binary statistics if required
@@ -298,8 +273,6 @@ void Simulation<ndim>::RecordDiagnostics(void)
   for (k=0; k<ndim; k++) outfile << diag.vcom[k]*simunits.v.outscale << "     ";
   for (k=0; k<ndim; k++) outfile << diag.mom[k]*simunits.mom.outscale << "     ";
   for (k=0; k<ndim; k++) outfile << diag.force[k] << "     "; //*simunits.f.outscale << "     ";
-  for (k=0; k<ndim; k++) outfile << diag.force_grav[k] << "      "; //*simunits.f.outscale << "     ";
-  for (k=0; k<ndim; k++) outfile << diag.force_hydro[k] << "      "; //*simunits.f.outscale << endl;
   outfile << endl;
 
   outfile.close();

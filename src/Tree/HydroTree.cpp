@@ -775,9 +775,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 
     for (j=0; j<Nactive; j++) {
       for (k=0; k<ndim; k++) dr[k] = activepart[j].r[k] - rc[k];
-      activepart[j].agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
-      activepart[j].agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
-      activepart[j].agrav[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
+      activepart[j].a[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
+      activepart[j].a[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
+      activepart[j].a[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
       activepart[j].gpot += cellpot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
     }
 
@@ -1000,8 +1000,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
         activepart[j].gpot = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
       }
 
 
@@ -1039,11 +1038,11 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       for (j=0; j<Nactive; j++) {
 
         if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
+          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
                                           activepart[j].r, Ngravcell, gravcelllist);
         }
         else if (multipole == "quadrupole") {
-          this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+          this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
                                             activepart[j].r, Ngravcell, gravcelllist);
         }
 
@@ -1059,8 +1058,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) partdata[i].agrav[k] += activepart[j].agrav[k];
+        for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].a[k];
         partdata[i].gpot += activepart[j].gpot;
       }
 

@@ -152,13 +152,6 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
         nbody->nbodydata[i]->gpe = (FLOAT) 0.0;
       }
     }
-    if (sink_particles == 1) {
-      for (i=0; i<sinks->Nsink; i++) {
-        if (sinks->sink[i].star->active) {
-          for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = (FLOAT) 0.0;
-        }
-      }
-    }
 
     if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
       mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);

@@ -313,7 +313,6 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (k=0; k<ndim; k++) sink[Nsink].star->v0[k]    = part.v0[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->a0[k]    = part.a0[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->adot0[k] = (FLOAT) 0.0; //part.adot0[k];
-  for (k=0; k<ndim; k++) sink[Nsink].fhydro[k]      = part.m*(part.a[k] - part.agrav[k]);
   for (k=0; k<3; k++) sink[Nsink].angmom[k]         = (FLOAT) 0.0;
 
 
@@ -615,7 +614,6 @@ void Sinks<ndim>::AccreteMassToSinks
         for (k=0; k<ndim; k++) sink[s].star->v[k] += mtemp*part.v[k];
         for (k=0; k<ndim; k++) sink[s].star->a[k] += mtemp*part.a[k];
         //for (k=0; k<ndim; k++) sink[s].star->adot[k] += mtemp*part.adot[k];
-        for (k=0; k<ndim; k++) sink[s].fhydro[k] += mtemp*(part.a[k] - part.agrav[k]);
         sink[s].utot += mtemp*part.u;
 
         // If we've reached/exceeded the mass limit, do not include more ptcls

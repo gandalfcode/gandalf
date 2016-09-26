@@ -546,7 +546,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<mfv->Ntot; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
     for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
     part.level  = 0;
     part.nstep  = 0;
     part.nlast  = 0;

@@ -239,8 +239,6 @@ struct Particle
   FLOAT r0[ndim];                   ///< Position at beginning of step
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
-  FLOAT agrav[ndim];                ///< Gravitational acceleration
-  FLOAT a_dust[ndim];                ///< Gravitational acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
   FLOAT h_dust ;                    ///< Gas Smoothing length for dust
@@ -278,8 +276,6 @@ struct Particle
     for (int k=0; k<ndim; k++) r0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) a_dust[k] = (FLOAT) 0.0;
     m         = (FLOAT) 0.0;
     h         = (FLOAT) 0.0;
     h_dust    = (FLOAT) 0.0;

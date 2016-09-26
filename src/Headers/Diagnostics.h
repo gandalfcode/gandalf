@@ -53,8 +53,6 @@ struct Diagnostics
   DOUBLE mom[ndim];                    ///< Total momentum vector
   DOUBLE angmom[3];                    ///< Total angular momentum vector
   DOUBLE force[ndim];                  ///< Net force
-  DOUBLE force_hydro[ndim];            ///< Net hydrodynamical force
-  DOUBLE force_grav[ndim];             ///< Net gravitational force
   DOUBLE rcom[ndim];                   ///< Position of centre of mass
   DOUBLE vcom[ndim];                   ///< Velocity of centre of mass
 

@@ -77,7 +77,6 @@ class SinkParticle
   FLOAT trot;                         ///< Rotational period at sink radius
   FLOAT tvisc;                        ///< Viscous accretion timescale
   FLOAT angmom[3];                    ///< Internal sink angular momentum
-  FLOAT fhydro[ndim];                 ///< Hydro force (from accreted ptcls)
 
 
   // Star particle constructor to initialise all values
@@ -103,7 +102,6 @@ class SinkParticle
     trot     = 0.0;
     tvisc    = 0.0;
     for (int k=0; k<3; k++) angmom[k] = 0.0;
-    for (int k=0; k<ndim; k++) fhydro[k] = 0.0;
   }
 
 };

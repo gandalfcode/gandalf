@@ -950,7 +950,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
         activepart[j].levelneib = 0;
         activepart[j].gpot      = (activepart[j].m/activepart[j].h)*mfv->kernp->wpot((FLOAT) 0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
       }
 
       // Compute neighbour list for cell depending on physics options
@@ -1044,11 +1043,11 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
           // Compute gravitational force due to distant cells
           if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
+          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
                                           activepart[j].r, Ngravcell, gravcell);
           }
           else if (multipole == "quadrupole") {
-            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
                                               activepart[j].r, Ngravcell, gravcell);
           }
 
@@ -1057,7 +1056,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
             for (jj=0; jj<Nneib; jj++) {
               for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
 
@@ -1065,7 +1064,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
             for (jj=0; jj<Ngravcell; jj++) {
               for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
+              for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
           }
@@ -1089,9 +1088,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k]     = activepart[j].a[k];
-        for (k=0; k<ndim; k++) partdata[i].agrav[k] = activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) partdata[i].a[k]    += partdata[i].agrav[k];
+        for (k=0; k<ndim; k++) partdata[i].a[k] = activepart[j].a[k];
         partdata[i].gpot  = activepart[j].gpot;
       }
 
