@@ -366,7 +366,7 @@ void MfvCommon<ndim, kernelclass>::ComputeGradients
     // Calculate maximum signal velocity
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
                                        min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
-    part.levelneib = max(part.levelneib, neibpart[j].levelneib) ;
+    part.levelneib = max(part.levelneib, neibpart[j].level) ;
 
     for (k=0; k<ndim; k++) part.vreg[k] -= draux[k]*kern.w0_s2(drsqd*invhsqd);
 
