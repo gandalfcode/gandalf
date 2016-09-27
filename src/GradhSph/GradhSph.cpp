@@ -812,7 +812,7 @@ template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::FinishReturnExport () {
 	for (int i=0; i<Nhydro; i++) {
 		GradhSphParticle<ndim>& part = sphdata[i];
-		part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)*part.invh +
+		part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)/part.h +
 			    max(-part.div_v, (FLOAT) 0.0)*(alpha_visc - part.alpha);
 	}
 }
