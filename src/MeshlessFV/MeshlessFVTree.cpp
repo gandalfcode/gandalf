@@ -1000,6 +1000,13 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
           }
         Ndirect = i ;
 
+        for (j=0, i=0; j<Nhydroneib; j++)
+          if (gravmask[neibpart[mfvlist[j]].ptype]) {
+            if (i != j) mfvlist[i] = mfvlist[j] ;
+            i++ ;
+          }
+        Nhydroneib = i ;
+
         // Loop over all active particles in the cell
         //-------------------------------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
@@ -1017,26 +1024,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
             for (jj=0; jj<Nhydroneib; jj++) {
               int ii = mfvlist[jj];
 
-              // Skip non-gravitating particles and the current active particle.
-              if (gravmask[neibpart[jj].ptype] == false) continue;
-
               // Compute relative position and distance quantities for pair
               for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
               drsqd = DotProduct(draux, draux, ndim) + small_number;
-
-<<<<<<< HEAD
-            // Record if neighbour is direct-sum or and SPH neighbour.
-            // If SPH neighbour, also record max. timestep level for neighbour
-            if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
-              directlist[Ndirectaux++] = ii;
-            }
-            else {
-              mfvauxlist[Nhydroaux++] = ii;
-            }
-          }
-=======
-              if (drsqd <= small_number) continue;
->>>>>>> Changed loop to be over ntot
 
               // Record if neighbour is direct-sum or and SPH neighbour.
               // If SPH neighbour, also record max. timestep level for neighbour
@@ -1115,10 +1105,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     //=============================================================================================
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> Changed loop to be over ntot
     // Free-up local memory for OpenMP thread
     delete[] gravlist;
     delete[] directlist;
