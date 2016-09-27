@@ -606,9 +606,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
- (const int Nhydro,                        ///< [in] No. of hydro particles
-  const int Ntot,                          ///< [in] No. of SPH + ghost particles
-  const FLOAT timestep,                    ///< [in] Lowest timestep value
+ (const int Nhydroaux,                        ///< [in] No. of hydro particles
+  const int Ntotaux,                          ///< [in] No. of SPH + ghost particles
+  const FLOAT timestepaux,                    ///< [in] Lowest timestep value
   MeshlessFVParticle<ndim> *mfvdata,       ///< [inout] Pointer to SPH ptcl array
   MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
@@ -644,10 +644,14 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
   tree->UpdateHmaxValues(tree->celldata[0], mfvdata);
   //if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], mfvdata);
 
+  int Nhydro = Nhydroaux;
+  int Ntot = Ntotaux;
+  FLOAT timestep = timestepaux;
+
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro,Ntot,timestep)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
