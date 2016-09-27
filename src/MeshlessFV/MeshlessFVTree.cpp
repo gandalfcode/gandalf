@@ -552,6 +552,19 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
     }
     //=============================================================================================
 
+    // Copy back the neighbour levels
+#ifdef _OPENMP
+    int Nthreads = omp_get_num_threads() ;
+#else
+    int Nthreads = 1 ;
+#endif
+#pragma omp barrier
+#pragma omp for schedule(static)
+      for(i=0; i<Ntot; ++i) {
+        for (k=0; k < Nthreads; ++k)
+          mfvdata[i].levelneib = max(mfvdata[i].levelneib, levelneibbuf[k][i]) ;
+      }
+
     // Free-up local memory for OpenMP thread
     delete[] invdrmag;
     delete[] drmag;
@@ -653,7 +666,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     Typemask hydromask;                            // Mask for computing hydro forces
     int Nneibmax      = Nneibmaxbuf[ithread];      // ..
     int* activelist   = activelistbuf[ithread];    // ..
-    int* levelneib    = levelneibbuf[ithread];     // ..
     int* neiblist     = new int[Nneibmax];         // ..
     int* mfvlist      = new int[Nneibmax];         // ..
     FLOAT* dr         = new FLOAT[Nneibmax*ndim];  // ..
@@ -665,7 +677,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
 
-    for (i=0; i<mfv->Nhydro; i++) levelneib[i] = 0;
     for (i=0; i<Ntot; i++) {
       for (k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
       for (k=0; k<ndim+2; k++)   dQBuffer[i][k] = (FLOAT) 0.0;
@@ -770,7 +781,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
             drmag[Nhydroaux] = sqrt(drsqd);
             invdrmag[Nhydroaux] = (FLOAT) 1.0/drmag[Nhydroaux];
             for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k]*invdrmag[Nhydroaux];
-            levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]], activepart[j].level);
             mfvlist[Nhydroaux] = jj;
             Nhydroaux++;
           }
@@ -916,7 +926,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     int Nactive;                                 // ..
     int Ndirect;                                 // ..
     int Ndirectaux;                              // ..
-    int Ngrav;                                   // --
     int Ngravcell;                               // No. of gravity cells
     int Nhydroaux;                               // ..
     int Nhydroneib;                              // ..
@@ -931,7 +940,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     int Nneibmax     = Nneibmaxbuf[ithread];     // ..
     int Ngravcellmax = Ngravcellmaxbuf[ithread]; // ..
     int *activelist  = activelistbuf[ithread];   // ..
-    int *levelneib   = levelneibbuf[ithread];    // ..
     int *neiblist    = new int[Nneibmax];        // ..
     int *mfvlist     = new int[Nneibmax];        // ..
     int *mfvauxlist  = new int[Nneibmax];        // ..
@@ -940,9 +948,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
-
-    // Zero timestep level array
-    for (i=0; i<mfv->Nhydro; i++) levelneib[i] = 0;
 
 
     // Loop over all active cells
@@ -966,7 +971,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
-        activepart[j].levelneib = 0;
         activepart[j].gpot      = activepart[j].m*activepart[j].invh*mfv->kernp->wpot((FLOAT) 0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
@@ -1048,7 +1052,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
             }
             else {
               mfvauxlist[Nhydroaux++] = ii;
-              levelneib[neiblist[ii]] = max(levelneib[neiblist[ii]], activepart[j].level);
             }
           }
 
@@ -1113,18 +1116,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
         for (k=0; k<ndim; k++) partdata[i].agrav[k] = activepart[j].agrav[k];
         for (k=0; k<ndim; k++) partdata[i].a[k]    += partdata[i].agrav[k];
         partdata[i].gpot  = activepart[j].gpot;
-        levelneib[i]      = max(levelneib[i], activepart[j].levelneib);
       }
 
     }
     //=============================================================================================
-
-
-    // Finally, add all contributions from distant pair-wise forces to arrays
-#pragma omp critical
-    for (i=0; i<mfv->Nhydro; i++) {
-      partdata[i].levelneib = max(partdata[i].levelneib, levelneib[i]);
-    }
 
 
     // Free-up local memory for OpenMP thread
