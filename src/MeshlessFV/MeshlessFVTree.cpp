@@ -491,6 +491,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         // Make local copy of hmask for active particle
         hmask = mfv->types[activepart[j].ptype].hmask;
 
+        activepart[j].levelneib = 0;
+
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
         Nhydroaux = 0;
@@ -546,6 +548,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
           for (k=0; k<ndim; k++) mfvdata[i].grad[var][k] = activepart[j].grad[var][k];
         }
         mfvdata[i].vsig_max = activepart[j].vsig_max;
+        mfvdata[i].levelneib = activepart[j].levelneib;
       }
 
 
