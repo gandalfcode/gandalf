@@ -436,7 +436,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
 
-    for (i=0; i<mfv->Nhydro; i++) levelneib[i] = 0;
+    for (i=0; i<Ntot; i++) levelneib[i] = 0;
 
 
     // Loop over all active cells
