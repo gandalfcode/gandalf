@@ -54,7 +54,7 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
                    h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
   kern(kernelclass<ndim>(KernelName)),
   riemannExact(gamma_aux, params->intparams["zero_mass_flux"]),
-  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"])
+  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal")
 {
   this->kernp      = &kern;
   this->kernfac    = (FLOAT) 1.0;

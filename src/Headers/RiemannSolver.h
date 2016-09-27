@@ -123,8 +123,9 @@ class HllcRiemannSolver
 {
  public:
 	HllcRiemannSolver(double gamma,
-	                  bool zero_mass_flux=false)
-   : _gamma(gamma), _zmf(zero_mass_flux)
+	                  bool zero_mass_flux=false,
+	                  bool isothermal=false)
+   : _gamma(gamma), _zmf(zero_mass_flux), _isothermal(isothermal)
   { } ;
 
 
@@ -275,18 +276,29 @@ class HllcRiemannSolver
 
     double v_av = fl*vl + fr*vr ;
 
-    // Compute Average sound-speed
-    double dv2 = 0 ;
-    for (int i(0); i < ndim; ++i) {
-      double dvi = Sl.v[i] - Sr.v[i] ;
-      dv2 += dvi * dvi ;
-    }
-
     double cs_l = Sl.cs ;
     double cs_r = Sr.cs ;
 
-    double cs_av =
+
+    // Compute Average sound-speed
+    double cs_av ;
+    if (!_isothermal) {
+      // Compute the sound speed from the Roe-averaged enthalpy in the standard
+      // way.
+      double dv2 = 0 ;
+      for (int i(0); i < ndim; ++i) {
+        double dvi = Sl.v[i] - Sr.v[i] ;
+        dv2 += dvi * dvi ;
+      }
+      cs_av =
       sqrt(fl*cs_l*cs_l + fr*cs_r*cs_r + 0.5*fl*fr*(_gamma-1)*dv2) ;
+    }
+    else {
+      // The sound speeds should just be the same, but they might differ
+      // slightly (ife.g. locally isothermal equations of state are used). We
+      // use a Roe averaged thermal energy as a sensible guess in this case.
+      cs_av = sqrt(fl*cs_l*cs_l + fr*cs_r*cs_r) ;
+    }
 
     // Final Wave-speeds
     Smin = min(vl - cs_l, v_av - cs_av);
@@ -295,8 +307,8 @@ class HllcRiemannSolver
 
   // Middle wave-speed : Contact discontinuity
   double compute_central_wave_speed(const HLLC_State& Sl,
-				                            const HLLC_State& Sr,
-				                            double Smin, double Smax) const {
+                                    const HLLC_State& Sr,
+                                    double Smin, double Smax) const {
 
     double vl = Sl.vline, vr = Sr.vline ;
 
@@ -313,7 +325,7 @@ class HllcRiemannSolver
 
   /* Evaluate the hydrodynamic flux from state s in direction [0] */
   void Hydro_Flux(const HLLC_State& S, const FLOAT n[ndim],
-		  FLOAT flux[ndim+2]) const
+                  FLOAT flux[ndim+2]) const
   {
     double rho = S.rho ;
     double P   = S.press ;
@@ -330,7 +342,7 @@ class HllcRiemannSolver
 
  private:
   double _gamma ;
-  bool _zmf ;
+  bool _zmf, _isothermal ;
 
   static const int nvar = ndim + 2;
   static const int irho   = ndim ;
