@@ -8,7 +8,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = GAUSSRING_serial
+Simulation run id string                    : run_id = GAUSSRING
 Select SPH simulation                       : sim = mfvmuscl
 Select shocktube initial conditions         : ic = gaussianring
 1D shocktube test                           : ndim = 2
