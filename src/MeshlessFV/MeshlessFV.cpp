@@ -25,7 +25,6 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-//#include <cassert>
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
@@ -252,27 +251,41 @@ void MeshlessFV<ndim>::IntegrateParticles
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nhydro; i++) {
-	MeshlessFVParticle<ndim> &part = partdata[i];
-	dn = n - part.nlast;
+
+    MeshlessFVParticle<ndim> &part = partdata[i];
+    dn = n - part.nlast;
+    FLOAT dt = dn * timestep ;
 
 	// Predict the conserved quantities
 	FLOAT Qcons[nvar] ;
-	for (k=0; k<nvar; k++)
-	  Qcons[k] = part.Qcons0[k] + part.dQdt[k] * dn * timestep ;
-	for (k=0; k<ndim; k++)
-	  Qcons[k] += part.Qcons0[irho] * part.a0[k] * dn * timestep ;
+    if (dn == part.nstep) {
+      part.flags.set_flag(active) ;
 
-  // Compute primitive values and update all main array quantities
-	this->UpdateArrayVariables(part, Qcons) ;
-  this->ComputeThermalProperties(part);
-  this->UpdatePrimitiveVector(part) ;
+      for (k=0; k<nvar; k++)
+        Qcons[k] = part.Qcons0[k] + part.dQ[k];
+    }
+    else {
+      part.flags.unset_flag(active) ;
+
+      for (k=0; k<nvar; k++)
+        Qcons[k] = part.Qcons0[k] + part.dQdt[k]*dt ;
+    }
+
+    for (k=0; k<ndim; k++)
+      Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt ;
+
+    // Compute primitive values and update all main array quantities
+    this->UpdateArrayVariables(part, Qcons);
+    this->ComputeThermalProperties(part);
+    this->UpdatePrimitiveVector(part) ;
+
 
 	if (!staticParticles) {
       //-------------------------------------------------------------------------------------------
+      part.flags.set_flag(update_density);
+
       for (k=0; k<ndim; k++) {
-        //part.r[k] = part.r0[k] + part.v[k]*timestep*(FLOAT) dn;
-        part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*timestep*(FLOAT) dn;
-        part.flags.set_flag(update_density) ;
+        part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*dt;
 
         // Check if particle has crossed LHS boundary
         //-----------------------------------------------------------------------------------------
@@ -305,7 +318,7 @@ void MeshlessFV<ndim>::IntegrateParticles
             part.r0[k] -= simbox.boxsize[k];
           }
 
-          // Check if wall or mirror boundary
+          // Check if wall or mirror boundaryq
           if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
             part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
             part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
