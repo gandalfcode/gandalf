@@ -53,7 +53,7 @@ Screen output frequency (in no. of steps)   : noutputstep = 1
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = isothermal
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
-Isothermal temperature                      : temp0 = 1.0
+Isothermal temperature                      : temp0 = 0.05
 
 
 #----------------------------------------
@@ -76,7 +76,7 @@ Artificial viscosity beta value             : beta_visc = 2.0
 # Finite-Volume options
 #---------------------------------
 Riemann solver                              : riemann_solver = exact
-Slope limiter                               : slope_limiter = gizmo
+Slope limiter                               : slope_limiter = balsara2004
 Finite mass scheme?                         : zero_mass_flux = 1
 Fix particle positions?                     : static_particles = 0
 
