@@ -651,7 +651,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvdust->UpdateAllDragForces(mfv->Nhydro, mfv->Ntot, partdata, timestep) ;
   }
 
-
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
@@ -679,7 +678,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
           nbody->nbodydata[i]->gpot);
     }
   }
-
 
   // Call EndTimestep to set all 'beginning-of-step' variables
   mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());

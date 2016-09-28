@@ -26,6 +26,7 @@
 #include "Debug.h"
 #include "DragLaws.h"
 #include "Dust.h"
+#include "MeshlessFV.h"
 #include "Particle.h"
 #include "Precision.h"
 #include "Tree.h"
@@ -39,7 +40,7 @@ double get_total_accel(const GradhSphParticle<ndim>& part, int k) {
 
 template<int ndim>
 double get_total_accel(const MeshlessFVParticle<ndim>& part, int k) {
-  return (part.Qcons0[ndim]*part.a[k] + part.dQdt[k]) / part.m ;
+  return (part.Qcons0[MeshlessFV<ndim>::irho]*part.a[k] + part.dQdt[k]) / part.m ;
 }
 
 
@@ -214,9 +215,6 @@ public:
   void UpdateAllDragForces(int NPart, int Ntot, Particle<ndim> *sph_gen){
 
     debug2("[DustFull::UpdateAllDragForces]") ;
-
-    return ;
-
 
     ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
 

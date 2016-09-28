@@ -23,6 +23,7 @@
 from gandalf.analysis.facade import *
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 class DriftVelocitySolution(object):
     def __init__(self, K, vg, vd, eps=None):
@@ -71,11 +72,11 @@ def DriftVelocitySolutionFactory():
 if __name__=="__main__":
     # Load the sim
     loadsim('DUSTYBOX')
-    
+    if len(sys.argv) > 1:
+        loadsim(sys.argv[1])
+
     # Set up the analytical solution
-    sol=DriftVelocitySolutionFactory()
-    
-    
+    sol=DriftVelocitySolutionFactory()   
     
     # Find the maximum time
     tmax = snap(-1).t
@@ -92,4 +93,3 @@ if __name__=="__main__":
     plt.xlim(0, t[-1])
     limit('vx',min(sol.vd(t).min(), sol.vg(t).min()), max(sol.vd(t).max(), sol.vg(t).max()), window='all')
     plt.show()
-    

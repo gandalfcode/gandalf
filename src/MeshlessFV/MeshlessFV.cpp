@@ -466,7 +466,8 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 {
   for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
   part.Wprim[irho] = part.rho;
-  if (!types[part.ptype].hydro_forces)
+
+  if (types[part.ptype].hydro_forces)
     part.Wprim[ipress] = part.press;
 }
 
@@ -482,7 +483,6 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOA
   part.m = Qcons[irho] ;
   part.rho = part.m*part.ndens;
   for (int k=0; k<ndim; k++) part.v[k] = Qcons[k]/part.m;
-
   assert(isnormal(part.m));
 
   if (types[part.ptype].hydro_forces) {
@@ -496,8 +496,8 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOA
     assert(isnormal(part.u));
     assert(isnormal(part.press));
   }
-return;
 
+  return;
 }
 
 
