@@ -7,8 +7,8 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BB1
-Run SPH simulation                          : sim = sph
+Simulation run id string                    : run_id = BB1-MFV
+Run SPH simulation                          : sim = mfvmuscl
 Select shocktube initial conditions         : ic = bb
 Input file format                           : in_file_form = su
 Output file format                          : out_file_form = su
@@ -39,9 +39,9 @@ Angular velocity unit                       : angveloutunit = rad_s
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.025
-Regular snapshot output frequency           : dt_snap = 0.005
-Time of first snapshot                      : tsnapfirst = 0.00
+Simulation end time                         : tend = 0.05
+Regular snapshot output frequency           : dt_snap = 0.0005
+Time of first snapshot                      : tsnapfirst = 0.01
 Screen output frequency (in no. of steps)   : noutputstep = 16
 Diagnostic output frequency                 : ndiagstep = 32
 
@@ -78,6 +78,15 @@ Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
+
+#---------------------------------
+# Finite-Volume options
+#---------------------------------
+Riemann solver                              : riemann_solver = exact
+Slope limiter                               : slope_limiter = balsara2004
+Finite mass scheme?                         : zero_mass_flux = 0
+Fix particle positions?                     : static_particles = 0
+
 
 
 #----------------------

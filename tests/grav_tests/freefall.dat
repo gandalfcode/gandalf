@@ -8,10 +8,10 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = FREEFALL1
-Select SPH simulation                       : sim = gradhsph
+Select SPH simulation                       : sim = mfvmuscl
 Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nhydro = 8000
+No. of SPH particles                        : Nhydro = 4000
 Local arrangement of particles              : particle_distribution = cubic_lattice
 Mass of sphere                              : mcloud = 1.0
 Radius of sphere                            : radius = 1.0
@@ -43,9 +43,20 @@ Diagnostic output frequency                 : ndiagstep = 16
 #------------------------
 # Thermal physics options
 #------------------------
-Switch-on hydrodynamical forces             : hydro_forces = 0
+Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+
+#---------------------------------
+# Finite-Volume options
+#---------------------------------
+Riemann solver                              : riemann_solver = exact
+Slope limiter                               : slope_limiter = balsara2004
+Finite mass scheme?                         : zero_mass_flux = 1
+Fix particle positions?                     : static_particles = 0
+
 
 
 #----------------
@@ -69,7 +80,7 @@ SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.5
-No. of block timestep levels                : Nlevels = 1
+No. of block timestep levels                : Nlevels = 5
 
 
 #-------------
