@@ -671,6 +671,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< Meshless FV neighbour search object pointer
 
   string time_step_limiter_type;               ///< Time step limiting algorithm to employ
+  DustBase<ndim>* mfvdust ;                    ///< Dust forces for dust particles.
 };
 
 
@@ -752,6 +753,8 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
   using MeshlessFVSimulation<ndim>::mfv;
   using MeshlessFVSimulation<ndim>::mfvneib;
   using MeshlessFVSimulation<ndim>::time_step_limiter_type;
+  using MeshlessFVSimulation<ndim>::mfvdust;
+
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;

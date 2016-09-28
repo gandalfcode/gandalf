@@ -31,6 +31,18 @@
 #include "Tree.h"
 #include "NeighbourManager.h"
 
+
+template<int ndim>
+double get_total_accel(const GradhSphParticle<ndim>& part, int k) {
+  return part.a[k] ;
+}
+
+template<int ndim>
+double get_total_accel(const MeshlessFVParticle<ndim>& part, int k) {
+  return (part.Qcons0[ndim]*part.a[k] + part.dQdt[k]) / part.m ;
+}
+
+
 //=================================================================================================
 //  Class DustSphNgbFinder
 /// \brief   DustSphNgbFinder class definition.
@@ -118,7 +130,7 @@ class DustInterpolant
 	  cs = p.sound ;
 	  for (int k=0; k < ndim; ++k){
 		  v[k] = p.v[k] ;
-		  a[k] = p.a[k] ;
+		  a[k] = get_total_accel(p, k) ;
 	  }
 	}
 
@@ -202,6 +214,9 @@ public:
   void UpdateAllDragForces(int NPart, int Ntot, Particle<ndim> *sph_gen){
 
     debug2("[DustFull::UpdateAllDragForces]") ;
+
+    return ;
+
 
     ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
 
@@ -649,7 +664,6 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   FLOAT dv[ndim] ;                     // Velocity difference
   FLOAT da[ndim] ;                     // Acceleration difference
 
-
   // Some basic sanity-checking in case of invalid input into routine
   assert(Nneib > 0);
   assert(hmax > (FLOAT) 0.0);
@@ -701,7 +715,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
     for (k=0; k < ndim; k++)
      {
     	dv[k] = parti.v[k] - dv[k]*invrho*hfactor ;
-    	da[k] = parti.a[k] - da[k]*invrho*hfactor ;
+    	da[k] = get_total_accel(parti, k) - da[k]*invrho*hfactor ;
      }
 
     // If h changes below some fixed tolerance, exit iteration loop
@@ -714,12 +728,12 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
     // more slowly.  (N.B. will implement Newton-Raphson soon)
     //---------------------------------------------------------------------------------------------
     if (iteration < iteration_max) {
-    	if (n > 0)
-           h = h_fac*pow(n,-1./ndim);
-    	else if (h < hmax)
-    		h = hmax ;
-    	else
-    		return 0 ;
+      if (n > 0)
+        h = h_fac*pow(n,-1./ndim);
+      else if (h < hmax)
+        h = hmax ;
+      else
+        return 0 ;
     }
     else if (iteration == iteration_max) {
       h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
@@ -827,6 +841,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
   FLOAT wkern;                         // Value of drag kernel function for part i
   FLOAT S ;                            // Drag term
 
+
   // Some basic sanity-checking in case of invalid input into routine
   assert(!parti.flags.is_dead());
 
@@ -859,9 +874,9 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     wkern *= neiblist[j].m / neiblist[j].rho ;
 
     for (k=0; k<ndim; k++) {
-    	if (drmag>0) draux[k] /= drmag;
-    	dv[k] = neiblist[j].v[k] - parti.v[k] ;
-    	da[k] = neiblist[j].a[k] - parti.a[k] ;
+      if (drmag>0) draux[k] /= drmag;
+      dv[k] = neiblist[j].v[k] - parti.v[k] ;
+      da[k] = get_total_accel(neiblist[j], k) - get_total_accel(parti, k) ;
     }
     dvdr = DotProduct(draux, dv, ndim);
     dadr = DotProduct(draux, da, ndim);
@@ -1093,3 +1108,7 @@ TreeBase<ndim>* mpi_tree)
 template class DustFactory<1, GradhSphParticle> ;
 template class DustFactory<2, GradhSphParticle> ;
 template class DustFactory<3, GradhSphParticle> ;
+
+template class DustFactory<1, MeshlessFVParticle> ;
+template class DustFactory<2, MeshlessFVParticle> ;
+template class DustFactory<3, MeshlessFVParticle> ;

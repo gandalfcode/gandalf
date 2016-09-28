@@ -220,6 +220,17 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
 
   neib = mfvneib ;
+  // Here I do a horrible hack to get at the underlying tree, needed for the dust.
+  TreeBase<ndim>
+    * t  = mfvneib->GetTree(),
+    * gt = mfvneib->GetGhostTree(),
+    *mpit = NULL ;
+#ifdef MPI_PARALLEL
+  mpit = mfvneib->GetMPIGhostTree();
+#endif
+
+  // Setup the dust
+  mfvdust = DustFactory<ndim, MeshlessFVParticle>::ProcessParameters(simparams, timing, mfv->types, t, gt, mpit) ;
 
   // Depending on the dimensionality, calculate expected neighbour number
   //-----------------------------------------------------------------------------------------------
@@ -629,6 +640,17 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
     }
   } // End of force iteration.
+
+  // Compute the dust forces if present.
+  if (mfvdust != NULL){
+    // Copy properties from original particles to ghost particles
+    mfv->CopyDataToGhosts(simbox, partdata);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
+#endif
+    mfvdust->UpdateAllDragForces(mfv->Nhydro, mfv->Ntot, partdata, timestep) ;
+  }
+
 
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------

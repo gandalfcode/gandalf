@@ -81,6 +81,7 @@ public:
   using Hydrodynamics<ndim>::Ntot;
   using Hydrodynamics<ndim>::self_gravity;
   using Hydrodynamics<ndim>::size_hydro_part;
+  using Hydrodynamics<ndim>::types;
   using FV<ndim>::gamma_eos;
   using FV<ndim>::gammam1;
 
@@ -221,6 +222,7 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::staticParticles;
   using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::hmin_sink;
+  using Hydrodynamics<ndim>::types;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;

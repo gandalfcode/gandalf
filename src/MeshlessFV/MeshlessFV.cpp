@@ -148,6 +148,11 @@ template <int ndim>
 void MeshlessFV<ndim>::ComputeThermalProperties
  (MeshlessFVParticle<ndim> &part)          ///< [inout] Particle i data
 {
+  // Skip non hydro particles
+  if (!types[part.ptype].hydro_forces)
+    return ;
+
+
   part.u     = eos->SpecificInternalEnergy(part);
   part.sound = eos->SoundSpeed(part);
   part.press = eos->Pressure(part);
@@ -454,32 +459,45 @@ int MeshlessFV<ndim>::CheckTimesteps
  }
 
 //=================================================================================================
+//  MeshlessFV::UpdatePrimitiveVector
+/// Updates all particle quantities based on the primitive variables.
+//=================================================================================================
+void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
+{
+  for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
+  part.Wprim[irho] = part.rho;
+  if (!types[part.ptype].hydro_forces)
+    part.Wprim[ipress] = part.press;
+}
+
+
+//=================================================================================================
 //  MeshlessFV::UpdateArrayVariables
 /// Updates all particle quantities based on the primitive/conserved variables.
 //=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOAT Qcons[nvar])
 {
-  // TODO: Check all callers.
-  //   This now uses the currently predicted value of Qcons, no need to add dQ.
+
   part.m = Qcons[irho] ;
   part.rho = part.m*part.ndens;
   for (int k=0; k<ndim; k++) part.v[k] = Qcons[k]/part.m;
 
-  FLOAT ekin = (FLOAT) 0.0;
-  for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.u = (Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
-  part.u = eos->SpecificInternalEnergy(part);
-  part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
-
   assert(isnormal(part.m));
-  assert(isnormal(part.u));
-  assert(isnormal(part.press));
-  /*assert(part.m > (FLOAT) 0.0);
-  assert(part.u > (FLOAT) 0.0);
-  assert(part.press > (FLOAT) 0.0);*/
 
-  return;
+  if (types[part.ptype].hydro_forces) {
+    FLOAT ekin = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
+
+    part.u = (Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
+    part.u = eos->SpecificInternalEnergy(part);
+    part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
+
+    assert(isnormal(part.u));
+    assert(isnormal(part.press));
+  }
+return;
+
 }
 
 
