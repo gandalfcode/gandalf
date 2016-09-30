@@ -552,9 +552,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     //=============================================================================================
 
 
-    // Finally, add all contributions from distant pair-wise forces to arrays
-#pragma omp critical
-    for (i=0; i<sph->Ntot; i++) sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+    // Propagate the changes in levelneib to the main array
+#pragma omp for
+    for (i=0; i<sph->Ntot; i++) {
+    	for (int ithread=0; i<Nthreads; i++)
+    		sphdata[i].levelneib = max(sphdata[i].levelneib, levelneibbuf[ithread][i]);
+    }
 
 
     // Free-up local memory for OpenMP thread
@@ -872,10 +875,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     //=============================================================================================
 
 
-    // Finally, add all contributions from distant pair-wise forces to arrays
-#pragma omp critical
+    // Propagate the changes in levelneib to the main array
+#pragma omp for
     for (i=0; i<sph->Ntot; i++) {
-      sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+    	for (int ithread=0; i<Nthreads; i++)
+    		sphdata[i].levelneib = max(sphdata[i].levelneib, levelneibbuf[ithread][i]);
     }
 
     // Free-up local memory for OpenMP thread
@@ -1167,10 +1171,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     //=============================================================================================
 
 
-    // Finally, add all contributions from distant pair-wise forces to arrays
-#pragma omp critical
+    // Propagate the changes in levelneib to the main array
+#pragma omp for
     for (i=0; i<sph->Ntot; i++) {
-      sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+    	for (int ithread=0; i<Nthreads; i++)
+    		sphdata[i].levelneib = max(sphdata[i].levelneib, levelneibbuf[ithread][i]);
     }
 
     // Free-up local memory for OpenMP thread
