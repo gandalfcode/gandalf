@@ -182,7 +182,6 @@ OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
 OBJ += RiemannSolver.o
 OBJ += SphNeighbourSearch.o
 OBJ += HydroTree.o Tree.o KDTree.o OctTree.o BruteForceTree.o
-#OBJ += BruteForceSearch.o MeshlessFVBruteForce.o 
 OBJ += MeshlessFVTree.o 
 OBJ += GradhSphTree.o
 OBJ += SM2012SphTree.o

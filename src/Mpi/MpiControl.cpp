@@ -94,8 +94,6 @@ MpiControl<ndim>::MpiControl()
   displacements_send.resize(Nmpi);
   Nreceive_per_node.resize(Nmpi);
   displacements_receive.resize(Nmpi);
-  Nbytes_from_proc.resize(Nmpi);
-  Nbytes_to_proc.resize(Nmpi);
 
   // Create the list of MPI node pair list for communications
   CreateLeagueCalendar();
@@ -706,7 +704,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
     if (iproc == rank) continue;
 
     // Pack the information to send
-    Nbytes_to_proc[iproc] = neibsearch->GetExportInfo(iproc, hydro, send_buffer[j],
+   neibsearch->GetExportInfo(iproc, hydro, send_buffer[j],
                                                       mpinode[iproc], rank, Nmpi);
 
     // Post the send now that we know what to transmit
@@ -774,7 +772,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
         int iproc = j;
         if (j >= rank)
             iproc +=1;
-        neibsearch->UnpackExported(receive_buffer[j], Nbytes_from_proc, hydro, iproc,
+        neibsearch->UnpackExported(receive_buffer[j], hydro, iproc,
             header_receive, rank, first_unpack);
         first_unpack=false;
     }
@@ -835,7 +833,7 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
 		  continue;
 
 	  // Prepare the data to send to each processor
-	  neibsearch->GetBackExportInfo(send_buffer[j], Nbytes_from_proc, Nbytes_to_proc, hydro, rank, i);
+	  neibsearch->GetBackExportInfo(send_buffer[j], hydro, rank, i);
 
 	  // Post the send immediately now that we know which data to send
 	  MPI_Isend(&send_buffer[j][0],send_buffer[j].size(),MPI_CHAR,i,5,MPI_COMM_WORLD,&send_req[j]);

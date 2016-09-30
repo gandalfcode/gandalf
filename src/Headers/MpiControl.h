@@ -78,8 +78,6 @@ class MpiControl
                                            ///< For each turn, gives the node we will play with
   vector<int> Nexport_per_node;            ///< No. of particles exported to each node
   vector<int> Nreceive_per_node;           ///< No. of particles received from each node
-  vector<int> Nbytes_from_proc;            ///< Bytes received from each processor
-  vector<int> Nbytes_to_proc;              ///< Bytes sent to each processor
   vector<Box<ndim> > boxes_buffer;         ///< Buffer needed by UpdateAllBoundingBoxes routine
   NeighbourSearch<ndim>* neibsearch;       ///< Neighbour search class
 
@@ -153,8 +151,6 @@ public:
   using MpiControl<ndim>::Nreceive_per_node;
   using MpiControl<ndim>::displacements_receive;
   using MpiControl<ndim>::Nreceive_tot;
-  using MpiControl<ndim>::Nbytes_from_proc;
-  using MpiControl<ndim>::Nbytes_to_proc;
   using MpiControl<ndim>::ExportParticleType;
   using MpiControl<ndim>::ExportBackParticleType;
   using MpiControl<ndim>::neibsearch;
@@ -231,8 +227,6 @@ public:
   using MpiControl<ndim>::Nreceive_per_node;
   using MpiControl<ndim>::displacements_receive;
   using MpiControl<ndim>::Nreceive_tot;
-  using MpiControl<ndim>::Nbytes_from_proc;
-  using MpiControl<ndim>::Nbytes_to_proc;
   using MpiControl<ndim>::ExportParticleType;
   using MpiControl<ndim>::ExportBackParticleType;
   using MpiControl<ndim>::neibsearch;

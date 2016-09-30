@@ -75,10 +75,6 @@ class MpiNode;
 template <int ndim>
 class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 {
-/*#if defined MPI_PARALLEL
-protected:
-  vector<int> ids_active_particles;
-#endif*/
  public:
 
   using NeighbourSearch<ndim>::neibcheck;
@@ -124,10 +120,7 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 class SphTree : public SphNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType,TreeCell>
 {
 #if defined MPI_PARALLEL
-  vector<vector<int> > ids_sent_particles;
 protected:
-  using NeighbourSearch<ndim>::ids_active_particles;
-  using NeighbourSearch<ndim>::N_imported_part_per_proc;
 #endif
  public:
 
