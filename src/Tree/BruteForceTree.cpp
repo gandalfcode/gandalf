@@ -546,12 +546,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
 
 
 
-template class BruteForceTree<1,Particle,BruteForceTreeCell>;
-template class BruteForceTree<2,Particle,BruteForceTreeCell>;
-template class BruteForceTree<3,Particle,BruteForceTreeCell>;
-template class BruteForceTree<1,SphParticle,BruteForceTreeCell>;
-template class BruteForceTree<2,SphParticle,BruteForceTreeCell>;
-template class BruteForceTree<3,SphParticle,BruteForceTreeCell>;
+
 template class BruteForceTree<1,GradhSphParticle,BruteForceTreeCell>;
 template class BruteForceTree<2,GradhSphParticle,BruteForceTreeCell>;
 template class BruteForceTree<3,GradhSphParticle,BruteForceTreeCell>;

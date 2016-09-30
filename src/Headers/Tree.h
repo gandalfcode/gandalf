@@ -119,22 +119,6 @@ class TreeBase
 	virtual int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                         const int, int &, int *, Particle<ndim> *) = 0 ;
 
-	/* TODO: Members that need more work to be part of a common interface
-	 * 		 Fix: Use a proxy class to hold multipole data, rather than returning the cells.
-	 *
-	virtual int ComputeActiveCellList(TreeCell<ndim> *) ;
-	virtual int ComputeGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
-	                                    const FLOAT, const int, const int, int &, int &, int &, int &,
-	                                    int *, int *, int *, TreeCell<ndim> *, Particle<ndim> *);
-	virtual  int ComputeGravityInteractionAndGhostList(const TreeCell<ndim> &, const Particle<ndim> *,
-	                                            const DomainBox<ndim> &, const FLOAT, const int,
-	                                            const int, int &, int &, int &, int &, int *, int *,
-	                                            int *, TreeCell<ndim> *, Particle<ndim> *);
-	virtual  int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
-												   const int, const int, int &, int &, int &, int *, int *,
-	                                               TreeCell<ndim> *, Particle<ndim> *);
-	*/
-
 	virtual int FindLeafCell(const FLOAT *) = 0;
 
 	//-----------------------------------------------------------------------------------------------
@@ -216,9 +200,6 @@ protected:
                            const int, int &, int *, Particle<ndim> *);
   int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                                    const int, int &, int *, Particle<ndim> *);
-  int ComputeGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
-                                    const FLOAT, const int, const int, int &, int &, int &, int &,
-                                    int *, int *, int *, TreeCell<ndim> *, Particle<ndim> *);
   int ComputeGravityInteractionAndGhostList(const TreeCell<ndim> &, const Particle<ndim> *,
 		                                    const FLOAT, const int,
                                             const int, int &, int &, int &, int &, int *, int *,
