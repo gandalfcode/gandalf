@@ -122,7 +122,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   TreeCell<ndim> *celllist;                // List of active tree cells
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
@@ -321,6 +320,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
   for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
   for (int cc=0; cc<cactive; cc++) {
     int c = celllist[cc].id;
@@ -360,7 +360,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   TreeCell<ndim> *celllist;                // List of active tree cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
@@ -566,6 +565,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
   for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
   for (int cc=0; cc<cactive; cc++) {
     int c = celllist[cc].id;
@@ -603,6 +603,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
   int cactive;                         // No. of active cells
   TreeCell<ndim> *celllist;            // List of active cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+#ifdef MPI_PARALLEL
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
   timing->StartTimingSection("SPH_ALL_FORCES");
@@ -875,6 +878,20 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
   }
   //===============================================================================================
 
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  for (int cc=0; cc<cactive; cc++) {
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+  }
+#ifdef OUTPUT_ALL
+  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+#endif
+
   delete[] celllist;
 
   timing->EndTimingSection("SPH_ALL_FORCES");
@@ -901,6 +918,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   int cactive;                         // No. of active cells
   TreeCell<ndim> *celllist;            // List of active cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+#ifdef MPI_PARALLEL
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
   timing->StartTimingSection("SPH_ALL_GRAV_FORCES");
@@ -1153,7 +1173,23 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   }
   //===============================================================================================
 
+
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  for (int cc=0; cc<cactive; cc++) {
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+  }
+#ifdef OUTPUT_ALL
+  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+#endif
+
   delete[] celllist;
+
 
   timing->EndTimingSection("SPH_ALL_GRAV_FORCES");
 

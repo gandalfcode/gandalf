@@ -1944,6 +1944,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
   for (int icell=0; icell<N_received_cells; icell++) {
     TreeCell<ndim>& dest_cell = tree->celldata[icell + offset_cells];
     handler_cell.ReceiveCell(&received_array[offset],dest_cell,offset_part);
+    dest_cell.id = icell+offset_cells;
     offset += sizeof(StreamlinedCell);
 
     // Now copy the received particles inside the hydro particle main arrays
