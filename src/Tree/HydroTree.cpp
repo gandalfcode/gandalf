@@ -587,6 +587,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
   }
 
   hydro->NPeriodicGhost = hydro->Nghost;
+  if (hydro->Ntot > Ntotmax) {
+	  Ntotmax = hydro->Ntot;
+	  ReallocateMemory();
+  }
 
   return;
 }
