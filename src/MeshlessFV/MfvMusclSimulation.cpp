@@ -245,6 +245,11 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     }
 #endif
   }
+  else {
+    for (i=0; i<mfv->Nhydro; i++)
+      for (k=0; k < ndim; k++)
+        mfv->GetMeshlessFVParticlePointer(i).a[k] = 0;
+  }
 
   // Compute N-body forces
   //-----------------------------------------------------------------------------------------------

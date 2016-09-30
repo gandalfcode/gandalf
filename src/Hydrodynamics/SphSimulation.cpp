@@ -475,16 +475,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
   }
 
-  // Compute the dust forces if present.
-  if (sphdust != NULL){
-    // Copy properties from original particles to ghost particles
-    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
-#ifdef MPI_PARALLEL
-    MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
-#endif
-    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
-  }
-
   // Set initial accelerations
   for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
@@ -498,6 +488,29 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,sph);
 #endif
+
+
+  // Compute the dust forces if present.
+  if (sphdust != NULL){
+    // Copy properties from original particles to ghost particles
+    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+#endif
+    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
+
+    // Compute timesteps for all particles and use it to compute the time-averaged initial
+    // drag force.
+    if (Nlevels == 1) this->ComputeGlobalTimestep();
+    else this->ComputeBlockTimesteps();
+
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (k=0; k<ndim; k++) part.a[k] = part.a0[k];
+    }
+
+    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
+  }
 
 
   // Compute initial N-body forces

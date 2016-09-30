@@ -354,12 +354,14 @@ void MeshlessFV<ndim>::EndTimestep
       this->UpdatePrimitiveVector(part) ;
 
       // Update all values to the beginning of the next step
+      // Note: We update a0 later since the old acceleration is needed for the drag force
+      //       computation at the start of the next step
       part.nlast  = n;
       part.tlast  = t;
       part.flags.set_flag(active);
       for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
-      for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
+      // for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
       for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
       for (k=0; k<ndim; k++) part.rdmdt[k] = 0.0;
       for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
@@ -466,7 +468,6 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 {
   for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
   part.Wprim[irho] = part.rho;
-
   if (types[part.ptype].hydro_forces)
     part.Wprim[ipress] = part.press;
 }

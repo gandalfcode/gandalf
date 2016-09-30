@@ -554,6 +554,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     else
       mfvneib->SetOpeningCriterion(mac_type) ;
 
+<<<<<<< HEAD
     for (i=0; i<mfv->Ntot; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
       for (k=0; k<ndim; k++) {
@@ -578,7 +579,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->InitialiseCellWorkCounters();
 #endif
     mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
-    mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
+
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
     MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
@@ -641,14 +642,12 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
   } // End of force iteration.
 
-  // Compute the dust forces if present.
-  if (mfvdust != NULL){
-    // Copy properties from original particles to ghost particles
-    mfv->CopyDataToGhosts(simbox, partdata);
-#ifdef MPI_PARALLEL
-    MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
-#endif
-    mfvdust->UpdateAllDragForces(mfv->Nhydro, mfv->Ntot, partdata, timestep) ;
+  // ..
+  for (i=0; i<mfv->Nhydro; i++) {
+    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+    for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
+    for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
+    for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
   }
 
   // Compute initial N-body forces
