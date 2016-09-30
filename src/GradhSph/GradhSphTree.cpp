@@ -418,7 +418,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
 
-    for (i=0; i<sph->Nhydro; i++) levelneib[i] = 0;
+    for (i=0; i<sph->Ntot; i++) levelneib[i] = 0;
 
 
     // Loop over all active cells
@@ -426,6 +426,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCell<ndim>& cell = celllist[cc];
+      //assert (cell.id>=0);
+
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
@@ -552,7 +554,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
     // Finally, add all contributions from distant pair-wise forces to arrays
 #pragma omp critical
-    for (i=0; i<sph->Nhydro; i++) sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+    for (i=0; i<sph->Ntot; i++) sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
 
 
     // Free-up local memory for OpenMP thread
@@ -674,7 +676,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
 
     // Zero timestep level array
-    for (i=0; i<sph->Nhydro; i++) levelneib[i] = 0;
+    for (i=0; i<sph->Ntot; i++) levelneib[i] = 0;
 
 
     // Loop over all active cells
@@ -872,7 +874,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
     // Finally, add all contributions from distant pair-wise forces to arrays
 #pragma omp critical
-    for (i=0; i<sph->Nhydro; i++) {
+    for (i=0; i<sph->Ntot; i++) {
       sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
     }
 
@@ -988,7 +990,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
 
     // Zero timestep level array
-    for (i=0; i<sph->Nhydro; i++) levelneib[i] = 0;
+    for (i=0; i<sph->Ntot; i++) levelneib[i] = 0;
 
 
     // Loop over all active cells
@@ -1167,7 +1169,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
     // Finally, add all contributions from distant pair-wise forces to arrays
 #pragma omp critical
-    for (i=0; i<sph->Nhydro; i++) {
+    for (i=0; i<sph->Ntot; i++) {
       sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
     }
 

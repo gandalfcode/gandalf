@@ -727,6 +727,9 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     // Sanity-checkt to ensure particles are really un-softened direct-sum neighbours
     assert(drsqd >= parti.hrangesqd && drsqd >= sphdata[j].hrangesqd);
 
+    parti.levelneib = max(parti.levelneib,sphdata[j].level);
+
+
   }
   //-----------------------------------------------------------------------------------------------
 
