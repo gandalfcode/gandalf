@@ -279,6 +279,7 @@ public:
 
     c2.Nactive = c.N;
     c2.N = c.N;
+    c2.worktot=0.;
 
 
   }

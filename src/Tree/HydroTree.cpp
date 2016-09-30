@@ -2112,8 +2112,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::InitialiseCellWorkCounters(void)
 {
-  //assert(tree->Ncellmax > 0);
-  //for (int c=0; c<tree->Ncellmax; c++) tree->celldata[c].worktot = (FLOAT) 0.0;
+  assert(tree->Ncell > 0);
+  for (int c=0; c<tree->Ncell; c++) tree->celldata[c].worktot = (FLOAT) 0.0;
   return;
 }
 #endif
