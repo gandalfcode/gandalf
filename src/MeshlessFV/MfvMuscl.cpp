@@ -178,7 +178,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     assert(Wj[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    if (RiemannSolverType == 1)
+    if (RiemannSolverType == exact)
       riemannExact.ComputeFluxes(Wj, Wi, Aunit, vface, flux);
     else
       riemannHLLC.ComputeFluxes(Wj, Wi, Aunit, vface, flux);

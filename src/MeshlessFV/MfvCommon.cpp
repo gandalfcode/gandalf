@@ -69,10 +69,10 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
   //-----------------------------------------------------------------------------------------------
   string riemann_solver = stringparams["riemann_solver"];
   if (riemann_solver == "exact") {
-    RiemannSolverType = 1 ;
+    RiemannSolverType = exact ;
   }
   else if (riemann_solver == "hllc") {
-   RiemannSolverType = 2 ;
+   RiemannSolverType = hllc ;
   }
   else {
     string message = "Unrecognised parameter : riemann_solver = " + riemann_solver;

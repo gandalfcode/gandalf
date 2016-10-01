@@ -72,13 +72,6 @@ ICCOPT   += -openmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
 
-ifeq ($(MPI), 1)
-CFLAGS += -DMPI_PARALLEL
-ifneq ($(CPP), mpic++)
-LIB += -lmpi
-endif
-endif
-
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
 ifeq ($(findstring g++,$(CPP)),g++)
@@ -91,6 +84,15 @@ else ifeq ($(CPP),mpic++)
 MPI = 1
 OPT += $(GCCOPT)
 endif
+
+
+ifeq ($(MPI), 1)
+CFLAGS += -DMPI_PARALLEL
+ifneq ($(CPP), mpic++)
+LIB += -lmpi
+endif
+endif
+
 
 ifeq ($(CXX),clang++)
  OPT += -D__extern_always_inline=inline

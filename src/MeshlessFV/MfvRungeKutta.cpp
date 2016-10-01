@@ -155,7 +155,7 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     assert(Wright[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    if (RiemannSolverType == 1)
+    if (RiemannSolverType == exact)
       riemannExact.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
     else
       riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
@@ -182,7 +182,7 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     assert(Wright[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    if (RiemannSolverType == 1)
+    if (RiemannSolverType == exact)
       riemannExact.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
     else
       riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);

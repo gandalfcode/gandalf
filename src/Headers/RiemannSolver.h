@@ -12,6 +12,11 @@
 #include "Constants.h"
 #include "InlineFuncs.h"
 
+enum RiemannSolver {
+  exact = 1,
+  hllc  = 2  
+} ;
+
 
 //=================================================================================================
 //  Class RiemannSolver
