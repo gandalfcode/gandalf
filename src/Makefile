@@ -72,6 +72,13 @@ ICCOPT   += -openmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
 
+ifeq ($(MPI), 1)
+CFLAGS += -DMPI_PARALLEL
+ifneq ($(CPP), mpic++)
+LIB += -lmpi
+endif
+endif
+
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
 ifeq ($(findstring g++,$(CPP)),g++)
@@ -82,7 +89,6 @@ else ifeq ($(CPP),clang)
 OPT += $(CLANGOPT)
 else ifeq ($(CPP),mpic++)
 MPI = 1
-CFLAGS += -DMPI_PARALLEL
 OPT += $(GCCOPT)
 endif
 
