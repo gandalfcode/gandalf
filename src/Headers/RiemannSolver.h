@@ -12,7 +12,7 @@
 #include "Constants.h"
 #include "InlineFuncs.h"
 
-enum RiemannSolver {
+enum RiemannSolverEnum {
   exact = 1,
   hllc  = 2  
 } ;
