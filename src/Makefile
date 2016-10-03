@@ -40,7 +40,7 @@ VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/GodunovSph:$(PWD)/src/GradhSph:$
 VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
 VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
 VPATH +=$(PWD)/src/UnitTesting
-INCLUDE = $(PWD)/src/Headers
+INCLUDE += -I$(PWD)/src/Headers
 
 ifeq ($(strip $(CPP)),)
   CPP=$(CXX)
@@ -89,7 +89,7 @@ endif
 ifeq ($(MPI), 1)
 CFLAGS += -DMPI_PARALLEL
 ifneq ($(CPP), mpic++)
-LIB += -lmpi
+LIB += -lmpi -lmpi++
 endif
 endif
 
@@ -229,16 +229,16 @@ TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) -I$(INCLUDE) $<
 
 %_wrap.o: %_wrap.cxx
-	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) -I$(INCLUDE)
+	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) $(INCLUDE)
 
 %.o: %.cxx
 	$(CPP) $(CFLAGS) -I$(INCLUDE) -c $< $(OPT)
 
 %.o: %.cpp
-	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include -I$(INCLUDE) -c $<
+	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include $(INCLUDE) -c $<
 
 %.o: %.c
-	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include -I$(INCLUDE) -c $<
+	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include $(INCLUDE) -c $<
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
@@ -255,18 +255,18 @@ all : $(WRAP_OBJ) $(OBJ) Exception.o _SphSim.so executable
 #==================================================================================================
 
 executable : $(OBJ) gandalf.o Exception.o
-	$(CPP) $(CFLAGS) -I$(INCLUDE) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT) $(LIB)
+	$(CPP) $(CFLAGS) $(INCLUDE) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT) $(LIB)
 	cp gandalf ../bin/gandalf
 
 unittests : $(OBJ) $(TEST_OBJ) Exception.o
-	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) $(LIB) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
+	$(CPP) $(CFLAGS) $(INCLUDE) $(OPT) $(LIB) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
 	cp testgandalf ../bin/testgandalf
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o
-	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) $(LIB) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
+	$(CPP) $(CFLAGS) $(INCLUDE) $(OPT) $(LIB) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
 
 Exception.o : Exception.cpp
-	$(CPP) $(OPT) -I$(INCLUDE) $(CFLAGS) -fexceptions -c $<
+	$(CPP) $(OPT) $(INCLUDE) $(CFLAGS) -fexceptions -c $<
 
 SphSimulation.o : SimulationIO.hpp SimulationIC.hpp SimAnalysis.hpp
 
