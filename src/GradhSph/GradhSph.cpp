@@ -28,6 +28,7 @@
 #include <cassert>
 #include <iostream>
 #include <math.h>
+#include <algorithm>
 #include "Precision.h"
 #include "Sph.h"
 #include "Particle.h"
@@ -78,8 +79,7 @@ GradhSph<ndim, kernelclass>::~GradhSph()
 
 //=================================================================================================
 //  GradhSph::AllocateMemory
-/// Allocate main SPH particle array.  Estimates the maximum number of boundary ghost particles
-/// assuming a roughly uniform depth of ghosts at each boundary.
+/// Allocate main SPH particle array
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
@@ -87,23 +87,29 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
   debug2("[GradhSph::AllocateMemory]");
 
   if (N > Nhydromax || !allocated) {
-    if (allocated) DeallocateMemory();
 
-    // Set conservative estimate for maximum number of particles, assuming
-    // extra space required for periodic ghost particles
-    if (Nhydromax < N) {
-      Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 16.0*kernp->kernrange,ndim);
+	GradhSphParticle<ndim>* oldsphdata;
+	if (allocated) {
+		oldsphdata = sphdata;
+	}
+	else {
+	}
+
+
+    sphdata          = new struct GradhSphParticle<ndim>[N];
+    if (allocated) {
+    	std::copy(oldsphdata,oldsphdata+Nhydromax,sphdata);
+        delete[] oldsphdata;
     }
 
-    iorder           = new int[Nhydromax];
-    sphdata          = new struct GradhSphParticle<ndim>[Nhydromax];
+	Nhydromax=N;
     allocated        = true;
     hydrodata_unsafe = sphdata;
     sphdata_unsafe   = sphdata;
+
   }
 
-  assert(Nhydromax > Nhydro);
-  assert(iorder);
+  assert(Nhydromax >= Nhydro);
   assert(sphdata);
 
   return;
@@ -122,7 +128,6 @@ void GradhSph<ndim, kernelclass>::DeallocateMemory(void)
 
   if (allocated) {
     delete[] sphdata;
-    delete[] iorder;
   }
   allocated = false;
 
@@ -171,31 +176,8 @@ void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
   Nhydro -= Ndead;
   Ntot -= Ndead;
   for (i=0; i<Nhydro; i++) {
-    iorder[i] = i;
     assert(!sphdata[i].flags.is_dead());
   }
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  GradhSph::ReorderParticles
-/// Delete selected SPH particles from the main arrays.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void GradhSph<ndim, kernelclass>::ReorderParticles(void)
-{
-  int i;                               // Particle counter
-  GradhSphParticle<ndim> *sphdataaux;  // Aux. SPH particle array
-
-  sphdataaux = new GradhSphParticle<ndim>[Nhydro];
-
-  for (i=0; i<Nhydro; i++) sphdataaux[i] = sphdata[i];
-  for (i=0; i<Nhydro; i++) sphdata[i] = sphdataaux[iorder[i]];
-
-  delete[] sphdataaux;
 
   return;
 }
@@ -744,6 +726,9 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
 
     // Sanity-checkt to ensure particles are really un-softened direct-sum neighbours
     assert(drsqd >= parti.hrangesqd && drsqd >= sphdata[j].hrangesqd);
+
+    parti.levelneib = max(parti.levelneib,sphdata[j].level);
+
 
   }
   //-----------------------------------------------------------------------------------------------

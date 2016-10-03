@@ -63,7 +63,6 @@ public:
   using Hydrodynamics<ndim>::eos;
   using Hydrodynamics<ndim>::h_fac;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
-  using Hydrodynamics<ndim>::iorder;
   using Hydrodynamics<ndim>::kernfac;
   using Hydrodynamics<ndim>::kernfacsqd;
   using Hydrodynamics<ndim>::kernp;
@@ -71,7 +70,6 @@ public:
   using Hydrodynamics<ndim>::mmean;
   using Hydrodynamics<ndim>::Ngather;
   using Hydrodynamics<ndim>::Nghost;
-  using Hydrodynamics<ndim>::Nghostmax;
   using Hydrodynamics<ndim>::NImportedParticles;
   using Hydrodynamics<ndim>::Nhydro;
   using Hydrodynamics<ndim>::Nhydromax;
@@ -107,7 +105,6 @@ public:
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
-  virtual void ReorderParticles(void) = 0;
 
   // Other functions
   //-----------------------------------------------------------------------------------------------

@@ -431,7 +431,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set all relevant particle counters
   mfv->Nghost = 0;
-  mfv->Nghostmax = mfv->Nhydromax - mfv->Nhydro;
   mfv->Ntot = mfv->Nhydro;
   for (i=0; i<mfv->Nhydro; i++) partdata[i].flags.set_flag(active);
 
@@ -465,6 +464,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Search ghost particles
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
+  // Update pointer in case there has been a reallocation
+  partdata = mfv->GetMeshlessFVParticleArray();
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep ,mfv->Ntot,
                           mfv->Nhydromax, timestep, partdata, mfv);
 
@@ -487,6 +488,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Search ghost particles
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
+  // Update pointer in case there has been a reallocation
+  partdata = mfv->GetMeshlessFVParticleArray();
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                           mfv->Nhydromax, timestep, partdata, mfv);
 
@@ -495,6 +498,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                      mfv->Nhydromax, timestep, partdata, mfv);
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
+  // Update pointer in case there has been a reallocation
+  partdata = mfv->GetMeshlessFVParticleArray();
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                           mfv->Nhydromax, timestep, partdata, mfv);
   mfvneib->neibcheck = true;
@@ -550,6 +555,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                      mfv->Nhydromax, timestep, partdata, mfv);
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
+  // Update pointer in case there has been a reallocation
+  partdata = mfv->GetMeshlessFVParticleArray();
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                           mfv->Nhydromax, timestep, partdata, mfv);
 

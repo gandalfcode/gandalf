@@ -67,8 +67,7 @@ class NeighbourSearch
 {
 #if defined MPI_PARALLEL
 protected:
-  vector<int> ids_active_particles;
-  vector<int> N_imported_part_per_proc;
+
 #endif
  public:
 
@@ -103,9 +102,8 @@ protected:
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) = 0;
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*) = 0;
-  virtual void GetBackExportInfo(vector<char >& received_array,
-                                 vector<int>& N_exported_particles_from_proc,
-                                 vector<int>&, Hydrodynamics<ndim> *hydro, const int rank, const int iproc) = 0;
+  virtual void GetBackExportInfo(vector<char >& received_array, Hydrodynamics<ndim> *hydro,
+		  	  	  	  	  	  	  const int rank, const int iproc) = 0;
   virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) =0;
   virtual int ExportInfoSize(const int i)=0;
   virtual int GetExportInfo(int Nproc, Hydrodynamics<ndim> *, vector<char >&,
@@ -113,8 +111,7 @@ protected:
   virtual void InitialiseCellWorkCounters(void) = 0;
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &) {return 0;};
-  virtual void UnpackExported(vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-                              Hydrodynamics<ndim> *, const int,vector< vector<char> >&,
+  virtual void UnpackExported(vector<char >& arrays, Hydrodynamics<ndim> *, const int,vector< vector<char> >&,
                               const int, const bool) = 0;
   virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
                                        Nbody<ndim> *, const DomainBox<ndim> &) = 0;
@@ -149,109 +146,6 @@ protected:
 
 
 //=================================================================================================
-//  Class BruteForceSearch
-/// \brief   Class for computing hydro neighbour lists using brute force only.
-/// \details Class for computing hydro neighbour lists using brute force only
-///          (i.e. direct summation over all particles).
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class BruteForceSearch : public virtual NeighbourSearch<ndim>
-{
-#if defined MPI_PARALLEL
-	using NeighbourSearch<ndim>::N_imported_part_per_proc;
-#endif
- public:
-
-  using NeighbourSearch<ndim>::neibcheck;
-  using NeighbourSearch<ndim>::timing;
-  using NeighbourSearch<ndim>::kernp;
-  using NeighbourSearch<ndim>::kernfac;
-  using NeighbourSearch<ndim>::kernrange;
-  using NeighbourSearch<ndim>::kernrangesqd;
-#if defined MPI_PARALLEL
-  using NeighbourSearch<ndim>::ids_active_particles;
-#endif
-
-
-  //-----------------------------------------------------------------------------------------------
-  BruteForceSearch(FLOAT kernrangeaux, DomainBox<ndim> *boxaux,
-                   SmoothingKernel<ndim> *kernaux, CodeTiming *timingaux) :
-    NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux) {};
-  virtual ~BruteForceSearch() {};
-
-
-  //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const int, const int, const int, const int,
-                         const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void BuildGhostTree(const bool, const int, const int, const int, const int,
-                              const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
-  virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
-  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
-  virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
-  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
-                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
-  virtual double GetMaximumSmoothingLength() { return _Hmax ; }
-
-#ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
-                               const MpiNode<ndim> *, Particle<ndim> *) {};
-  virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
-                                 const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
-  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) {return (FLOAT) 0.0;};
-  virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
-                                        vector<int>&, const vector<int>&, MpiNode<ndim>*);
-  virtual void GetBackExportInfo(vector<char >& received_array,
-                                 vector<int>& N_exported_particles_from_proc,
-                                 vector<int>&, Hydrodynamics<ndim> *hydro, const int rank, const int iproc);
-  virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) {
-    vector<char> result(sizeof(int));
-    if (iproc==0) {
-      ids_active_particles.clear();
-      for (int i=0; i<hydro->Nhydro; i++) {
-    	  Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.active) {
-          ids_active_particles.push_back(i);
-        }
-      }
-    }
-    int size = ids_active_particles.size()*sizeof(ParticleType<ndim>);
-    copy(&result[0],&size);
-    return result;
-  }
-  virtual int ExportInfoSize(const int i) {
-	  return ids_active_particles.size()*sizeof(ParticleType<ndim>);
-  }
-  virtual int GetExportInfo(int Nproc, Hydrodynamics<ndim> *, vector<char >&,
-                            MpiNode<ndim>&, int, int);
-  virtual void InitialiseCellWorkCounters(void) {};
-  virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
-                                      Hydrodynamics<ndim> *, vector<int> &);
-  virtual void UnpackExported(vector<char>& arrays, vector<int>& N_received_particles_from_proc,
-                              Hydrodynamics<ndim> *, const int, vector< vector<char> >&,
-                              const int, const bool);
-  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
-                                       Nbody<ndim> *, const DomainBox<ndim> &) {};
-  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
-                                     Nbody<ndim> *, const DomainBox<ndim> &) {};
-  virtual void UnpackReturnedExportInfo(vector<char> &, Hydrodynamics<ndim> *, const int, const int);
-  virtual void FindParticlesToTransfer(Hydrodynamics<ndim> *, vector<vector<int> >& ,
-                                       vector<int> &, const vector<int> &, MpiNode<ndim> *);
-  virtual void ResetCountersExportInfo (Hydrodynamics<ndim>* hydro) {
-	  hydro->Ntot -= hydro->NImportedParticles;
-	  assert(hydro->Ntot == hydro->Nhydro + hydro->Nghost);
-	  hydro->NImportedParticles=0;
-  };
-#endif
-
-  double _Hmax ;
-
-};
-
-
-
-//=================================================================================================
 //  Class HydroTree
 /// \brief   Class containing tree for efficient neighbour searching and gravity calculations.
 /// \details Class containing tree for efficient neighbour searching and gravity calculations.
@@ -261,11 +155,13 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class HydroTree : public virtual NeighbourSearch<ndim>
 {
+	void ReallocateMemory(void);
 #if defined MPI_PARALLEL
   vector<vector<int> > ids_sent_particles;
+  vector<vector<int> > ids_sent_cells;
+  vector<int> N_imported_part_per_proc;
+  vector<int> N_imported_cells_per_proc;
 protected:
-  using NeighbourSearch<ndim>::ids_active_particles;
-  using NeighbourSearch<ndim>::N_imported_part_per_proc;
 #endif
  public:
 
@@ -303,8 +199,8 @@ protected:
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*);
-  virtual void GetBackExportInfo(vector<char > &, vector<int> &,
-                                 vector<int> &, Hydrodynamics<ndim> *, const int, const int);
+  virtual void GetBackExportInfo(vector<char > &,
+                                 Hydrodynamics<ndim> *, const int, const int);
   virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) {
     int cactive = Ncellexport[iproc];
     int Nactive = Npartexport[iproc];
@@ -333,13 +229,15 @@ protected:
   virtual int ExportInfoSize(const int i) {
 	  typename ParticleType<ndim>::HandlerType handler;
 	  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
-	  return ids_sent_particles[i].size()*sizeof(StreamlinedPart);
+	  const int size_particles = ids_sent_particles[i].size()*sizeof(StreamlinedPart);
+	  const int size_cells = ids_sent_cells[i].size()*sizeof(double);
+	  return size_particles+size_cells;
   };
   virtual int GetExportInfo(int, Hydrodynamics<ndim> *, vector<char >&, MpiNode<ndim>&, int, int);
   virtual void InitialiseCellWorkCounters(void);
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
-  virtual void UnpackExported(vector<char> &, vector<int> &, Hydrodynamics<ndim> *,
+  virtual void UnpackExported(vector<char> &, Hydrodynamics<ndim> *,
       const int, vector< vector<char> >&, const int, const bool);
   virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
                                        Nbody<ndim> *, const DomainBox<ndim> &);

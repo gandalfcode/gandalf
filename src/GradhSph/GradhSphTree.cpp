@@ -119,10 +119,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
   int cactive;                             // No. of active tree cells
-  TreeCell<ndim> *celllist;                // List of active tree cells
+  vector<TreeCell<ndim> > celllist;		   // List of active tree cells
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
@@ -131,13 +130,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCell<ndim>[tree->gtot];
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    delete[] celllist;
     timing->EndTimingSection("SPH_PROPERTIES");
     return;
   }
@@ -186,6 +183,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCell<ndim>& cell = celllist[cc];
+
       celldone = 1;
       hmax = cell.hmax;
 
@@ -322,17 +320,19 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
   for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
   for (int cc=0; cc<cactive; cc++) {
     int c = celllist[cc].id;
+    assert (c<tree->Ncell);
+    assert(tree->celldata[c].worktot>=0);
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+    assert(tree->celldata[c].worktot>=0);
   }
 #ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
-  delete[] celllist;
 
   // Update tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0],sphdata);
@@ -358,10 +358,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  TreeCell<ndim> *celllist;                // List of active tree cells
+  vector<TreeCell<ndim> > celllist;                // List of active tree cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
@@ -369,16 +368,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   timing->StartTimingSection("SPH_HYDRO_FORCES");
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    delete[] celllist;
     timing->EndTimingSection("SPH_HYDRO_FORCES");
     return;
   }
@@ -421,7 +414,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
 
-    for (i=0; i<sph->Nhydro; i++) levelneib[i] = 0;
+    for (i=0; i<sph->Ntot; i++) levelneib[i] = 0;
 
 
     // Loop over all active cells
@@ -429,6 +422,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCell<ndim>& cell = celllist[cc];
+      //assert (cell.id>=0);
+
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
@@ -553,9 +548,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     //=============================================================================================
 
 
-    // Finally, add all contributions from distant pair-wise forces to arrays
-#pragma omp critical
-    for (i=0; i<sph->Nhydro; i++) sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+    // Propagate the changes in levelneib to the main array
+#pragma omp for
+    for (i=0; i<sph->Ntot; i++) {
+    	for (int ithread=0; i<Nthreads; i++)
+    		sphdata[i].levelneib = max(sphdata[i].levelneib, levelneibbuf[ithread][i]);
+    }
 
 
     // Free-up local memory for OpenMP thread
@@ -572,18 +570,21 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
   for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
   for (int cc=0; cc<cactive; cc++) {
     int c = celllist[cc].id;
+    assert(c<tree->Ncelltot);
+    assert(tree->celldata[c].Nactive>0);
+    assert(tree->celldata[c].worktot>=0);
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+    assert(tree->celldata[c].worktot>=0);
   }
 #ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
 
-
-  delete[] celllist;
 
   timing->EndTimingSection("SPH_HYDRO_FORCES");
 
@@ -607,24 +608,21 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int cactive;                         // No. of active cells
-  TreeCell<ndim> *celllist;            // List of active cells
+  vector<TreeCell<ndim> > celllist;            // List of active cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+#ifdef MPI_PARALLEL
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
   timing->StartTimingSection("SPH_ALL_FORCES");
 
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    delete[] celllist;
     timing->EndTimingSection("SPH_ALL_FORCES");
     return;
   }
@@ -674,7 +672,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
 
     // Zero timestep level array
-    for (i=0; i<sph->Nhydro; i++) levelneib[i] = 0;
+    for (i=0; i<sph->Ntot; i++) levelneib[i] = 0;
 
 
     // Loop over all active cells
@@ -870,10 +868,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     //=============================================================================================
 
 
-    // Finally, add all contributions from distant pair-wise forces to arrays
-#pragma omp critical
-    for (i=0; i<sph->Nhydro; i++) {
-      sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+    // Propagate the changes in levelneib to the main array
+#pragma omp for
+    for (i=0; i<sph->Ntot; i++) {
+    	for (int ithread=0; i<Nthreads; i++)
+    		sphdata[i].levelneib = max(sphdata[i].levelneib, levelneibbuf[ithread][i]);
     }
 
     // Free-up local memory for OpenMP thread
@@ -886,7 +885,19 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
   }
   //===============================================================================================
 
-  delete[] celllist;
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  for (int cc=0; cc<cactive; cc++) {
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+  }
+#ifdef OUTPUT_ALL
+  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+#endif
 
   timing->EndTimingSection("SPH_ALL_FORCES");
 
@@ -910,24 +921,21 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int cactive;                         // No. of active cells
-  TreeCell<ndim> *celllist;            // List of active cells
+  vector<TreeCell<ndim> > celllist;            // List of active cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+#ifdef MPI_PARALLEL
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
   timing->StartTimingSection("SPH_ALL_GRAV_FORCES");
 
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    delete[] celllist;
     timing->EndTimingSection("SPH_ALL_GRAV_FORCES");
     return;
   }
@@ -976,7 +984,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
 
     // Zero timestep level array
-    for (i=0; i<sph->Nhydro; i++) levelneib[i] = 0;
+    for (i=0; i<sph->Ntot; i++) levelneib[i] = 0;
 
 
     // Loop over all active cells
@@ -1153,10 +1161,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     //=============================================================================================
 
 
-    // Finally, add all contributions from distant pair-wise forces to arrays
-#pragma omp critical
-    for (i=0; i<sph->Nhydro; i++) {
-      sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
+    // Propagate the changes in levelneib to the main array
+#pragma omp for
+    for (i=0; i<sph->Ntot; i++) {
+    	for (int ithread=0; i<Nthreads; i++)
+    		sphdata[i].levelneib = max(sphdata[i].levelneib, levelneibbuf[ithread][i]);
     }
 
     // Free-up local memory for OpenMP thread
@@ -1169,7 +1178,21 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   }
   //===============================================================================================
 
-  delete[] celllist;
+
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  for (int cc=0; cc<cactive; cc++) {
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+  }
+#ifdef OUTPUT_ALL
+  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+#endif
+
 
   timing->EndTimingSection("SPH_ALL_GRAV_FORCES");
 

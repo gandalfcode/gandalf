@@ -67,7 +67,6 @@ public:
   using Hydrodynamics<ndim>::hydrodata_unsafe;
   using Hydrodynamics<ndim>::hydro_forces;
   using Hydrodynamics<ndim>::invndim;
-  using Hydrodynamics<ndim>::iorder;
   using Hydrodynamics<ndim>::kernfac;
   using Hydrodynamics<ndim>::kernfacsqd;
   using Hydrodynamics<ndim>::kernp;
@@ -75,7 +74,6 @@ public:
   using Hydrodynamics<ndim>::mmean;
   using Hydrodynamics<ndim>::Ngather;
   using Hydrodynamics<ndim>::Nghost;
-  using Hydrodynamics<ndim>::Nghostmax;
   using Hydrodynamics<ndim>::NImportedParticles;
   using Hydrodynamics<ndim>::Nhydro;
   using Hydrodynamics<ndim>::Nhydromax;
@@ -107,7 +105,6 @@ public:
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
   virtual void DeleteDeadParticles(void);
-  virtual void ReorderParticles(void);
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {
     MeshlessFVParticle<ndim>& mfvpart = static_cast<MeshlessFVParticle<ndim>& > (part);
     mfvpart.m -= dm;
@@ -214,7 +211,6 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
-  using MeshlessFV<ndim>::Nghostmax;
   using MeshlessFV<ndim>::NImportedParticles;
   using MeshlessFV<ndim>::Nhydro;
   using MeshlessFV<ndim>::Nhydromax;
@@ -300,7 +296,6 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
-  using MeshlessFV<ndim>::Nghostmax;
   using MeshlessFV<ndim>::NImportedParticles;
   using MeshlessFV<ndim>::Nhydro;
   using MeshlessFV<ndim>::Nhydromax;
@@ -369,7 +364,6 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
-  using MeshlessFV<ndim>::Nghostmax;
   using MeshlessFV<ndim>::NImportedParticles;
   using MeshlessFV<ndim>::Nhydro;
   using MeshlessFV<ndim>::Nhydromax;

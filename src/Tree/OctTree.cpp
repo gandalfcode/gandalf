@@ -62,11 +62,8 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
   ltot_old       = -1;
   Ncell          = 0;
   Ncellmax       = 0;
-  Ncellmaxold    = 0;
   Ntot           = 0;
   Ntotmax        = 0;
-  Ntotmaxold     = 0;
-  Ntotold        = -1;
   hmax           = 0.0;
   #if defined _OPENMP
   Nthreads       = omp_get_max_threads();
@@ -99,34 +96,88 @@ OctTree<ndim,ParticleType,TreeCell>::~OctTree()
 /// than currently allocated, tree is deallocated and reallocated here.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
+void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(int Nparticles, int Ncells, bool force_realloc)
 {
   debug2("[OctTree::AllocateTreeMemory]");
 
   assert(Ntot >= 0);
   assert(lmax >= 0);
 
-  if (!allocated_tree || Ntotmax > Ntotmaxold || Ncell > Ncellmax) {
+  if (!allocated_tree || Nparticles > Ntotmax || Ncells > Ncellmax || force_realloc) {
     if (allocated_tree) DeallocateTreeMemory();
-    Ntotmax     = max(Ntotmax, Ntot);
-    Ntotmaxold  = Ntotmax;
-    Ncellmax    = max((int) ((FLOAT) 2.0*(FLOAT) Ncellmax), 4*Ntotmax);
-    Ncellmaxold = Ncellmax;
+
+    Ncells = max(Ncells,Ncellmax);
+    Nparticles = max(Nparticles,Ntotmax);
+    Ncells    = max((int) ((FLOAT) 2.0*(FLOAT) Ncells), 4*Nparticles);
     gtot        = Ntotmax;
 
     firstCell = new int[lmax];
     lastCell  = new int[lmax];
-    ids       = new int[Ntotmax];
-    inext     = new int[Ntotmax];
-    celldata  = new struct TreeCell<ndim>[Ncellmax];
+    ids       = new int[Nparticles];
+    inext     = new int[Nparticles];
+    celldata  = new struct TreeCell<ndim>[Ncells];
 
     allocated_tree = true;
+
+    Ntotmax = Nparticles;
+    Ncellmax = Ncells;
+
   }
 
   return;
 }
 
+//=================================================================================================
+//  OctTree::ReallocateMemory
+/// Reallocate memory for OctTree (when we need to grow the tree) as requested. Preserves the existing
+/// information in the tree, differently from the previous function
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void OctTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int Ncells)
+{
+  debug2("[OctTree::ReallocateMemory]");
 
+  if (!allocated_tree) {
+	  ExceptionHandler::getIstance().raise("This function should not be called if the tree has not been allocated yet!");
+  }
+
+
+  if (Nparticles > Ntotmax ) {
+
+	  int* idsold = ids;
+	  int* inextold = inext;
+
+	  ids = new int[Nparticles];
+	  inext    = new int[Nparticles];
+
+	  std::copy(idsold,idsold+Ntotmax,ids);
+	  std::copy(inextold,inextold+Ntotmax,inext);
+
+	  delete[] idsold;
+	  delete[] inextold;
+
+	  Ntotmax = Nparticles;
+
+  }
+
+  if (Ncells > Ncellmax) {
+
+
+    TreeCell<ndim>* celldataold = celldata;
+
+    celldata = new struct TreeCell<ndim>[Ncells];
+
+    std::copy(celldataold,celldataold+Ncellmax,celldata);
+
+    delete[] celldataold;
+
+    Ncellmax = Ncells;
+
+  }
+
+
+  return;
+}
 
 //=================================================================================================
 //  OctTree::DeallocateTreeMemory
@@ -181,7 +232,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   //timing->StartTimingSection("BUILD_OCT_TREE");
 
   // Allocate (or reallocate if needed) all tree memory
-  AllocateTreeMemory();
+  AllocateTreeMemory(Npartmax,0,false);
 
 
   // Set properties for root cell before constructing tree
@@ -903,13 +954,7 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
 
 
 
-template class OctTree<1, Particle, OctTreeCell>;
-template class OctTree<2, Particle, OctTreeCell>;
-template class OctTree<3, Particle, OctTreeCell>;
 
-template class OctTree<1, SphParticle, OctTreeCell>;
-template class OctTree<2, SphParticle, OctTreeCell>;
-template class OctTree<3, SphParticle, OctTreeCell>;
 
 template class OctTree<1, GradhSphParticle, OctTreeCell>;
 template class OctTree<2, GradhSphParticle, OctTreeCell>;

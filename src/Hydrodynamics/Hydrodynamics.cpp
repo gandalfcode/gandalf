@@ -162,26 +162,30 @@ void Hydrodynamics<ndim>::CheckXBoundaryGhostParticle
   const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
-  Particle<ndim>& part = GetParticlePointer(i);
 
-  if (part.r[0] + min((FLOAT) 0.0, part.v[0]*tghost) <
-      simbox.boxmin[0] + ghost_range*kernrange*part.h) {
+  Particle<ndim>& part = GetParticlePointer(i);
+  const FLOAT r0 = part.r[0];
+  const FLOAT v0 = part.v[0];
+  const FLOAT h = part.h;
+
+  if (r0 + min((FLOAT) 0.0, v0*tghost) <
+      simbox.boxmin[0] + ghost_range*kernrange*h) {
     if (simbox.boundary_lhs[0] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, 0, x_periodic_lhs, part.r[0] + simbox.boxsize[0], part.v[0]);
+      CreateBoundaryGhostParticle(i, 0, x_periodic_lhs,r0 + simbox.boxsize[0], v0);
     }
     if (simbox.boundary_lhs[0] == mirrorBoundary) {
       CreateBoundaryGhostParticle(i, 0, x_mirror_lhs,
-                                  (FLOAT) 2.0*simbox.boxmin[0] - part.r[0], -part.v[0]);
+                                  (FLOAT) 2.0*simbox.boxmin[0] - r0, -v0);
     }
   }
-  if (part.r[0] + max((FLOAT) 0.0, part.v[0]*tghost) >
-      simbox.boxmax[0] - ghost_range*kernrange*part.h) {
+  if (r0 + max((FLOAT) 0.0, v0*tghost) >
+      simbox.boxmax[0] - ghost_range*kernrange*h) {
     if (simbox.boundary_rhs[0] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, 0, x_periodic_rhs, part.r[0] - simbox.boxsize[0], part.v[0]);
+      CreateBoundaryGhostParticle(i, 0, x_periodic_rhs, r0 - simbox.boxsize[0], v0);
     }
     if (simbox.boundary_rhs[0] == mirrorBoundary) {
       CreateBoundaryGhostParticle(i, 0, x_mirror_rhs,
-                                  (FLOAT) 2.0*simbox.boxmax[0] - part.r[0], -part.v[0]);
+                                  (FLOAT) 2.0*simbox.boxmax[0] - r0, -v0);
     }
   }
 
@@ -201,27 +205,35 @@ void Hydrodynamics<ndim>::CheckYBoundaryGhostParticle
   const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
-  if (ndim > 1) {
-    Particle<ndim>& part = GetParticlePointer(i);
 
-    if (part.r[1] + min((FLOAT) 0.0, part.v[1]*tghost) <
-        simbox.boxmin[1] + ghost_range*kernrange*part.h) {
+	assert(ndim>1);
+
+	Particle<ndim>& part = GetParticlePointer(i);
+	const FLOAT r1 = part.r[1];
+	const FLOAT v1 = part.v[1];
+	const FLOAT h = part.h;
+
+
+  if (ndim > 1) {
+
+    if (r1 + min((FLOAT) 0.0, v1*tghost) <
+        simbox.boxmin[1] + ghost_range*kernrange*h) {
       if (simbox.boundary_lhs[1] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 1, y_periodic_lhs, part.r[1] + simbox.boxsize[1], part.v[1]);
+        CreateBoundaryGhostParticle(i, 1, y_periodic_lhs, r1 + simbox.boxsize[1], v1);
       }
       if (simbox.boundary_lhs[1] == mirrorBoundary) {
         CreateBoundaryGhostParticle(i, 1, y_mirror_lhs,
-                                    (FLOAT) 2.0*simbox.boxmin[1] - part.r[1], -part.v[1]);
+                                    (FLOAT) 2.0*simbox.boxmin[1] - r1, -v1);
       }
     }
-    if (part.r[1] + max((FLOAT) 0.0, part.v[1]*tghost) >
-        simbox.boxmax[1] - ghost_range*kernrange*part.h) {
+    if (r1 + max((FLOAT) 0.0, v1*tghost) >
+        simbox.boxmax[1] - ghost_range*kernrange*h) {
       if (simbox.boundary_rhs[1] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 1, y_periodic_rhs, part.r[1] - simbox.boxsize[1], part.v[1]);
+        CreateBoundaryGhostParticle(i, 1, y_periodic_rhs, r1 - simbox.boxsize[1], v1);
       }
       if (simbox.boundary_rhs[1] == mirrorBoundary) {
         CreateBoundaryGhostParticle(i, 1, y_mirror_rhs,
-                                    (FLOAT) 2.0*simbox.boxmax[1] - part.r[1], -part.v[1]);
+                                    (FLOAT) 2.0*simbox.boxmax[1] - r1, -r1);
       }
     }
   }
@@ -242,27 +254,33 @@ void Hydrodynamics<ndim>::CheckZBoundaryGhostParticle
   const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
-  if (ndim == 3) {
-    Particle<ndim>& part = GetParticlePointer(i);
+	assert(ndim>2);
 
-    if (part.r[2] + min((FLOAT) 0.0, part.v[2]*tghost) <
-        simbox.boxmin[2] + ghost_range*kernrange*part.h) {
+	Particle<ndim>& part = GetParticlePointer(i);
+	const FLOAT r2 = part.r[2];
+	const FLOAT v2 = part.v[2];
+	const FLOAT h = part.h;
+
+  if (ndim == 3) {
+
+    if (r2 + min((FLOAT) 0.0, v2*tghost) <
+        simbox.boxmin[2] + ghost_range*kernrange*h) {
       if (simbox.boundary_lhs[2] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 2, z_periodic_lhs, part.r[2] + simbox.boxsize[2], part.v[2]);
+        CreateBoundaryGhostParticle(i, 2, z_periodic_lhs, r2 + simbox.boxsize[2], v2);
       }
       if (simbox.boundary_lhs[2] == mirrorBoundary) {
         CreateBoundaryGhostParticle(i, 2, z_mirror_lhs,
-                                    (FLOAT) 2.0*simbox.boxmin[2] - part.r[2], -part.v[2]);
+                                    (FLOAT) 2.0*simbox.boxmin[2] - r2, -v2);
       }
     }
-    if (part.r[2] + max((FLOAT) 0.0, part.v[2]*tghost) >
-        simbox.boxmax[2] - ghost_range*kernrange*part.h) {
+    if (r2 + max((FLOAT) 0.0, v2*tghost) >
+        simbox.boxmax[2] - ghost_range*kernrange*h) {
       if (simbox.boundary_rhs[2] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 2, z_periodic_rhs, part.r[2] - simbox.boxsize[2], part.v[2]);
+        CreateBoundaryGhostParticle(i, 2, z_periodic_rhs, r2 - simbox.boxsize[2],v2);
       }
       if (simbox.boundary_rhs[2] == mirrorBoundary) {
         CreateBoundaryGhostParticle(i, 2, z_mirror_rhs,
-                                    (FLOAT) 2.0*simbox.boxmax[2] - part.r[2], -part.v[2]);
+                                    (FLOAT) 2.0*simbox.boxmax[2] - r2, -v2);
       }
     }
   }
@@ -286,11 +304,10 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   const FLOAT rk,                      ///< [in] k-position of original particle
   const FLOAT vk)                      ///< [in] k-velocity of original particle
 {
-  // Increase ghost counter and check there's enough space in memory
-  if (Nghost > Nghostmax) {
-    cout << "Nghost : " << Nghost << "     Nghostmax : " << Nghostmax << endl;
-    string message = "Not enough memory for new ghost";
-    ExceptionHandler::getIstance().raise(message);
+  // Reallocate memory if necessary
+  if (Nhydro+Nghost >= Nhydromax) {
+	  //TODO: should create a layer on top of AllocateMemory, it should not be called directly
+	  AllocateMemory(Nhydromax+1);
   }
 
   int id_new_ghost = Nhydro + Nghost;
@@ -305,7 +322,7 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart.flags.set_flag(ghosttype); // Allow ghost to have multiple ghost flags
   ghostpart.iorig  = i;
 
-  Nghost = Nghost + 1;
+  Nghost++;
 
   return;
 }

@@ -68,11 +68,8 @@ BruteForceTree<ndim,ParticleType,TreeCell>::BruteForceTree(int Nleafmaxaux, FLOA
   ltot_old       = -1;
   Ncell          = 0;
   Ncellmax       = 0;
-  Ncellmaxold    = 0;
   Ntot           = 0;
   Ntotmax        = 0;
-  Ntotmaxold     = 0;
-  Ntotold        = -1;
   hmax           = 0.0;
 #if defined _OPENMP
   Nthreads       = omp_get_max_threads();
@@ -103,22 +100,82 @@ BruteForceTree<ndim,ParticleType,TreeCell>::~BruteForceTree()
 /// than currently allocated, tree is deallocated and reallocated here.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void BruteForceTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
+void BruteForceTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(int Nparticles, int Ncells, bool force_realloc)
 {
   debug2("[BruteForceTree::AllocateTreeMemory]");
 
-  if (!allocated_tree || Ntotmax > Ntotmaxold || Ntot > Ntotmax || Ncellmax > Ncellmaxold) {
+  if (!allocated_tree || Nparticles > Ntotmax || Ncells>Ncellmax || force_realloc) {
     if (allocated_tree) DeallocateTreeMemory();
-    Ntotmax     = max(Ntotmax, Ntot);
-    Ntotmaxold  = Ntotmax;
-    Ncellmaxold = Ncellmax;
+
+    Nparticles     = max(Nparticles, Ntotmax);
+    Ncells		   = max(Ncells, Ncellmax);
 
     g2c      = new int[gmax];
-    ids      = new int[Ntotmax];
-    inext    = new int[Ntotmax];
-    celldata = new struct TreeCell<ndim>[Ncellmax];
+    ids      = new int[Nparticles];
+    inext    = new int[Nparticles];
+    celldata = new struct TreeCell<ndim>[Ncells];
 
     allocated_tree = true;
+
+    Ntotmax = Nparticles;
+    Ncellmax = Ncells;
+  }
+
+  assert(Ntotmax>=Ntot);
+  assert(Ncell<=Ncellmax);
+
+
+  return;
+}
+
+//=================================================================================================
+//  BruteForceTree::ReallocateMemory
+/// Reallocate memory for KD-tree (when we need to grow the tree) as requested. Preserves the existing
+/// information in the tree, differently from the previous function
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void BruteForceTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int Ncells)
+{
+  debug2("[BruteForceTree::ReallocateMemory]");
+
+  if (!allocated_tree) {
+	  ExceptionHandler::getIstance().raise("This function should not be called if the tree has not been allocated yet!");
+  }
+
+
+  if (Nparticles > Ntotmax ) {
+
+	  int* idsold = ids;
+	  int* inextold = inext;
+
+	  ids = new int[Nparticles];
+	  inext    = new int[Nparticles];
+
+	  std::copy(idsold,idsold+Ntotmax,ids);
+	  std::copy(inextold,inextold+Ntotmax,inext);
+
+	  delete[] idsold;
+	  delete[] inextold;
+
+	  Ntotmax = Ntot;
+
+
+  }
+
+  if (Ncells > Ncellmax) {
+
+
+    TreeCell<ndim>* celldataold = celldata;
+
+    celldata = new struct TreeCell<ndim>[Ncells];
+
+    std::copy(celldataold,celldataold+Ncellmax,celldata);
+
+    delete[] celldataold;
+
+	Ncellmax=Ncells;
+
+
   }
 
 
@@ -171,9 +228,13 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
 
 
   // Set tree size and allocate memory: Only one cell.
-  gmax = Ncellmax = Ntotmax + 1 ;
+  bool force_realloc=false;
+  const int gmax_old = gmax;
+  gmax = Npartmax + 1 ;
+  if (gmax>gmax_old)
+	  force_realloc=true;
   gtot = Ncell = Ntot + 1;
-  AllocateTreeMemory();
+  AllocateTreeMemory(Npartmax,Npartmax+1,force_realloc);
 
   // Create bounding box of SPH particles
   for (k=0; k<ndim; k++) bbmin[k] = big_number;
@@ -196,7 +257,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].id     = 0;
   celldata[0].level  = 0;
   for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmin[k] ;
-  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmax[k] ;
+  for (k=0; k<ndim; k++) celldata[0].bbmax[k] = bbmax[k] ;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
@@ -211,7 +272,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
 	celldata[c].id     = c;
 	celldata[c].level  = 1;
 	for (k=0; k<ndim; k++) celldata[c].bbmin[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
-	for (k=0; k<ndim; k++) celldata[c].bbmin[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
+	for (k=0; k<ndim; k++) celldata[c].bbmax[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
 	for (k=0; k<ndim; k++) celldata[c].cexit[0][k] = -1; // TODO: Check this
 	for (k=0; k<ndim; k++) celldata[c].cexit[1][k] = -1;
 
@@ -486,12 +547,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
 
 
 
-template class BruteForceTree<1,Particle,BruteForceTreeCell>;
-template class BruteForceTree<2,Particle,BruteForceTreeCell>;
-template class BruteForceTree<3,Particle,BruteForceTreeCell>;
-template class BruteForceTree<1,SphParticle,BruteForceTreeCell>;
-template class BruteForceTree<2,SphParticle,BruteForceTreeCell>;
-template class BruteForceTree<3,SphParticle,BruteForceTreeCell>;
+
 template class BruteForceTree<1,GradhSphParticle,BruteForceTreeCell>;
 template class BruteForceTree<2,GradhSphParticle,BruteForceTreeCell>;
 template class BruteForceTree<3,GradhSphParticle,BruteForceTreeCell>;

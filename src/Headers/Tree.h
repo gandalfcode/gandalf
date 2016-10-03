@@ -119,28 +119,12 @@ class TreeBase
 	virtual int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                         const int, int &, int *, Particle<ndim> *) = 0 ;
 
-	/* TODO: Members that need more work to be part of a common interface
-	 * 		 Fix: Use a proxy class to hold multipole data, rather than returning the cells.
-	 *
-	virtual int ComputeActiveCellList(TreeCell<ndim> *) ;
-	virtual int ComputeGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
-	                                    const FLOAT, const int, const int, int &, int &, int &, int &,
-	                                    int *, int *, int *, TreeCell<ndim> *, Particle<ndim> *);
-	virtual  int ComputeGravityInteractionAndGhostList(const TreeCell<ndim> &, const Particle<ndim> *,
-	                                            const DomainBox<ndim> &, const FLOAT, const int,
-	                                            const int, int &, int &, int &, int &, int *, int *,
-	                                            int *, TreeCell<ndim> *, Particle<ndim> *);
-	virtual  int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
-												   const int, const int, int &, int &, int &, int *, int *,
-	                                               TreeCell<ndim> *, Particle<ndim> *);
-	*/
-
 	virtual int FindLeafCell(const FLOAT *) = 0;
 
 	//-----------------------------------------------------------------------------------------------
 	// virtual void BuildTree(const int, const int, const int, const int,
 	//                        const FLOAT, ParticleType<ndim> *) = 0;
-	virtual void AllocateTreeMemory(void) = 0;
+	virtual void AllocateTreeMemory(int,int,bool) = 0;
 	virtual void DeallocateTreeMemory(void) = 0;
 	virtual void UpdateAllHmaxValues(Particle<ndim> *) = 0;
 	//virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
@@ -170,6 +154,9 @@ class TreeBase
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class Tree : public TreeBase<ndim>
 {
+protected:
+	int Ncellmax;                        ///< Max. allowed no. of grid cells
+	int Ntotmax;                         ///< Max. no. of points in list
  public:
 
 
@@ -183,6 +170,8 @@ class Tree : public TreeBase<ndim>
     {};
 
   virtual ~Tree() { } ;
+
+  virtual void ReallocateMemory (int,int) = 0;
 
   //-----------------------------------------------------------------------------------------------
   int MaxNumPartInLeafCell() const
@@ -201,7 +190,7 @@ class Tree : public TreeBase<ndim>
   }
 
   int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
-  int ComputeActiveCellList(TreeCell<ndim> *);
+  int ComputeActiveCellList(vector<TreeCell<ndim> >& );
   int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
   int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int &, int *);
@@ -211,9 +200,6 @@ class Tree : public TreeBase<ndim>
                            const int, int &, int *, Particle<ndim> *);
   int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                                    const int, int &, int *, Particle<ndim> *);
-  int ComputeGravityInteractionList(const TreeCell<ndim> &, const Particle<ndim> *,
-                                    const FLOAT, const int, const int, int &, int &, int &, int &,
-                                    int *, int *, int *, TreeCell<ndim> *, Particle<ndim> *);
   int ComputeGravityInteractionAndGhostList(const TreeCell<ndim> &, const Particle<ndim> *,
 		                                    const FLOAT, const int,
                                             const int, int &, int &, int &, int &, int *, int *,
@@ -273,13 +259,8 @@ class Tree : public TreeBase<ndim>
   int ltot;                            ///< Total number of levels in tree
   int ltot_old;                        ///< Prev. value of ltot
   int Ncell;                           ///< Current no. of grid cells
-  int Ncellmax;                        ///< Max. allowed no. of grid cells
-  int Ncellmaxold;                     ///< Old value of Ncellmax
   int Nthreads;                        ///< No. of OpenMP threads
   int Ntot;                            ///< No. of current points in list
-  int Ntotmax;                         ///< Max. no. of points in list
-  int Ntotmaxold;                      ///< Old value of Ntotmax
-  int Ntotold;                         ///< Prev. no. of particles
   FLOAT hmax;                          ///< Store hmax in the tree
   int *g2c;                            ///< i.d. of leaf(grid) cells
   int *ids;                            ///< Particle ids

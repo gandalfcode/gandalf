@@ -93,7 +93,6 @@ void SM2012Sph<ndim, kernelclass>::AllocateMemory(int N)
       Nhydromax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
     //Nhydromax = N;
 
-    iorder = new int[Nhydromax];
     sphdata = new struct SM2012SphParticle<ndim>[Nhydromax];
     allocated = true;
     hydrodata_unsafe = sphdata;
@@ -116,7 +115,6 @@ void SM2012Sph<ndim, kernelclass>::DeallocateMemory(void)
 
   if (allocated) {
     delete[] sphdata;
-    delete[] iorder;
   }
   allocated = false;
 
@@ -164,33 +162,7 @@ void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
   // Reduce particle counters once dead particles have been removed
   Nhydro -= Ndead;
   Ntot -= Ndead;
-  for (i=0; i<Nhydro; i++) iorder[i] = i;
 
-
-  return;
-}
-
-
-//=================================================================================================
-//  SM2012Sph::ReorderParticles
-/// Delete selected SPH particles from the main arrays.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass>::ReorderParticles(void)
-{
-  int i;                                // Particle counter
-  SM2012SphParticle<ndim> *sphdataaux;  // Aux. SPH particle array
-
-  sphdataaux = new SM2012SphParticle<ndim>[Nhydro];
-
-  for (i=0; i<Nhydro; i++) {
-    sphdataaux[i] = sphdata[i];
-  }
-  for (i=0; i<Nhydro; i++) {
-    sphdata[i] = sphdataaux[iorder[i]];
-  }
-
-  delete[] sphdataaux;
 
   return;
 }

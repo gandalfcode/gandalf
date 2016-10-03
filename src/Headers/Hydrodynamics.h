@@ -79,7 +79,6 @@ public:
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
-  virtual void ReorderParticles(void) = 0;
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) = 0;
   void ComputeBoundingBox(FLOAT *, FLOAT *, const int);
   void CheckXBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
@@ -115,8 +114,7 @@ public:
   bool allocated;                      ///< Is memory allocated?
   int create_sinks;                    ///< Create new sink particles?
   int Ngather;                         ///< No. of gather neighbours
-  int Nghost;                          ///< No. of ghost particles
-  int Nghostmax;                       ///< Max. allowed no. of ghost particles
+  int Nghost;                          ///< No. of ghost particles (total among all kinds of ghosts)
   int NImportedParticles;              ///< No. of imported particles
                                        ///< (to compute forces on behalf of other processors)
   int Nmpighost;                       ///< No. of MPI ghost particles
@@ -131,7 +129,6 @@ public:
   FLOAT mmean;                         ///< Mean SPH particle mass
   ParticleTypeRegister types;          ///< Array of particle types
 
-  int *iorder;                         ///< Array containing particle ordering
   EOS<ndim> *eos;                      ///< Equation-of-state
   SmoothingKernel<ndim> *kernp;        ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;       ///< Tabulated version of chosen kernel
@@ -164,7 +161,6 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
   virtual void AllocateMemory(int) {};
   virtual void DeallocateMemory(void) {};
   virtual void DeleteDeadParticles(void) {};
-  virtual void ReorderParticles(void) {};
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {};
 
 };

@@ -84,24 +84,29 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
- (TreeCell<ndim> *celllist)            ///< Array containing copies of cells with active ptcls
+ (vector<TreeCell<ndim> >& celllist)            ///< Array containing copies of cells with active ptcls
 {
   int c;                               // Cell counter
-  int Nactive = 0;                     // No. of active leaf cells in tree
 
+
+#if defined (MPI_PARALLEL)
+  celllist.reserve(Ncellmax);
+#else
+  celllist.reserve(gtot);
+#endif
   for (c=0; c<Ncell; c++) {
     if (celldata[c].N <= Nleafmax && celldata[c].copen == -1 && celldata[c].Nactive > 0) {
-      celllist[Nactive++] = celldata[c];
+      celllist.push_back(celldata[c]);
     }
   }
 
 #ifdef MPI_PARALLEL
   for (c=Ncell; c<Ncell+Nimportedcell; c++) {
-    if (celldata[c].Nactive > 0) celllist[Nactive++] = celldata[c];
+    if (celldata[c].Nactive > 0) celllist.push_back(celldata[c]);
   }
 #endif
 
-  return Nactive;
+  return celllist.size();
 }
 
 
@@ -628,196 +633,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
 
 //=================================================================================================
-//  Tree::ComputeGravityInteractionList
-/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
-/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
-/// the gravity tree walk for active particles inside cell c.
-/// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
-/// overflow, return with error code (-1) to reallocate more memory.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
- (const TreeCell<ndim> &cell,          ///< [in] Pointer to cell
-  const Particle<ndim> *part_gen,      ///< [in] Particle data array
-  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
-  const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
-  const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
-  int &Nneib,                          ///< [out] Total no. of neighbours
-  int &Nhydroneib,                     ///< [out] No. of SPH neighbours
-  int &Ndirect,                        ///< [out] No. of direct-sum neighbours
-  int &Ngravcell,                      ///< [out] No. of cell interactions
-  int *neiblist,                       ///< [out] List of all particle ids
-  int *hydroneiblist,                  ///< [out] List of SPH neibpart ids
-  int *directlist,                     ///< [out] List of direct-sum neibpart ids
-  TreeCell<ndim> *gravcell,            ///< [out] Array of local copies of tree cells
-  Particle<ndim> *neib_out)            ///< [out] Array of local copies of neighbour particles
-{
-  const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
-  ParticleType<ndim>* neibpart = reinterpret_cast<ParticleType<ndim>* >(neib_out) ;
-  int cc = 0;                          // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int k;                               // Neighbour counter
-  int Nhydroneibtemp = 0;              // Aux. counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT rc[ndim];                      // Position of cell
-  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax, 2);
-  const FLOAT rmax = cell.rmax;
-  assert(gravcell != NULL);
-  assert(neibpart != NULL);
-  assert(partdata != NULL);
-
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
-
-  // Start with root cell and walk through entire tree
-  Nneib      = 0;
-  Nhydroneib = 0;
-  Ndirect    = 0;
-  Ngravcell  = 0;
-
-
-  // Walk through all cells in tree to determine particle and cell interaction lists
-  //===============================================================================================
-  while (cc < Ncell) {
-
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    drsqd = DotProduct(dr, dr, ndim);
-
-
-    // Check if bounding boxes overlap with each other
-    //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bbmin, cell.bbmax, celldata[cc].hboxmin, celldata[cc].hboxmax) ||
-        BoxOverlap(cell.hboxmin, cell.hboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1) {
-        cc = celldata[cc].copen;
-      }
-
-      // Ignore empty cells
-      else if (celldata[cc].N == 0) {
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          hydroneiblist[Nhydroneib++] = Nneib;
-          neiblist[Nneib] = i;
-          neibpart[Nneib++] = partdata[i];
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Nneib + Nleafmax > Nneibmax) {
-        return -1;
-      }
-
-    }
-
-    // Check if cell is far enough away to use the COM approximation
-    //---------------------------------------------------------------------------------------------
-    else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
-             celldata[cc].N > 0) {
-
-      // If cell is a leaf-cell with only one particle, more efficient to
-      // compute the gravitational contribution from the particle than the cell
-      if (celldata[cc].copen == -1 && celldata[cc].N == 1 && Nneib + 1 <= Nneibmax) {
-        i = celldata[cc].ifirst;
-        directlist[Ndirect++] = Nneib;
-        neiblist[Nneib] = i;
-        neibpart[Nneib++] = partdata[i];
-      }
-      else if (Ngravcell < Ngravcellmax) {
-        gravcell[Ngravcell++] = celldata[cc];
-      }
-      else {
-        return -2;
-      }
-      cc = celldata[cc].cnext;
-
-    }
-
-    // If cell is too close, open cell to interogate children cells.
-    // If cell is too close and a leaf cell, then add particles to direct list.
-    //---------------------------------------------------------------------------------------------
-    else if (!(drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor) &&
-              celldata[cc].N > 0) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1) {
-         cc = celldata[cc].copen;
-      }
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          directlist[Ndirect++] = Nneib;
-          neiblist[Nneib] = i;
-          neibpart[Nneib++] = partdata[i];
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Nneib + Nleafmax > Nneibmax) {
-        return -3;
-      }
-
-    }
-
-    // If not in range, then open next cell
-    //---------------------------------------------------------------------------------------------
-    else {
-      cc = celldata[cc].cnext;
-    }
-
-  };
-  //===============================================================================================
-
-
-  // Now, trim the list to remove particles that are definitely not SPH neighbours.
-  // If not an SPH neighbour, then add to direct gravity sum list.
-  for (j=Nhydroneibtemp; j<Nhydroneib; j++) {
-    assert(j < Nneibmax);
-    i = hydroneiblist[j];
-    if (neibpart[i].flags.is_dead()) continue;
-    for (k=0; k<ndim; k++) dr[k] = neibpart[i].r[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < hrangemaxsqd || drsqd <
-        (rmax + kernrange*neibpart[i].h)*(rmax + kernrange*neibpart[i].h)) {
-      hydroneiblist[Nhydroneibtemp++] = i;
-    }
-    else if (Ndirect < Nneibmax) {
-      directlist[Ndirect++] = i;
-    }
-    else {
-     return -3;
-    }
-  }
-  Nhydroneib = Nhydroneibtemp;
-
-  assert(Nhydroneib <= Nneibmax);
-  assert(Nneib <= Nneibmax);
-  assert(Ndirect <= Nneibmax);
-  assert(Ngravcell <= Ngravcellmax);
-  assert(VerifyUniqueIds(Nneib, Ntot, neiblist));
-
-  return 1;
-}
-
-
-
-//=================================================================================================
 //  Tree::ComputeGravityInteractionAndGhostList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles (Ndirect) and
 /// number of cells (Ngravcell), including lists of ids, from the gravity tree walk for active
@@ -1275,7 +1090,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   for (c=0; c<Ncellmax+1; c++) newCellIds[c] = -1;
   //newCellIds[Ncell] = Ncell;
   //newCellIds[Ncellmax] = Ncellmax;
-  assert(Nprunedcellmax <= Ncellmax);
+  //assert(Nprunedcellmax <= Ncellmax);
 
   for (k=0; k<ndim; k++) rmin[k] = mpinode.hbox.boxmin[k];
   for (k=0; k<ndim; k++) rmax[k] = mpinode.hbox.boxmax[k];
@@ -1633,12 +1448,7 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
 
 
 
-template class Tree<1,Particle,KDTreeCell>;
-template class Tree<2,Particle,KDTreeCell>;
-template class Tree<3,Particle,KDTreeCell>;
-template class Tree<1,SphParticle,KDTreeCell>;
-template class Tree<2,SphParticle,KDTreeCell>;
-template class Tree<3,SphParticle,KDTreeCell>;
+
 template class Tree<1,GradhSphParticle,KDTreeCell>;
 template class Tree<2,GradhSphParticle,KDTreeCell>;
 template class Tree<3,GradhSphParticle,KDTreeCell>;
@@ -1650,12 +1460,7 @@ template class Tree<2,MeshlessFVParticle,KDTreeCell>;
 template class Tree<3,MeshlessFVParticle,KDTreeCell>;
 
 
-template class Tree<1,Particle,OctTreeCell>;
-template class Tree<2,Particle,OctTreeCell>;
-template class Tree<3,Particle,OctTreeCell>;
-template class Tree<1,SphParticle,OctTreeCell>;
-template class Tree<2,SphParticle,OctTreeCell>;
-template class Tree<3,SphParticle,OctTreeCell>;
+
 template class Tree<1,GradhSphParticle,OctTreeCell>;
 template class Tree<2,GradhSphParticle,OctTreeCell>;
 template class Tree<3,GradhSphParticle,OctTreeCell>;
@@ -1666,22 +1471,14 @@ template class Tree<1,MeshlessFVParticle,OctTreeCell>;
 template class Tree<2,MeshlessFVParticle,OctTreeCell>;
 template class Tree<3,MeshlessFVParticle,OctTreeCell>;
 
-template class Tree<1,Particle,TreeRayCell>;
-template class Tree<1,SphParticle,TreeRayCell>;
+
 template class Tree<1,GradhSphParticle,TreeRayCell>;
-template class Tree<2,Particle,TreeRayCell>;
-template class Tree<2,SphParticle,TreeRayCell>;
+
 template class Tree<2,GradhSphParticle,TreeRayCell>;
-template class Tree<3,Particle,TreeRayCell>;
-template class Tree<3,SphParticle,TreeRayCell>;
+
 template class Tree<3,GradhSphParticle,TreeRayCell>;
 
-template class Tree<1,Particle,BruteForceTreeCell>;
-template class Tree<2,Particle,BruteForceTreeCell>;
-template class Tree<3,Particle,BruteForceTreeCell>;
-template class Tree<1,SphParticle,BruteForceTreeCell>;
-template class Tree<2,SphParticle,BruteForceTreeCell>;
-template class Tree<3,SphParticle,BruteForceTreeCell>;
+
 template class Tree<1,GradhSphParticle,BruteForceTreeCell>;
 template class Tree<2,GradhSphParticle,BruteForceTreeCell>;
 template class Tree<3,GradhSphParticle,BruteForceTreeCell>;

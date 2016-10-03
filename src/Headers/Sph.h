@@ -85,7 +85,6 @@ class Sph : public Hydrodynamics<ndim>
   using Hydrodynamics<ndim>::mmean;
   using Hydrodynamics<ndim>::Ngather;
   using Hydrodynamics<ndim>::Nghost;
-  using Hydrodynamics<ndim>::Nghostmax;
   using Hydrodynamics<ndim>::NImportedParticles;
   using Hydrodynamics<ndim>::Nhydro;
   using Hydrodynamics<ndim>::Nhydromax;
@@ -107,7 +106,6 @@ class Sph : public Hydrodynamics<ndim>
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
-  virtual void ReorderParticles(void) = 0;
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {part.m -= dm;}
 
 
@@ -206,7 +204,6 @@ public:
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
   using Sph<ndim>::Nhydromax;
-  using Sph<ndim>::iorder;
   using Sph<ndim>::sphdata_unsafe;
 
  //public:
@@ -221,7 +218,6 @@ public:
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
   virtual void DeleteDeadParticles(void);
-  virtual void ReorderParticles(void);
 
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
@@ -279,7 +275,6 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::hmin_sink;
   using Sph<ndim>::Nhydromax;
   using Sph<ndim>::kernp;
-  using Sph<ndim>::iorder;
   using Sph<ndim>::sphdata_unsafe;
 
  public:
@@ -294,7 +289,6 @@ class SM2012Sph: public Sph<ndim>
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
   virtual void DeleteDeadParticles(void);
-  virtual void ReorderParticles(void);
 
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
@@ -347,7 +341,6 @@ class NullSph: public Sph<ndim>
   using Sph<ndim>::hmin_sink;
   using Sph<ndim>::Nhydromax;
   using Sph<ndim>::kernp;
-  using Sph<ndim>::iorder;
   using Sph<ndim>::sphdata_unsafe;
 
  public:
@@ -369,7 +362,6 @@ class NullSph: public Sph<ndim>
   virtual void AllocateMemory(int) {};
   virtual void DeallocateMemory(void) {};
   virtual void DeleteDeadParticles(void) {};
-  virtual void ReorderParticles(void) {};
 
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *) {return -1;}

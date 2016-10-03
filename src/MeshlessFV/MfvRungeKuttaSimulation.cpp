@@ -207,6 +207,8 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     tghost = timestep*(FLOAT) (ntreebuildstep - 1);
     mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+    // Update pointer in case there has been a reallocation
+    partdata = mfv->GetMeshlessFVParticleArray();
     mfv->CopyDataToGhosts(simbox, partdata);
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                             mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
@@ -388,6 +390,8 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
   tghost = timestep*(FLOAT)(ntreebuildstep - 1);
   mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+  // Update pointer in case there has been a reallocation
+  partdata = sph->GetSphParticleArray();
   mfvneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
                           mfv->Ntot,mfv->Nhydromax,timestep,partdata,mfv);
     //}

@@ -481,10 +481,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
         cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
 #endif
         if (hydro->Nhydro + N_to_receive > hydro->Nhydromax) {
-          cout << "Memory problem : " << rank << " " << hydro->Nhydro
-               << " " << N_to_receive << " " << hydro->Nhydromax <<endl;
-          string message = "Not enough memory for transfering particles";
-          ExceptionHandler::getIstance().raise(message);
+        	hydro->AllocateMemory(hydro->Nhydro + N_to_receive);
+        	partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
         }
         MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode,
                  tag_bal, MPI_COMM_WORLD, &status);

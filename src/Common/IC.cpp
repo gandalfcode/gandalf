@@ -492,7 +492,6 @@ void Ic<ndim>::ShockTube(void)
       // Set initial smoothing lengths and create initial ghost particles
       //-------------------------------------------------------------------------------------------
       hydro->Nghost = 0;
-      hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
       hydro->Ntot = hydro->Nhydro;
       for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
@@ -859,7 +858,6 @@ void Ic<ndim>::ContactDiscontinuity(void)
   // Set initial smoothing lengths and create initial ghost particles
   //-----------------------------------------------------------------------------------------------
   hydro->Nghost = 0;
-  hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
   hydro->Ntot = hydro->Nhydro;
   for (int i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
@@ -1094,7 +1092,6 @@ void Ic<ndim>::KHI(void)
     // Set initial smoothing lengths and create initial ghost particles
     //---------------------------------------------------------------------------------------------
     hydro->Nghost = 0;
-    hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
     hydro->Ntot = hydro->Nhydro;
     for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
@@ -1325,7 +1322,6 @@ void Ic<ndim>::RTI(void)
     // Set initial smoothing lengths and create initial ghost particles
     //---------------------------------------------------------------------------------------------
     hydro->Nghost = 0;
-    hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
     hydro->Ntot = hydro->Nhydro;
     for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
@@ -2486,7 +2482,6 @@ void Ic<ndim>::BlastWave(void)
   // Set initial smoothing lengths and create initial ghost particles
   //-----------------------------------------------------------------------------------------------
   hydro->Nghost = 0;
-  hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
   hydro->Ntot = hydro->Nhydro;
   for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
@@ -2615,7 +2610,6 @@ void Ic<ndim>::SedovBlastWave(void)
   // Set initial smoothing lengths and create initial ghost particles
   //-----------------------------------------------------------------------------------------------
   hydro->Nghost = 0;
-  hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
   hydro->Ntot = hydro->Nhydro;
   for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 

@@ -121,7 +121,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active tree cells
-  TreeCell<ndim> *celllist;                // List of active tree cells
+  vector<TreeCell<ndim> > celllist;            // List of active cells
   //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
   int Nactivetot = 0;                      // Total number of active particles
@@ -133,12 +133,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCell<ndim>[tree->gtot];
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    delete[] celllist;
     timing->EndTimingSection("MFV_PROPERTIES");
     return;
   }
@@ -347,8 +345,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 
-  delete[] celllist;
-
   // Update tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0],mfvdata);
 
@@ -373,7 +369,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  TreeCell<ndim> *celllist;                // List of active tree cells
+  vector<TreeCell<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
   int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
@@ -384,16 +380,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    delete[] celllist;
     timing->EndTimingSection("MFV_UPDATE_GRADIENTS");
     return;
   }
@@ -591,8 +581,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 #endif
 
 
-  delete[] celllist;
-
   timing->EndTimingSection("MFV_UPDATE_GRADIENTS");
 
   return;
@@ -615,7 +603,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  TreeCell<ndim> *celllist;                // List of active tree cells
+  vector<TreeCell<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
   int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
@@ -626,16 +614,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    delete[] celllist;
     timing->EndTimingSection("MFV_UPDATE_FLUXES");
     return;
   }
@@ -860,8 +842,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #endif
 
 
-  delete[] celllist;
-
   timing->EndTimingSection("MFV_UPDATE_FLUXES");
 
   return;
@@ -887,7 +867,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int cactive;                         // No. of active cells
-  TreeCell<ndim> *celllist;            // List of active tree cells
+  vector<TreeCell<ndim> > celllist;            // List of active cells
   //ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[MeshlessFVTree::UpdateAllGravForces]");
@@ -897,16 +877,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
   tree->UpdateHmaxValues(tree->celldata[0], partdata);
 
   // Find list of all cells that contain active particles
-#if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[tree->Ncellmax];
-#else
-  celllist = new TreeCell<ndim>[tree->gtot];
-#endif
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    delete[] celllist;
     timing->EndTimingSection("MFV_GRAV_FORCES");
     return;
   }
@@ -1134,8 +1108,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
   }
   //===============================================================================================
-
-  delete[] celllist;
 
   timing->EndTimingSection("MFV_GRAV_FORCES");
 
