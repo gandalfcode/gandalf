@@ -190,7 +190,7 @@ protected:
   }
 
   int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
-  int ComputeActiveCellList(TreeCell<ndim>** );
+  int ComputeActiveCellList(vector<TreeCell<ndim> >& );
   int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
   int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int &, int *);

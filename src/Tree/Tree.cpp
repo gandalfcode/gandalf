@@ -83,31 +83,29 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
- (TreeCell<ndim>** celllistaux)            ///< Array containing copies of cells with active ptcls
+ (vector<TreeCell<ndim> >& celllist)            ///< Array containing copies of cells with active ptcls
 {
   int c;                               // Cell counter
-  int Nactive = 0;                     // No. of active leaf cells in tree
 
-  TreeCell<ndim>* celllist = *celllistaux;
+
 #if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>[Ncellmax];
+  celllist.reserve(Ncellmax);
 #else
-  celllist = new TreeCell<ndim>[gtot];
+  celllist.reserve(gtot);
 #endif
   for (c=0; c<Ncell; c++) {
     if (celldata[c].N <= Nleafmax && celldata[c].copen == -1 && celldata[c].Nactive > 0) {
-      celllist[Nactive++] = celldata[c];
+      celllist.push_back(celldata[c]);
     }
   }
 
 #ifdef MPI_PARALLEL
   for (c=Ncell; c<Ncell+Nimportedcell; c++) {
-    if (celldata[c].Nactive > 0) celllist[Nactive++] = celldata[c];
+    if (celldata[c].Nactive > 0) celllist.push_back(celldata[c]);
   }
 #endif
 
-  *celllistaux = celllist;
-  return Nactive;
+  return celllist.size();
 }
 
 
