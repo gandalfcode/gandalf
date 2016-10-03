@@ -32,7 +32,6 @@ class GradhSphCommunicationHandler {
     GradSphForcesParticle (const GradhSphParticle<ndim>& p) {
       for (int k=0; k<ndim; k++) {
         a[k] = p.a[k];
-        agrav[k] = p.agrav[k];
       }
       gpot = p.gpot;
       dudt = p.dudt;
@@ -103,7 +102,6 @@ public:
 
     for (int k=0; k<ndim; k++) {
       p2.a[k] += p.a[k];
-      p2.agrav[k] += p.agrav[k];
     }
 
     p2.gpot += p.gpot;
@@ -125,7 +123,6 @@ public:
       p2.r[k]=p.r[k];
       p2.v[k]=p.v[k];
       p2.a[k]=0;
-      p2.agrav[k]=0;
     }
     p2.m = p.m;
     p2.rho = p.rho;
@@ -139,11 +136,9 @@ public:
     p2.zeta = p.zeta;
 
     //Recompute things we store only for optimization
-    p2.invrho = 1./p2.rho;
-    p2.h = hydro->h_fac*powf(p2.m*p2.invrho, Sph<ndim>::invndim);
-    p2.invh = 1./p2.h;
+    p2.h = hydro->h_fac*powf(p2.m/p2.rho, Sph<ndim>::invndim);
     p2.hrangesqd = hydro->kernfacsqd*hydro->kernrange*hydro->kernrange*p2.h*p2.h;
-    p2.hfactor = pow(p2.invh,ndim+1);
+    p2.hfactor = pow(1/p2.h,ndim+1);
     p2.sound = hydro->eos->SoundSpeed(p2);
     p2.flags.set_flag(active);
 
@@ -188,7 +183,7 @@ public:
   }
 
   void ReceiveParticle (void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
-    DataType& p = *reinterpret_cast<DataType*>(pointer);
+   // DataType& p = *reinterpret_cast<DataType*>(pointer);
     ExceptionHandler::getIstance().raise("not implemented");
 
 
@@ -238,7 +233,7 @@ public:
   }
 
   void ReceiveParticle (void* pointer, SM2012SphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
-    DataType& p = *reinterpret_cast<DataType*>(pointer);
+    //DataType& p = *reinterpret_cast<DataType*>(pointer);
     ExceptionHandler::getIstance().raise("not implemented");
 
 

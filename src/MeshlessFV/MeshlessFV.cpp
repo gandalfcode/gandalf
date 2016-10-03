@@ -25,7 +25,6 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-//#include <cassert>
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
@@ -202,12 +201,6 @@ void MeshlessFV<ndim>::ComputeThermalProperties
   part.sound = eos->SoundSpeed(part);
   part.press = eos->Pressure(part);
 
-  FLOAT ekin = (FLOAT) 0.0;
-  for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.Qcons[ietot] = part.m*part.u + (FLOAT) 0.5*part.m*ekin;
-  //part.Qcons[ietot] = part.press*part.volume/(gamma_eos - (FLOAT) 1.0) +
-  //  (FLOAT) 0.5*part.rho*part.volume*ekin;
-
   assert(part.u > (FLOAT) 0.0);
   assert(part.sound > (FLOAT) 0.0);
   assert(part.press > (FLOAT) 0.0);
@@ -258,26 +251,41 @@ void MeshlessFV<ndim>::IntegrateParticles
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nhydro; i++) {
-	MeshlessFVParticle<ndim> &part = partdata[i];
-	dn = n - part.nlast;
+
+    MeshlessFVParticle<ndim> &part = partdata[i];
+    dn = n - part.nlast;
+    FLOAT dt = dn * timestep ;
 
 	// Predict the conserved quantities
-	for (k=0; k<nvar; k++)
-	  part.Qcons[k] = part.Qcons0[k] + part.dQdt[k] * dn * timestep ;
-	for (k=0; k<ndim; k++)
-	  part.Qcons[k] += part.Qcons0[irho] * part.a0[k] * dn * timestep ;
+	FLOAT Qcons[nvar] ;
+    if (dn == part.nstep) {
+      part.flags.set_flag(active) ;
+
+      for (k=0; k<nvar; k++)
+        Qcons[k] = part.Qcons0[k] + part.dQ[k];
+    }
+    else {
+      part.flags.unset_flag(active) ;
+
+      for (k=0; k<nvar; k++)
+        Qcons[k] = part.Qcons0[k] + part.dQdt[k]*dt ;
+    }
+
+    for (k=0; k<ndim; k++)
+      Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt ;
 
     // Compute primitive values and update all main array quantities
-  this->UpdateArrayVariables(part);
-  this->ComputeThermalProperties(part);
-  this->UpdatePrimitiveVector(part) ;
+    this->UpdateArrayVariables(part, Qcons);
+    this->ComputeThermalProperties(part);
+    this->UpdatePrimitiveVector(part) ;
+
 
 	if (!staticParticles) {
       //-------------------------------------------------------------------------------------------
+      part.flags.set_flag(update_density);
+
       for (k=0; k<ndim; k++) {
-        //part.r[k] = part.r0[k] + part.v[k]*timestep*(FLOAT) dn;
-        part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*timestep*(FLOAT) dn;
-        part.flags.set_flag(update_density) ;
+        part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*dt;
 
         // Check if particle has crossed LHS boundary
         //-----------------------------------------------------------------------------------------
@@ -310,7 +318,7 @@ void MeshlessFV<ndim>::IntegrateParticles
             part.r0[k] -= simbox.boxsize[k];
           }
 
-          // Check if wall or mirror boundary
+          // Check if wall or mirror boundaryq
           if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
             part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
             part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
@@ -371,27 +379,27 @@ void MeshlessFV<ndim>::EndTimestep
     if (dn == nstep) {
 
       // Integrate all conserved quantities to end of the step (adding sums from neighbours)
+      FLOAT Qcons[nvar] ;
       for (int var=0; var<nvar; var++) {
-        part.Qcons[var] = part.Qcons0[var] + part.dQ[var];
+        Qcons[var] = part.Qcons0[var] + part.dQ[var];
         part.dQ[var]    = (FLOAT) 0.0;
         part.dQdt[var]  = (FLOAT) 0.0;
       }
 
       // Further update conserved quantities if computing gravitational/nbody  contributions
       for (k=0; k<ndim; k++) {
-    	part.Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-    			(part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
-        part.v[k] = part.Qcons[k] / part.Qcons[irho] ;
+    	Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+    			(part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
+        part.v[k] = Qcons[k] / Qcons[irho] ;
       }
-      part.Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+      Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
     	(part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-         part.Qcons[irho]*DotProduct(part.v, part.a, ndim) +
+    	   Qcons[irho]*DotProduct(part.v, part.a, ndim) +
          DotProduct(part.a0, part.rdmdt0, ndim) +
          DotProduct(part.a, part.rdmdt, ndim));
 
       // Compute primitive values and update all main array quantities
-      //this->ConvertConservedToPrimitive(part.volume, part.Qcons, part.Wprim);
-      this->UpdateArrayVariables(part);
+      this->UpdateArrayVariables(part, Qcons);
       this->ComputeThermalProperties(part);
       this->UpdatePrimitiveVector(part) ;
 
@@ -403,7 +411,7 @@ void MeshlessFV<ndim>::EndTimestep
       for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
       for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
-      for (k=0; k<nvar; k++) part.Qcons0[k] = part.Qcons[k];
+      for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
 
     }
     //---------------------------------------------------------------------------------------------
@@ -441,17 +449,17 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 /// Updates all particle quantities based on the primitive/conserved variables.
 //=================================================================================================
 template <int ndim>
-void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
+void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOAT Qcons[nvar])
 {
   // TODO: Check all callers.
   //   This now uses the currently predicted value of Qcons, no need to add dQ.
-  part.m = part.Qcons[irho] ;
-  part.rho = part.m/part.volume;
-  for (int k=0; k<ndim; k++) part.v[k] = part.Qcons[k]/part.m;
+  part.m = Qcons[irho] ;
+  part.rho = part.m*part.ndens;
+  for (int k=0; k<ndim; k++) part.v[k] = Qcons[k]/part.m;
 
   FLOAT ekin = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.u = (part.Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
+  part.u = (Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
   part.u = eos->SpecificInternalEnergy(part);
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
@@ -469,14 +477,14 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
 /// Perform initial guess of smoothing.  In the absence of more sophisticated techniques, we guess
 /// the smoothing length assuming a uniform density medium with the same volume and total mass.
 //=================================================================================================
-template <int ndim>
-void MeshlessFV<ndim>::InitialSmoothingLengthGuess(void)
+template<>
+void MeshlessFV<1>::InitialSmoothingLengthGuess(void)
 {
   int i;                           // Particle counter
   FLOAT h_guess;                   // Global guess of smoothing length
   FLOAT volume;                    // Volume of global bounding box
-  FLOAT rmin[ndim];                // Min. extent of bounding box
-  FLOAT rmax[ndim];                // Max. extent of bounding box
+  FLOAT rmin[1];                   // Min. extent of bounding box
+  FLOAT rmax[1];                   // Max. extent of bounding box
 
   debug2("[MeshlessFV::InitialSmoothingLengthGuess]");
 
@@ -486,35 +494,83 @@ void MeshlessFV<ndim>::InitialSmoothingLengthGuess(void)
   // Depending on the dimensionality, calculate the average smoothing
   // length assuming a uniform density distribution filling the bounding box.
   //-----------------------------------------------------------------------------------------------
-  if (ndim == 1) {
-    Ngather = (int) ((FLOAT) 2.0*kernp->kernrange*h_fac);
-    volume = rmax[0] - rmin[0];
-    h_guess = (volume*(FLOAT) Ngather)/((FLOAT) 4.0*(FLOAT) Nhydro);
-  }
-  //-----------------------------------------------------------------------------------------------
-  else if (ndim == 2) {
-    Ngather = (int) (pi*pow(kernp->kernrange*h_fac,2));
-    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
-    h_guess = sqrtf((volume*(FLOAT) Ngather)/((FLOAT) 4.0*(FLOAT) Nhydro));
-  }
-  //-----------------------------------------------------------------------------------------------
-  else if (ndim == 3) {
-    Ngather = (int) ((FLOAT) 4.0*pi*pow(kernp->kernrange*h_fac,3)/(FLOAT) 3.0);
-    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
-    h_guess = powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Nhydro),onethird);
-  }
+  Ngather = (int) ((FLOAT) 2.0*kernp->kernrange*h_fac);
+  volume = rmax[0] - rmin[0];
+  h_guess = (volume*(FLOAT) Ngather)/((FLOAT) 4.0*(FLOAT) Nhydro);
   //-----------------------------------------------------------------------------------------------
 
   // Set all smoothing lengths equal to average value
   for (i=0; i<Nhydro; i++) {
-    MeshlessFVParticle<ndim>& part = GetMeshlessFVParticlePointer(i);
+    MeshlessFVParticle<1>& part = GetMeshlessFVParticlePointer(i);
     part.h         = h_guess;
-    part.invh      = (FLOAT) 1.0/h_guess;
     part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
   }
 
   return;
 }
+template<>
+void MeshlessFV<2>::InitialSmoothingLengthGuess(void)
+{
+  int i;                           // Particle counter
+  FLOAT h_guess;                   // Global guess of smoothing length
+  FLOAT volume;                    // Volume of global bounding box
+  FLOAT rmin[2];                   // Min. extent of bounding box
+  FLOAT rmax[2];                   // Max. extent of bounding box
+
+  debug2("[MeshlessFV::InitialSmoothingLengthGuess]");
+
+  // Calculate bounding box containing all SPH particles
+  this->ComputeBoundingBox(rmax,rmin,Nhydro);
+
+  // Depending on the dimensionality, calculate the average smoothing
+  // length assuming a uniform density distribution filling the bounding box.
+  //-----------------------------------------------------------------------------------------------
+  Ngather = (int) (pi*pow(kernp->kernrange*h_fac,2));
+  volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
+  h_guess = sqrtf((volume*(FLOAT) Ngather)/((FLOAT) 4.0*(FLOAT) Nhydro));
+  //-----------------------------------------------------------------------------------------------
+
+  // Set all smoothing lengths equal to average value
+  for (i=0; i<Nhydro; i++) {
+    MeshlessFVParticle<2>& part = GetMeshlessFVParticlePointer(i);
+    part.h         = h_guess;
+    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+  }
+
+  return;
+}
+template <>
+void MeshlessFV<3>::InitialSmoothingLengthGuess(void)
+{
+  int i;                           // Particle counter
+  FLOAT h_guess;                   // Global guess of smoothing length
+  FLOAT volume;                    // Volume of global bounding box
+  FLOAT rmin[3];                   // Min. extent of bounding box
+  FLOAT rmax[3];                   // Max. extent of bounding box
+
+  debug2("[MeshlessFV::InitialSmoothingLengthGuess]");
+
+  // Calculate bounding box containing all SPH particles
+  this->ComputeBoundingBox(rmax,rmin,Nhydro);
+
+  // Depending on the dimensionality, calculate the average smoothing
+  // length assuming a uniform density distribution filling the bounding box.
+  //-----------------------------------------------------------------------------------------------
+  Ngather = (int) ((FLOAT) 4.0*pi*pow(kernp->kernrange*h_fac,3)/(FLOAT) 3.0);
+  volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
+  h_guess = powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Nhydro),onethird);
+  //-----------------------------------------------------------------------------------------------
+
+  // Set all smoothing lengths equal to average value
+  for (i=0; i<Nhydro; i++) {
+    MeshlessFVParticle<3>& part = GetMeshlessFVParticlePointer(i);
+    part.h         = h_guess;
+    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+  }
+
+  return;
+}
+
 
 
 

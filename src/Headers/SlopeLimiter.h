@@ -214,13 +214,13 @@ class ScalarLimiter: public SlopeLimiter<ndim,ParticleType>
       for (var=0; var<ndim+2; var++) {
         Wmax[var] = max(Wmax[var], neibpart[j].Wprim[var]) ;
         Wmin[var] = min(Wmin[var], neibpart[j].Wprim[var]) ;
-        drmax = max(drmax, sqrt(DotProduct(dr,dr, ndim))) ;
+        drmax = max(drmax, DotProduct(dr,dr, ndim)) ;
       }
     }
 
     // TODO:
     //   Factor of 2 here is a hack assuming m4 kernel
-    drmax = max(drmax, 2 * parti.h) ;
+    drmax = max(sqrt(drmax), 2 * parti.h) ;
     if (_edge_limit) drmax *= 0.51 ;
 
     for (var=0; var<ndim+2; var++) {
@@ -340,7 +340,6 @@ class GizmoLimiter : public ScalarLimiter<ndim,ParticleType>
                             FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
   {
     int var;
-    FLOAT alpha = (FLOAT) 0.0;
     FLOAT dr[ndim];
     FLOAT phiminus;
     FLOAT phiplus;
@@ -390,7 +389,6 @@ class GizmoLimiter : public ScalarLimiter<ndim,ParticleType>
         phimid = parti.Wprim[var];
       }
 
-      FLOAT drsqd = DotProduct(draux, draux, ndim);
       dW[var] = phimid - parti.Wprim[var];
     }
     //---------------------------------------------------------------------------------------------

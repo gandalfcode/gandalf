@@ -313,7 +313,6 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (k=0; k<ndim; k++) sink[Nsink].star->v0[k]    = part.v0[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->a0[k]    = part.a0[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->adot0[k] = (FLOAT) 0.0; //part.adot0[k];
-  for (k=0; k<ndim; k++) sink[Nsink].fhydro[k]      = part.m*(part.a[k] - part.agrav[k]);
   for (k=0; k<3; k++) sink[Nsink].angmom[k]         = (FLOAT) 0.0;
 
 
@@ -514,7 +513,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
         sink[s].menc += part.m;
         wnorm += part.m*hydro->kernp->w0(drmag*sink[s].star->invh)*
-          pow(sink[s].star->invh,ndim)*part.invrho;
+          pow(sink[s].star->invh,ndim)/part.rho;
 
         // Sum total grav. potential energy of all particles inside sink
         sink[s].gpetot += (FLOAT) 0.5*part.m*(sink[s].star->m + sink[s].menc)*
@@ -526,9 +525,9 @@ void Sinks<ndim>::AccreteMassToSinks
 
         // Compute total and rotational kinetic energies
         sink[s].ketot += part.m*DotProduct(dv,dv,ndim)*
-          hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)*part.invrho;
+          hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)/part.rho;
         sink[s].rotketot += part.m*DotProduct(dvtang,dvtang,ndim)*
-          hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)*part.invrho;
+          hydro->kernp->w0(drmag*sink[s].star->invh)*pow(sink[s].star->invh,ndim)/part.rho;
 
         // Add contributions to average timescales from particles
         sink[s].tvisc *= pow(sqrt(drmag)/part.sound/part.sound,part.m);
@@ -615,7 +614,6 @@ void Sinks<ndim>::AccreteMassToSinks
         for (k=0; k<ndim; k++) sink[s].star->v[k] += mtemp*part.v[k];
         for (k=0; k<ndim; k++) sink[s].star->a[k] += mtemp*part.a[k];
         //for (k=0; k<ndim; k++) sink[s].star->adot[k] += mtemp*part.adot[k];
-        for (k=0; k<ndim; k++) sink[s].fhydro[k] += mtemp*(part.a[k] - part.agrav[k]);
         sink[s].utot += mtemp*part.u;
 
         // If we've reached/exceeded the mass limit, do not include more ptcls

@@ -132,7 +132,6 @@ public:
   EOS<ndim> *eos;                      ///< Equation-of-state
   SmoothingKernel<ndim> *kernp;        ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;       ///< Tabulated version of chosen kernel
-  RiemannSolver<ndim> *riemann;        ///< Riemann solver
   ExternalPotential<ndim> *extpot;     ///< Pointer to external potential object
 
 };

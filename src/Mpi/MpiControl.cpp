@@ -450,7 +450,6 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
       sendbuffer[offset++] = sink->sink[s].gpetot;
       sendbuffer[offset++] = sink->sink[s].taccrete;
       sendbuffer[offset++] = sink->sink[s].trot;
-      for (int k=0; k<ndim; k++) sendbuffer[offset++] = sink->sink[s].fhydro[k];
       sendbuffer[offset++] = sink->sink[s].utot;
       for (int k=0; k<3; k++) sendbuffer[offset++] = sink->sink[s].angmom[k];
 
@@ -500,9 +499,6 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
     sink->sink[s].gpetot   = receivebuffer[displ[origin] + offset_rank + offset++];
     sink->sink[s].taccrete = receivebuffer[displ[origin] + offset_rank + offset++];
     sink->sink[s].trot     = receivebuffer[displ[origin] + offset_rank + offset++];
-    for (int k=0; k<ndim; k++) {
-      sink->sink[s].fhydro[k] = receivebuffer[displ[origin] + offset_rank + offset++];
-    }
     sink->sink[s].utot     = receivebuffer[displ[origin] + offset_rank + offset++];
     for (int k=0; k<3; k++) {
       sink->sink[s].angmom[k] = receivebuffer[displ[origin] + offset_rank + offset++];
@@ -1144,8 +1140,6 @@ void MpiControl<ndim>::CollateDiagnosticsData
       for (k=0; k<ndim; k++) diag.mom[k] += diagaux.mom[k];
       for (k=0; k<3; k++) diag.angmom[k] += diagaux.angmom[k];
       for (k=0; k<ndim; k++) diag.force[k] += diagaux.force[k];
-      for (k=0; k<ndim; k++) diag.force_hydro[k] += diagaux.force_hydro[k];
-      for (k=0; k<ndim; k++) diag.force_grav[k] += diagaux.force_grav[k];
       for (k=0; k<ndim; k++) diag.rcom[k] += diagaux.mtot*diagaux.rcom[k];
       for (k=0; k<ndim; k++) diag.vcom[k] += diagaux.mtot*diagaux.vcom[k];
     }

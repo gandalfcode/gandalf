@@ -633,4 +633,53 @@ static inline bool isPowerOfTwo (int x)
  return (x == 1);
 }
 
+
+
+//=================================================================================================
+//  InvertMatrix
+/// Invert a small matrix of specified dimension
+//=================================================================================================
+template<int ndim>
+struct __matrixInverter {
+  inline static void invert(const FLOAT A[ndim][ndim], FLOAT B[ndim][ndim]) ;
+};
+template<>
+inline void __matrixInverter<1>::invert(const FLOAT A[1][1], FLOAT B[1][1]) {
+  B[0][0] = 1 / A[0][0] ;
+}
+template<>
+inline void __matrixInverter<2>::invert(const FLOAT A[2][2], FLOAT B[2][2]) {
+
+  const FLOAT invdet = (FLOAT) 1.0/(A[0][0]*A[1][1] - A[0][1]*A[1][0]);
+
+  B[0][0] =  invdet*A[1][1];
+  B[0][1] = -invdet*A[0][1];
+  B[1][0] = -invdet*A[1][0];
+  B[1][1] =  invdet*A[0][0];
+}
+template<>
+inline void __matrixInverter<3>::invert(const FLOAT A[3][3], FLOAT B[3][3]) {
+  const FLOAT invdet = (FLOAT) 1.0/(A[0][0]*(A[1][1]*A[2][2] - A[2][1]*A[1][2]) -
+                                        A[0][1]*(A[1][0]*A[2][2] - A[1][2]*A[2][0]) +
+                                        A[0][2]*(A[1][0]*A[2][1] - A[1][1]*A[2][0]));
+
+      B[0][0] = (A[1][1]*A[2][2] - A[2][1]*A[1][2])*invdet;
+      B[0][1] = (A[0][2]*A[2][1] - A[0][1]*A[2][2])*invdet;
+      B[0][2] = (A[0][1]*A[1][2] - A[0][2]*A[1][1])*invdet;
+      B[1][0] = (A[1][2]*A[2][0] - A[1][0]*A[2][2])*invdet;
+      B[1][1] = (A[0][0]*A[2][2] - A[0][2]*A[2][0])*invdet;
+      B[1][2] = (A[1][0]*A[0][2] - A[0][0]*A[1][2])*invdet;
+      B[2][0] = (A[1][0]*A[2][1] - A[2][0]*A[1][1])*invdet;
+      B[2][1] = (A[2][0]*A[0][1] - A[0][0]*A[2][1])*invdet;
+      B[2][2] = (A[0][0]*A[1][1] - A[1][0]*A[0][1])*invdet;
+}
+
+
+template<int ndim>
+inline void InvertMatrix(const FLOAT A[ndim][ndim], FLOAT B[ndim][ndim])
+{
+  __matrixInverter<ndim>::invert(A,B) ;
+}
+
+
 #endif

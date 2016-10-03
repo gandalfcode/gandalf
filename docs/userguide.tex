@@ -170,8 +170,19 @@ Note that the Makefile in the root folder is just a convenience to set the varia
 g++ & : GCC C++ compiler \\
 icpc & : Intel C++ compiler \\
 clang & : CLANG compiler\\
-mpic++ & : Compiles the code with MPI.
+mpic++ & : Compiles the code with MPI. \\
 \end{tabular}
+
+As an alternative, if you do not have the MPI compiler wrappers available (mpic++) you can enable MPI by adding the line 
+\begin{lstlisting}
+MPI=1
+\end{lstlisting}
+to the makefile. However, be warned that you may need to specify the location of the MPI header file, mpi.h, for compilation to succeed. You can do this by adding a line of the following form.
+\begin{lstlisting}
+INCLUDE = -I/path/to/mpi_header_directory
+\end{lstlisting}
+Similarly, you may find that the default paths to the MPI library (-lmpi -lmpi++) may need to be changed in src/Makefile. \textbf{Where possible we highly recommend using the MPI compiler wrapper, mpic++.}
+
 
 \item PYTHON : name of python command-line executable (e.g. python, python2.7)
 

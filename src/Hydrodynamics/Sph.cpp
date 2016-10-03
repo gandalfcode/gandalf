@@ -111,7 +111,6 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
   for (i=0; i<Nhydro; i++) {
     SphParticle<ndim>& part = GetSphParticlePointer(i);
     part.h = h_guess;
-    part.invh = 1.0/h_guess;
     part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
   }
 

@@ -28,7 +28,8 @@ def run_slope_limiter_test(test, slope_limiter, mfm=False):
     sim.SetParam('run_id',         run_id)
     sim.SetParam('slope_limiter',  slope_limiter)
     sim.SetParam('zero_mass_flux', zero_mass_flux)
-
+    sim.SetParam('riemann_solver', 'hllc')
+    
     print 'About to run sim:', run_id
 
     setupsim()

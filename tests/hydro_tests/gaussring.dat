@@ -8,8 +8,8 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = GAUSSRING1STATICRIGHT
-Select SPH simulation                       : sim = meshlessfv
+Simulation run id string                    : run_id = GAUSSRING
+Select SPH simulation                       : sim = mfvmuscl
 Select shocktube initial conditions         : ic = gaussianring
 1D shocktube test                           : ndim = 2
 Use dimensionless units                     : dimensionless = 1
@@ -20,7 +20,7 @@ Use dimensionless units                     : dimensionless = 1
 #--------------------------
 Simulation end time                         : tend = 100.0
 Time of first snapshot                      : tsnapfirst = 0.0
-Regular snapshot output frequency           : dt_snap = 0.1
+Regular snapshot output frequency           : dt_snap = 1.0
 Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
@@ -29,7 +29,7 @@ Screen output frequency (in no. of steps)   : noutputstep = 128
 #------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = isothermal
-Temperature				    : temp0 = 1e-6;
+Temperature				    : temp0 = 1e-6
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
@@ -39,8 +39,12 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = quintic
 SPH smoothing length iteration tolerance    : h_converge = 0.0001
-: zero_mass_flux = 0
-: static_particles=1
+    	      	     	       		    : h_fac = 1.13
+    	      	     	       		    : zero_mass_flux = 1
+					    : static_particles = 0
+					    : riemann_solver = hllc
+					    : slope_limiter = gizmo
+
 
 #---------------------------------
 # SPH artificial viscosity options
@@ -57,7 +61,8 @@ Artificial viscosity beta value             : beta_visc = 2
 SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
-No. of block timestep levels                : Nlevels = 1
+No. of block timestep levels                : Nlevels = 5
+       	     	      			    : level_diff_max = 1
 
 
 #---------------------

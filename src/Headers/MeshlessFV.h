@@ -80,7 +80,6 @@ public:
   using Hydrodynamics<ndim>::Nmpighost;
   using Hydrodynamics<ndim>::NPeriodicGhost;
   using Hydrodynamics<ndim>::Ntot;
-  using Hydrodynamics<ndim>::riemann;
   using Hydrodynamics<ndim>::self_gravity;
   using Hydrodynamics<ndim>::size_hydro_part;
   using FV<ndim>::gamma_eos;
@@ -119,8 +118,6 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                        MeshlessFVParticle<ndim> &, Nbody<ndim> *) = 0;
-  virtual void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
@@ -142,7 +139,7 @@ public:
                           const DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
   FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
-  void UpdateArrayVariables(MeshlessFVParticle<ndim> &);
+  void UpdateArrayVariables(MeshlessFVParticle<ndim> &, FLOAT [nvar]);
 
 
   // Functions needed to hide some implementation details
@@ -175,7 +172,6 @@ public:
   string slope_limiter;                ///< Selected slope limiter
   //MeshlessFVType MeshlessFVtype[Ntypes];        ///< Array of MeshlessFV types
 
-  SlopeLimiter<ndim,MeshlessFVParticle> *limiter;
   MeshlessFVParticle<ndim> *hydrodata;
 
 };
@@ -190,7 +186,7 @@ public:
 /// \date    25/02/2015
 //=================================================================================================
 //template <int ndim>
-template <int ndim, template<int> class kernelclass>
+template <int ndim, template<int> class kernelclass, class SlopeLimiterType>
 class MfvCommon : public MeshlessFV<ndim>
 {
  public:
@@ -207,7 +203,6 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
-  using MeshlessFV<ndim>::limiter;
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
@@ -217,7 +212,6 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::Nmpighost;
   using MeshlessFV<ndim>::NPeriodicGhost;
   using MeshlessFV<ndim>::Ntot;
-  using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
   using Hydrodynamics<ndim>::create_sinks;
@@ -230,7 +224,6 @@ class MfvCommon : public MeshlessFV<ndim>
   static const int irho = ndim;
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
-
 
 
   // Constructor
@@ -248,8 +241,6 @@ class MfvCommon : public MeshlessFV<ndim>
   //-----------------------------------------------------------------------------------------------
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                MeshlessFVParticle<ndim> &, Nbody<ndim> *);
-  void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                         MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                     MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
@@ -260,6 +251,12 @@ class MfvCommon : public MeshlessFV<ndim>
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
+  SlopeLimiterType limiter;
+  ExactRiemannSolver<ndim> riemannExact ;
+  HllcRiemannSolver<ndim> riemannHLLC ;
+  int RiemannSolverType ;
+
+
 
 };
 
@@ -273,8 +270,8 @@ class MfvCommon : public MeshlessFV<ndim>
 /// \date    25/02/2015
 //=================================================================================================
 //template <int ndim>
-template <int ndim, template<int> class kernelclass>
-class MfvMuscl : public MfvCommon<ndim,kernelclass>
+template <int ndim, template<int> class kernelclass, class SlopeLimiterType>
+class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 {
  public:
 
@@ -292,7 +289,6 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
-  using MeshlessFV<ndim>::limiter;
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
@@ -302,10 +298,13 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::Nmpighost;
   using MeshlessFV<ndim>::NPeriodicGhost;
   using MeshlessFV<ndim>::Ntot;
-  using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
-  using MfvCommon<ndim,kernelclass>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -341,8 +340,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass>
 /// \date    25/02/2015
 //=================================================================================================
 //template <int ndim>
-template <int ndim, template<int> class kernelclass>
-class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
+template <int ndim, template<int> class kernelclass, class SlopeLimiterType>
+class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 {
  public:
 
@@ -360,7 +359,6 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
-  using MeshlessFV<ndim>::limiter;
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
@@ -370,10 +368,13 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass>
   using MeshlessFV<ndim>::Nmpighost;
   using MeshlessFV<ndim>::NPeriodicGhost;
   using MeshlessFV<ndim>::Ntot;
-  using MeshlessFV<ndim>::riemann;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
-  using MfvCommon<ndim,kernelclass>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;

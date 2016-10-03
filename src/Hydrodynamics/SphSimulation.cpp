@@ -497,7 +497,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     part.gpot      = (FLOAT) 0.0;
     part.mu_bar    = (FLOAT) simparams->floatparams["mu_bar"];
     for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
   }
   for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).flags.set_flag(active);
 
@@ -763,8 +762,6 @@ void SphSimulation<ndim>::MainLoop(void)
           part.dudt      = (FLOAT) 0.0;
           part.gpot      = (FLOAT) 0.0;
           for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
-          for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
-          for (k=0; k<ndim; k++) part.a_dust[k] = (FLOAT) 0.0;
         }
       }
 
@@ -895,13 +892,6 @@ void SphSimulation<ndim>::MainLoop(void)
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = (FLOAT) 0.0;
         nbody->nbodydata[i]->gpot = (FLOAT) 0.0;
         nbody->nbodydata[i]->gpe = (FLOAT) 0.0;
-      }
-    }
-    if (sink_particles == 1) {
-      for (i=0; i<sinks->Nsink; i++) {
-        if (sinks->sink[i].star->active) {
-          for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = (FLOAT) 0.0;
-        }
       }
     }
 
@@ -1662,7 +1652,7 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
 #pragma omp for
       for (int i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim> &part = sph->GetSphParticlePointer(i);
-        FLOAT invhsqd = part.invh*part.invh;
+        FLOAT invhsqd = 1/(part.h*part.h) ;
         for (k=0; k<ndim; k++) rreg[ndim*i + k] = (FLOAT) 0.0;
 
         // Find list of gather neighbours

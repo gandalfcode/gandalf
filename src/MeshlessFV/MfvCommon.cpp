@@ -45,19 +45,39 @@ using namespace std;
 /// MfvCommon class constructor.  Calls main SPH class constructor and also
 /// sets additional kernel-related quantities
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-MfvCommon<ndim, kernelclass>::MfvCommon
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
   (int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
    FLOAT _h_fac, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName,
    int size_part, SimUnits &units, Parameters *params):
   MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult, _h_fac,
                    h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
-  kern(kernelclass<ndim>(KernelName))
+  kern(kernelclass<ndim>(KernelName)),
+  riemannExact(gamma_aux, params->intparams["zero_mass_flux"]),
+  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal")
 {
   this->kernp      = &kern;
   this->kernfac    = (FLOAT) 1.0;
   this->kernfacsqd = (FLOAT) 1.0;
   this->kernrange  = this->kernp->kernrange;
+
+  // Local references to parameter variables for brevity
+  map<string, string> &stringparams = params->stringparams;
+
+
+  // Riemann solver object
+  //-----------------------------------------------------------------------------------------------
+  string riemann_solver = stringparams["riemann_solver"];
+  if (riemann_solver == "exact") {
+    RiemannSolverType = exact ;
+  }
+  else if (riemann_solver == "hllc") {
+   RiemannSolverType = hllc ;
+  }
+  else {
+    string message = "Unrecognised parameter : riemann_solver = " + riemann_solver;
+    ExceptionHandler::getIstance().raise(message);
+  }
 }
 
 
@@ -66,10 +86,9 @@ MfvCommon<ndim, kernelclass>::MfvCommon
 //  MfvCommon::~MfvCommon
 /// MfvCommon class destructor
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-MfvCommon<ndim, kernelclass>::~MfvCommon()
-{
-}
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+MfvCommon<ndim, kernelclass,SlopeLimiter>::~MfvCommon()
+{ } ;
 
 
 
@@ -81,8 +100,8 @@ MfvCommon<ndim, kernelclass>::~MfvCommon()
 /// or fixed-point iteration, to converge on the correct value of h.  The maximum tolerance used
 /// for deciding whether the iteration has converged is given by the 'h_converge' parameter.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-int MfvCommon<ndim, kernelclass>::ComputeH
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of potential neighbours
   const FLOAT hmax,                    ///< [in] Max. h permitted by neib list
@@ -116,40 +135,41 @@ int MfvCommon<ndim, kernelclass>::ComputeH
   assert(!part.flags.is_dead());
   assert(part.m > (FLOAT) 0.0);
 
+  FLOAT ndens, rho, volume, invomega, zeta, h, invh, hfactor ;
 
+  h = part.h ;
   // Main smoothing length iteration loop
   //===============================================================================================
   do {
 
     // Initialise all variables for this value of h
     iteration++;
-    part.ndens    = (FLOAT) 0.0;
-    part.invomega = (FLOAT) 0.0;
-    part.zeta     = (FLOAT) 0.0;
-    part.invh     = (FLOAT) 1.0/part.h;
-    part.hfactor  = pow(part.invh,ndim);
-    invhsqd       = part.invh*part.invh;
+    ndens    = 0;
+    invomega = 0;
+    zeta     = 0;
+    invh     = 1/h;
+    hfactor  = pow(invh,ndim);
+    invhsqd  = invh*invh ;
 
     // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
-      ssqd           = drsqd[j]*invhsqd;
-      part.ndens    += kern.w0_s2(ssqd);
-      part.invomega += part.invh*kern.womega_s2(ssqd);
-      part.zeta     += m[j]*kern.wzeta_s2(ssqd);
+      ssqd      = drsqd[j]*invhsqd;
+      ndens    += kern.w0_s2(ssqd);
+      invomega += invh*kern.womega_s2(ssqd);
+      zeta     += m[j]*kern.wzeta_s2(ssqd);
     }
     //---------------------------------------------------------------------------------------------
 
-    part.ndens    *= part.hfactor;
-    part.invomega *= part.hfactor;
-    part.zeta     *= invhsqd;
-    part.volume    = (FLOAT) 1.0/part.ndens;
-    part.rho       = part.m*part.ndens;
-    if (part.rho > (FLOAT) 0.0) part.invrho = (FLOAT) 1.0/part.rho;
+    ndens    *= hfactor;
+    invomega *= hfactor;
+    zeta     *= invhsqd;
+    volume    = 1/ndens;
+    rho       = part.m*ndens;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (part.rho > (FLOAT) 0.0 && part.h > h_lower_bound &&
-        fabs(part.h - h_fac*pow(part.volume,MeshlessFV<ndim>::invndim)) < h_converge) break;
+        fabs(part.h - h_fac*pow(volume,MeshlessFV<ndim>::invndim)) < h_converge) break;
 
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
@@ -158,41 +178,42 @@ int MfvCommon<ndim, kernelclass>::ComputeH
     // more slowly.  (N.B. will implement Newton-Raphson soon)
     //---------------------------------------------------------------------------------------------
     if (iteration < iteration_max) {
-      part.h = h_fac*pow(part.volume,MeshlessFV<ndim>::invndim);
+      h = h_fac*pow(volume,MeshlessFV<ndim>::invndim);
     }
     else if (iteration == iteration_max) {
-      part.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
+      h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else if (iteration < 5*iteration_max) {
-      if (part.ndens < small_number || part.ndens*pow(part.h,ndim) > pow(h_fac,ndim)) {
-        h_upper_bound = part.h;
+      if (ndens < small_number || ndens*pow(h,ndim) > pow(h_fac,ndim)) {
+        h_upper_bound = h;
       }
       else {
-        h_lower_bound = part.h;
+        h_lower_bound = h;
       }
-      part.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
+      h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else {
-      cout << "H ITERATION : " << iteration << "    h : " << part.h
-           << "   rho : " << part.rho << "   h_upper " << h_upper_bound << "    hmax :  " << hmax
-           << "   h_lower : " << h_lower_bound << "    " << part.hfactor << "    m : " << part.m
-           << "     " << part.m*part.hfactor*kern.w0(0.0) << "    " << Nneib << endl;
+      cout << "H ITERATION : " << iteration << "    h : " << h
+           << "   rho : " << rho << "   h_upper " << h_upper_bound << "    hmax :  " << hmax
+           << "   h_lower : " << h_lower_bound << "    " << hfactor << "    m : " << part.m
+           << "     " << part.m*hfactor*kern.w0(0.0) << "    " << Nneib << endl;
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }
 
     // If the smoothing length is too large for the neighbour list, exit routine and flag neighbour
     // list error in order to generate a larger neighbour list (not properly implemented yet).
-    if (part.h > hmax) return 0;
+    if (h > hmax) return 0;
 
-  } while (part.h > h_lower_bound && part.h < h_upper_bound);
+  } while (h > h_lower_bound && h < h_upper_bound);
   //===============================================================================================
 
 
   // Compute other terms once number density and smoothing length are known
-  part.h         = max(h_fac*powf(part.volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
-  part.invh      = (FLOAT) 1.0/part.h;
-  part.hfactor   = pow(part.invh, ndim+1);
+  part.ndens     = ndens ;
+  part.rho       = rho ;
+  part.h         = max(h_fac*powf(volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
+  part.hfactor   = pow(1/part.h, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
   part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
@@ -211,7 +232,6 @@ int MfvCommon<ndim, kernelclass>::ComputeH
   // Set important thermal variables here
   this->ComputeThermalProperties(part);
   this->UpdatePrimitiveVector(part);
-  //this->UpdateArrayVariables(part);
 
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
@@ -225,8 +245,8 @@ int MfvCommon<ndim, kernelclass>::ComputeH
 //  MfvCommon::ComputeDerivatives
 /// Compute Psi factors required for computing derivatives needed in Meshess FV equations.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MfvCommon<ndim, kernelclass>::ComputePsiFactors
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
  (const int i,                                 ///< [in] id of particle
   const int Nneib,                             ///< [in] No. of neins in neibpart array
   int *neiblist,                               ///< [in] id of gather neibs in neibpart
@@ -239,12 +259,21 @@ void MfvCommon<ndim, kernelclass>::ComputePsiFactors
   int j;                                       // Neighbour list id
   int jj;                                      // Aux. neighbour loop counter
   int k;                                       // Dimension counter
-  FLOAT draux[ndim];                           // Relative position vector
+  int var;                                     // Primitive variable counter
+  FLOAT draux[ndim], dv[ndim];                 // Relative position / velocity vector
   FLOAT drsqd;                                 // Distance squared
+  FLOAT dvdr ;                                 // Delta v , Delta r
   FLOAT E[ndim][ndim];                         // E-matrix for computing normalised B-matrix
-  const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
+  const FLOAT invhsqd = 1/(part.h*part.h);     // Local copy of 1/h^2
+  FLOAT grad_tmp[nvar][ndim] ;                 // Workspace for computing gradient
 
-  // Zero all matrices
+  // Initialise/zero all variables to be updated in this routine
+  part.vsig_max = (FLOAT) 0.0;
+  for (var=0; var<nvar; var++) {
+    for (k=0; k<ndim; k++) {
+      grad_tmp[var][k] = (FLOAT) 0.0;
+    }
+  }
   for (k=0; k<ndim; k++) {
     for (int kk=0; kk<ndim; kk++) {
       E[k][kk] = (FLOAT) 0.0;
@@ -259,128 +288,46 @@ void MfvCommon<ndim, kernelclass>::ComputePsiFactors
     j = neiblist[jj];
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
-    drsqd = DotProduct(draux, draux, ndim);
-
-    for (k=0; k<ndim; k++) {
-      for (int kk=0; kk<ndim; kk++) {
-        E[k][kk] += draux[k]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
-      }
-    }
-  }
-  //-----------------------------------------------------------------------------------------------
-
-
-  // Invert the matrix (depending on dimensionality)
-  if (ndim == 1) {
-    part.B[0][0] = (FLOAT) 1.0/E[0][0];
-  }
-  else if (ndim == 2) {
-    const FLOAT invdet = (FLOAT) 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
-    part.B[0][0] = invdet*E[1][1];
-    part.B[0][1] = -(FLOAT) 1.0*invdet*E[0][1];
-    part.B[1][0] = -(FLOAT) 1.0*invdet*E[1][0];
-    part.B[1][1] = invdet*E[0][0];
-  }
-  else if (ndim == 3) {
-    const FLOAT invdet = (FLOAT) 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
-                                      E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
-                                      E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
-    part.B[0][0] = (E[1][1]*E[2][2] - E[2][1]*E[1][2])*invdet;
-    part.B[0][1] = (E[0][2]*E[2][1] - E[0][1]*E[2][2])*invdet;
-    part.B[0][2] = (E[0][1]*E[1][2] - E[0][2]*E[1][1])*invdet;
-    part.B[1][0] = (E[1][2]*E[2][0] - E[1][0]*E[2][2])*invdet;
-    part.B[1][1] = (E[0][0]*E[2][2] - E[0][2]*E[2][0])*invdet;
-    part.B[1][2] = (E[1][0]*E[0][2] - E[0][0]*E[1][2])*invdet;
-    part.B[2][0] = (E[1][0]*E[2][1] - E[2][0]*E[1][1])*invdet;
-    part.B[2][1] = (E[2][0]*E[0][1] - E[0][0]*E[2][1])*invdet;
-    part.B[2][2] = (E[0][0]*E[1][1] - E[1][0]*E[0][1])*invdet;
-  }
-
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  MfvCommon::ComputeDerivatives
-/// Compute derivatives required for Meshless FV equations.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MfvCommon<ndim, kernelclass>::ComputeGradients
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  FLOAT *drmag,                        ///< [in] Distances of gather neighbours
-  FLOAT *invdrmag,                     ///< [in] Inverse distances of gather neibs
-  FLOAT *dr,                           ///< [in] Position vector of gather neibs
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
-{
-  int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
-  int k;                               // Dimension counter
-  int var;                             // Particle state vector summation variable
-  FLOAT draux[ndim];                   // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT dv[ndim];                      // Relative velocity vector
-  FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT psitilda[ndim];                // Normalised gradient psi factor
-  const FLOAT invhsqd = part.invh*part.invh;   // Local copy of 1/h^2
-
-
-  // Initialise/zero all variables to be updated in this routine
-  part.vsig_max = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) part.vreg[k] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) {
-    for (var=0; var<nvar; var++) {
-      part.grad[var][k] = (FLOAT) 0.0;
-    }
-  }
-
-  // Loop over all potential neighbours in the list
-  //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
-
-    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - part.v[k];
-    dvdr = DotProduct(dv, draux, ndim);
     drsqd = DotProduct(draux, draux, ndim);
+    dvdr = DotProduct(dv, draux, ndim);
 
-    // Calculate psitilda values
-    for (k=0; k<ndim; k++) psitilda[k] = (FLOAT) 0.0;
+    double w = part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
+
     for (k=0; k<ndim; k++) {
       for (int kk=0; kk<ndim; kk++) {
-        psitilda[k] += part.B[k][kk]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
+        E[k][kk] += draux[k]*draux[kk]*w ;
       }
     }
 
-    // Calculate contribution to gradient from neighbour
-    for (var=0; var<nvar; var++) {
+    // Compute the first part of gradient, we do the matrix mult later, when part.B is available.
+    for (var=0; var <nvar; var++) {
       for (k=0; k<ndim; k++) {
-        part.grad[var][k] += (neibpart[j].Wprim[var] - part.Wprim[var])*psitilda[k];
+        grad_tmp[var][k] += draux[k]*(neibpart[j].Wprim[var] - part.Wprim[var])*w ;
       }
     }
 
     // Calculate maximum signal velocity
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
-                                       min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
+        min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
     part.levelneib = max(part.levelneib, neibpart[j].level) ;
-
-    for (k=0; k<ndim; k++) part.vreg[k] -= draux[k]*kern.w0_s2(drsqd*invhsqd);
-
   }
   //-----------------------------------------------------------------------------------------------
 
-  for (k=0; k<ndim; k++) part.vreg[k] *= part.invh*part.sound;  //pow(part.invh, ndim);
 
+  // Invert the matrix (depending on dimensionality)
+  InvertMatrix<ndim>(E,part.B) ;
 
+  // Complete the calculation of the gradients:
+  for (var=0; var<nvar; var++) {
+    for (k=0; k<ndim; k++) {
+      part.grad[var][k] = DotProduct(part.B[k], grad_tmp[var], ndim) ;
+    }
+  }
 
-  // Apply the slope limiter
+  // Finally apply the slope limiter
   //-----------------------------------------------------------------------------------------------
-  limiter->CellLimiter(part, neibpart, neiblist, Nneib) ;
-
+  limiter.CellLimiter(part, neibpart, neiblist, Nneib) ;
 
   assert(part.vsig_max >= part.sound);
 
@@ -388,13 +335,12 @@ void MfvCommon<ndim, kernelclass>::ComputeGradients
 }
 
 
-
 //=================================================================================================
 //  MfvCommon::CopyDataToGhosts
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MfvCommon<ndim, kernelclass>::CopyDataToGhosts
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+void MfvCommon<ndim, kernelclass,SlopeLimiter>::CopyDataToGhosts
  (DomainBox<ndim> &simbox,
   MeshlessFVParticle<ndim> *partdata)      ///< [inout] Neighbour particle data
 {
@@ -433,11 +379,11 @@ void MfvCommon<ndim, kernelclass>::CopyDataToGhosts
         continue ;
       }
       else if (itype & z_mirror_lhs) {
-    	partdata[i].reflect(2, simbox.boxmin[2]) ;
+    	reflect(partdata[i], 2, simbox.boxmin[2]) ;
         continue ;
       }
       else if (itype & z_mirror_rhs) {
-      	partdata[i].reflect(2, simbox.boxmax[2]) ;
+      	reflect(partdata[i], 2, simbox.boxmax[2]) ;
         continue ;
       }
 
@@ -452,11 +398,11 @@ void MfvCommon<ndim, kernelclass>::CopyDataToGhosts
     	continue ;
       }
       else if (itype & y_mirror_lhs) {
-      	partdata[i].reflect(1, simbox.boxmin[1]) ;
+        reflect(partdata[i], 1, simbox.boxmin[1]) ;
     	continue ;
       }
       else if (itype & y_mirror_rhs) {
-    	partdata[i].reflect(1, simbox.boxmax[1]) ;
+        reflect(partdata[i], 1, simbox.boxmax[1]) ;
         continue ;
       }
     }
@@ -470,11 +416,11 @@ void MfvCommon<ndim, kernelclass>::CopyDataToGhosts
       continue ;
     }
     else if (itype & x_mirror_lhs) {
-      partdata[i].reflect(0, simbox.boxmin[0]) ;
+      reflect(partdata[i], 0, simbox.boxmin[0]) ;
       continue ;
     }
     else if (itype & x_mirror_rhs) {
-      partdata[i].reflect(0, simbox.boxmax[0]) ;
+      reflect(partdata[i], 0, simbox.boxmax[0]) ;
       continue ;
     }
   }
@@ -493,8 +439,8 @@ void MfvCommon<ndim, kernelclass>::CopyDataToGhosts
 /// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
 /// This ensures that particle-particle pair interactions are computed once only for efficiency.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MfvCommon<ndim, kernelclass>::ComputeSmoothedGravForces
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
@@ -514,12 +460,15 @@ void MfvCommon<ndim, kernelclass>::ComputeSmoothedGravForces
   //MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
   //MeshlessFVParticle<ndim>* neibpart = static_cast<MeshlessFVParticle<ndim>* > (neib_gen);
 
+  FLOAT invh_i = 1/parti.h ;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     assert(!neibpart[j].flags.is_dead());
+
+    FLOAT invh_j = 1/neibpart[j].h;
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     drmag = sqrt(DotProduct(dr, dr, ndim) + small_number);
@@ -528,15 +477,15 @@ void MfvCommon<ndim, kernelclass>::ComputeSmoothedGravForces
 
     // Main SPH gravity terms
     //---------------------------------------------------------------------------------------------
-    paux = (FLOAT) 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
-                        parti.zeta*parti.hfactor*kern.w1(drmag*parti.invh) +
-                        neibpart[j].invh*neibpart[j].invh*kern.wgrav(drmag*neibpart[j].invh) +
-                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh));
-    gaux = (FLOAT) 0.5*(parti.invh*kern.wpot(drmag*parti.invh) +
-                        neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
+    paux = (FLOAT) 0.5*(invh_i*invh_i*kern.wgrav(drmag*invh_i) +
+                        parti.zeta*parti.hfactor*kern.w1(drmag*invh_i) +
+                        invh_j*invh_j*kern.wgrav(drmag*invh_j) +
+                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*invh_j));
+    gaux = (FLOAT) 0.5*(invh_i*kern.wpot(drmag*invh_i) +
+                        invh_j*kern.wpot(drmag*invh_j));
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
   }
@@ -552,8 +501,8 @@ void MfvCommon<ndim, kernelclass>::ComputeSmoothedGravForces
 /// Compute the contribution to the total gravitational force of particle 'i'
 /// due to 'Nneib' neighbouring particles in the list 'neiblist'.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MfvCommon<ndim, kernelclass>::ComputeDirectGravForces
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
  (const int i,                         ///< id of particle
   const int Ndirect,                   ///< No. of nearby 'gather' neighbours
   int *directlist,                     ///< id of gather neighbour in neibpart
@@ -583,7 +532,7 @@ void MfvCommon<ndim, kernelclass>::ComputeDirectGravForces
     invdr3   = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibdata[j].m*dr[k]*invdr3;
+    for (k=0; k<ndim; k++) parti.a[k] += neibdata[j].m*dr[k]*invdr3;
     parti.gpot += neibdata[j].m*invdrmag;
 
     assert(drsqd >= parti.hrangesqd && drsqd >= neibdata[j].hrangesqd);
@@ -600,8 +549,8 @@ void MfvCommon<ndim, kernelclass>::ComputeDirectGravForces
 //  MfvCommon::ComputeStarGravForces
 /// Computes contribution of gravitational force and potential due to stars.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MfvCommon<ndim, kernelclass>::ComputeStarGravForces
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeStarGravForces
  (const int N,                         ///< [in] No. of stars
   NbodyParticle<ndim> **nbodydata,     ///< [in] Array of star pointers
   MeshlessFVParticle<ndim> &part)      ///< [inout] SPH particle reference
@@ -637,7 +586,7 @@ void MfvCommon<ndim, kernelclass>::ComputeStarGravForces
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
+    for (k=0; k<ndim; k++) parti.a[k] += paux*dr[k];
     //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
     //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
@@ -653,12 +602,64 @@ void MfvCommon<ndim, kernelclass>::ComputeStarGravForces
 
 
 
-template class MfvCommon<1, M4Kernel>;
-template class MfvCommon<2, M4Kernel>;
-template class MfvCommon<3, M4Kernel>;
-template class MfvCommon<1, QuinticKernel>;
-template class MfvCommon<2, QuinticKernel>;
-template class MfvCommon<3, QuinticKernel>;
-template class MfvCommon<1, TabulatedKernel>;
-template class MfvCommon<2, TabulatedKernel>;
-template class MfvCommon<3, TabulatedKernel>;
+template class MfvCommon<1, M4Kernel, NullLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, M4Kernel, NullLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, M4Kernel, NullLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, QuinticKernel, NullLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, QuinticKernel, NullLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, QuinticKernel, NullLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, TabulatedKernel, NullLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, TabulatedKernel, NullLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, TabulatedKernel, NullLimiter<3,MeshlessFVParticle> >;
+
+
+template class MfvCommon<1, M4Kernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, M4Kernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, M4Kernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, QuinticKernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, QuinticKernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, QuinticKernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, TabulatedKernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, TabulatedKernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, TabulatedKernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
+
+template class MfvCommon<1, M4Kernel, TVDScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, M4Kernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, M4Kernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, QuinticKernel, TVDScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, QuinticKernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, QuinticKernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, TabulatedKernel,TVDScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, TabulatedKernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, TabulatedKernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
+
+template class MfvCommon<1, M4Kernel, ScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, M4Kernel, ScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, M4Kernel, ScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, QuinticKernel, ScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, QuinticKernel, ScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, QuinticKernel, ScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, TabulatedKernel, ScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, TabulatedKernel, ScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, TabulatedKernel, ScalarLimiter<3,MeshlessFVParticle> >;
+
+template class MfvCommon<1, M4Kernel, Springel2009Limiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, M4Kernel, Springel2009Limiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, M4Kernel, Springel2009Limiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, QuinticKernel, Springel2009Limiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, QuinticKernel, Springel2009Limiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, QuinticKernel, Springel2009Limiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, TabulatedKernel, Springel2009Limiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, TabulatedKernel, Springel2009Limiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, TabulatedKernel, Springel2009Limiter<3,MeshlessFVParticle> >;
+
+template class MfvCommon<1, M4Kernel, GizmoLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, M4Kernel, GizmoLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, M4Kernel, GizmoLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, QuinticKernel, GizmoLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, QuinticKernel, GizmoLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, QuinticKernel, GizmoLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, TabulatedKernel, GizmoLimiter<1,MeshlessFVParticle> >;
+template class MfvCommon<2, TabulatedKernel, GizmoLimiter<2,MeshlessFVParticle> >;
+template class MfvCommon<3, TabulatedKernel, GizmoLimiter<3,MeshlessFVParticle> >;
+

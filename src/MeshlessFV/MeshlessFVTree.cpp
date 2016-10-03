@@ -521,7 +521,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         //-----------------------------------------------------------------------------------------
 
         // Compute all neighbour contributions to hydro forces
-        mfv->ComputePsiFactors(i, Nhydroaux, mfvlist, drmag, invdrmag, dr, activepart[j], neibpart);
         mfv->ComputeGradients(i, Nhydroaux, mfvlist, drmag, invdrmag, dr, activepart[j], neibpart);
 
       }
@@ -781,7 +780,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       //-------------------------------------------------------------------------------------------
 
 
-      // Accumulate fluxes for neighbours (only currently works for real and periodic neighbours)
+      // Accumulate fluxes for neighbours
       for (int jj=0; jj<Nneib; jj++) {
         i = neibpart[jj].iorig;
         if (!neibpart[jj].flags.is_mirror()) {
@@ -926,6 +925,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
 
+    bool self_gravity =  mfv->self_gravity == 1 ;
 
     // Loop over all active cells
     //=============================================================================================
@@ -940,144 +940,152 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) activepart[j] = partdata[activelist[j]];
 
-      // Compute average/maximum term for computing gravity MAC
-      if (gravity_mac == "eigenmac") {
-        for (j=0; j<Nactive; j++)
-          macfactor = max(macfactor, pow((FLOAT) 1.0/activepart[j].gpot, twothirds));
-      }
-
       // Zero/initialise all summation variables for active particles
-      for (j=0; j<Nactive; j++) {
-        activepart[j].gpot      = activepart[j].m*activepart[j].invh*mfv->kernp->wpot((FLOAT) 0.0);
+      for (j=0; j<Nactive; j++)
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
-      }
 
-      // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputeGravityInteractionAndGhostList
-        (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
-         Ndirect, Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
+      // Do the self-gravity contribution, or just the stars
+      if (self_gravity) {
+        // Compute average/maximum term for computing gravity MAC
+        if (gravity_mac == "eigenmac") {
+          for (j=0; j<Nactive; j++)
+            macfactor = max(macfactor, pow((FLOAT) 1.0/activepart[j].gpot, twothirds));
+        }
 
-      // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
-      while (okflag < 0 || Nneib > Nneibmax) {
-        delete[] neibpartbuf[ithread];
-        delete[] cellbuf[ithread];
-        delete[] gravlist;
-        delete[] directlist;
-        delete[] mfvauxlist;
-        delete[] mfvlist;
-        delete[] neiblist;
-        Nneibmax                 = 2*Nneibmax;
-        Ngravcellmax             = 2*Ngravcellmax;
-        Nneibmaxbuf[ithread]     = Nneibmax;
-        Ngravcellmaxbuf[ithread] = Ngravcellmax;
-        neiblist                 = new int[Nneibmax];
-        mfvlist                  = new int[Nneibmax];
-        mfvauxlist               = new int[Nneibmax];
-        directlist               = new int[Nneibmax];
-        gravlist                 = new int[Nneibmax];
-        neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmax];
-        cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
-        neibpart                 = neibpartbuf[ithread];
-        gravcell                 = cellbuf[ithread];
+        // Include self-term for potential
+        for (j=0; j<Nactive; j++)
+          activepart[j].gpot = (activepart[j].m/activepart[j].h)*mfv->kernp->wpot((FLOAT) 0.0);
+
+
+        // Compute neighbour list for cell depending on physics options
         okflag = tree->ComputeGravityInteractionAndGhostList
           (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
            Ndirect, Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
-      };
 
-      // Prune the directlist of non-gravitating particles
-      Typemask gravmask;
-      gravmask = mfv->types.gravmask;
+        // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
+        while (okflag < 0 || Nneib > Nneibmax) {
+          delete[] neibpartbuf[ithread];
+          delete[] cellbuf[ithread];
+          delete[] gravlist;
+          delete[] directlist;
+          delete[] mfvauxlist;
+          delete[] mfvlist;
+          delete[] neiblist;
+          Nneibmax                 = 2*Nneibmax;
+          Ngravcellmax             = 2*Ngravcellmax;
+          Nneibmaxbuf[ithread]     = Nneibmax;
+          Ngravcellmaxbuf[ithread] = Ngravcellmax;
+          neiblist                 = new int[Nneibmax];
+          mfvlist                  = new int[Nneibmax];
+          mfvauxlist               = new int[Nneibmax];
+          directlist               = new int[Nneibmax];
+          gravlist                 = new int[Nneibmax];
+          neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmax];
+          cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
+          neibpart                 = neibpartbuf[ithread];
+          gravcell                 = cellbuf[ithread];
+          okflag = tree->ComputeGravityInteractionAndGhostList
+            (cell, partdata, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
+             Ndirect, Ngravcell, neiblist, mfvlist, directlist, gravcell, neibpart);
+        };
 
-      for (j=0, i=0; j<Ndirect; j++)
-    	if (gravmask[neibpart[directlist[j]].ptype]) {
-    	 if (i != j) directlist[i] = directlist[j] ;
-    	 i++ ;
-    	}
-      Ndirect = i ;
+        // Prune the directlist of non-gravitating particles
+        Typemask gravmask;
+        gravmask = mfv->types.gravmask;
 
-      // Loop over all active particles in the cell
-      //-------------------------------------------------------------------------------------------
-      for (j=0; j<Nactive; j++) {
-        i = activelist[j];
-
-        // Only calculate gravity for active particle types that have self-gravity activated
-        if (mfv->types[activepart[j].ptype].self_gravity){
-
-          Nhydroaux = 0;
-          Ndirectaux = Ndirect;
-          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
-          hrangesqdi = activepart[j].hrangesqd;
-
-          //---------------------------------------------------------------------------------------
-          for (jj=0; jj<Nhydroneib; jj++) {
-            int ii = mfvlist[jj];
-
-            // Skip non-gravitating particles and the current active particle.
-            if (gravmask[neibpart[jj].ptype] == false) continue;
-
-            // Compute relative position and distance quantities for pair
-            for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
-            drsqd = DotProduct(draux, draux, ndim) + small_number;
-
-            if (drsqd <= small_number) continue;
-
-            // Record if neighbour is direct-sum or and SPH neighbour.
-            // If SPH neighbour, also record max. timestep level for neighbour
-            if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
-              directlist[Ndirectaux++] = ii;
-            }
-            else {
-              mfvauxlist[Nhydroaux++] = ii;
-            }
+        for (j=0, i=0; j<Ndirect; j++)
+          if (gravmask[neibpart[directlist[j]].ptype]) {
+            if (i != j) directlist[i] = directlist[j] ;
+            i++ ;
           }
+        Ndirect = i ;
 
-          //---------------------------------------------------------------------------------------
-
-
-          // Compute forces between SPH neighbours (hydro and gravity)
-          mfv->ComputeSmoothedGravForces(i, Nhydroaux, mfvauxlist, activepart[j], neibpart);
-
-          // Compute direct gravity forces between distant particles
-          //mfv->ComputeSmoothedGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
-          mfv->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
-
-          // Compute gravitational force due to distant cells
-          if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
-                                          activepart[j].r, Ngravcell, gravcell);
+        for (j=0, i=0; j<Nhydroneib; j++)
+          if (gravmask[neibpart[mfvlist[j]].ptype]) {
+            if (i != j) mfvlist[i] = mfvlist[j] ;
+            i++ ;
           }
-          else if (multipole == "quadrupole") {
-            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
-                                              activepart[j].r, Ngravcell, gravcell);
-          }
+        Nhydroneib = i ;
 
-          // Add the periodic correction force for SPH and direct-sum neighbours
-          if (simbox.PeriodicGravity){
-            for (jj=0; jj<Nneib; jj++) {
-              for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
-              ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-              activepart[j].gpot += potperiodic;
+        // Loop over all active particles in the cell
+        //-------------------------------------------------------------------------------------------
+        for (j=0; j<Nactive; j++) {
+          i = activelist[j];
+
+          // Only calculate gravity for active particle types that have self-gravity activated
+          if (mfv->types[activepart[j].ptype].self_gravity){
+
+            Nhydroaux = 0;
+            Ndirectaux = Ndirect;
+            for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+            hrangesqdi = activepart[j].hrangesqd;
+
+            //---------------------------------------------------------------------------------------
+            for (jj=0; jj<Nhydroneib; jj++) {
+              int ii = mfvlist[jj];
+
+              // Compute relative position and distance quantities for pair
+              for (k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
+              drsqd = DotProduct(draux, draux, ndim) + small_number;
+
+              // Record if neighbour is direct-sum or and SPH neighbour.
+              // If SPH neighbour, also record max. timestep level for neighbour
+              if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd) {
+                directlist[Ndirectaux++] = ii;
+              }
+              else {
+                mfvauxlist[Nhydroaux++] = ii;
+              }
             }
 
-            // Now add the periodic correction force for all cell COMs
-            for (jj=0; jj<Ngravcell; jj++) {
-              for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
-              ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-              for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
-              activepart[j].gpot += potperiodic;
+            //---------------------------------------------------------------------------------------
+
+
+            // Compute forces between SPH neighbours (hydro and gravity)
+            mfv->ComputeSmoothedGravForces(i, Nhydroaux, mfvauxlist, activepart[j], neibpart);
+
+            // Compute direct gravity forces between distant particles
+            //mfv->ComputeSmoothedGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
+            mfv->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
+
+            // Compute gravitational force due to distant cells
+            if (multipole == "monopole") {
+            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
+                                            activepart[j].r, Ngravcell, gravcell);
+            }
+            else if (multipole == "quadrupole") {
+              this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
+                                                activepart[j].r, Ngravcell, gravcell);
+            }
+
+            // Add the periodic correction force for SPH and direct-sum neighbours
+            if (simbox.PeriodicGravity){
+              for (jj=0; jj<Nneib; jj++) {
+                for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
+                ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
+                for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
+                activepart[j].gpot += potperiodic;
+              }
+
+              // Now add the periodic correction force for all cell COMs
+              for (jj=0; jj<Ngravcell; jj++) {
+                for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
+                ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
+                for (k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
+                activepart[j].gpot += potperiodic;
+              }
             }
           }
         }
-      }
-      //-------------------------------------------------------------------------------------------
+        //-------------------------------------------------------------------------------------------
 
 
-      // Compute 'fast' multipole terms here
-      if (multipole == "fast_monopole") {
-        this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
-      }
+        // Compute 'fast' multipole terms here
+        if (multipole == "fast_monopole") {
+          this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+        }
+
+      } // End of self-gravity for this cell
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {
@@ -1089,9 +1097,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k]     = activepart[j].a[k];
-        for (k=0; k<ndim; k++) partdata[i].agrav[k] = activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) partdata[i].a[k]    += partdata[i].agrav[k];
+        for (k=0; k<ndim; k++) partdata[i].a[k] = activepart[j].a[k];
         partdata[i].gpot  = activepart[j].gpot;
       }
 

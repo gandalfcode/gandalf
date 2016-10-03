@@ -133,11 +133,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       rebuild_tree = true;
     }
 
-    // Update all array variables now accretion has probably removed some mass
-    // TODO:
-    //  This appears to be undoing the change in mass due to accretion. This needs fixing.
-    for (i=0; i<mfv->Nhydro; i++) partdata[i].m = partdata[i].Qcons[FV<ndim>::irho] + partdata[i].dQ[FV<ndim>::irho];
-
     // Re-build/re-stock tree now particles have moved
     mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                        mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
@@ -148,12 +143,13 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
 
-  // Calculate terms due to self-gravity
-  if (mfv->self_gravity == 1) {
+  // Calculate terms due to self-gravity / stars
+  if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
     // Update the density to get the correct softening & grad-h terms.
     mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
     mfv->CopyDataToGhosts(simbox, partdata);
 
+    // Does only the star forces in mfv->self_gravity != 1
     mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox, ewald);
   }
 
@@ -170,13 +166,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = (FLOAT) 0.0;
         nbody->nbodydata[i]->gpot = (FLOAT) 0.0;
         nbody->nbodydata[i]->gpe = (FLOAT) 0.0;
-      }
-    }
-    if (sink_particles == 1) {
-      for (i=0; i<sinks->Nsink; i++) {
-        if (sinks->sink[i].star->active) {
-          for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = (FLOAT) 0.0;
-        }
       }
     }
 

@@ -202,19 +202,19 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
   SM2012SphParticle<ndim>& parti = static_cast<SM2012SphParticle<ndim>& > (part);
 
-
+  FLOAT invh ;
   // Main smoothing length iteration loop
   //===============================================================================================
   do {
 
     // Initialise all variables for this value of h
     iteration++;
-    parti.invh     = (FLOAT) 1.0/parti.h;
+    invh           = (FLOAT) 1.0/parti.h;
     parti.rho      = (FLOAT) 0.0;
     //parti.invomega = (FLOAT) 0.0;
     parti.q        = (FLOAT) 0.0;
-    parti.hfactor  = pow(parti.invh,ndim);
-    invhsqd        = parti.invh*parti.invh;
+    parti.hfactor  = pow(invh,ndim);
+    invhsqd        = invh*invh;
 
     // Loop over all nearest neighbours in list to calculate
     // density.
@@ -229,11 +229,12 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     parti.rho *= parti.hfactor;
     parti.q *= parti.hfactor;
 
-    if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
+    FLOAT invrho ;
+    if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
-        fabs(parti.h - h_fac*pow(parti.m*parti.invrho,invndim)) < h_converge) break;
+        fabs(parti.h - h_fac*pow(parti.m*invrho,invndim)) < h_converge) break;
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim),
     // for now.  If this does not converge in a reasonable number of
@@ -242,7 +243,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     // albeit much more slowly.  (N.B. will implement Newton-Raphson soon)
     //---------------------------------------------------------------------------------------------
     if (iteration < iteration_max)
-      parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
+      parti.h = h_fac*pow(parti.m*invrho,Sph<ndim>::invndim);
 
     else if (iteration == iteration_max)
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
@@ -270,9 +271,9 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h         = max(h_fac*powf(parti.m*parti.invrho,Sph<ndim>::invndim), h_lower_bound);
-  parti.invh      = (FLOAT) 1.0/parti.h;
-  parti.hfactor   = pow(parti.invh,ndim+1);
+  parti.h         = max(h_fac*powf(parti.m/parti.rho,Sph<ndim>::invndim), h_lower_bound);
+  invh            = (FLOAT) 1.0/parti.h;
+  parti.hfactor   = pow(invh,ndim+1);
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.div_v     = (FLOAT) 0.0;
   parti.dudt      = (FLOAT) 0.0;
@@ -299,7 +300,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     }
   }
   else {
-    invhsqd = 4.0*parti.invh*parti.invh;
+    invhsqd = 4.0*invh*invh;
     for (j=0; j<nbody->Nstar; j++) {
       for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
       ssqd = DotProduct(dr,dr,ndim)*invhsqd;
@@ -327,7 +328,7 @@ void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
   part.invq    = (FLOAT) 1.0/part.q;
   part.u       = eos->SpecificInternalEnergy(part);
   part.sound   = eos->SoundSpeed(part);
-  part.pfactor = eos->Pressure(part)*part.invrho*part.invq;
+  part.pfactor = eos->Pressure(part)*part.invq/part.rho;
 
   return;
 }
@@ -372,13 +373,19 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
   SM2012SphParticle<ndim>* neibpart = static_cast<SM2012SphParticle<ndim>* > (neibpart_gen);
 
 
+  FLOAT invh_i   = 1/parti.h;
+  FLOAT invrho_i = 1/parti.rho;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
-    wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
-    wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
+
+    FLOAT invh_j   = 1/neibpart[j].h;
+    FLOAT invrho_j = 1/neibpart[j].rho;
+
+    wkerni = parti.hfactor*kern.w1(drmag[jj]*invh_i);
+    wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*invh_j);
 
     for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
@@ -397,7 +404,7 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
     //---------------------------------------------------------------------------------------------
     if (dvdr < (FLOAT) 0.0) {
 
-      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(parti.invrho + neibpart[j].invrho);
+      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(invrho_i + invrho_j);
       //winvrho = (FLOAT) (wkerni + wkernj)/(parti.rho + neibpart[j].rho);
 
       // Artificial viscosity term
@@ -420,14 +427,14 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
       // Artificial conductivity term
       if (acond == wadsley2008) {
         uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
-	      (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+	      (invrho_i*wkerni + invrho_j*wkernj);
         parti.dudt += neibpart[j].m*uaux;
         neibpart[j].dudt -= parti.m*uaux;
       }
       else if (acond == price2008) {
     	vsignal = sqrt(fabs(eos->Pressure(parti) -
       		      eos->Pressure(neibpart[j]))*0.5*
-      		 (parti.invrho + neibpart[j].invrho));
+      		 (invrho_i + invrho_j));
         parti.dudt += 0.5*neibpart[j].m*vsignal*
           (parti.u - neibpart[j].u)*winvrho;
         neibpart[j].dudt -= 0.5*parti.m*vsignal*

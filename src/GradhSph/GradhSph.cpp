@@ -230,6 +230,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   assert(!parti.flags.is_dead());
   assert(parti.m > (FLOAT) 0.0);
 
+  FLOAT invh ;
 
   // Main smoothing length iteration loop
   //===============================================================================================
@@ -237,19 +238,19 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
     // Initialise all variables for this value of h
     iteration++;
-    parti.invh     = (FLOAT) 1.0/parti.h;
+    invh           = (FLOAT) 1.0/parti.h;
     parti.rho      = (FLOAT) 0.0;
     parti.invomega = (FLOAT) 0.0;
     parti.zeta     = (FLOAT) 0.0;
-    parti.hfactor  = pow(parti.invh,ndim);
-    invhsqd        = parti.invh*parti.invh;
+    parti.hfactor  = pow(invh,ndim);
+    invhsqd        = invh*invh;
 
     // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd           = drsqd[j]*invhsqd;
       parti.rho      += m[j]*kern.w0_s2(ssqd);
-      parti.invomega += m[j]*parti.invh*kern.womega_s2(ssqd);
+      parti.invomega += m[j]*invh*kern.womega_s2(ssqd);
       parti.zeta     += m[j]*kern.wzeta_s2(ssqd);
     }
     //---------------------------------------------------------------------------------------------
@@ -262,12 +263,13 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // (failure could indicate neighbour list problem)
     assert(parti.rho >= parti.m*parti.hfactor*kern.w0(0.0));
 
-    if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
+    FLOAT invrho = 0 ;
+    if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;
 
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
-        fabs(parti.h - h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim)) < h_converge) break;
+        fabs(parti.h - h_fac*pow(parti.m*invrho,Sph<ndim>::invndim)) < h_converge) break;
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
     // not converge in a reasonable number of iterations (iteration_max), then assume something is
@@ -275,7 +277,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // more slowly.  (N.B. will implement Newton-Raphson soon)
     //---------------------------------------------------------------------------------------------
     if (iteration < iteration_max) {
-      parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
+      parti.h = h_fac*pow(parti.m*invrho,Sph<ndim>::invndim);
     }
     else if (iteration == iteration_max) {
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
@@ -308,9 +310,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h         = max(h_fac*powf(parti.m*parti.invrho, Sph<ndim>::invndim), h_lower_bound);
-  parti.invh      = (FLOAT) 1.0/parti.h;
-  parti.hfactor   = pow(parti.invh, ndim+1);
+  parti.h         = max(h_fac*pow(parti.m/parti.rho, Sph<ndim>::invndim), h_lower_bound);
+  invh            = 1/parti.h;
+  parti.hfactor   = pow(invh, ndim+1);
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.div_v     = (FLOAT) 0.0;
   assert(!(isinf(parti.h)) && !(isnan(parti.h)));
@@ -337,16 +339,16 @@ int GradhSph<ndim, kernelclass>::ComputeH
       }
     }
     else {
-      invhsqd = (FLOAT) 4.0*parti.invh*parti.invh;
+      invhsqd = (FLOAT) 4.0*invh*invh;
       for (j=0; j<nbody->Nstar; j++) {
         for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
         ssqd = DotProduct(dr,dr,ndim)*invhsqd;
         parti.zeta += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
       }
     }
-    parti.invomega = (FLOAT) 1.0 + Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
+    parti.invomega = (FLOAT) 1.0 + Sph<ndim>::invndim*parti.h*parti.invomega/parti.rho;
     parti.invomega = (FLOAT) 1.0/parti.invomega;
-    parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*parti.invrho*parti.invomega;
+    parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*parti.invomega/parti.rho;
   }
   else {
     parti.invomega = (FLOAT) 1.0;
@@ -378,7 +380,7 @@ void GradhSph<ndim, kernelclass>::ComputeThermalProperties
   part.u       = eos->SpecificInternalEnergy(part);
   part.sound   = eos->SoundSpeed(part);
   //part.press   = eos->Pressure(part);
-  part.pfactor = eos->Pressure(part)*part.invrho*part.invrho*part.invomega;
+  part.pfactor = eos->Pressure(part)*part.invomega/(part.rho*part.rho);
 
   return;
 }
@@ -423,14 +425,20 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   assert(neibpart_gen != NULL);
   assert(!parti.flags.is_dead());
 
+  FLOAT invh_i   = 1/parti.h;
+  FLOAT invrho_i = 1/parti.rho;
+
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     assert(!neibpart[j].flags.is_dead());
 
-    wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
-    wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
+    FLOAT invh_j   = 1/neibpart[j].h;
+    FLOAT invrho_j = 1/neibpart[j].rho;
+
+    wkerni = parti.hfactor*kern.w1(drmag[jj]*invh_i);
+    wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*invh_j);
 
     for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
     dvdr = DotProduct(neibpart[j].v,draux, ndim);
@@ -446,7 +454,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     //---------------------------------------------------------------------------------------------
     if (dvdr < (FLOAT) 0.0) {
 
-      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(parti.invrho + neibpart[j].invrho);
+      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(invrho_i + invrho_j);
 
       // Artificial viscosity term
       if (avisc == mon97) {
@@ -464,11 +472,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
       // Artificial conductivity term
       if (acond == wadsley2008) {
         parti.dudt += neibpart[j].m*dvdr*(neibpart[j].u - parti.u)*
-          (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+          (invrho_i*wkerni + invrho_j*wkernj);
       }
       else if (acond == price2008) {
         parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
-          winvrho*(parti.invrho + neibpart[j].invrho)*
+          winvrho*(invrho_i + invrho_j)*
           sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
       }
 
@@ -483,9 +491,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   //-----------------------------------------------------------------------------------------------
 
   // Set velocity divergence and compressional heating rate terms
-  parti.div_v    *= parti.invrho;
-  parti.dudt     -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
-  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*parti.invh +
+  parti.div_v    *= invrho_i;
+  parti.dudt     -= eos->Pressure(parti)*parti.div_v*invrho_i*parti.invomega;
+  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*invh_i +
     max(-parti.div_v, (FLOAT) 0.0)*(alpha_visc - parti.alpha);
 
 
@@ -528,8 +536,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
   GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
-  const FLOAT invhsqdi = parti.invh*parti.invh;
 
+  FLOAT invh_i   = 1/parti.h;
+  FLOAT invrho_i = 1/parti.rho;
+  const FLOAT invhsqdi = invh_i*invh_i;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
@@ -548,8 +558,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
     dvdr = DotProduct(dv,dr,ndim);
 
-    wkerni = parti.hfactor*kern.w1(drmag*parti.invh);
-    wkernj = neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh);
+    FLOAT invh_j   = 1/neibpart[j].h;
+    FLOAT invrho_j = 1/neibpart[j].rho;
+
+    wkerni = parti.hfactor*kern.w1(drmag*invh_i);
+    wkernj = neibpart[j].hfactor*kern.w1(drmag*invh_j);
 
     // Main SPH pressure force term
     paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
@@ -558,7 +571,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     //---------------------------------------------------------------------------------------------
     if (dvdr < (FLOAT) 0.0) {
 
-      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(parti.invrho + neibpart[j].invrho);
+      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(invrho_i + invrho_j) ;
 
       // Artificial viscosity term
       if (avisc == mon97) {
@@ -576,11 +589,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
       // Artificial conductivity term
       if (acond == wadsley2008) {
         parti.dudt += neibpart[j].m*dvdr*(neibpart[j].u - parti.u)*
-          (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+          (invrho_i*wkerni + invrho_j*wkernj);
       }
       else if (acond == price2008) {
         parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
-          winvrho*(parti.invrho + neibpart[j].invrho)*
+          winvrho*(invrho_i + invrho_j)*
           sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
       }
 
@@ -593,12 +606,12 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
     // Compute SPH gravity terms
     //---------------------------------------------------------------------------------------------
-    paux = (FLOAT) 0.5*(invhsqdi*kern.wgrav(drmag*parti.invh) + parti.zeta*wkerni +
-                        neibpart[j].invh*neibpart[j].invh*kern.wgrav(drmag*neibpart[j].invh) +
+    paux = (FLOAT) 0.5*(invhsqdi*kern.wgrav(drmag*invh_i) + parti.zeta*wkerni +
+                        invh_j*invh_j*kern.wgrav(drmag*invh_j) +
                         neibpart[j].zeta*wkernj);
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
-    parti.gpot += (FLOAT) 0.5*neibpart[j].m*(parti.invh*kern.wpot(drmag*parti.invh) +
-                                             neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
+    parti.gpot += (FLOAT) 0.5*neibpart[j].m*(invh_i*kern.wpot(drmag*invh_i) +
+                                             invh_j*kern.wpot(drmag*invh_j));
 
     // Add velocity divergence and neighbour timestep level terms
     parti.div_v -= neibpart[j].m*dvdr*wkerni;
@@ -609,10 +622,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
 
   // Set velocity divergence and compressional heating rate terms
-  parti.div_v   *= parti.invrho;
-  parti.dudt    -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
-  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*
-    parti.invh + max(parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
+  parti.div_v   *= invrho_i;
+  parti.dudt    -= eos->Pressure(parti)*parti.div_v*invrho_i*parti.invomega;
+  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*invh_i +
+    max(parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
 
 
   return;
@@ -649,6 +662,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
   GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
+  FLOAT invh_i = 1/parti.h;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
@@ -663,17 +677,19 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
     invdrmag = (FLOAT) 1.0/drmag;
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
 
+    FLOAT invh_j =  1/neibpart[j].h;
+
     // Main SPH gravity terms
     //---------------------------------------------------------------------------------------------
-    paux = (FLOAT) 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
-                        parti.zeta*parti.hfactor*kern.w1(drmag*parti.invh) +
-                        neibpart[j].invh*neibpart[j].invh*kern.wgrav(drmag*neibpart[j].invh) +
-                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh));
-    gaux = (FLOAT) 0.5*(parti.invh*kern.wpot(drmag*parti.invh) +
-                        neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
+    paux = (FLOAT) 0.5*(invh_i*invh_i*kern.wgrav(drmag*invh_i) +
+                        parti.zeta*parti.hfactor*kern.w1(drmag*invh_i) +
+                        invh_j*invh_j*kern.wgrav(drmag*invh_j) +
+                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*invh_j));
+    gaux = (FLOAT) 0.5*(invh_i*kern.wpot(drmag*invh_i) +
+                        invh_j*kern.wpot(drmag*invh_j));
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
   }
@@ -721,7 +737,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     invdr3   = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.agrav[k] += sphdata[j].m*dr[k]*invdr3;
+    for (k=0; k<ndim; k++) parti.a[k] += sphdata[j].m*dr[k]*invdr3;
     parti.gpot += sphdata[j].m*invdrmag;
 
     // Sanity-checkt to ensure particles are really un-softened direct-sum neighbours
@@ -778,7 +794,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
+    for (k=0; k<ndim; k++) parti.a[k] += paux*dr[k];
     //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
     //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
@@ -796,7 +812,7 @@ template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::FinishReturnExport () {
 	for (int i=0; i<Nhydro; i++) {
 		GradhSphParticle<ndim>& part = sphdata[i];
-		part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)*part.invh +
+		part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)/part.h +
 			    max(-part.div_v, (FLOAT) 0.0)*(alpha_visc - part.alpha);
 	}
 }

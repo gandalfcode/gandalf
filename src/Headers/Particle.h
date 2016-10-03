@@ -239,15 +239,11 @@ struct Particle
   FLOAT r0[ndim];                   ///< Position at beginning of step
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
-  FLOAT agrav[ndim];                ///< Gravitational acceleration
-  FLOAT a_dust[ndim];                ///< Gravitational acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
   FLOAT h_dust ;                    ///< Gas Smoothing length for dust
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
-  FLOAT invh;                       ///< 1 / h
   FLOAT hfactor;                    ///< invh^(ndim + 1)
-  FLOAT invrho;                     ///< 1 / rho
   FLOAT sound;                      ///< Sound speed
   FLOAT rho;                        ///< Density
   FLOAT u;                          ///< Specific internal energy
@@ -280,15 +276,11 @@ struct Particle
     for (int k=0; k<ndim; k++) r0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) a_dust[k] = (FLOAT) 0.0;
     m         = (FLOAT) 0.0;
     h         = (FLOAT) 0.0;
     h_dust    = (FLOAT) 0.0;
     hrangesqd = (FLOAT) 0.0;
-    invh      = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;
-    invrho    = (FLOAT) 0.0;
     rho       = (FLOAT) 0.0;
     sound     = (FLOAT) 0.0;
     u         = (FLOAT) 0.0;
@@ -301,12 +293,6 @@ struct Particle
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
     mu_bar    = (FLOAT) 1.0;
-  }
-
-  /* reflect the particle in a given direction about a mirror */
-  void reflect(int k, double x_mirror) {
-	  r[k] = 2*x_mirror - r[k] ;
-	  v[k]*= -1 ;
   }
 
 };
@@ -429,75 +415,72 @@ struct MeshlessFVParticle : public Particle<ndim>
   using Particle<ndim>::v ;
   using Particle<ndim>::a ;
 
-  FLOAT invh;                          ///< 1 / h
-  FLOAT hfactor;                       ///< invh^(ndim + 1)
-  FLOAT invrho;                        ///< 1 / rho
+  FLOAT press;                         ///< Pressure
   FLOAT invomega;                      ///< ..
-  FLOAT press;                         ///< Thermal pressure
-  FLOAT pfactor;                       ///< Pressure factor in SPH EOM
-  FLOAT sound;                         ///< Sound speed
   FLOAT div_v;                         ///< Velocity divergence
   FLOAT vsig_max;                      ///< Maximum signal velocity to all neighbours
-  FLOAT ndens;                         ///< Number density of neighbours
-  FLOAT volume;                        ///< 'Volume' of particle
+  FLOAT ndens;                         ///< Particle number density, inverse volume
   FLOAT zeta;                          ///< ..
   FLOAT B[ndim][ndim];                 ///< Inverse matrix for gradient calculations
   FLOAT Wprim[ndim+2];                 ///< ..
-  FLOAT Qcons[ndim+2];                 ///< ..
   FLOAT Qcons0[ndim+2];                ///< ..
   FLOAT grad[ndim+2][ndim];            ///< ..
   FLOAT dQ[ndim+2];                    ///< ..
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
-  FLOAT Utot;                          ///< ..
   FLOAT rdmdt[ndim];                   ///< ..
   FLOAT rdmdt0[ndim];                  ///< ..
-  FLOAT vreg[ndim];                    ///< ..
-
 
   // SPH particle constructor to initialise all values
   //-----------------------------------------------------------------------------------------------
   MeshlessFVParticle()
   {
-    invh      = (FLOAT) 0.0;
-    hfactor   = (FLOAT) 0.0;
-    invrho    = (FLOAT) 0.0;
     invomega  = (FLOAT) 1.0;
     press     = (FLOAT) 0.0;
-    pfactor   = (FLOAT) 0.0;
-    sound     = (FLOAT) 0.0;
     div_v     = (FLOAT) 0.0;
     ndens     = (FLOAT) 0.0;
-    volume    = (FLOAT) 0.0;
     vsig_max  = (FLOAT) 0.0;
     zeta      = (FLOAT) 0.0;
-    Utot      = (FLOAT) 0.0;
   }
 
 #ifdef MPI_PARALLEL
   typedef MeshlessCommunicationHandler<ndim> HandlerType;
 #endif
 
-  void reflect(int k, double x_mirror) {
-	  using std::swap ;
-
-	  Particle<ndim>::reflect(k, x_mirror) ;
-
-	  a[k] *= -1 ;
-
-	  Wprim[k] *= -1 ;
-	  Qcons[k] *= -1 ;
-	  dQ[k] *= -1 ;
-	  dQdt[k] *= -1 ;
-
-	  // Gradients
-	  for (int j=0; j < ndim+2; j++)
-	    grad[j][k] *= -1 ;
-	  for (int j=0; j < ndim; j++) {
-		grad[k][j] *= -1 ;
-		B[j][k] *= -1 ;
-		B[k][j] *= -1 ;
-	  }
-   }
-
 };
+
+
+/* reflect the particle in a given direction about a mirror */
+template<int ndim>
+inline void reflect(Particle<ndim>& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
+   part.v[k]*= -1 ;
+   part.a[k] *= -1 ;
+}
+
+template<int ndim>
+inline void reflect(MeshlessFVParticle<ndim>& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
+   part.v[k]*= -1 ;
+   part.a[k] *= -1 ;
+
+   part.Wprim[k] *= -1 ;
+   part.dQ[k] *= -1 ;
+   part.dQdt[k] *= -1 ;
+
+   // Gradients
+   for (int j=0; j < ndim+2; j++)
+     part.grad[j][k] *= -1 ;
+   for (int j=0; j < ndim; j++) {
+     part.grad[k][j] *= -1 ;
+     part.B[j][k] *= -1 ;
+     part.B[k][j] *= -1 ;
+   }
+}
+
+
+
+
+
+
+
 #endif
