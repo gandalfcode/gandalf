@@ -127,6 +127,13 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
+  /*
+  virtual void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, MultipoleMoment<ndim> *) = 0;
+  virtual void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, MultipoleMoment<ndim> *) = 0;
+  virtual void ComputeFastMonopoleForces(int, int, MultipoleMoment<ndim> *,
+                                         TreeCellBase<ndim> &, ParticleType<ndim> *) =0;
+  */
+  //-----------------------------------------------------------------------------------------------
   bool neibcheck;                      ///< Flag to verify neighbour lists
   FLOAT kernfac;                       ///< Deprecated variable (to be removed)
   FLOAT kernrange;                     ///< Kernel extent (in units of h)
@@ -263,10 +270,10 @@ protected:
   //-----------------------------------------------------------------------------------------------
   void AllocateMemory(const int);
   void DeallocateMemory(void);
-  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
-  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
-  void ComputeFastMonopoleForces(int, int, TreeCell<ndim> *,
-                                 TreeCell<ndim> &, ParticleType<ndim> *);
+  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, MultipoleMoment<ndim> *);
+  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, MultipoleMoment<ndim> *);
+  void ComputeFastMonopoleForces(int, int, MultipoleMoment<ndim> *,
+                                 TreeCellBase<ndim> &, ParticleType<ndim> *);
 
 
   // Const variables
@@ -299,7 +306,7 @@ protected:
   int **levelneibbuf;                              ///< Arrays of neighbour timestep levels
   ParticleType<ndim> **neibpartbuf;                ///< Local copy of neighbouring ptcls
   ParticleType<ndim> **activepartbuf;              ///< Local copy of SPH particle
-  TreeCell<ndim> **cellbuf;                        ///< Buffers of tree-cell copies
+  MultipoleMoment<ndim> **cellbuf;                 ///< Buffers of tree-cell copies
 
   Tree<ndim,ParticleType,TreeCell> *tree;          ///< Pointer to main (local) tree
   Tree<ndim,ParticleType,TreeCell> *ghosttree;     ///< Pointer to tree containing ghosts

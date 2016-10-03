@@ -84,6 +84,33 @@ struct TreeCellBase {
 #endif
 };
 
+//=================================================================================================
+//  Struct MultipoleMoment
+/// Structure to hold the multipole moment data.
+//=================================================================================================
+template<int ndim>
+struct MultipoleMoment {
+  MultipoleMoment()
+  {
+    for (int k=0; k<ndim; k++) r[k] = 0 ;
+    for (int k=0; k<5; k++) q[k] = 0 ;
+    m = 0;
+    id = 0;
+  }
+
+  explicit MultipoleMoment(const TreeCellBase<ndim>& cell)
+  {
+    for (int k=0; k<ndim; k++) r[k] = cell.r[k] ;
+    for (int k=0; k<5; k++) q[k] = cell.q[k] ;
+    m = cell.m;
+    id = cell.id;
+  }
+
+  FLOAT r[ndim];                       ///< Position of cell COM
+  FLOAT m;                             ///< Mass contained in cell
+  FLOAT q[5];                          ///< Quadrupole moment tensor
+  int id ;
+};
 
 
 //=================================================================================================
@@ -110,6 +137,7 @@ class TreeBase
 	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
 	virtual int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist) = 0 ;
+	virtual int ComputeActiveCellList(vector<TreeCellBase<ndim> >& ) = 0 ;
 	virtual int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
 	                                       const FLOAT, const int, int &, int *) = 0 ;
 	virtual int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
@@ -118,6 +146,13 @@ class TreeBase
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
 	virtual int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                         const int, int &, int *, Particle<ndim> *) = 0 ;
+	virtual int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+	                                                  const FLOAT, const int,
+	                                                  const int, int &, int &, int &, int &, int *, int *,
+	                                                  int *, MultipoleMoment<ndim> *, Particle<ndim> *)=0;
+	virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
+	                                              const int, const int, int &, int &, int &, int *, int *,
+	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
 
 	virtual int FindLeafCell(const FLOAT *) = 0;
 
@@ -190,7 +225,7 @@ protected:
   }
 
   int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
-  int ComputeActiveCellList(vector<TreeCell<ndim> >& );
+  int ComputeActiveCellList(vector<TreeCellBase<ndim> >& );
   int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
   int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int &, int *);
@@ -200,13 +235,13 @@ protected:
                            const int, int &, int *, Particle<ndim> *);
   int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                                    const int, int &, int *, Particle<ndim> *);
-  int ComputeGravityInteractionAndGhostList(const TreeCell<ndim> &, const Particle<ndim> *,
+  int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 		                                    const FLOAT, const int,
                                             const int, int &, int &, int &, int &, int *, int *,
-                                            int *, TreeCell<ndim> *, Particle<ndim> *);
+                                            int *, MultipoleMoment<ndim> *, Particle<ndim> *);
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
-                                        TreeCell<ndim> *, Particle<ndim> *);
+                                        MultipoleMoment<ndim> *, Particle<ndim> *);
   virtual int FindLeafCell(const FLOAT *);
 #ifdef MPI_PARALLEL
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,

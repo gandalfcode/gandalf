@@ -121,7 +121,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active tree cells
-  vector<TreeCell<ndim> > celllist;            // List of active cells
+  vector<TreeCellBase<ndim> > celllist;            // List of active cells
   //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
   int Nactivetot = 0;                      // Total number of active particles
@@ -184,7 +184,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
       celldone = 1;
       hmax = cell.hmax;
 
@@ -367,7 +367,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  vector<TreeCell<ndim> > celllist;            // List of active cells
+  vector<TreeCellBase<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
   int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
@@ -434,7 +434,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell, mfvdata, activelist);
@@ -612,7 +612,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  vector<TreeCell<ndim> > celllist;            // List of active cells
+  vector<TreeCellBase<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
   int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
@@ -682,7 +682,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
@@ -884,7 +884,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int cactive;                         // No. of active cells
-  vector<TreeCell<ndim> > celllist;            // List of active cells
+  vector<TreeCellBase<ndim> > celllist;            // List of active cells
   //ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[MeshlessFVTree::UpdateAllGravForces]");
@@ -939,9 +939,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     int *mfvauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
     int	*gravlist    = new int[Nneibmax];        // ..
-    ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
-    ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
-    TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
+    ParticleType<ndim>* activepart  = activepartbuf[ithread];   // ..
+    ParticleType<ndim>* neibpart    = neibpartbuf[ithread];     // ..
+    MultipoleMoment<ndim>* gravcell = cellbuf[ithread];         // ..
 
     bool self_gravity =  mfv->self_gravity == 1 ;
 
@@ -949,7 +949,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
       macfactor = (FLOAT) 0.0;
 
       // Find list of active particles in current cell
@@ -999,7 +999,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
           directlist               = new int[Nneibmax];
           gravlist                 = new int[Nneibmax];
           neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmax];
-          cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
+          cellbuf[ithread]         = new MultipoleMoment<ndim>[Ngravcellmax];
           neibpart                 = neibpartbuf[ithread];
           gravcell                 = cellbuf[ithread];
           okflag = tree->ComputeGravityInteractionAndGhostList

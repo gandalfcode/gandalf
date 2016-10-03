@@ -84,25 +84,25 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
- (vector<TreeCell<ndim> >& celllist)            ///< Array containing copies of cells with active ptcls
+ (vector<TreeCellBase<ndim> >& celllist)            ///< Array containing copies of cells with active ptcls
 {
   int c;                               // Cell counter
-
 
 #if defined (MPI_PARALLEL)
   celllist.reserve(Ncellmax);
 #else
   celllist.reserve(gtot);
 #endif
+
   for (c=0; c<Ncell; c++) {
     if (celldata[c].N <= Nleafmax && celldata[c].copen == -1 && celldata[c].Nactive > 0) {
-      celllist.push_back(celldata[c]);
+      celllist.push_back(TreeCellBase<ndim>(celldata[c]));
     }
   }
 
 #ifdef MPI_PARALLEL
   for (c=Ncell; c<Ncell+Nimportedcell; c++) {
-    if (celldata[c].Nactive > 0) celllist.push_back(celldata[c]);
+    if (celldata[c].Nactive > 0) celllist.push_backTreeCellBase<ndim>(celldata[c]));
   }
 #endif
 
@@ -655,7 +655,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
- (const TreeCell<ndim> &cell,          ///< [in] Pointer to cell
+ (const TreeCellBase<ndim> &cell,      ///< [in] Pointer to cell
   const Particle<ndim> *part_gen,      ///< [in] Particle data array
   //const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
@@ -668,7 +668,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   int *neiblist,                       ///< [out] List of all particle ids
   int *hydroneiblist,                  ///< [out] List of SPH neibpart ids
   int *directlist,                     ///< [out] List of direct-sum neibpart ids
-  TreeCell<ndim> *gravcell,            ///< [out] Array of local copies of tree cells
+  MultipoleMoment<ndim> *gravcell,     ///< [out] Array of local copies of tree cells
   Particle<ndim> *neib_out)            ///< [out] Array of local copies of neighbour particles
 {
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
@@ -773,11 +773,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
         Nneib++;
       }
       else if (Ngravcell < Ngravcellmax) {
-        gravcell[Ngravcell] = celldata[cc];
+        gravcell[Ngravcell] = MultipoleMoment<ndim>(celldata[cc]);
         for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k] ;
         GhostFinder.PeriodicDistanceCorrection(dr, dr_corr);
         for (k=0; k<ndim; k++) gravcell[Ngravcell].r[k] += dr_corr[k] ;
-        for (k=0; k<ndim; k++) gravcell[Ngravcell].rcell[k] += dr_corr[k];
         Ngravcell++;
       }
       else {
@@ -884,7 +883,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   int &Ngravcell,                      ///< [out] No. of cell interactions
   int *neiblist,                       ///< [out] List of SPH neighbour ids
   int *directlist,                     ///< [out] List of direct-sum neighbour ids
-  TreeCell<ndim> *gravcell,            ///< [out] List of cell ids
+  MultipoleMoment<ndim> *gravcell,            ///< [out] List of cell ids
   Particle<ndim> *part_gen)            ///< [in] Particle data array
 {
   ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>* >(part_gen) ;
@@ -958,7 +957,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
         }
       }
       else if (Ngravcell < Ngravcellmax && celldata[cc].N > 0) {
-        gravcell[Ngravcell++] = celldata[cc];
+        gravcell[Ngravcell++] = MultipoleMoment<ndim>(celldata[cc]);
       }
       else {
         return -1;

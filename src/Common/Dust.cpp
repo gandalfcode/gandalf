@@ -272,7 +272,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 
 
   int cactive;                             // No. of active tree cells
-  TreeCellBase<ndim> **celllist;           // List of active tree cells
+  vector<TreeCellBase<ndim> > celllist;    // List of active cells
 
 #ifdef MPI_PARALLEL
   double twork = timing->WallClockTime();  // Start time (for load balancing)
@@ -282,8 +282,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
   timing->StartTimingSection("DUST_GAS_INTERPOLATE_FORCES");
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCellBase<ndim>*[_tree->MaxNumCells()];
-  cactive = _tree->ComputeActiveCellPointers(celllist);
+  cactive = _tree->ComputeActiveCellList(celllist);
   assert(cactive <= _tree->MaxNumCells());
 
 
@@ -327,7 +326,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCellBase<ndim>& cell = *(celllist[cc]);
+      TreeCellBase<ndim>& cell = celllist[cc];
       celldone = 1;
       hmax = cell.hmax;
 
@@ -492,7 +491,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   using std::vector ;
 
   int cactive;                             // No. of active cells
-  TreeCellBase<ndim> **celllist;           // List of active tree cells
+  vector<TreeCellBase<ndim> > celllist;    // List of active cells
+
 #ifdef MPI_PARALLEL
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
@@ -502,8 +502,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCellBase<ndim>*[_tree->MaxNumCells()];
-  cactive = _tree->ComputeActiveCellPointers(celllist);
+  cactive = _tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
@@ -547,7 +546,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCellBase<ndim>& cell = *celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = _tree->ComputeActiveParticleList(cell,sphdata, &(activelist[0]));

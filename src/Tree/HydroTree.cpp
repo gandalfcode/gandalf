@@ -123,7 +123,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
     levelneibbuf    = new int*[Nthreads];
     activepartbuf   = new ParticleType<ndim>*[Nthreads];
     neibpartbuf     = new ParticleType<ndim>*[Nthreads];
-    cellbuf         = new TreeCell<ndim>*[Nthreads];
+    cellbuf         = new MultipoleMoment<ndim>*[Nthreads];
 
     for (int ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread]     = max(1, 8*Ngather);
@@ -132,7 +132,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
       levelneibbuf[ithread]    = new int[Ntotmax];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
       neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
-      cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmaxbuf[ithread]];
+      cellbuf[ithread]         = new MultipoleMoment<ndim>[Ngravcellmaxbuf[ithread]];
     }
     allocated_buffer = true;
 
@@ -604,7 +604,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
   FLOAT agrav[ndim],                   ///< [inout] Acceleration array
   FLOAT rp[ndim],                      ///< [in] Position of point
   int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> *gravcell)            ///< [in] List of tree cell ids
+  MultipoleMoment<ndim> *gravcell)     ///< [in] List of tree cell ids
 {
   int cc;                              // Aux. cell counter
   int k;                               // Dimension counter
@@ -614,7 +614,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
   FLOAT invdrsqd;                      // 1 / drsqd
   FLOAT invdr3;                        // 1 / dist^3
   FLOAT mc;                            // Mass of cell
-  TreeCell<ndim> *cellptr;             // Pointer to gravity tree cell
+  MultipoleMoment<ndim> *cellptr;      // Pointer to gravity tree cell
 
   // Loop over all neighbouring particles in list
   //-----------------------------------------------------------------------------------------------
@@ -650,7 +650,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
   FLOAT agrav[ndim],                   ///< [inout] Acceleration array
   FLOAT rp[ndim],                      ///< [in] Position of point
   int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> *gravcell)            ///< [in] List of tree cell ids
+  MultipoleMoment<ndim> *gravcell)     ///< [in] List of tree cell ids
 {
   int cc;                              // Aux. cell counter
   int k;                               // Dimension counter
@@ -661,7 +661,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
   FLOAT invdr5;                        // 1 / distance^5
   FLOAT qfactor;                       // Constant factor for optimisation
   FLOAT qscalar;                       // Quadrupole moment scalar quantity
-  TreeCell<ndim> *cellptr;             // Pointer to gravity tree cell
+  MultipoleMoment<ndim> *cellptr;      // Pointer to gravity tree cell
 
 
   // Loop over all neighbouring particles in list
@@ -719,8 +719,8 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 void HydroTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
  (int Nactive,                         ///< [in] No. of active particles
   int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> *gravcell,            ///< [in] List of tree cell ids
-  TreeCell<ndim> &cell,                ///< [in] Current cell pointer
+  MultipoleMoment<ndim> *gravcell,     ///< [in] List of tree cell ids
+  TreeCellBase<ndim> &cell,            ///< [in] Current cell pointer
   ParticleType<ndim> *activepart)      ///< [inout] Active Hydrodynamics particle array
 {
   int cc;                              // Aux. cell counter
@@ -836,7 +836,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
     FLOAT macfactor;                             // Gravity MAC factor
     int* neiblist = new int[Nneibmax];           // ..
     int* directlist = new int[Nneibmax];         // ..
-    TreeCell<ndim>* gravcell = new TreeCell<ndim>[Ngravcellmax];   // ..
+    MultipoleMoment<ndim>* gravcell = new MultipoleMoment<ndim>[Ngravcellmax];   // ..
 
 
     // Loop over all active cells
@@ -859,7 +859,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
       while (okflag == -1) {
         delete[] gravcell;
         Ngravcellmax = 2*Ngravcellmax;
-        gravcell = new TreeCell<ndim>[Ngravcellmax];
+        gravcell = new MultipoleMoment<ndim>[Ngravcellmax];
         okflag = tree->ComputeStarGravityInteractionList
          (star, macfactor, Nneibmax, Nneibmax, Ngravcellmax, Nneib,
           Ndirect, Ngravcell, neiblist, directlist, gravcell, partdata);
