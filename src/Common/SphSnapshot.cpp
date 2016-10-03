@@ -101,6 +101,7 @@ SphSnapshot<ndims>::SphSnapshot
     if (Nhydro>0) {
       this->data["sph"]=Species(Nhydro,"sph");
       Species::maptype& sph_values=data["sph"].values;
+      sph_values["iorig"]=vector<float>();
       sph_values["x"]=vector<float>();
       sph_values["vx"]=vector<float>();
       sph_values["ax"]=vector<float>();
@@ -124,6 +125,7 @@ SphSnapshot<ndims>::SphSnapshot
     if (Ndust>0) {
       this->data["dust"]=Species(Ndust,"dust");
       Species::maptype& dust_values=data["dust"].values;
+      dust_values["iorig"]=vector<float>();
       dust_values["x"]=vector<float>();
       dust_values["vx"]=vector<float>();
       dust_values["ax"]=vector<float>();
@@ -434,6 +436,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
       Species& sph = data["sph"];
       Species::maptype& sph_values = data["sph"].values;
+      sph_values["iorig"]=vector<float>(sph.N);
       sph_values["x"]=vector<float>(sph.N);
       sph_values["vx"]=vector<float>(sph.N);
       sph_values["ax"]=vector<float>(sph.N);
@@ -459,6 +462,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
       Species& dust = data["dust"];
       Species::maptype& dust_values = data["dust"].values;
+      dust_values["iorig"]=vector<float>(Ndust);
       dust_values["x"]=vector<float>(Ndust);
       dust_values["vx"]=vector<float>(Ndust);
       dust_values["ax"]=vector<float>(Ndust);
@@ -524,6 +528,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     if (itype==gas) {
       Species& sph = data["sph"];
       Species::maptype& sph_values = data["sph"].values;
+      sph_values["iorig"][igas] = reinterpret_cast<float&>( part.iorig);
       sph_values["x"][igas] = (float) part.r[0];
       sph_values["vx"][igas] = (float) part.v[0];
       sph_values["ax"][igas] = (float) part.a[0];
@@ -547,6 +552,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     else if (itype==dust) {
       Species& dust = data["dust"];
       Species::maptype& dust_values = data["dust"].values;
+      dust_values["iorig"][idust] = reinterpret_cast<float&>( part.iorig);
       dust_values["x"][idust] = (float) part.r[0];
       dust_values["vx"][idust] = (float) part.v[0];
       dust_values["ax"][idust] = (float) part.a[0];
@@ -692,6 +698,9 @@ UnitInfo SphSnapshotBase::ExtractArray
   // If array type and name is valid, pass pointer to array and also set unit
   if (name == "x") {
     unit = &(units->r);
+  }
+  else if (name == "iorig") {
+	  unit = &(units->nounits);
   }
   else if (name == "y") {
     unit = &(units->r);
