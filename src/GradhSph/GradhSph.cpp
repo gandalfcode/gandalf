@@ -101,11 +101,6 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
     	std::copy(oldsphdata,oldsphdata+Nhydromax,sphdata);
         delete[] oldsphdata;
     }
-#ifdef MPI_PARALLEL
-    int Nmpi;
-    MPI_Comm_size(MPI_COMM_WORLD, &Nmpi);
-    Nhydromax *= Nmpi;
-#endif
 
 	Nhydromax=N;
     allocated        = true;
