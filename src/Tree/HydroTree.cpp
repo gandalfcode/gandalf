@@ -1891,7 +1891,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   if (first_unpack) {
     tree->Nimportedcell = 0;
-    tree->Ncelltot=tree->Ncell;
     assert(hydro->NImportedParticles == 0);
   }
 
@@ -1981,7 +1980,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   // Update the tree counters
   tree->Nimportedcell += N_received_cells;
-  tree->Ncelltot += N_received_cells;
   tree->Ntot = hydro->Ntot;
   Ntot = hydro->Ntot;
 

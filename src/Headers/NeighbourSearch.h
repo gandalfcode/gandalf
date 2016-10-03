@@ -251,7 +251,6 @@ protected:
 	  hydro->Ntot -= hydro->NImportedParticles;
 	  assert(hydro->Ntot == hydro->Nhydro + hydro->Nghost);
 	  hydro->NImportedParticles=0;
-	  tree->Ncelltot = tree->Ncell;
 	  tree->Nimportedcell = 0;
   };
 #endif

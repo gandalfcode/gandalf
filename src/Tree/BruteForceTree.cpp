@@ -77,7 +77,6 @@ BruteForceTree<ndim,ParticleType,TreeCell>::BruteForceTree(int Nleafmaxaux, FLOA
   Nthreads       = 1;
 #endif
 #if defined MPI_PARALLEL
-  Ncelltot       = 0;
   Nimportedcell  = 0;
 #endif
 }

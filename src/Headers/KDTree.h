@@ -103,7 +103,6 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::thetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::gravmask ;
 #ifdef MPI_PARALLEL
-  using Tree<ndim,ParticleType,TreeCell>::Ncelltot;
   using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
 #endif
 

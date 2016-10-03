@@ -572,7 +572,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
   for (int cc=0; cc<cactive; cc++) {
     int c = celllist[cc].id;
-    assert(c<tree->Ncelltot);
     assert(tree->celldata[c].Nactive>0);
     assert(tree->celldata[c].worktot>=0);
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
