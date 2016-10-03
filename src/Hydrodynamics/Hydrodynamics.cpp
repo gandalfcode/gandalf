@@ -163,24 +163,29 @@ void Hydrodynamics<ndim>::CheckXBoundaryGhostParticle
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
 
-  if (GetParticlePointer(i).r[0] + min((FLOAT) 0.0, GetParticlePointer(i).v[0]*tghost) <
-      simbox.boxmin[0] + ghost_range*kernrange*GetParticlePointer(i).h) {
+  Particle<ndim>& part = GetParticlePointer(i);
+  const FLOAT r0 = part.r[0];
+  const FLOAT v0 = part.v[0];
+  const FLOAT h = part.h;
+
+  if (r0 + min((FLOAT) 0.0, v0*tghost) <
+      simbox.boxmin[0] + ghost_range*kernrange*h) {
     if (simbox.boundary_lhs[0] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, 0, x_periodic_lhs, GetParticlePointer(i).r[0] + simbox.boxsize[0], GetParticlePointer(i).v[0]);
+      CreateBoundaryGhostParticle(i, 0, x_periodic_lhs,r0 + simbox.boxsize[0], v0);
     }
     if (simbox.boundary_lhs[0] == mirrorBoundary) {
       CreateBoundaryGhostParticle(i, 0, x_mirror_lhs,
-                                  (FLOAT) 2.0*simbox.boxmin[0] - GetParticlePointer(i).r[0], -GetParticlePointer(i).v[0]);
+                                  (FLOAT) 2.0*simbox.boxmin[0] - r0, -v0);
     }
   }
-  if (GetParticlePointer(i).r[0] + max((FLOAT) 0.0, GetParticlePointer(i).v[0]*tghost) >
-      simbox.boxmax[0] - ghost_range*kernrange*GetParticlePointer(i).h) {
+  if (r0 + max((FLOAT) 0.0, v0*tghost) >
+      simbox.boxmax[0] - ghost_range*kernrange*h) {
     if (simbox.boundary_rhs[0] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, 0, x_periodic_rhs, GetParticlePointer(i).r[0] - simbox.boxsize[0], GetParticlePointer(i).v[0]);
+      CreateBoundaryGhostParticle(i, 0, x_periodic_rhs, r0 - simbox.boxsize[0], v0);
     }
     if (simbox.boundary_rhs[0] == mirrorBoundary) {
       CreateBoundaryGhostParticle(i, 0, x_mirror_rhs,
-                                  (FLOAT) 2.0*simbox.boxmax[0] - GetParticlePointer(i).r[0], -GetParticlePointer(i).v[0]);
+                                  (FLOAT) 2.0*simbox.boxmax[0] - r0, -v0);
     }
   }
 
@@ -200,26 +205,35 @@ void Hydrodynamics<ndim>::CheckYBoundaryGhostParticle
   const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
+
+	assert(ndim>1);
+
+	Particle<ndim>& part = GetParticlePointer(i);
+	const FLOAT r1 = part.r[1];
+	const FLOAT v1 = part.v[1];
+	const FLOAT h = part.h;
+
+
   if (ndim > 1) {
 
-    if (GetParticlePointer(i).r[1] + min((FLOAT) 0.0, GetParticlePointer(i).v[1]*tghost) <
-        simbox.boxmin[1] + ghost_range*kernrange*GetParticlePointer(i).h) {
+    if (r1 + min((FLOAT) 0.0, v1*tghost) <
+        simbox.boxmin[1] + ghost_range*kernrange*h) {
       if (simbox.boundary_lhs[1] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 1, y_periodic_lhs, GetParticlePointer(i).r[1] + simbox.boxsize[1], GetParticlePointer(i).v[1]);
+        CreateBoundaryGhostParticle(i, 1, y_periodic_lhs, r1 + simbox.boxsize[1], v1);
       }
       if (simbox.boundary_lhs[1] == mirrorBoundary) {
         CreateBoundaryGhostParticle(i, 1, y_mirror_lhs,
-                                    (FLOAT) 2.0*simbox.boxmin[1] - GetParticlePointer(i).r[1], -GetParticlePointer(i).v[1]);
+                                    (FLOAT) 2.0*simbox.boxmin[1] - r1, -v1);
       }
     }
-    if (GetParticlePointer(i).r[1] + max((FLOAT) 0.0, GetParticlePointer(i).v[1]*tghost) >
-        simbox.boxmax[1] - ghost_range*kernrange*GetParticlePointer(i).h) {
+    if (r1 + max((FLOAT) 0.0, v1*tghost) >
+        simbox.boxmax[1] - ghost_range*kernrange*h) {
       if (simbox.boundary_rhs[1] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 1, y_periodic_rhs, GetParticlePointer(i).r[1] - simbox.boxsize[1], GetParticlePointer(i).v[1]);
+        CreateBoundaryGhostParticle(i, 1, y_periodic_rhs, r1 - simbox.boxsize[1], v1);
       }
       if (simbox.boundary_rhs[1] == mirrorBoundary) {
         CreateBoundaryGhostParticle(i, 1, y_mirror_rhs,
-                                    (FLOAT) 2.0*simbox.boxmax[1] - GetParticlePointer(i).r[1], -GetParticlePointer(i).v[1]);
+                                    (FLOAT) 2.0*simbox.boxmax[1] - r1, -r1);
       }
     }
   }
@@ -240,26 +254,33 @@ void Hydrodynamics<ndim>::CheckZBoundaryGhostParticle
   const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
+	assert(ndim>2);
+
+	Particle<ndim>& part = GetParticlePointer(i);
+	const FLOAT r2 = part.r[2];
+	const FLOAT v2 = part.v[2];
+	const FLOAT h = part.h;
+
   if (ndim == 3) {
 
-    if (GetParticlePointer(i).r[2] + min((FLOAT) 0.0, GetParticlePointer(i).v[2]*tghost) <
-        simbox.boxmin[2] + ghost_range*kernrange*GetParticlePointer(i).h) {
+    if (r2 + min((FLOAT) 0.0, v2*tghost) <
+        simbox.boxmin[2] + ghost_range*kernrange*h) {
       if (simbox.boundary_lhs[2] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 2, z_periodic_lhs, GetParticlePointer(i).r[2] + simbox.boxsize[2], GetParticlePointer(i).v[2]);
+        CreateBoundaryGhostParticle(i, 2, z_periodic_lhs, r2 + simbox.boxsize[2], v2);
       }
       if (simbox.boundary_lhs[2] == mirrorBoundary) {
         CreateBoundaryGhostParticle(i, 2, z_mirror_lhs,
-                                    (FLOAT) 2.0*simbox.boxmin[2] - GetParticlePointer(i).r[2], -GetParticlePointer(i).v[2]);
+                                    (FLOAT) 2.0*simbox.boxmin[2] - r2, -v2);
       }
     }
-    if (GetParticlePointer(i).r[2] + max((FLOAT) 0.0, GetParticlePointer(i).v[2]*tghost) >
-        simbox.boxmax[2] - ghost_range*kernrange*GetParticlePointer(i).h) {
+    if (r2 + max((FLOAT) 0.0, v2*tghost) >
+        simbox.boxmax[2] - ghost_range*kernrange*h) {
       if (simbox.boundary_rhs[2] == periodicBoundary) {
-        CreateBoundaryGhostParticle(i, 2, z_periodic_rhs, GetParticlePointer(i).r[2] - simbox.boxsize[2], GetParticlePointer(i).v[2]);
+        CreateBoundaryGhostParticle(i, 2, z_periodic_rhs, r2 - simbox.boxsize[2],v2);
       }
       if (simbox.boundary_rhs[2] == mirrorBoundary) {
         CreateBoundaryGhostParticle(i, 2, z_mirror_rhs,
-                                    (FLOAT) 2.0*simbox.boxmax[2] - GetParticlePointer(i).r[2], -GetParticlePointer(i).v[2]);
+                                    (FLOAT) 2.0*simbox.boxmax[2] - r2, -v2);
       }
     }
   }
