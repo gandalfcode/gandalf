@@ -330,11 +330,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
   };
   gmax = pow(2,lmax);
   Ncellmax = 2*gmax - 1;
-#ifdef MPI_PARALLEL
-  int Nmpi;
-  MPI_Comm_size(MPI_COMM_WORLD, &Nmpi);
-  Ncellmax *= Nmpi;
-#endif
 
   // Calculate level of tree that can contain all current particles
   ltot = 0;
