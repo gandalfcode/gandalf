@@ -1931,7 +1931,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
 	  if (hydro->Ntot + N_received_part_total > Ntotmax) {
 		  Ntotmax = hydro->Ntot + N_received_part_total;
-		  cout << "Ntotmax: " << Ntotmax << endl;
 		  ReallocateMemory();
 	  }
 
