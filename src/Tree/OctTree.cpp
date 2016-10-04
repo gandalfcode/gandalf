@@ -629,6 +629,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             for (k=0; k<ndim; k++) dr[k] = child.r[k] - cell.r[k];
             drsqd = DotProduct(dr,dr,ndim);
             if (ndim == 3) {
+              for (k=0; k<5; k++) cell.q[k] += child.q[k] ;
               cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
               cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
               cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
@@ -636,6 +637,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
               cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
             }
             else if (ndim == 2) {
+              for (k=0; k<3; k++) cell.q[k] += child.q[k] ;
               cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
               cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
               cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);

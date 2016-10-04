@@ -964,6 +964,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (ndim == 3) {
+        for (k=0; k<5; k++) cell.q[k] += child1.q[k] ;
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
         cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
         cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
@@ -971,6 +972,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
       }
       else if (ndim == 2) {
+        for (k=0; k<3; k++) cell.q[k] += child1.q[k] ;
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
         cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
         cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
@@ -982,6 +984,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (ndim == 3) {
+        for (k=0; k<5; k++) cell.q[k] += child2.q[k] ;
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
         cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
         cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
@@ -989,6 +992,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
       }
       else if (ndim == 2) {
+        for (k=0; k<3; k++) cell.q[k] += child2.q[k] ;
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
         cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
         cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
