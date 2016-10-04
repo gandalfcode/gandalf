@@ -468,7 +468,7 @@ public:
   }
 
   inline void AddCellContribution(const MultipoleMoment<ndim>& cell) ;
-  inline void ApplyMonopoleForces(const FLOAT r[ndim], FLOAT agrav[ndim], FLOAT& gpot) const ;
+  inline void ApplyForcesTaylor(const FLOAT r[ndim], FLOAT agrav[ndim], FLOAT& gpot) const ;
 
 private:
   FLOAT rc[ndim] ;
@@ -543,7 +543,7 @@ inline void FastMonopoleTerms<3>::AddCellContribution(const MultipoleMoment<3>& 
 /// Apply the fast monopole forces at a given location.
 //=================================================================================================
 template<>
-inline void FastMonopoleTerms<1>::ApplyMonopoleForces(const FLOAT r[1], FLOAT agrav[1], FLOAT& gpot) const {
+inline void FastMonopoleTerms<1>::ApplyForcesTaylor(const FLOAT r[1], FLOAT agrav[1], FLOAT& gpot) const {
   FLOAT dr[1];
   for (int k=0; k<1; k++) dr[k] = rc[k] - r[k];
 
@@ -551,7 +551,7 @@ inline void FastMonopoleTerms<1>::ApplyMonopoleForces(const FLOAT r[1], FLOAT ag
   gpot += pot + dphi[0]*dr[0];
 }
 template<>
-inline void FastMonopoleTerms<2>::ApplyMonopoleForces(const FLOAT r[2], FLOAT agrav[2], FLOAT& gpot) const {
+inline void FastMonopoleTerms<2>::ApplyForcesTaylor(const FLOAT r[2], FLOAT agrav[2], FLOAT& gpot) const {
   FLOAT dr[2];
   for (int k=0; k<2; k++) dr[k] = rc[k] - r[k];
 
@@ -560,7 +560,7 @@ inline void FastMonopoleTerms<2>::ApplyMonopoleForces(const FLOAT r[2], FLOAT ag
   gpot += pot + dphi[0]*dr[0] + dphi[1]*dr[1];
 }
 template<>
-inline void FastMonopoleTerms<3>::ApplyMonopoleForces(const FLOAT r[3], FLOAT agrav[3], FLOAT& gpot) const {
+inline void FastMonopoleTerms<3>::ApplyForcesTaylor(const FLOAT r[3], FLOAT agrav[3], FLOAT& gpot) const {
   FLOAT dr[3];
   for (int k=0; k<3; k++) dr[k] = rc[k] - r[k];
 
@@ -595,7 +595,7 @@ void ComputeFastMonopoleForces
   }
 
   for (int j=0; j<Nactive; j++)
-    monopole.ApplyMonopoleForces(activepart[j].r, activepart[j].agrav, activepart[j].gpot) ;
+    monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].agrav, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;
