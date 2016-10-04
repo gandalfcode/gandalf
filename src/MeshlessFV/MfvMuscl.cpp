@@ -77,11 +77,8 @@ template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
+  const int *neiblist,                 ///< [in] id of gather neibs in neibpart
   const FLOAT timestep,                ///< [in] Minimum timestep size
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  FLOAT *drmag,                        ///< [in] Distances of gather neighbours
-  FLOAT *invdrmag,                     ///< [in] Inverse distances of gather neibs
-  FLOAT *dr,                           ///< [in] Position vector of gather neibs
   MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
   MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
 {
@@ -189,8 +186,8 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     for (var=0; var<nvar; var++) {
       double f = DotProduct(flux[var], Aij, ndim);
       part.dQ[var] += f*dt;
-      neibpart[j].dQ[var] -= f*dt;
       part.dQdt[var] += f;
+      neibpart[j].dQ[var] -= f*dt;
       neibpart[j].dQdt[var] -= f;
     }
 

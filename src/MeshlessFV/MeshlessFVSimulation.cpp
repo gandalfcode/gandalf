@@ -834,7 +834,6 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 template <int ndim>
 void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 {
-  int i;                                     // Particle counter
   int istep;                                 // Aux. variable for changing steps
   int last_level;                            // Previous timestep level
   int level;                                 // Particle timestep level
@@ -849,9 +848,9 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   int nstep;                                 // Particle integer step-size
   DOUBLE dt;                                 // Aux. timestep variable
   DOUBLE dt_min = big_number_dp;             // Minimum timestep
-  DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
-  DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
-  DOUBLE dt_hydro;                           // Aux. minimum hydro timestep
+  //DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
+  //DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
+  //DOUBLE dt_hydro;                           // Aux. minimum hydro timestep
 
   debug2("[MeshlessFVSimulation::ComputeBlockTimesteps]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
@@ -868,16 +867,16 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     n = 0;
     timestep = big_number_dp;
 
-#pragma omp parallel default(none) private(dt,dt_min_aux,dt_nbody,dt_hydro,i)
+#pragma omp parallel default(none) shared(dt_min) private(dt, level) //private(dt,dt_min_aux,dt_nbody,dt_hydro,i)
     {
       // Initialise all timestep and min/max variables
-      dt_min_aux = big_number_dp;
-      dt_hydro   = big_number_dp;
-      dt_nbody   = big_number_dp;
+      DOUBLE dt_min_aux = big_number_dp;
+      DOUBLE dt_hydro   = big_number_dp;
+      DOUBLE dt_nbody   = big_number_dp;
 
       // Find minimum timestep from all hydro particles
 #pragma omp for
-      for (i=0; i<mfv->Nhydro; i++) {
+      for (int i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
         dt         = mfv->Timestep(part);
@@ -888,7 +887,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
       // Now compute minimum timestep due to stars/systems
 #pragma omp for
-      for (i=0; i<nbody->Nnbody; i++) {
+      for (int i=0; i<nbody->Nnbody; i++) {
         dt         = nbody->Timestep(nbody->nbodydata[i]);
         dt_min_aux = min(dt_min_aux, dt);
         dt_nbody   = min(dt_nbody, dt);
@@ -927,7 +926,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
     // Populate timestep levels with N-body particles.
     // Ensures that N-body particles occupy levels lower than all hydro particles
-    for (i=0; i<nbody->Nnbody; i++) {
+    for (int i=0; i<nbody->Nnbody; i++) {
       dt = nbody->nbodydata[i]->dt;
       level = min(ComputeTimestepLevel(dt, dt_max), level_max);
       nbody->nbodydata[i]->level = max(level, level_max_hydro);
@@ -937,7 +936,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     }
 
     // If particles are sink neighbours, set to same timesteps as sinks
-    for (i=0; i<mfv->Nhydro; i++) {
+    for (int i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
       if (part.sinkid != -1) {
         if (sinks->sink[part.sinkid].star->level - part.level > level_diff_max) {
@@ -951,7 +950,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     // If enforcing a single hydro timestep, set it here.
     // Otherwise, populate the timestep levels with hydro particles.
     if (sph_single_timestep == 1) {
-      for (i=0; i<mfv->Nhydro; i++) {
+      for (int i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
         part.flags.set_flag(active);
@@ -964,7 +963,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       level_min_hydro = level_max_hydro;
     }
     else {
-      for (i=0; i<mfv->Nhydro; i++) {
+      for (int i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
         dt              = part.dt;
@@ -996,20 +995,26 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max_hydro = 0;
 
 
-#pragma omp parallel default(shared) private(dt,dt_nbody,dt_hydro,i)\
-  private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor)
+#pragma omp parallel default(none) private(dt, level) \
+  shared(dt_min, last_level, level_max_hydro, level_max_nbody, level_max_old)
     {
-      dt_hydro      = big_number_dp;
-      dt_nbody      = big_number_dp;
-      level_max_aux = 0;
-      level_nbody   = 0;
-      level_hydro   = 0;
+  //private(dt,dt_nbody,dt_hydro)\
+  //private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor)
+      int istep;
+      int nstep;
+      int nfactor;
+      DOUBLE dt;
+      DOUBLE dt_hydro   = big_number_dp;
+      DOUBLE dt_nbody   = big_number_dp;
+      int level_max_aux = 0;
+      int level_nbody   = 0;
+      int level_hydro   = 0;
 
 
       // Find all hydro particles at the beginning of a new timestep
       //-------------------------------------------------------------------------------------------
 #pragma omp for
-      for (i=0; i<mfv->Nhydro; i++) {
+      for (int i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
         part.flags.unset_flag(active);
@@ -1072,7 +1077,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       // Now find all N-body particles at the beginning of a new timestep
       //-------------------------------------------------------------------------------------------
 #pragma omp for
-      for (i=0; i<nbody->Nnbody; i++) {
+      for (int i=0; i<nbody->Nnbody; i++) {
 
         // Skip particles that are not at end of step
         if (nbody->nbodydata[i]->nlast == n) {
@@ -1147,7 +1152,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
     // Set fixed hydro timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
-      for (i=0; i<mfv->Nhydro; i++) {
+      for (int i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
         if (part.nlast == n) part.level = level_max_hydro;
@@ -1162,14 +1167,14 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     if (level_max > level_max_old) {
       nfactor = pow(2, level_max - level_max_old);
       n *= nfactor;
-      for (i=0; i<mfv->Nhydro; i++) {
+      for (int i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
         part.nstep *= nfactor;
         part.nlast *= nfactor;
       }
-      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
-      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
+      for (int i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
+      for (int i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
     }
     else if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0) {
       level_max = level_max_old - 1;
@@ -1177,14 +1182,14 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       nfactor = pow(2, level_max_old - level_max);
       assert(n%nfactor == 0);
       n /= nfactor;
-      for (i=0; i<mfv->Nhydro; i++) {
+      for (int i=0; i<mfv->Nhydro; i++) {
         MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
         if (part.flags.is_dead()) continue;
         part.nlast /= nfactor;
         part.nstep /= nfactor;
       }
-      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
-      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
+      for (int i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
+      for (int i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
     }
     else {
       level_max = level_max_old;
@@ -1197,12 +1202,12 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     timestep   = dt_max / (DOUBLE) nresync;
 
     // Update values of nstep for both hydro and star particles
-    for (i=0; i<mfv->Nhydro; i++) {
+    for (int i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
       if (part.flags.is_dead()) continue;
       if (part.nlast == n) part.nstep = pow(2,level_step - part.level);
     }
-    for (i=0; i<nbody->Nnbody; i++) {
+    for (int i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->nlast == n) {
         nbody->nbodydata[i]->nstep = pow(2, level_step - nbody->nbodydata[i]->level);
       }
@@ -1220,7 +1225,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   assert(level_max_hydro <= level_max);
   assert(level_max_nbody <= level_max);
   assert(n <= nresync);
-  for (i=0; i<mfv->Nhydro; i++) {
+  for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
     if (part.flags.is_dead()) continue;
     assert(part.level <= level_max);
@@ -1230,7 +1235,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     assert(pow(2,level_step - part.level) >= n - part.nlast);
     assert(part.nlast != n || n%part.nstep == 0);
   }
-  for (i=0; i<nbody->Nnbody; i++) {
+  for (int i=0; i<nbody->Nnbody; i++) {
     assert(nbody->nbodydata[i]->level <= level_max);
     assert(nbody->nbodydata[i]->nlast <= n);
     assert(nbody->nbodydata[i]->nstep == pow(2,level_step - nbody->nbodydata[i]->level));
