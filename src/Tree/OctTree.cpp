@@ -571,6 +571,9 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
                 cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
                 cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
               }
+              else if (ndim == 1) {
+                cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+              }
             }
             if (i == cell.ilast) break;
             i = inext[i];
@@ -641,6 +644,10 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
               cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
               cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
               cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+            }
+            else if (ndim == 1) {
+              cell.q[0] += child.q[0] ;
+              cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
             }
           }
 

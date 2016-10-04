@@ -1093,8 +1093,11 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
         if (multipole == "fast_monopole") {
           ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
         }
+        else if (multipole == "fast_quadrupole") {
+          ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+        }
       } // End of self-gravity for this cell
-
+e
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {

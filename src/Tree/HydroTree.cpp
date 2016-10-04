@@ -679,7 +679,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
       if (multipole == "monopole" || multipole == "fast_monopole") {
         ComputeCellMonopoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
-      else if (multipole == "quadrupole") {
+      else if (multipole == "quadrupole" || multipole == "fast_quadrupole") {
         ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
 

@@ -829,6 +829,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
       if (multipole == "fast_monopole") {
         ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
       }
+      else if (multipole == "fast_quadrupole") {
+        ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+      }
+
+
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {
@@ -1115,6 +1120,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
         ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+      }
+      else if (multipole == "fast_quadrupole") {
+        ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
       }
 
       // Compute all star forces for active particles

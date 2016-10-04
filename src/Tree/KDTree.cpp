@@ -897,7 +897,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     // Compute quadrupole moment terms if selected
-    if (multipole == "quadrupole") {
+    if (multipole == "quadrupole" || multipole == "fast_quadrupole") {
       i = cell.ifirst;
 
       while (i != -1) {
@@ -916,6 +916,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
             cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
             cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
             cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+          } else if (ndim == 1) {
+            cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
           }
         }
         if (i == cell.ilast) break;
@@ -959,7 +961,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     // Now add individual quadrupole moment terms
-    if (multipole == "quadrupole" && child1.N > 0) {
+    if ((multipole == "quadrupole" || multipole == "fast_quadrupole") && child1.N > 0) {
       mi = child1.m;
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -977,9 +979,13 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
         cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
       }
+      else if (ndim == 1) {
+        cell.q[0] += child1.q[0] ;
+        cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+      }
     }
 
-    if (multipole == "quadrupole" && child2.N > 0) {
+    if ((multipole == "quadrupole" || multipole == "fast_quadrupole") && child2.N > 0) {
       mi = child2.m;
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -996,6 +1002,10 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
         cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
         cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+      }
+      else if (ndim == 1) {
+        cell.q[0] += child2.q[0] ;
+        cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
       }
     }
 

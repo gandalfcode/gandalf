@@ -371,10 +371,16 @@ inline void ComputeQuadropole(const MultipoleMoment<1>& cell, const FLOAT rp[1],
   FLOAT drsqd    = DotProduct(dr,dr,1) + small_number;
   FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
   FLOAT invdrmag = sqrt(invdrsqd);
+  FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
 
   // First add monopole term for acceleration
   for (int k=0; k<1; k++) agrav[k] += cell.m*dr[k]*invdrsqd*invdrmag;
-  gpot += cell.m*invdrmag;
+
+  FLOAT qscalar = cell.q[0]*dr[0]*dr[0];
+  FLOAT qfactor = 2.5*qscalar*invdr5*invdrsqd;
+
+  agrav[0] += (cell.q[0]*dr[0])*invdr5 - qfactor*dr[0];
+  gpot += cell.m*invdrmag + 0.5*qscalar*invdr5;
 }
 inline void ComputeQuadropole(const MultipoleMoment<2>& cell, const FLOAT rp[2],
                               FLOAT agrav[2], FLOAT& gpot) {
@@ -451,14 +457,14 @@ void ComputeCellQuadrupoleForces
 }
 
 //=================================================================================================
-//  class FastMonopoleTerms
+//  class FastMultipoleForces
 /// \brief Class for computing the gravitational forces using the fast monopole expansion
 //=================================================================================================
 template<int ndim>
-class FastMonopoleTerms {
+class FastMultipoleForces {
 public:
 
-  FastMonopoleTerms(const FLOAT r[ndim])
+  FastMultipoleForces(const FLOAT r[ndim])
   {
     for (int k=0; k<ndim; k++) rc[k]   = r[k];
     for (int k=0; k<ndim; k++) ac[k]   = 0;
@@ -467,7 +473,9 @@ public:
     pot = 0 ;
   }
 
-  inline void AddCellContribution(const MultipoleMoment<ndim>& cell) ;
+  inline void AddMonopoleContribution(const MultipoleMoment<ndim>& cell) ;
+  inline void AddQuadrupoleContribution(const MultipoleMoment<ndim>& cell) ;
+
   inline void ApplyForcesTaylor(const FLOAT r[ndim], FLOAT agrav[ndim], FLOAT& gpot) const ;
 
 private:
@@ -483,7 +491,7 @@ private:
 /// Compute the fast monopole cell-cell terms depending on dimension.
 //=================================================================================================
 template<>
-inline void FastMonopoleTerms<1>::AddCellContribution(const MultipoleMoment<1>& cell) {
+inline void FastMultipoleForces<1>::AddMonopoleContribution(const MultipoleMoment<1>& cell) {
   FLOAT dr[1] ;
   for (int k=0; k<1; k++) dr[k] = cell.r[k] - rc[k];
   FLOAT invdrmag = sqrt((FLOAT) 1.0/DotProduct(dr,dr,1));
@@ -494,12 +502,12 @@ inline void FastMonopoleTerms<1>::AddCellContribution(const MultipoleMoment<1>& 
   pot += mc*invdrmag;
 
   mc *= invdr3;
-  for (int k=0; k<3; k++) ac[k] += mc*dr[k];
-  for (int k=0; k<3; k++) dphi[k] += mc*dr[k];
+  for (int k=0; k<1; k++) ac[k] += mc*dr[k];
+  for (int k=0; k<1; k++) dphi[k] += mc*dr[k];
   q[0] += mc*(3.0*dr[0]*dr[0]*invdrsqd - 1);
 }
 template<>
-inline void FastMonopoleTerms<2>::AddCellContribution(const MultipoleMoment<2>& cell) {
+inline void FastMultipoleForces<2>::AddMonopoleContribution(const MultipoleMoment<2>& cell) {
   FLOAT dr[2] ;
   for (int k=0; k<2; k++) dr[k] = cell.r[k] - rc[k];
   FLOAT invdrmag = sqrt((FLOAT) 1.0/DotProduct(dr,dr,2));
@@ -510,14 +518,14 @@ inline void FastMonopoleTerms<2>::AddCellContribution(const MultipoleMoment<2>& 
   pot += mc*invdrmag;
 
   mc *= invdr3;
-  for (int k=0; k<3; k++) ac[k] += mc*dr[k];
-  for (int k=0; k<3; k++) dphi[k] += mc*dr[k];
+  for (int k=0; k<2; k++) ac[k] += mc*dr[k];
+  for (int k=0; k<2; k++) dphi[k] += mc*dr[k];
   q[0] += mc*(3.0*dr[0]*dr[0]*invdrsqd - 1);
   q[1] += mc*(3.0*dr[0]*dr[1]*invdrsqd);
   q[2] += mc*(3.0*dr[1]*dr[1]*invdrsqd - 1);
 }
 template<>
-inline void FastMonopoleTerms<3>::AddCellContribution(const MultipoleMoment<3>& cell)  {
+inline void FastMultipoleForces<3>::AddMonopoleContribution(const MultipoleMoment<3>& cell)  {
   FLOAT dr[3] ;
   for (int k=0; k<3; k++) dr[k] = cell.r[k] - rc[k];
   FLOAT invdrmag = sqrt((FLOAT) 1.0/DotProduct(dr,dr,3));
@@ -538,37 +546,141 @@ inline void FastMonopoleTerms<3>::AddCellContribution(const MultipoleMoment<3>& 
   q[5] += mc*(3.0*dr[2]*dr[2]*invdrsqd - 1);
 }
 
+template<>
+inline void FastMultipoleForces<1>::AddQuadrupoleContribution(const MultipoleMoment<1>& cell) {
+  AddMonopoleContribution(cell);
+
+  FLOAT dr[1] ;
+  for (int k=0; k<1; k++) dr[k] = cell.r[k] - rc[k];
+  FLOAT drsqd    = DotProduct(dr,dr,1) + small_number;
+  FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
+  FLOAT invdrmag = sqrt(invdrsqd);
+  FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
+
+  FLOAT qscalar = cell.q[0]*dr[0]*dr[0] ;
+  FLOAT qfactor = 2.5*qscalar*invdr5*invdrsqd;
+
+  FLOAT qx[1];
+  qx[0] = (cell.q[0]*dr[0])*invdr5;
+
+  pot += 0.5*qscalar*invdr5;
+
+  for (int k=0; k<1; k++) ac[k]   += qx[k] - qfactor*dr[k];
+  for (int k=0; k<1; k++) dphi[k] += qx[k] - qfactor*dr[k];
+  for (int k=0; k<1; k++) qx[k] *= 5*invdrsqd;
+
+  q[0] += - qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
+
+  q[0] += qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
+}
+template<>
+inline void FastMultipoleForces<2>::AddQuadrupoleContribution(const MultipoleMoment<2>& cell) {
+  AddMonopoleContribution(cell);
+
+  FLOAT dr[2] ;
+  for (int k=0; k<2; k++) dr[k] = cell.r[k] - rc[k];
+  FLOAT drsqd    = DotProduct(dr,dr,2) + small_number;
+  FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
+  FLOAT invdrmag = sqrt(invdrsqd);
+  FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
+
+  FLOAT qscalar = cell.q[0]*dr[0]*dr[0] + cell.q[2]*dr[1]*dr[1] +
+      2.0*cell.q[1]*dr[0]*dr[1];
+
+  FLOAT qfactor = 2.5*qscalar*invdr5*invdrsqd;
+
+  FLOAT qx[2];
+  qx[0] = (cell.q[0]*dr[0] + cell.q[1]*dr[1])*invdr5;
+  qx[1] = (cell.q[1]*dr[0] + cell.q[2]*dr[1])*invdr5;
+
+  pot += 0.5*qscalar*invdr5;
+
+  for (int k=0; k<2; k++) ac[k]   += qx[k] - qfactor*dr[k];
+  for (int k=0; k<2; k++) dphi[k] += qx[k] - qfactor*dr[k];
+  for (int k=0; k<2; k++) qx[k] *= 5*invdrsqd;
+
+  q[0] += - qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
+  q[1] += - qfactor*(7*dr[0]*dr[1]*invdrsqd);
+  q[2] += - qfactor*(7*dr[1]*dr[1]*invdrsqd - 1);
+
+  q[0] += qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
+  q[1] += qx[0]*dr[1] + qx[1]*dr[0] - cell.q[1]*invdr5;
+  q[2] += qx[1]*dr[1] + qx[1]*dr[1] - cell.q[2]*invdr5;
+}
+template<>
+inline void FastMultipoleForces<3>::AddQuadrupoleContribution(const MultipoleMoment<3>& cell) {
+  AddMonopoleContribution(cell);
+
+  FLOAT dr[3] ;
+  for (int k=0; k<3; k++) dr[k] = cell.r[k] - rc[k];
+  FLOAT drsqd    = DotProduct(dr,dr,3) + small_number;
+  FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
+  FLOAT invdrmag = sqrt(invdrsqd);
+  FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
+
+  FLOAT qscalar = cell.q[0]*dr[0]*dr[0] + cell.q[2]*dr[1]*dr[1] -
+      (cell.q[0] + cell.q[2])*dr[2]*dr[2] +
+      2.0*(cell.q[1]*dr[0]*dr[1] + cell.q[3]*dr[0]*dr[2] + cell.q[4]*dr[1]*dr[2]);
+
+  FLOAT qfactor = 2.5*qscalar*invdr5*invdrsqd;
+
+  FLOAT qx[3];
+  qx[0] = (cell.q[0]*dr[0] + cell.q[1]*dr[1] + cell.q[3]*dr[2])*invdr5;
+  qx[1] = (cell.q[1]*dr[0] + cell.q[2]*dr[1] + cell.q[4]*dr[2])*invdr5;
+  qx[2] = (cell.q[3]*dr[0] + cell.q[4]*dr[1] -(cell.q[0]+cell.q[2])*dr[2])*invdr5;
+
+  pot += 0.5*qscalar*invdr5;
+
+  for (int k=0; k<3; k++) ac[k]   += qx[k] - qfactor*dr[k];
+  for (int k=0; k<3; k++) dphi[k] += qx[k] - qfactor*dr[k];
+  for (int k=0; k<3; k++) qx[k] *= 5*invdrsqd;
+
+  q[0] += - qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
+  q[1] += - qfactor*(7*dr[0]*dr[1]*invdrsqd);
+  q[2] += - qfactor*(7*dr[1]*dr[1]*invdrsqd - 1);
+  q[3] += - qfactor*(7*dr[0]*dr[2]*invdrsqd);
+  q[4] += - qfactor*(7*dr[1]*dr[2]*invdrsqd);
+  q[5] += - qfactor*(7*dr[2]*dr[2]*invdrsqd - 1);
+
+  q[0] += qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
+  q[1] += qx[0]*dr[1] + qx[1]*dr[0] - cell.q[1]*invdr5;
+  q[2] += qx[1]*dr[1] + qx[1]*dr[1] - cell.q[2]*invdr5;
+  q[3] += qx[0]*dr[2] + qx[2]*dr[0] - cell.q[3]*invdr5;
+  q[4] += qx[1]*dr[2] + qx[2]*dr[1] - cell.q[4]*invdr5;
+  q[5] += qx[2]*dr[2] + qx[2]*dr[2] + (cell.q[0] + cell.q[2])*invdr5;
+}
 //=================================================================================================
 //  ApplyMonopoleForces
 /// Apply the fast monopole forces at a given location.
 //=================================================================================================
 template<>
-inline void FastMonopoleTerms<1>::ApplyForcesTaylor(const FLOAT r[1], FLOAT agrav[1], FLOAT& gpot) const {
+inline void FastMultipoleForces<1>::ApplyForcesTaylor(const FLOAT r[1], FLOAT agrav[1], FLOAT& gpot) const {
   FLOAT dr[1];
-  for (int k=0; k<1; k++) dr[k] = rc[k] - r[k];
+  for (int k=0; k<1; k++) dr[k] = r[k] - rc[k];
 
   agrav[0] += ac[0] + q[0]*dr[0];
   gpot += pot + dphi[0]*dr[0];
 }
 template<>
-inline void FastMonopoleTerms<2>::ApplyForcesTaylor(const FLOAT r[2], FLOAT agrav[2], FLOAT& gpot) const {
+inline void FastMultipoleForces<2>::ApplyForcesTaylor(const FLOAT r[2], FLOAT agrav[2], FLOAT& gpot) const {
   FLOAT dr[2];
-  for (int k=0; k<2; k++) dr[k] = rc[k] - r[k];
+  for (int k=0; k<2; k++) dr[k] = r[k] - rc[k];
 
   agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1];
   agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1];
   gpot += pot + dphi[0]*dr[0] + dphi[1]*dr[1];
 }
 template<>
-inline void FastMonopoleTerms<3>::ApplyForcesTaylor(const FLOAT r[3], FLOAT agrav[3], FLOAT& gpot) const {
+inline void FastMultipoleForces<3>::ApplyForcesTaylor(const FLOAT r[3], FLOAT agrav[3], FLOAT& gpot) const {
   FLOAT dr[3];
-  for (int k=0; k<3; k++) dr[k] = rc[k] - r[k];
+  for (int k=0; k<3; k++) dr[k] = r[k] - rc[k];
 
   agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
   agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
   agrav[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
   gpot += pot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
 }
+
 
 //=================================================================================================
 //  ComputeFastMonopoleForces
@@ -584,14 +696,14 @@ void ComputeFastMonopoleForces
   ParticleType<ndim> *activepart)      ///< [inout] Active Hydrodynamics particle array
 {
 
-  FastMonopoleTerms<ndim> monopole(cell.r) ;
+  FastMultipoleForces<ndim> monopole(cell.r) ;
 
   //-----------------------------------------------------------------------------------------------
   for (int cc=0; cc<Ngravcell; cc++) {
 #ifndef MPI_PARALLEL
     assert(cell.id != gravcell[cc].id);
 #endif
-    monopole.AddCellContribution(gravcell[cc]);
+    monopole.AddMonopoleContribution(gravcell[cc]);
   }
 
   for (int j=0; j<Nactive; j++)
@@ -600,6 +712,38 @@ void ComputeFastMonopoleForces
 
   return;
 }
+
+//=================================================================================================
+//  ComputeFastQuadrupoleForces
+/// Compute the force on particle 'parti' due to all cells obtained in the
+/// gravity tree walk.  Uses quadrupole moments (i.e. COM) of the cell.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+void ComputeFastQuadrupoleForces
+ (int Nactive,                         ///< [in] No. of active particles
+  int Ngravcell,                       ///< [in] No. of tree cells in list
+  MultipoleMoment<ndim> *gravcell,     ///< [in] List of tree cell ids
+  TreeCellBase<ndim> &cell,            ///< [in] Current cell pointer
+  ParticleType<ndim> *activepart)      ///< [inout] Active Hydrodynamics particle array
+{
+
+  FastMultipoleForces<ndim> monopole(cell.r) ;
+
+  //-----------------------------------------------------------------------------------------------
+  for (int cc=0; cc<Ngravcell; cc++) {
+#ifndef MPI_PARALLEL
+    assert(cell.id != gravcell[cc].id);
+#endif
+    monopole.AddQuadrupoleContribution(gravcell[cc]);
+  }
+
+  for (int j=0; j<Nactive; j++)
+    monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].agrav, activepart[j].gpot) ;
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
 
 
 
