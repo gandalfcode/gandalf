@@ -124,7 +124,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
   //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
@@ -333,11 +332,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-  }
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
@@ -369,7 +365,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
@@ -579,16 +574,12 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-  }
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing gradients : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
 
   timing->EndTimingSection("MFV_UPDATE_GRADIENTS");
 
@@ -614,7 +605,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
@@ -848,11 +838,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-  }
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing fluxes : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
@@ -889,6 +876,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
   debug2("[MeshlessFVTree::UpdateAllGravForces]");
   timing->StartTimingSection("MFV_GRAV_FORCES");
+
+#ifdef MPI_PARALLEL
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
 
   // Update ghost tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0], partdata);
@@ -1068,12 +1059,12 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
             // Compute gravitational force due to distant cells
             if (multipole == "monopole") {
-            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
-                                            activepart[j].r, Ngravcell, gravcell);
+            ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
+                                      activepart[j].r, Ngravcell, gravcell);
             }
             else if (multipole == "quadrupole") {
-              this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
-                                                activepart[j].r, Ngravcell, gravcell);
+              ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
+                                          activepart[j].r, Ngravcell, gravcell);
             }
 
             // Add the periodic correction force for SPH and direct-sum neighbours
@@ -1100,10 +1091,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
         // Compute 'fast' multipole terms here
         if (multipole == "fast_monopole") {
-          this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+          ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
         }
-
       } // End of self-gravity for this cell
+
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {
@@ -1132,6 +1123,16 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
   }
   //===============================================================================================
+
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
+#ifdef OUTPUT_ALL
+  cout << "Time computing fluxes : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+#endif
+
 
   timing->EndTimingSection("MFV_GRAV_FORCES");
 

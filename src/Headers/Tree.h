@@ -153,7 +153,10 @@ class TreeBase
 	virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
 	                                              const int, const int, int &, int &, int &, int *, int *,
 	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
-
+#if defined(MPI_PARALLEL)
+	virtual int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
+	                                                 const FLOAT, const int, int, MultipoleMoment<ndim> *) = 0;
+#endif
 	virtual int FindLeafCell(const FLOAT *) = 0;
 
 	//-----------------------------------------------------------------------------------------------
@@ -169,7 +172,7 @@ class TreeBase
 #endif
 
 #if defined(MPI_PARALLEL)
-   // virtual void AddWorkCostForCell() ;
+     virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) = 0;
 #endif
 
 };
@@ -246,8 +249,8 @@ protected:
 #ifdef MPI_PARALLEL
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeCell<ndim> *);
-  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const DomainBox<ndim> &,
-                                           const FLOAT, const int, int, TreeCell<ndim> *);
+  int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
+                                           const FLOAT, const int, int, MultipoleMoment<ndim> *);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *, const DomainBox<ndim> &);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
 #endif
@@ -269,6 +272,7 @@ protected:
 #ifdef MPI_PARALLEL
   virtual void UpdateWorkCounters(TreeCell<ndim> &) = 0;
   virtual int GetMaxCellNumber(const int) = 0;
+  virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) ;
 #endif
 
 
@@ -310,4 +314,6 @@ protected:
 #endif
 
 };
+
+
 #endif

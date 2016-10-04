@@ -592,199 +592,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 }
 
 
-
-//=================================================================================================
-//  HydroTree::ComputeCellMonopoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the
-/// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
- (FLOAT &gpot,                         ///< [inout] Grav. potential
-  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
-  FLOAT rp[ndim],                      ///< [in] Position of point
-  int Ngravcell,                       ///< [in] No. of tree cells in list
-  MultipoleMoment<ndim> *gravcell)     ///< [in] List of tree cell ids
-{
-  int cc;                              // Aux. cell counter
-  int k;                               // Dimension counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT invdrmag;                      // 1 / distance
-  FLOAT invdrsqd;                      // 1 / drsqd
-  FLOAT invdr3;                        // 1 / dist^3
-  FLOAT mc;                            // Mass of cell
-  MultipoleMoment<ndim> *cellptr;      // Pointer to gravity tree cell
-
-  // Loop over all neighbouring particles in list
-  //-----------------------------------------------------------------------------------------------
-  for (cc=0; cc<Ngravcell; cc++) {
-    cellptr = &(gravcell[cc]);
-
-    mc = cellptr->m;
-    for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
-    drsqd    = DotProduct(dr,dr,ndim) + small_number;
-    invdrsqd = (FLOAT) 1.0/drsqd;
-    invdrmag = sqrt(invdrsqd);
-    invdr3   = invdrsqd*invdrmag;
-
-    gpot += mc*invdrmag;
-    for (k=0; k<ndim; k++) agrav[k] += mc*dr[k]*invdr3;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  HydroTree::ComputeCellQuadrupoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the
-/// gravity tree walk including the quadrupole moment correction term.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
- (FLOAT &gpot,                         ///< [inout] Grav. potential
-  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
-  FLOAT rp[ndim],                      ///< [in] Position of point
-  int Ngravcell,                       ///< [in] No. of tree cells in list
-  MultipoleMoment<ndim> *gravcell)     ///< [in] List of tree cell ids
-{
-  int cc;                              // Aux. cell counter
-  int k;                               // Dimension counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT invdrsqd;                      // 1 / drsqd
-  FLOAT invdrmag;                      // 1 / distance
-  FLOAT invdr5;                        // 1 / distance^5
-  FLOAT qfactor;                       // Constant factor for optimisation
-  FLOAT qscalar;                       // Quadrupole moment scalar quantity
-  MultipoleMoment<ndim> *cellptr;      // Pointer to gravity tree cell
-
-
-  // Loop over all neighbouring particles in list
-  //-----------------------------------------------------------------------------------------------
-  for (cc=0; cc<Ngravcell; cc++) {
-    cellptr = &(gravcell[cc]);
-
-    for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
-    drsqd    = DotProduct(dr,dr,ndim) + small_number;
-    invdrsqd = (FLOAT) 1.0/drsqd;
-    invdrmag = sqrt(invdrsqd);
-    invdr5   = invdrsqd*invdrsqd*invdrmag;
-
-    // First add monopole term for acceleration
-    for (k=0; k<ndim; k++) agrav[k] += cellptr->m*dr[k]*invdrsqd*invdrmag;
-
-    // Now add quadrupole moment terms depending on dimensionality
-    if (ndim == 3) {
-      qscalar = cellptr->q[0]*dr[0]*dr[0] + cellptr->q[2]*dr[1]*dr[1] -
-        (cellptr->q[0] + cellptr->q[2])*dr[2]*dr[2] +
-         2.0*(cellptr->q[1]*dr[0]*dr[1] + cellptr->q[3]*dr[0]*dr[2] + cellptr->q[4]*dr[1]*dr[2]);
-      qfactor = 2.5*qscalar*invdr5*invdrsqd;
-      agrav[0] +=
-        (cellptr->q[0]*dr[0] + cellptr->q[1]*dr[1] + cellptr->q[3]*dr[2])*invdr5 - qfactor*dr[0];
-      agrav[1] +=
-        (cellptr->q[1]*dr[0] + cellptr->q[2]*dr[1] + cellptr->q[4]*dr[2])*invdr5 - qfactor*dr[1];
-      agrav[2] += (cellptr->q[3]*dr[0] + cellptr->q[4]*dr[1] -
-        (cellptr->q[0] + cellptr->q[2])*dr[2])*invdr5 - qfactor*dr[2];
-      gpot += cellptr->m*invdrmag + 0.5*qscalar*invdr5;
-    }
-    else if (ndim == 2) {
-      qscalar = cellptr->q[0]*dr[0]*dr[0] + cellptr->q[2]*dr[1]*dr[1] +
-        2.0*cellptr->q[1]*dr[0]*dr[1];
-      qfactor = 2.5*qscalar*invdr5*invdrsqd;
-      agrav[0] += (cellptr->q[0]*dr[0] + cellptr->q[1]*dr[1])*invdr5 - qfactor*dr[0];
-      agrav[1] += (cellptr->q[1]*dr[0] + cellptr->q[2]*dr[1])*invdr5 - qfactor*dr[1];
-      gpot += cellptr->m*invdrmag + 0.5*qscalar*invdr5;
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  HydroTree::ComputeFastMonopoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the
-/// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
- (int Nactive,                         ///< [in] No. of active particles
-  int Ngravcell,                       ///< [in] No. of tree cells in list
-  MultipoleMoment<ndim> *gravcell,     ///< [in] List of tree cell ids
-  TreeCellBase<ndim> &cell,            ///< [in] Current cell pointer
-  ParticleType<ndim> *activepart)      ///< [inout] Active Hydrodynamics particle array
-{
-  int cc;                              // Aux. cell counter
-  int j;                               // Counter over active particles in cell
-  int k;                               // Dimension counter
-  FLOAT ac[ndim];                      // Acceleration at cell centre
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT invdrmag;                      // 1 / distance
-  FLOAT invdrsqd;                      // 1 / drsqd
-  FLOAT invdr3;                        // 1 / dist^3
-  FLOAT mc;                            // Mass of cell
-  FLOAT q[6];                          // Local copy of quadrupole moment
-  FLOAT dphi[3];                       // Potential gradient (same as accel?)
-  FLOAT cellpot;                       // Potential at cell centre
-  FLOAT rc[ndim];                      // Position of cell centre
-
-  for (k=0; k<ndim; k++) rc[k] = cell.r[k];
-  for (k=0; k<ndim; k++) ac[k] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) dphi[k] = (FLOAT) 0.0;
-  for (k=0; k<6; k++) q[k] = (FLOAT) 0.0;
-  cellpot = (FLOAT) 0.0;
-
-
-  //-----------------------------------------------------------------------------------------------
-  if (ndim == 3) {
-
-    for (cc=0; cc<Ngravcell; cc++) {
-#ifndef MPI_PARALLEL
-      assert(cell.id != gravcell[cc].id);
-#endif
-      mc = gravcell[cc].m;
-      for (k=0; k<ndim; k++) dr[k] = gravcell[cc].r[k] - rc[k];
-      drsqd    = DotProduct(dr,dr,ndim);
-      invdrsqd = (FLOAT) 1.0/drsqd;
-      invdrmag = sqrt(invdrsqd);
-      invdr3   = invdrsqd*invdrmag;
-      cellpot += mc*invdrmag;
-      for (k=0; k<ndim; k++) ac[k] += mc*dr[k]*invdr3;
-      for (k=0; k<ndim; k++) dphi[k] += mc*dr[k]*invdr3;
-      q[0] += mc*(3.0*dr[0]*dr[0]*invdr3*invdrsqd - invdrsqd*invdrmag);
-      q[1] += mc*(3.0*dr[0]*dr[1]*invdr3*invdrsqd);
-      q[2] += mc*(3.0*dr[1]*dr[1]*invdr3*invdrsqd - invdrsqd*invdrmag);
-      q[3] += mc*(3.0*dr[2]*dr[0]*invdr3*invdrsqd);
-      q[4] += mc*(3.0*dr[2]*dr[1]*invdr3*invdrsqd);
-      q[5] += mc*(3.0*dr[2]*dr[2]*invdr3*invdrsqd - invdrsqd*invdrmag);
-    }
-
-    for (j=0; j<Nactive; j++) {
-      for (k=0; k<ndim; k++) dr[k] = activepart[j].r[k] - rc[k];
-      activepart[j].a[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
-      activepart[j].a[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
-      activepart[j].a[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
-      activepart[j].gpot += cellpot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
-
-
-
 //=================================================================================================
 //  HydroTree::UpdateAllStarGasForces
 /// Calculate the gravitational acceleration on all star particles due to
@@ -870,10 +677,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
 
       // Compute gravitational force due to distant cells
       if (multipole == "monopole" || multipole == "fast_monopole") {
-        this->ComputeCellMonopoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
+        ComputeCellMonopoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
       else if (multipole == "quadrupole") {
-        this->ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
+        ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
 
 
@@ -928,8 +735,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
-  int cactive;                         // No. of active cells
-  TreeCellBase<ndim> **celllist;           // List of pointers to binary tree cells
+  int cactive;                          // No. of active cells
+  vector<TreeCellBase<ndim> > celllist; // List of active tree cells
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[HydroTree::UpdateGravityExportForces]");
@@ -937,9 +744,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCellBase<ndim>*[2*tree->gtot];
   assert(tree->Nimportedcell==0);
-  cactive = tree->ComputeActiveCellPointers(celllist);
+  cactive = tree->ComputeActiveCellList(celllist);
+
 
   // Reset all export lists
   for (int j=0; j<Nmpi; j++) {
@@ -969,15 +776,14 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
     FLOAT macfactor;                           // Gravity MAC factor for cell
     int *activelist                = activelistbuf[ithread];
     ParticleType<ndim> *activepart = activepartbuf[ithread];
-    TreeCell<ndim> *gravcelllist   = new TreeCell<ndim>[Ngravcellmax];
+    MultipoleMoment<ndim> *gravcelllist   = new MultipoleMoment<ndim>[Ngravcellmax];
 
 
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>* cellptr = reinterpret_cast<TreeCell<ndim>*>(celllist[cc]);
-      TreeCell<ndim>& cell = *cellptr;
+      TreeCellBase<ndim>& cell = celllist[cc] ;
       macfactor = (FLOAT) 0.0;
       Ngravcell = 0;
 
@@ -1008,7 +814,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         if (j == rank) continue;
 
         Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
-          (cellptr, simbox, macfactor, Ngravcellmax, Ngravcell, gravcelllist);
+          (cell, simbox, macfactor, Ngravcellmax, Ngravcell, gravcelllist);
 
         // If pruned tree is too close to be used (flagged by -1), then record cell id
         // for exporting those particles to other MPI processes
@@ -1034,12 +840,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       for (j=0; j<Nactive; j++) {
 
         if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
-                                          activepart[j].r, Ngravcell, gravcelllist);
+          ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
+                                    activepart[j].r, Ngravcell, gravcelllist);
         }
         else if (multipole == "quadrupole") {
-          this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
-                                            activepart[j].r, Ngravcell, gravcelllist);
+          ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
+                                      activepart[j].r, Ngravcell, gravcelllist);
         }
 
       }
@@ -1048,7 +854,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
-        this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcelllist, cell, activepart);
+        ComputeFastMonopoleForces(Nactive, Ngravcell, gravcelllist, cell, activepart);
       }
 
       // Add all active particles contributions to main array
@@ -1066,8 +872,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
   }
   //===============================================================================================
-
-  delete[] celllist;
 
   timing->EndTimingSection("HYDRO_DISTANT_FORCES");
 
@@ -1195,7 +999,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   Particle<ndim> *hydro_gen)           ///< [inout] Pointer to Hydrodynamics ptcl array
 {
   bool localNode;                              // Is this pruned tree for the local node?
-  int c;                                       // Cell counter
   int i;                                       // Particle counter
   Tree<ndim,ParticleType,TreeCell> *treeptr;   // Pointer to tree object in question
 
@@ -1617,7 +1420,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::FindMpiTransferParticles
 
   // Loop over potential domains and walk the tree for each bounding box
   //-----------------------------------------------------------------------------------------------
-  for (jnode=0; jnode<potential_nodes.size(); jnode++) {
+  int num_pot_nodes = potential_nodes.size();
+  for (jnode=0; jnode<num_pot_nodes; jnode++) {
 
     inode = potential_nodes[jnode];
     Box<ndim>& nodebox = mpinodes[inode].domain;
@@ -2009,7 +1813,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
 {
 //  int InitialNImportedParticles = hydro->NImportedParticles;
 
-  typename ParticleType<ndim>::HandlerType handler;
+  //typename ParticleType<ndim>::HandlerType handler;
   typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
 
 

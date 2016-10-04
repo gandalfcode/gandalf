@@ -450,20 +450,15 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
   }
   //===============================================================================================
 
-  // Compute time spent in routine and in each cell for load balancing
-
+ // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
-  int Nactivetot = 0 ;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc]->Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    celllist[cc]->worktot +=  celllist[cc]->Nactive * twork /  Nactivetot ;
-  }
+ twork = timing->WallClockTime() - twork;
+ int Nactivetot=0;
+ _tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
-  cout << "Time computing dust smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
+ cout << "Time computing dust pair-wise forces: " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
 
   timing->EndTimingSection("DUST_GAS_INTERPOLATE_FORCES");
 
@@ -659,11 +654,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
-  int Nactivetot = 0 ;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc]->Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    celllist[cc]->worktot +=  celllist[cc]->Nactive * twork /  Nactivetot ;
-  }
+  int Nactivetot=0;
+  _tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing dust pair-wise forces: " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
@@ -1107,8 +1099,8 @@ TreeBase<ndim>* t,
 TreeBase<ndim>* ghost,
 TreeBase<ndim>* mpi_tree)
 {
-  map<string, int> &intparams = simparams->intparams;
-  map<string, string> &stringparams = simparams->stringparams;
+	map<string, int> &intparams = simparams->intparams;
+	map<string, string> &stringparams = simparams->stringparams;
 	string DragLaw = stringparams["drag_law"];
 
 	if (stringparams["dust_forces"] == "none")

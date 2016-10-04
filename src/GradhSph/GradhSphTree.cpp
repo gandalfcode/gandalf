@@ -321,18 +321,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
   int Nactivetot=0;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    assert (c<tree->Ncell);
-    assert(tree->celldata[c].worktot>=0);
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-    assert(tree->celldata[c].worktot>=0);
-  }
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
+
 
   // Update tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0],sphdata);
@@ -569,19 +563,11 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
   int Nactivetot=0;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    assert(tree->celldata[c].Nactive>0);
-    assert(tree->celldata[c].worktot>=0);
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-    assert(tree->celldata[c].worktot>=0);
-  }
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
 
   timing->EndTimingSection("SPH_HYDRO_FORCES");
 
@@ -805,12 +791,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
           // Compute gravitational force due to distant cells
           if (multipole == "monopole") {
-            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
-                                          activepart[j].r, Ngravcell, gravcell);
+            ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
+                                      activepart[j].r, Ngravcell, gravcell);
           }
           else if (multipole == "quadrupole") {
-            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
-                                            activepart[j].r, Ngravcell, gravcell);
+            ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
+                                        activepart[j].r, Ngravcell, gravcell);
          }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
@@ -841,7 +827,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
-        this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+        ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
       }
 
       // Compute all star forces for active particles
@@ -884,11 +870,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
   int Nactivetot=0;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-  }
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
@@ -1100,12 +1082,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
           // Compute gravitational force due to distant cells
           if (multipole == "monopole") {
-            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
-                                            activepart[j].r, Ngravcell, gravcell);
+            ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
+                                      activepart[j].r, Ngravcell, gravcell);
           }
           else if (multipole == "quadrupole") {
-            this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
-                                              activepart[j].r, Ngravcell, gravcell);
+            ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
+                                        activepart[j].r, Ngravcell, gravcell);
           }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
@@ -1132,7 +1114,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
-        this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+        ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
       }
 
       // Compute all star forces for active particles
@@ -1176,11 +1158,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
   int Nactivetot=0;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-  }
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif

@@ -102,7 +102,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 
 #ifdef MPI_PARALLEL
   for (c=Ncell; c<Ncell+Nimportedcell; c++) {
-    if (celldata[c].Nactive > 0) celllist.push_backTreeCellBase<ndim>(celldata[c]));
+    if (celldata[c].Nactive > 0) celllist.push_back(TreeCellBase<ndim>(celldata[c]));
   }
 #endif
 
@@ -211,7 +211,6 @@ void Tree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
 
   return;
 }
-
 
 
 //=================================================================================================
@@ -1085,8 +1084,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
 {
   int c;                               // Cell counter
   int cnext;                           // id of next cell in tree
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
   int Nprunedcell = 0;                 // No. of cells in newly created pruned tree
   int *newCellIds;                     // New cell ids in pruned tree
@@ -1232,12 +1229,12 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
- (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+ (const TreeCellBase<ndim>& cell,      ///< [in] Pointer to cell
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int Ngravcell,                       ///< [in] Current no. of cells in array
-  TreeCell<ndim> *gravcelllist)        ///< [out] Array of cells
+  MultipoleMoment<ndim> *gravcelllist) ///< [out] Array of cells
 {
   int cc = 0;                          // Cell counter
   int k;                               // Dimension counter
@@ -1250,9 +1247,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   FLOAT rmax;                          // Radius of sphere containing particles
 
   // Make local copies of important cell properties
-  for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
-  hrangemax = cellptr->rmax + kernrange*cellptr->hmax;
-  rmax = cellptr->rmax;
+  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  hrangemax = cell.rmax + kernrange*cell.hmax;
+  rmax = cell.rmax;
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -1266,8 +1263,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
     // Check if bounding spheres overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (drsqd <= pow(celldata[cc].rmax + cellptr->rmax + kernrange*cellptr->hmax,2) ||
-        drsqd <= pow(cellptr->rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
+    if (drsqd <= pow(celldata[cc].rmax + hrangemax,2) ||
+        drsqd <= pow(rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1292,7 +1289,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
              celldata[cc].N > 0) {
 
-      gravcelllist[Ngravcelltemp++] = celldata[cc];
+      gravcelllist[Ngravcelltemp++] = MultipoleMoment<ndim>(celldata[cc]);
       if (Ngravcelltemp >= Ngravcellmax) {
         ExceptionHandler::getIstance().raise("Too many interaction cells "
                                              "in distant gravity interaction list!");
@@ -1456,6 +1453,28 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
 
   return worktot;
 }
+
+
+//=================================================================================================
+//  Tree::AddWorkCost
+/// Add the work done for active particles to the tree cells
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::AddWorkCost(vector<TreeCellBase<ndim> >& celllist,
+                                                   double twork, int& Nactivetot_out) {
+   int cactive = celllist.size();
+   int Nactivetot=0;
+   for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+   for (int cc=0; cc<cactive; cc++) {
+     int c = celllist[cc].id;
+     celldata[c].worktot += twork*(DOUBLE) celldata[c].Nactive / (DOUBLE) Nactivetot;
+   }
+
+   Nactivetot_out =  Nactivetot ;
+}
+
+
+
 #endif
 
 
