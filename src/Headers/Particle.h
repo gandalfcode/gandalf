@@ -440,6 +440,10 @@ struct MeshlessFVParticle : public Particle<ndim>
     ndens     = (FLOAT) 0.0;
     vsig_max  = (FLOAT) 0.0;
     zeta      = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) rdmdt[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) rdmdt0[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim+2; k++) dQ[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim+2; k++) dQdt[k] = (FLOAT) 0.0;
   }
 
 #ifdef MPI_PARALLEL
