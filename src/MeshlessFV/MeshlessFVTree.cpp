@@ -164,7 +164,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     FLOAT hrangesqd;                           // Kernel extent
     FLOAT hmax;                                // Maximum smoothing length
     FLOAT rp[ndim];                            // Local copy of particle position
-    //FLOAT *mu,                                 // Mass times specific internal energy arrays
     FLOAT *mu2 = 0;                            // Trimmed array (dummy for grad-h)
     int Nneibmax = Nneibmaxbuf[ithread];       // Local copy of neighbour buffer size
     int* activelist = activelistbuf[ithread];  // Local array of active particle ids
@@ -189,17 +188,19 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
+
       // Skip particles that have an up-to-date density estimate
-      for (j=0; j< Nactive; j++) {
+      for (j=0; j<Nactive; j++) {
         if (mfvdata[activelist[j]].flags.check_flag(update_density)) {
-          activepart[j] = mfvdata[activelist[j]] ;
-        } else {
-          activelist[j] = activelist[--Nactive] ;
+          activepart[j] = mfvdata[activelist[j]];
+        }
+        else {
+          activelist[j] = activelist[--Nactive];
           j-- ;
         }
       }
 
-      if (Nactive == 0) continue ;
+      if (Nactive == 0) continue;
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
@@ -476,14 +477,13 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         // If particle is NOT a hydro particle (and therefore doesn't need gradients), skip to next
         if (!mfv->types[activepart[j].ptype].hydro_forces) continue;
 
-        // Make local copy of hmask for active particle
+        // Make local copy of important variables for active particle
         hmask = mfv->types[activepart[j].ptype].hmask;
-
-        activepart[j].levelneib = 0;
-
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
         Nhydroaux = 0;
+
+        activepart[j].levelneib = 0;
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
@@ -551,8 +551,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 #pragma omp barrier
 #pragma omp for schedule(static)
       for(i=0; i<Ntot; ++i) {
-        for (k=0; k < Nthreads; ++k)
-          mfvdata[i].levelneib = max(mfvdata[i].levelneib, levelneibbuf[k][i]) ;
+        for (k=0; k<Nthreads; k++)
+          mfvdata[i].levelneib = max(mfvdata[i].levelneib, levelneibbuf[k][i]);
       }
 
     // Free-up local memory for OpenMP thread
@@ -633,11 +633,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #else
     const int ithread = 0;
 #endif
-    int cc;                                        // Aux. cell counter
     int i;                                         // Particle id
-    int j;                                         // Aux. particle counter
-    int jj;                                        // Aux. particle counter
-    int k;                                         // Dimension counter
     int Nactive;                                   // ..
     int Nneib;                                     // ..
     int Nhydroaux;                                 // ..
@@ -646,41 +642,38 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     FLOAT hrangesqdi;                              // Kernel gather extent
     FLOAT rp[ndim];                                // Local copy of particle position
     Typemask hydromask;                            // Mask for computing hydro forces
-    int Nneibmax      = Nneibmaxbuf[ithread];      // ..
-    int* activelist   = activelistbuf[ithread];    // ..
-    int* neiblist     = new int[Nneibmax];         // ..
-    int* mfvlist      = new int[Nneibmax];         // ..
-    FLOAT* dr         = new FLOAT[Nneibmax*ndim];  // ..
-    FLOAT* drmag      = new FLOAT[Nneibmax];       // ..
-    FLOAT* invdrmag   = new FLOAT[Nneibmax];       // ..
+    int Nneibmax    = Nneibmaxbuf[ithread];        // ..
+    int* activelist = activelistbuf[ithread];      // ..
+    int* neiblist   = new int[Nneibmax];           // ..
+    int* mfvlist    = new int[Nneibmax];           // ..
     FLOAT (*dQBuffer)[ndim+2]      = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*fluxBuffer)[ndim+2]    = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*rdmdtBuffer)[ndim]     = new FLOAT[Ntot][ndim];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
 
-    for (i=0; i<Ntot; i++) {
-      for (k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
-      for (k=0; k<ndim+2; k++)   dQBuffer[i][k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++)  rdmdtBuffer[i][k] = (FLOAT) 0.0;
+    for (int i=0; i<Ntot; i++) {
+      for (int k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
+      for (int k=0; k<ndim+2; k++) dQBuffer[i][k] = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) rdmdtBuffer[i][k] = (FLOAT) 0.0;
     }
 
 
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
-    for (cc=0; cc<cactive; cc++) {
+    for (int cc=0; cc<cactive; cc++) {
       TreeCell<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
 
       // Make local copies of active particles
-      for (j=0; j<Nactive; j++) {
+      for (int j=0; j<Nactive; j++) {
         activepart[j] = mfvdata[activelist[j]];
-        for (k=0; k<ndim+2; k++) activepart[j].dQ[k]   = (FLOAT) 0.0;
-        for (k=0; k<ndim+2; k++) activepart[j].dQdt[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].rdmdt[k]  = (FLOAT) 0.0;
+        for (int k=0; k<ndim+2; k++) activepart[j].dQ[k]   = (FLOAT) 0.0;
+        for (int k=0; k<ndim+2; k++) activepart[j].dQdt[k] = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) activepart[j].rdmdt[k]  = (FLOAT) 0.0;
       }
 
       // Compute neighbour list for cell from real and periodic ghost particles
@@ -692,35 +685,29 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       // recompute the neighbour list.
       while (Nneib == -1) {
         delete[] neibpartbuf[ithread];
-        delete[] invdrmag;
-        delete[] drmag;
-        delete[] dr;
         delete[] mfvlist;
         delete[] neiblist;
-        Nneibmax                  = 2*Nneibmax;
-        Nneibmaxbuf[ithread]      = Nneibmax;
-        neiblist                  = new int[Nneibmax];
-        mfvlist                   = new int[Nneibmax];
-        dr                        = new FLOAT[Nneibmax*ndim];
-        drmag                     = new FLOAT[Nneibmax];
-        invdrmag                  = new FLOAT[Nneibmax];
-        neibpartbuf[ithread]      = new ParticleType<ndim>[Nneibmax];
-        neibpart                  = neibpartbuf[ithread];
+        Nneibmax             = 2*Nneibmax;
+        Nneibmaxbuf[ithread] = Nneibmax;
+        neiblist             = new int[Nneibmax];
+        mfvlist              = new int[Nneibmax];
+        neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax];
+        neibpart             = neibpartbuf[ithread];
         Nneib = 0;
         Nneib = tree->ComputeNeighbourAndGhostList
           (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
       };
 
-      for (j=0; j<Nneib; j++) {
-        for (k=0; k<ndim+2; k++) neibpart[j].dQ[k]   = (FLOAT) 0.0;
-        for (k=0; k<ndim+2; k++) neibpart[j].dQdt[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) neibpart[j].rdmdt[k]  = (FLOAT) 0.0;
+      for (int j=0; j<Nneib; j++) {
+        for (int k=0; k<ndim+2; k++) neibpart[j].dQ[k]   = (FLOAT) 0.0;
+        for (int k=0; k<ndim+2; k++) neibpart[j].dQdt[k] = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) neibpart[j].rdmdt[k]  = (FLOAT) 0.0;
       }
 
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
-      for (j=0; j<Nactive; j++) {
+      for (int j=0; j<Nactive; j++) {
         i = activelist[j];
 
         // If particle is not a hydro particle (e.g. cdm), then skip to next active particle
@@ -729,7 +716,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         // Make a local copy of the hydro neighbour mask
         hydromask = mfv->types[activepart[j].ptype].hydromask;
 
-        for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+        for (int k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
         Nhydroaux = 0;
 
@@ -742,37 +729,32 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         // for both gather and inactive scatter neibs.  Only consider particles with j > i to
         // compute pair forces once unless particle j is inactive.
         //-----------------------------------------------------------------------------------------
-        for (jj=0; jj<Nneib; jj++) {
+        for (int jj=0; jj<Nneib; jj++) {
 
           // Skip if (i) neighbour particle type does not interact hydrodynamically with particle,
           // (ii) neighbour is a dead (e.g. accreted) particle (iii) same i.d. as current active
           // particle, (iv) neighbour is on lower timestep level (i.e. timestep is shorter),
           // or (v) neighbour is on same level as current particle but has larger id. value
           // (to only calculate each pair once).
-          if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].flags.is_dead()) continue ;
+          if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].flags.is_dead()) continue;
           if ((!neibpart[jj].flags.is_mirror()) &&
               (neiblist[jj] == i || activepart[j].level < neibpart[jj].level ||
               (neibpart[jj].iorig < i && neibpart[jj].level == activepart[j].level))) continue;
 
           // Compute relative position and distance quantities for pair
-          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
+          for (int k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux, draux, ndim) + small_number;
 
           // Only include gather or scatter neighbours
           if (drsqd < hrangesqdi || drsqd < neibpart[jj].hrangesqd) {
-            drmag[Nhydroaux] = sqrt(drsqd);
-            invdrmag[Nhydroaux] = (FLOAT) 1.0/drmag[Nhydroaux];
-            for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k]*invdrmag[Nhydroaux];
-            mfvlist[Nhydroaux] = jj;
-            Nhydroaux++;
+            mfvlist[Nhydroaux++] = jj;
           }
 
         }
         //-----------------------------------------------------------------------------------------
 
         // Compute all neighbour contributions to hydro fluxes
-        mfv->ComputeGodunovFlux(i, Nhydroaux, timestep, mfvlist, drmag,
-                                invdrmag, dr, activepart[j], neibpart);
+        mfv->ComputeGodunovFlux(i, Nhydroaux, mfvlist, timestep, activepart[j], neibpart);
 
       }
       //-------------------------------------------------------------------------------------------
@@ -782,18 +764,17 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       for (int jj=0; jj<Nneib; jj++) {
         i = neibpart[jj].iorig;
         if (!neibpart[jj].flags.is_mirror()) {
-	        if (neibpart[jj].flags.check_flag(active))
-	          for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
-          for (k=0; k<ndim+2; k++) dQBuffer[i][k] += neibpart[jj].dQ[k];
-          for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
+          for (int k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
+          for (int k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
+          for (int k=0; k<ndim+2; k++) dQBuffer[i][k] += neibpart[jj].dQ[k];
         }
       }
       // Add all active particles contributions to main array
-      for (j=0; j<Nactive; j++) {
+      for (int j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim+2; k++)   dQBuffer[i][k] += activepart[j].dQ[k];
-        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += activepart[j].dQdt[k];
-        for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += activepart[j].rdmdt[k];
+        for (int k=0; k<ndim; k++) rdmdtBuffer[i][k] += activepart[j].rdmdt[k];
+        for (int k=0; k<ndim+2; k++) fluxBuffer[i][k] += activepart[j].dQdt[k];
+        for (int k=0; k<ndim+2; k++) dQBuffer[i][k] += activepart[j].dQ[k];
       }
 
     }
@@ -802,14 +783,14 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
     // Add all buffers back to main arrays
     // Could be simply atomic?
-#pragma omp barrier
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-	    if (mfvdata[i].flags.check_flag(active))
-	      for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
-        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
+        if (mfvdata[i].flags.check_flag(active)) {
+          for (int k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
+          for (int k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
+        }
+        for (int k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
       }
     }
 
@@ -817,9 +798,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     delete[] rdmdtBuffer;
     delete[] dQBuffer;
     delete[] fluxBuffer;
-    delete[] invdrmag;
-    delete[] drmag;
-    delete[] dr;
     delete[] mfvlist;
     delete[] neiblist;
 
