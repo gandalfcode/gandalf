@@ -411,6 +411,8 @@ void MeshlessFV<ndim>::EndTimestep
       for (int k=0; k<ndim; k++) part.a[k] = 0.0;
       part.gpot=0.0;
 
+      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
+
     }
     //---------------------------------------------------------------------------------------------
     else {
