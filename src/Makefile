@@ -226,13 +226,13 @@ TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 
 
 %_wrap.cxx: %.i
-	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) -I$(INCLUDE) $<
+	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) $(INCLUDE) $<
 
 %_wrap.o: %_wrap.cxx
 	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) $(INCLUDE)
 
 %.o: %.cxx
-	$(CPP) $(CFLAGS) -I$(INCLUDE) -c $< $(OPT)
+	$(CPP) $(CFLAGS) $(INCLUDE) -c $< $(OPT)
 
 %.o: %.cpp
 	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include $(INCLUDE) -c $<
@@ -292,7 +292,7 @@ get_dir_str = $(patsubst %/,%,$(dir $1))
 WHICH_GPP   = which g++
 
 ifeq ($(findstring g++,$(WHICH_GPP)),g++)
-BUILD_DEPS = @set -e; g++ -MM -MG -I$(INCLUDE) $< |\
+BUILD_DEPS = @set -e; g++ -MM -MG $(INCLUDE) $< |\
 	 sed 's;\($*\)\.o[ :]*;$(call get_dir_str, $@)/\1.o $@ : ;g' > $@
 else
 BUILD_DEPS = @echo "Warning: Cannot build dependencies for $(notdir $<)"
