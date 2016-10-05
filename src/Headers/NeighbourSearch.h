@@ -304,7 +304,8 @@ protected:
 #ifdef MPI_PARALLEL
   int Nprunedcellmax;                              ///< Max. number of cells in pruned tree
   int *Npartexport;                                ///< No. of ptcls to be exported (per MPI node)
-  vector<vector<TreeCell<ndim>*> > cellexportlist;                ///< List of cells to be exported
+
+  vector<vector<int>> cellexportlist;              ///< List of cell ids
   Tree<ndim,ParticleType,TreeCell> *mpighosttree;  ///< Pointer to tree containing
                                                    ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.

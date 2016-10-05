@@ -541,7 +541,7 @@ static inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
 //  ..
 //=================================================================================================
 template <int ndim, template<int> class Particle >
-static inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box)
+static inline bool ParticleInBox (const Particle<ndim>& part,const Box<ndim>& box)
 {
   for (int k=0; k<ndim; k++) {
     if (part.r[k] < box.boxmin[k] || part.r[k] > box.boxmax[k]) return false;

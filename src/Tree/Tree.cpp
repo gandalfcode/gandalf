@@ -1080,7 +1080,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   const int pruning_level_min,         ///< [in] Minimum pruning level
   const int pruning_level_max,         ///< [in] Maximum pruning level
   const int Nprunedcellmax,            ///< [in] Max. no. of cell interactions
-  TreeCell<ndim> *prunedcells)         ///< [out] List of cell pointers in pruned tree
+  TreeBase<ndim> *prunedtree)         ///< [out] List of cell pointers in pruned tree
 {
   int c;                               // Cell counter
   int cnext;                           // id of next cell in tree
@@ -1097,19 +1097,15 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
 
   newCellIds = new int[Ncellmax + 1];
   for (c=0; c<Ncellmax+1; c++) newCellIds[c] = -1;
-  //newCellIds[Ncell] = Ncell;
-  //newCellIds[Ncellmax] = Ncellmax;
-  //assert(Nprunedcellmax <= Ncellmax);
 
   for (k=0; k<ndim; k++) rmin[k] = mpinode.hbox.boxmin[k];
   for (k=0; k<ndim; k++) rmax[k] = mpinode.hbox.boxmax[k];
   for (k=0; k<ndim; k++) rnode[k] = (FLOAT) 0.5*(mpinode.hbox.boxmin[k] + mpinode.hbox.boxmax[k]);
   for (k=0; k<ndim; k++) rsize[k] = mpinode.hbox.boxmax[k] - rnode[k];
 
-  /*cout << "NODE      : " << rmin[0] << "    " << rnode[0] << "    " << rmax[0] << "    size : " << rsize[0] << endl;
-  cout << "FULL TREE : " << celldata[0].bbmin[0] << "    " << celldata[0].bbmax[0] << "    "
-       << celldata[0].rmax << "   " << celldata[0].hmax << endl;
-  cout << "Main tree? : " << c << "     Ncell : " << Ncell << "   " << Ncellmax << endl;*/
+
+  TreeCell<ndim>* prunedcells =
+      dynamic_cast<Tree<ndim,ParticleType,TreeCell>*>(prunedtree)->celldata;
 
   c = 0;
 
@@ -1341,7 +1337,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
- (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+ (const TreeCellBase<ndim> *cellptr,   ///< [in] Pointer to cell
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box object
 {
   int cc = 0;                          // Cell counter
@@ -1398,6 +1394,67 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 
   // If we've walked the entire tree wihout any leaf overlaps, return flag for no overlap
   return false;
+}
+
+//=================================================================================================
+//  Tree::ComputeHydroTreeCellOverlap
+/// \brief Compute the particles that are inside the specified box.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::FindBoxOverlapParticles
+(const Box<ndim>& nodebox,                     ///< [in] Box to check overlap of
+vector<int>& part_ids,                         ///< [out] ID's of particles found.
+const Particle<ndim> *part_gen)                ///< [in] List of particle data
+{
+  const ParticleType<ndim> *partdata = reinterpret_cast<const ParticleType<ndim> *>(part_gen) ;
+
+  // Start from root-cell
+  int c = 0;
+  int i ;
+  int Npart = 0;
+
+  //---------------------------------------------------------------------------------------------
+  while (c < Ncell) {
+    TreeCell<ndim>* cellptr = &(celldata[c]);
+
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    //-------------------------------------------------------------------------------------------
+    if (BoxOverlap(cellptr->bbmin, cellptr->bbmax, nodebox.boxmin, nodebox.boxmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (cellptr->level != ltot) {
+        c++;
+      }
+
+      else if (cellptr->N == 0) {
+        c = cellptr->cnext;
+      }
+
+      // If leaf-cell, check through particles in turn to find ghosts and
+      // add to list to be exported
+      else if (cellptr->level == ltot) {
+        i = cellptr->ifirst;
+        while (i != -1) {
+          if (ParticleInBox(partdata[i], nodebox)) {
+            part_ids.push_back(i);
+            Npart++ ;
+          }
+          if (i == cellptr->ilast) break;
+          i = inext[i];
+        };
+        c = cellptr->cnext;
+      }
+    }
+
+    // If not in range, then open next cell
+    //-------------------------------------------------------------------------------------------
+    else {
+      c = cellptr->cnext;
+    }
+
+  }
+  //---------------------------------------------------------------------------------------------
+  return Npart;
 }
 
 

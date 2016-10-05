@@ -173,6 +173,8 @@ class TreeBase
 
 #if defined(MPI_PARALLEL)
      virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) = 0;
+     virtual int GetTreeCellSize() const = 0 ;
+     virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*)= 0;
 #endif
 
 };
@@ -248,10 +250,10 @@ protected:
   virtual int FindLeafCell(const FLOAT *);
 #ifdef MPI_PARALLEL
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
-                                 const bool, const int, const int, const int, TreeCell<ndim> *);
+                                 const bool, const int, const int, const int, TreeBase<ndim> *);
   int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
                                            const FLOAT, const int, int, MultipoleMoment<ndim> *);
-  bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *, const DomainBox<ndim> &);
+  bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
 #endif
 
@@ -272,7 +274,9 @@ protected:
 #ifdef MPI_PARALLEL
   virtual void UpdateWorkCounters(TreeCell<ndim> &) = 0;
   virtual int GetMaxCellNumber(const int) = 0;
+  virtual int GetTreeCellSize() const { return sizeof(TreeCell<ndim>) ;}
   virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) ;
+  virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) ;
 #endif
 
 
