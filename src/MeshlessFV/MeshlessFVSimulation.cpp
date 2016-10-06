@@ -743,7 +743,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   int level_nbody;                           // local thread var. for N-body level
   int level_hydro;                           // local thread var. for hydro level
   int nfactor;                               // Increase/decrease factor of n
-  int nstep;                                 // Particle integer step-size
+  //int nstep;                                 // Particle integer step-size
   DOUBLE dt;                                 // Aux. timestep variable
   DOUBLE dt_min = big_number_dp;             // Minimum timestep
   //DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
@@ -894,19 +894,16 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
 
 #pragma omp parallel default(none) private(dt, level) \
-  shared(dt_min, last_level, level_max_hydro, level_max_nbody, level_max_old)
+  shared(dt_min, istep, level_max_hydro, level_max_nbody, level_max_old, nfactor)
     {
-  //private(dt,dt_nbody,dt_hydro)\
-  //private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor)
-      int istep;
+      int last_level;
       int nstep;
-      int nfactor;
-      DOUBLE dt;
-      DOUBLE dt_hydro   = big_number_dp;
-      DOUBLE dt_nbody   = big_number_dp;
       int level_max_aux = 0;
       int level_nbody   = 0;
       int level_hydro   = 0;
+      DOUBLE dt;
+      DOUBLE dt_hydro   = big_number_dp;
+      DOUBLE dt_nbody   = big_number_dp;
 
 
       // Find all hydro particles at the beginning of a new timestep
