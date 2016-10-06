@@ -42,6 +42,12 @@
 #if defined _OPENMP
 #include <omp.h>
 #endif
+
+#ifdef MPI_PARALLEL
+#include "MpiExport.h"
+#include "CommunicationHandler.h"
+#endif
+
 using namespace std;
 
 
@@ -1105,7 +1111,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
 
 
   TreeCell<ndim>* prunedcells =
-      dynamic_cast<Tree<ndim,ParticleType,TreeCell>*>(prunedtree)->celldata;
+      static_cast<Tree<ndim,ParticleType,TreeCell>*>(prunedtree)->celldata;
 
   c = 0;
 
@@ -1513,6 +1519,25 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
 
 
 //=================================================================================================
+//  Tree::GetSizeOfExportedParticleData
+/// Get size needed for packed particle data
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::GetSizeOfExportedParticleData(int Nparticles) const {
+  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+  return Nparticles*sizeof(StreamlinedPart) ;
+}
+//=================================================================================================
+//  Tree::GetSizeOfExportedCellData
+/// Get size needed for packed cell data
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::GetSizeOfExportedCellData(int Ncell) const {
+  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
+  return Ncell * sizeof(StreamlinedCell) ;
+}
+
+//=================================================================================================
 //  Tree::AddWorkCost
 /// Add the work done for active particles to the tree cells
 //=================================================================================================
@@ -1530,6 +1555,177 @@ void Tree<ndim,ParticleType,TreeCell>::AddWorkCost(vector<TreeCellBase<ndim> >& 
    Nactivetot_out =  Nactivetot ;
 }
 
+//=================================================================================================
+//  Tree::PackParticlesAndCellsForMPITransfer
+/// Packs the requested list of cells and their active particles into a byte (char) array
+/// for transfer.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::PackParticlesAndCellsForMPITransfer
+(int Ncells,                                  ///< [in] Number of cells to pack
+ const int* celllist,                         ///< [in] List of cells to pack
+ vector<int>& active_cells,                   ///< [out] List of active cells in buffer
+ vector<int>& active_particles,               ///< [out] List of active particles in buffer
+ vector<char>& send_buffer,                   ///< [out] Buffer of packed data
+ Particle<ndim>* part_gen)
+ {
+
+  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
+
+  ParticleType<ndim> * partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
+  std::vector<int> _activelist(Nleafmax) ;
+  int* activelist = &(_activelist[0]) ;
+
+  // Loop over all cells to be exported and include all cell and particle data
+  //-----------------------------------------------------------------------------------------------
+  int exported_particles = 0 ;
+  for (int cc=0; cc<Ncells; cc++) {
+    active_cells.push_back(celllist[cc]) ;
+    TreeCell<ndim>& cell_orig = celldata[celllist[cc]];
+    const int Nactive_cell = ComputeActiveParticleList(cell_orig, partdata, activelist);
+    StreamlinedCell c (Nactive_cell, exported_particles);
+    append_bytes(send_buffer, &c) ;
+
+    // Copy active particles
+    for (int jpart=0; jpart<Nactive_cell; jpart++) {
+      active_particles.push_back(activelist[jpart]);
+      StreamlinedPart p = partdata[activelist[jpart]];
+      append_bytes(send_buffer, &p) ;
+    }
+    exported_particles += Nactive_cell;
+  }
+
+  return exported_particles ;
+ }
+
+//=================================================================================================
+//  Tree::UnpackParticlesAndCEllsFromMPITransfer
+/// Unpacks the cells and particles received in the MPI transfer.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsFromMPITransfer
+(int offset_part,                             ///< [in] Number of imported parts before these ones
+ int Npart,                                   ///< [in] Number of particles received
+ int offset_cells,                             ///< [in] Number of imported cells before these ones
+ int Ncell,                                   ///< [in] Number of cells received
+ const vector<char>& recv_buffer,             ///< [in] Received data
+ Hydrodynamics<ndim>* hydro)
+ {
+  typename ParticleType<ndim>::HandlerType handler;
+  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+
+  typename TreeCell<ndim>::HandlerType handler_cell;
+  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
+
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+
+
+  //---------------------------------------------------------------------------------------------
+  int cell_count = 0;
+  int part_count = 0;
+  int particle_index = offset_part ;
+  vector<char>::const_iterator iter = recv_buffer.begin() ;
+  for (int icell=0; icell<Ncell; icell++) {
+    TreeCell<ndim>& dest_cell = celldata[icell + offset_cells];
+
+    handler_cell.ReceiveCell(&(*iter),dest_cell,offset_part);
+    dest_cell.id = icell+offset_cells;
+
+    iter += sizeof(StreamlinedCell);
+    cell_count++ ;
+    // Now copy the received particles inside the hydro particle main arrays
+    for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
+
+      handler.ReceiveParticle(&(*iter),partdata[particle_index],hydro);
+
+      inext[particle_index] = particle_index + 1;
+      particle_index++;
+      part_count++ ;
+      iter += sizeof(StreamlinedPart);
+    }
+
+    handler_cell.ReconstructProperties(dest_cell, partdata, kernrange);
+  }
+
+  assert(part_count == Npart) ;
+  assert(iter == recv_buffer.end()) ;
+
+
+ }
+
+//=================================================================================================
+//  Tree::PackParticlesAndCellsForMPIReturn
+/// Packs the exported particles for return after their force calculations.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::PackParticlesAndCellsForMPIReturn
+(int start_part,                         ///< [in] Index of the first particle to pack
+ int Npart,                              ///< [in] Number of particles to pack
+ int start_cell,                         ///< [in] Index of the first cell to send back
+ int Ncell,                              ///< [in] Number of cells to send back
+ vector<char>& send_buffer,              ///< [out] Buffer of packed data
+ Particle<ndim>* part_gen)
+ {
+  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+
+
+  // Copy the particles
+  int start_index = start_part ;
+  int end_index = start_index + Npart ;
+  for (int i=start_index; i<end_index; i++) {
+    StreamlinedPart p = partdata[i];
+    append_bytes(send_buffer, &p) ;
+  }
+
+  // Copy worktot
+  start_index = start_cell ;
+  end_index  = start_index + Ncell ;
+  for (int c=start_index; c<end_index; c++) {
+    append_bytes<double>(send_buffer, &celldata[c].worktot) ;
+  }
+ }
+
+
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsForMPIReturn
+(const vector<int>& part_ids,
+ const vector<int>& cell_ids,
+ vector<char>& recv_buffer,
+ Hydrodynamics<ndim>* hydro)
+ {
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
+
+  typename ParticleType<ndim>::HandlerType handler;
+  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+
+
+  int Npart = part_ids.size() ;
+  vector<char>::const_iterator iter = recv_buffer.begin() ;
+  for (int j=0; j<Npart; j++) {
+    const int i = part_ids[j];
+
+    const StreamlinedPart* received_particle = reinterpret_cast<const StreamlinedPart*>(&(*iter)) ;
+
+    assert(partdata[i].iorig == received_particle->iorig);
+
+    handler.ReceiveParticleAccelerations(received_particle,partdata[i]);
+
+    iter += sizeof(StreamlinedPart) ;
+  }
+
+  int Ncell = cell_ids.size() ;
+  for (int j=0; j<Ncell; j++) {
+    const int i = cell_ids[j];
+
+    double received_worktot;
+    unpack_bytes<double>(&received_worktot, iter) ;
+
+    celldata[i].worktot += received_worktot;
+  }
+  assert(iter == recv_buffer.end()) ;
+ }
 
 
 #endif
@@ -1561,9 +1757,7 @@ template class Tree<3,MeshlessFVParticle,OctTreeCell>;
 
 
 template class Tree<1,GradhSphParticle,TreeRayCell>;
-
 template class Tree<2,GradhSphParticle,TreeRayCell>;
-
 template class Tree<3,GradhSphParticle,TreeRayCell>;
 
 

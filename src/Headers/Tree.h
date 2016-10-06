@@ -172,9 +172,33 @@ class TreeBase
 #endif
 
 #if defined(MPI_PARALLEL)
-     virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) = 0;
-     virtual int GetTreeCellSize() const = 0 ;
-     virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*)= 0;
+	virtual void InitialiseCellWorkCounters() = 0 ;
+	virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) = 0;
+	virtual int GetTreeCellSize() const = 0 ;
+	virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*)= 0;
+	virtual int PackParticlesAndCellsForMPITransfer(int Ncells, const int* celllist,
+                                                    vector<int>& cell_ids, vector<int>& part_ids,
+                                                    vector<char>& send_buffer,
+                                                    Particle<ndim>*) = 0;
+	virtual void PackParticlesAndCellsForMPIReturn(int start_part, int Npart,
+                                                   int start_cell, int Ncall,
+                                                   vector<char>& send_buffer,
+                                                   Particle<ndim>* part_gen) = 0;
+
+	virtual void UnpackParticlesAndCellsFromMPITransfer(int offset_part, int Npart,
+                                                        int offset_cell, int Ncell,
+                                                        const vector<char>& recv_buffer,
+                                                        Hydrodynamics<ndim>*) = 0 ;
+
+	virtual void UnpackParticlesAndCellsForMPIReturn(const vector<int>& part_ids,
+                                                     const vector<int>& cell_ids,
+                                                     vector<char>& recv_buffer,
+                                                     Hydrodynamics<ndim>*) = 0;
+
+	virtual int GetSizeOfExportedParticleData(int Nparticles) const = 0 ;
+	virtual int GetSizeOfExportedCellData(int Ncell) const = 0 ;
+	virtual int GetSizeOfReturnedParticleData(int Nparticles) const = 0 ;
+	virtual int GetSizeOfReturnedCellData(int Ncell) const = 0 ;
 #endif
 
 };
@@ -272,11 +296,42 @@ protected:
   virtual void UpdateActiveParticleCounters(ParticleType<ndim> *) = 0;
 
 #ifdef MPI_PARALLEL
+  virtual void InitialiseCellWorkCounters() {
+    assert(Ncell > 0);
+    for (int c=0; c<Ncell; c++) celldata[c].worktot = 0 ;
+  }
   virtual void UpdateWorkCounters(TreeCell<ndim> &) = 0;
   virtual int GetMaxCellNumber(const int) = 0;
   virtual int GetTreeCellSize() const { return sizeof(TreeCell<ndim>) ;}
   virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) ;
   virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) ;
+  virtual int PackParticlesAndCellsForMPITransfer(int Ncells, const int* celllist,
+                                                  vector<int>& cell_ids, vector<int>& part_ids,
+                                                  vector<char>& send_buffer,
+                                                  Particle<ndim>*);
+  virtual void PackParticlesAndCellsForMPIReturn(int start_part, int Npart,
+                                                 int start_cell, int Ncell,
+                                                 vector<char>& send_buffer,
+                                                 Particle<ndim>*);
+
+  virtual void UnpackParticlesAndCellsFromMPITransfer(int offset_part, int Npart,
+                                                      int offset_cell, int Ncell,
+                                                      const vector<char>& recv_buffer,
+                                                      Hydrodynamics<ndim>*) ;
+
+  virtual void UnpackParticlesAndCellsForMPIReturn(const vector<int>& part_ids,
+                                                   const vector<int>& cell_ids,
+                                                   vector<char>& recv_buffer,
+                                                   Hydrodynamics<ndim>*) ;
+
+  virtual int GetSizeOfExportedParticleData(int Nparticles) const  ;
+  virtual int GetSizeOfExportedCellData(int Ncell) const ;
+  virtual int GetSizeOfReturnedParticleData(int Nparticles) const {
+    return GetSizeOfExportedParticleData(Nparticles) ;
+  }
+  virtual int GetSizeOfReturnedCellData(int Ncell) const {
+    return sizeof(double) * Ncell ;
+  }
 #endif
 
 

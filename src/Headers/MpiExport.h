@@ -25,6 +25,7 @@
 #define MPIEXPORT_H_
 
 #include <cstring>
+#include <vector>
 #include "Precision.h"
 
 
@@ -106,6 +107,24 @@ inline void copy (T* element, char* pointer) {
   void* element_unsafe = reinterpret_cast<void*> (element);
   void* pointer_unsafe = reinterpret_cast<void*> (pointer);
   memcpy(element_unsafe,pointer_unsafe,sizeof(T));
+}
+
+
+template<class T>
+inline void append_bytes(std::vector<char>& buffer, const T* element) {
+
+  const char* bytes_start = reinterpret_cast<const char*>(element);
+  const char* bytes_end = bytes_start + sizeof(T) ;
+
+  buffer.insert(buffer.end(), bytes_start, bytes_end) ;
+}
+
+template<class T>
+inline void unpack_bytes(T* element, std::vector<char>::const_iterator& it) {
+
+  void* element_unsafe = reinterpret_cast<void*> (element);
+  memcpy(element_unsafe, &(*it), sizeof(T)) ;
+  it += sizeof(T) ;
 }
 
 

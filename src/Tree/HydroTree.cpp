@@ -1550,11 +1550,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::FindParticlesToTransfer
   MpiNode<ndim>* mpinodes)                   ///< [in] Array of other mpi nodes
 {
   // Loop over particles and prepare the ones to export
+  int nodes_size = potential_nodes.size() ;
   for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i) ;
 
     // Loop over potential domains and see if we need to transfer this particle to them
-    for (int inode=0; inode<potential_nodes.size(); inode++) {
+    for (int inode=0; inode<nodes_size; inode++) {
       int node_number = potential_nodes[inode];
 
       if (ParticleInBox(part, mpinodes[node_number].domain)) {
@@ -1587,73 +1588,42 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
 {
   int cactive = cellexportlist[iproc].size();
   int Nactive = Npartexport[iproc];
-  int activelist[Nleafmax];
-  int exported_particles    = 0;
-  const int size_header     = 2*sizeof(int);
 
-  typename ParticleType<ndim>::HandlerType handler;
-  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
-
-  typename TreeCell<ndim>::HandlerType handler_cell;
-  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
-
-  const int size_particles  = Nactive*sizeof(StreamlinedPart);
-  const int size_cells      = cactive*sizeof(StreamlinedCell);
+  const int size_particles  = tree->GetSizeOfExportedParticleData(Nactive) ;
+  const int size_cells      = tree->GetSizeOfExportedCellData(cactive) ;
   const int old_size        = send_buffer.size();
-  int offset                = size_header + old_size;
-<<<<<<< HEAD
+
   vector<TreeCell<ndim>*>& celllist = cellexportlist[iproc];
-=======
-  int *celllist             = cellexportlist[iproc];
->>>>>>> Changed more functions to be type agnostic
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+
 
   assert(tree->Nimportedcell == 0);
-
-  // Work out size of the information we are sending
-  // Header consists of number of particles and number of cells
-  send_buffer.resize(size_particles + size_cells + size_header + old_size);
-
-  // Write the header
-  copy(&send_buffer[old_size], &Nactive);
-  copy(&send_buffer[old_size+sizeof(int)], &cactive);
 
   // Clear the array needed for bookkeeping (which active particles we sent to which processor)
   vector<int>& ids_active_particles = ids_sent_particles[iproc];
   ids_active_particles.clear();
   ids_active_particles.reserve(Nactive);
+
   // Correspondingly clear also the same kind of information for the active cells
   vector<int>& ids_active_cells = ids_sent_cells[iproc];
   ids_active_cells.clear();
   ids_active_cells.reserve(cactive);
 
+  // Work out size of the information we are sending
+  // Header consists of number of particles and number of cells
+  send_buffer.reserve(size_particles + size_cells + old_size);
 
-  // Loop over all cells to be exported and include all cell and particle data
-  //-----------------------------------------------------------------------------------------------
-  for (int cc=0; cc<cactive; cc++) {
-    TreeCell<ndim>& cell_orig = tree->celldata[celllist[cc]];
-    ids_active_cells.push_back(celllist[cc]);
-    const int Nactive_cell = tree->ComputeActiveParticleList(cell_orig, partdata, activelist);
-    StreamlinedCell c (Nactive_cell, exported_particles);
-    copy(&send_buffer[offset], &c);
-    offset += sizeof(StreamlinedCell);
 
-    // Copy active particles
-    for (int jpart=0; jpart<Nactive_cell; jpart++) {
-      ids_active_particles.push_back(activelist[jpart]);
-      StreamlinedPart p = partdata[activelist[jpart]];
-
-      copy(&send_buffer[offset], &p);
-      offset += sizeof(StreamlinedPart);
-    }
-    exported_particles += Nactive_cell;
-  }
-  //-----------------------------------------------------------------------------------------------
+  // Write the packed data
+  int exported_particles =
+      tree->PackParticlesAndCellsForMPITransfer(cactive, cellexportlist[iproc],
+                                                ids_active_cells,
+                                                ids_active_particles,
+                                                send_buffer,
+                                                hydro->GetParticleArray()) ;
 
   assert(exported_particles == Nactive);
-  assert(offset == send_buffer.size());
 
-  return size_particles + size_cells + size_header;
+  return size_particles + size_cells;
 }
 
 
@@ -1672,14 +1642,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
   const int rank,
   const bool first_unpack)
 {
-  int offset = 0;
-
-  typename ParticleType<ndim>::HandlerType handler;
-  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
-
-  typename TreeCell<ndim>::HandlerType handler_cell;
-  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
-
 
   if (first_unpack) {
     tree->Nimportedcell = 0;
@@ -1693,26 +1655,15 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
     int i=j;
     if (i>= rank)
       i += 1;
-    copy(&imported_part_from_j[i],&receive_header[j][sizeof(int)]);
-    copy(&imported_cell_from_j[i],&receive_header[j][2*sizeof(int)]);
+
+    std::vector<char>::const_iterator iter = receive_header[j].begin() ;
+    unpack_bytes(&imported_part_from_j[i], iter) ;
+    unpack_bytes(&imported_cell_from_j[i], iter) ;
   }
-  const int N_received_cells_total = std::accumulate(imported_cell_from_j.begin(),imported_cell_from_j.end(),0);
-  const int N_received_part_total = std::accumulate(imported_part_from_j.begin(),imported_part_from_j.end(),0);
-
-  int N_received_bytes = received_array.size();
-  int N_received_cells;
-  int N_received_particles;
-
-  if (N_received_bytes == 0) {
-    N_imported_part_per_proc[iproc] = 0;
-    N_imported_cells_per_proc[iproc] = 0;
-    return;
-  }
-
-  copy(&N_received_particles, &received_array[offset]);
-  N_imported_part_per_proc[iproc] = N_received_particles;
-  copy(&N_received_cells, &received_array[offset + sizeof(int)]);
-  N_imported_cells_per_proc[iproc] = N_received_cells;
+  const int N_received_cells_total =
+      std::accumulate(imported_cell_from_j.begin(),imported_cell_from_j.end(),0);
+  const int N_received_part_total  =
+      std::accumulate(imported_part_from_j.begin(),imported_part_from_j.end(),0);
 
   // Ensure there is enough memory
   if (first_unpack) {
@@ -1726,43 +1677,33 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
 	  tree->ReallocateMemory(hydro->Ntot + N_received_part_total,tree->Ncell+N_received_cells_total);
   }
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+
+  // Get the info about how many particles/cells we received from this thread.
+  int N_received_bytes     = received_array.size();
+  int N_received_cells     = imported_cell_from_j[iproc];
+  int N_received_particles = imported_part_from_j[iproc];
+
+  if (N_received_bytes == 0) {
+    N_imported_part_per_proc[iproc] = 0;
+    N_imported_cells_per_proc[iproc] = 0;
+    return;
+  }
+
+  N_imported_part_per_proc[iproc] = N_received_particles;
+  N_imported_cells_per_proc[iproc] = N_received_cells;
 
   // Copy received particles inside main arrays and received cells inside the tree array
   // Also update the linked list
   const vector<int>::iterator nth_part = imported_part_from_j.begin() + iproc;
   const vector<int>::iterator nth_cell = imported_cell_from_j.begin() + iproc;
-  const int offset_part = hydro->Nhydro+hydro->Nghost+std::accumulate(imported_part_from_j.begin(),nth_part,0);
-
+  const int offset_parts = hydro->Nhydro+hydro->Nghost+std::accumulate(imported_part_from_j.begin(),nth_part,0);
   const int offset_cells = tree->Ncell + std::accumulate(imported_cell_from_j.begin(),nth_cell,0);
 
-  int particle_index = offset_part;
-  offset += 2*sizeof(int);
+  tree->UnpackParticlesAndCellsFromMPITransfer(offset_parts, N_received_particles,
+                                               offset_cells, N_received_cells,
+                                               received_array,
+                                               hydro);
 
-  //---------------------------------------------------------------------------------------------
-  for (int icell=0; icell<N_received_cells; icell++) {
-    TreeCell<ndim>& dest_cell = tree->celldata[icell + offset_cells];
-    handler_cell.ReceiveCell(&received_array[offset],dest_cell,offset_part);
-    dest_cell.id = icell+offset_cells;
-    offset += sizeof(StreamlinedCell);
-
-    // Now copy the received particles inside the hydro particle main arrays
-    for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
-
-      handler.ReceiveParticle(&received_array[offset],partdata[particle_index],hydro);
-
-      tree->inext[particle_index] = particle_index + 1;
-      particle_index++;
-      offset += sizeof(StreamlinedPart);
-    }
-
-    handler_cell.ReconstructProperties(dest_cell, partdata, kernrange);
-
-  //---------------------------------------------------------------------------------------------
-
-
-
-  }
   //-----------------------------------------------------------------------------------------------
 
 
@@ -1794,57 +1735,28 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
   const int rank,						   ///< [in] Our rank
   const int iproc)                         ///< [in] Rank that we are sending to
 {
-//  int InitialNImportedParticles = hydro->NImportedParticles;
-
-  //typename ParticleType<ndim>::HandlerType handler;
-  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
-
-
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
-
   const int N_received_particles = N_imported_part_per_proc[iproc];
   const int N_received_cells = N_imported_cells_per_proc[iproc];
-  const int size_imp_part = N_received_particles * sizeof(StreamlinedPart);
-  const int size_imp_cells = N_received_cells*sizeof(double);
-  send_buffer.resize(size_imp_part+size_imp_cells);
+  const int size_imp_part  = tree->GetSizeOfReturnedParticleData(N_received_particles);
+  const int size_imp_cells = tree->GetSizeOfReturnedCellData(N_received_cells);
 
 
-	// Copy the particles inside the send buffer
-    const vector<int>::iterator nth = N_imported_part_per_proc.begin()+iproc;
-	const int start_index = hydro->Nhydro + hydro->Nghost + std::accumulate(N_imported_part_per_proc.begin(),
-			                                                nth, 0);
+  // Work out which particles we need
+  const vector<int>::iterator nth = N_imported_part_per_proc.begin()+iproc;
+  const int part_start_index = hydro->Nhydro + hydro->Nghost +
+      std::accumulate(N_imported_part_per_proc.begin(), nth, 0);
 
-	int j = 0;
-
-	for (int i=start_index; i<start_index + N_received_particles; i++) {
-	  StreamlinedPart p = partdata[i];
-	  copy (&send_buffer[j*sizeof(StreamlinedPart)], &p);
-	  j++;
-	}
-	assert(j == N_received_particles);
-
-	// Copy worktot
-	int index_worktot = j*sizeof(StreamlinedPart);
-	const vector<int>::iterator nth_cell = N_imported_cells_per_proc.begin()+iproc;
-	const int start_index_cells = tree->Ncell+std::accumulate(N_imported_cells_per_proc.begin(), nth_cell, 0);
-	for (int i=0; i<N_received_cells; i++) {
-		const int c=start_index_cells+i;
-		copy(&send_buffer[index_worktot],&tree->celldata[c].worktot);
-		index_worktot += sizeof(double);
-	}
+  const vector<int>::iterator nth_cell = N_imported_cells_per_proc.begin()+iproc;
+  const int cell_start_index = tree->Ncell +
+      std::accumulate(N_imported_cells_per_proc.begin(), nth_cell, 0);
 
 
-//	// Decrease the particle counter
-//	hydro->Ntot -= N_received_particles;
-//	hydro->NImportedParticles -= N_received_particles;
-
-//  tree->Ncelltot      = tree->Ncell;
-//  tree->Nimportedcell = 0;
-//  tree->Ntot          -= InitialNImportedParticles;
-//
-//  assert(hydro->NImportedParticles == 0);
-//  assert(hydro->Ntot == hydro->Nhydro + hydro->Nghost);
-//  assert(send_buffer.size() == removed_particles*sizeof(StreamlinedPart));
+  // Pack the particles for sending
+  send_buffer.clear();
+  send_buffer.reserve(size_imp_part+size_imp_cells);
+  tree->PackParticlesAndCellsForMPIReturn(part_start_index, N_received_particles,
+                                          cell_start_index, N_received_cells,
+                                          send_buffer, hydro->GetParticleArray());
 
   return;
 }
@@ -1862,54 +1774,16 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
   const int rank,						 ///< Our local rank
   const int iproc)                       ///< Remote processor
 {
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
-
-  typename ParticleType<ndim>::HandlerType handler;
-  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
-
-  // Sum up the received quantities for each particle
-  //-----------------------------------------------------------------------------------------------
+  // Unpack the info for this processor.
 
 	const vector<int>& ids_active_particles = ids_sent_particles[iproc];
 	const vector<int>& ids_active_cells = ids_sent_cells[iproc];
 
-	for (int j=0; j<ids_active_particles.size(); j++) {
-	  const int i = ids_active_particles[j];
-
-	  StreamlinedPart* received_particle = reinterpret_cast<StreamlinedPart*>
-		(&received_information[j*sizeof(StreamlinedPart)]);
-
-	  assert(partdata[i].iorig == received_particle->iorig);
-
-	  handler.ReceiveParticleAccelerations(received_particle,partdata[i]);
-	}
-
-	for (int j=0; j<ids_active_cells.size(); j++) {
-		const int i = ids_active_cells[j];
-
-		const int index = ids_active_particles.size()*sizeof(StreamlinedPart) + j*sizeof(double);
-		double received_worktot;
-		copy(&received_worktot,&received_information[index]);
-
-		tree->celldata[i].worktot += received_worktot;
-	}
+	tree->UnpackParticlesAndCellsForMPIReturn(ids_active_particles, ids_active_cells,
+	                                          received_information, hydro) ;
 
   //-----------------------------------------------------------------------------------------------
 
-
-  return;
-}
-
-
-//=================================================================================================
-//  HydroTree::InitialiseCellWorkCounters
-/// Initialise all CPU work counters (used for MPI load balancing) to zero for next balance.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::InitialiseCellWorkCounters(void)
-{
-  assert(tree->Ncell > 0);
-  for (int c=0; c<tree->Ncell; c++) tree->celldata[c].worktot = (FLOAT) 0.0;
   return;
 }
 #endif

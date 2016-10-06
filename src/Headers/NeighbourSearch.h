@@ -104,8 +104,8 @@ protected:
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*) = 0;
   virtual void GetBackExportInfo(vector<char >& received_array, Hydrodynamics<ndim> *hydro,
 		  	  	  	  	  	  	  const int rank, const int iproc) = 0;
-  virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) =0;
-  virtual int ExportInfoSize(const int i)=0;
+  virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) const =0;
+  virtual int ExportInfoSize(const int i) const =0;
   virtual int GetExportInfo(int Nproc, Hydrodynamics<ndim> *, vector<char >&,
                             MpiNode<ndim>&, int, int) = 0;
   virtual void InitialiseCellWorkCounters(void) = 0;
@@ -201,18 +201,13 @@ protected:
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*);
   virtual void GetBackExportInfo(vector<char > &,
                                  Hydrodynamics<ndim> *, const int, const int);
-  virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) {
+  virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) const{
     int cactive = cellexportlist[iproc].size();
+
     int Nactive = Npartexport[iproc];
 
-    //typename ParticleType<ndim>::HandlerType handler;
-    typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
-
-    //typename TreeCell<ndim>::HandlerType handler_cell;
-    typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
-
-    const int size_particles  = Nactive*sizeof(StreamlinedPart);
-    const int size_cells      = cactive*sizeof(StreamlinedCell);
+    const int size_particles  = tree->GetSizeOfExportedParticleData(Nactive);
+    const int size_cells      = tree->GetSizeOfExportedCellData(cactive);
 
     const int size_header = 2*sizeof(int);
 
@@ -223,18 +218,14 @@ protected:
     copy(&result[sizeof(int)],&Nactive);
     copy(&result[2*sizeof(int)],&cactive);
 
-
     return result;
   };
-  virtual int ExportInfoSize(const int i) {
-	  //typename ParticleType<ndim>::HandlerType handler;
-	  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
-	  const int size_particles = ids_sent_particles[i].size()*sizeof(StreamlinedPart);
-	  const int size_cells = ids_sent_cells[i].size()*sizeof(double);
+  virtual int ExportInfoSize(const int i) const {
+	  const int size_particles = tree->GetSizeOfReturnedParticleData(ids_sent_particles[i].size());
+	  const int size_cells     = tree->GetSizeOfReturnedCellData(ids_sent_cells[i].size()) ;
 	  return size_particles+size_cells;
   };
   virtual int GetExportInfo(int, Hydrodynamics<ndim> *, vector<char >&, MpiNode<ndim>&, int, int);
-  virtual void InitialiseCellWorkCounters(void);
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
   virtual void UnpackExported(vector<char> &, Hydrodynamics<ndim> *,
@@ -253,6 +244,9 @@ protected:
 	  hydro->NImportedParticles=0;
 	  tree->Nimportedcell = 0;
   };
+  virtual void InitialiseCellWorkCounters() {
+    tree->InitialiseCellWorkCounters() ;
+  }
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, ParticleType<ndim> *, string);

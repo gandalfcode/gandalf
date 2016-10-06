@@ -99,7 +99,7 @@ public:
   typedef GradhSphExportParticle DataType;
   typedef GradSphForcesParticle ReturnDataType;
 
-  void ReceiveParticleAccelerations (ReturnDataType* pointer, GradhSphParticle<ndim>& p2) {
+  void ReceiveParticleAccelerations (const ReturnDataType* pointer, GradhSphParticle<ndim>& p2) {
 
     const ReturnDataType& p = *pointer;
 
@@ -114,8 +114,8 @@ public:
 
   }
 
-  void ReceiveParticle (void* pointer, GradhSphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
-    DataType& p = *reinterpret_cast<DataType*>(pointer);
+  void ReceiveParticle (const void* pointer, GradhSphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
+    const DataType& p = *reinterpret_cast<const DataType*>(pointer);
     //GradhSph<ndim>* sph = static_cast<GradhSph<ndim>*>(hydro);
 
     p2.iorig = p.iorig;
@@ -281,8 +281,6 @@ public:
   p2.h = hydro->h_fac*powf(1/p2.ndens, MeshlessFV<ndim>::invndim);
   p2.hfactor = pow(1/p2.h, ndim+1);
   p2.hrangesqd = hydro->kernfacsqd*hydro->kernrange*hydro->kernrange*p2.h*p2.h;
-
-
   }
 
 };
@@ -325,12 +323,12 @@ public:
   typedef SM2012ExportParticle DataType;
   typedef SM2012ForcesParticle ReturnDataType;
 
-  void ReceiveParticleAccelerations (ReturnDataType* pointer, SM2012SphParticle<ndim>& p2) {
+  void ReceiveParticleAccelerations (const ReturnDataType* pointer, SM2012SphParticle<ndim>& p2) {
     ExceptionHandler::getIstance().raise("not implemented");
   }
 
-  void ReceiveParticle (void* pointer, SM2012SphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
-    //DataType& p = *reinterpret_cast<DataType*>(pointer);
+  void ReceiveParticle (const void* pointer, SM2012SphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
+    //const DataType& p = *reinterpret_cast<const DataType*>(pointer);
     ExceptionHandler::getIstance().raise("not implemented");
 
 
@@ -363,8 +361,8 @@ public:
 
   typedef TreeCellStreamlined DataType;
 
-  void ReceiveCell (void* pointer, TreeCellBase<ndim>& c2,int Ntot) {
-    const DataType& c = *reinterpret_cast<DataType*>(pointer);
+  void ReceiveCell (const void* pointer, TreeCellBase<ndim>& c2,int Ntot) {
+    const DataType& c = *reinterpret_cast<const DataType*>(pointer);
 
     c2.ifirst = c.ifirst + Ntot;
     c2.ilast = c.ilast + Ntot;
