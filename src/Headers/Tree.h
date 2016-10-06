@@ -326,12 +326,8 @@ protected:
 
   virtual int GetSizeOfExportedParticleData(int Nparticles) const  ;
   virtual int GetSizeOfExportedCellData(int Ncell) const ;
-  virtual int GetSizeOfReturnedParticleData(int Nparticles) const {
-    return GetSizeOfExportedParticleData(Nparticles) ;
-  }
-  virtual int GetSizeOfReturnedCellData(int Ncell) const {
-    return sizeof(double) * Ncell ;
-  }
+  virtual int GetSizeOfReturnedParticleData(int Nparticles) const ;
+  virtual int GetSizeOfReturnedCellData(int Ncell) const ;
 #endif
 
 

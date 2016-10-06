@@ -1622,6 +1622,8 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
                                                 hydro->GetParticleArray()) ;
 
   assert(exported_particles == Nactive);
+  assert(ids_active_particles.size() == static_cast<unsigned int>(Nactive)) ;
+  assert(ids_active_cells.size() == static_cast<unsigned int>(cactive)) ;
 
   return size_particles + size_cells;
 }
@@ -1657,16 +1659,24 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
       i += 1;
 
     std::vector<char>::const_iterator iter = receive_header[j].begin() ;
+
+    unsigned int read_size ;
+    unpack_bytes(&read_size, iter) ;
     unpack_bytes(&imported_part_from_j[i], iter) ;
     unpack_bytes(&imported_cell_from_j[i], iter) ;
+
+    assert(i != iproc || read_size == received_array.size()) ;
+    assert(iter == receive_header[j].end()) ;
   }
-  const int N_received_cells_total =
-      std::accumulate(imported_cell_from_j.begin(),imported_cell_from_j.end(),0);
-  const int N_received_part_total  =
-      std::accumulate(imported_part_from_j.begin(),imported_part_from_j.end(),0);
+
 
   // Ensure there is enough memory
   if (first_unpack) {
+    const int N_received_cells_total =
+        std::accumulate(imported_cell_from_j.begin(),imported_cell_from_j.end(),0);
+    const int N_received_part_total  =
+        std::accumulate(imported_part_from_j.begin(),imported_part_from_j.end(),0);
+
 	  hydro->AllocateMemory(hydro->Ntot + N_received_part_total);
 
 	  if (hydro->Ntot + N_received_part_total > Ntotmax) {
@@ -1696,8 +1706,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
   // Also update the linked list
   const vector<int>::iterator nth_part = imported_part_from_j.begin() + iproc;
   const vector<int>::iterator nth_cell = imported_cell_from_j.begin() + iproc;
-  const int offset_parts = hydro->Nhydro+hydro->Nghost+std::accumulate(imported_part_from_j.begin(),nth_part,0);
-  const int offset_cells = tree->Ncell + std::accumulate(imported_cell_from_j.begin(),nth_cell,0);
+  const int offset_parts = hydro->Nhydro + hydro->Nghost +
+      std::accumulate(imported_part_from_j.begin(),nth_part,0);
+  const int offset_cells = tree->Ncell +
+      std::accumulate(imported_cell_from_j.begin(),nth_cell,0);
 
   tree->UnpackParticlesAndCellsFromMPITransfer(offset_parts, N_received_particles,
                                                offset_cells, N_received_cells,
@@ -1736,7 +1748,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
   const int iproc)                         ///< [in] Rank that we are sending to
 {
   const int N_received_particles = N_imported_part_per_proc[iproc];
-  const int N_received_cells = N_imported_cells_per_proc[iproc];
+  const int N_received_cells     = N_imported_cells_per_proc[iproc];
   const int size_imp_part  = tree->GetSizeOfReturnedParticleData(N_received_particles);
   const int size_imp_cells = tree->GetSizeOfReturnedCellData(N_received_cells);
 
@@ -1757,6 +1769,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
   tree->PackParticlesAndCellsForMPIReturn(part_start_index, N_received_particles,
                                           cell_start_index, N_received_cells,
                                           send_buffer, hydro->GetParticleArray());
+
+
+  assert(send_buffer.size() == static_cast<unsigned int>(size_imp_part+size_imp_cells)) ;
 
   return;
 }

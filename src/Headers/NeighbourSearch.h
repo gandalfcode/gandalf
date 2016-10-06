@@ -209,9 +209,7 @@ protected:
     const int size_particles  = tree->GetSizeOfExportedParticleData(Nactive);
     const int size_cells      = tree->GetSizeOfExportedCellData(cactive);
 
-    const int size_header = 2*sizeof(int);
-
-    int size = size_particles + size_cells + size_header;
+    int size = size_particles + size_cells ;
 
     vector<char> result(3*sizeof(int));
     copy(&result[0],&size);
@@ -221,9 +219,9 @@ protected:
     return result;
   };
   virtual int ExportInfoSize(const int i) const {
-	  const int size_particles = tree->GetSizeOfReturnedParticleData(ids_sent_particles[i].size());
-	  const int size_cells     = tree->GetSizeOfReturnedCellData(ids_sent_cells[i].size()) ;
-	  return size_particles+size_cells;
+    const int size_particles = tree->GetSizeOfReturnedParticleData(ids_sent_particles[i].size());
+    const int size_cells     = tree->GetSizeOfReturnedCellData(ids_sent_cells[i].size()) ;
+    return size_particles+size_cells;
   };
   virtual int GetExportInfo(int, Hydrodynamics<ndim> *, vector<char >&, MpiNode<ndim>&, int, int);
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,

@@ -1097,15 +1097,11 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rnode[ndim];                   // Position of cell
-  FLOAT rmin[ndim];                    // Minimum extent of MPI node
-  FLOAT rmax[ndim];                    // Maximum extent of MPI node
   FLOAT rsize[ndim];                   // Size of MPI node
 
   newCellIds = new int[Ncellmax + 1];
   for (c=0; c<Ncellmax+1; c++) newCellIds[c] = -1;
 
-  for (k=0; k<ndim; k++) rmin[k] = mpinode.hbox.boxmin[k];
-  for (k=0; k<ndim; k++) rmax[k] = mpinode.hbox.boxmax[k];
   for (k=0; k<ndim; k++) rnode[k] = (FLOAT) 0.5*(mpinode.hbox.boxmin[k] + mpinode.hbox.boxmax[k]);
   for (k=0; k<ndim; k++) rsize[k] = mpinode.hbox.boxmax[k] - rnode[k];
 
@@ -1536,6 +1532,23 @@ int Tree<ndim,ParticleType,TreeCell>::GetSizeOfExportedCellData(int Ncell) const
   typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
   return Ncell * sizeof(StreamlinedCell) ;
 }
+//=================================================================================================
+//  Tree::GetSizeOfReturnedParticleData
+/// Get size needed for packed particle data returned after force calculation
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::GetSizeOfReturnedParticleData(int Nparticles) const {
+  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+  return sizeof(StreamlinedPart) * Nparticles ;
+}
+//=================================================================================================
+//  Tree::GetSizeOCellData
+/// Get size needed for packed cell data returned after force calculation
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::GetSizeOfReturnedCellData(int Ncell) const {
+  return sizeof(double) * Ncell ;
+}
 
 //=================================================================================================
 //  Tree::AddWorkCost
@@ -1638,8 +1651,8 @@ void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsFromMPITransfer
     for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
 
       handler.ReceiveParticle(&(*iter),partdata[particle_index],hydro);
-
       inext[particle_index] = particle_index + 1;
+
       particle_index++;
       part_count++ ;
       iter += sizeof(StreamlinedPart);
@@ -1650,8 +1663,6 @@ void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsFromMPITransfer
 
   assert(part_count == Npart) ;
   assert(iter == recv_buffer.end()) ;
-
-
  }
 
 //=================================================================================================
@@ -1683,8 +1694,10 @@ void Tree<ndim,ParticleType,TreeCell>::PackParticlesAndCellsForMPIReturn
   start_index = start_cell ;
   end_index  = start_index + Ncell ;
   for (int c=start_index; c<end_index; c++) {
-    append_bytes<double>(send_buffer, &celldata[c].worktot) ;
+    append_bytes<double>(send_buffer, &(celldata[c].worktot)) ;
   }
+
+  assert(send_buffer.size() == (Ncell*sizeof(double) + Npart*sizeof(StreamlinedPart))) ;
  }
 
 
