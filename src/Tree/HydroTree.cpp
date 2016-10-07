@@ -138,12 +138,14 @@ HydroTree<ndim,ParticleType,TreeCell>::~HydroTree()
   // Free up the trees that we own.
   delete tree ;
   delete ghosttree ;
+#ifdef MPI_PARALLEL
   for (int i=0; i<Nmpi; i++) {
     delete prunedtree[i];
     delete sendprunedtree[i];
   }
   delete[] prunedtree ;
   delete[] sendprunedtree;
+#endif
 }
 
 //=================================================================================================

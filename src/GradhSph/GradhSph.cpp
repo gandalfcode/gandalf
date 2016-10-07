@@ -88,18 +88,13 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
 
   if (N > Nhydromax || !allocated) {
 
-	GradhSphParticle<ndim>* oldsphdata;
-	if (allocated) {
-		oldsphdata = sphdata;
-	}
-	else {
-	}
+	GradhSphParticle<ndim>* newsphdata =
+	    new struct GradhSphParticle<ndim>[N];
 
-
-    sphdata          = new struct GradhSphParticle<ndim>[N];
+	std::swap(newsphdata, sphdata) ;
     if (allocated) {
-    	std::copy(oldsphdata,oldsphdata+Nhydromax,sphdata);
-        delete[] oldsphdata;
+    	std::copy(newsphdata,newsphdata+Nhydromax,sphdata);
+        delete[] newsphdata;
     }
 
 	Nhydromax=N;

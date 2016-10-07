@@ -141,7 +141,6 @@ class TreeBase
 	virtual int MaxNumPartInLeafCell() const = 0 ;
 	virtual FLOAT MaxKernelRange() const = 0 ;
 	virtual int MaxNumCells() const = 0 ;
-	virtual int GetMaxCellNumber(const int) = 0;
 
 	virtual void BuildTree(const int, const int, const int, const int,
 	                       const FLOAT, Particle<ndim> *) = 0;
@@ -195,6 +194,7 @@ class TreeBase
 #endif
 
 #if defined(MPI_PARALLEL)
+    virtual int GetMaxCellNumber(const int) = 0;
 	virtual void InitialiseCellWorkCounters() = 0 ;
 	virtual void UpdateWorkCounters() = 0;
 

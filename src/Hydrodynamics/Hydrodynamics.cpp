@@ -310,18 +310,18 @@ void Hydrodynamics<ndim>::CheckBoundaryGhostParticle
 
   if (r + min((FLOAT) 0.0, v*tghost) < simbox.boxmin[j] + ghost_range*kernrange*h) {
     if     (simbox.boundary_lhs[j] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][0], r + simbox.boxsize[2], v);
+      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][0], r + simbox.boxsize[j], v);
     }
     if (simbox.boundary_lhs[j] == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][0], 2*simbox.boxmin[2] - r, -v);
+      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][0], 2*simbox.boxmin[j] - r, -v);
     }
   }
   if (r + max((FLOAT) 0.0, v*tghost) > simbox.boxmax[j] - ghost_range*kernrange*h) {
     if (simbox.boundary_rhs[j] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][1], r - simbox.boxsize[2],v);
+      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][1], r - simbox.boxsize[j],v);
     }
     if (simbox.boundary_rhs[j] == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][1], 2*simbox.boxmax[2] - r, -v);
+      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][1], 2*simbox.boxmax[j] - r, -v);
     }
   }
 
