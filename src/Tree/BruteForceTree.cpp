@@ -215,7 +215,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   const int Npart,                     ///< No. of particles
   const int Npartmax,                  ///< Max. no. of particles
   const FLOAT timestep,                ///< Smallest physical timestep
-  ParticleType<ndim> *partdata)        ///< Particle data array
+  Particle<ndim> *part_gen)            ///< Particle data array
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
@@ -224,6 +224,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
 
   debug2("[BruteForceTree::BuildTree]");
   //timing->StartTimingSection("BUILD_TREE");
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
 
   // Set tree size and allocate memory: Only one cell.
@@ -460,25 +461,33 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
- (ParticleType<ndim> *partdata)        ///< [in] Main particle array
+ (Particle<ndim> *part_gen)            ///< [in] Main particle array
 {
   int i;                               // SPH particle index
+  int c;                               // Cell index
   int ilast;                           // Last particle in linked list
 
   debug2("[BruteForceTree::UpdateActiveParticleCounters]");
 
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
-  celldata[0].Nactive = 0;
-  i = celldata[0].ifirst;
-  ilast = celldata[0].ilast;
+#pragma omp parallel for default(none) private(c,i,ilast) shared(partdata)
+  for (c=0; c<Ncell; c++) {
+    celldata[c].Nactive = 0;
 
-  // Else walk through linked list to obtain list and number of active ptcls.
-  while (i != -1) {
-    if (i < Ntot && partdata[i].flags.check_flag(active) && !partdata[i].flags.is_dead())
-      celldata[0].Nactive++;
-    if (i == ilast) break;
-    i = inext[i];
-  };
+    if (celldata[c].level != ltot) continue;
+    i = celldata[c].ifirst;
+    ilast = celldata[c].ilast;
+
+    // Else walk through linked list to obtain list and number of active ptcls.
+    while (i != -1) {
+      if (i < Ntot && partdata[i].flags.check_flag(active) && !partdata[i].flags.is_dead())
+        celldata[c].Nactive++;
+      if (i == ilast) break;
+      i = inext[i];
+    };
+
+  }
 
   return;
 }
@@ -543,6 +552,27 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
 }
 
 
+
+#ifdef MPI_PARALLEL
+//=================================================================================================
+//  BruteForceTree::UpdateWorkCounters
+/// Calculate the physical properties (e.g. total mass, centre-of-mass,
+/// opening-distance, etc..) of all cells in the tree.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters()
+{
+
+  double worktot = 0 ;
+
+  for (int c=1; c <Ncell; c++)
+    worktot += celldata[c].worktot ;
+
+  celldata[0].worktot = worktot ;
+
+  return;
+}
+#endif
 
 
 

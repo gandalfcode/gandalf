@@ -261,19 +261,19 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   //-----------------------------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce") {
     mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,BruteForceTreeCell>
-    (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+    ("bruteforce", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
      floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
   }
   else if (stringparams["neib_search"] == "kdtree") {
     mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,KDTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+     ("kdtree", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
   }
   else if (stringparams["neib_search"] == "octtree") {
     mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,OctTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+     ("octtree",intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing,  mfv->types);
   }

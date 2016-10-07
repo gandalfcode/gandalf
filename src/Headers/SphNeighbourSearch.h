@@ -157,15 +157,16 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  SphTree(int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
+  SphTree(string tree_t, int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
           FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
           string _gravity_mac, string _multipole,
-          DomainBox<ndim> *_box, SmoothingKernel<ndim> *_kern, CodeTiming *_timing) :
+          DomainBox<ndim> *_box, SmoothingKernel<ndim> *_kern, CodeTiming *_timing,
+          ParticleTypeRegister& types) :
     NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     SphNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
-    HydroTree<ndim,ParticleType,TreeCell>(_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
+    HydroTree<ndim,ParticleType,TreeCell>(tree_t, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
                                           _thetamaxsqd, _kernrange, _macerror, _gravity_mac,
-                                          _multipole, _box, _kern, _timing) {};
+                                          _multipole, _box, _kern, _timing, types) {};
   virtual ~SphTree() {};
 
 
@@ -228,7 +229,7 @@ class GradhSphTree : public SphTree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
+  GradhSphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister& types);
   virtual ~GradhSphTree();
 
@@ -288,7 +289,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SM2012SphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,
                 ParticleTypeRegister&);
 

@@ -81,6 +81,8 @@ public:
   virtual void DeleteDeadParticles(void) = 0;
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) = 0;
   void ComputeBoundingBox(FLOAT *, FLOAT *, const int);
+  void CheckBoundaryGhostParticle(const int, const int, const FLOAT, const DomainBox<ndim> &);
+
   void CheckXBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
   void CheckYBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
   void CheckZBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);

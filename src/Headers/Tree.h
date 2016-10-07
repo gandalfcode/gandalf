@@ -127,14 +127,28 @@ template <int ndim>
 class TreeBase
 {
  public:
-	TreeBase() {};
+	TreeBase()
+    : Ntot(0), Ncell(0)
+#ifdef MPI_PARALLEL
+   , Nimportedcell(0), Ncelltot(0)
+#endif
+ {};
 	virtual ~TreeBase() { } ;
+
+	virtual void ReallocateMemory (int,int) = 0;
+
 
 	virtual int MaxNumPartInLeafCell() const = 0 ;
 	virtual FLOAT MaxKernelRange() const = 0 ;
 	virtual int MaxNumCells() const = 0 ;
+	virtual int GetMaxCellNumber(const int) = 0;
 
+	virtual void BuildTree(const int, const int, const int, const int,
+	                       const FLOAT, Particle<ndim> *) = 0;
+	virtual void StockTree(Particle<ndim> *) = 0 ;
+	virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
+
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
 	virtual int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist) = 0 ;
 	virtual int ComputeActiveCellList(vector<TreeCellBase<ndim> >& ) = 0 ;
@@ -154,8 +168,12 @@ class TreeBase
 	                                              const int, const int, int &, int &, int &, int *, int *,
 	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
 #if defined(MPI_PARALLEL)
+	virtual int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
+	                                       const bool, const int, const int, const int, TreeBase<ndim> *) = 0;
 	virtual int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
 	                                                 const FLOAT, const int, int, MultipoleMoment<ndim> *) = 0;
+	virtual  bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &) = 0;
+	virtual  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
 #endif
 	virtual int FindLeafCell(const FLOAT *) = 0;
 
@@ -165,7 +183,12 @@ class TreeBase
 	virtual void AllocateTreeMemory(int,int,bool) = 0;
 	virtual void DeallocateTreeMemory(void) = 0;
 	virtual void UpdateAllHmaxValues(Particle<ndim> *) = 0;
+	virtual double GetMaximumSmoothingLength() const = 0 ;
 	//virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
+
+	virtual void GenerateBoundaryGhostParticles(const FLOAT, const FLOAT, const int,
+	                                            const DomainBox<ndim>&,
+	                                            Hydrodynamics<ndim>*) = 0;
 
 #if defined(VERIFY_ALL)
    // virtual void ValidateTree(Particle<ndim> *) = 0;
@@ -173,9 +196,13 @@ class TreeBase
 
 #if defined(MPI_PARALLEL)
 	virtual void InitialiseCellWorkCounters() = 0 ;
+	virtual void UpdateWorkCounters() = 0;
+
 	virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) = 0;
 	virtual int GetTreeCellSize() const = 0 ;
-	virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*)= 0;
+	virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) = 0;
+	virtual int FindBoxGhostParticles(const FLOAT, const FLOAT, const Box<ndim> &,
+	                                  vector<int> &export_list) = 0;
 	virtual int PackParticlesAndCellsForMPITransfer(int Ncells, const int* celllist,
                                                     vector<int>& cell_ids, vector<int>& part_ids,
                                                     vector<char>& send_buffer,
@@ -199,8 +226,21 @@ class TreeBase
 	virtual int GetSizeOfExportedCellData(int Ncell) const = 0 ;
 	virtual int GetSizeOfReturnedParticleData(int Nparticles) const = 0 ;
 	virtual int GetSizeOfReturnedCellData(int Ncell) const = 0 ;
+	virtual const void* GetCellDataPointer() const = 0 ;
+	virtual void* GetCellDataPointer() = 0 ;
 #endif
 
+	int Ntot;                              ///< No. of current points in list
+	int Ncell;                             ///< Current no. of grid cells
+	int gmax;                              ///< Max. no. of grid/leaf cells
+    int gtot;                              ///< Total number of grid/leaf cells
+    int lmax;                              ///< Max. no. of levels
+    int ltot;                              ///< Total number of levels in tree
+    int ltot_old;                          ///< Prev. value of ltot
+#if defined MPI_PARALLEL
+	int Nimportedcell;                     ///< No. of imported cells
+	int Ncelltot;                          ///< Total number of cells
+#endif
 };
 
 
@@ -285,26 +325,30 @@ protected:
   //-----------------------------------------------------------------------------------------------
 
   virtual void BuildTree(const int, const int, const int, const int,
-                         const FLOAT, ParticleType<ndim> *) = 0;
-  void UpdateAllHmaxValues(Particle<ndim>* sph_gen)
-  {
-	  ParticleType<ndim> * sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
-	  UpdateHmaxValues(celldata[0], sphdata) ;
+                         const FLOAT, Particle<ndim> *) = 0;
+  void UpdateAllHmaxValues(Particle<ndim>* sph_gen) = 0;
+  virtual void StockTree(Particle<ndim> *) = 0 ;
+  virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
+  virtual double GetMaximumSmoothingLength() const {
+    return celldata[0].hmax ;
   }
-  virtual void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
-  virtual void StockTree(TreeCell<ndim> &, ParticleType<ndim> *) = 0 ;
-  virtual void UpdateActiveParticleCounters(ParticleType<ndim> *) = 0;
+
+  virtual void GenerateBoundaryGhostParticles(const FLOAT, const FLOAT, const int,
+                                              const DomainBox<ndim>&,
+                                              Hydrodynamics<ndim>*) ;
 
 #ifdef MPI_PARALLEL
   virtual void InitialiseCellWorkCounters() {
     assert(Ncell > 0);
     for (int c=0; c<Ncell; c++) celldata[c].worktot = 0 ;
   }
-  virtual void UpdateWorkCounters(TreeCell<ndim> &) = 0;
+  virtual void UpdateWorkCounters() = 0;
   virtual int GetMaxCellNumber(const int) = 0;
   virtual int GetTreeCellSize() const { return sizeof(TreeCell<ndim>) ;}
   virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) ;
   virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) ;
+  virtual int FindBoxGhostParticles(const FLOAT, const FLOAT, const Box<ndim> &,
+                                    vector<int> &export_list) ;
   virtual int PackParticlesAndCellsForMPITransfer(int Ncells, const int* celllist,
                                                   vector<int>& cell_ids, vector<int>& part_ids,
                                                   vector<char>& send_buffer,
@@ -328,6 +372,12 @@ protected:
   virtual int GetSizeOfExportedCellData(int Ncell) const ;
   virtual int GetSizeOfReturnedParticleData(int Nparticles) const ;
   virtual int GetSizeOfReturnedCellData(int Ncell) const ;
+  virtual const void* GetCellDataPointer() const {
+    return celldata ;
+  }
+  virtual void* GetCellDataPointer() {
+    return celldata ;
+  }
 #endif
 
 
@@ -344,17 +394,22 @@ protected:
 
   // Additional variables for tree class
   //-----------------------------------------------------------------------------------------------
+  using TreeBase<ndim>::Ntot;
+  using TreeBase<ndim>::Ncell;
+  using TreeBase<ndim>::gtot;
+  using TreeBase<ndim>::gmax;
+  using TreeBase<ndim>::lmax;
+  using TreeBase<ndim>::ltot;
+  using TreeBase<ndim>::ltot_old;
+#if defined MPI_PARALLEL
+  using TreeBase<ndim>::Nimportedcell;
+  using TreeBase<ndim>::Ncelltot;
+#endif
+
   bool allocated_tree;                 ///< Are grid arrays allocated?
-  int gmax;                            ///< Max. no. of grid/leaf cells
-  int gtot;                            ///< Total number of grid/leaf cells
   int ifirst;                          ///< i.d. of first particle in tree
   int ilast;                           ///< i.d. of last particle in tree
-  int lmax;                            ///< Max. no. of levels
-  int ltot;                            ///< Total number of levels in tree
-  int ltot_old;                        ///< Prev. value of ltot
-  int Ncell;                           ///< Current no. of grid cells
   int Nthreads;                        ///< No. of OpenMP threads
-  int Ntot;                            ///< No. of current points in list
   FLOAT hmax;                          ///< Store hmax in the tree
   int *g2c;                            ///< i.d. of leaf(grid) cells
   int *ids;                            ///< Particle ids
@@ -369,6 +424,5 @@ protected:
 #endif
 
 };
-
 
 #endif

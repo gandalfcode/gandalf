@@ -70,6 +70,7 @@ int main(int argc, char** argv)
   }
 
 #ifdef _OPENMP
+  /*
   // Check that OpenMP and MPI can work together
   if (mpi_thread_support == MPI_THREAD_SINGLE)
     ExceptionHandler::getIstance().raise("This implementation of MPI is not interoperable with OpenMP, aborting!"
@@ -87,6 +88,7 @@ int main(int argc, char** argv)
     }
     cout << "The level of MPI thread support is " << message << endl;
   }
+  */
 #endif
 #endif
 

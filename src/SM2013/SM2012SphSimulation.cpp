@@ -232,18 +232,18 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new SM2012SphTree<ndim,SM2012SphParticle,BruteForceTreeCell>
-  	  (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+  	  ("bruteforce", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
   	   floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
   	   stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new SM2012SphTree<ndim,SM2012SphParticle,KDTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+     ("kdtree",intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new SM2012SphTree<ndim,SM2012SphParticle,OctTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+     ("octtree", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
   }

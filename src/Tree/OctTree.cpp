@@ -212,7 +212,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   const int Npart,                     ///< [in] No. of particles
   const int Npartmax,                  ///< [in] Max. no. of particles
   const FLOAT timestep,                ///< [in] Smallest physical timestep
-  ParticleType<ndim> *partdata)        ///< [in] Particle data array
+  Particle<ndim> *part_gen)            ///< [in] Particle data array
 {
   bool allDone = false;                // Are all cell divisions completed?
   int c;                               // Cell counter
@@ -229,6 +229,8 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
 
   debug2("[OctTree::BuildTree]");
   //timing->StartTimingSection("BUILD_OCT_TREE");
+
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
 
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory(Npartmax,0,false);
@@ -782,7 +784,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
- (ParticleType<ndim> *partdata)        ///< ..
+ (Particle<ndim> *part_gen)            ///< ..
 {
   int c;                               // Cell counter
   int i;                               // SPH particle index
@@ -790,6 +792,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
   debug2("[OctTree::UpdateActiveParticleCounters]");
   //timing->StartTimingSection("TREE_UPDATE_COUNTERS");
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
 
   // Loop through all grid cells in turn
@@ -817,6 +820,62 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
   return;
 }
 
+#ifdef MPI_PARALLEL
+//=================================================================================================
+//  OctTree::UpdateWorkCounters
+/// Calculate the physical properties (e.g. total mass, centre-of-mass,
+/// opening-distance, etc..) of all cells in the tree.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void OctTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters
+ (TreeCell<ndim> &rootcell)            ///< KD-tree cell
+{
+  int c,cc;                            // Cell counters
+  int cfirst,cend;                     // ..
+  int l;                               // ..
+
+
+  // Loop over all levels in tree starting from lowest
+  //===============================================================================================
+  for (l=ltot; l>=0; l--) {
+
+
+    // Loop over all cells on current level
+    //---------------------------------------------------------------------------------------------
+    for (c=firstCell[l]; c<=lastCell[l]; c++) {
+      TreeCell<ndim> &cell = celldata[c];
+
+      // For non-leaf cells, sum over all child cells
+      //-------------------------------------------------------------------------------------------
+      if (cell.copen != -1) {
+
+        // Set limits for children (maximum of 8 but may be less)
+        cfirst = cell.copen;
+        cend   = cell.cnext;
+
+
+        cc = cfirst;
+        double worktot = 0 ;
+        while (cc != cend) {
+          TreeCell<ndim> &child = celldata[cc];
+
+          worktot += child.worktot ;
+          cc = child.cnext;
+        };
+        cell.worktot = worktot ;
+      }
+      //-------------------------------------------------------------------------------------------
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+  }
+  //===============================================================================================
+
+
+  return;
+}
+#endif
 
 
 #if defined(VERIFY_ALL)
@@ -979,4 +1038,11 @@ template class OctTree<3, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<1, GradhSphParticle, TreeRayCell>;
 template class OctTree<2, GradhSphParticle, TreeRayCell>;
 template class OctTree<3, GradhSphParticle, TreeRayCell>;
-//template class OctTree<3, MeshlessFVParticle, TreeRayCell>;
+
+template class OctTree<1, SM2012SphParticle, TreeRayCell>;
+template class OctTree<2, SM2012SphParticle, TreeRayCell>;
+template class OctTree<3, SM2012SphParticle, TreeRayCell>;
+
+template class OctTree<1, MeshlessFVParticle, TreeRayCell>;
+template class OctTree<2, MeshlessFVParticle, TreeRayCell>;
+template class OctTree<3, MeshlessFVParticle, TreeRayCell>;

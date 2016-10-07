@@ -47,45 +47,15 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 GradhSphTree<ndim,ParticleType,TreeCell>::GradhSphTree
- (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
+ (string tree_type,
+  int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
  SphTree<ndim,ParticleType,TreeCell>
-  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
-{
-  // Set-up main tree object
-  tree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-		  	  	  	  	  	  	  	  	  	  _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up ghost-particle tree object
-  ghosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-	  	  	  	  	  _macerror, _gravity_mac, _multipole, *_box, types);
-
-#ifdef MPI_PARALLEL
-  // Set-up ghost-particle tree object
-  mpighosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-	  	  	  _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up multiple pruned trees, one for each MPI process
-  prunedtree = new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
-		 // new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
-  sendprunedtree =  new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
-		  //new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
-
-  for (int i=0; i<Nmpi; i++) {
-    prunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-	  	  	  	  	  	  	  	  	  	  	  	  	  	 _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-  for (int i=0; i<Nmpi; i++) {
-    sendprunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-    														 _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-#endif
-
-
-}
+  (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
+{ }
 
 
 
@@ -96,10 +66,6 @@ GradhSphTree<ndim,ParticleType,TreeCell>::GradhSphTree
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 GradhSphTree<ndim,ParticleType,TreeCell>::~GradhSphTree()
 {
-  if (tree->allocated_tree) {
-    this->DeallocateMemory();
-    tree->DeallocateTreeMemory();
-  }
 }
 
 
@@ -329,7 +295,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 
 
   // Update tree smoothing length values here
-  tree->UpdateHmaxValues(tree->celldata[0],sphdata);
+  tree->UpdateAllHmaxValues(sphdata);
 
   timing->EndTimingSection("SPH_PROPERTIES");
 
@@ -371,7 +337,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   }
 
   // Update ghost tree smoothing length values here
-  tree->UpdateHmaxValues(tree->celldata[0],sphdata);
+  tree->UpdateAllHmaxValues(sphdata);
   //if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
 
 

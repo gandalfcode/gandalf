@@ -236,7 +236,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   if (stringparams["neib_search"] == "bruteforce") {
     sphneib = new GradhSphTree<ndim,GradhSphParticle,BruteForceTreeCell>
-      (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      ("bruteforce", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
        floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
        stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
        
@@ -250,7 +250,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GradhSphTree<ndim,GradhSphParticle,KDTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+     ("kdtree", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
@@ -263,7 +263,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
   else if (stringparams["neib_search"] == "octtree" && gas_radiation == "treeray" && ndim == 3) {
     sphneib = new GradhSphTree<ndim,GradhSphParticle,TreeRayCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+     ("treeray", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
@@ -276,7 +276,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new GradhSphTree<ndim,GradhSphParticle,OctTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+     ("octtree", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 

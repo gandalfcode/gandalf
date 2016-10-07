@@ -36,7 +36,6 @@
 #include "Particle.h"
 #include "Sph.h"
 #include "KDTree.h"
-#include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>
 #endif
@@ -222,7 +221,7 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   const int Npart,                     ///< No. of particles
   const int Npartmax,                  ///< Max. no. of particles
   const FLOAT timestep,                ///< Smallest physical timestep
-  ParticleType<ndim> *partdata)        ///< Particle data array
+  Particle<ndim> *part_gen)            ///< Particle data array
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
@@ -231,6 +230,8 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
 
   debug2("[KDTree::BuildTree]");
   //timing->StartTimingSection("BUILD_TREE");
+
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -757,8 +758,8 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockTree
- (TreeCell<ndim> &cell,                ///< Reference to cell to be stocked
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
+(TreeCell<ndim> &cell,                ///< Reference to cell to be stocked
+ ParticleType<ndim> *partdata)        ///< SPH particle data array
 {
   int i;                               // Aux. child cell counter
 
@@ -1167,7 +1168,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
- (ParticleType<ndim> *partdata)        ///< [in] Main particle array
+ (Particle<ndim> *part_gen)        ///< [in] Main particle array
 {
   int c;                               // Cell counter
   int i;                               // SPH particle index
@@ -1175,6 +1176,8 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
   debug2("[KDTree::UpdateActiveParticleCounters]");
   //timing->StartTimingSection("TREE_UPDATE_COUNTERS");
+
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
 
 
   // Loop through all grid cells in turn

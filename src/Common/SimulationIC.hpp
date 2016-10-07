@@ -196,7 +196,7 @@ void Simulation<ndim>::GenerateIC(void)
   // Check that the initial conditions are valid
   icGenerator.CheckInitialConditions();
 
-  cout << "Finsihed creating initial conditions" << endl;
+  cout << "Finished creating initial conditions" << endl;
 
   return;
 }

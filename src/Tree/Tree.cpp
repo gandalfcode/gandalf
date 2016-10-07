@@ -1067,6 +1067,56 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
   return -1;
 }
 
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::GenerateBoundaryGhostParticles
+(const FLOAT tghost,                              ///< [in] Ghost update time
+ const FLOAT ghost_range,                         ///< [in] Smoothing range of ghosts to include
+ const int j,                                     ///< [in] Direction that we are searching for ghosts
+ const DomainBox<ndim>& simbox,                   ///< [in] Simulation box domain.
+ Hydrodynamics<ndim>* hydro)
+ {
+  // Start from root-cell
+  int c = 0;
+
+  //---------------------------------------------------------------------------------------------
+  while (c < Ncell) {
+    TreeCell<ndim>* cellptr = &(celldata[c]);
+
+    // If x-bounding box overlaps edge of x-domain, open cell
+    //-------------------------------------------------------------------------------------------
+    if (cellptr->bbmin[j] + min((FLOAT) 0.0,cellptr->v[j]*tghost) <
+        simbox.boxmin[j] + ghost_range*cellptr->hmax ||
+        cellptr->bbmax[j] + max((FLOAT) 0.0,cellptr->v[j]*tghost) >
+        simbox.boxmax[j] - ghost_range*cellptr->hmax) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (cellptr->copen != -1) {
+        c = cellptr->copen;
+      }
+
+      else if (cellptr->N == 0)
+        c = cellptr->cnext;
+
+      // If leaf-cell, check through particles in turn to find ghosts
+      else if (cellptr->copen == -1) {
+       int i = cellptr->ifirst;
+        while (i != -1) {
+          hydro->CheckBoundaryGhostParticle(i,j,tghost,simbox);
+          if (i == cellptr->ilast) break;
+          i = inext[i];
+        };
+        c = cellptr->cnext;
+      }
+    }
+
+    // If not in range, then open next cell
+    //-------------------------------------------------------------------------------------------
+    else
+      c = cellptr->cnext;
+
+  }
+  //---------------------------------------------------------------------------------------------
+ }
 
 
 #ifdef MPI_PARALLEL
@@ -1399,7 +1449,7 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 }
 
 //=================================================================================================
-//  Tree::ComputeHydroTreeCellOverlap
+//  Tree::FindBoxOverlapParticles
 /// \brief Compute the particles that are inside the specified box.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
@@ -1424,8 +1474,8 @@ const Particle<ndim> *part_gen)                ///< [in] List of particle data
     if (BoxOverlap(cellptr->bbmin, cellptr->bbmax, nodebox.boxmin, nodebox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (cellptr->level != ltot) {
-        c++;
+      if (cellptr->copen != -1) {
+        c = cellptr->copen;
       }
 
       else if (cellptr->N == 0) {
@@ -1434,7 +1484,7 @@ const Particle<ndim> *part_gen)                ///< [in] List of particle data
 
       // If leaf-cell, check through particles in turn to find ghosts and
       // add to list to be exported
-      else if (cellptr->level == ltot) {
+      else if (cellptr->copen == -1) {
         i = cellptr->ifirst;
         while (i != -1) {
           if (ParticleInBox(partdata[i], nodebox)) {
@@ -1459,6 +1509,75 @@ const Particle<ndim> *part_gen)                ///< [in] List of particle data
   return Npart;
 }
 
+//=================================================================================================
+//  Tree::FindBoxGhostParticles
+/// \brief Compute the ghost particles that overlap a given box.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::FindBoxGhostParticles
+(const FLOAT tghost,
+ const FLOAT ghost_range,
+ const Box<ndim> &box,
+ vector<int> &export_list)
+ {
+  FLOAT scattermin[ndim];              // Minimum 'scatter' box size due to particle motion
+  FLOAT scattermax[ndim];              // Maximum 'scatter' box size due to particle motion
+
+
+
+  // Start from root-cell of tree and walk all cells
+  //-----------------------------------------------------------------------------------------------
+  int c = 0 ;
+  int Nexport = 0 ;
+  while (c < Ncell) {
+    TreeCell<ndim>*  cellptr = &(celldata[c]);
+
+    // Construct maximum cell bounding box depending on particle velocities
+    for (int k=0; k<ndim; k++) {
+      scattermin[k] = cellptr->bbmin[k] +
+          min((FLOAT) 0.0, cellptr->v[k]*tghost) - ghost_range*cellptr->hmax;
+      scattermax[k] = cellptr->bbmax[k] +
+          max((FLOAT) 0.0, cellptr->v[k]*tghost) + ghost_range*cellptr->hmax;
+    }
+
+
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    //---------------------------------------------------------------------------------------------
+    if (BoxOverlap(scattermin, scattermax, box.boxmin, box.boxmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (cellptr->copen != -1) {
+        c = cellptr->copen;
+      }
+
+      else if (cellptr->N == 0) {
+        c = cellptr->cnext;
+      }
+
+      // If leaf-cell, check through particles in turn to find ghosts and
+      // add to list to be exported
+      else if (cellptr->copen == -1) {
+        int i = cellptr->ifirst;
+        while (i != -1) {
+          export_list.push_back(i);
+          Nexport++;
+          if (i == cellptr->ilast) break;
+          i = inext[i];
+        };
+        c = cellptr->cnext;
+      }
+    }
+
+    // If not in range, then open next cell
+    //---------------------------------------------------------------------------------------------
+    else {
+      c = cellptr->cnext;
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return Nexport ;
+}
 
 
 //=================================================================================================
@@ -1490,7 +1609,7 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
       c = celldata[c].cnext;
     }
 
-    // If there is a parital overlap for a non-leaf cell, then open cell to lower levels
+    // If there is a partial overlap for a non-leaf cell, then open cell to lower levels
     else if (celldata[c].copen != -1) {
       c = celldata[c].copen;
     }
@@ -1772,6 +1891,12 @@ template class Tree<3,MeshlessFVParticle,OctTreeCell>;
 template class Tree<1,GradhSphParticle,TreeRayCell>;
 template class Tree<2,GradhSphParticle,TreeRayCell>;
 template class Tree<3,GradhSphParticle,TreeRayCell>;
+template class Tree<1,SM2012SphParticle,TreeRayCell>;
+template class Tree<2,SM2012SphParticle,TreeRayCell>;
+template class Tree<3,SM2012SphParticle,TreeRayCell>;
+template class Tree<1,MeshlessFVParticle,TreeRayCell>;
+template class Tree<2,MeshlessFVParticle,TreeRayCell>;
+template class Tree<3,MeshlessFVParticle,TreeRayCell>;
 
 
 template class Tree<1,GradhSphParticle,BruteForceTreeCell>;

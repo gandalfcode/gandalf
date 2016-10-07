@@ -289,6 +289,46 @@ void Hydrodynamics<ndim>::CheckZBoundaryGhostParticle
 }
 
 
+//=================================================================================================
+//  Hydrodynamics::CheckZBoundaryGhostParticle
+/// Check if we must create a ghost replica of particle i in the z-direction.  Checks how deep
+/// the ghost region is likely to be based on the particle's z-velocity.
+//=================================================================================================
+template <int ndim>
+void Hydrodynamics<ndim>::CheckBoundaryGhostParticle
+ (const int i,                         ///< [in] i.d. of particles to check
+  const int j,                         ///< [in] Direction of boundary to check
+  const FLOAT tghost,                  ///< [in] Expected lifetime of ghost
+  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
+{
+  assert(j<ndim);
+
+  Particle<ndim>& part = GetParticlePointer(i);
+  const FLOAT r = part.r[j];
+  const FLOAT v = part.v[j];
+  const FLOAT h = part.h;
+
+  if (r + min((FLOAT) 0.0, v*tghost) < simbox.boxmin[j] + ghost_range*kernrange*h) {
+    if     (simbox.boundary_lhs[j] == periodicBoundary) {
+      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][0], r + simbox.boxsize[2], v);
+    }
+    if (simbox.boundary_lhs[j] == mirrorBoundary) {
+      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][0], 2*simbox.boxmin[2] - r, -v);
+    }
+  }
+  if (r + max((FLOAT) 0.0, v*tghost) > simbox.boxmax[j] - ghost_range*kernrange*h) {
+    if (simbox.boundary_rhs[j] == periodicBoundary) {
+      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][1], r - simbox.boxsize[2],v);
+    }
+    if (simbox.boundary_rhs[j] == mirrorBoundary) {
+      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][1], 2*simbox.boxmax[2] - r, -v);
+    }
+  }
+
+  return;
+}
+
+
 
 //=================================================================================================
 //  Hydrodynamics::CreateBoundaryGhostParticle
