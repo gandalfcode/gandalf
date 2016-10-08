@@ -260,7 +260,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph") {
     sinks->timing    = timing;
     sphint->timing  = timing;
-    sphneib->timing = timing;
+    sphneib->SetTimingObject(timing);
     uint->timing    = timing;
     radiation->timing = timing;
   }

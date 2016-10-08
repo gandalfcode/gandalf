@@ -58,7 +58,10 @@ HydroTree<ndim,ParticleType>::HydroTree
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
   ParticleTypeRegister& types):
-  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
+  neibcheck(true),
+  kernfac(1.0),
+  kernrange(_kernrange),
+  kernrangesqd(_kernrange*_kernrange),
   Nleafmax(_Nleafmax),
   Nmpi(_Nmpi),
   pruning_level_min(_pruning_level_min),
@@ -67,7 +70,10 @@ HydroTree<ndim,ParticleType>::HydroTree
   invthetamaxsqd((FLOAT) 1.0/_thetamaxsqd),
   macerror(_macerror),
   gravity_mac(_gravity_mac),
-  multipole(_multipole)
+  multipole(_multipole),
+  timing(_timing),
+  box(_box),
+  kernp(_kern)
 {
   allocated_buffer = false;
   neibcheck        = true;

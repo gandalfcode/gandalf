@@ -53,11 +53,11 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
   debug2("[TreeRay::TreeRay]");
 
   // Set pointers to reference the tree (and pruned tree) objets in the Neighbour Search class
-  tree = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->_tree);
+  tree = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->GetTree());
 #if defined MPI_PARALLEL
   prunedtree = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
   for (int i=0; i<Nmpi; i++) {
-    prunedtree[i] = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->_prunedtree[i]);
+    prunedtree[i] = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->GetPrunedTree(i));
   }
 #endif
 

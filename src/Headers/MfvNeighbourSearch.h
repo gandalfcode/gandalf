@@ -71,9 +71,6 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  MeshlessFVNeighbourSearch(FLOAT kernrangeaux, DomainBox<ndim> *boxaux,
-                            SmoothingKernel<ndim> *kernaux, CodeTiming *timingaux) :
-    NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux) {};
   virtual ~MeshlessFVNeighbourSearch() {};
 
 
@@ -142,10 +139,7 @@ protected:
                  FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
                  string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
                  SmoothingKernel<ndim> *_kern, CodeTiming *_timing, ParticleTypeRegister&); //:
-    /*NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
-    MeshlessFVNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
-    HydroTree<ndim,ParticleType>(_Nleafmax, _Nmpi, _thetamaxsqd, _kernrange, _macerror,
-                                          _gravity_mac, _multipole, _box, _kern, _timing) {};*/
+
   virtual ~MeshlessFVTree(); //{};
 
 

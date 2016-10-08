@@ -267,7 +267,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
    stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
 
   ////mfvneib->kernp = mfv->kernp;
-  mfvneib->kernfac = mfv->kernfac;
+  // mfvneib->kernfac = mfv->kernfac;
   ////mfvneib->kernrange = mfv->kernp->kernrange;
 
 
@@ -397,7 +397,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   nbody->timing   = timing;
   //if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || sim == "godunov_hydro") {
     sinks->timing    = timing;
-    mfvneib->timing = timing;
+    mfvneib->SetTimingObject(timing);
   //}*/
 
 #if defined MPI_PARALLEL
@@ -487,7 +487,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // If the smoothing lengths have not been provided beforehand, then
   // calculate the initial values here
-  mfvneib->neibcheck = false;
+
+  mfvneib->ToggleNeighbourCheck(false);
   if (!this->initial_h_provided) {
     mfv->InitialSmoothingLengthGuess();
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
@@ -579,7 +580,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   partdata = mfv->GetMeshlessFVParticleArray();
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                           mfv->Nhydromax, timestep, partdata, mfv);
-  mfvneib->neibcheck = true;
+  mfvneib->ToggleNeighbourCheck(true);
 
   // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL

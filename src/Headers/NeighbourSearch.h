@@ -72,14 +72,6 @@ protected:
  public:
 
   //-----------------------------------------------------------------------------------------------
-  NeighbourSearch(FLOAT kernrangeaux, DomainBox<ndim> *boxaux,
-                  SmoothingKernel<ndim> *kernaux, CodeTiming *timingaux) :
-    kernfac(1.0),
-    kernrange(kernrangeaux),
-    kernrangesqd(kernrangeaux*kernrangeaux),
-    timing(timingaux),
-    box(boxaux),
-    kernp(kernaux) {};
   virtual ~NeighbourSearch() {};
 
 
@@ -93,8 +85,16 @@ protected:
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) = 0;
   virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
                                       Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
-  virtual double GetMaximumSmoothingLength() const = 0 ;
+  virtual double GetMaximumSmoothingLength() const = 0;
+  virtual TreeBase<ndim>* GetTree() const = 0;
+  virtual TreeBase<ndim>* GetGhhotTree() const = 0;
+  virtual void SetTimingObject(CodeTiming*) = 0 ;
+  virtual void ToggleNeighbourCheck(bool do_check) = 0 ;
+
 #ifdef MPI_PARALLEL
+  virtual TreeBase<ndim>** GetPrunedTrees() const = 0;
+  virtual TreeBase<ndim>*  GetPrunedTree(int i) const = 0;
+
   virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Particle<ndim> *) = 0;
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
@@ -125,22 +125,6 @@ protected:
   virtual void ResetCountersExportInfo(Hydrodynamics<ndim>* hydro) = 0;
 #endif
 
-
-  //-----------------------------------------------------------------------------------------------
-  bool neibcheck;                      ///< Flag to verify neighbour lists
-  FLOAT kernfac;                       ///< Deprecated variable (to be removed)
-  FLOAT kernrange;                     ///< Kernel extent (in units of h)
-  FLOAT kernrangesqd;                  ///< Kernel extent (squared)
-
-  CodeTiming *timing;                  ///< Pointer to code timing object
-  DomainBox<ndim> *box;                ///< Pointer to simulation bounding box
-  SmoothingKernel<ndim> *kernp;        ///< Pointer to SPH kernel object
-
-  TreeBase<ndim>* _tree;               ///< Pointer to main tree
-#if defined MPI_PARALLEL
-  TreeBase<ndim>** _prunedtree;        ///< Pointer to pruned tree arrays
-#endif
-
 };
 
 
@@ -165,14 +149,6 @@ protected:
 #endif
  public:
 
-  using NeighbourSearch<ndim>::neibcheck;
-  using NeighbourSearch<ndim>::box;
-  using NeighbourSearch<ndim>::timing;
-  using NeighbourSearch<ndim>::kernp;
-  using NeighbourSearch<ndim>::kernfac;
-  using NeighbourSearch<ndim>::kernrange;
-  using NeighbourSearch<ndim>::kernrangesqd;
-
 
   //-----------------------------------------------------------------------------------------------
   HydroTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
@@ -191,7 +167,16 @@ protected:
   virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
                                       Hydrodynamics<ndim> *, Nbody<ndim> *);
   virtual double GetMaximumSmoothingLength() const;
+  virtual TreeBase<ndim>* GetTree() const { return tree; }
+  virtual TreeBase<ndim>* GetGhhotTree() const { return ghosttree; }
+  virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
+  virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
+
+
 #ifdef MPI_PARALLEL
+  virtual TreeBase<ndim>** GetPrunedTrees() const { return prunedtree; }
+  virtual TreeBase<ndim>*  GetPrunedTree(int i) const { return prunedtree[i]; }
+
   virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Particle<ndim> *);
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
@@ -257,8 +242,10 @@ protected:
   void DeallocateMemory(void);
 
 
+
   // Const variables
   //-----------------------------------------------------------------------------------------------
+
   const int pruning_level_min;                     ///< Minimum pruned tree level
   const int pruning_level_max;                     ///< Maximum pruned tree level
   const int Nleafmax;                              ///< Max. number of particles per leaf cell
@@ -268,6 +255,14 @@ protected:
   const FLOAT macerror;                            ///< Error tolerance for gravity tree-MAC
   const string gravity_mac;                        ///< Multipole-acceptance criteria for tree
   const string multipole;                          ///< Multipole-order for cell gravity
+
+
+  //-----------------------------------------------------------------------------------------------
+  bool neibcheck;                      ///< Flag to verify neighbour lists
+  FLOAT kernfac;                       ///< Deprecated variable (to be removed)
+  FLOAT kernrange;                     ///< Kernel extent (in units of h)
+  FLOAT kernrangesqd;                  ///< Kernel extent (squared)
+
 
   // Class variables
   //-----------------------------------------------------------------------------------------------
@@ -292,6 +287,10 @@ protected:
   TreeBase<ndim> *tree;                            ///< Pointer to main (local) tree
   TreeBase<ndim> *ghosttree;                       ///< Pointer to tree containing ghosts
                                                    ///< on local domain
+
+  CodeTiming *timing;                              ///< Pointer to code timing object
+  DomainBox<ndim> *box;                            ///< Pointer to simulation bounding box
+  SmoothingKernel<ndim> *kernp;                    ///< Pointer to SPH kernel object
 
 #ifdef MPI_PARALLEL
   int Nprunedcellmax;                              ///< Max. number of cells in pruned tree

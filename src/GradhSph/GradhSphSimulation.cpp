@@ -259,7 +259,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #endif
 
   //sphneib->kernp = sph->kernp;
-  sphneib->kernfac = sph->kernfac;
+  //sphneib->kernfac = sph->kernfac;
   //sphneib->kernrange = sph->kernp->kernrange;
 
 

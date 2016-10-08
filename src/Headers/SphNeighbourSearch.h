@@ -77,19 +77,7 @@ class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 {
  public:
 
-  using NeighbourSearch<ndim>::neibcheck;
-  using NeighbourSearch<ndim>::box;
-  using NeighbourSearch<ndim>::timing;
-  using NeighbourSearch<ndim>::kernp;
-  using NeighbourSearch<ndim>::kernfac;
-  using NeighbourSearch<ndim>::kernrange;
-  using NeighbourSearch<ndim>::kernrangesqd;
-
-
   //-----------------------------------------------------------------------------------------------
-  SphNeighbourSearch(FLOAT kernrangeaux, DomainBox<ndim> *boxaux,
-                     SmoothingKernel<ndim> *kernaux, CodeTiming *timingaux) :
-    NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux) {};
   virtual ~SphNeighbourSearch() {};
 
 
@@ -162,8 +150,6 @@ protected:
           string _gravity_mac, string _multipole,
           DomainBox<ndim> *_box, SmoothingKernel<ndim> *_kern, CodeTiming *_timing,
           ParticleTypeRegister& types) :
-    NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
-    SphNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     HydroTree<ndim,ParticleType>(tree_t, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
                                           _thetamaxsqd, _kernrange, _macerror, _gravity_mac,
                                           _multipole, _box, _kern, _timing, types) {};
