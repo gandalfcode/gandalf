@@ -94,25 +94,22 @@ void MeshlessFV<ndim>::AllocateMemory(int N)
 
   if (N > Nhydromax || !allocated) {
 
-	  MeshlessFVParticle<ndim>* oldhydrodata;
-		if (allocated) {
-			oldhydrodata = hydrodata;
-		}
-		else {
-		}
+    MeshlessFVParticle<ndim>* newhydrodata =
+        new struct MeshlessFVParticle<ndim>[N];
+
+    // Swap so that hydrodata points to the new memory
+    std::swap(newhydrodata, hydrodata) ;
+    if (allocated) {
+      // Copy back particle data
+      std::copy(newhydrodata,newhydrodata+Nhydromax,hydrodata);
+      delete[] newhydrodata;
+    }
 
 
-		hydrodata          = new struct MeshlessFVParticle<ndim>[N];
-	    if (allocated) {
-	    	std::copy(oldhydrodata,oldhydrodata+Nhydromax,hydrodata);
-	        delete[] oldhydrodata;
-	    }
-
-		Nhydromax=N;
-	    allocated        = true;
-	    hydrodata_unsafe = hydrodata;
-	  }
-
+    Nhydromax=N;
+    allocated        = true;
+    hydrodata_unsafe = hydrodata;
+  }
   assert(Nhydromax >= Nhydro);
   assert(hydrodata);
 
@@ -492,7 +489,7 @@ void MeshlessFV<1>::InitialSmoothingLengthGuess(void)
   for (i=0; i<Nhydro; i++) {
     MeshlessFVParticle<1>& part = GetMeshlessFVParticlePointer(i);
     part.h         = h_guess;
-    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+    part.hrangesqd = kernp->kernrangesqd*part.h*part.h;
   }
 
   return;
@@ -523,7 +520,7 @@ void MeshlessFV<2>::InitialSmoothingLengthGuess(void)
   for (i=0; i<Nhydro; i++) {
     MeshlessFVParticle<2>& part = GetMeshlessFVParticlePointer(i);
     part.h         = h_guess;
-    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+    part.hrangesqd = kernp->kernrangesqd*part.h*part.h;
   }
 
   return;
@@ -554,7 +551,7 @@ void MeshlessFV<3>::InitialSmoothingLengthGuess(void)
   for (i=0; i<Nhydro; i++) {
     MeshlessFVParticle<3>& part = GetMeshlessFVParticlePointer(i);
     part.h         = h_guess;
-    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+    part.hrangesqd = kernp->kernrangesqd*part.h*part.h;
   }
 
   return;

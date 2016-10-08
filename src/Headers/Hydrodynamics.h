@@ -122,8 +122,6 @@ public:
   int Nhydromax;                       ///< Max. no. of hydro particles in array
   int Ntot;                            ///< No. of real + ghost particles
   FLOAT hmin_sink;                     ///< Minimum smoothing length for sinks
-  FLOAT kernfac;                       ///< Kernel range neighbour fraction
-  FLOAT kernfacsqd;                    ///< Kernel range neib. fraction squared
   FLOAT kernrange;                     ///< Kernel range
   FLOAT mmean;                         ///< Mean SPH particle mass
   ParticleTypeRegister types;          ///< Array of particle types

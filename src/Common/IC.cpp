@@ -3279,22 +3279,26 @@ void Ic<ndim>::TurbIsothermSphere(void)
 template <int ndim>
 void Ic<ndim>::GaussianRing(void)
 {
-
+  // Run the test only in 2d
+    if (ndim != 2) {
+        ExceptionHandler::getIstance().raise("Gaussian ring test only in 2D");
+    }
+}
+template <>
+void Ic<2>::GaussianRing(void)
+{
 	debug2("[Ic::GaussianRing]");
 
-	// Run the test only in 2d
-	if (ndim != 2) {
-		ExceptionHandler::getIstance().raise("Gaussian ring test only in 2D");
-	}
+	const int ndim = 2;
 
 	//int Nhydro = simparams->intparams["Nhydro"];
 	int Nhydro = 13188*2; //I've hard-coded it to reproduce Murray 1996
 	const FLOAT temp0     = simparams->floatparams["temp0"];
 	const FLOAT mu_bar    = simparams->floatparams["mu_bar"];
-	const FLOAT alpha = simparams->floatparams["alpha_visc"];
+//	const FLOAT alpha = simparams->floatparams["alpha_visc"];
 	const FLOAT c_s = sqrt(temp0/mu_bar);
 	cout << "sound speed: " << c_s << endl;
-	const FLOAT nu = 1./8. * alpha * c_s * 0.01;
+//	const FLOAT nu = 1./8. * alpha * c_s * 0.01;
 
 	// Parameters of the gaussian
 	const FLOAT rcentre = 0.85;
@@ -4804,11 +4808,7 @@ void Ic<ndim>::DustyBox(void)
   int k;                               // Dimension counter
   int Nbox;                            // No. of particles in box
   int Nlattice[3];                     // Lattice size
-  FLOAT drmag;                         // Distance
-  FLOAT drsqd;                         // Distance squared
   FLOAT mbox;                          // Total mass inside simulation box
-  FLOAT umax;                          // Maximum u of all particles
-  FLOAT utot;                          // Total internal energy
   FLOAT volume;                        // Volume of box
   FLOAT *r;                            // Positions of all particles
 

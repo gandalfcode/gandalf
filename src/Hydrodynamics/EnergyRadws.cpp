@@ -395,7 +395,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   FLOAT kappaLow, kappaHigh, kappapLow, kappapHigh;
   FLOAT logtemp, logrho;
   FLOAT Tlow, Thigh, Tlow_log, Thigh_log, Tequi_log;
-  FLOAT mu_bar_high, mu_bar_low;
+  //FLOAT mu_bar_high, mu_bar_low;
   FLOAT dtemp;
 
   logrho = log10(rho);
@@ -559,7 +559,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
 
     Tequi = 0.5*(Thigh + Tlow);
     dtemp = Thigh - Tlow;
-    mu_bar_equi = (mu_bar_high + mu_bar_low)/2;
+   // mu_bar_equi = (mu_bar_high + mu_bar_low)/2;
     kappa = (kappaHigh + kappaLow)/2;
     kappap = (kappapHigh + kappapLow)/2;
   }

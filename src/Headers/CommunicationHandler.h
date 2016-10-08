@@ -140,7 +140,7 @@ public:
 
     //Recompute things we store only for optimization
     p2.h = hydro->h_fac*powf(p2.m/p2.rho, Sph<ndim>::invndim);
-    p2.hrangesqd = hydro->kernfacsqd*hydro->kernrange*hydro->kernrange*p2.h*p2.h;
+    p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
     p2.hfactor = pow(1/p2.h,ndim+1);
     p2.sound = hydro->eos->SoundSpeed(p2);
     p2.flags.set_flag(active);

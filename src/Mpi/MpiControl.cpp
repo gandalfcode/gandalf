@@ -221,19 +221,19 @@ void MpiControl<ndim>::CreateLeagueCalendar(void)
     // First index is process
     vector<vector<int> > calendar(Nmpi);
     // And second is turn
-    for (int iteam=0; iteam< calendar.size(); iteam++) {
+    for (unsigned int iteam=0; iteam< calendar.size(); iteam++) {
       vector<int>& calendar_team = calendar[iteam];
       calendar_team.resize(Nturns);
     }
 
     // Create pairs table
     vector<vector<int> > pairs (Nturns);
-    for (int iturn=0; iturn< pairs.size(); iturn++) {
+    for (unsigned int iturn=0; iturn< pairs.size(); iturn++) {
       vector<int>& pairs_turn = pairs[iturn];
       pairs_turn.resize(Nmpi);
       // Fill in the pairs table
       pairs_turn[0]=Nturns;
-      for (int i=1; i<pairs_turn.size(); i++) {
+      for (unsigned int i=1; i<pairs_turn.size(); i++) {
         pairs_turn[i] = (i+iturn) % (Nmpi-1);
       }
       // Can now fill in the calendar
@@ -469,7 +469,7 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
 
   vector<int> displ(Nmpi);
   compute_displs(displ, N_sinks_per_rank);
-  for (int i=0; i<N_sinks_per_rank.size(); i++) {
+  for (unsigned int i=0; i<N_sinks_per_rank.size(); i++) {
     displ[i] *= number_variables;
     N_sinks_per_rank[i] *= number_variables;
   }
@@ -534,7 +534,6 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
  (list<int>& ids_ghosts,
   Hydrodynamics<ndim>* hydro)
 {
-  const int size_particle = sizeof(FLOAT) + sizeof(bool) + sizeof(int);
   vector<vector<FLOAT> > buffer_proc(Nmpi);
   vector<vector<int> > buffer_proc_iorig(Nmpi);
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
@@ -806,8 +805,6 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
 	  if (i==rank)
 		  continue;
 
-	  typename ParticleType<ndim>::HandlerType handler;
-	  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
 	  // We know how much data we are going to receive
 	  const int size_receive = neibsearch->ExportInfoSize(i);
 	  receive_buffer[j].resize(size_receive);
@@ -890,14 +887,12 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   ParticleType<ndim>** array)          ///< Main SPH particle array
 {
   int i;                               // Particle counter
-  int iaux;                            // ..
+  unsigned int iaux;                   // ..
   int index = 0;                       // ..
-  int iparticle;                       // ..
-  int j;                               // ..
   int Nexport;                         // ..
   int Npart;                           // ..
   int running_counter;                 // ..
-  int inode;                           // MPI node index
+  unsigned int inode;                  // MPI node index
   vector<int> overlapping_nodes;       // List of nodes that overlap this domain
   vector<int> ghost_export_list;       // List of particles ids to be exported
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
@@ -908,7 +903,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   overlapping_nodes.reserve(Nmpi);
 
   // Loop over domains and find the ones that could overlap us
-  for (inode=0; inode<Nmpi; inode++) {
+  for (int inode=0; inode<Nmpi; inode++) {
     if (inode == rank) continue;
     if (BoxesOverlap(mpinode[inode].hbox,mpinode[rank].hbox)) {
       overlapping_nodes.push_back(inode);
@@ -926,21 +921,21 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
     ghost_export_list.clear();
     Nexport = neibsearch->SearchMpiGhostParticles(tghost, mpinode[inode].domain,
                                                   hydro, ghost_export_list);
-    for (j=0; j<ghost_export_list.size(); j++) {
+    for (unsigned int j=0; j<ghost_export_list.size(); j++) {
       i = ghost_export_list[j];
       particles_to_export_per_node[inode].push_back(i);
     }
 #ifdef OUTPUT_ALL
     cout << "Nexport : " << Nexport << "     size : " << ghost_export_list.size() << endl;
 #endif
-    assert(Nexport == ghost_export_list.size());
+    assert((unsigned int) Nexport == ghost_export_list.size());
   }
 
   // Prepare arrays with no. of particles to export per node and displacements
   fill(Nexport_per_node.begin(), Nexport_per_node.end(), 0);
 
   running_counter = 0;
-  for (inode=0; inode<Nmpi; inode++) {
+  for (int inode=0; inode<Nmpi; inode++) {
     Npart = particles_to_export_per_node[inode].size();
     Nexport_per_node[inode] = Npart;
     displacements_send[inode] = running_counter;
@@ -974,10 +969,10 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   // Create vector containing all particles to export
   particles_to_export.resize(Nexport);
 
-  for (inode=0; inode<Nmpi; inode++) {
+  for (int inode=0; inode<Nmpi; inode++) {
     vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
 
-    for (iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
+    for (unsigned int iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
       particles_to_export[index] = partdata[particles_on_this_node[iparticle]];
 
       // Record in iorig the location in memory of the particle
@@ -1019,7 +1014,7 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
 {
   int index = 0;                       // ..
   int inode;                           // MPI node counter
-  int ipart;                           // Particle counter
+  unsigned int ipart;                  // Particle counter
 
   // Update the local buffer of particles to send
   for (inode=0; inode<Nmpi; inode++) {

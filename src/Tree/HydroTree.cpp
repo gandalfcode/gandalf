@@ -59,7 +59,6 @@ HydroTree<ndim,ParticleType>::HydroTree
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
   ParticleTypeRegister& types):
   neibcheck(true),
-  kernfac(1.0),
   kernrange(_kernrange),
   kernrangesqd(_kernrange*_kernrange),
   Nleafmax(_Nleafmax),

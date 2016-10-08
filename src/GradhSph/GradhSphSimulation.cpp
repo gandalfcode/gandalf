@@ -258,10 +258,6 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     mpit = pTree->mpighosttree ;
 #endif
 
-  //sphneib->kernp = sph->kernp;
-  //sphneib->kernfac = sph->kernfac;
-  //sphneib->kernrange = sph->kernp->kernrange;
-
 
 #if defined MPI_PARALLEL
   mpicontrol->SetNeibSearch(sphneib);

@@ -57,8 +57,6 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
   riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal")
 {
   this->kernp      = &kern;
-  this->kernfac    = (FLOAT) 1.0;
-  this->kernfacsqd = (FLOAT) 1.0;
   this->kernrange  = this->kernp->kernrange;
 
   // Local references to parameter variables for brevity
@@ -215,7 +213,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   //part.h         = max(h_fac*powf(volume, MeshlessFV<ndim>::invndim), h_lower_bound);
   part.h = h_fac*powf(volume, MeshlessFV<ndim>::invndim);
   part.hfactor   = pow(1/part.h, ndim+1);
-  part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
+  part.hrangesqd = kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
   part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
   part.invomega  = (FLOAT) 1.0/part.invomega;

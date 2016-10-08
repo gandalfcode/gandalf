@@ -81,8 +81,6 @@ MpiTree<ndim,ParticleType>::~MpiTree()
 template <int ndim, template<int> class ParticleType>
 void MpiTree<ndim,ParticleType>::AllocateMemory(void)
 {
-  int ithread;                      // Thread id number
-
   debug2("[MpiTree::AllocateMemory]");
 
   if (!allocated_tree) {
@@ -378,7 +376,6 @@ FLOAT MpiTree<ndim,ParticleType>::QuickSelect
  int k,                             ///< Dimension of sort
  ParticleType<ndim> *partdata)      ///< Pointer to main SPH object
 {
-  int i;                            // ..
   int j;                            // Aux.
   int jguess;                       // ..
   int jtemp;                        // ..

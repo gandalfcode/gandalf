@@ -266,10 +266,6 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
    floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
    stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
 
-  ////mfvneib->kernp = mfv->kernp;
-  // mfvneib->kernfac = mfv->kernfac;
-  ////mfvneib->kernrange = mfv->kernp->kernrange;
-
 
   // Depending on the dimensionality, calculate expected neighbour number
   //-----------------------------------------------------------------------------------------------

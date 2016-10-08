@@ -259,7 +259,6 @@ protected:
 
   //-----------------------------------------------------------------------------------------------
   bool neibcheck;                      ///< Flag to verify neighbour lists
-  FLOAT kernfac;                       ///< Deprecated variable (to be removed)
   FLOAT kernrange;                     ///< Kernel extent (in units of h)
   FLOAT kernrangesqd;                  ///< Kernel extent (squared)
 

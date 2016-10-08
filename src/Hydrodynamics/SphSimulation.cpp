@@ -383,7 +383,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro+sph->NPeriodicGhost, sph, sph->kernp);
   for (int i=0; i<sph->Nhydro+sph->NPeriodicGhost; i++) {
     SphParticle<ndim>& parti = sph->GetSphParticlePointer(i);
-    parti.hrangesqd = sph->kernfacsqd*sph->kernp->kernrangesqd*parti.h*parti.h;
+    parti.hrangesqd = sph->kernp->kernrangesqd*parti.h*parti.h;
   }
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
   // Update pointer in case there has been a reallocation

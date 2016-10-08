@@ -365,7 +365,7 @@ void Sinks<ndim>::AccreteMassToSinks
     int Nneib;                               // No. of particles inside sink
     int Nneibmax = 128;                      // Max. no. of particles inside sink
     int s;                                   // Sink counter
-    int saux;                                // Aux. sink i.d.
+    //  int saux;                                // Aux. sink i.d.
     FLOAT asqd;                              // Acceleration squared
     FLOAT dr[ndim];                          // Relative position vector
     FLOAT drmag;                             // Distance
@@ -378,7 +378,7 @@ void Sinks<ndim>::AccreteMassToSinks
     FLOAT macc_temp;                         // Temp. accreted mass variable
     FLOAT mold;                              // Old mass
     FLOAT mtemp;                             // Aux. mass variable
-    FLOAT rsqdmin;                           // Distance (sqd) to closest sink
+    //FLOAT rsqdmin;                           // Distance (sqd) to closest sink
     FLOAT rold[ndim];                        // Old sink position
     FLOAT vold[ndim];                        // Old sink velocity
     FLOAT wnorm;                             // Kernel normalisation factor

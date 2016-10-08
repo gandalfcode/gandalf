@@ -325,12 +325,12 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   Nbody<ndim> *nbody)                  ///< [inout] Pointer to main N-body object
 {
   int c;                               // MPI tree cell counter
-  int c2;                              // i.d. of second child cell
+//  int c2;                              // i.d. of second child cell
   int inode;                           // MPI node counter
   int k;                               // Dimension counter
   int l;                               // MPI tree level counter
   int lbalance = 0;                    // Load balance level (always top level for now)
-  FLOAT rold;                          // Position of previous load balancing division
+ // FLOAT rold;                          // Position of previous load balancing division
   DOUBLE worktot = 0.0;                // Total work on all nodes
 
   // If running on only one MPI node, return immediately
@@ -360,9 +360,9 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
     for (c=0; c<mpitree->Ncell; c++) {
 
       if (mpitree->tree[c].level != l) continue;
-      c2   = mpitree->tree[c].c2;
+      //c2   = mpitree->tree[c].c2;
       k    = mpitree->tree[c].k_divide;
-      rold = mpitree->tree[c].r_divide;
+      //rold = mpitree->tree[c].r_divide;
 
 #ifdef OUTPUT_ALL
       cout << "Previous load balancing division for " << c << "    rold : " << rold
@@ -439,7 +439,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
 
   //-----------------------------------------------------------------------------------------------
-  for (int iturn = 0; iturn<my_matches.size(); iturn++) {
+  for (unsigned int iturn = 0; iturn<my_matches.size(); iturn++) {
     int inode = my_matches[iturn];
 
     int N_to_transfer = particles_to_transfer[inode].size();
@@ -490,7 +490,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
     // Copy particles from receive buffer to main arrays
     int running_counter = hydro->Nhydro;
     // TODO: check we have enough memory
-    for (int i=0; i< recvbuffer.size(); i++) {
+    for (unsigned int i=0; i< recvbuffer.size(); i++) {
       partdata[running_counter] = recvbuffer[i];
       running_counter++;
     }
@@ -501,7 +501,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
 
   // Remove transferred particles
-  for (int i=0; i<all_particles_to_export.size(); i++) {
+  for (unsigned int i=0; i<all_particles_to_export.size(); i++) {
     partdata[all_particles_to_export[i]].flags.set_flag(dead);
   }
   hydro->DeleteDeadParticles();
