@@ -46,15 +46,15 @@ using namespace std;
 //  MeshlessFVTree::MeshlessFVTree
 /// MeshlessFVTree constructor.  Initialises various variables.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-MeshlessFVTree<ndim,ParticleType,TreeCell>::MeshlessFVTree
+template <int ndim, template<int> class ParticleType>
+MeshlessFVTree<ndim,ParticleType>::MeshlessFVTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
  MeshlessFVNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- HydroTree<ndim,ParticleType,TreeCell>
+ HydroTree<ndim,ParticleType>
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 { }
@@ -65,8 +65,8 @@ MeshlessFVTree<ndim,ParticleType,TreeCell>::MeshlessFVTree
 //  MeshlessFVTree::~MeshlessFVTree
 /// MeshlessFVTree destructor.  Deallocates tree memory upon object destruction.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-MeshlessFVTree<ndim,ParticleType,TreeCell>::~MeshlessFVTree()
+template <int ndim, template<int> class ParticleType>
+MeshlessFVTree<ndim,ParticleType>::~MeshlessFVTree()
 {
 }
 
@@ -78,8 +78,8 @@ MeshlessFVTree<ndim,ParticleType,TreeCell>::~MeshlessFVTree()
 /// Loops over all cells containing active particles, performs a tree walk for all particles in
 /// the cell, and then calls SPH class routine to compute properties from neighbours.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
  (int Nhydro,                              ///< [in] No. of SPH particles
   int Ntot,                                ///< [in] No. of SPH + ghost particles
   MeshlessFVParticle<ndim> *mfvdata,       ///< [inout] Pointer to SPH ptcl array
@@ -320,8 +320,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 //  MeshlessFVTree::UpdateGradientMatrices
 /// Compute hydro forces for all active SPH particles.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
  (int Nhydro,                              ///< [in] No. of SPH particles
   int Ntot,                                ///< [in] No. of SPH + ghost particles
   MeshlessFVParticle<ndim> *mfvdata,       ///< [inout] Pointer to SPH ptcl array
@@ -558,8 +558,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 //  MeshlessFVTree::UpdateGodunovFluxes
 /// Compute hydro forces for all active SPH particles.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
  (const int Nhydro,                        ///< [in] No. of hydro particles
   const int Ntot,                          ///< [in] No. of SPH + ghost particles
   const FLOAT timestep,                    ///< [in] Lowest timestep value
@@ -826,8 +826,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   MeshlessFVParticle<ndim> *partdata,  ///< [inout] Pointer to SPH ptcl array
@@ -1109,14 +1109,7 @@ e
 }
 
 
-template class MeshlessFVTree<1,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,KDTreeCell>;
+template class MeshlessFVTree<1,MeshlessFVParticle>;
+template class MeshlessFVTree<2,MeshlessFVParticle>;
+template class MeshlessFVTree<3,MeshlessFVParticle>;
 
-template class MeshlessFVTree<1,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,OctTreeCell>;
-
-template class MeshlessFVTree<1,MeshlessFVParticle,BruteForceTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,BruteForceTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,BruteForceTreeCell>;

@@ -259,29 +259,13 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce") {
-    mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,BruteForceTreeCell>
-    ("bruteforce", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-     floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-     stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
-  }
-  else if (stringparams["neib_search"] == "kdtree") {
-    mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,KDTreeCell>
-     ("kdtree", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-      floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
-  }
-  else if (stringparams["neib_search"] == "octtree") {
-    mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,OctTreeCell>
-     ("octtree",intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-      floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing,  mfv->types);
-  }
-  else {
-    string message = "Unrecognised parameter : neib_search = "
-      + simparams->stringparams["neib_search"];
-    ExceptionHandler::getIstance().raise(message);
-  }
+  string tree_type = stringparams["neib_search"] ;
+
+  mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle>
+  (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+   floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
+   stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
+
   ////mfvneib->kernp = mfv->kernp;
   mfvneib->kernfac = mfv->kernfac;
   ////mfvneib->kernrange = mfv->kernp->kernrange;

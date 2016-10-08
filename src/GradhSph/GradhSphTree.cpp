@@ -45,14 +45,14 @@ using namespace std;
 //  GradhSphTree::GradhSphTree
 /// GradhSphTree constructor.  Initialises various variables.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-GradhSphTree<ndim,ParticleType,TreeCell>::GradhSphTree
+template <int ndim, template<int> class ParticleType>
+GradhSphTree<ndim,ParticleType>::GradhSphTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- SphTree<ndim,ParticleType,TreeCell>
+ SphTree<ndim,ParticleType>
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 { }
@@ -63,8 +63,8 @@ GradhSphTree<ndim,ParticleType,TreeCell>::GradhSphTree
 //  GradhSphTree::~GradhSphTree
 /// GradhSphTree destructor.  Deallocates tree memory upon object destruction.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-GradhSphTree<ndim,ParticleType,TreeCell>::~GradhSphTree()
+template <int ndim, template<int> class ParticleType>
+GradhSphTree<ndim,ParticleType>::~GradhSphTree()
 {
 }
 
@@ -76,8 +76,8 @@ GradhSphTree<ndim,ParticleType,TreeCell>::~GradhSphTree()
 /// Loops over all cells containing active particles, performs a tree walk for all particles in
 /// the cell, and then calls SPH class routine to compute properties from neighbours.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
+template <int ndim, template<int> class ParticleType>
+void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
  (int Nhydro,                              ///< [in] No. of SPH particles
   int Ntot,                                ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
@@ -308,8 +308,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 //  GradhSphTree::UpdateAllSphHydroForces
 /// Compute hydro forces for all active SPH particles.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
+template <int ndim, template<int> class ParticleType>
+void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
  (int Nhydro,                              ///< [in] No. of SPH particles
   int Ntot,                                ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
@@ -546,8 +546,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 //  GradhSphTree::UpdateAllSphForces
 /// Compute all forces on active SPH particles (hydro + gravity) for periodic boundary conditions.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
+template <int ndim, template<int> class ParticleType>
+void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
@@ -858,8 +858,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 //  GradhSphTree::UpdateAllSphGravForces
 /// Compute all gravitational forces on active SPH particles for periodic boundary conditions.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
+template <int ndim, template<int> class ParticleType>
+void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
@@ -1146,18 +1146,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
 
 
-template class GradhSphTree<1,GradhSphParticle,KDTreeCell>;
-template class GradhSphTree<2,GradhSphParticle,KDTreeCell>;
-template class GradhSphTree<3,GradhSphParticle,KDTreeCell>;
+template class GradhSphTree<1,GradhSphParticle>;
+template class GradhSphTree<2,GradhSphParticle>;
+template class GradhSphTree<3,GradhSphParticle>;
 
-template class GradhSphTree<1,GradhSphParticle,OctTreeCell>;
-template class GradhSphTree<2,GradhSphParticle,OctTreeCell>;
-template class GradhSphTree<3,GradhSphParticle,OctTreeCell>;
-
-template class GradhSphTree<1,GradhSphParticle,TreeRayCell>;
-template class GradhSphTree<2,GradhSphParticle,TreeRayCell>;
-template class GradhSphTree<3,GradhSphParticle,TreeRayCell>;
-
-template class GradhSphTree<1,GradhSphParticle,BruteForceTreeCell>;
-template class GradhSphTree<2,GradhSphParticle,BruteForceTreeCell>;
-template class GradhSphTree<3,GradhSphParticle,BruteForceTreeCell>;

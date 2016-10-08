@@ -51,8 +51,8 @@ using namespace std;
 //  HydroTree::HydroTree
 /// HydroTree constructor.  Initialises various variables.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-HydroTree<ndim,ParticleType,TreeCell>::HydroTree
+template <int ndim, template <int> class ParticleType>
+HydroTree<ndim,ParticleType>::HydroTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
@@ -126,8 +126,8 @@ HydroTree<ndim,ParticleType,TreeCell>::HydroTree
 //  HydroTree::~HydroTree
 /// HydroTree destructor.  Deallocates tree memory upon object destruction.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-HydroTree<ndim,ParticleType,TreeCell>::~HydroTree()
+template <int ndim, template <int> class ParticleType>
+HydroTree<ndim,ParticleType>::~HydroTree()
 {
   /*
   if (tree->allocated_tree) {
@@ -152,8 +152,8 @@ HydroTree<ndim,ParticleType,TreeCell>::~HydroTree()
 //  CreateTree
 /// Construct the required tree type based on parameters
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-TreeBase<ndim>* HydroTree<ndim,ParticleType,TreeCell>::CreateTree
+template <int ndim, template <int> class ParticleType>
+TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
 (string tree_type,
  int Nleafmax, FLOAT thetamaxsqd,
  FLOAT kernrange, FLOAT macerror,
@@ -201,8 +201,8 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType,TreeCell>::CreateTree
 /// Allocate memory for tree as requested.  If more memory is required
 /// than currently allocated, tree is deallocated and reallocated here.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::AllocateMemory
  (const int Ngather)                   ///< [in] Average no. of gather neighbours
 {
   debug2("[HydroTree::AllocateMemory]");
@@ -238,8 +238,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
 //  HydroTree::ReallocateMemory
 /// Reallocate memory for tree when the number of particles has changed
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::ReallocateMemory
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::ReallocateMemory
  ()
 {
     for (int ithread=0; ithread<Nthreads; ithread++) {
@@ -256,8 +256,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::ReallocateMemory
 //  HydroTree::DeallocateTreeMemory
 /// Deallocates all binary tree memory
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::DeallocateMemory(void)
 {
   int ithread;                         // Thread id number
 
@@ -291,8 +291,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
 //  HydroTree::BuildTree
 /// Main routine to control how the tree is built, re-stocked and interpolated during each step.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::BuildTree
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::BuildTree
  (const bool rebuild_tree,             ///< [in] Flag to rebuild tree
   const int n,                         ///< [in] Integer time
   const int ntreebuildstep,            ///< [in] Tree build frequency
@@ -379,8 +379,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildTree
 /// Main routine to control how the tree is built, re-stocked and interpolated
 /// during each timestep.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostTree
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::BuildGhostTree
  (const bool rebuild_tree,             ///< [in] Flag to rebuild tree
   const int n,                         ///< [in] Integer time
   const int ntreebuildstep,            ///< [in] Tree build frequency
@@ -455,8 +455,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 /// Compute the gather neighbour list at the point 'rp' of all particles within a search radius
 /// of 'rsearch'.  Searches through real and ghost neighbour trees.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int HydroTree<ndim,ParticleType,TreeCell>::GetGatherNeighbourList
+template <int ndim, template <int> class ParticleType>
+int HydroTree<ndim,ParticleType>::GetGatherNeighbourList
  (FLOAT rp[ndim],                      ///< [in] Position vector
   FLOAT rsearch,                       ///< [in] Gather search radius
   Particle<ndim> *part_gen,            ///< [in] Pointer to Hydrodynamics particle array
@@ -484,8 +484,8 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetGatherNeighbourList
 //  HydroTree::UpdateActiveParticleCounters
 /// Loop through all leaf cells in the tree and update all active particle counters.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::UpdateActiveParticleCounters
  (Particle<ndim> *partdata_gen,        ///< [inout] Pointer to hydrodynamics particles array
   Hydrodynamics<ndim> *hydro)          ///< [in] Pointer to hydrodynamics object
 {
@@ -500,8 +500,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 /// Search domain to create any required ghost particles near any boundaries.
 /// Currently only searches to create periodic or mirror ghost particles.
 //=================================================================================================
-template <int ndim, template <int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
  (FLOAT tghost,                                ///< [in] Ghost particle 'lifetime'
   DomainBox<ndim> &simbox,                     ///< [in] Simulation box structure
   Hydrodynamics<ndim> *hydro)                  ///< [inout] Hydrodynamics object pointer
@@ -557,8 +557,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 /// Calculate the gravitational acceleration on all star particles due to
 /// all gas particles via the tree.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   Particle<ndim> *part_gen,            ///< [inout] Pointer to SPH ptcl array
@@ -663,8 +663,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
   return;
 }
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-double HydroTree<ndim,ParticleType,TreeCell>::GetMaximumSmoothingLength() const
+template <int ndim, template <int> class ParticleType>
+double HydroTree<ndim,ParticleType>::GetMaximumSmoothingLength() const
 {
   assert(tree != NULL) ;
   double hmax = tree->GetMaximumSmoothingLength() ;
@@ -684,8 +684,8 @@ double HydroTree<ndim,ParticleType,TreeCell>::GetMaximumSmoothingLength() const
 /// If the other domains are too close (so the pruned trees are not adequate), then flag
 /// cell to be exported to that MPI node for a full local tree-walk.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::UpdateGravityExportList
  (int rank,                            ///< [in] MPI rank
   int Nhydro,                          ///< [in] No. of hydro particles
   int Ntot,                            ///< [in] No. of hydro + ghost particles
@@ -844,8 +844,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 /// Check if any local particles need to be exported to other MPI nodes by comparing the
 /// smoothing length box overlaps.  If so, then flag for exporting.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::UpdateHydroExportList
  (int rank,                            ///< [in] MPI rank
   int Nhydro,                          ///< [in] No. of hydro particles
   int Ntot,                            ///< [in] No. of hydro + ghost particles
@@ -949,8 +949,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 /// Constructs a pruned version of the local tree ready to be exported to other MPI processes.
 /// Copies all levels up to and including 'pruning_level'.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::BuildPrunedTree
  (const int rank,                      ///< [in] Rank of local MPI node
   const int Nhydromax,                 ///< [in] Max. no. of hydro particles
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
@@ -1150,8 +1150,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 /// Main routine to control how the tree is built, re-stocked and interpolated
 /// during each timestep.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
  (const bool rebuild_tree,             ///< Flag to rebuild tree
   const int n,                         ///< Integer time
   const int ntreebuildstep,            ///< Tree build frequency
@@ -1232,8 +1232,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
 /// Search through local domain for any MPI ghost particles that should be sent to the given
 /// domain by checking the predicted position over a time tghost.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
+template <int ndim, template <int> class ParticleType>
+int HydroTree<ndim,ParticleType>::SearchMpiGhostParticles
  (const FLOAT tghost,                  ///< [in] Expected ghost life-time
   const Box<ndim> &mpibox,             ///< [in] Bounding box of MPI domain
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
@@ -1256,8 +1256,8 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 //  HydroTree::FindMpiTransferParticles
 /// ..
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::FindMpiTransferParticles
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::FindMpiTransferParticles
  (Hydrodynamics<ndim> *hydro,                ///< [in] Pointer to Hydrodynamics class
   vector<vector<int> >& particles_to_export, ///< [inout] Vector that for each
                                              ///< node gives the list of particles to export
@@ -1302,8 +1302,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::FindMpiTransferParticles
 /// Find the predicted cell-cell dividing point that approximately balances the CPU work load
 /// in order to achieve load balancing amongst all MPI nodes.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
+template <int ndim, template <int> class ParticleType>
+FLOAT HydroTree<ndim,ParticleType>::FindLoadBalancingDivision
  (int k_divide,                        ///< Dimension of cell division
   FLOAT r_old,                         ///< Old position of cell division
   FLOAT boxmin[ndim],                  ///< Minimum extent of parent MPI tree cell
@@ -1378,8 +1378,8 @@ FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
 /// Compute on behalf of the MpiControl class the particles that are outside
 /// the domain after a load balancing step and need to be transferred to other nodes
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::FindParticlesToTransfer
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::FindParticlesToTransfer
  (Hydrodynamics<ndim> *hydro,                ///< [in] Pointer to sph class
   vector<vector<int> >& id_export_buffers,   ///< [inout] List of ids to export for each node
   vector<int>& all_ids_export_buffer,        ///< [inout] List of all ids to export from proc
@@ -1414,8 +1414,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::FindParticlesToTransfer
 //  HydroTree::GetExportInfo
 /// Get the array with the information that needs to be exported to the given processor
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
+template <int ndim, template <int> class ParticleType>
+int HydroTree<ndim,ParticleType>::GetExportInfo
  (int iproc,                           ///< [in] No. of processor we want to send data to
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to GetParticleArray object
   vector<char >& send_buffer,          ///< [inout] Vector where the ptcls to export will be stored
@@ -1472,8 +1472,8 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
 /// Unpack the information exported from the other processors, contaning the particles
 /// that were exported and
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::UnpackExported
  (vector<char >& received_array,
   Hydrodynamics<ndim> *hydro,
   const int iproc,
@@ -1577,8 +1577,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 //  HydroTree::GetBackExportInfo
 /// Return the data to transmit back to the other processors (particle acceleration etc.)
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::GetBackExportInfo
  (vector<char >& send_buffer,              ///< [inout] These arrays will be overwritten with the information to send
   Hydrodynamics<ndim> *hydro,              ///< [in] Pointer to the GetParticleArray object
   const int rank,						   ///< [in] Our rank
@@ -1619,8 +1619,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
 //  HydroTree::UnpackReturnedExportInfo
 /// Unpack the data that was returned by the other processors, summing the accelerations to the particles
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::UnpackReturnedExportInfo
  (vector<char >& received_information,   ///< ..
   Hydrodynamics<ndim> *hydro,            ///< ..
   const int rank,						 ///< Our local rank
@@ -1649,8 +1649,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
 /// (i) does include all true neighbours, and
 /// (ii) all true neigbours are only included once and once only.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
+template <int ndim, template<int> class ParticleType>
+void HydroTree<ndim,ParticleType>::CheckValidNeighbourList
  (int i,                               ///< [in] Particle i.d.
   int Ntot,                            ///< [in] Total no. of particles
   int Nneib,                           ///< [in] No. of potential neighbours
@@ -1736,38 +1736,14 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
 #endif
 
 
-template class HydroTree<1,GradhSphParticle,KDTreeCell>;
-template class HydroTree<2,GradhSphParticle,KDTreeCell>;
-template class HydroTree<3,GradhSphParticle,KDTreeCell>;
-template class HydroTree<1,GradhSphParticle,OctTreeCell>;
-template class HydroTree<2,GradhSphParticle,OctTreeCell>;
-template class HydroTree<3,GradhSphParticle,OctTreeCell>;
+template class HydroTree<1,GradhSphParticle>;
+template class HydroTree<2,GradhSphParticle>;
+template class HydroTree<3,GradhSphParticle>;
 
-template class HydroTree<1,SM2012SphParticle,KDTreeCell>;
-template class HydroTree<2,SM2012SphParticle,KDTreeCell>;
-template class HydroTree<3,SM2012SphParticle,KDTreeCell>;
-template class HydroTree<1,SM2012SphParticle,OctTreeCell>;
-template class HydroTree<2,SM2012SphParticle,OctTreeCell>;
-template class HydroTree<3,SM2012SphParticle,OctTreeCell>;
+template class HydroTree<1,SM2012SphParticle>;
+template class HydroTree<2,SM2012SphParticle>;
+template class HydroTree<3,SM2012SphParticle>;
 
-template class HydroTree<1,MeshlessFVParticle,KDTreeCell>;
-template class HydroTree<2,MeshlessFVParticle,KDTreeCell>;
-template class HydroTree<3,MeshlessFVParticle,KDTreeCell>;
-template class HydroTree<1,MeshlessFVParticle,OctTreeCell>;
-template class HydroTree<2,MeshlessFVParticle,OctTreeCell>;
-template class HydroTree<3,MeshlessFVParticle,OctTreeCell>;
-
-template class HydroTree<1,GradhSphParticle,TreeRayCell>;
-template class HydroTree<2,GradhSphParticle,TreeRayCell>;
-template class HydroTree<3,GradhSphParticle,TreeRayCell>;
-
-template class HydroTree<1,GradhSphParticle,BruteForceTreeCell>;
-template class HydroTree<2,GradhSphParticle,BruteForceTreeCell>;
-template class HydroTree<3,GradhSphParticle,BruteForceTreeCell>;
-template class HydroTree<1,SM2012SphParticle,BruteForceTreeCell>;
-template class HydroTree<2,SM2012SphParticle,BruteForceTreeCell>;
-template class HydroTree<3,SM2012SphParticle,BruteForceTreeCell>;
-template class HydroTree<1,MeshlessFVParticle,BruteForceTreeCell>;
-template class HydroTree<2,MeshlessFVParticle,BruteForceTreeCell>;
-template class HydroTree<3,MeshlessFVParticle,BruteForceTreeCell>;
-
+template class HydroTree<1,MeshlessFVParticle>;
+template class HydroTree<2,MeshlessFVParticle>;
+template class HydroTree<3,MeshlessFVParticle>;

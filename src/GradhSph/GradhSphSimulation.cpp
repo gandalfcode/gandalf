@@ -231,67 +231,33 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
-  // Here I do a horrible hack to get at the underlying tree, needed for the dust.
-   TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
 
-  if (stringparams["neib_search"] == "bruteforce") {
-    sphneib = new GradhSphTree<ndim,GradhSphParticle,BruteForceTreeCell>
-      ("bruteforce", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+
+   string tree_type = stringparams["neib_search"] ;
+   if (gas_radiation == "tree_ray") {
+     if (tree_type == "octtree" && ndim == 3) {
+       tree_type == "treeray" ;
+     }
+     else {
+       string message = "Error: Tree Ray needs an Oct Tree and ndim=3";
+       ExceptionHandler::getIstance().raise(message);
+     }
+   }
+
+   sphneib = new GradhSphTree<ndim,GradhSphParticle>
+      (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
        floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
        stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
        
-    typedef GradhSphTree<ndim,GradhSphParticle,BruteForceTreeCell> TreeType ;
-    TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
-    t = pTree->tree ; gt = pTree->ghosttree ;
+   // Here I do a horrible hack to get at the underlying tree, needed for the dust.
+   TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
+   typedef GradhSphTree<ndim,GradhSphParticle> TreeType ;
+   TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
+   t = pTree->tree ; gt = pTree->ghosttree ;
 #ifdef MPI_PARALLEL
     mpit = pTree->mpighosttree ;
 #endif
-    
-  }
-  else if (stringparams["neib_search"] == "kdtree") {
-    sphneib = new GradhSphTree<ndim,GradhSphParticle,KDTreeCell>
-     ("kdtree", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
-    typedef GradhSphTree<ndim,GradhSphParticle,KDTreeCell> TreeType ;
-    TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
-    t = pTree->tree ; gt = pTree->ghosttree ;
-#ifdef MPI_PARALLEL
-    mpit = pTree->mpighosttree ;
-#endif
-  }
-  else if (stringparams["neib_search"] == "octtree" && gas_radiation == "treeray" && ndim == 3) {
-    sphneib = new GradhSphTree<ndim,GradhSphParticle,TreeRayCell>
-     ("treeray", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
-
-    typedef GradhSphTree<ndim,GradhSphParticle,TreeRayCell> TreeType ;
-    TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
-    t = pTree->tree ; gt = pTree->ghosttree ;
-#ifdef MPI_PARALLEL
-    mpit = pTree->mpighosttree ;
-#endif
-  }
-  else if (stringparams["neib_search"] == "octtree") {
-    sphneib = new GradhSphTree<ndim,GradhSphParticle,OctTreeCell>
-     ("octtree", intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
-
-    typedef GradhSphTree<ndim,GradhSphParticle,OctTreeCell> TreeType ;
-    TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
-    t = pTree->tree ; gt = pTree->ghosttree ;
-#ifdef MPI_PARALLEL
-    mpit = pTree->mpighosttree ;
-#endif
-  }
-  else {
-    string message = "Unrecognised parameter : neib_search = "
-      + simparams->stringparams["neib_search"];
-    ExceptionHandler::getIstance().raise(message);
-  }
   //sphneib->kernp = sph->kernp;
   sphneib->kernfac = sph->kernfac;
   //sphneib->kernrange = sph->kernp->kernrange;

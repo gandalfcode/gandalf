@@ -152,7 +152,7 @@ protected:
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+template <int ndim, template<int> class ParticleType>
 class HydroTree : public virtual NeighbourSearch<ndim>
 {
 	void ReallocateMemory(void);

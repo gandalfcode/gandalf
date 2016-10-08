@@ -97,42 +97,42 @@ protected:
 /// \author  D. A. Hubber
 /// \date    21/04/2015
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class MeshlessFVTree: public MeshlessFVNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType,TreeCell>
+template <int ndim, template<int> class ParticleType>
+class MeshlessFVTree: public MeshlessFVNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType>
 {
 #if defined MPI_PARALLEL
 protected:
 #endif
  public:
 
-  using HydroTree<ndim,ParticleType,TreeCell>::activelistbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::activepartbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::allocated_buffer;
-  using HydroTree<ndim,ParticleType,TreeCell>::box;
-  using HydroTree<ndim,ParticleType,TreeCell>::cellbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::gravity_mac;
-  using HydroTree<ndim,ParticleType,TreeCell>::kernp;
-  using HydroTree<ndim,ParticleType,TreeCell>::kernrange;
-  using HydroTree<ndim,ParticleType,TreeCell>::kernrangesqd;
-  using HydroTree<ndim,ParticleType,TreeCell>::levelneibbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::multipole;
-  using HydroTree<ndim,ParticleType,TreeCell>::neibcheck;
-  using HydroTree<ndim,ParticleType,TreeCell>::neibpartbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nleafmax;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ntot;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ntotmax;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ntotold;
-  using HydroTree<ndim,ParticleType,TreeCell>::timing;
-  using HydroTree<ndim,ParticleType,TreeCell>::tree;
-  using HydroTree<ndim,ParticleType,TreeCell>::ghosttree;
+  using HydroTree<ndim,ParticleType>::activelistbuf;
+  using HydroTree<ndim,ParticleType>::activepartbuf;
+  using HydroTree<ndim,ParticleType>::allocated_buffer;
+  using HydroTree<ndim,ParticleType>::box;
+  using HydroTree<ndim,ParticleType>::cellbuf;
+  using HydroTree<ndim,ParticleType>::gravity_mac;
+  using HydroTree<ndim,ParticleType>::kernp;
+  using HydroTree<ndim,ParticleType>::kernrange;
+  using HydroTree<ndim,ParticleType>::kernrangesqd;
+  using HydroTree<ndim,ParticleType>::levelneibbuf;
+  using HydroTree<ndim,ParticleType>::multipole;
+  using HydroTree<ndim,ParticleType>::neibcheck;
+  using HydroTree<ndim,ParticleType>::neibpartbuf;
+  using HydroTree<ndim,ParticleType>::Ngravcellmaxbuf;
+  using HydroTree<ndim,ParticleType>::Nleafmax;
+  using HydroTree<ndim,ParticleType>::Nneibmaxbuf;
+  using HydroTree<ndim,ParticleType>::Ntot;
+  using HydroTree<ndim,ParticleType>::Ntotmax;
+  using HydroTree<ndim,ParticleType>::Ntotmaxold;
+  using HydroTree<ndim,ParticleType>::Ntotold;
+  using HydroTree<ndim,ParticleType>::timing;
+  using HydroTree<ndim,ParticleType>::tree;
+  using HydroTree<ndim,ParticleType>::ghosttree;
 #ifdef MPI_PARALLEL
-  using HydroTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using HydroTree<ndim,ParticleType,TreeCell>::prunedtree;
-  using HydroTree<ndim,ParticleType,TreeCell>::sendprunedtree;
+  using HydroTree<ndim,ParticleType>::mpighosttree;
+  using HydroTree<ndim,ParticleType>::Nmpi;
+  using HydroTree<ndim,ParticleType>::prunedtree;
+  using HydroTree<ndim,ParticleType>::sendprunedtree;
 #endif
 
 
@@ -144,7 +144,7 @@ protected:
                  SmoothingKernel<ndim> *_kern, CodeTiming *_timing, ParticleTypeRegister&); //:
     /*NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     MeshlessFVNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
-    HydroTree<ndim,ParticleType,TreeCell>(_Nleafmax, _Nmpi, _thetamaxsqd, _kernrange, _macerror,
+    HydroTree<ndim,ParticleType>(_Nleafmax, _Nmpi, _thetamaxsqd, _kernrange, _macerror,
                                           _gravity_mac, _multipole, _box, _kern, _timing) {};*/
   virtual ~MeshlessFVTree(); //{};
 

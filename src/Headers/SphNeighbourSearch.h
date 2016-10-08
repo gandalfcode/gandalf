@@ -116,43 +116,43 @@ class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class SphTree : public SphNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType,TreeCell>
+template <int ndim, template<int> class ParticleType>
+class SphTree : public SphNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType>
 {
 #if defined MPI_PARALLEL
 protected:
 #endif
  public:
 
-  using HydroTree<ndim,ParticleType,TreeCell>::activelistbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::activepartbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::allocated_buffer;
-  using HydroTree<ndim,ParticleType,TreeCell>::box;
-  using HydroTree<ndim,ParticleType,TreeCell>::cellbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::gravity_mac;
-  using HydroTree<ndim,ParticleType,TreeCell>::kernp;
-  using HydroTree<ndim,ParticleType,TreeCell>::kernrange;
-  using HydroTree<ndim,ParticleType,TreeCell>::kernrangesqd;
-  using HydroTree<ndim,ParticleType,TreeCell>::levelneibbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::multipole;
-  using HydroTree<ndim,ParticleType,TreeCell>::neibcheck;
-  using HydroTree<ndim,ParticleType,TreeCell>::neibpartbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nleafmax;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nthreads;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ntot;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ntotmax;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
-  using HydroTree<ndim,ParticleType,TreeCell>::Ntotold;
-  using HydroTree<ndim,ParticleType,TreeCell>::timing;
-  using HydroTree<ndim,ParticleType,TreeCell>::tree;
-  using HydroTree<ndim,ParticleType,TreeCell>::ghosttree;
+  using HydroTree<ndim,ParticleType>::activelistbuf;
+  using HydroTree<ndim,ParticleType>::activepartbuf;
+  using HydroTree<ndim,ParticleType>::allocated_buffer;
+  using HydroTree<ndim,ParticleType>::box;
+  using HydroTree<ndim,ParticleType>::cellbuf;
+  using HydroTree<ndim,ParticleType>::gravity_mac;
+  using HydroTree<ndim,ParticleType>::kernp;
+  using HydroTree<ndim,ParticleType>::kernrange;
+  using HydroTree<ndim,ParticleType>::kernrangesqd;
+  using HydroTree<ndim,ParticleType>::levelneibbuf;
+  using HydroTree<ndim,ParticleType>::multipole;
+  using HydroTree<ndim,ParticleType>::neibcheck;
+  using HydroTree<ndim,ParticleType>::neibpartbuf;
+  using HydroTree<ndim,ParticleType>::Ngravcellmaxbuf;
+  using HydroTree<ndim,ParticleType>::Nleafmax;
+  using HydroTree<ndim,ParticleType>::Nneibmaxbuf;
+  using HydroTree<ndim,ParticleType>::Nthreads;
+  using HydroTree<ndim,ParticleType>::Ntot;
+  using HydroTree<ndim,ParticleType>::Ntotmax;
+  using HydroTree<ndim,ParticleType>::Ntotmaxold;
+  using HydroTree<ndim,ParticleType>::Ntotold;
+  using HydroTree<ndim,ParticleType>::timing;
+  using HydroTree<ndim,ParticleType>::tree;
+  using HydroTree<ndim,ParticleType>::ghosttree;
 #ifdef MPI_PARALLEL
-  using HydroTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using HydroTree<ndim,ParticleType,TreeCell>::prunedtree;
-  using HydroTree<ndim,ParticleType,TreeCell>::sendprunedtree;
+  using HydroTree<ndim,ParticleType>::mpighosttree;
+  using HydroTree<ndim,ParticleType>::Nmpi;
+  using HydroTree<ndim,ParticleType>::prunedtree;
+  using HydroTree<ndim,ParticleType>::sendprunedtree;
 #endif
 
 
@@ -164,7 +164,7 @@ protected:
           ParticleTypeRegister& types) :
     NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     SphNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
-    HydroTree<ndim,ParticleType,TreeCell>(tree_t, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
+    HydroTree<ndim,ParticleType>(tree_t, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
                                           _thetamaxsqd, _kernrange, _macerror, _gravity_mac,
                                           _multipole, _box, _kern, _timing, types) {};
   virtual ~SphTree() {};
@@ -191,40 +191,40 @@ protected:
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class GradhSphTree : public SphTree<ndim,ParticleType,TreeCell>
+template <int ndim, template<int> class ParticleType>
+class GradhSphTree : public SphTree<ndim,ParticleType>
 {
  public:
 
-  using SphTree<ndim,ParticleType,TreeCell>::activelistbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
-  using SphTree<ndim,ParticleType,TreeCell>::box;
-  using SphTree<ndim,ParticleType,TreeCell>::cellbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
-  using SphTree<ndim,ParticleType,TreeCell>::kernp;
-  using SphTree<ndim,ParticleType,TreeCell>::kernrange;
-  using SphTree<ndim,ParticleType,TreeCell>::kernrangesqd;
-  using SphTree<ndim,ParticleType,TreeCell>::levelneibbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::multipole;
-  using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
-  using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
-  using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Nthreads;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntot;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotmax;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotold;
-  using SphTree<ndim,ParticleType,TreeCell>::timing;
-  using SphTree<ndim,ParticleType,TreeCell>::tree;
-  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
+  using SphTree<ndim,ParticleType>::activelistbuf;
+  using SphTree<ndim,ParticleType>::activepartbuf;
+  using SphTree<ndim,ParticleType>::allocated_buffer;
+  using SphTree<ndim,ParticleType>::box;
+  using SphTree<ndim,ParticleType>::cellbuf;
+  using SphTree<ndim,ParticleType>::gravity_mac;
+  using SphTree<ndim,ParticleType>::kernp;
+  using SphTree<ndim,ParticleType>::kernrange;
+  using SphTree<ndim,ParticleType>::kernrangesqd;
+  using SphTree<ndim,ParticleType>::levelneibbuf;
+  using SphTree<ndim,ParticleType>::multipole;
+  using SphTree<ndim,ParticleType>::neibcheck;
+  using SphTree<ndim,ParticleType>::neibpartbuf;
+  using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
+  using SphTree<ndim,ParticleType>::Nleafmax;
+  using SphTree<ndim,ParticleType>::Nneibmaxbuf;
+  using SphTree<ndim,ParticleType>::Nthreads;
+  using SphTree<ndim,ParticleType>::Ntot;
+  using SphTree<ndim,ParticleType>::Ntotmax;
+  using SphTree<ndim,ParticleType>::Ntotmaxold;
+  using SphTree<ndim,ParticleType>::Ntotold;
+  using SphTree<ndim,ParticleType>::timing;
+  using SphTree<ndim,ParticleType>::tree;
+  using SphTree<ndim,ParticleType>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
-  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
+  using SphTree<ndim,ParticleType>::mpighosttree;
+  using SphTree<ndim,ParticleType>::Nmpi;
+  using SphTree<ndim,ParticleType>::prunedtree;
+  using SphTree<ndim,ParticleType>::sendprunedtree;
 #endif
 
 
@@ -252,39 +252,39 @@ class GradhSphTree : public SphTree<ndim,ParticleType,TreeCell>
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
+template <int ndim, template<int> class ParticleType>
+class SM2012SphTree: public SphTree<ndim,ParticleType>
 {
  public:
 
-  using SphTree<ndim,ParticleType,TreeCell>::activelistbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
-  using SphTree<ndim,ParticleType,TreeCell>::box;
-  using SphTree<ndim,ParticleType,TreeCell>::cellbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
-  using SphTree<ndim,ParticleType,TreeCell>::kernp;
-  using SphTree<ndim,ParticleType,TreeCell>::kernrange;
-  using SphTree<ndim,ParticleType,TreeCell>::kernrangesqd;
-  using SphTree<ndim,ParticleType,TreeCell>::levelneibbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::multipole;
-  using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
-  using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
-  using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntot;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotmax;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotold;
-  using SphTree<ndim,ParticleType,TreeCell>::timing;
-  using SphTree<ndim,ParticleType,TreeCell>::tree;
-  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
+  using SphTree<ndim,ParticleType>::activelistbuf;
+  using SphTree<ndim,ParticleType>::activepartbuf;
+  using SphTree<ndim,ParticleType>::allocated_buffer;
+  using SphTree<ndim,ParticleType>::box;
+  using SphTree<ndim,ParticleType>::cellbuf;
+  using SphTree<ndim,ParticleType>::gravity_mac;
+  using SphTree<ndim,ParticleType>::kernp;
+  using SphTree<ndim,ParticleType>::kernrange;
+  using SphTree<ndim,ParticleType>::kernrangesqd;
+  using SphTree<ndim,ParticleType>::levelneibbuf;
+  using SphTree<ndim,ParticleType>::multipole;
+  using SphTree<ndim,ParticleType>::neibcheck;
+  using SphTree<ndim,ParticleType>::neibpartbuf;
+  using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
+  using SphTree<ndim,ParticleType>::Nleafmax;
+  using SphTree<ndim,ParticleType>::Nneibmaxbuf;
+  using SphTree<ndim,ParticleType>::Ntot;
+  using SphTree<ndim,ParticleType>::Ntotmax;
+  using SphTree<ndim,ParticleType>::Ntotmaxold;
+  using SphTree<ndim,ParticleType>::Ntotold;
+  using SphTree<ndim,ParticleType>::timing;
+  using SphTree<ndim,ParticleType>::tree;
+  using SphTree<ndim,ParticleType>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
-  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
+  using SphTree<ndim,ParticleType>::mpighosttree;
+  using SphTree<ndim,ParticleType>::Nmpi;
+  using SphTree<ndim,ParticleType>::prunedtree;
+  using SphTree<ndim,ParticleType>::sendprunedtree;
 #endif
 
 

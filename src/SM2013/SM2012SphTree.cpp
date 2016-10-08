@@ -44,14 +44,14 @@ using namespace std;
 //  SM2012SphTree::SM2012SphTree
 /// SM2012SphTree constructor.  Initialises various variables.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-SM2012SphTree<ndim,ParticleType,TreeCell>::SM2012SphTree
+template <int ndim, template<int> class ParticleType>
+SM2012SphTree<ndim,ParticleType>::SM2012SphTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- SphTree<ndim,ParticleType,TreeCell>
+ SphTree<ndim,ParticleType>
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 {
@@ -60,13 +60,8 @@ SM2012SphTree<ndim,ParticleType,TreeCell>::SM2012SphTree
 
 
 
-template class SM2012SphTree<1,SM2012SphParticle,BruteForceTreeCell>;
-template class SM2012SphTree<2,SM2012SphParticle,BruteForceTreeCell>;
-template class SM2012SphTree<3,SM2012SphParticle,BruteForceTreeCell>;
-template class SM2012SphTree<1,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphTree<2,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphTree<3,SM2012SphParticle,KDTreeCell>;
-template class SM2012SphTree<1,SM2012SphParticle,OctTreeCell>;
-template class SM2012SphTree<2,SM2012SphParticle,OctTreeCell>;
-template class SM2012SphTree<3,SM2012SphParticle,OctTreeCell>;
+template class SM2012SphTree<1,SM2012SphParticle>;
+template class SM2012SphTree<2,SM2012SphParticle>;
+template class SM2012SphTree<3,SM2012SphParticle>;
+
 
