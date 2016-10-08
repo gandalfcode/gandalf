@@ -1063,7 +1063,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
           ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
         }
       } // End of self-gravity for this cell
-e
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {

@@ -707,7 +707,7 @@ void ComputeFastMonopoleForces
   }
 
   for (int j=0; j<Nactive; j++)
-    monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].agrav, activepart[j].gpot) ;
+    monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;
@@ -738,7 +738,7 @@ void ComputeFastQuadrupoleForces
   }
 
   for (int j=0; j<Nactive; j++)
-    monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].agrav, activepart[j].gpot) ;
+    monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;
