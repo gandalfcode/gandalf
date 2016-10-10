@@ -622,18 +622,18 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
     int Nmax = NumGhosts + Nneib;
     while (Nneib < Nmax) {
-      neibpart[Nneib].iorig = i;
+      //neibpart[Nneib].iorig = i;
       for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
       drsqd = DotProduct(dr, dr, ndim);
       FLOAT h2 = rmax + kernrange*neibpart[Nneib].h;
       if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
-	neiblist[Nneib] = i;
-	Nneib++ ;
+        neiblist[Nneib] = i;
+        Nneib++ ;
       }
       else if (Nmax > Nneib) {
-	Nmax-- ;
-	if (Nmax > Nneib)
-	  neibpart[Nneib] = neibpart[Nmax];
+        Nmax-- ;
+        if (Nmax > Nneib)
+          neibpart[Nneib] = neibpart[Nmax];
       }
     }// Loop over Ghosts
   }

@@ -752,9 +752,14 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
           // or (v) neighbour is on same level as current particle but has larger id. value
           // (to only calculate each pair once).
           if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].flags.is_dead()) continue ;
-          if ((!neibpart[jj].flags.is_mirror()) &&
-              (neiblist[jj] == i || activepart[j].level < neibpart[jj].level ||
-              (neibpart[jj].iorig < i && neibpart[jj].level == activepart[j].level))) continue;
+
+          bool need_fluxes =
+              neibpart[jj].flags.is_mirror() ||
+              activepart[j].level > neibpart[jj].level ||
+              activepart[j].iorig < neibpart[jj].iorig ;
+
+          if (not need_fluxes) continue ;
+
 
           // Compute relative position and distance quantities for pair
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
@@ -782,7 +787,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
       // Accumulate fluxes for neighbours
       for (int jj=0; jj<Nneib; jj++) {
-        i = neibpart[jj].iorig;
+        i = neiblist[jj] ;
         if (!neibpart[jj].flags.is_mirror()) {
 	        if (neibpart[jj].flags.check_flag(active))
 	          for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
