@@ -100,10 +100,7 @@ void CodeTiming::StartTimingSection
   block[level][iblock].tstart      = clock();
   block[level][iblock].tstart_wall = WallClockTime();
 
-  // Add block to stack for book-keeping and error checking
-  levelstack[level] = &(block[level][iblock]);
   level++;
-  Nlevel = max(Nlevel, level);
 
   return;
 }

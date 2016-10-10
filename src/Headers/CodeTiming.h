@@ -25,6 +25,7 @@
 #define _CODE_TIMING_H_
 
 
+#include <assert.h>
 #include <map>
 #include <string>
 #include <time.h>
@@ -69,6 +70,9 @@ struct TimingBlock
     block_name     = "";
   }
 
+  void StartTiming() ;
+  void EndTiming() ;
+
 };
 
 
@@ -87,26 +91,81 @@ class CodeTiming
 #endif
  public:
 
+  friend class BlockTimer {
+    BlockTimer(string& _block_name, int _level, CodeTiming& _parent, bool delayed_start=false)
+     : block_name(_block_name), parent(_parent), level(_level), timing_in_progress(false)
+    {
+      if (not delayed_start)
+        StartTiming() ;
+    } ;
+
+
+    void StartTiming() {
+      assert(not timing_in_progress) ;
+      parent.StartTimingBlock(level, block_name) ;
+      timing_in_progress = true ;
+    }
+
+    void EndTiming() {
+      parent.EndTimingBlock(level, block_name) ;
+      timing_in_progress = false ;
+    }
+
+    ~BlockTimer() {
+      if (timing_in_progress)
+        EndTiming() ;
+    } ;
+
+  private:
+    string block_name ;
+    CodeTiming& parent ;
+    int level;
+    bool timing_in_progress;
+  };
+
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
   CodeTiming();
   ~CodeTiming();
 
+  // Get a timing object for a new region
+  BlockTimer StartNewTimer(string block_name) {
+    return BlockTimer(level++, block_name) ;
+  }
 
-  // Other functions
-  //-----------------------------------------------------------------------------------------------
-  void StartTimingSection(string);
-  void EndTimingSection(string);
+  BlockTimer NewTimer(string block_name) {
+    return BlockTimer(level++, block_name, true);
+  }
   void ComputeTimingStatistics(string);
+
+
+  // Private functions
+  //-----------------------------------------------------------------------------------------------
+ private:
+  void StartTimingBlock(int timing_level, string block_name) {
+    __check_levels_are_equal(timing_level, level, block_name) ;
+    GetBlock(level++, block_name).StartTiming() ;
+  }
+  void EndTimingBlock(int timing_level, string block_name) {
+    __check_levels_are_equal(timing_level+1, level, block_name) ;
+    GetBlock(--level, block_name).EndTiming() ;
+  }
+
+  const TimingBlock& GetBlock(int level, string block_name) const {
+    return blockmap[level][block_name] ;
+  }
+  TimingBlock& GetBlock(int level, string block_name) {
+    return blockmap[level][block_name] ;
+  }
+
   double WallClockTime(void);
+
+  void __check_levels_are_equal(int, int, string) ;
 
 
   // CodeTiming class variables
   //-----------------------------------------------------------------------------------------------
-  static const int Nblockmax=128;          ///< Max. no. of code timing blocks
-  static const int Nlevelmax=8;            ///< Max. no. of timing levels
   int level;                               ///< Current timing level
-  int Nlevel;                              ///< No. of timing levels
   double tstart_wall;                      ///< Start of wall clock timing
   double tend_wall;                        ///< End of wall clock timing
   DOUBLE ttot;                             ///< Total time
@@ -114,11 +173,6 @@ class CodeTiming
   clock_t tstart;                          ///< Start of integer clock
   clock_t tend;                            ///< End of integer clock
 
-  int Nblock[Nlevelmax];                   ///< No. of timing blocks on a given level
-  int timingOrder[Nlevelmax][Nblockmax];   ///< Order (longest to shortest) of timing blocks
-  map<string,int> blockmap[Nlevelmax];     ///< Map of timing block names
-  TimingBlock block[Nlevelmax][Nblockmax]; ///< Array of timing blocks
-  TimingBlock *levelstack[Nlevelmax];      ///< Stack of current blocks being timed
-
+  vector<map<string,TimingBlock> > blockmap;     ///< Map of timing block names
 };
 #endif
