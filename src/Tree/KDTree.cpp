@@ -287,8 +287,8 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].ifirst = ifirst;
   celldata[0].ilast  = ilast;
   celldata[0].cnext  = Ncellmax;
-  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmin[k]; //-big_number;
-  for (k=0; k<ndim; k++) celldata[0].bbmax[k] = bbmax[k]; //big_number;
+  for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k]; //-big_number;
+  for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k]; //big_number;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
   for (i=ifirst; i<ilast; i++) inext[i] = i+1;
@@ -475,14 +475,14 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 #if defined(MPI_PARALLEL)
   i = cell.ifirst;
   for (k=0; k< ndim; k++) {
-    cell.bbmin[k] = +big_number;
-    cell.bbmax[k] = -big_number;
+    cell.bb.min[k] = +big_number;
+    cell.bb.max[k] = -big_number;
   }
   for (i=cell.ifirst; i<=cell.ilast; i++) {
     int j = ids[i];
     for (k=0; k<ndim; k++) {
-      if (cell.bbmin[k] > partdata[j].r[k]) cell.bbmin[k] = partdata[j].r[k];
-      if (cell.bbmax[k] < partdata[j].r[k]) cell.bbmax[k] = partdata[j].r[k];
+      if (cell.bb.min[k] > partdata[j].r[k]) cell.bb.min[k] = partdata[j].r[k];
+      if (cell.bb.max[k] < partdata[j].r[k]) cell.bb.max[k] = partdata[j].r[k];
     }
   }
 #endif
@@ -490,8 +490,8 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   // Determine dimension to split the cell along.
   // For now, simply split along direction of the bounding box's longest axis
   for (k=0; k<ndim; k++) {
-    if (cell.bbmax[k] - cell.bbmin[k] > rkmax) {
-      rkmax = cell.bbmax[k] - cell.bbmin[k];
+    if (cell.bb.max[k] - cell.bb.min[k] > rkmax) {
+      rkmax = cell.bb.max[k] - cell.bb.min[k];
       k_divide = k;
       //cout << "Division? : " << k_divide << "    " << rkmax << endl;
     }
@@ -505,11 +505,11 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   rdivide = QuickSelect(cell.ifirst, cell.ilast, cell.ifirst+cell.N/2, k_divide, partdata);
 
   // Set properties of first child cell
-  for (k=0; k<ndim; k++) celldata[cell.c1].bbmin[k] = cell.bbmin[k];
-  for (k=0; k<ndim; k++) celldata[cell.c1].bbmax[k] = cell.bbmax[k];
+  for (k=0; k<ndim; k++) celldata[cell.c1].bb.min[k] = cell.bb.min[k];
+  for (k=0; k<ndim; k++) celldata[cell.c1].bb.max[k] = cell.bb.max[k];
   for (k=0; k<ndim; k++) celldata[cell.c1].cexit[0][k] = cell.cexit[0][k];
   for (k=0; k<ndim; k++) celldata[cell.c1].cexit[1][k] = cell.cexit[1][k];
-  celldata[cell.c1].bbmax[k_divide] = rdivide;
+  celldata[cell.c1].bb.max[k_divide] = rdivide;
   celldata[cell.c1].cexit[1][k_divide] = cell.c2;
   celldata[cell.c1].N = cell.N/2;
   if (celldata[cell.c1].N != 0) {
@@ -519,11 +519,11 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   }
 
   // Set properties of second child cell
-  for (k=0; k<ndim; k++) celldata[cell.c2].bbmin[k] = cell.bbmin[k];
-  for (k=0; k<ndim; k++) celldata[cell.c2].bbmax[k] = cell.bbmax[k];
+  for (k=0; k<ndim; k++) celldata[cell.c2].bb.min[k] = cell.bb.min[k];
+  for (k=0; k<ndim; k++) celldata[cell.c2].bb.max[k] = cell.bb.max[k];
   for (k=0; k<ndim; k++) celldata[cell.c2].cexit[0][k] = cell.cexit[0][k];
   for (k=0; k<ndim; k++) celldata[cell.c2].cexit[1][k] = cell.cexit[1][k];
-  celldata[cell.c2].bbmin[k_divide] = rdivide;
+  celldata[cell.c2].bb.min[k_divide] = rdivide;
   celldata[cell.c2].cexit[0][k_divide] = cell.c1;
   celldata[cell.c2].N = cell.N - celldata[cell.c1].N;
   if (celldata[cell.c2].N != 0) {
@@ -536,13 +536,13 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   // MAYBE NEED TO ADD THESE LINES ??
   // Set new cell boundaries depending on number of particles in cells
   /*if (radcell[cell.c1].N > 0 && radcell[cell.c2].N > 0) {
-    radcell[cell.c1].bbmax[k_divide] = rdivide;
-    radcell[cell.c2].bbmin[k_divide] = rdivide;
+    radcell[cell.c1].bb.max[k_divide] = rdivide;
+    radcell[cell.c2].bb.min[k_divide] = rdivide;
     radcell[cell.c1].cexit[1][k_divide] = cell.c2;
     radcell[cell.c2].cexit[0][k_divide] = cell.c1;
   }
   else if (radcell[cell.c2].N > 0) {
-    radcell[cell.c1].bbmax[k_divide] = -big_number;
+    radcell[cell.c1].bb.max[k_divide] = -big_number;
   }*/
 
 
@@ -832,12 +832,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.bbmin[k]   = big_number;
-  for (k=0; k<ndim; k++) cell.bbmax[k]   = -big_number;
-  for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
-  for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
-  for (k=0; k<ndim; k++) cell.vboxmin[k] = big_number;
-  for (k=0; k<ndim; k++) cell.vboxmax[k] = -big_number;
+  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
+  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
+  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
+  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
+  for (k=0; k<ndim; k++) cell.vbox.min[k] = big_number;
+  for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
 
 
   // If this is a leaf cell, sum over all particles
@@ -875,12 +875,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
           for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
         }
         for (k=0; k<ndim; k++) {
-         if (partdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = partdata[i].r[k];
-         if (partdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = partdata[i].r[k];
-         if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k])
-         cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-         if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
-          cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+         if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
+         if (partdata[i].r[k] > cell.bb.max[k]) cell.bb.max[k] = partdata[i].r[k];
+         if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k])
+         cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+         if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
+          cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
         }
       }
       if (i == cell.ilast) break;
@@ -891,8 +891,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-      for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
+      for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
     }
@@ -932,17 +932,17 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   else {
 
     if (child1.N > 0) {
-      for (k=0; k<ndim; k++) cell.bbmin[k] = min(child1.bbmin[k],cell.bbmin[k]);
-      for (k=0; k<ndim; k++) cell.bbmax[k] = max(child1.bbmax[k],cell.bbmax[k]);
-      for (k=0; k<ndim; k++) cell.hboxmin[k] = min(child1.hboxmin[k],cell.hboxmin[k]);
-      for (k=0; k<ndim; k++) cell.hboxmax[k] = max(child1.hboxmax[k],cell.hboxmax[k]);
+      for (k=0; k<ndim; k++) cell.bb.min[k] = min(child1.bb.min[k],cell.bb.min[k]);
+      for (k=0; k<ndim; k++) cell.bb.max[k] = max(child1.bb.max[k],cell.bb.max[k]);
+      for (k=0; k<ndim; k++) cell.hbox.min[k] = min(child1.hbox.min[k],cell.hbox.min[k]);
+      for (k=0; k<ndim; k++) cell.hbox.max[k] = max(child1.hbox.max[k],cell.hbox.max[k]);
       cell.hmax = max(cell.hmax,child1.hmax);
     }
     if (child2.N > 0) {
-      for (k=0; k<ndim; k++) cell.bbmin[k] = min(child2.bbmin[k],cell.bbmin[k]);
-      for (k=0; k<ndim; k++) cell.bbmax[k] = max(child2.bbmax[k],cell.bbmax[k]);
-      for (k=0; k<ndim; k++) cell.hboxmin[k] = min(child2.hboxmin[k],cell.hboxmin[k]);
-      for (k=0; k<ndim; k++) cell.hboxmax[k] = max(child2.hboxmax[k],cell.hboxmax[k]);
+      for (k=0; k<ndim; k++) cell.bb.min[k] = min(child2.bb.min[k],cell.bb.min[k]);
+      for (k=0; k<ndim; k++) cell.bb.max[k] = max(child2.bb.max[k],cell.bb.max[k]);
+      for (k=0; k<ndim; k++) cell.hbox.min[k] = min(child2.hbox.min[k],cell.hbox.min[k]);
+      for (k=0; k<ndim; k++) cell.hbox.max[k] = max(child2.hbox.max[k],cell.hbox.max[k]);
       cell.hmax = max(cell.hmax,child2.hmax);
     }
 
@@ -952,8 +952,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       cell.m = child1.m + child2.m;
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
       for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
-      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-      for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
+      for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
 #ifdef MPI_PARALLEL
@@ -1057,10 +1057,10 @@ void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
 
     for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bbmin[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bbmax[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hboxmin[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hboxmax[k] += celldata[c].v[k]*dt;
+    for (k=0; k<ndim; k++) celldata[c].bb.min[k] += celldata[c].v[k]*dt;
+    for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
+    for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
+    for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
     //celldata[c].rmax += celldata[c].drmaxdt*dt;
     //celldata[c].hmax += celldata[c].dhmaxdt*dt;
 
@@ -1113,8 +1113,8 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 
   // Zero all summation variables for all cells
   cell.hmax = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
-  for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
+  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
+  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
 
 
   // If this is a leaf cell, sum over all particles
@@ -1126,11 +1126,11 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
     while (i != -1) {
       cell.hmax = max(cell.hmax,partdata[i].h);
       for (k=0; k<ndim; k++) {
-        if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k]) {
-          cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+        if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
+          cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
         }
-        if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k]) {
-          cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+        if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k]) {
+          cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
         }
       }
       if (i == cell.ilast) break;
@@ -1145,13 +1145,13 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
     ccc = cell.c2;
     if (celldata[cc].N > 0) {
       cell.hmax = max(cell.hmax,celldata[cc].hmax);
-      for (k=0; k<ndim; k++) cell.hboxmin[k] = min(celldata[cc].hboxmin[k],cell.hboxmin[k]);
-      for (k=0; k<ndim; k++) cell.hboxmax[k] = max(celldata[cc].hboxmax[k],cell.hboxmax[k]);
+      for (k=0; k<ndim; k++) cell.hbox.min[k] = min(celldata[cc].hbox.min[k],cell.hbox.min[k]);
+      for (k=0; k<ndim; k++) cell.hbox.max[k] = max(celldata[cc].hbox.max[k],cell.hbox.max[k]);
     }
     if (celldata[ccc].N > 0) {
       cell.hmax = max(cell.hmax,celldata[ccc].hmax);
-      for (k=0; k<ndim; k++) cell.hboxmin[k] = min(celldata[ccc].hboxmin[k],cell.hboxmin[k]);
-      for (k=0; k<ndim; k++) cell.hboxmax[k] = max(celldata[ccc].hboxmax[k],cell.hboxmax[k]);
+      for (k=0; k<ndim; k++) cell.hbox.min[k] = min(celldata[ccc].hbox.min[k],cell.hbox.min[k]);
+      for (k=0; k<ndim; k++) cell.hbox.max[k] = max(celldata[ccc].hbox.max[k],cell.hbox.max[k]);
     }
 
   }
@@ -1413,8 +1413,8 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
       KDTreeCell<ndim>& c2 = celldata[cell.c2];
 
       for (int k=0; k<ndim; k++) {
-        if (c1.hboxmin[k] < cell.hboxmin[k] || c1.hboxmax[k] > cell.hboxmax[k] ||
-            c2.hboxmin[k] < cell.hboxmin[k] || c2.hboxmax[k] > cell.hboxmax[k])
+        if (c1.hbox.min[k] < cell.hbox.min[k] || c1.hbox.max[k] > cell.hbox.max[k] ||
+            c2.hbox.min[k] < cell.hbox.min[k] || c2.hbox.max[k] > cell.hbox.max[k])
             overlap_flag = true;
       }
       if (overlap_flag) {
@@ -1428,26 +1428,26 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
     for (cc=0; cc<Ncell; cc++) {
       if (c != cc && celldata[cc].level == cell.level) {
         if (ndim == 1) {
-          if (cell.bbmin[0] < celldata[cc].bbmax[0] &&
-              cell.bbmax[0] > celldata[cc].bbmin[0]) {
+          if (cell.bb.min[0] < celldata[cc].bb.max[0] &&
+              cell.bb.max[0] > celldata[cc].bb.min[0]) {
             overlap_flag = true;
           }
         }
         else if (ndim == 2) {
-          if (cell.bbmin[0] < celldata[cc].bbmax[0] &&
-              cell.bbmax[0] > celldata[cc].bbmin[0] &&
-              cell.bbmin[1] < celldata[cc].bbmax[1] &&
-              cell.bbmax[1] > celldata[cc].bbmin[1]) {
+          if (cell.bb.min[0] < celldata[cc].bb.max[0] &&
+              cell.bb.max[0] > celldata[cc].bb.min[0] &&
+              cell.bb.min[1] < celldata[cc].bb.max[1] &&
+              cell.bb.max[1] > celldata[cc].bb.min[1]) {
             overlap_flag = true;
           }
         }
         else if (ndim == 3) {
-          if (cell.bbmin[0] < celldata[cc].bbmax[0] &&
-              cell.bbmax[0] > celldata[cc].bbmin[0] &&
-              cell.bbmin[1] < celldata[cc].bbmax[1] &&
-              cell.bbmax[1] > celldata[cc].bbmin[1] &&
-              cell.bbmin[2] < celldata[cc].bbmax[2] &&
-              cell.bbmax[2] > celldata[cc].bbmin[2]) {
+          if (cell.bb.min[0] < celldata[cc].bb.max[0] &&
+              cell.bb.max[0] > celldata[cc].bb.min[0] &&
+              cell.bb.min[1] < celldata[cc].bb.max[1] &&
+              cell.bb.max[1] > celldata[cc].bb.min[1] &&
+              cell.bb.min[2] < celldata[cc].bb.max[2] &&
+              cell.bb.max[2] > celldata[cc].bb.min[2]) {
             overlap_flag = true;
           }
         }

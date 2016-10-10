@@ -369,56 +369,56 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::CopyDataToGhosts
     // only update one direction.
     if (ndim > 2) {
       if (itype & z_periodic_lhs) {
-        partdata[i].r[2] += simbox.boxsize[2];
+        partdata[i].r[2] += simbox.size[2];
         continue ;
       }
       else if (itype & z_periodic_rhs) {
-    	partdata[i].r[2] -= simbox.boxsize[2];
+    	partdata[i].r[2] -= simbox.size[2];
         continue ;
       }
       else if (itype & z_mirror_lhs) {
-    	reflect(partdata[i], 2, simbox.boxmin[2]) ;
+    	reflect(partdata[i], 2, simbox.min[2]) ;
         continue ;
       }
       else if (itype & z_mirror_rhs) {
-      	reflect(partdata[i], 2, simbox.boxmax[2]) ;
+      	reflect(partdata[i], 2, simbox.max[2]) ;
         continue ;
       }
 
     }
     if (ndim > 1) {
       if (itype & y_periodic_lhs) {
-    	partdata[i].r[1] += simbox.boxsize[1];
+    	partdata[i].r[1] += simbox.size[1];
     	continue ;
       }
       else if (itype & y_periodic_rhs) {
-    	partdata[i].r[1] -= simbox.boxsize[1];
+    	partdata[i].r[1] -= simbox.size[1];
     	continue ;
       }
       else if (itype & y_mirror_lhs) {
-        reflect(partdata[i], 1, simbox.boxmin[1]) ;
+        reflect(partdata[i], 1, simbox.min[1]) ;
     	continue ;
       }
       else if (itype & y_mirror_rhs) {
-        reflect(partdata[i], 1, simbox.boxmax[1]) ;
+        reflect(partdata[i], 1, simbox.max[1]) ;
         continue ;
       }
     }
 
     if (itype & x_periodic_lhs) {
-      partdata[i].r[0] += simbox.boxsize[0];
+      partdata[i].r[0] += simbox.size[0];
       continue ;
     }
     else if (itype & x_periodic_rhs) {
-      partdata[i].r[0] -= simbox.boxsize[0];
+      partdata[i].r[0] -= simbox.size[0];
       continue ;
     }
     else if (itype & x_mirror_lhs) {
-      reflect(partdata[i], 0, simbox.boxmin[0]) ;
+      reflect(partdata[i], 0, simbox.min[0]) ;
       continue ;
     }
     else if (itype & x_mirror_rhs) {
-      reflect(partdata[i], 0, simbox.boxmax[0]) ;
+      reflect(partdata[i], 0, simbox.max[0]) ;
       continue ;
     }
   }

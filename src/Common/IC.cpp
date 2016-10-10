@@ -58,10 +58,10 @@ void Ic<ndim>::CheckInitialConditions(void)
 
     // Check that all particles reside inside any defined boundaries
     for (k=0; k<ndim; k++) {
-      if (part.r[k] < simbox.boxmin[k]) {
+      if (part.r[k] < simbox.min[k]) {
         if (simbox.boundary_lhs[k] == periodicBoundary) okflag = false;
       }
-      if (part.r[k] > simbox.boxmax[k]) {
+      if (part.r[k] > simbox.max[k]) {
         if (simbox.boundary_rhs[k] == periodicBoundary) okflag = false;
       }
     }
@@ -71,7 +71,7 @@ void Ic<ndim>::CheckInitialConditions(void)
       cout << "Particle " << i << " not inside periodic box" << endl;
       for (k=0; k<ndim; k++)
         cout << "r[" << k << "] : " << part.r[k] << "    "
-             << simbox.boxmin[k] << "    " << simbox.boxmax[k] << endl;
+             << simbox.min[k] << "    " << simbox.max[k] << endl;
     }
 
     valid_ic = okflag;
@@ -180,10 +180,10 @@ void Ic<ndim>::BinaryAccretion(void)
     else if (Nbox1 > 0 && Nbox2 > 0) {
       box1 = simbox;
       box2 = simbox;
-      box1.boxmin[0] = simbox.boxmin[0];
-      box1.boxmax[0] = simbox.boxmin[0] + simbox.boxhalf[0];
-      box2.boxmin[0] = simbox.boxmin[0] + simbox.boxhalf[0];
-      box2.boxmax[0] = simbox.boxmax[0];
+      box1.min[0] = simbox.min[0];
+      box1.max[0] = simbox.min[0] + simbox.half[0];
+      box2.min[0] = simbox.min[0] + simbox.half[0];
+      box2.max[0] = simbox.max[0];
     }
     else {
       string message = "Invalid number of particles chosen";
@@ -194,16 +194,16 @@ void Ic<ndim>::BinaryAccretion(void)
     // Compute size and range of fluid bounding boxes
     //---------------------------------------------------------------------------------------------
     if (ndim == 2) {
-      volume1 = (box1.boxmax[0] - box1.boxmin[0])*(box1.boxmax[1] - box1.boxmin[1]);
-      volume2 = (box2.boxmax[0] - box2.boxmin[0])*(box2.boxmax[1] - box2.boxmin[1]);
+      volume1 = (box1.max[0] - box1.min[0])*(box1.max[1] - box1.min[1]);
+      volume2 = (box2.max[0] - box2.min[0])*(box2.max[1] - box2.min[1]);
       Nneib   = (int) (pi*pow(hydro->kernp->kernrange*hydro->h_fac,2));
       hfluid1 = sqrtf((volume1*(FLOAT) Nneib)/((FLOAT) 4.0*(FLOAT) Nbox1));
     }
     else if (ndim == 3) {
-      volume1 = (box1.boxmax[0] - box1.boxmin[0])*
-        (box1.boxmax[1] - box1.boxmin[1])*(box1.boxmax[2] - box1.boxmin[2]);
-      volume2 = (box2.boxmax[0] - box2.boxmin[0])*
-        (box2.boxmax[1] - box2.boxmin[1])*(box2.boxmax[2] - box2.boxmin[2]);
+      volume1 = (box1.max[0] - box1.min[0])*
+        (box1.max[1] - box1.min[1])*(box1.max[2] - box1.min[2]);
+      volume2 = (box2.max[0] - box2.min[0])*
+        (box2.max[1] - box2.min[1])*(box2.max[2] - box2.min[2]);
       Nneib = (int) (pi*pow(hydro->kernp->kernrange*hydro->h_fac,2));
       hfluid1 = powf(((FLOAT) 3.0*volume1*(FLOAT) Nneib)/((FLOAT) 32.0*pi*(FLOAT) Nbox1),onethird);
     }
@@ -238,8 +238,8 @@ void Ic<ndim>::BinaryAccretion(void)
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r1[ndim*i + k];
-        part.r[0] += (FLOAT) 0.25*simbox.boxsize[0];
-        if (part.r[0] > simbox.boxmax[0]) part.r[0] -= simbox.boxsize[0];
+        part.r[0] += (FLOAT) 0.25*simbox.size[0];
+        if (part.r[0] > simbox.max[0]) part.r[0] -= simbox.size[0];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.m = rhofluid1*volume1/(FLOAT) Nbox1;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
@@ -273,8 +273,8 @@ void Ic<ndim>::BinaryAccretion(void)
         i = Nbox1 + j;
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r2[ndim*j + k];
-        part.r[0] += (FLOAT) 0.25*simbox.boxsize[0];
-        if (part.r[0] > simbox.boxmax[0]) part.r[0] -= simbox.boxsize[0];
+        part.r[0] += (FLOAT) 0.25*simbox.size[0];
+        if (part.r[0] > simbox.max[0]) part.r[0] -= simbox.size[0];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
         part.m = rhofluid2*volume2/(FLOAT) Nbox1;
@@ -313,10 +313,10 @@ void Ic<ndim>::BinaryAccretion(void)
       for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = (FLOAT) 0.0;
       if (vmachbin < small_number) {
-        nbody->stardata[0].r[0] = simbox.boxmin[0] + (FLOAT) 0.5*simbox.boxsize[0];
+        nbody->stardata[0].r[0] = simbox.min[0] + (FLOAT) 0.5*simbox.size[0];
       }
       else {
-        nbody->stardata[0].r[0] = simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
+        nbody->stardata[0].r[0] = simbox.min[0] + (FLOAT) 0.0625*simbox.size[0];
       }
       nbody->stardata[0].v[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
       nbody->stardata[0].m = m1 + m2;
@@ -331,10 +331,10 @@ void Ic<ndim>::BinaryAccretion(void)
       for (k=0; k<ndim; k++) rbinary[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) vbinary[k] = (FLOAT) 0.0;
       if (vmachbin < small_number) {
-        rbinary[0] = simbox.boxmin[0] + (FLOAT) 0.5*simbox.boxsize[0];
+        rbinary[0] = simbox.min[0] + (FLOAT) 0.5*simbox.size[0];
       }
       else {
-        rbinary[0] = simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
+        rbinary[0] = simbox.min[0] + (FLOAT) 0.0625*simbox.size[0];
       }
       vbinary[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
       AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,phirot,thetarot,psirot,0.0,
@@ -409,11 +409,11 @@ void Ic<ndim>::ShockTube(void)
     debug2("[Ic::ShockTube]");
 
     // Compute size and range of fluid bounding boxes
-    box1.boxmin[0] = simbox.boxmin[0];
-    box1.boxmax[0] = (FLOAT) 0.0;
-    box2.boxmin[0] = (FLOAT) 0.0;
-    box2.boxmax[0] = simbox.boxmax[0];
-    volume = box1.boxmax[0] - box1.boxmin[0];
+    box1.min[0] = simbox.min[0];
+    box1.max[0] = (FLOAT) 0.0;
+    box2.min[0] = (FLOAT) 0.0;
+    box2.max[0] = simbox.max[0];
+    volume = box1.max[0] - box1.min[0];
     Nbox1 = Nlattice1[0];
     Nbox2 = Nlattice2[0];
     hydro->Nhydro = Nbox1 + Nbox2;
@@ -600,16 +600,16 @@ void Ic<ndim>::UniformBox(void)
 
   // Compute volume and number of particles inside box
   if (ndim == 1) {
-    volume = simbox.boxmax[0] - simbox.boxmin[0];
+    volume = simbox.max[0] - simbox.min[0];
     Nbox = Nlattice[0];
   }
   else if (ndim == 2) {
-    volume = (simbox.boxmax[0] - simbox.boxmin[0])*(simbox.boxmax[1] - simbox.boxmin[1]);
+    volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
     Nbox = Nlattice[0]*Nlattice[1];
   }
   else if (ndim == 3) {
-    volume = (simbox.boxmax[0] - simbox.boxmin[0])*
-      (simbox.boxmax[1] - simbox.boxmin[1])*(simbox.boxmax[2] - simbox.boxmin[2]);
+    volume = (simbox.max[0] - simbox.min[0])*
+      (simbox.max[1] - simbox.min[1])*(simbox.max[2] - simbox.min[2]);
     Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
   }
 
@@ -791,11 +791,11 @@ void Ic<ndim>::ContactDiscontinuity(void)
   // 1D simulation
   //===============================================================================================
   if (ndim == 1) {
-    box1.boxmin[0] = simbox.boxmin[0];
-    box1.boxmax[0] = (FLOAT) 0.8*simbox.boxmax[0];
-    box2.boxmin[0] = (FLOAT) 0.8*simbox.boxmax[0];
-    box2.boxmax[0] = simbox.boxmax[0];
-    volume = box1.boxmax[0] - box1.boxmin[0];
+    box1.min[0] = simbox.min[0];
+    box1.max[0] = (FLOAT) 0.8*simbox.max[0];
+    box2.min[0] = (FLOAT) 0.8*simbox.max[0];
+    box2.max[0] = simbox.max[0];
+    volume = box1.max[0] - box1.min[0];
     Nbox1 = Nlattice1[0];
     Nbox2 = Nlattice2[0];
 
@@ -807,11 +807,11 @@ void Ic<ndim>::ContactDiscontinuity(void)
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
       AddCubicLattice(Nbox1, Nlattice1, box1, false, r);
-      volume = box1.boxmax[0] - box1.boxmin[0];
+      volume = box1.max[0] - box1.min[0];
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        part.r[0] = r[i] - (FLOAT) 0.4*simbox.boxsize[0];
-        if (part.r[0] < simbox.boxmin[0]) part.r[0] += simbox.boxsize[0];
+        part.r[0] = r[i] - (FLOAT) 0.4*simbox.size[0];
+        if (part.r[0] < simbox.min[0]) part.r[0] += simbox.size[0];
         part.v[0] = (FLOAT) 0.0;
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
@@ -827,12 +827,12 @@ void Ic<ndim>::ContactDiscontinuity(void)
     //---------------------------------------------------------------------------------------------
     if (Nbox2 > 0) {
       AddCubicLattice(Nbox2, Nlattice2, box2, false, r);
-      volume = box2.boxmax[0] - box2.boxmin[0];
+      volume = box2.max[0] - box2.min[0];
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        part.r[0] = r[j] - (FLOAT) 0.4*simbox.boxsize[0];
-        if (part.r[0] < simbox.boxmin[0]) part.r[0] += simbox.boxsize[0];
+        part.r[0] = r[j] - (FLOAT) 0.4*simbox.size[0];
+        if (part.r[0] < simbox.min[0]) part.r[0] += simbox.size[0];
         part.v[0] = (FLOAT) 0.0;
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
@@ -926,7 +926,7 @@ void Ic<ndim>::GreshoVortex(void)
     // Compute size and range of fluid bounding boxes
     //---------------------------------------------------------------------------------------------
     rhofluid = 1.0;
-    volume = (simbox.boxmax[0] - simbox.boxmin[0])*(simbox.boxmax[1] - simbox.boxmin[1]);
+    volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
     Nbox = Nlattice[0]*Nlattice[1];
 
     // Allocate local and main particle memory and calculate positions for cubic lattice
@@ -1023,15 +1023,15 @@ void Ic<ndim>::KHI(void)
 
     // Compute size and range of fluid bounding boxes
     //---------------------------------------------------------------------------------------------
-    box1.boxmin[0] = simbox.boxmin[0];
-    box1.boxmax[0] = simbox.boxmax[0];
-    box1.boxmin[1] = simbox.boxmin[1];
-    box1.boxmax[1] = simbox.boxmin[1] + simbox.boxhalf[1];
-    box2.boxmin[0] = simbox.boxmin[0];
-    box2.boxmax[0] = simbox.boxmax[0];
-    box2.boxmin[1] = simbox.boxmin[1] + simbox.boxhalf[1];
-    box2.boxmax[1] = simbox.boxmax[1];
-    volume = (box1.boxmax[0] - box1.boxmin[0])*(box1.boxmax[1] - box1.boxmin[1]);
+    box1.min[0] = simbox.min[0];
+    box1.max[0] = simbox.max[0];
+    box1.min[1] = simbox.min[1];
+    box1.max[1] = simbox.min[1] + simbox.half[1];
+    box2.min[0] = simbox.min[0];
+    box2.max[0] = simbox.max[0];
+    box2.min[1] = simbox.min[1] + simbox.half[1];
+    box2.max[1] = simbox.max[1];
+    volume = (box1.max[0] - box1.min[0])*(box1.max[1] - box1.min[1]);
     Nbox1 = Nlattice1[0]*Nlattice1[1];
     Nbox2 = Nlattice2[0]*Nlattice2[1];
 
@@ -1051,8 +1051,8 @@ void Ic<ndim>::KHI(void)
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
-        part.r[1] -= (FLOAT) 0.25*simbox.boxsize[1];
-        if (part.r[1] < simbox.boxmin[1]) part.r[1] += simbox.boxsize[1];
+        part.r[1] -= (FLOAT) 0.25*simbox.size[1];
+        if (part.r[1] < simbox.min[1]) part.r[1] += simbox.size[1];
         part.v[0] = vfluid1[0];
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
@@ -1070,8 +1070,8 @@ void Ic<ndim>::KHI(void)
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
-        part.r[1] -= (FLOAT) 0.25*simbox.boxsize[1];
-        if (part.r[1] < simbox.boxmin[1]) part.r[1] += simbox.boxsize[1];
+        part.r[1] -= (FLOAT) 0.25*simbox.size[1];
+        if (part.r[1] < simbox.min[1]) part.r[1] += simbox.size[1];
         part.v[0] = vfluid2[0];
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
@@ -1249,15 +1249,15 @@ void Ic<ndim>::RTI(void)
 
     // Compute size and range of fluid bounding boxes
     //---------------------------------------------------------------------------------------------
-    box1.boxmin[0] = simbox.boxmin[0];
-    box1.boxmax[0] = simbox.boxmax[0];
-    box1.boxmin[1] = simbox.boxmin[1];
-    box1.boxmax[1] = simbox.boxmin[1] + simbox.boxhalf[1];
-    box2.boxmin[0] = simbox.boxmin[0];
-    box2.boxmax[0] = simbox.boxmax[0];
-    box2.boxmin[1] = simbox.boxmin[1] + simbox.boxhalf[1];
-    box2.boxmax[1] = simbox.boxmax[1];
-    volume = (box1.boxmax[0] - box1.boxmin[0])*(box1.boxmax[1] - box1.boxmin[1]);
+    box1.min[0] = simbox.min[0];
+    box1.max[0] = simbox.max[0];
+    box1.min[1] = simbox.min[1];
+    box1.max[1] = simbox.min[1] + simbox.half[1];
+    box2.min[0] = simbox.min[0];
+    box2.max[0] = simbox.max[0];
+    box2.min[1] = simbox.min[1] + simbox.half[1];
+    box2.max[1] = simbox.max[1];
+    volume = (box1.max[0] - box1.min[0])*(box1.max[1] - box1.min[1]);
     Nbox1 = Nlattice1[0]*Nlattice1[1];
     Nbox2 = Nlattice2[0]*Nlattice2[1];
 
@@ -1525,7 +1525,7 @@ void Ic<ndim>::BlobTest(void)
 
   FLOAT volume_box=1;
   for (int k=0; k<ndim; k++) {
-    volume_box *= (simbox.boxmax[k]-simbox.boxmin[k]);
+    volume_box *= (simbox.max[k]-simbox.min[k]);
   }
   // Add an uniform background
   int Nlattice[3];
@@ -2020,8 +2020,8 @@ void Ic<ndim>::EwaldDensity(void)
       csound = sqrt(gamma*press1/rhofluid1);
     }
 
-    lambda = simbox.boxsize[0];
-    volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
+    lambda = simbox.size[0];
+    volume = simbox.size[0]*simbox.size[1]*simbox.size[2];
     kwave  = twopi/lambda;
     //omegawave = twopi*csound/lambda;
 
@@ -2054,7 +2054,7 @@ void Ic<ndim>::EwaldDensity(void)
     //=============================================================================================
     if (ic == "ewaldsine") {
 
-      lambda    = simbox.boxmax[0] - simbox.boxmin[0];
+      lambda    = simbox.max[0] - simbox.min[0];
       kwave     = twopi/lambda;
       //omegawave = twopi*csound/lambda;
 
@@ -2087,13 +2087,13 @@ void Ic<ndim>::EwaldDensity(void)
     //=============================================================================================
     else if (ic == "ewaldsine2") {
 
-      lambda = simbox.boxmax[0] - simbox.boxmin[0];
+      lambda = simbox.max[0] - simbox.min[0];
       kwave = twopi/lambda;
 
       // Add regular distribution of SPH particles
       AddCubicLattice(Npart, Nlattice1, simbox, false, r);
 
-      volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
+      volume = simbox.size[0]*simbox.size[1]*simbox.size[2];
       FLOAT volp = volume/(FLOAT) Npart;
 
       // Set all other particle quantities
@@ -2130,7 +2130,7 @@ void Ic<ndim>::EwaldDensity(void)
       // Add regular distribution of SPH particles
       AddCubicLattice(Npart, Nlattice1, simbox, false, r);
 
-      volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
+      volume = simbox.size[0]*simbox.size[1]*simbox.size[2];
       FLOAT volp = volume/(FLOAT) Npart;
 
       // Set all other particle quantities
@@ -2181,7 +2181,7 @@ void Ic<ndim>::EwaldDensity(void)
       // Add regular distribution of SPH particles
       AddCubicLattice(Npart, Nlattice1, simbox, false, r);
 
-      volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
+      volume = simbox.size[0]*simbox.size[1]*simbox.size[2];
       FLOAT volp = volume/(FLOAT) Npart;
 
       // Set all other particle quantities
@@ -2425,16 +2425,16 @@ void Ic<ndim>::BlastWave(void)
   // Compute size and range of fluid bounding boxes
   //-----------------------------------------------------------------------------------------------
   if (ndim == 1) {
-    volume = simbox.boxmax[0] - simbox.boxmin[0];
+    volume = simbox.max[0] - simbox.min[0];
     Nbox = Nlattice[0];
   }
   else if (ndim == 2) {
-    volume = (simbox.boxmax[0] - simbox.boxmin[0])*(simbox.boxmax[1] - simbox.boxmin[1]);
+    volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
     Nbox = Nlattice[0]*Nlattice[1];
   }
   else if (ndim == 3) {
-    volume = (simbox.boxmax[0] - simbox.boxmin[0])*
-      (simbox.boxmax[1] - simbox.boxmin[1])*(simbox.boxmax[2] - simbox.boxmin[2]);
+    volume = (simbox.max[0] - simbox.min[0])*
+      (simbox.max[1] - simbox.min[1])*(simbox.max[2] - simbox.min[2]);
     Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
   }
   mbox  = volume*rhofluid;
@@ -2549,23 +2549,23 @@ void Ic<ndim>::SedovBlastWave(void)
   // Compute size and range of fluid bounding boxes
   //-----------------------------------------------------------------------------------------------
   if (ndim == 1) {
-    volume = simbox.boxmax[0] - simbox.boxmin[0];
+    volume = simbox.max[0] - simbox.min[0];
     Nbox = Nlattice[0];
   }
   else if (ndim == 2) {
-    volume = (simbox.boxmax[0] - simbox.boxmin[0])*(simbox.boxmax[1] - simbox.boxmin[1]);
+    volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
     Nbox = Nlattice[0]*Nlattice[1];
   }
   else if (ndim == 3) {
-    volume = (simbox.boxmax[0] - simbox.boxmin[0])*
-      (simbox.boxmax[1] - simbox.boxmin[1])*(simbox.boxmax[2] - simbox.boxmin[2]);
+    volume = (simbox.max[0] - simbox.min[0])*
+      (simbox.max[1] - simbox.min[1])*(simbox.max[2] - simbox.min[2]);
     Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
   }
   mbox  = volume*rhofluid;
   ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);
   Ncold = 0;
   Nhot  = 0;
-  r_hot = hydro->h_fac*hydro->kernrange*simbox.boxsize[0]/Nlattice[0];
+  r_hot = hydro->h_fac*hydro->kernrange*simbox.size[0]/Nlattice[0];
 
 
   // Allocate local and main particle memory
@@ -2731,9 +2731,9 @@ void Ic<ndim>::ShearFlow(void)
 
 
     // Compute size and range of fluid bounding boxes
-    volume = (simbox.boxmax[0] - simbox.boxmin[0])*(simbox.boxmax[1] - simbox.boxmin[1]);
+    volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
     Nbox   = Nlattice1[0]*Nlattice1[1];
-    lambda = simbox.boxmax[1] - simbox.boxmin[1];
+    lambda = simbox.max[1] - simbox.min[1];
     kwave  = twopi/lambda;
 
     // Allocate local and main particle memory
@@ -2816,7 +2816,7 @@ void Ic<ndim>::SoundWave(void)
     csound = sqrt(gamma*press1/rhofluid1);
   }
 
-  lambda = simbox.boxmax[0] - simbox.boxmin[0];
+  lambda = simbox.max[0] - simbox.min[0];
   kwave = twopi/lambda;
   //omegawave = twopi*csound/lambda;
 
@@ -3634,7 +3634,7 @@ void Ic<ndim>::AddRandomBox
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
-      r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*sim->randnumb->floatrand();
+      r[ndim*i + k] = box.min[k] + (box.max[k] - box.min[k])*sim->randnumb->floatrand();
     }
   }
 
@@ -3709,8 +3709,8 @@ int Ic<ndim>::AddLatticeSphere
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
   for (k=0; k<ndim; k++) Nlattice[k] = (int) (3.0*powf((FLOAT) Npart, invndim));
-  for (k=0; k<ndim; k++) box1.boxmin[k] = -2.0;
-  for (k=0; k<ndim; k++) box1.boxmax[k] = 2.0;
+  for (k=0; k<ndim; k++) box1.min[k] = -2.0;
+  for (k=0; k<ndim; k++) box1.max[k] = 2.0;
   Naux = Nlattice[0]*Nlattice[1]*Nlattice[2];
   raux = new FLOAT[ndim*Naux];
 
@@ -3828,12 +3828,12 @@ void Ic<ndim>::AddCubicLattice
   // Otherwise set spacing to fit bounding box
   if (normalise) {
     for (k=0; k<ndim; k++) {
-      spacing[k] = (box.boxmax[0] - box.boxmin[0])/(FLOAT) Nlattice[0];
+      spacing[k] = (box.max[0] - box.min[0])/(FLOAT) Nlattice[0];
     }
   }
   else {
     for (k=0; k<ndim; k++) {
-      spacing[k] = (box.boxmax[k] - box.boxmin[k])/(FLOAT) Nlattice[k];
+      spacing[k] = (box.max[k] - box.min[k])/(FLOAT) Nlattice[k];
     }
   }
 
@@ -3843,7 +3843,7 @@ void Ic<ndim>::AddCubicLattice
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
-      r[i] = box.boxmin[0] + ((FLOAT)ii + (FLOAT) 0.5)*spacing[0];
+      r[i] = box.min[0] + ((FLOAT)ii + (FLOAT) 0.5)*spacing[0];
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -3851,8 +3851,8 @@ void Ic<ndim>::AddCubicLattice
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
         i = jj*Nlattice[0] + ii;
-        r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + (FLOAT) 0.5)*spacing[0];
-        r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + (FLOAT) 0.5)*spacing[1];
+        r[ndim*i] = box.min[0] + ((FLOAT)ii + (FLOAT) 0.5)*spacing[0];
+        r[ndim*i + 1] = box.min[1] + ((FLOAT)jj + (FLOAT) 0.5)*spacing[1];
       }
     }
   }
@@ -3863,9 +3863,9 @@ void Ic<ndim>::AddCubicLattice
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
           i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-          r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + (FLOAT) 0.5)*spacing[0];
-          r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + (FLOAT) 0.5)*spacing[1];
-          r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + (FLOAT) 0.5)*spacing[2];
+          r[ndim*i] = box.min[0] + ((FLOAT)ii + (FLOAT) 0.5)*spacing[0];
+          r[ndim*i + 1] = box.min[1] + ((FLOAT)jj + (FLOAT) 0.5)*spacing[1];
+          r[ndim*i + 2] = box.min[2] + ((FLOAT)kk + (FLOAT) 0.5)*spacing[2];
         }
       }
     }
@@ -3899,10 +3899,10 @@ void Ic<ndim>::AddHexagonalLattice
   // If normalised, ensure equal spacing between all particles.
   // Otherwise set spacing to fit bounding box.
   if (normalise) {
-    for (k=0; k<ndim; k++) rad[k] = (FLOAT) 0.5*(box.boxmax[0] - box.boxmin[0])/(FLOAT) Nlattice[0];
+    for (k=0; k<ndim; k++) rad[k] = (FLOAT) 0.5*(box.max[0] - box.min[0])/(FLOAT) Nlattice[0];
   }
   else {
-    for (k=0; k<ndim; k++) rad[k] = (FLOAT) 0.5*(box.boxmax[k] - box.boxmin[k])/(FLOAT) Nlattice[k];
+    for (k=0; k<ndim; k++) rad[k] = (FLOAT) 0.5*(box.max[k] - box.min[k])/(FLOAT) Nlattice[k];
   }
 
 
@@ -3911,7 +3911,7 @@ void Ic<ndim>::AddHexagonalLattice
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
-      r[i] = box.boxmin[0] + (FLOAT) 0.5*rad[0] + (FLOAT) 2.0*(FLOAT)ii*rad[0];
+      r[i] = box.min[0] + (FLOAT) 0.5*rad[0] + (FLOAT) 2.0*(FLOAT)ii*rad[0];
     }
   }
 
@@ -3920,9 +3920,9 @@ void Ic<ndim>::AddHexagonalLattice
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
         i = jj*Nlattice[0] + ii;
-        r[ndim*i] = box.boxmin[0] +
+        r[ndim*i] = box.min[0] +
           (FLOAT) 0.5*rad[0] + ((FLOAT) 2.0*(FLOAT)ii + (FLOAT)(jj%2))*rad[0];
-        r[ndim*i + 1] = box.boxmin[1] +
+        r[ndim*i + 1] = box.min[1] +
           (FLOAT) 0.5*sqrt((FLOAT) 3.0)*rad[1] + (FLOAT)jj*sqrt(3.0)*rad[1];
       }
     }
@@ -3935,11 +3935,11 @@ void Ic<ndim>::AddHexagonalLattice
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
           i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-          r[ndim*i] = box.boxmin[0] + (FLOAT) 0.5*rad[0] +
+          r[ndim*i] = box.min[0] + (FLOAT) 0.5*rad[0] +
             ((FLOAT) 2.0*(FLOAT) ii + (FLOAT) (jj%2) + (FLOAT) ((kk+1)%2))*rad[0];
-          r[ndim*i + 1] = box.boxmin[1] + (FLOAT) 0.5*sqrt((FLOAT) 3.0)*rad[1] +
+          r[ndim*i + 1] = box.min[1] + (FLOAT) 0.5*sqrt((FLOAT) 3.0)*rad[1] +
             (FLOAT) jj*sqrt((FLOAT) 3.0)*rad[1] + (FLOAT) (kk%2)*rad[1]/sqrt((FLOAT) 3.0);
-          r[ndim*i + 2] = box.boxmin[2] + sqrt((FLOAT) 6.0)*rad[2]/(FLOAT) 3.0 +
+          r[ndim*i + 2] = box.min[2] + sqrt((FLOAT) 6.0)*rad[2]/(FLOAT) 3.0 +
             (FLOAT) kk*(FLOAT) 2.0*sqrt((FLOAT) 6.0)*rad[2]/(FLOAT) 3.0;
         }
       }
@@ -3979,8 +3979,8 @@ int Ic<ndim>::CutSphere
   // Find centre and shortest edge-length of bounding box
   r_high = (FLOAT) big_number;
   for (k=0; k<ndim; k++) {
-    rcentre[k] = (FLOAT) 0.5*(box.boxmin[k] + box.boxmax[k]);
-    r_high = min(r_high, (FLOAT) 0.5*(box.boxmax[k] - box.boxmin[k]));
+    rcentre[k] = (FLOAT) 0.5*(box.min[k] + box.max[k]);
+    r_high = min(r_high, (FLOAT) 0.5*(box.max[k] - box.min[k]));
   }
 
   // Bisection iteration to determine the radius containing the desired
@@ -4141,8 +4141,8 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
       diff = fabs((xnew - xold)/lambda);
     } while (diff > (FLOAT) 1.0e-6);
 
-    if (xnew > simbox.boxmax[0]) xnew -= simbox.boxsize[0];
-    if (xnew < simbox.boxmin[0]) xnew += simbox.boxsize[0];
+    if (xnew > simbox.max[0]) xnew -= simbox.size[0];
+    if (xnew < simbox.min[0]) xnew += simbox.size[0];
 
     r[ndim*i] = xnew;
   }
@@ -4831,7 +4831,7 @@ void Ic<ndim>::DustyBox(void)
   volume = 1 ;
   Nbox = 1 ;
   for (i=0; i < ndim; ++i){
-	volume *= simbox.boxmax[i] - simbox.boxmin[i];
+	volume *= simbox.max[i] - simbox.min[i];
 	Nbox *= Nlattice[i] ;
   }
   mbox  = volume*rhofluid;

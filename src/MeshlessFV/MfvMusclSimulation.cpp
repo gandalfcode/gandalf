@@ -286,7 +286,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     double hmax = mfvneib->GetMaximumSmoothingLength() ;
     hmax *= mfv->kernp->kernrange ;
     for (i=0; i < ndim; i++)
-      if (simbox.boxhalf[i] < 2*hmax){
+      if (simbox.half[i] < 2*hmax){
         string message = "Error: Smoothing length too large, self-interaction will occur" ;
     	ExceptionHandler::getIstance().raise(message);
       }

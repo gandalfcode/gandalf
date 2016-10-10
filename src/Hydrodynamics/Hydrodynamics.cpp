@@ -169,20 +169,20 @@ void Hydrodynamics<ndim>::CheckBoundaryGhostParticle
   const FLOAT v = part.v[j];
   const FLOAT h = part.h;
 
-  if (r + min((FLOAT) 0.0, v*tghost) < simbox.boxmin[j] + ghost_range*kernrange*h) {
+  if (r + min((FLOAT) 0.0, v*tghost) < simbox.min[j] + ghost_range*kernrange*h) {
     if (simbox.boundary_lhs[j] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][0], r + simbox.boxsize[j], v);
+      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][0], r + simbox.size[j], v);
     }
     if (simbox.boundary_lhs[j] == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][0], 2*simbox.boxmin[j] - r, -v);
+      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][0], 2*simbox.min[j] - r, -v);
     }
   }
-  if (r + max((FLOAT) 0.0, v*tghost) > simbox.boxmax[j] - ghost_range*kernrange*h) {
+  if (r + max((FLOAT) 0.0, v*tghost) > simbox.max[j] - ghost_range*kernrange*h) {
     if (simbox.boundary_rhs[j] == periodicBoundary) {
-      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][1], r - simbox.boxsize[j],v);
+      CreateBoundaryGhostParticle(i, j, periodic_bound_flags[j][1], r - simbox.size[j],v);
     }
     if (simbox.boundary_rhs[j] == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][1], 2*simbox.boxmax[j] - r, -v);
+      CreateBoundaryGhostParticle(i, j, mirror_bound_flags[j][1], 2*simbox.max[j] - r, -v);
     }
   }
 

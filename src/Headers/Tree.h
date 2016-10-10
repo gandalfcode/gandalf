@@ -64,12 +64,9 @@ struct TreeCellBase {
   int cexit[2][ndim];                  ///< Left and right exit cells (per dim)
   FLOAT cdistsqd;                      ///< Minimum distance to use COM values
   FLOAT mac;                           ///< Multipole-opening criterion value
-  FLOAT bbmin[ndim];                   ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                   ///< Maximum extent of bounding box
-  FLOAT hboxmin[ndim];                 ///< Minimum extent of bounding box
-  FLOAT hboxmax[ndim];                 ///< Maximum extent of bounding box
-  FLOAT vboxmin[ndim];                 ///< ..
-  FLOAT vboxmax[ndim];                 ///< ..
+  Box<ndim> bb ;                       ///< Bounding box
+  Box<ndim> hbox;                      ///< Bounding box for smoothing volume
+  Box<ndim> vbox ;                     ///< Velocity space bounding box
   FLOAT rcell[ndim];                   ///< Geometric centre of cell bounding box
   FLOAT r[ndim];                       ///< Position of cell COM
   FLOAT v[ndim];                       ///< Velocity of cell COM

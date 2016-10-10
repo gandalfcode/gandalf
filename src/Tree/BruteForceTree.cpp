@@ -256,8 +256,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].copen  = Ntot > 0 ? 1 : -1 ;
   celldata[0].id     = 0;
   celldata[0].level  = 0;
-  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmin[k] ;
-  for (k=0; k<ndim; k++) celldata[0].bbmax[k] = bbmax[k] ;
+  for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k] ;
+  for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k] ;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
@@ -271,8 +271,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
 	celldata[c].copen  = -1;
 	celldata[c].id     = c;
 	celldata[c].level  = 1;
-	for (k=0; k<ndim; k++) celldata[c].bbmin[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
-	for (k=0; k<ndim; k++) celldata[c].bbmax[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
+	for (k=0; k<ndim; k++) celldata[c].bb.min[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
+	for (k=0; k<ndim; k++) celldata[c].bb.max[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
 	for (k=0; k<ndim; k++) celldata[c].cexit[0][k] = -1; // TODO: Check this
 	for (k=0; k<ndim; k++) celldata[c].cexit[1][k] = -1;
 
@@ -348,12 +348,12 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.bbmin[k]   = big_number;
-  for (k=0; k<ndim; k++) cell.bbmax[k]   = -big_number;
-  for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
-  for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
-  for (k=0; k<ndim; k++) cell.vboxmin[k] = big_number;
-  for (k=0; k<ndim; k++) cell.vboxmax[k] = -big_number;
+  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
+  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
+  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
+  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
+  for (k=0; k<ndim; k++) cell.vbox.min[k] = big_number;
+  for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
 
 
   // First, check if any particles have been accreted and remove them
@@ -386,12 +386,12 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
 		for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
 	  }
 	  for (k=0; k<ndim; k++) {
-		if (partdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = partdata[i].r[k];
-		if (partdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = partdata[i].r[k];
-		if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k])
-			cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-		if 	(partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
-			cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+		if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
+		if (partdata[i].r[k] > cell.bb.max[k]) cell.bb.max[k] = partdata[i].r[k];
+		if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k])
+			cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+		if 	(partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
+			cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
 	  }
 	}
 	if (i == cell.ilast) break;
@@ -402,8 +402,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   if (cell.m > 0) {
     for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
     for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-    for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-    for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+    for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
+    for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
     cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
     cell.rmax = sqrt(DotProduct(dr,dr,ndim));
   }
@@ -525,8 +525,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
 
   // Zero all summation variables for all cells
   cell.hmax = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
-  for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
+  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
+  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
 
 
   // If this is a leaf cell, sum over all particles
@@ -537,11 +537,11 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
   while (i != -1) {
     cell.hmax = max(cell.hmax,partdata[i].h);
     for (k=0; k<ndim; k++) {
-      if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k]) {
-    	cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+      if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
+    	cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
       }
-      if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k]) {
-    	cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+      if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k]) {
+    	cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
       }
     }
     if (i == cell.ilast) break;

@@ -92,13 +92,13 @@ public:
 	  _need_mirrors = false ;
 	  for (int k=0; k < ndim; k++){
 		_centre[k] = cell.rcell[k] ;
-		_cell.boxmin[k] = cell.hboxmin[k] ;
-		_cell.boxmax[k] = cell.hboxmax[k] ;
+		_cell.min[k] = cell.hbox.min[k] ;
+		_cell.max[k] = cell.hbox.max[k] ;
 
 		if (_any_mirror){
 		  // Compute whether we need a mirror in the gather case
-		  _need_mirror[k][0] = (_mirror_bound[k][0] & (_cell.boxmin[k] < _domain.boxmin[k]));
-		  _need_mirror[k][1] = (_mirror_bound[k][1] & (_cell.boxmax[k] > _domain.boxmax[k]));
+		  _need_mirror[k][0] = (_mirror_bound[k][0] & (_cell.min[k] < _domain.min[k]));
+		  _need_mirror[k][1] = (_mirror_bound[k][1] & (_cell.max[k] > _domain.max[k]));
 		  _need_mirrors     |= (_need_mirror[k][0] | _need_mirror[k][1]) ;
 	    }
 	  }
@@ -118,12 +118,12 @@ public:
 		{
    		  for (int k=0; k<ndim; k++) {
    		    if (_periodic_bound[k]) {
-   		      if (dr[k] > _domain.boxhalf[k]) {
-   		        dr[k] -=_domain.boxsize[k];
+   		      if (dr[k] > _domain.half[k]) {
+   		        dr[k] -=_domain.size[k];
    		        bound.set_flag(periodic_bound_flags[k][1]) ;
    		      }
-   		      else if (dr[k] < -_domain.boxhalf[k]) {
-   		        dr[k] += _domain.boxsize[k];
+   		      else if (dr[k] < -_domain.half[k]) {
+   		        dr[k] += _domain.size[k];
    		        bound.set_flag(periodic_bound_flags[k][0]) ;
    		      }
    		    }
@@ -145,12 +145,12 @@ public:
 		{
 	   	  for (int k=0; k<ndim; k++) {
 	   	    if (_periodic_bound[k]) {
-	   	      if (dr[k] > _domain.boxhalf[k]) {
-	   	        dr_corr[k] =- _domain.boxsize[k];
+	   	      if (dr[k] > _domain.half[k]) {
+	   	        dr_corr[k] =- _domain.size[k];
 	   	        bound.set_flag(periodic_bound_flags[k][1]) ;
 	   	      }
-	   	      else if (dr[k] < -_domain.boxhalf[k]) {
-	   	        dr_corr[k] = _domain.boxsize[k];
+	   	      else if (dr[k] < -_domain.half[k]) {
+	   	        dr_corr[k] = _domain.size[k];
 	   	        bound.set_flag(periodic_bound_flags[k][0]) ;
 	   	      }
 	   	      else
@@ -159,6 +159,37 @@ public:
 	   	  }
 		}
 	  return bound ;
+	}
+	//=================================================================================================
+	/// \brief  Find out whether two boxes overlap in a domain that might be periodic
+	/// \author R. A. Booth
+	/// \date   09/10/2016
+	/// \return A boolean saying whether the boxes overlap
+	//=================================================================================================
+	bool PeriodicBoxOverlap(const Box<ndim>& box1, const Box<ndim>& box2) const
+	{
+	  if (!_any_periodic)
+	    return BoxOverlap(ndim, box1.min, box1.max, box2.min, box2.max) ;
+	  else {
+	    // Find the smallest possible distance between box centres
+        FLOAT dr[ndim];
+        FLOAT dr_corr[ndim];
+	    for (int k=0; k<ndim; k++)
+	      dr[k] = 0.5*((box2.max[k] + box2.min[k]) - (box1.max[k] + box1.min[k])) ;
+
+	    // Find whether the boxes can overlap.
+	    if (PeriodicDistanceCorrection(dr, dr_corr).is_periodic()) {
+	      Box<ndim> periodic_box ;
+	      for (int k=0; k<ndim; k++) {
+	        periodic_box.min[k] = box2.min[k] + dr_corr[k];
+	        periodic_box.max[k] = box2.max[k] + dr_corr[k];
+	      }
+	      return BoxOverlap(ndim, box1.min, box1.max, periodic_box.min, periodic_box.max) ;
+	    }
+	    else {
+	      return BoxOverlap(ndim, box1.min, box1.max, box2.min, box2.max) ;
+	    }
+	  }
 	}
 
 	//=================================================================================================
@@ -282,10 +313,10 @@ private:
 		// Do reflections on the left edge
 		if (_need_mirror[k][0]){
 		  for (int n=0; n < Nghost; n++){
-			double rk = 2*_domain.boxmin[k] - ngbs[n].r[k] ;
-			if (rk > _cell.boxmin[k]) {
+			double rk = 2*_domain.min[k] - ngbs[n].r[k] ;
+			if (rk > _cell.min[k]) {
 			  ngbs[nc] = ngbs[n] ;
-			  reflect(ngbs[nc], k, _domain.boxmin[k]) ;
+			  reflect(ngbs[nc], k, _domain.min[k]) ;
 			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][0]) ;
 			  nc++ ;
 			}
@@ -294,10 +325,10 @@ private:
 		// Do reflections on the right edge
 		if (_need_mirror[k][1]){
 		  for (int n=0; n < Nghost; n++){
-			double rk = 2*_domain.boxmax[k] - ngbs[n].r[k] ;
-			if (rk < _cell.boxmax[k]) {
+			double rk = 2*_domain.max[k] - ngbs[n].r[k] ;
+			if (rk < _cell.max[k]) {
 			  ngbs[nc] = ngbs[n] ;
-			  reflect(ngbs[nc], k, _domain.boxmax[k]) ;
+			  reflect(ngbs[nc], k, _domain.max[k]) ;
 			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][1]) ;
 			  nc++ ;
 			}
@@ -326,11 +357,11 @@ private:
 
 		// Do reflections on the left edge
 		if (_mirror_bound[k][0]){
-		  FLOAT dx = 2*_domain.boxmin[k] - ngbs[0].r[k] - _cell.boxmin[k] ;
+		  FLOAT dx = 2*_domain.min[k] - ngbs[0].r[k] - _cell.min[k] ;
 		  if (dx*dx < h2){
 			for (int n=0; n < Nghost; n++){
 			  ngbs[nc] = ngbs[n] ;
-			  reflect(ngbs[nc], k, _domain.boxmin[k]) ;
+			  reflect(ngbs[nc], k, _domain.min[k]) ;
 			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][0]) ;
 			  nc++;
 			}
@@ -338,11 +369,11 @@ private:
 		}
 		// Do reflections on the right edge
 		if (_mirror_bound[k][1]){
-		  FLOAT dx = 2*_domain.boxmax[k] - ngbs[0].r[k] - _cell.boxmax[k] ;
+		  FLOAT dx = 2*_domain.max[k] - ngbs[0].r[k] - _cell.max[k] ;
 		  if (dx*dx < h2){
 			for (int n=0; n < Nghost; n++){
 			 ngbs[nc] = ngbs[n] ;
-			 reflect(ngbs[nc], k, _domain.boxmax[k]) ;
+			 reflect(ngbs[nc], k, _domain.max[k]) ;
 			 ngbs[nc].flags.set_flag(mirror_bound_flags[k][1]) ;
 			 nc++ ;
 			}
@@ -362,8 +393,7 @@ template<int ndim>
 struct ParticleCellProxy
 : public TreeCellBase<ndim>
 {
-	using TreeCellBase<ndim>::hboxmin ;
-	using TreeCellBase<ndim>::hboxmax ;
+	using TreeCellBase<ndim>::hbox ;
 	using TreeCellBase<ndim>::rcell ;
 
 
@@ -374,8 +404,8 @@ struct ParticleCellProxy
 		{
 			rcell[k] = p.r[k] ;
 
-			hboxmax[k] = rcell[k] + dr ;
-			hboxmin[k] = rcell[k] - dr ;
+			hbox.max[k] = rcell[k] + dr ;
+			hbox.min[k] = rcell[k] - dr ;
 
 		}
 	}
@@ -390,19 +420,18 @@ template<int ndim>
 struct DomainCellProxy
 : public TreeCellBase<ndim>
 {
-	using TreeCellBase<ndim>::hboxmin ;
-	using TreeCellBase<ndim>::hboxmax ;
+	using TreeCellBase<ndim>::hbox ;
 	using TreeCellBase<ndim>::rcell ;
 
 	DomainCellProxy(const DomainBox<ndim>& box)
 	{
 		for (int k=0; k<ndim;k++)
 		{
-			rcell[k] = 0.5 * (box.boxmax[k] + box.boxmin[k]) ;
-			FLOAT dr = 0.6 * (box.boxmax[k] - box.boxmin[k]) ;
+			rcell[k] = 0.5 * (box.max[k] + box.min[k]) ;
+			FLOAT dr = 0.6 * (box.max[k] - box.min[k]) ;
 
-			hboxmax[k] = rcell[k] + dr ;
-			hboxmax[k] = rcell[k] - dr ;
+			hbox.max[k] = rcell[k] + dr ;
+			hbox.max[k] = rcell[k] - dr ;
 		}
 	}
 } ;

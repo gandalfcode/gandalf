@@ -104,26 +104,26 @@ void SphSimulation<ndim>::ProcessParameters(void)
   //-----------------------------------------------------------------------------------------------
   simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
   simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
-  simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
-  simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+  simbox.min[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.max[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
 
   if (ndim > 1) {
     simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
     simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
-    simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
-    simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+    simbox.min[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+    simbox.max[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
   }
 
   if (ndim == 3) {
     simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
     simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
-    simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
-    simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+    simbox.min[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+    simbox.max[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
   }
 
   for (int k=0; k<ndim; k++) {
-    simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
-    simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+    simbox.size[k] = simbox.max[k] - simbox.min[k];
+    simbox.half[k] = 0.5*simbox.size[k];
   }
 
 
@@ -141,7 +141,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
   else if (stringparams["external_potential"] == "vertical") {
     extpot = new VerticalPotential<ndim>
-      (intparams["kgrav"], floatparams["avert"], simbox.boxmin[intparams["kgrav"]]);
+      (intparams["kgrav"], floatparams["avert"], simbox.min[intparams["kgrav"]]);
   }
   else if (stringparams["external_potential"] == "plummer") {
     extpot = new PlummerPotential<ndim>(floatparams["mplummer"], floatparams["rplummer"]);
@@ -875,7 +875,7 @@ void SphSimulation<ndim>::MainLoop(void)
     double hmax = sphneib->GetMaximumSmoothingLength() ;
     hmax *= sph->kernp->kernrange ;
     for (i=0; i < ndim; i++)
-      if (simbox.boxhalf[i] < 2*hmax){
+      if (simbox.half[i] < 2*hmax){
         string message = "Error: Smoothing length too large, self-interaction will occur" ;
     	ExceptionHandler::getIstance().raise(message);
       }
