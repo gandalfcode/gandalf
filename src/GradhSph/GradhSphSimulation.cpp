@@ -236,7 +236,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
    string tree_type = stringparams["neib_search"] ;
    if (gas_radiation == "tree_ray") {
      if (tree_type == "octtree" && ndim == 3) {
-       tree_type == "treeray" ;
+       tree_type = "treeray" ;
      }
      else {
        string message = "Error: Tree Ray needs an Oct Tree and ndim=3";

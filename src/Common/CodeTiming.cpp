@@ -222,7 +222,7 @@ struct BlockWallTimeSorter
   : blocks(blocks_)
   { } ;
 
-  bool operator()(string& key1, string& key2) const {
+  bool operator()(const string& key1,const string& key2) {
     return blocks[key1].ttot_wall > blocks[key2].ttot_wall ;
   }
 private:
