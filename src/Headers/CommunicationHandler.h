@@ -380,10 +380,10 @@ public:
     c.m = 0;
     c.hmax = 0;
     for (int k=0; k<ndim; k++) {
-      c.bbmin[k] = big_number;
-      c.bbmax[k] = -big_number;
-      c.hboxmin[k] = big_number;
-      c.hboxmax[k] = -big_number;
+      c.bb.min[k] = big_number;
+      c.bb.max[k] = -big_number;
+      c.hbox.min[k] = big_number;
+      c.hbox.max[k] = -big_number;
       c.r[k] = 0;
     }
 
@@ -392,12 +392,12 @@ public:
       const ParticleType<ndim>& p = partdata[i];
       for (int k=0; k<ndim; k++) {
         c.r[k] += p.m*p.r[k];
-        if (c.bbmin[k] > p.r[k]) c.bbmin[k] = p.r[k];
-        if (c.bbmax[k] < p.r[k]) c.bbmax[k] = p.r[k];
-        if (p.r[k] - kernrange*p.h < c.hboxmin[k])
-          c.hboxmin[k] = p.r[k] - kernrange*p.h;
-        if (p.r[k] + kernrange*p.h > c.hboxmax[k])
-          c.hboxmax[k] = p.r[k] + kernrange*p.h;
+        if (c.bb.min[k] > p.r[k]) c.bb.min[k] = p.r[k];
+        if (c.bb.max[k] < p.r[k]) c.bb.max[k] = p.r[k];
+        if (p.r[k] - kernrange*p.h < c.hbox.min[k])
+          c.hbox.min[k] = p.r[k] - kernrange*p.h;
+        if (p.r[k] + kernrange*p.h > c.hbox.max[k])
+          c.hbox.max[k] = p.r[k] + kernrange*p.h;
       }
       c.m += p.m;
       c.hmax = max(c.hmax,p.h);
@@ -406,8 +406,8 @@ public:
     FLOAT dr[ndim];
     for (int k=0; k<ndim; k++) {
       c.r[k] /= c.m;
-      c.rcell[k] = (FLOAT) 0.5*(c.bbmin[k] + c.bbmax[k]);
-      dr[k] = (FLOAT) 0.5*(c.bbmax[k] - c.bbmin[k]);
+      c.rcell[k] = (FLOAT) 0.5*(c.bb.min[k] + c.bb.max[k]);
+      dr[k] = (FLOAT) 0.5*(c.bb.max[k] - c.bb.min[k]);
     }
     c.rmax = sqrt(DotProduct(dr,dr,ndim));
 

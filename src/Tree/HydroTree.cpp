@@ -86,12 +86,7 @@ HydroTree<ndim,ParticleType>::HydroTree
 #endif
 #ifdef MPI_PARALLEL
   Npartexport = new int[Nmpi];
-<<<<<<< HEAD
   cellexportlist.resize(Nmpi);
-=======
-  cellexportlist = new int*[Nmpi];
-  for (int j=0; j<Nmpi; j++) cellexportlist[j] = NULL;
->>>>>>> Changed more functions to be type agnostic
   ids_sent_particles.resize(Nmpi);
   ids_sent_cells.resize(Nmpi);
   N_imported_part_per_proc.resize(Nmpi);
@@ -310,7 +305,7 @@ void HydroTree<ndim,ParticleType>::BuildTree
 {
 
   debug2("[HydroTree::BuildTree]");
-  timing->StartTimingSection("BUILD_TREE");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -338,17 +333,6 @@ void HydroTree<ndim,ParticleType>::BuildTree
     AllocateMemory(hydro->Ngather);
     if (Ntotmaxold < Ntotmax)
     	ReallocateMemory();
-<<<<<<< HEAD
-=======
-#ifdef MPI_PARALLEL
-    if (Ntotmax > Ntotmaxold) {
-      for (int i=Nmpi-1; i>=0; i--) delete[] cellexportlist[i];
-      for (int i=0; i<Nmpi; i++) cellexportlist[i] = new int[tree->gmax];
-      assert(tree->gmax > 0);
-    }
-#endif
-
->>>>>>> Changed more functions to be type agnostic
   }
 
   // Else stock the tree
@@ -371,8 +355,6 @@ void HydroTree<ndim,ParticleType>::BuildTree
 #ifdef _OPENMP
   omp_set_nested(0);
 #endif
-
-  timing->EndTimingSection("BUILD_TREE");
 
   return;
 }
@@ -402,7 +384,7 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
   if (hydro->NPeriodicGhost == 0) return;
 
   debug2("[HydroTree::BuildGhostTree]");
-  timing->StartTimingSection("BUILD_GHOST_TREE");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_GHOST_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -447,8 +429,6 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
 #ifdef _OPENMP
   omp_set_nested(0);
 #endif
-
-  timing->EndTimingSection("BUILD_GHOST_TREE");
 
   return;
 }
@@ -577,7 +557,7 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
 
 
   debug2("[GradhSphTree::UpdateAllStarGasForces]");
-  timing->StartTimingSection("STAR_GAS_GRAV_FORCES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("STAR_GAS_GRAV_FORCES");
 
   // Make list of all active stars
   Nactive = 0;
@@ -663,8 +643,6 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
 
   delete[] activelist;
 
-  timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
-
   return;
 }
 //=================================================================================================
@@ -703,8 +681,8 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
-  debug2("[HydroTree::UpdateGravityExportForces]");
-  timing->StartTimingSection("HYDRO_DISTANT_FORCES");
+  debug2("[GradhHydroTree::UpdateGravityExportForces]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_DISTANT_FORCES");
 
 
   // Find list of all cells that contain active particles
@@ -837,8 +815,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
   }
   //===============================================================================================
 
-  timing->EndTimingSection("HYDRO_DISTANT_FORCES");
-
   return;
 }
 
@@ -864,7 +840,7 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[HydroTree::UpdateHydroExportList]");
-  timing->StartTimingSection("MPI_HYDRO_EXPORT");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MPI_HYDRO_EXPORT");
 
 
   // Find list of all cells that contain active particles
@@ -942,8 +918,6 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
   delete[] celllist;
 
 
-  timing->EndTimingSection("MPI_HYDRO_EXPORT");
-
   return;
 }
 
@@ -967,7 +941,7 @@ void HydroTree<ndim,ParticleType>::BuildPrunedTree
   TreeBase<ndim> *treeptr;                     // Pointer to tree object in question
 
   debug2("[HydroTree::BuildPrunedTree]");
-  timing->StartTimingSection("BUILD_PRUNED_TREE");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_PRUNED_TREE");
 
   Nprunedcellmax = 0;
 #if defined(OUTPUT_ALL)
@@ -1143,8 +1117,6 @@ void HydroTree<ndim,ParticleType>::BuildPrunedTree
 
   }
 
-  timing->EndTimingSection("BUILD_PRUNED_TREE");
-
   return;
 }
 
@@ -1174,7 +1146,7 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
   //if (hydroNmpighost == 0) return;
 
   debug2("[HydroTree::BuildMpiGhostTree]");
-  timing->StartTimingSection("BUILD_MPIGHOST_TREE");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_MPIGHOST_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -1223,8 +1195,6 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
 #ifdef _OPENMP
   omp_set_nested(0);
 #endif
-
-  timing->EndTimingSection("BUILD_MPIGHOST_TREE");
 
 
   return;

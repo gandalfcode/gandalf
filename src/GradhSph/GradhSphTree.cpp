@@ -87,11 +87,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   vector<TreeCellBase<ndim> > celllist;		   // List of active tree cells
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[GradhSphTree::UpdateAllSphProperties]");
-  timing->StartTimingSection("SPH_PROPERTIES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_PROPERTIES");
 
 
   // Find list of all cells that contain active particles
@@ -100,7 +100,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("SPH_PROPERTIES");
     return;
   }
 
@@ -284,7 +283,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
@@ -295,8 +294,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
   // Update tree smoothing length values here
   tree->UpdateAllHmaxValues(sphdata);
-
-  timing->EndTimingSection("SPH_PROPERTIES");
 
   return;
 }
@@ -320,18 +317,17 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   vector<TreeCellBase<ndim> > celllist;                // List of active tree cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[GradhSphTree::UpdateAllSphHydroForces]");
-  timing->StartTimingSection("SPH_HYDRO_FORCES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_HYDRO_FORCES");
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("SPH_HYDRO_FORCES");
     return;
   }
 
@@ -526,15 +522,13 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
-  timing->EndTimingSection("SPH_HYDRO_FORCES");
 
   return;
 }
@@ -559,11 +553,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
-  timing->StartTimingSection("SPH_ALL_FORCES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_ALL_FORCES");
 
 
   // Find list of all cells that contain active particles
@@ -571,7 +565,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("SPH_ALL_FORCES");
     return;
   }
 
@@ -838,7 +831,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
@@ -846,7 +839,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 #endif
 #endif
 
-  timing->EndTimingSection("SPH_ALL_FORCES");
 
   return;
 }
@@ -871,11 +863,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
-  timing->StartTimingSection("SPH_ALL_GRAV_FORCES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_ALL_GRAV_FORCES");
 
 
   // Find list of all cells that contain active particles
@@ -883,7 +875,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("SPH_ALL_GRAV_FORCES");
     return;
   }
 
@@ -1129,7 +1120,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
@@ -1137,8 +1128,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 #endif
 #endif
 
-
-  timing->EndTimingSection("SPH_ALL_GRAV_FORCES");
 
   return;
 }

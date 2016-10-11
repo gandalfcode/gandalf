@@ -91,28 +91,28 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
 
   // For periodic simulations, set bounding box of root node to be the periodic box size.
   // Otherwise, set to extend to infinity.
-  if (simbox.boundary_lhs[0] == openBoundary) mpibox.boxmin[0] = -big_number;
-  else mpibox.boxmin[0] = simbox.boxmin[0];
-  if (simbox.boundary_rhs[0] == openBoundary) mpibox.boxmax[0] = big_number;
-  else mpibox.boxmax[0] = simbox.boxmax[0];
+  if (simbox.boundary_lhs[0] == openBoundary) mpibox.min[0] = -big_number;
+  else mpibox.min[0] = simbox.min[0];
+  if (simbox.boundary_rhs[0] == openBoundary) mpibox.max[0] = big_number;
+  else mpibox.max[0] = simbox.max[0];
   if (ndim > 1) {
-    if (simbox.boundary_lhs[1] == openBoundary) mpibox.boxmin[1] = -big_number;
-    else mpibox.boxmin[1] = simbox.boxmin[1];
-    if (simbox.boundary_rhs[1] == openBoundary) mpibox.boxmax[1] = big_number;
-    else mpibox.boxmax[1] = simbox.boxmax[1];
+    if (simbox.boundary_lhs[1] == openBoundary) mpibox.min[1] = -big_number;
+    else mpibox.min[1] = simbox.min[1];
+    if (simbox.boundary_rhs[1] == openBoundary) mpibox.max[1] = big_number;
+    else mpibox.max[1] = simbox.max[1];
   }
   if (ndim == 3) {
-    if (simbox.boundary_lhs[2] == openBoundary) mpibox.boxmin[2] = -big_number;
-    else mpibox.boxmin[2] = simbox.boxmin[2];
-    if (simbox.boundary_rhs[2] == openBoundary) mpibox.boxmax[2] = big_number;
-    else mpibox.boxmax[2] = simbox.boxmax[2];
+    if (simbox.boundary_lhs[2] == openBoundary) mpibox.min[2] = -big_number;
+    else mpibox.min[2] = simbox.min[2];
+    if (simbox.boundary_rhs[2] == openBoundary) mpibox.max[2] = big_number;
+    else mpibox.max[2] = simbox.max[2];
   }
   //mpitree->box = &mpibox;
 
 #ifdef OUTPUT_ALL
   cout << "Simulation bounding box" << endl;
   for (k=0; k<ndim; k++) {
-    cout << "r[" << k << "]  :  " << mpibox.boxmin[k] << "   " << mpibox.boxmax[k] << endl;
+    cout << "r[" << k << "]  :  " << mpibox.min[k] << "   " << mpibox.max[k] << endl;
   }
 #endif
 
@@ -147,8 +147,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     mpitree->tree[0].N      = hydro->Nhydro;
     mpitree->tree[0].ifirst = 0;
     mpitree->tree[0].ilast  = hydro->Nhydro - 1;
-    for (k=0; k<ndim; k++) mpitree->tree[0].boxmin[k] = mpibox.boxmin[k];
-    for (k=0; k<ndim; k++) mpitree->tree[0].boxmax[k] = mpibox.boxmax[k];
+    for (k=0; k<ndim; k++) mpitree->tree[0].boxmin[k] = mpibox.min[k];
+    for (k=0; k<ndim; k++) mpitree->tree[0].boxmax[k] = mpibox.max[k];
     for (i=0; i<hydro->Nhydro; i++) mpitree->inext[i] = -1;
     for (i=0; i<hydro->Nhydro-1; i++) mpitree->inext[i] = i + 1;
     for (i=0; i<hydro->Nhydro; i++) mpitree->ids[i] = i;
@@ -174,8 +174,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
       int icell = mpitree->g2c[inode];
 
       // Create bounding boxes containing particles in each sub-tree
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].boxmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].boxmax[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].boxmin[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].boxmax[k];
 
 #ifdef OUTPUT_ALL
       cout << "CHECKING MPITREE : " << inode << "   " << icell << "   "
@@ -195,7 +195,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
 
 #ifdef OUTPUT_ALL
       cout << "MPIDOMAIN : " << inode << "   Nhydro : " << mpinode[inode].Nhydro << "    box : "
-           << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
+           << mpinode[inode].domain.min[0] << "    " << mpinode[inode].domain.max[0] << endl;
 #endif
 
     }
@@ -251,8 +251,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
       int icell = mpitree->g2c[inode];
 
       // Create bounding boxes containing particles in each sub-tree
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].boxmin[k]; //bbmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].boxmax[k]; //bbmax[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].boxmin[k]; //bbmin[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].boxmax[k]; //bbmax[k];
     }
 
 #ifdef OUTPUT_ALL
@@ -278,7 +278,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
       cout << "CHECKING MPITREE : " << inode << "   " << icell << "   "
            << &mpitree->tree[icell] << "    N : " << mpitree->tree[icell].N << endl;
       cout << "MPIDOMAIN : " << inode << "   Nhydro : " << mpinode[inode].Nhydro << "    box : "
-           << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
+           << mpinode[inode].domain.min[0] << "    " << mpinode[inode].domain.max[0] << endl;
     }
     //---------------------------------------------------------------------------------------------
 
@@ -336,7 +336,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   // If running on only one MPI node, return immediately
   if (Nmpi == 1) return;
   debug2("[MpiKDTreeDecomposition::LoadBalancing]");
-  timing->StartTimingSection("MPI_LOAD_BALANCING");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MPI_LOAD_BALANCING");
 
   //Get pointer to sph particles and cast it to the right type
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
@@ -346,8 +346,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
   // Set MPI tree root node to size of particle bounding box (so load balancing division on
   // each level are iterated in a valid range).
-  for (k=0; k<ndim; k++) mpitree->tree[0].boxmin[k] = partbox.boxmin[k];
-  for (k=0; k<ndim; k++) mpitree->tree[0].boxmax[k] = partbox.boxmax[k];
+  for (k=0; k<ndim; k++) mpitree->tree[0].boxmin[k] = partbox.min[k];
+  for (k=0; k<ndim; k++) mpitree->tree[0].boxmax[k] = partbox.max[k];
 
 
   // Starting with the highest MpiTree division, start adjusting divisional positions to achieve
@@ -399,8 +399,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
       int icell = mpitree->g2c[inode];
 
       // Create bounding boxes containing particles in each sub-tree
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].boxmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].boxmax[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].boxmin[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].boxmax[k];
     }
 
   }
@@ -409,8 +409,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   // Write out 'final' mpinode bounding boxes
 #ifdef OUTPUT_ALL
   for (int inode=0; inode<Nmpi; inode++) {
-    cout << "Node " << inode << "     box : " << mpinode[inode].domain.boxmin[0] << "     "
-         << mpinode[inode].domain.boxmax[0] << endl;
+    cout << "Node " << inode << "     box : " << mpinode[inode].domain.min[0] << "     "
+         << mpinode[inode].domain.max[0] << endl;
   }
 #endif
 
@@ -505,8 +505,6 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
     partdata[all_particles_to_export[i]].flags.set_flag(dead);
   }
   hydro->DeleteDeadParticles();
-
-  timing->EndTimingSection("MPI_LOAD_BALANCING");
 
   return;
 }

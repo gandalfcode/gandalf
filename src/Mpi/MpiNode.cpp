@@ -107,10 +107,10 @@ void MpiNode<ndim>::UpdateBoundingBoxData
   const FLOAT kernange = kernptr->kernrange;
 
   // Initialise bounding box values
-  for (k=0; k<ndim; k++) rbox.boxmin[k] = big_number;
-  for (k=0; k<ndim; k++) rbox.boxmax[k] = -big_number;
-  for (k=0; k<ndim; k++) hbox.boxmin[k] = big_number;
-  for (k=0; k<ndim; k++) hbox.boxmax[k] = -big_number;
+  for (k=0; k<ndim; k++) rbox.min[k] = big_number;
+  for (k=0; k<ndim; k++) rbox.max[k] = -big_number;
+  for (k=0; k<ndim; k++) hbox.min[k] = big_number;
+  for (k=0; k<ndim; k++) hbox.max[k] = -big_number;
 
 
   // Loop over all particles and compute new bounding boxes
@@ -120,17 +120,17 @@ void MpiNode<ndim>::UpdateBoundingBoxData
 
     hrange = 2.0*kernange*part.h;
     for (k=0; k<ndim; k++) {
-      rbox.boxmin[k] = min(rbox.boxmin[k], part.r[k]);
-      rbox.boxmax[k] = max(rbox.boxmax[k], part.r[k]);
-      hbox.boxmin[k] = min(hbox.boxmin[k], part.r[k] - hrange);
-      hbox.boxmax[k] = max(hbox.boxmax[k], part.r[k] + hrange);
+      rbox.min[k] = min(rbox.min[k], part.r[k]);
+      rbox.max[k] = max(rbox.max[k], part.r[k]);
+      hbox.min[k] = min(hbox.min[k], part.r[k] - hrange);
+      hbox.max[k] = max(hbox.max[k], part.r[k] + hrange);
     }
   }
 
 #ifdef OUTPUT_ALL
-  cout << "RBOX : " << rbox.boxmin[0] << "    " << rbox.boxmax[0] << endl;
-  cout << "HBOX : " << hbox.boxmin[0] << "    " << hbox.boxmax[0] << endl;
-  cout << "DOMAIN : " << domain.boxmin[0] << "    " << domain.boxmax[0] << endl;
+  cout << "RBOX : " << rbox.min[0] << "    " << rbox.max[0] << endl;
+  cout << "HBOX : " << hbox.min[0] << "    " << hbox.max[0] << endl;
+  cout << "DOMAIN : " << domain.min[0] << "    " << domain.max[0] << endl;
 #endif
 
   return;

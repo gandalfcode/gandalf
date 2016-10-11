@@ -153,9 +153,9 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 
 
   // Re-build radiation tree from scratch
-  timing->StartTimingSection("IONTREE_BUILD");
+  CodeTiming::BlockTimer timer1 = timing->StartNewTimer("IONTREE_BUILD");
   radtree->BuildTree(Nhydro, Nhydro, sphdata);
-  timing->EndTimingSection("IONTREE_BUILD");
+  timer1.EndTiming();
 
   // Compute maximum radius of cell extent from co-ordinate centre, in order
   // to know where to emit external photons from
@@ -167,7 +167,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 
 
   // Perform single iteration step on computing radiation field
-  timing->StartTimingSection("RADTREE_MONTE_CARLO");
+  CodeTiming::BlockTimer timer2 = timing->StartNewTimer("RADTREE_MONTE_CARLO");
   Nit = Nraditerations + Nradlevels - 1;
   level = radtree->ltot - Nradlevels + 1;
   //level = radtree->ltot;
@@ -213,8 +213,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
   //-----------------------------------------------------------------------------------------------
 
 
-  timing->EndTimingSection("RADTREE_MONTE_CARLO");
-
+  timer2.EndTiming();
 
   // Set thermal properties of all particles in leaf cells by interpolation from grid values
   InterpolateParticleProperties(level, Nhydro, sph_gen);

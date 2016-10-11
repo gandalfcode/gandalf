@@ -53,7 +53,7 @@ endif
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
 ifeq ($(COMPILER_MODE),FAST)
-GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
+GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti -g
 ICCOPT   += -O3 -fast -fPIC -fno-exceptions
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
@@ -67,7 +67,7 @@ GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 endif
 
 ifeq ($(OPENMP),1)
-GCCOPT   += -fopenmp
+GCCOPT   += -fopenmp -fsanitize=address
 ICCOPT   += -openmp
 CLANGOPT += -fopenmp -DOPENMP
 endif

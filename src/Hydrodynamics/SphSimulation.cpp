@@ -963,7 +963,7 @@ void SphSimulation<ndim>::MainLoop(void)
     }
     // If we will output a snapshot (regular or for restarts), then delete all accreted particles
     if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->WallClockTime() - timing->tstart_wall > (FLOAT) 0.99*tmax_wallclock) {
+         timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock) {
       sph->DeleteDeadParticles();
       rebuild_tree = true;
     }
@@ -990,7 +990,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
   DOUBLE dt_sph;                       // Aux. minimum SPH timestep
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
-  timing->StartTimingSection("GLOBAL_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GLOBAL_TIMESTEPS");
 
 
   // Only update timestep when all particles are synced at end of last step.
@@ -1060,8 +1060,6 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
   }
   //-----------------------------------------------------------------------------------------------
 
-  timing->EndTimingSection("GLOBAL_TIMESTEPS");
-
   return;
 }
 
@@ -1094,7 +1092,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_sph;                             // Aux. minimum SPH timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
-  timing->StartTimingSection("BLOCK_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
 
 
   dt_min_nbody = big_number_dp;
@@ -1503,7 +1501,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     ExceptionHandler::getIstance().raise("Error : timestep fallen to zero");
   }
 
-  timing->EndTimingSection("BLOCK_TIMESTEPS");
 
   return;
 

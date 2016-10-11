@@ -769,7 +769,7 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 
 
   debug2("[MeshlessFVSimulation::ComputeGlobalTimestep]");
-  timing->StartTimingSection("GLOBAL_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GLOBAL_TIMESTEPS");
 
 
   // Only update timestep when all particles are synced at end of last step.
@@ -840,8 +840,6 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
   }
   //-----------------------------------------------------------------------------------------------
 
-  timing->EndTimingSection("GLOBAL_TIMESTEPS");
-
   return;
 }
 
@@ -874,7 +872,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_hydro;                           // Aux. minimum hydro timestep
 
   debug2("[MeshlessFVSimulation::ComputeBlockTimesteps]");
-  timing->StartTimingSection("BLOCK_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
 
 
   dt_min_nbody = big_number_dp;
@@ -1263,8 +1261,6 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     cout << "Timestep fallen to zero : " << timestep << endl;
     ExceptionHandler::getIstance().raise("Timestep fallen to zero");
   }
-
-  timing->EndTimingSection("BLOCK_TIMESTEPS");
 
   return;
 

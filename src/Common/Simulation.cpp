@@ -188,6 +188,7 @@ SimulationBase::SimulationBase
 #else
   Nthreads = 1;
 #endif
+  timing = new CodeTiming() ;
 }
 
 
@@ -198,6 +199,8 @@ SimulationBase::SimulationBase
 //=================================================================================================
 SimulationBase::~SimulationBase()
 {
+  if (timing != NULL)
+    delete timing ;
 }
 
 
@@ -348,19 +351,18 @@ void SimulationBase::Run
   //-----------------------------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget) {
 
-    timing->StartTimingSection("RUN");
+   CodeTiming::BlockTimer timer = timing->StartNewTimer("RUN");
 
     MainLoop();
     Output();
 
     // Special condition to check if maximum wall-clock time has been reached.
-    if (kill_simulation || timing->WallClockTime() - timing->tstart_wall > 0.95*tmax_wallclock) {
+    if (kill_simulation || timing->RunningTime() > 0.95*tmax_wallclock) {
       RestartSnapshot();
       cout << "Reached maximum wall-clock time.  Killing simulation." << endl;
       break;
     }
 
-    timing->EndTimingSection("RUN");
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -463,7 +465,7 @@ string SimulationBase::Output(void)
   ofstream outfile;                 // Stream of restart file
 
   debug2("[SimulationBase::Output]");
-  timing->StartTimingSection("OUTPUT");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("OUTPUT");
 
 
   // Output time and no of steps for root process
@@ -520,11 +522,11 @@ string SimulationBase::Output(void)
       outfile.close();
 
       // Finally, calculate wall-clock time interval since last output snapshot
-      if (tsnap_wallclock > 0.0) dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
-      tsnap_wallclock = timing->WallClockTime();
+      if (tsnap_wallclock > 0.0) dt_snap_wall = timing->RunningTime() - tsnap_wallclock;
+      tsnap_wallclock = timing->RunningTime();
 
       // If simulation is too close to maximum wall-clock time, end prematurely
-      if (timing->ttot_wall > 0.95*tmax_wallclock) {
+      if (timing->RunningTime() > 0.95*tmax_wallclock) {
         kill_simulation = true;
       }
 
@@ -549,8 +551,6 @@ string SimulationBase::Output(void)
     nlastrestart = Nsteps;
   }
 
-
-  timing->EndTimingSection("OUTPUT");
 
   return filename;
 }
@@ -596,7 +596,7 @@ void SimulationBase::SetupSimulation(void)
 {
   debug1("[SimulationBase::Setup]");
 
-  timing->StartTimingSection("SETUP");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SETUP");
 
   if (setup) {
     string msg = "This simulation has been already set up";
@@ -635,8 +635,6 @@ void SimulationBase::SetupSimulation(void)
 
   // Initial output before simulation begins
   Output();
-
-  timing->EndTimingSection("SETUP");
 
   return;
 }

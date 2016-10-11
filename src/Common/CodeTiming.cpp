@@ -24,8 +24,10 @@
 
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -35,8 +37,116 @@
 #include "Exception.h"
 #include "CodeTiming.h"
 #include "Debug.h"
+#include "InlineFuncs.h"
 using namespace std;
 
+#ifdef MPI_PARALLEL
+#include "mpi.h"
+#endif
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
+
+//=================================================================================================
+//  WallClockTime
+/// Returns current world clock time (from set point) in seconds
+//=================================================================================================
+inline double WallClockTime()
+{
+  struct timeval tm;
+  gettimeofday( &tm, NULL );
+  return (double)tm.tv_sec + (double)tm.tv_usec / 1000000.0;
+}
+
+
+void TimingBlock::StartTiming()
+{
+ assert(not timing_flag) ;
+
+ tstart      = clock();
+ tstart_wall = WallClockTime();
+
+ timing_flag = true ;
+}
+
+
+void TimingBlock::EndTiming()
+{
+  assert(timing_flag) ;
+
+  tend = clock();
+  tend_wall = WallClockTime();
+
+  ttot += (double) (tend - tstart) / (double) CLOCKS_PER_SEC;
+  ttot_wall += (double) (tend_wall - tstart_wall);
+
+  Ncalled++ ;
+  timing_flag = false ;
+}
+
+
+//=================================================================================================
+//  TimingBlock::Pack
+/// Pack the timing data from the block for an MPI send
+//=================================================================================================
+int TimingBlock::Pack(vector<char>& buffer) const
+{
+  // First pack in to a temporary
+  vector<char> temp ;
+  append_bytes(temp, &timing_level) ;
+  append_bytes(temp, &Ncalled) ;
+  append_bytes(temp, &ttot) ;
+  append_bytes(temp, &ttot_wall);
+
+  temp.insert(temp.end(), block_name.begin(), block_name.end());
+
+  int size = temp.size();
+  int size_tot = size + 2*sizeof(int) ;
+
+  // Add Header, packed data and footer
+  append_bytes(buffer, &size) ;
+  buffer.insert(buffer.end(), temp.begin(), temp.end()) ;
+  append_bytes(buffer, &size) ;
+
+  return size_tot ;
+}
+
+//=================================================================================================
+//  TimingBlock::Pack
+/// Unpack the timing data for the block from an MPI send
+//=================================================================================================
+void TimingBlock::Unpack(vector<char>::const_iterator& buffer) {
+  int size1 ;
+  unpack_bytes(&size1, buffer) ;
+  int count = 0;
+  count += unpack_bytes(&timing_level, buffer) ;
+  count += unpack_bytes(&Ncalled,      buffer) ;
+  count += unpack_bytes(&ttot,         buffer) ;
+  count += unpack_bytes(&ttot_wall,    buffer) ;
+
+  int name_len = size1 - count ;
+  block_name = string(buffer, buffer+name_len) ;
+  buffer += name_len ;
+
+  int size2;
+  unpack_bytes(&size2, buffer) ;
+
+  if (size1 != size2) {
+    stringstream message ;
+    message << "Error in unpacking of TimingBlock data. Block name: " << block_name
+       <<  ". Expected size2=" << size1 <<". Got"
+        << "size2=" << size2 ;
+    ExceptionHandler::getIstance().raise(message.str());
+  }
+
+}
+
+
+
+double CodeTiming::RunningTime() const {
+  return WallClockTime() - tstart_wall;
+}
 
 
 //=================================================================================================
@@ -45,9 +155,6 @@ using namespace std;
 //=================================================================================================
 CodeTiming::CodeTiming()
 {
-  for (int i=0; i<Nlevelmax; i++) Nblock[i] = 0;
-  level       = 0;
-  Nlevel      = 0;
   ttot        = 0.0;
   ttot_wall   = 0.0;
   tstart      = clock();
@@ -70,87 +177,57 @@ CodeTiming::~CodeTiming()
 }
 
 
-
 //=================================================================================================
-//  CodeTiming::StartTimingSection
-/// Start timing a block of code marked by the string 'newblock'.  If block is already on record
-/// (e.g. from previous timestep), then timing is appended to previously recorded times.
+//  CodeTiming::StartNewTimer
+/// Create and start a new timing section
 //=================================================================================================
-void CodeTiming::StartTimingSection
- (const string newblock)               ///< [in] String of new/existing timing block
+CodeTiming::__BlockTimerProxy CodeTiming::StartNewTimer(string block_name)
 {
-  int iblock;                          // Integer id of existing timing block
-#ifdef MPI_PARALLEL
-  return;
-#endif
-  // If block string not in list, then create new entry to timing block
-  if (blockmap[level].find(newblock) == blockmap[level].end()) {
-    iblock                            = Nblock[level];
-    blockmap[level][newblock]         = iblock;
-    block[level][iblock].timing_level = level;
-    block[level][iblock].block_name   = newblock;
-    Nblock[level]++;
-  }
-  // Else, look-up existing timing block
-  else {
-    iblock = blockmap[level][newblock];
-  }
+   return __BlockTimerProxy(block_name, this) ;
+ }
 
-  // Now record timein arrays
-  block[level][iblock].tstart      = clock();
-  block[level][iblock].tstart_wall = WallClockTime();
-
-  level++;
-
-  return;
+//=================================================================================================
+//  CodeTiming::StartNewTimer
+/// Create a new timing section without starting it
+//=================================================================================================
+CodeTiming::__BlockTimerProxy CodeTiming::NewTimer(string block_name)
+{
+   return __BlockTimerProxy(block_name, this,  true);
 }
 
-
-
 //=================================================================================================
-//  CodeTiming::EndTimingSection
-/// Terminate timing a block of code signified by the string 's1' and record
-/// time in main timing arrays.
+//  CodeTiming::StartNewTimer
+/// Check that the timing block that we are trying to destroy is sensible.
 //=================================================================================================
-void CodeTiming::EndTimingSection
- (const string s1)                     ///< [in] String identifying block-end
+void CodeTiming::__check_timing_level(unsigned int level, const string& block_name) const
 {
-  int iblock;                          // Integer i.d. of timing block in arrays
-#ifdef MPI_PARALLEL
-  return;
-#endif
-  // Check level is valid
-  if (level <= 0) {
-    ExceptionHandler::getIstance().raise("Error with timing levels");
+  if (level != activeblocks.size()-1) {
+    stringstream message;
+    message << "Error in timing block. Level of timer does not agree with level of the block "
+        "being timed: " <<  block_name
+        << ".Levels: " << level << " " << activeblocks.size() << "\n" ;
+    ExceptionHandler::getIstance().raise(message.str());
   }
-  level--;
-
-  // If block not in list, then print error message and return
-  if (blockmap[level].find(s1) == blockmap[level].end()) {
-    string message = "Error : looking for incorrect timing block : " + s1;
-    for (map<string, int>::iterator it = blockmap[level].begin();
-         it != blockmap[level].end(); it++) {
-      cout << it->first << " ";
-    }
-    cout << endl;
-    ExceptionHandler::getIstance().raise(message);
+  if (block_name != activeblocks[level]) {
+    stringstream message;
+    message << "Error in timing block. Trying to end block name " << block_name << ", but the"
+        << "active block is " << activeblocks[level] << "\n" ;
+    ExceptionHandler::getIstance().raise(message.str());
   }
-  // Else, look-up existing timing block
-  else {
-    iblock = blockmap[level][s1];
-  }
-
-  block[level][iblock].tend = clock();
-  block[level][iblock].ttot +=
-    (double) (block[level][iblock].tend - block[level][iblock].tstart) / (double) CLOCKS_PER_SEC;
-
-  block[level][iblock].tend_wall = WallClockTime();
-  block[level][iblock].ttot_wall +=
-    (double) (block[level][iblock].tend_wall - block[level][iblock].tstart_wall);
-
-  return;
 }
 
+struct BlockWallTimeSorter
+{
+  BlockWallTimeSorter(map<string, TimingBlock>& blocks_)
+  : blocks(blocks_)
+  { } ;
+
+  bool operator()(string& key1, string& key2) const {
+    return blocks[key1].ttot_wall > blocks[key2].ttot_wall ;
+  }
+private:
+  map<string,TimingBlock>& blocks;
+} ;
 
 
 //=================================================================================================
@@ -161,8 +238,6 @@ void CodeTiming::EndTimingSection
 void CodeTiming::ComputeTimingStatistics
  (string run_id)                       ///< [in] String i.d. of current simulation
 {
-  int iblock;                          // Timing block counter
-  int l;                               // Timing block level
   DOUBLE tcount = 0.0;                 // Total time
   DOUBLE tcount_wall = 0.0;            // Total wall-clock time
   string filename;                     // Filename for writing statistics
@@ -173,90 +248,145 @@ void CodeTiming::ComputeTimingStatistics
   tend      = clock();
   tend_wall = WallClockTime();
   ttot      = (double) (tend - tstart) / (double) CLOCKS_PER_SEC;
+  ttot_wall = tend_wall - tstart_wall ;
+
+  vector<map<string, TimingBlock> > totals = blockmap ;
+
+  int NOpenMP = 1;
+  int Nmpi = 1;
+#ifdef _OPENMP
+  NOpenMP = omp_get_max_threads();
+#endif
 
 #if defined MPI_PARALLEL
-  // In this case, clock measures the cpu time on the local processor. We need to sum
-  // the cpu time of ALL processors to get the cpu time of the simulation
-  if (CPU_Master) {
-    MPI_Reduce(MPI_IN_PLACE, &ttot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  int rank ;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &Nmpi);
+
+  // First Gather the total clock cycles
+  if (rank == 0) {
+    MPI_Reduce(MPI_IN_PLACE, &ttot,      1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(MPI_IN_PLACE, &ttot_wall, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
   }
   else {
-    MPI_Reduce(&ttot, &ttot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ttot,      &ttot,      1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ttot_wall, &ttot_wall, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
   }
 
-  // Now we do the same for all the blocks. Saves the ttot of each single block
-  // inside the temporary array ttot_temp (so that we call MPI_Reduce only once)
-  int Nblocks=0;
-  for (l=0; l<Nlevel; l++) {
-    Nblocks += Nblock[l];
+
+  // Now gather the block data from each thread
+  // First gather the amount of data to send on rank=0
+  std::vector<char> send_buffer ;
+  pack_timing_blocks_for_MPI_send(send_buffer) ;
+  int size = send_buffer.size() ;
+
+  std::vector<int> data_size(Nmpi) ;
+  MPI_Gather(&size, 1, MPI_INT, &(data_size[0]), 1, MPI_INT, 0, MPI_COMM_WORLD) ;
+
+  // Allocate space for receive and set offsets of data
+  std::vector<char> recv_buffer ;
+  std::vector<int> offsets(Nmpi+1) ;
+  if (rank == 0) {
+    offsets[0] = 0;
+    for (int i=0; i < Nmpi; i++)
+      offsets[i+1] = offsets[i] + data_size[i] ;
+
+    recv_buffer.resize(offsets.back()) ;
   }
 
-  vector<double> ttot_temp(Nblocks);
-  int counter=0;
-  for (l=0; l< Nlevel; l++) {
-    for (iblock=0; iblock<Nblock[l]; iblock++) {
-      ttot_temp[counter]=block[l][iblock].ttot;
-      counter++;
+  // Gather the data
+  MPI_Gatherv(&(send_buffer[0]), size, MPI_BYTE,
+              &(recv_buffer[0]), &(data_size[0]), &(offsets[0]), MPI_BYTE,
+              0, MPI_COMM_WORLD) ;
+
+  // Now add the data to the totals
+  if (rank == 0) {
+    std::vector<char>::const_iterator buf = recv_buffer.begin() ;
+    for (int i=0; i < Nmpi; i++) {
+      std::vector<map<string, TimingBlock> > tmp_map ;
+      unpack_timing_blocks_from_MPI_send(buf, tmp_map) ;
+      assert((buf - recv_buffer.begin()) == offsets[i+1]) ;
+
+      if (i == 0) continue ;
+
+      for (unsigned int l=0; l <tmp_map.size(); ++l) {
+
+        typedef map<string,TimingBlock>::iterator iterator ;
+
+        for(iterator iter=totals[l].begin(); iter != totals[l].end(); ++iter) {
+          TimingBlock& block = totals[l][iter->first] ;
+          block.ttot += iter->second.ttot ;
+          block.ttot_wall = max(block.ttot_wall, iter->second.ttot_wall) ;
+        }
+      }
     }
   }
-
-  if (CPU_Master) {
-    MPI_Reduce(MPI_IN_PLACE, &ttot_temp[0], Nblocks, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  }
-  else {
-    MPI_Reduce(&ttot_temp[0], &ttot_temp[0], Nblocks, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  }
-
-  if (!CPU_Master) return;
-
-  counter=0;
-  for (l=0; l< Nlevel; l++) {
-    for (iblock=0; iblock<Nblock[l]; iblock++) {
-      block[l][iblock].ttot=ttot_temp[counter];
-      counter++;
-    }
-  }
+  else
+    return ;
 #endif
   ttot_wall = (double) (tend_wall - tstart_wall);
+
+  int NThread = Nmpi * NOpenMP ;
 
   outfile.open(filename.c_str());
   outfile << resetiosflags(ios::adjustfield);
   outfile << setiosflags(ios::left);
-  std::string dashes(95,'-');
+  std::string dashes(100,'-');
   outfile << dashes << endl;
   outfile << "Total simulation wall clock time : " << ttot_wall << endl;
+
+  outfile << "Threads: Total=" << NThread ;
+#ifdef MPI_PARALLEL
+  outfile << ", MPI=" << Nmpi ;
+#endif
+#ifdef _OPENMP
+  outfile << ", OpenMP=" << NOpenMP ;
+#endif
+  outfile << endl ;
+
   outfile << dashes << endl;
 
   // Output timing data on each hierarchical level
   //-----------------------------------------------------------------------------------------------
-  for (l=0; l<Nlevel; l++) {
+  for (unsigned int l=0; l<totals.size(); l++) {
     tcount = 0.0;
     tcount_wall = 0.0;
     outfile << "Level : " << l << endl;
     outfile << "Block";
-    outfile << std::string( 42, ' ' );
-    outfile << "Wall time" << std::string(3,' ') << "%time";
-    outfile << std::string(7,' ') << "CPU Time" << std::string(4,' ') << "%time"<<endl;
+    outfile << std::string( 35, ' ' );
+    outfile << "Max Wall time" << std::string(2,' ') << "%time";
+    outfile << std::string(10,' ') << "Av. CPU Time" << std::string(3,' ') << "%time"<<endl;
     outfile << dashes << endl;
 
-    for (iblock=0; iblock<Nblock[l]; iblock++) {
-      tcount      += block[l][iblock].ttot;
-      tcount_wall += block[l][iblock].ttot_wall;
-      block[l][iblock].tfraction      = block[l][iblock].ttot / ttot;
-      block[l][iblock].tfraction_wall = block[l][iblock].ttot_wall / ttot_wall;
-      outfile << setw(47) << block[l][iblock].block_name
-              << setw(12) << block[l][iblock].ttot_wall
-              << setw(12) << 100.0*block[l][iblock].tfraction_wall;
-      outfile << setw(12) << block[l][iblock].ttot
-              << setw(12) << 100.0*block[l][iblock].tfraction
+    // First sort by wall time
+    std::vector<string> keys ;
+    for(map<string,TimingBlock>::iterator iter=totals[l].begin();
+        iter != totals[l].end(); ++iter)
+      keys.push_back(iter->first) ;
+
+    std::sort(keys.begin(), keys.end(), BlockWallTimeSorter(totals[l])) ;
+
+    for(vector<string>::iterator iter=keys.begin(); iter != keys.end(); ++iter) {
+      TimingBlock& block = totals[l][*iter] ;
+
+      tcount      += block.ttot;
+      tcount_wall += block.ttot_wall;
+      block.tfraction      = block.ttot / ttot;
+      block.tfraction_wall = block.ttot_wall / ttot_wall;
+      outfile << setw(40) << block.block_name
+              << setw(15) << block.ttot_wall
+              << setw(15) << 100.0*block.tfraction_wall;
+      outfile << setw(15) << block.ttot / NThread
+              << setw(15) << 100.0*block.tfraction
               << endl;
     }
-    outfile << setw(47) << "REMAINDER"
-            << setw(12) << ttot_wall - tcount_wall
-            << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall;
 
-    outfile << setw(12) << ttot - tcount
-            << setw(12) << 100.0*(ttot - tcount)/ttot
+    outfile << setw(40) << "REMAINDER"
+            << setw(15) << ttot_wall - tcount_wall
+            << setw(15) << 100.0*(ttot_wall - tcount_wall)/ttot_wall;
+
+    outfile << setw(15) << (ttot - tcount) / NThread
+            << setw(15) << 100.0*(ttot - tcount)/ttot
             << endl;
     outfile << dashes << endl;
   }
@@ -268,15 +398,103 @@ void CodeTiming::ComputeTimingStatistics
   return;
 }
 
-
+#ifdef MPI_PARALLEL
 
 //=================================================================================================
-//  CodeTiming::WallClockTime
-/// Returns current world clock time (from set point) in seconds
+//  CodeTiming::pack_timing_blocks_for_MPI_send
+/// Fills a vector<char> array with the minimal block data from this processor
 //=================================================================================================
-double CodeTiming::WallClockTime(void)
+void CodeTiming::pack_timing_blocks_for_MPI_send(std::vector<char>& buffer) const
 {
-  struct timeval tm;
-  gettimeofday( &tm, NULL );
-  return (double)tm.tv_sec + (double)tm.tv_usec / 1000000.0;
+
+  // First pack the number of levels, then for each level pack:
+  //   Level id
+  //   Number of blocks
+  //   Block data
+  //   -1
+  // Finally, pack a -1.
+
+  buffer.clear() ;
+  int Nlevels = blockmap.size() ;
+  append_bytes(buffer, &Nlevels) ;
+
+
+  for (int l=0; l < Nlevels; ++l) {
+    append_bytes(buffer, &l) ;
+
+    int Nblocks = blockmap[l].size() ;
+    append_bytes(buffer, &Nblocks) ;
+
+    typedef map<string, TimingBlock>::const_iterator iterator;
+
+    for (iterator iter=blockmap[l].begin(); iter != blockmap[l].end(); ++iter)
+      iter->second.Pack(buffer) ;
+
+    int minus_one = -1 ;
+    append_bytes(buffer, &minus_one) ;
+  }
+
+  int minus_one = -1 ;
+  append_bytes(buffer, &minus_one) ;
+
 }
+
+//=================================================================================================
+//  CodeTiming::unpack_timing_blocks_from_MPI_send
+/// Create a new blockmap from the data received in an MPI communication.
+//=================================================================================================
+void CodeTiming::unpack_timing_blocks_from_MPI_send
+(vector<char>::const_iterator& buffer,            ///< [in] Buffer to read data from
+vector<map<string, TimingBlock> >& newblockmap)   ///< [out] New block map constructed from data
+const
+{
+  // Unpack the data: First the number of levels, then for each level unpack:
+  //   Level id
+  //   Number of blocks
+  //   Block data
+  //   -1
+  // Finally, unpack a -1.
+
+  int Nlevels ;
+  unpack_bytes(&Nlevels, buffer) ;
+  newblockmap.resize(Nlevels) ;
+
+  for (int l=0; l < Nlevels; ++l) {
+    int lbuf ;
+    unpack_bytes(&lbuf, buffer) ;
+
+    if (lbuf != l) {
+      stringstream message;
+        message << "Error in unpacking of blockmap. Trying get level " << l << ", but got "
+                << lbuf << "\n" ;
+        ExceptionHandler::getIstance().raise(message.str());
+    }
+
+    int Nblocks;
+    unpack_bytes(&Nblocks, buffer) ;
+
+    for (int blk = 0; blk < Nblocks; blk++) {
+       TimingBlock block ;
+       block.Unpack(buffer) ;
+       assert(block.timing_level == l) ;
+       newblockmap[l][block.block_name] = block ;
+    }
+
+    int minus_one;
+    unpack_bytes(&minus_one, buffer) ;
+
+    if (minus_one != -1) {
+      string message = "Error in unpacking of blockmap, expected end of level data token";
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+
+  int minus_one;
+  unpack_bytes(&minus_one, buffer) ;
+  if (minus_one != -1) {
+    string message = "Error in unpacking of blockmap, expected end of data token";
+    ExceptionHandler::getIstance().raise(message);
+  }
+}
+#endif
+

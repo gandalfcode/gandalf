@@ -7,7 +7,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = SEDOV1
+Simulation run id string                    : run_id = SEDOV3
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sedov
 Dimensionality of cube                      : ndim = 3

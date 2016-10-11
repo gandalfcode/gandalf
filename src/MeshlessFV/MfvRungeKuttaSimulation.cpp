@@ -119,7 +119,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
     // If we will output a snapshot (regular or for restarts), then delete all accreted particles
     if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->WallClockTime() - timing->tstart_wall > (FLOAT) 0.99*tmax_wallclock) {
+         timing->RunningTime() > (FLOAT) 0.99*tmax_wallclock) {
       hydro->DeleteDeadParticles();
       rebuild_tree = true;
     }

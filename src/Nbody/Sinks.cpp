@@ -124,7 +124,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
   FLOAT rho_max;                       // Maximum density of sink candidates
 
   debug2("[Sinks::SearchForNewSinkParticles]");
-  timing->StartTimingSection("SEARCH_NEW_SINKS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_NEW_SINKS");
 
 
   // Continuous loop to search for new sinks.  If a new sink is found, then repeat
@@ -242,8 +242,6 @@ void Sinks<ndim>::SearchForNewSinkParticles
   //===============================================================================================
 
 
-  timing->EndTimingSection("SEARCH_NEW_SINKS");
-
   return;
 }
 
@@ -340,7 +338,7 @@ void Sinks<ndim>::AccreteMassToSinks
   Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
 {
   debug2("[Sinks::AccreteMassToSinks]");
-  timing->StartTimingSection("SINK_ACCRETE_MASS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SINK_ACCRETE_MASS");
 
   // Allocate local memory and initialise values
   for (int i=0; i<hydro->Ntot; i++) hydro->GetParticlePointer(i).sinkid = -1;
@@ -732,8 +730,6 @@ void Sinks<ndim>::AccreteMassToSinks
     }
     assert(part.flags.is_dead() || part.m > 0.0);
   }
-
-  timing->EndTimingSection("SINK_ACCRETE_MASS");
 
   return;
 }

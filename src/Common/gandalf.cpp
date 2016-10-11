@@ -90,9 +90,6 @@ int main(int argc, char** argv)
 #endif
 #endif
 
-  // Create timing object here (constructor need to be called after MPI is initialised)
-  CodeTiming timing;
-
 
   // Parse and process all command-line arguments.
   if (argc == 3) {
@@ -121,7 +118,6 @@ int main(int argc, char** argv)
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"],
                                           params->stringparams["sim"], params);
-  sim->timing = &timing;
   sim->restart = restart;
 
   // Print out splash screen
@@ -145,7 +141,7 @@ int main(int argc, char** argv)
   sim->Run();
 
   // Compile timing statistics from complete simulation
-  timing.ComputeTimingStatistics(sim->run_id);
+  sim->timing->ComputeTimingStatistics(sim->run_id);
 
 #ifdef MPI_PARALLEL
   MPI_Finalize();

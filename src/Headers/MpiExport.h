@@ -110,23 +110,5 @@ inline void copy (T* element, char* pointer) {
 }
 
 
-template<class T>
-inline void append_bytes(std::vector<char>& buffer, const T* element) {
-
-  const char* bytes_start = reinterpret_cast<const char*>(element);
-  const char* bytes_end = bytes_start + sizeof(T) ;
-
-  buffer.insert(buffer.end(), bytes_start, bytes_end) ;
-}
-
-template<class T>
-inline void unpack_bytes(T* element, std::vector<char>::const_iterator& it) {
-
-  void* element_unsafe = reinterpret_cast<void*> (element);
-  memcpy(element_unsafe, &(*it), sizeof(T)) ;
-  it += sizeof(T) ;
-}
-
-
 
 #endif /* MPIEXPORT_H_ */

@@ -83,7 +83,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     FILE *fo;                                    // File where Ewald field is printed
 
     debug2("[Ewald::Ewald]");
-    timing->StartTimingSection("EWALD");
+    CodeTiming::BlockTimer timer = timing->StartNewTimer("EWALD");
 
     // First check that we don't have any reflecting boundaries
     if (IsAnyBoundaryReflecting(simbox)){
@@ -461,8 +461,6 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
       printf("potC1p2i %16.10lf %16.10lf %16.10lf %16.10lf %8d\n",potC1p2i,2.0*linv*log(2*lz_per),
         ewald_field[Ngrid[0]-2],ewald_field[Ngrid[0]-2]+0.5/lz_per,Ngrid[0]-2);
     }
-
-    timing->EndTimingSection("EWALD");
 
   }
   //-----------------------------------------------------------------------------------------------

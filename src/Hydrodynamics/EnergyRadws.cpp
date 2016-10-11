@@ -217,7 +217,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[EnergyRadws::EnergyIntegration]");
-  timing->StartTimingSection("ENERGY_RADWS_INTEGRATION");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_INTEGRATION");
 
 
   //-----------------------------------------------------------------------------------------------
@@ -244,8 +244,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
   //-----------------------------------------------------------------------------------------------
 
 
-  timing->EndTimingSection("ENERGY_RADWS_INTEGRATION");
-
   return;
 }
 
@@ -270,7 +268,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[EnergyRadws::EndTimestep]");
-  timing->StartTimingSection("ENERGY_RADWS_END_TIMESTEP");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
@@ -292,8 +290,6 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 
   }
   //-----------------------------------------------------------------------------------------------
-
-  timing->EndTimingSection("ENERGY_RADWS_END_TIMESTEP");
 
   return;
 }

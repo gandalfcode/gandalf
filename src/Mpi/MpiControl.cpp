@@ -343,12 +343,12 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
 
   // Now update the global bounding box for the entire domain
   // (needed for adjusting mpitree in load balancing step)
-  for (int k=0; k<ndim; k++) partbox.boxmin[k] = big_number;
-  for (int k=0; k<ndim; k++) partbox.boxmax[k] = -big_number;
+  for (int k=0; k<ndim; k++) partbox.min[k] = big_number;
+  for (int k=0; k<ndim; k++) partbox.max[k] = -big_number;
   for (int inode=0; inode<Nmpi; inode++) {
     for (int k=0; k<ndim; k++) {
-      partbox.boxmin[k] = min(partbox.boxmin[k], mpinode[inode].rbox.boxmin[k]);
-      partbox.boxmax[k] = max(partbox.boxmax[k], mpinode[inode].rbox.boxmax[k]);
+      partbox.min[k] = min(partbox.min[k], mpinode[inode].rbox.min[k]);
+      partbox.max[k] = max(partbox.max[k], mpinode[inode].rbox.max[k]);
     }
   }
 

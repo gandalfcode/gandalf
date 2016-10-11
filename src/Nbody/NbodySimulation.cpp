@@ -469,7 +469,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
-  timing->StartTimingSection("BLOCK_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
 
 
   // Synchronise all timesteps and reconstruct block timestep structure.
@@ -657,8 +657,6 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 #if defined(VERIFY_ALL)
   //VerifyBlockTimesteps();
 #endif
-
-  timing->EndTimingSection("BLOCK_TIMESTEPS");
 
   return;
 }

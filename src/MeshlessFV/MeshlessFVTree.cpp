@@ -89,11 +89,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
   //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[MeshlessFVTree::UpdateAllProperties]");
-  timing->StartTimingSection("MFV_PROPERTIES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_PROPERTIES");
 
 
   // Find list of all cells that contain active particles
@@ -101,7 +101,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("MFV_PROPERTIES");
     return;
   }
 
@@ -296,7 +295,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
@@ -306,8 +305,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 
   // Update tree smoothing length values here
   tree->UpdateAllHmaxValues(mfvdata);
-
-  timing->EndTimingSection("MFV_PROPERTIES");
 
   return;
 }
@@ -330,11 +327,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[MeshlessFVTree::UpdateGradientMatrices]");
-  timing->StartTimingSection("MFV_UPDATE_GRADIENTS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_GRADIENTS");
 
 
   // Find list of all cells that contain active particles
@@ -342,7 +339,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("MFV_UPDATE_GRADIENTS");
     return;
   }
 
@@ -537,15 +533,13 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing gradients : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
-  timing->EndTimingSection("MFV_UPDATE_GRADIENTS");
 
   return;
 }
@@ -569,11 +563,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[MeshlessFVTree::UpdateGodunovFluxes]");
-  timing->StartTimingSection("MFV_UPDATE_FLUXES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_FLUXES");
 
 
   // Find list of all cells that contain active particles
@@ -581,7 +575,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("MFV_UPDATE_FLUXES");
     return;
   }
 
@@ -801,7 +794,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
@@ -809,8 +802,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 #endif
 #endif
 
-
-  timing->EndTimingSection("MFV_UPDATE_FLUXES");
 
   return;
 }
@@ -839,10 +830,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
   //ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[MeshlessFVTree::UpdateAllGravForces]");
-  timing->StartTimingSection("MFV_GRAV_FORCES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_GRAV_FORCES");
 
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   // Update ghost tree smoothing length values here
@@ -853,7 +844,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("MFV_GRAV_FORCES");
     return;
   }
 
@@ -1091,16 +1081,13 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
   //===============================================================================================
 
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing fluxes : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
-
-  timing->EndTimingSection("MFV_GRAV_FORCES");
 
   return;
 }

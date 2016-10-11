@@ -45,7 +45,6 @@
 #include "SmoothingKernel.h"
 #include "UnitInfo.h"
 #include "HeaderInfo.h"
-#include "CodeTiming.h"
 
 void catch_alarm (int SIG) {
 signal(SIGINT, catch_alarm);
@@ -228,4 +227,3 @@ ExceptionHandler::makeExceptionHandler(python);
 %include "Render.h"
 %include "SmoothingKernel.h"
 %include "UnitInfo.h"
-%include "CodeTiming.h"

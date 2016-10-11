@@ -275,11 +275,11 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
   vector<TreeCellBase<ndim> > celllist;    // List of active cells
 
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[DustSphNgbFinder::FindNeibAndDoInterp]");
-  timing->StartTimingSection("DUST_GAS_INTERPOLATE_FORCES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("DUST_GAS_INTERPOLATE_FORCES");
 
   // Find list of all cells that contain active particles
   cactive = _tree->ComputeActiveCellList(celllist);
@@ -452,15 +452,13 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 
  // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
- twork = timing->WallClockTime() - twork;
+ twork = timing->RunningTime() - twork;
  int Nactivetot=0;
  _tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
  cout << "Time computing dust pair-wise forces: " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
-  timing->EndTimingSection("DUST_GAS_INTERPOLATE_FORCES");
 
   return;
 }
@@ -489,11 +487,11 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   vector<TreeCellBase<ndim> > celllist;    // List of active cells
 
 #ifdef MPI_PARALLEL
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[DustSphNgbFinder::FindNeibForces]");
-  timing->StartTimingSection("DUST_GAS_PAIRWISE_FORCES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("DUST_GAS_PAIRWISE_FORCES");
 
 
   // Find list of all cells that contain active particles
@@ -501,7 +499,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("DUST_GAS_PAIRWISE_FORCES");
     return;
   }
 
@@ -653,15 +650,13 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
+  twork = timing->RunningTime() - twork;
   int Nactivetot=0;
   _tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing dust pair-wise forces: " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
-  timing->EndTimingSection("DUST_GAS_PAIRWISE_FORCES");
 
   return;
 }
