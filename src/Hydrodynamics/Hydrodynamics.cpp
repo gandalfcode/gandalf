@@ -177,6 +177,9 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   for (int k=0; k<ndim; k++) part.v0[k] = v[k];
   for (int k=0; k<ndim; k++) part.a0[k] = (FLOAT) 0.0;
 
+
+  // Set particle flag to active to ensure force is computed asap
+  part.flags = none;
   part.flags.set_flag(active);
 
   return part;
