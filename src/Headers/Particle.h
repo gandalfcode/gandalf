@@ -258,6 +258,7 @@ struct Particle
   FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
+  FLOAT vsig_max;                   ///< Maximum signal velocity.
   FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
   int ionstate;                     ///< States current ionisation state of the particle
                                     ///< (0 is neutral, 1 is smoothed and 2 is ionised)
@@ -293,6 +294,7 @@ struct Particle
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
     mu_bar    = (FLOAT) 1.0;
+    vsig_max  = 0;
   }
 
 };
@@ -418,7 +420,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT press;                         ///< Pressure
   FLOAT invomega;                      ///< ..
   FLOAT div_v;                         ///< Velocity divergence
-  FLOAT vsig_max;                      ///< Maximum signal velocity to all neighbours
+  //FLOAT vsig_max;                      ///< Maximum signal velocity to all neighbours
   FLOAT ndens;                         ///< Particle number density, inverse volume
   FLOAT zeta;                          ///< ..
   FLOAT B[ndim][ndim];                 ///< Inverse matrix for gradient calculations
@@ -438,7 +440,7 @@ struct MeshlessFVParticle : public Particle<ndim>
     press     = (FLOAT) 0.0;
     div_v     = (FLOAT) 0.0;
     ndens     = (FLOAT) 0.0;
-    vsig_max  = (FLOAT) 0.0;
+   // vsig_max  = (FLOAT) 0.0;
     zeta      = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) rdmdt[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) rdmdt0[k] = (FLOAT) 0.0;

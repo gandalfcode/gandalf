@@ -647,6 +647,57 @@ double HydroTree<ndim,ParticleType>::GetMaximumSmoothingLength() const
   return hmax ;
 }
 
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
+(int Nhydro,                                      ///< [in] No. of hydro particles
+ int Ntot,                                        ///< [in] No. of hydro + ghost particles
+ Particle<ndim> *part_gen)                        ///< [inout] Pointer to Hydrodynamics ptcl array
+ {
+  int cactive;                          // No. of active cells
+  vector<TreeCellBase<ndim> > celllist; // List of active tree cells
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+
+  debug2("[HydroTree::UpdateTimestepsLimitsFromDistantParticles]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_DISTANT_TIMESTEPS");
+
+  // Find list of all cells that contain active particles
+  cactive = tree->ComputeActiveCellList(celllist);
+
+#pragma omp parallel default(none) shared(celllist,cactive,cout,partdata)
+  {
+#if defined _OPENMP
+    const int ithread = omp_get_thread_num();
+#else
+    const int ithread = 0;
+#endif
+    int cc;                                    // Aux. cell counter
+    int j;                                     // Aux. particle counter
+    int Nactive;                               // No. of active particles in current cell
+    int *activelist                = activelistbuf[ithread];
+    ParticleType<ndim> *activepart = activepartbuf[ithread];
+
+
+    // Loop over all active cells
+    //=============================================================================================
+#pragma omp for schedule(guided)
+    for (cc=0; cc<cactive; cc++) {
+      TreeCellBase<ndim>& cell = celllist[cc] ;
+
+      // Find list of active particles in current cell
+      Nactive = tree->ComputeActiveParticleList(cell, partdata, activelist);
+      if (Nactive == 0) continue ;
+
+      // Make local copies of active particles & update vsig_max
+      for (j=0; j<Nactive; j++) activepart[j] = partdata[activelist[j]];
+
+      tree->ComputeSignalVelocityFromDistantInteractions(cell, Nactive, activepart, partdata);
+
+      for (j=0; j<Nactive; j++) {
+        partdata[activelist[j]].vsig_max = activepart[j].vsig_max;
+      }
+    }
+  }
+ }
 
 #ifdef MPI_PARALLEL
 //=================================================================================================
@@ -668,6 +719,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
   debug2("[GradhHydroTree::UpdateGravityExportForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_DISTANT_FORCES");
+
 
 
   // Find list of all cells that contain active particles

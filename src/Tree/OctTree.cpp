@@ -528,6 +528,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             cell.N++;
             if (partdata[i].flags.check_flag(active)) cell.Nactive++;
             cell.hmax = max(cell.hmax, partdata[i].h);
+            cell.maxsound = max(cell.maxsound, partdata[i].sound);
             if (gravmask[partdata[i].ptype]) {
               cell.m += partdata[i].m;
               for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
@@ -540,6 +541,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
                 cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
               if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
                 cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+              if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
+              if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
             }
           }
           if (i == cell.ilast) break;
@@ -603,9 +606,12 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             for (k=0; k<ndim; k++) cell.bb.max[k]   = max(child.bb.max[k], cell.bb.max[k]);
             for (k=0; k<ndim; k++) cell.hbox.min[k] = min(child.hbox.min[k], cell.hbox.min[k]);
             for (k=0; k<ndim; k++) cell.hbox.max[k] = max(child.hbox.max[k], cell.hbox.max[k]);
+            for (k=0; k<ndim; k++) cell.vbox.min[k] = min(child.vbox.min[k],cell.vbox.min[k]);
+            for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child.vbox.max[k],cell.vbox.max[k]);
             for (k=0; k<ndim; k++) cell.r[k] += child.m*child.r[k];
             for (k=0; k<ndim; k++) cell.v[k] += child.m*child.v[k];
             cell.hmax = max(child.hmax, cell.hmax);
+            cell.maxsound = max(cell.maxsound,child.maxsound);
             cell.m += child.m;
             cell.N += child.N;
           }

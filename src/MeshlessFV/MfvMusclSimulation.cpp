@@ -266,6 +266,10 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   //   Compute gradients for all cells neighbouring active ones (use levelneib?).
   mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
 
+  if (time_step_limiter_type == "conservative")
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv->Nhydro, mfv->Ntot, partdata) ;
+
+
   /* Check that we have sensible smoothing lengths */
   if (periodicBoundaries) {
     double hmax = mfvneib->GetMaximumSmoothingLength() ;

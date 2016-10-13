@@ -73,6 +73,7 @@ struct TreeCellBase {
   FLOAT m;                             ///< Mass contained in cell
   FLOAT rmax;                          ///< Radius of bounding sphere
   FLOAT hmax;                          ///< Maximum smoothing length inside cell
+  FLOAT maxsound;                      ///< Maximum sound speed inside the cell
   FLOAT drmaxdt;                       ///< Rate of change of bounding sphere
   FLOAT dhmaxdt;                       ///< Rate of change of maximum h
   FLOAT q[5];                          ///< Quadrupole moment tensor
@@ -171,6 +172,11 @@ class TreeBase
 	virtual  bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &) = 0;
 	virtual  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
 #endif
+
+	virtual void ComputeSignalVelocityFromDistantInteractions(const TreeCellBase<ndim>& cell,
+	                                                          int Nactive, Particle<ndim>* active_gen,
+	                                                          Particle<ndim>* part_gen) = 0;
+
 	virtual int FindLeafCell(const FLOAT *) = 0;
 
 	//-----------------------------------------------------------------------------------------------
@@ -308,6 +314,10 @@ protected:
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
                                         MultipoleMoment<ndim> *, Particle<ndim> *);
+
+  virtual void ComputeSignalVelocityFromDistantInteractions(const TreeCellBase<ndim>& cell,
+                                                            int Nactive, Particle<ndim>* active_gen,
+                                                            Particle<ndim>* part_gen);
   virtual int FindLeafCell(const FLOAT *);
 #ifdef MPI_PARALLEL
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,

@@ -407,6 +407,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   MpiGhosts = new MpiGhostsSpecific<ndim, MeshlessFVParticle>(mpicontrol);
 #endif
 
+  time_step_limiter_type = stringparams["time_step_limiter"] ;
+
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
 
@@ -673,6 +675,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
 
+  if (time_step_limiter_type == "conservative")
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv->Nhydro, mfv->Ntot, partdata) ;
 
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
 #ifdef MPI_PARALLEL

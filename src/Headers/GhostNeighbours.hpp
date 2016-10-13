@@ -238,11 +238,11 @@ public:
 	/// \brief Construct the centres and reflection signs of a cell. This list will include the
 	///        original cell or the periodic neighbour of the original cell.
 	/// \author R. A. Booth
-	/// \date   27/10/2015
+	/// \date   13/10/2016
 	/// \return The number of neighbours found
 	//===============================================================================================
 	template<template <int> class ParticleType>
-	int ConstructGhostsGather(const ParticleType<ndim>& p, ParticleType<ndim>* ngbs) const
+	int ConstructAllGhosts(const ParticleType<ndim>& p, ParticleType<ndim>* ngbs) const
 	{
 	  // First find the nearest periodic mirror
 	  ngbs[0] = p ;
@@ -254,10 +254,36 @@ public:
 	  int Nghost = 1 ;
 	  // Now recursively reflect the cells
 	  if (_need_mirrors)
-		Nghost = _MakeReflectedGhostsGather(ngbs) ;
+		Nghost = _MakeReflectedGhostsAll(ngbs) ;
 
 	  return Nghost ;
 	}
+
+    //=================================================================================================
+    /// \brief Construct the centres and reflection signs of a cell. This list will include the
+    ///        original cell or the periodic neighbour of the original cell.
+    /// \author R. A. Booth
+    /// \date   27/10/2015
+    /// \return The number of neighbours found
+    //===============================================================================================
+    template<template <int> class ParticleType>
+    int ConstructGhostsGather(const ParticleType<ndim>& p, ParticleType<ndim>* ngbs) const
+    {
+      // First find the nearest periodic mirror
+      ngbs[0] = p ;
+      if (_any_periodic)
+        _MakePeriodicGhost(ngbs[0]) ;
+
+
+      // Number of Ghost cells
+      int Nghost = 1 ;
+      // Now recursively reflect the cells
+      if (_need_mirrors)
+        Nghost = _MakeReflectedGhostsGather(ngbs) ;
+
+      return Nghost ;
+    }
+
 
 	template< template<int> class TreeCell, template<int> class ParticleType>
 	void CorrectGhostParticlePosition(const TreeCell<ndim>& cell, const FLOAT * r, const int * sign,
@@ -287,9 +313,11 @@ private:
 	  for (int k=0; k <ndim; k++)
 	    dr[k] = p.r[k] - _centre[k] ;
 
-	  type_flag bound_flag =  NearestPeriodicVector(dr) ;
-	  for (int k=0; k <ndim; k++)
-	    p.r[k] = _centre[k] + dr[k];
+	  type_flag bound_flag = NearestPeriodicVector(dr) ;
+
+	  if (bound_flag.is_periodic())
+	    for (int k=0; k <ndim; k++)
+	      p.r[k] = _centre[k] + dr[k];
 
 	  p.flags.set_flag(bound_flag.get()) ;
 
@@ -382,6 +410,46 @@ private:
 	  }
 	  return nc ;
 	}
+
+
+    //=================================================================================================
+    //  _MakeReflectedGhostsAll
+    /// \brief Do the actual construction of all of the mirror ghosts. Assumes that the first
+    /// particle is already saved in ngbs.
+    /// \author R. A. Booth
+    /// \date   27/10/2015
+    /// \return The number of neighbours found
+    //===============================================================================================
+    template<template <int> class ParticleType>
+    int _MakeReflectedGhostsAll(ParticleType<ndim>* ngbs) const {
+      int nc = 1 ;
+      // Loop over the possible directions for reflections
+      for (int k = 0; k < ndim; k++){
+        // Save the current number of images
+        int Nghost = nc ;
+
+        // Do reflections on the left edge
+        if (_mirror_bound[k][0]){
+          for (int n=0; n < Nghost; n++){
+            ngbs[nc] = ngbs[n] ;
+            reflect(ngbs[nc], k, _domain.min[k]) ;
+            ngbs[nc].flags.set_flag(mirror_bound_flags[k][0]) ;
+            nc++;
+          }
+        }
+
+        // Do reflections on the right edge
+        if (_mirror_bound[k][1]){
+          for (int n=0; n < Nghost; n++){
+            ngbs[nc] = ngbs[n] ;
+            reflect(ngbs[nc], k, _domain.max[k]) ;
+            ngbs[nc].flags.set_flag(mirror_bound_flags[k][1]) ;
+            nc++ ;
+          }
+        }
+      }
+      return nc ;
+    }
 };
 
 
