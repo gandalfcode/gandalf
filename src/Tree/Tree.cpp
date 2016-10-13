@@ -971,6 +971,16 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   return 1;
 }
 
+//=================================================================================================
+//  Tree::ComputeSignalVelocityFromDistantInteractions
+/// Computes an effective signal velocity from distant interactions in order to ensure that the
+/// timesteps used are small enough to detect approaching shocks. It does this for each of the
+/// active particles included in a list by walking the tree and opening the cells if:
+///   1) They overlap
+///   2) dt * ( cs_1 + cs_2 - Delta v) > Delta r.
+/// The time-step used in the tree walk is continually updated to use to most stringent condition
+/// for opening the tree cells.
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteractions
 (const TreeCellBase<ndim>& cell,                       ///< [in] Pointer to cell
