@@ -92,16 +92,23 @@ public:
 
   // Virtual functions
   //-----------------------------------------------------------------------------------------------
-  virtual void CalculateMassTable(std::string, FLOAT, FLOAT);
-  virtual FLOAT FindMassIntegratedPosition(FLOAT);
   virtual void Generate(void) {};
   virtual FLOAT GetValue(const std::string, const FLOAT *) {return (FLOAT) 0.0;}
-  virtual FLOAT GetDensity(const FLOAT) {return (FLOAT) 0.0;}
+  virtual FLOAT GetDensity(const FLOAT rad) {
+    FLOAT r[ndim];
+    for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
+    r[0] = rad;
+    return GetValue("rho", r);
+  }
 
 
   // Other common functions
   //-----------------------------------------------------------------------------------------------
   void CheckInitialConditions(void);
+  void CalculateMassTable(std::string, FLOAT, FLOAT);
+  FLOAT CalculateMassInBox(const int*, const Box<ndim>&);
+  FLOAT FindMassIntegratedPosition(FLOAT);
+
 
 
   // Static functions which can be used outside of Ic class
@@ -175,6 +182,51 @@ public:
 
 
 //=================================================================================================
+//  Class FilamentIc
+/// \brief   Class to generate a simple filament for ICs.
+/// \details Class to generate a simple filament for ICs.
+/// \author  D. A. Hubber
+/// \date    12/10/2016
+//=================================================================================================
+template <int ndim>
+class FilamentIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+  FLOAT aconst;
+  FLOAT n0;
+  FLOAT r0;
+  FLOAT rho0;
+  FLOAT Rfilament;
+  FLOAT Lfilament;
+  FLOAT temp0;
+
+  FLOAT mtot;
+  FLOAT u0;
+  FLOAT mp;
+
+
+public:
+
+  FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  virtual ~FilamentIc() {};
+
+  virtual void Generate(void);
+  virtual FLOAT GetValue(const std::string, const FLOAT *);
+
+};
+
+
+
+//=================================================================================================
 //  Class PolytropeIc
 /// \brief   Class to generate initial conditions with a Polytrope density profile
 /// \details Class to generate initial conditions with a Polytrope density profile
@@ -212,7 +264,6 @@ public:
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
-  virtual FLOAT GetDensity(const FLOAT);
 
 };
 
@@ -260,7 +311,6 @@ public:
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
-  virtual FLOAT GetDensity(const FLOAT);
 
 };
 #endif

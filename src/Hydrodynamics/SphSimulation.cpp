@@ -616,8 +616,7 @@ void SphSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
-    sphneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,
-                               timestep, sph);
+    sphneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
 
 
@@ -1498,10 +1497,14 @@ template <int ndim>
 void SphSimulation<ndim>::RegulariseParticleDistribution
  (const int Nreg)                                  ///< [in] No. of regularisation steps
 {
-  FLOAT alphaReg = 0.0;                            // Particle displacement magnitude
-  FLOAT rhoReg = 0.8;                              // ..
+  FLOAT alphaReg = 0.05;                            // Particle displacement magnitude
+  FLOAT rhoReg = 0.4;                              // ..
   FLOAT *rreg = new FLOAT[ndim*sph->Nhydromax];    // Array of particle positions
   SphParticle<ndim> *partdata = sph->GetSphParticleArray();
+
+  DomainBox<ndim> localBox = simbox;
+  for (int k=0; k<ndim; k++) localBox.boundary_lhs[k] = periodicBoundary;
+  for (int k=0; k<ndim; k++) localBox.boundary_rhs[k] = periodicBoundary;
 
   debug1("[SphSimulation::RegulariseParticleDistribution]");
 
@@ -1517,7 +1520,6 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
     sphneib->UpdateAllSphProperties(sph, nbody);
 
-
     //=============================================================================================
 #pragma omp parallel default(none) shared(alphaReg, partdata, rhoReg, rreg)
     {
@@ -1531,7 +1533,7 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
 #pragma omp for
       for (int i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim> &part = sph->GetSphParticlePointer(i);
-        FLOAT invhsqd = 1/(part.h*part.h) ;
+        FLOAT invhsqd = (FLOAT) 1.0/(part.h*part.h) ;
         for (k=0; k<ndim; k++) rreg[ndim*i + k] = (FLOAT) 0.0;
 
         // Find list of gather neighbours
@@ -1583,7 +1585,8 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
     //=============================================================================================
 
     // Check that new positions don't fall outside the domain box
-    sphint->CheckBoundaries(simbox, sph);
+    //sphint->CheckBoundaries(simbox, sph);
+    sphint->CheckBoundaries(localBox, sph);
 
   }
   //================================================================================================

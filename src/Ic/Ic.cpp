@@ -30,6 +30,47 @@ using namespace std;
 
 
 
+//=================================================================================================
+//  Ic::CalculateMassInBox
+/// Calculates total mass throughout volume of given box.
+//=================================================================================================
+template <int ndim>
+FLOAT Ic<ndim>::CalculateMassInBox
+ (const int grid[ndim],
+  const Box<ndim> &box)
+{
+  FLOAT dr[ndim];
+  FLOAT r[ndim];
+  FLOAT rho;
+  FLOAT mtot = (FLOAT) 0.0;
+  FLOAT dV = 1.0;
+
+  for (int k=0; k<ndim; k++) {
+    dr[k] = (box.boxmax[k] - box.boxmin[k]) / (FLOAT) grid[k];
+    dV *= dr[k];
+  }
+
+  if (ndim == 3) {
+
+    for (int i=0; i<grid[0]; i++) {
+      r[0] = box.boxmin[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
+      for (int j=0; j<grid[1]; j++) {
+        r[1] = box.boxmin[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
+        for (int k=0; k<grid[2]; k++) {
+          r[2] = box.boxmin[2] + ((FLOAT) k + (FLOAT) 0.5)*dr[2];
+          rho = this->GetValue("rho", r);
+          mtot += rho;
+        }
+      }
+    }
+
+    mtot *= dV;
+
+  }
+
+  return mtot;
+}
+
 
 //=================================================================================================
 //  Ic::CalculateMassTable
