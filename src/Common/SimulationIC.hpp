@@ -58,7 +58,6 @@ void Simulation<ndim>::GenerateIC(void)
 
   debug2("[Simulation::GenerateIC]");
 
-std::cout << "IC : " << ic << "  " << restart << std::endl;
 
   // First, check special case of restarting a simulation, in which case
   // determine the name of the last snapshot file to be re-read
@@ -83,7 +82,6 @@ std::cout << "IC : " << ic << "  " << restart << std::endl;
     }
   }
 
-std::cout << "IC : " << ic << "  " << std::endl;
 
   // If not a restart, generate initial conditions either from external file or created on the fly.
   //-----------------------------------------------------------------------------------------------
@@ -92,6 +90,11 @@ std::cout << "IC : " << ic << "  " << std::endl;
     rescale_particle_data = true;
     this->initial_h_provided = false;
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ic == "filament") {
+    icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "polytrope") {
@@ -184,10 +187,10 @@ std::cout << "IC : " << ic << "  " << std::endl;
       icGenerator->TurbIsothermSphere();
     }
     else if (ic == "evrard"){
-      icGenerator->EvrardCollapse() ;
+      icGenerator->EvrardCollapse();
     }
     else if (ic == "dustybox"){
-      icGenerator->DustyBox() ;
+      icGenerator->DustyBox();
     }
     else if (ic == "python") {
       return;

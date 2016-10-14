@@ -1,6 +1,6 @@
 //=================================================================================================
-//  SilccIc.cpp
-//  Class for generating initial conditions for SILCC-like simulations.
+//  FilamentIc.cpp
+//  Class for generating initial conditions for simple filaments.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -31,78 +31,74 @@ using namespace std;
 
 
 //=================================================================================================
-//  Silcc::Silcc
-/// Set-up SILCC-type simulation initial conditions.
+//  Filament::Filament
+/// Set-up Filament-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
+FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
   Ic<ndim>(_sim, _hydro, _invndim)
 {
   FLOAT mu_bar = simparams->floatparams["mu_bar"];
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
 
-  // Create local copies of initial conditions parameters
-  a_midplane   = simparams->floatparams["a_midplane"];
-  h_midplane   = simparams->floatparams["h_midplane"];
-  rho_midplane = simparams->floatparams["rho_midplane"];
-  sigma_star   = simparams->floatparams["sigma_star"];
-  z_d          = simparams->floatparams["z_d"];
-  temp0        = simparams->floatparams["temp0"];
+  // Hard-wired (for now) constants + other parameters
+  aconst    = (FLOAT) 10.9;
+  n0        = (FLOAT) 7.1e4;
+  rho0      = (FLOAT) 1000.0*m_hydrogen*mu_bar*n0;
+  r0        = (FLOAT) 0.027;
+  Rfilament = (FLOAT) 0.075;
+  Lfilament = (FLOAT) 1.6;
+  temp0     = simparams->floatparams["temp0"];
+
 
   // Some sanity checking to ensure correct units are used for these ICs
   if (simparams->stringparams["routunit"] != "pc") {
     ExceptionHandler::getIstance().raise("r unit not set to pc");
   }
-  if (simparams->stringparams["sigmaoutunit"] != "m_sun_pc2") {
-    ExceptionHandler::getIstance().raise("sigma unit not set to m_sun_pc2");
+  if (simparams->stringparams["rhooutunit"] != "g_cm3") {
+    ExceptionHandler::getIstance().raise("sigma unit not set to g_cm3");
   }
 
   // Convert any parameters to code units
-  a_midplane   /= simunits.r.outscale;
-  h_midplane   /= simunits.r.outscale;
-  rho_midplane /= simunits.rho.outscale;
-  sigma_star   /= simunits.sigma.outscale;
-  z_d          /= simunits.r.outscale;
-  temp0        /= simunits.temp.outscale;
+  Rfilament /= simunits.r.outscale;
+  Lfilament /= simunits.r.outscale;
+  r0        /= simunits.r.outscale;
+  rho0      /= simunits.rho.outscale;
+  temp0     /= simunits.temp.outscale;
 
   // Compute initial internal energy of all particles
   u0 = temp0/gammaone/mu_bar;
 
-  // Compute total mass of particles in simulation box by integrating in the z-direction
-  box_area = (FLOAT) 1.0;
-  for (int k=0; k<ndim-1; k++) box_area *= simbox.boxsize[k];
-  rho_star  = (FLOAT) 0.25*sigma_star/z_d;
-  rho_a     = rho_midplane*exp(-a_midplane*a_midplane/h_midplane/h_midplane);
-  m_exp     = (FLOAT) 0.5*sqrt(pi)*rho_midplane*h_midplane*erf(a_midplane/h_midplane)*box_area;
-  m_uniform = rho_a*box_area*(simbox.boxmax[ndim-1] - a_midplane);
-  m_box     = 2.0*(m_exp + m_uniform);
+  // Compute total mass inside simulation box
+  int grid[ndim];
+  if (ndim == 3) {
+    grid[0] = 512;
+    grid[1] = 512;
+    grid[2] = 2048;
+  }
+  Box<ndim> box;
+  for (int k=0; k<ndim; k++) box.boxmin[k] = simbox.boxmin[k];
+  for (int k=0; k<ndim; k++) box.boxmax[k] = simbox.boxmax[k];
+  mtot = this->CalculateMassInBox(grid, box);
 
-  FLOAT sigma_gas = m_box/box_area;
+  std::cout << "rho0 : " << rho0*simunits.rho.outscale << " " << simunits.rho.outunit << std::endl;
+  std::cout << "mtot : " << mtot*simunits.m.outscale << " " << simunits.m.outunit << std::endl;
 
-
-  // Generate mass table
-  this->CalculateMassTable("z", simbox.boxmin[ndim-1], simbox.boxmax[ndim-1]);
-  cout << "Compare masses;  m_box : " << m_box <<  "    m_table : " << this->mTable[this->Ntable-1]*box_area << endl;
-
-
-  // TESTING :
-  //m_box = 1.2*0.5*box_area + 0.8*0.5*box_area;
-  cout << "m_box : " << m_box << "   m_exp : " << m_exp << "   m_uniform : " << m_uniform << endl;
-  cout << "rho_midplane : " << rho_midplane*simunits.rho.outscale << "   rho_star : " << rho_star*simunits.rho.outscale << endl;
-  cout << "rho_a : " << rho_a*simunits.rho.outscale << "   " << "    box_area : " <<  box_area << endl;
-  cout << "a_midplane : " << a_midplane << "   " << h_midplane << "   " << endl;
-  cout << "sigma_gas : " << sigma_gas*simunits.sigma.outscale << endl;
+  FLOAT vol = pi*Rfilament*Rfilament*Lfilament;
+  std::cout << "volume : " << vol*simunits.r.outscale*simunits.r.outscale*simunits.r.outscale
+            << " pc^3" << std::endl;
+  std::cout << "Uniform mass : " << rho0*vol*simunits.m.outscale << " " << simunits.m.outunit << std::endl;
 
 }
 
 
 
 //=================================================================================================
-//  Silcc::Generate
-/// Set-up SILCC-type simulation initial conditions.
+//  Filament::Generate
+/// Set-up Filament-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-void SilccIc<ndim>::Generate(void)
+void FilamentIc<ndim>::Generate(void)
 {
   // Only compile for 3-dimensional case
   //-----------------------------------------------------------------------------------------------
@@ -110,39 +106,43 @@ void SilccIc<ndim>::Generate(void)
 
     int i;                               // Particle counter
     int k;                               // Dimension counter
-    FLOAT mp;                            // Mass of individual particle
-    FLOAT z;                             // z-position of newly inserted particle
+    FLOAT *r;
 
     // Create local copies of initial conditions parameters
     int Npart          = simparams->intparams["Nhydro"];
     FLOAT gammaone     = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
 
-    debug2("[SilccIc::Generate]");
+    debug2("[FilamentIc::Generate]");
 
 
     // Allocate local and main particle memory
     hydro->Nhydro = Npart;
     sim->AllocateParticleMemory();
-    mp = m_box / (FLOAT) Npart;
+    mp = 0.8*mtot / (FLOAT) Npart;
 
     std::cout << "Nhydro : " << Npart << std::endl;
+
+    FLOAT Rsqd;
+    r = new FLOAT[ndim*Npart];
+    //this->AddRandomBox(Npart, simbox, r, sim->randnumb);
 
 
     // Record particle properties in main memory
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
 
-      part.r[0] = simbox.boxmin[0] + simbox.boxsize[0]*sim->randnumb->floatrand();
-      part.r[1] = simbox.boxmin[1] + simbox.boxsize[1]*sim->randnumb->floatrand();
-      part.r[2] = this->FindMassIntegratedPosition(sim->randnumb->floatrand());
+      do {
+        part.r[0] = Rfilament*(1.0 - 2.0*sim->randnumb->floatrand());
+        part.r[1] = Rfilament*(1.0 - 2.0*sim->randnumb->floatrand());
+        part.r[2] = 0.5*Lfilament*(1.0 - 2.0*sim->randnumb->floatrand());
+        Rsqd = part.r[0]*part.r[0] + part.r[1]*part.r[1];
+      } while (Rsqd > Rfilament*Rfilament);
 
-
+      //for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
       for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
       part.m = mp;
-      part.u = (FLOAT) 1.5;
-      //part.h = hydro->h_fac*powf(mp/rho,invndim);
+      part.u = u0;
       part.ptype = gas_type;
-
     }
 
   }
@@ -154,11 +154,11 @@ void SilccIc<ndim>::Generate(void)
 
 
 //=================================================================================================
-//  Silcc::GetValue
+//  Filament::GetValue
 /// Returns the value of the requested quantity at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT SilccIc<ndim>::GetValue
+FLOAT FilamentIc<ndim>::GetValue
  (const std::string var,
   const FLOAT r[ndim])
 {
@@ -172,21 +172,24 @@ FLOAT SilccIc<ndim>::GetValue
     return r[2];
   }
   else if (var == "rho") {
-    if (fabs(r[ndim-1]) <= a_midplane) {
-      return rho_midplane*exp(-r[ndim-1]*r[ndim-1]/h_midplane/h_midplane);
+    FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
+    FLOAT rad = sqrt(r[0]*r[0] + r[1]*r[1] + r[2]*r[2]);
+    FLOAT z = r[2];
+    if (R < Rfilament && fabs(z) < Lfilament) {
+      return rho0 / ((FLOAT) 1.0 + powf(rad/r0,2) + powf(z/(aconst*r0),2));
     }
     else {
-      return rho_a;
+      return (FLOAT) 0.0;
     }
   }
   else {
-    std::cout << "Invalid string variable for Silcc::GetValue" << std::endl;
+    std::cout << "Invalid string variable for Filament::GetValue" << std::endl;
     return 0.0;
   }
 }
 
 
 
-template class SilccIc<1>;
-template class SilccIc<2>;
-template class SilccIc<3>;
+template class FilamentIc<1>;
+template class FilamentIc<2>;
+template class FilamentIc<3>;
