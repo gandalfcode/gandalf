@@ -60,6 +60,7 @@ MeshlessFVTree<ndim,ParticleType>::MeshlessFVTree
 
 
 
+
 //=================================================================================================
 //  MeshlessFVTree::~MeshlessFVTree
 /// MeshlessFVTree destructor.  Deallocates tree memory upon object destruction.
@@ -584,7 +585,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   tree->UpdateAllHmaxValues(mfvdata);
   //if (ghosttree->Ntot > 0) ghosttree->UpdateAllHmaxValues(ghosttree->celldata[0], mfvdata);
 
-
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro, Ntot)
@@ -715,9 +715,19 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
           if (drsqd < hrangesqdi || drsqd < neibpart[jj].hrangesqd) {
             mfvlist[Nhydroaux++] = jj;
           }
-
         }
         //-----------------------------------------------------------------------------------------
+
+        // Don't do the flux calculation if:
+        //  1) We're going to flag this particle for needing a smaller time-step
+        //  2) All fluxes are provided by neighbours
+        if (level_diff_max > 0 &&
+            (activepart[j].levelneib - activepart[j].level) > level_diff_max) {
+          Nrecalc++;
+          continue;
+        }
+        if (Nhydroaux == 0)
+          continue ;
 
         // Compute all neighbour contributions to hydro fluxes
         mfv->ComputeGodunovFlux(i, Nhydroaux, mfvlist, timestep, activepart[j], neibpart);
@@ -728,7 +738,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
       // Accumulate fluxes for neighbours
       for (int jj=0; jj<Nneib; jj++) {
-        i = neiblist[jj] ;
+        i = neiblist[jj];
         if (!neibpart[jj].flags.is_mirror()) {
           for (int k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
           for (int k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
@@ -758,6 +768,19 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
         }
         for (int k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
       }
+    }
+
+
+#ifdef _OPENMP
+    int Nthreads = omp_get_num_threads() ;
+#else
+    int Nthreads = 1 ;
+#endif
+#pragma omp barrier
+#pragma omp for schedule(static)
+    for(i=0; i<Ntot; ++i) {
+      for (k=0; k < Nthreads; ++k)
+        mfvdata[i].levelneib = max(mfvdata[i].levelneib, levelneibbuf[k][i]) ;
     }
 
     // Free-up local memory for OpenMP thread

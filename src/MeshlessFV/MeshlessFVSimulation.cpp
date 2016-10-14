@@ -394,6 +394,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   //if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || sim == "godunov_hydro") {
     sinks->timing    = timing;
     mfvneib->SetTimingObject(timing);
+    mfv->timing = timing;
   //}*/
 
 #if defined MPI_PARALLEL
@@ -674,9 +675,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
-
-  if (time_step_limiter_type == "conservative")
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv->Nhydro, mfv->Ntot, partdata) ;
 
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
 #ifdef MPI_PARALLEL

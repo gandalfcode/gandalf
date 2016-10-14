@@ -94,8 +94,8 @@ public:
 	  _need_mirrors = false ;
 	  for (int k=0; k < ndim; k++){
 		_centre[k] = cell.rcell[k] ;
-		_cell.min[k] = cell.bbox.min[k] ;
-		_cell.max[k] = cell.bbox.max[k] ;
+		_cell.min[k] = cell.bb.min[k] ;
+		_cell.max[k] = cell.bb.max[k] ;
         _hbox.min[k] = cell.hbox.min[k] ;
         _hbox.max[k] = cell.hbox.max[k] ;
         _vbox.min[k] = cell.vbox.min[k] ;

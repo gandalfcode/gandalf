@@ -60,12 +60,15 @@ MeshlessFV<ndim>::MeshlessFV(int _hydro_forces, int _self_gravity, FLOAT _accel_
   // Local references to parameter variables for brevity
   map<string, int> &intparams = params->intparams;
   map<string, double> &floatparams = params->floatparams;
-  //map<string, string> &stringparams = params->stringparams;
+  map<string, string> &stringparams = params->stringparams;
 
   Nhydromax       = intparams["Nhydromax"];
   create_sinks    = intparams["create_sinks"];
   fixed_sink_mass = intparams["fixed_sink_mass"];
   msink_fixed     = floatparams["m1"];
+
+  timestep_limiter = stringparams["time_step_limiter"] ;
+
 }
 
 
@@ -245,6 +248,7 @@ void MeshlessFV<ndim>::IntegrateParticles
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
 {
   debug2("[MeshlessFV::IntegrateParticles]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_INTEGRATE_PARTICLES");
 
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
@@ -357,7 +361,7 @@ void MeshlessFV<ndim>::EndTimestep
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
 {
   debug2("[MeshlessFV::EndTimestep]");
-  //timing->StartTimingSection("MFV_END_TIMESTEP");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
@@ -432,7 +436,77 @@ void MeshlessFV<ndim>::EndTimestep
   return;
 }
 
+//=================================================================================================
+//  MeshlessFV<ndim>::EndTimestep
+/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
+//=================================================================================================
+template <int ndim>
+int MeshlessFV<ndim>::CheckTimesteps
+(const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
+ const int level_step,                ///< [in] Level of base timestep
+ const int n,                         ///< [in] Integer time in block time struct
+ const int Npart,                     ///< [in] Number of particles
+ double timestep,                     ///< [in] Timestep
+ MeshlessFVParticle<ndim>* mfvdata,
+ int mode_)
+ {
+  int dn;                              // Integer time since beginning of step
+  int level_new;                       // New timestep level
+  int nnewstep;                        // New integer timestep
+  int activecount = 0;                 // No. of newly active particles
+  int i;                               // Particle counter
 
+  debug2("[MeshlessFV::CheckTimesteps]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MESHLESS_CHECK_TIMESTEPS");
+
+  const int mode = mode_ ;
+  if (mode == 1 && (timestep_limiter != "simple")) return 0 ;
+
+  const double tstep = timestep ;
+  //-----------------------------------------------------------------------------------------------
+  #pragma omp parallel for default(none) private(dn,i,level_new,nnewstep) \
+    shared(mfvdata,cout) reduction(+:activecount)
+  for (i=0; i<Npart; i++) {
+    MeshlessFVParticle<ndim>& part = mfvdata[i];
+    if (part.flags.is_dead()) continue;
+
+    dn = n - part.nlast;
+
+    // Check if neighbour timesteps are too small.  If so, then reduce timestep if possible
+    if (part.levelneib - part.level > level_diff_max) {
+      level_new = part.levelneib - level_diff_max;
+      nnewstep  = pow(2,level_step - level_new);
+
+      // Force recalculation of fluxes for particles at the end of their step
+      if (mode == 0) {
+        if(dn == 0) {
+          part.nstep = nnewstep ;
+          part.level = level_new;
+          part.flags.set_flag(active);
+          activecount++;
+        }
+      }
+      // Saitoh & Makino type reactive limiting
+      //   Note: The current timestep ends at dn+1
+      else if (mode == 1) {
+        if(dn%nnewstep == 0 && dn != part.nstep) {
+          part.nstep = dn;
+          part.level = level_new;
+          double dt = part.nstep * tstep ;
+
+          // Use current predicted value for dQ
+          for (int var=0; var<nvar; var++)
+            part.dQ[var] = dt * part.dQdt[var];
+
+          part.flags.set_flag(active);
+        }
+      }
+    }
+  }
+    //-----------------------------------------------------------------------------------------------
+
+  return activecount;
+ }
 
 //=================================================================================================
 //  MeshlessFV::UpdateArrayVariables

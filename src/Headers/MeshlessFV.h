@@ -135,6 +135,9 @@ public:
   void InitialSmoothingLengthGuess(void);
   void IntegrateParticles(const int, const int, const FLOAT, const FLOAT,
                           const DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
+  int CheckTimesteps(const int, const int, const int, const int, double,
+                     MeshlessFVParticle<ndim>*, int);
+
   FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &, FLOAT [nvar]);
@@ -168,9 +171,10 @@ public:
   FLOAT hmin_sink;                     ///< Minimum smoothing length of sinks
   string riemann_solver;               ///< Selected Riemann solver
   string slope_limiter;                ///< Selected slope limiter
-  //MeshlessFVType MeshlessFVtype[Ntypes];        ///< Array of MeshlessFV types
+  string timestep_limiter;            ///< Time of limiter used for block timesteps
 
   MeshlessFVParticle<ndim> *hydrodata;
+  CodeTiming* timing;
 
 };
 
