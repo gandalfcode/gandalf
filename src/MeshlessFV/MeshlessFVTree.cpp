@@ -765,9 +765,10 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
           if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].flags.is_dead()) continue ;
 
           bool need_fluxes =
-              neibpart[jj].flags.is_mirror() ||
-              activepart[j].level > neibpart[jj].level ||
-              activepart[j].iorig < neibpart[jj].iorig ;
+              (neibpart[jj].flags.is_mirror()) ||
+              (activepart[j].level > neibpart[jj].level) ||
+              (activepart[j].level == neibpart[jj].level &&
+               activepart[j].iorig < neibpart[jj].iorig) ;
 
           if (not need_fluxes) continue ;
 
