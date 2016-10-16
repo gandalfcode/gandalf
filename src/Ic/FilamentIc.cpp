@@ -72,8 +72,8 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
   // Compute total mass inside simulation box
   int grid[ndim];
   if (ndim == 3) {
-    grid[0] = 512;
-    grid[1] = 512;
+    grid[0] = 256;
+    grid[1] = 256;
     grid[2] = 2048;
   }
   Box<ndim> box;
@@ -118,7 +118,7 @@ void FilamentIc<ndim>::Generate(void)
     // Allocate local and main particle memory
     hydro->Nhydro = Npart;
     sim->AllocateParticleMemory();
-    mp = 0.8*mtot / (FLOAT) Npart;
+    mp = 1.0*mtot / (FLOAT) Npart;
 
     std::cout << "Nhydro : " << Npart << std::endl;
 
@@ -173,10 +173,13 @@ FLOAT FilamentIc<ndim>::GetValue
   }
   else if (var == "rho") {
     FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
-    FLOAT rad = sqrt(r[0]*r[0] + r[1]*r[1] + r[2]*r[2]);
+    FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
     FLOAT z = r[2];
     if (R < Rfilament && fabs(z) < Lfilament) {
-      return rho0 / ((FLOAT) 1.0 + powf(rad/r0,2) + powf(z/(aconst*r0),2));
+      return rho0 / ((FLOAT) 1.0 + radsqd/r0/r0 + z*z/r0/r0/aconst/aconst);
+      //return rho0 / ((FLOAT) 1.0 + radsqd/r0/r0);
+      //return rho0;
+      //return rho0 / ((FLOAT) 1.0 + z*z/r0/r0/aconst/aconst);
     }
     else {
       return (FLOAT) 0.0;
