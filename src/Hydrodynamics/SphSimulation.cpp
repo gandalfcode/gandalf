@@ -1500,8 +1500,9 @@ template <int ndim>
 void SphSimulation<ndim>::RegulariseParticleDistribution
  (const int Nreg)                                  ///< [in] No. of regularisation steps
 {
-  FLOAT alphaReg = 0.05;                            // Particle displacement magnitude
-  FLOAT rhoReg = 0.4;                              // ..
+  FLOAT alphaReg = 0.0;                            // ..
+  FLOAT alphaRegMax = 0.1;                         // Particle displacement magnitude
+  FLOAT rhoReg = 0.5;                              // ..
   FLOAT *rreg = new FLOAT[ndim*sph->Nhydromax];    // Array of particle positions
   SphParticle<ndim> *partdata = sph->GetSphParticleArray();
 
@@ -1515,6 +1516,11 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
   for (int ireg=0; ireg<Nreg; ireg++) {
 
     //if (ireg%10 == 0) cout << "REGULARISE : " << ireg << "   " << Nreg << endl;
+
+    // Increase alphaReg for last few iterations to improve particle order
+    if (ireg >= Nreg - 20) {
+      alphaReg = (FLOAT) (ireg + 21 - Nreg)*alphaRegMax / 20.0;
+    }
 
     // Buid/re-build tree, create ghosts and update particle properties
     rebuild_tree = true;
@@ -1556,9 +1562,9 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
           //for (k=0; k<ndim; k++) rreg[ndim*i + k] -= dr[k]*sph->kernp->w0_s2(drsqd*invhsqd);
 
           FLOAT rhotrue = icGenerator->GetValue("rho", neibpart.r);
-          FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue);
-          rhofrac = max(rhofrac, -0.5);
-          rhofrac = min(rhofrac, 1.0);
+          FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue + small_number);
+          rhofrac = max(rhofrac, -0.1);
+          rhofrac = min(rhofrac, 10.0);
           //cout << "rhotrue : " << icGenerator->GetValue("rho", neibpart.r) << "   " << neibpart.rho << endl;
 
           for (k=0; k<ndim; k++) {
@@ -1570,6 +1576,12 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
         //-----------------------------------------------------------------------------------------
         //cout << "rreg[" << i << "] : " << rreg[ndim*i] << "   " << rreg[ndim+i+1] << "   "
           //   << part.rho << "   " << icGenerator->GetValue("rho", part.r) << endl;;
+
+        for (int k=0; k<ndim; k++) {
+          rreg[ndim*i + k] = min(rreg[ndim*i + k], simbox.boxsize[k]);
+          rreg[ndim*i + k] = max(rreg[ndim*i + k], -simbox.boxsize[k]);
+        }
+
       }
       //-------------------------------------------------------------------------------------------
 
