@@ -89,9 +89,9 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   FLOAT Aij[ndim];                     // Pseudo 'Area' vector
   FLOAT Aunit[ndim];                   // ..
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
-  FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
+  //FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
   FLOAT drsqd;                         // Distance squared
-  FLOAT invdrmagaux;                   // 1 / distance
+  //FLOAT invdrmagaux;                   // 1 / distance
   FLOAT psitildai[ndim];               // Normalised gradient psi value for particle i
   FLOAT psitildaj[ndim];               // Normalised gradient psi value for neighbour j
   FLOAT rface[ndim];                   // Position of working face (to compute Godunov fluxes)
@@ -103,23 +103,21 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   FLOAT gradW[nvar][ndim];             // Gradient of primitive vector
   FLOAT dW[nvar];                      // Change in primitive quantities
   const FLOAT dt = timestep*(FLOAT) part.nstep;    // Timestep of given particle
-
-
-  FLOAT invh_i   = 1/part.h;
-  FLOAT volume_i = 1/part.ndens;
+  const FLOAT invh_i   = 1.0/part.h;
+  const FLOAT volume_i = 1.0/part.ndens;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
-    FLOAT invh_j   = 1/neibpart[j].h;
-    FLOAT volume_j = 1/neibpart[j].ndens;
+    const FLOAT invh_j   = (FLOAT) 1.0/neibpart[j].h;
+    const FLOAT volume_j = (FLOAT) 1/neibpart[j].ndens;
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     drsqd = DotProduct(draux, draux, ndim);
-    invdrmagaux = (FLOAT) 1.0/sqrt(drsqd + small_number);
-    for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
+    //invdrmagaux = (FLOAT) 1.0/sqrt(drsqd + small_number);
+    //for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
 
     // Calculate psitilda values
     for (k=0; k<ndim; k++) {
@@ -134,7 +132,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
       Aij[k] = volume_i*psitildaj[k] - volume_j*psitildai[k];
     }
 
-    FLOAT Amag = sqrt(DotProduct(Aij, Aij, ndim));
+    FLOAT Amag = sqrt(DotProduct(Aij, Aij, ndim) + small_number);
     for (k=0; k<ndim; k++) Aunit[k] = Aij[k] / Amag;
 
     // Calculate position and velocity of the face
@@ -175,20 +173,26 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     Wi[ipress] = max(Wi[ipress], small_number);
     Wj[ipress] = max(Wj[ipress], small_number);
 
-    assert(Wi[irho] > 0.0);
+    assert(isnormal(Wi[irho]));
+    assert(isnormal(Wi[ipress]));
+    assert(isnormal(Wj[irho]));
+    assert(isnormal(Wj[ipress]));
+    /*assert(Wi[irho] > 0.0);
     assert(Wi[ipress] > 0.0);
     assert(Wj[irho] > 0.0);
-    assert(Wj[ipress] > 0.0);
+    assert(Wj[ipress] > 0.0);*/
 
     // Calculate Godunov flux using the selected Riemann solver
-    if (RiemannSolverType == exact)
+    if (RiemannSolverType == exact) {
       riemannExact.ComputeFluxes(Wj, Wi, Aunit, vface, flux);
-    else
+    }
+    else {
       riemannHLLC.ComputeFluxes(Wj, Wi, Aunit, vface, flux);
+    }
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      double f = DotProduct(flux[var], Aij, ndim);
+      const FLOAT f = DotProduct(flux[var], Aij, ndim);
       part.dQ[var] += f*dt;
       part.dQdt[var] += f;
       neibpart[j].dQ[var] -= f*dt;
@@ -270,4 +274,3 @@ template class MfvMuscl<3, QuinticKernel, GizmoLimiter<3,MeshlessFVParticle> >;
 template class MfvMuscl<1, TabulatedKernel, GizmoLimiter<1,MeshlessFVParticle> >;
 template class MfvMuscl<2, TabulatedKernel, GizmoLimiter<2,MeshlessFVParticle> >;
 template class MfvMuscl<3, TabulatedKernel, GizmoLimiter<3,MeshlessFVParticle> >;
-
