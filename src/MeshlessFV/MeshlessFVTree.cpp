@@ -1116,8 +1116,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k] = activepart[j].a[k];
-        partdata[i].gpot  = activepart[j].gpot;
+        for (k=0; k<ndim; k++) partdata[i].a[k] += activepart[j].a[k];
+        partdata[i].gpot  += activepart[j].gpot;
       }
 
     }

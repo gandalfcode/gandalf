@@ -207,12 +207,14 @@ class MeshlessCommunicationHandler {
 
       for (int k=0; k<ndim; k++) {
     	  rdmdt[k]=p.rdmdt[k];
+    	  a[k]=p.a[k];
       }
       for (int ivar=0; ivar<ndim+2; ivar++) {
     	  dQ[ivar]=p.dQ[ivar];
     	  dQdt[ivar]=p.dQdt[ivar];
       }
       iorig = p.iorig;
+      gpot = p.gpot;
 
     }
 
@@ -220,6 +222,8 @@ class MeshlessCommunicationHandler {
     FLOAT dQ[ndim+2];
     FLOAT dQdt[ndim+2];
     FLOAT rdmdt[ndim];
+    FLOAT a[ndim];
+    FLOAT gpot;
   };
 
 public:
@@ -231,12 +235,15 @@ public:
 
 	    for (int k=0; k<ndim; k++) {
 	      p2.rdmdt[k] += p.rdmdt[k];
+	      p2.a[k] += p.a[k];
 	    }
 
 	    for (int ivar=0; ivar<ndim+2; ivar++) {
 	    	  p2.dQ[ivar]+=p.dQ[ivar];
 	    	  p2.dQdt[ivar]+=p.dQdt[ivar];
 	    }
+
+	    p2.gpot += p.gpot;
   }
 
   void ReceiveParticle (void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
@@ -269,6 +276,7 @@ public:
 
   p2.m = p.m;
   p2.ndens = p.ndens;
+  p2.gpot = 0.0;
 
   //Recompute h dependent stuff
   p2.rho = p2.ndens*p2.m;
