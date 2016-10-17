@@ -799,7 +799,7 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Find minimum timestep from all hydro particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) private(i) shared(dt_min)
+#pragma omp parallel default(none) private(i,dt) shared(dt_min)
     {
       dt       = big_number_dp;           // Aux. minimum timestep
       DOUBLE dt_nbody = big_number_dp;           // Aux. minimum N-body timestep
