@@ -13,7 +13,7 @@ Select shocktube initial conditions         : ic = bb
 Input file format                           : in_file_form = su
 Output file format                          : out_file_form = su
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nhydro = 10000
+No. of SPH particles                        : Nhydro = 8000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037
@@ -69,6 +69,7 @@ Switch-on self-gravity of gas               : self_gravity = 1
 #----------------------------------------
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
+Tabulate SPH kernel                         : tabulated_kernel = 1
 
 
 #---------------------------------
@@ -79,14 +80,14 @@ Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
 
+
 #---------------------------------
 # Finite-Volume options
 #---------------------------------
 Riemann solver                              : riemann_solver = exact
 Slope limiter                               : slope_limiter = balsara2004
-Finite mass scheme?                         : zero_mass_flux = 0
+Finite mass scheme?                         : zero_mass_flux = 1
 Fix particle positions?                     : static_particles = 0
-
 
 
 #----------------------
@@ -124,9 +125,3 @@ Tree re-build frequency                     : ntreebuildstep = 1
 No. of particles in leaf cell               : Nleafmax = 6
 Tree opening angle (squared)                : thetamaxsqd = 0.15
 Multipole option                            : multipole = fast_monopole
-
-
-#---------------------
-# Optimisation options
-#---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 1

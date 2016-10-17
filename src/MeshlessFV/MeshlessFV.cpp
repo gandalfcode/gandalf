@@ -250,10 +250,10 @@ void MeshlessFV<ndim>::IntegrateParticles
   //-----------------------------------------------------------------------------------------------
   for (int i=0; i<Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
-    //if (part.flags.is_dead()) continue;
+    if (part.flags.is_dead()) continue;
 
-    dn = n - part.nlast;
-    FLOAT dt = dn * timestep;
+    const int dn = n - part.nlast;
+    const FLOAT dt = timestep*(FLOAT) dn;
     FLOAT Qcons[nvar];
 
     if (dn == part.nstep) {
@@ -267,10 +267,15 @@ void MeshlessFV<ndim>::IntegrateParticles
     for (int k=0; k<ndim; k++) Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt;
 
 
+    // Some sanity-checking
+    assert(isnormal(Qcons[irho]));
+    assert(isnormal(Qcons[ipress]));
+
+
     // Compute primitive values and update all main array quantities
     this->UpdateArrayVariables(part, Qcons);
     this->ComputeThermalProperties(part);
-    this->UpdatePrimitiveVector(part) ;
+    this->UpdatePrimitiveVector(part);
 
 
     //---------------------------------------------------------------------------------------------
@@ -446,9 +451,12 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOA
   part.u = eos->SpecificInternalEnergy(part);
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
-  assert(part.m > (FLOAT) 0.0);
+  assert(isnormal(part.m));
+  assert(isnormal(part.u));
+  assert(isnormal(part.press));
+  /*assert(part.m > (FLOAT) 0.0);
   assert(part.u > (FLOAT) 0.0);
-  assert(part.press > (FLOAT) 0.0);
+  assert(part.press > (FLOAT) 0.0);*/
 
   return;
 }
