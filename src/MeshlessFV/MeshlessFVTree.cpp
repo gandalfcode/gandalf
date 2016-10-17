@@ -391,6 +391,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
   // Update ghost tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0], mfvdata);
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], mfvdata);
+#ifdef MPI_PARALLEL
+  if (mfv->Nmpighost > 0) mpighosttree->UpdateHmaxValues(mpighosttree->celldata[0],mfvdata);
+#endif
 
 
   // Set-up all OMP threads
@@ -445,6 +448,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
       Nneib = 0;
       Nneib = tree->ComputeNeighbourAndGhostList
         (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
+#ifdef MPI_PARALLEL
+      Nneib = mpighosttree->ComputeNeighbourList(cell,mfvdata,Nneibmax,Nneib,neiblist,neibpart);
+#endif
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour list.
@@ -467,6 +473,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         Nneib = 0;
         Nneib = tree->ComputeNeighbourAndGhostList
           (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
+#ifdef MPI_PARALLEL
+      Nneib = mpighosttree->ComputeNeighbourList(cell,mfvdata,Nneibmax,Nneib,neiblist,neibpart);
+#endif
       };
 
 
@@ -576,7 +585,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
-  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#ifdef OUTPUT_ALL
+  cout << "Time computing gradients : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
 
@@ -608,7 +619,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
-  debug2("[MeshlessFVTree::UpdateGradientMatrices]");
+  debug2("[MeshlessFVTree::UpdateGodunovFluxes]");
   timing->StartTimingSection("MFV_UPDATE_FLUXES");
 
 
@@ -812,7 +823,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #pragma omp barrier
 #pragma omp critical
     {
-      for (i=0; i<Nhydro; i++) {
+    	assert(Ntot == mfv->Ntot);
+      for (i=0; i<Ntot; i++) {
 	    if (mfvdata[i].flags.check_flag(active))
 	      for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
@@ -842,7 +854,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
-  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#ifdef OUTPUT_ALL
+  cout << "Time computing fluxes : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
 

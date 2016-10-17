@@ -312,6 +312,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostTree
   omp_set_nested(1);
 #endif
 
+  if (hydro->Ntot > Ntotmax) {
+	  Ntotmax = hydro->Ntot;
+	  Ntot = hydro->Ntot;
+	  ReallocateMemory();
+  }
+
 
   // For tree rebuild steps
   //-----------------------------------------------------------------------------------------------
@@ -1369,6 +1375,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 
 	  treeptr->Ncell= count/sizeof(TreeCell<ndim>);
 
+#ifdef OUTPUT_ALL
+	  cout << "on rank " << rank << " we received a pruned tree with " << treeptr->Ncell << " from " << i << endl;
+#endif
+
 	  j++;
 
   }
@@ -1414,6 +1424,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
 #ifdef OUTPUT_ALL
   cout << "BUILDING TREE WITH " << hydro->Nmpighost << " MPI GHOSTS!!" << endl;
 #endif
+
+  if (hydro->Ntot > Ntotmax) {
+	  Ntotmax = hydro->Ntot;
+	  Ntot = hydro->Ntot;
+	  ReallocateMemory();
+  }
 
   // For tree rebuild steps
   //-----------------------------------------------------------------------------------------------
@@ -2213,13 +2229,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
 }
 #endif
 
-
-//template class HydroTree<1,SphParticle,KDTreeCell>;
-//template class HydroTree<2,SphParticle,KDTreeCell>;
-//template class HydroTree<3,SphParticle,KDTreeCell>;
-//template class HydroTree<1,SphParticle,OctTreeCell>;
-//template class HydroTree<2,SphParticle,OctTreeCell>;
-//template class HydroTree<3,SphParticle,OctTreeCell>;
 
 template class HydroTree<1,GradhSphParticle,KDTreeCell>;
 template class HydroTree<2,GradhSphParticle,KDTreeCell>;

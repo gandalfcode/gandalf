@@ -72,14 +72,26 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   else {
     this->ComputeBlockTimesteps();
   }
+  //WHY IS THIS HERE?!!!!
   mfv->CopyDataToGhosts(simbox, partdata);
 
+#ifdef MPI_PARALLEL
+  //MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
+  mfvneib->UpdateHydroExportList(rank, mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+
+  mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+  // Update pointer in case there has been a reallocation
+  partdata = mfv->GetMeshlessFVParticleArray();
+#endif
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
     mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
   }
 
+#ifdef MPI_PARALLEL
+  mpicontrol->GetExportedParticlesAccelerations(mfv);
+#endif
   // Advance all global time variables
   n++;
   Nsteps++;
@@ -94,18 +106,47 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Advance N-body particle positions
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
+#ifdef MPI_PARALLEL
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    mfvneib->BuildPrunedTree(rank, mfv->Nhydromax, simbox, mpicontrol->mpinode, partdata);
+    mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
+    mpicontrol->LoadBalancing(mfv, nbody);
+    // Update pointer in case there has been a reallocation
+    partdata = mfv->GetMeshlessFVParticleArray();
+  }
+#endif
+
   // Re-build/re-stock tree now particles have moved
   mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                      mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
-  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                          mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+#ifdef MPI_PARALLEL
+  mfvneib->InitialiseCellWorkCounters();
+#endif
 
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     tghost = timestep*(FLOAT) (ntreebuildstep - 1);
     mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-    mfv->CopyDataToGhosts(simbox, partdata);
+    // Update pointer in case there has been a reallocation
+    partdata = mfv->GetMeshlessFVParticleArray();
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                             mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+    // Re-build and communicate the new pruned trees (since the trees will necessarily change
+    // once there has been communication of particles to new domains)
+#ifdef MPI_PARALLEL
+      mfvneib->BuildPrunedTree(rank, mfv->Nhydromax, simbox, mpicontrol->mpinode, partdata);
+      mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
+      MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
+      // Update pointer in case there has been a reallocation
+      partdata = mfv->GetMeshlessFVParticleArray();
+      mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                                 mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+#endif
+  }
+  else {
+	  LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
+#ifdef MPI_PARALLEL
+	  MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#endif
   }
 
 
@@ -207,17 +248,24 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Update all active cell counters in the tree
   mfvneib->UpdateActiveParticleCounters(partdata, mfv);
 
+  mfv->CopyDataToGhosts(simbox, partdata);
+#ifdef MPI_PARALLEL
+  MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#endif
+
 
   //Calculate all properties (and copy updated data to ghost particles)
   mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
+#ifdef MPI_PARALLEL
+  MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#endif
 
   // Calculate all matrices and gradients (and copy updated data to ghost particles)
   // TODO:
   //   Compute gradients for all cells neighbouring active ones (use levelneib?).
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
-
 
   /* Check that we have sensible smoothing lengths */
   if (periodicBoundaries) {

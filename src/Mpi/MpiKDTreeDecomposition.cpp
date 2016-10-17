@@ -523,3 +523,6 @@ template class MpiKDTreeDecomposition<3, GradhSphParticle>;
 template class MpiKDTreeDecomposition<1, SM2012SphParticle>;
 template class MpiKDTreeDecomposition<2, SM2012SphParticle>;
 template class MpiKDTreeDecomposition<3, SM2012SphParticle>;
+template class MpiKDTreeDecomposition<1, MeshlessFVParticle>;
+template class MpiKDTreeDecomposition<2, MeshlessFVParticle>;
+template class MpiKDTreeDecomposition<3, MeshlessFVParticle>;

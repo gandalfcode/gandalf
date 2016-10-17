@@ -411,6 +411,7 @@ void MeshlessFV<ndim>::EndTimestep
       for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
       for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
+      for (k=0; k<ndim; k++) part.rdmdt[k] = 0.0;
       for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
 
     }
@@ -426,20 +427,6 @@ void MeshlessFV<ndim>::EndTimestep
   //timing->EndTimingSection("MFV_END_TIMESTEP");
 
   return;
-}
-
-
-
-//=================================================================================================
-//  MeshlessFV::UpdatePrimitiveVector
-/// Updates the primitive vector from particle quantities.
-//=================================================================================================
-template <int ndim>
-void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
-{
-  for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
-  part.Wprim[irho] = part.rho;
-  part.Wprim[ipress] = part.press;
 }
 
 
