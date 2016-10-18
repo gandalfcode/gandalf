@@ -824,7 +824,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #pragma omp barrier
 #pragma omp critical
     {
-    	assert(Ntot == mfv->Ntot);
       for (i=0; i<Ntot; i++) {
 	    if (mfvdata[i].flags.check_flag(active))
 	      for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
