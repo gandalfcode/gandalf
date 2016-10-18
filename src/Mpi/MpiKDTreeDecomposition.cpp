@@ -147,8 +147,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     mpitree->tree[0].N      = hydro->Nhydro;
     mpitree->tree[0].ifirst = 0;
     mpitree->tree[0].ilast  = hydro->Nhydro - 1;
-    for (k=0; k<ndim; k++) mpitree->tree[0].boxmin[k] = mpibox.min[k];
-    for (k=0; k<ndim; k++) mpitree->tree[0].boxmax[k] = mpibox.max[k];
+    for (k=0; k<ndim; k++) mpitree->tree[0].box.min[k] = mpibox.min[k];
+    for (k=0; k<ndim; k++) mpitree->tree[0].box.max[k] = mpibox.max[k];
     for (i=0; i<hydro->Nhydro; i++) mpitree->inext[i] = -1;
     for (i=0; i<hydro->Nhydro-1; i++) mpitree->inext[i] = i + 1;
     for (i=0; i<hydro->Nhydro; i++) mpitree->ids[i] = i;
@@ -174,8 +174,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
       int icell = mpitree->g2c[inode];
 
       // Create bounding boxes containing particles in each sub-tree
-      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].boxmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].boxmax[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].box.min[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].box.max[k];
 
 #ifdef OUTPUT_ALL
       cout << "CHECKING MPITREE : " << inode << "   " << icell << "   "
@@ -251,8 +251,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
       int icell = mpitree->g2c[inode];
 
       // Create bounding boxes containing particles in each sub-tree
-      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].boxmin[k]; //bbmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].boxmax[k]; //bbmax[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].box.min[k]; //bbmin[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].box.max[k]; //bbmax[k];
     }
 
 #ifdef OUTPUT_ALL
@@ -346,8 +346,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
   // Set MPI tree root node to size of particle bounding box (so load balancing division on
   // each level are iterated in a valid range).
-  for (k=0; k<ndim; k++) mpitree->tree[0].boxmin[k] = partbox.min[k];
-  for (k=0; k<ndim; k++) mpitree->tree[0].boxmax[k] = partbox.max[k];
+  for (k=0; k<ndim; k++) mpitree->tree[0].box.min[k] = partbox.min[k];
+  for (k=0; k<ndim; k++) mpitree->tree[0].box.max[k] = partbox.max[k];
 
 
   // Starting with the highest MpiTree division, start adjusting divisional positions to achieve
@@ -366,24 +366,24 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
 #ifdef OUTPUT_ALL
       cout << "Previous load balancing division for " << c << "    rold : " << rold
-           << "     bb : " << mpitree->tree[c].boxmin[k]<< "   "
-           << mpitree->tree[c].boxmax[k] << "   k_divide : " << k << endl;
+           << "     bb : " << mpitree->tree[c].box.min[k]<< "   "
+           << mpitree->tree[c].box.max[k] << "   k_divide : " << k << endl;
 #endif
 
       // In case of extreme movement of the load balancing positions (perhaps due to latency or
       // large movement of active particles between nodes), then set some arbitary position of
       // the first division guess in order to search for correct division
-      if (mpitree->tree[c].boxmin[k] >= mpitree->tree[c].r_divide ||
-          mpitree->tree[c].boxmax[k] <= mpitree->tree[c].r_divide) {
-        mpitree->tree[c].r_divide = 0.5*(mpitree->tree[c].boxmin[k] + mpitree->tree[c].boxmax[k]);
+      if (mpitree->tree[c].box.min[k] >= mpitree->tree[c].r_divide ||
+          mpitree->tree[c].box.max[k] <= mpitree->tree[c].r_divide) {
+        mpitree->tree[c].r_divide = 0.5*(mpitree->tree[c].box.min[k] + mpitree->tree[c].box.max[k]);
       }
-      assert(mpitree->tree[c].boxmin[k] < mpitree->tree[c].r_divide);
-      assert(mpitree->tree[c].boxmax[k] > mpitree->tree[c].r_divide);
+      assert(mpitree->tree[c].box.min[k] < mpitree->tree[c].r_divide);
+      assert(mpitree->tree[c].box.max[k] > mpitree->tree[c].r_divide);
 
       // Now find new division between child cells that is load-balanced
       mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
         (mpitree->tree[c].k_divide, mpitree->tree[c].r_divide,
-         mpitree->tree[c].boxmin, mpitree->tree[c].boxmax);
+         mpitree->tree[c].box.min, mpitree->tree[c].box.max);
 #ifdef OUTPUT_ALL
       cout << "Moved load balancing division for " << c << "    rold : " << rold
            << "     rnew : " << mpitree->tree[c].r_divide << "    k_divide : "
@@ -399,8 +399,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
       int icell = mpitree->g2c[inode];
 
       // Create bounding boxes containing particles in each sub-tree
-      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].boxmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].boxmax[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.min[k] = mpitree->tree[icell].box.min[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.max[k] = mpitree->tree[icell].box.max[k];
     }
 
   }

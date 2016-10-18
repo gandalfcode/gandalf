@@ -278,8 +278,8 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   // Determine dimension to split the cell along.
   // For now, simply split along direction of the bounding box's longest axis
   for (k=0; k<ndim; k++) {
-    if (cell.boxmax[k] - cell.boxmin[k] > rkmax) {
-      rkmax = cell.boxmax[k] - cell.boxmin[k];
+    if (cell.box.max[k] - cell.box.min[k] > rkmax) {
+      rkmax = cell.box.max[k] - cell.box.min[k];
       k_divide = k;
     }
   }
@@ -292,8 +292,8 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   cell.r_divide = r_divide;
 
   // Set properties of first child cell
-  for (k=0; k<ndim; k++) tree[cell.c1].boxmin[k] = cell.boxmin[k];
-  for (k=0; k<ndim; k++) tree[cell.c1].boxmax[k] = cell.boxmax[k];
+  for (k=0; k<ndim; k++) tree[cell.c1].box.min[k] = cell.box.min[k];
+  for (k=0; k<ndim; k++) tree[cell.c1].box.max[k] = cell.box.max[k];
   tree[cell.c1].N = cell.N/2;
   if (tree[cell.c1].N != 0) {
     tree[cell.c1].ifirst = ifirst;
@@ -301,8 +301,8 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   }
 
   // Set properties of second child cell
-  for (k=0; k<ndim; k++) tree[cell.c2].boxmin[k] = cell.boxmin[k];
-  for (k=0; k<ndim; k++) tree[cell.c2].boxmax[k] = cell.boxmax[k];
+  for (k=0; k<ndim; k++) tree[cell.c2].box.min[k] = cell.box.min[k];
+  for (k=0; k<ndim; k++) tree[cell.c2].box.max[k] = cell.box.max[k];
   tree[cell.c2].N = cell.N - tree[cell.c1].N;
   if (tree[cell.c2].N != 0) {
     tree[cell.c2].ifirst = ifirst + cell.N/2;
@@ -313,11 +313,11 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
 
   // Set new cell boundaries depending on number of particles in cells
   if (tree[cell.c1].N > 0 && tree[cell.c2].N > 0) {
-    tree[cell.c1].boxmax[k_divide] = r_divide;
-    tree[cell.c2].boxmin[k_divide] = r_divide;
+    tree[cell.c1].box.max[k_divide] = r_divide;
+    tree[cell.c2].box.min[k_divide] = r_divide;
   }
   else if (tree[cell.c2].N > 0) {
-    tree[cell.c1].boxmax[k_divide] = -big_number;
+    tree[cell.c1].box.max[k_divide] = -big_number;
   }
 
 
@@ -461,7 +461,7 @@ int MpiTree<ndim,ParticleType>::FindCell
     k_divide = tree[c].k_divide;
 
     // If point is left of divide, pick 1st child cell.  Else pick 2nd child.
-    if (rp[k_divide] < tree[c1].boxmax[k_divide])
+    if (rp[k_divide] < tree[c1].box.max[k_divide])
       c = c1;
     else
       c = tree[c].c2;
@@ -499,14 +499,14 @@ void MpiTree<ndim,ParticleType>::UpdateBoundingBoxes(void)
     r_divide = tree[c].r_divide;
 
     // Adjust bounding box of 1st child
-    for (k=0; k<ndim; k++) tree[c1].boxmin[k] = tree[c].boxmin[k];
-    for (k=0; k<ndim; k++) tree[c1].boxmax[k] = tree[c].boxmax[k];
-    tree[c1].boxmax[k_divide] = r_divide;
+    for (k=0; k<ndim; k++) tree[c1].box.min[k] = tree[c].box.min[k];
+    for (k=0; k<ndim; k++) tree[c1].box.max[k] = tree[c].box.max[k];
+    tree[c1].box.max[k_divide] = r_divide;
 
     // Adjust bounding box of 2nd child
-    for (k=0; k<ndim; k++) tree[c2].boxmin[k] = tree[c].boxmin[k];
-    for (k=0; k<ndim; k++) tree[c2].boxmax[k] = tree[c].boxmax[k];
-    tree[c2].boxmin[k_divide] = r_divide;
+    for (k=0; k<ndim; k++) tree[c2].box.min[k] = tree[c].box.min[k];
+    for (k=0; k<ndim; k++) tree[c2].box.max[k] = tree[c].box.max[k];
+    tree[c2].box.min[k_divide] = r_divide;
 
   }
   //-----------------------------------------------------------------------------------------------
