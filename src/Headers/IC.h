@@ -117,8 +117,8 @@ public:
   // Static functions which can be used outside of Ic class
   // (e.g. generating new particles on the fly in simulations)
   //-----------------------------------------------------------------------------------------------
-  static void AddCubicLattice(const int, const int *, const DomainBox<ndim>, const bool, FLOAT *);
-  static void AddHexagonalLattice(const int, const int *, const DomainBox<ndim>, const bool, FLOAT *);
+  static void AddCubicLattice(const int, const int *, const DomainBox<ndim> &, const bool, FLOAT *);
+  static void AddHexagonalLattice(const int, const int *, const DomainBox<ndim> &, const bool, FLOAT *);
   static int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *, RandomNumber *);
   static void AddRandomBox(const int, const DomainBox<ndim>, FLOAT *, RandomNumber *);
   static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
