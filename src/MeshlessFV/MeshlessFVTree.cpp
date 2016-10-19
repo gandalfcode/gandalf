@@ -173,7 +173,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     int* neiblist = new int[Nneibmax];         // Local array of neighbour particle ids
     int* ptype    = new int[Nneibmax];         // Local array of particle types
     FLOAT* gpot   = new FLOAT[Nneibmax];       // Local array of particle potentials
-    FLOAT* gpot2  = new FLOAT[Nneibmax];       // Local reduced array of neighbour potentials
     FLOAT* drsqd  = new FLOAT[Nneibmax];       // Local array of distances (squared)
     FLOAT* m      = new FLOAT[Nneibmax];       // Local array of particle masses
     FLOAT* m2     = new FLOAT[Nneibmax];       // Local reduced array of neighbour masses
@@ -226,7 +225,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
           delete[] m2;
           delete[] m;
           delete[] drsqd;
-          delete[] gpot2;
           delete[] gpot;
           delete[] ptype;
           delete[] neiblist;
@@ -234,7 +232,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
           neiblist = new int[Nneibmax];
           ptype    = new int[Nneibmax];
           gpot     = new FLOAT[Nneibmax];
-          gpot2    = new FLOAT[Nneibmax];
           drsqd    = new FLOAT[Nneibmax];
           m        = new FLOAT[Nneibmax];
           m2       = new FLOAT[Nneibmax];
@@ -252,7 +249,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j         = neiblist[jj];
-          gpot[jj]  = mfvdata[j].gpot;
+          //gpot[jj]  = mfvdata[j].gpot;
           m[jj]     = mfvdata[j].m;
           ptype[jj] = mfvdata[j].ptype;
           for (k=0; k<ndim; k++) r[ndim*jj + k] = mfvdata[j].r[k];
@@ -281,7 +278,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
             // Record distance squared and masses for all potential gather neighbours
             if (drsqdaux <= hrangesqd) {
-              gpot[Ngather]  = gpot[jj];
+              //gpot[Ngather]  = gpot[jj];
               drsqd[Ngather] = drsqdaux;
               m2[Ngather]    = m[jj];
               Ngather++;
@@ -326,7 +323,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     delete[] m2;
     delete[] m;
     delete[] drsqd;
-    delete[] gpot2;
     delete[] gpot;
     delete[] ptype;
     delete[] neiblist;
@@ -547,6 +543,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         }
         mfvdata[i].vsig_max = activepart[j].vsig_max;
         mfvdata[i].levelneib = activepart[j].levelneib;
+        mfvdata[i].flags = activepart[j].flags;
       }
 
 

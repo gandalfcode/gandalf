@@ -142,7 +142,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 #endif
   }
   else {
-	  LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
+	    mfv->CopyDataToGhosts(simbox,partdata);
 	    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
 	                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
 #ifdef MPI_PARALLEL
@@ -178,14 +178,16 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     }
 
     // Re-build/re-stock tree now particles have moved
-
-    //DO WE NEED THESE?!
-
     mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                        mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+    mfv->CopyDataToGhosts(simbox,partdata);
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                             mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
-
+#ifdef MPI_PARALLEL
+	MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+    mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                               mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+#endif
   }
 
 
@@ -270,17 +272,11 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Update all active cell counters in the tree
   mfvneib->UpdateActiveParticleCounters(partdata, mfv);
 
-  //DO WE NEED THESE?!
-  mfv->CopyDataToGhosts(simbox, partdata);
-#ifdef MPI_PARALLEL
-  MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
-#endif
-
-
   //Calculate all properties (and copy updated data to ghost particles)
   mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
+
 #ifdef MPI_PARALLEL
+  mfv->CopyDataToGhosts(simbox, partdata);
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
 
