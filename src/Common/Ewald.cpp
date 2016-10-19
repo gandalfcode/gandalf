@@ -510,9 +510,29 @@ void Ewald<ndim>::CalculatePeriodicCorrection
     static double dr1=0.0, dr2=0.0, dr3=0.0;
     static int basemax;
 
-    if (fabs(dr[0]) > 0.6*lx_per || fabs(dr[1]) > 0.6*ly_per || fabs(dr[2]) > 0.6*lz_per) {
-      cout << "Ewald problem : " << dr[0]/lx_per << "   " << dr[1]/ly_per << "   "
-           << dr[2]/lz_per << endl;
+    // Correct the distance and pre-computed force if position used wasn't the nearest periodic
+    // distance
+    if (fabs(dr[0]) > 0.5*lx_per || fabs(dr[1]) > 0.5*ly_per || fabs(dr[2]) > 0.5*lz_per) {
+      // Subract off the old force:
+      double inv_dr3 = 1 / sqrt(DotProduct(dr, dr, ndim) + small_number);
+      inv_dr3 = inv_dr3*inv_dr3*inv_dr3;
+      for (k=0; k<ndim;k++)
+        acorr[k] -= m*dr[k]*inv_dr3;
+
+      // Correct the distance
+      double size[3] = { 0.5*lx_per, 0.5*ly_per, 0.5*lz_per } ;
+      for (k=0; k<ndim;k++) {
+        if (dr[k] > size[k])
+          dr[k] -= 2*size[k] ;
+        else if (dr[k] < - size[k])
+          dr[k] += 2*size[k] ;
+        }
+
+      // Add on the new force
+      inv_dr3 = 1 / sqrt(DotProduct(dr, dr, ndim) + small_number);
+      inv_dr3 = inv_dr3*inv_dr3*inv_dr3;
+      for (k=0; k<ndim;k++)
+        acorr[k] += m*dr[k]*inv_dr3;
     }
 
     // find edges of the ewald_field cuboid around dr
