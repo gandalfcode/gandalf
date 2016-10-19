@@ -149,7 +149,7 @@ HydroTree<ndim,ParticleType>::~HydroTree()
 }
 
 //=================================================================================================
-//  CreateTree
+//  HydroTree::CreateTree
 /// Construct the required tree type based on parameters
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
@@ -646,6 +646,10 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
   return;
 }
 //=================================================================================================
+// HydroTree::GetMaximumSmoothingLength
+/// Returns the maximum smoothing length over all particles in the simulation
+//=================================================================================================
+
 template <int ndim, template <int> class ParticleType>
 double HydroTree<ndim,ParticleType>::GetMaximumSmoothingLength() const
 {
@@ -1229,7 +1233,9 @@ int HydroTree<ndim,ParticleType>::SearchMpiGhostParticles
 
 //=================================================================================================
 //  HydroTree::FindMpiTransferParticles
-/// ..
+/// This function finds particles that this thread needs to export to other MPI threads. It
+/// fills two vectors: 1) the list of particles to go to each processor and 2) the combined list
+/// of all particles to send.
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::FindMpiTransferParticles

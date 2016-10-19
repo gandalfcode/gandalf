@@ -146,45 +146,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
 }
 
 
-/*
- * Now using template available in InlineFuncs
-//=================================================================================================
-//  Tree::BoxOverlap
-/// Check if two bounding boxes overlap.  If yes, then returns true.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-bool Tree<ndim,ParticleType,TreeCell>::BoxOverlap
- (const FLOAT box1min[ndim],           ///< [in] Minimum extent of box 1
-  const FLOAT box1max[ndim],           ///< [in] Maximum extent of box 1
-  const FLOAT box2min[ndim],           ///< [in] Minimum extent of box 2
-  const FLOAT box2max[ndim])           ///< [in] Maximum extent of box 2
-{
-  if (ndim == 1) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    return true;
-  }
-  else if (ndim == 2) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    return true;
-  }
-  else if (ndim == 3) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    if (box1min[2] > box2max[2]) return false;
-    if (box2min[2] > box1max[2]) return false;
-    return true;
-  }
-
-}
-*/
-
-
 //=================================================================================================
 //  Tree::ExtrapolateCellProperties
 /// Extrapolate important physical properties of all cells in the tree.
@@ -1061,7 +1022,12 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
   // return error code, -1
   return -1;
 }
-
+//=================================================================================================
+// Tree::GenerateBoundaryGhostParticles
+/// Creates the ghost particles by walking the tree. It checks whether the cell's smoothing
+/// volume is expected to overlap boundary within the given time range, including some safety
+/// factor.
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void Tree<ndim,ParticleType,TreeCell>::GenerateBoundaryGhostParticles
 (const FLOAT tghost,                              ///< [in] Ghost update time
