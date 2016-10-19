@@ -153,8 +153,6 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
 
   // Set all particle properties from given arguments
   part.iorig     = inew;
-  part.active    = true;
-  part.itype     = _ptype;
   part.ptype     = _parttype;
   part.level     = level_max;
   part.levelneib = level_max;
@@ -173,8 +171,7 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   for (int k=0; k<ndim; k++) part.v0[k] = v[k];
   for (int k=0; k<ndim; k++) part.a0[k] = (FLOAT) 0.0;
 
-  //cout << "CREATING NEW PARTICLE : " << inew << "   " << Nhydro << "   m : " << m << "   v : "
-  //     << part.r[0] << "   " << part.r[1] << endl;
+  part.flags.set_flag(active);
 
   return part;
 }
