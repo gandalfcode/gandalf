@@ -60,14 +60,8 @@
 #include "SphNeighbourSearch.h"
 #include "SphIntegration.h"
 #include "Supernova.h"
-#include "TreeRay.h"
-#include "EnergyEquation.h"
-#include "Nbody.h"
-#include "NbodySystemTree.h"
-#include "Ghosts.h"
-#include "Sinks.h"
-#include "HeaderInfo.h"
 #include "TimeStepControl.h"
+#include "TreeRay.h"
 using namespace std;
 #ifdef MPI_PARALLEL
 #include "mpi.h"
