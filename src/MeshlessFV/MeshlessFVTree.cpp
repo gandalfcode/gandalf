@@ -338,7 +338,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
   // Update tree smoothing length values here
