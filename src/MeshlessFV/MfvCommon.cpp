@@ -272,7 +272,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
       part.B[k][kk] = (FLOAT) 0.0;
     }
   }
-  part.flags.set_flag(potmin);
+  if (create_sinks==1) part.flags.set_flag(potmin);
 
 
   // Loop over all potential neighbours in the list

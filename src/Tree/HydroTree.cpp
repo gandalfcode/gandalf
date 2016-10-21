@@ -1999,6 +1999,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
   tree->Ntot = hydro->Ntot;
   Ntot = hydro->Ntot;
 
+#ifdef OUTPUT_ALL
+  cout << "Importing " << N_received_particles << " from rank " << iproc << " on rank " << rank << endl;
+#endif
+
   return;
 }
 

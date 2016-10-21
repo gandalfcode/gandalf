@@ -169,7 +169,6 @@ class MeshlessCommunicationHandler {
     	for (int k=0; k<ndim; k++) {
     		r[k] = p.r[k];
     		v[k] = p.v[k];
-    		a[k] = p.a[k];
     		for (int kk=0; kk<ndim; kk++) {
     			B[k][kk]=p.B[k][kk];
     		}
@@ -193,7 +192,6 @@ class MeshlessCommunicationHandler {
 
     FLOAT r[ndim];
     FLOAT v[ndim];
-    FLOAT a[ndim];
     FLOAT m;
     FLOAT ndens;
     FLOAT Wprim[ndim+2];
@@ -258,7 +256,7 @@ public:
     for (int k=0; k<ndim; k++) {
       p2.r[k]=p.r[k];
       p2.v[k]=p.v[k];
-      p2.a[k]=p.a[k];
+      p2.a[k]=0.0;
 	  for (int kk=0; kk<ndim; kk++) {
 			p2.B[k][kk]=p.B[k][kk];
 	  }
