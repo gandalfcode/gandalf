@@ -110,9 +110,8 @@ DOUBLE SphIntegration<ndim>::Timestep
 
 
   // Explicit energy integration timestep condition
-  if (gas_eos == energy_eqn) {
-	  if (part.ptype == gas_type)
-        timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
+  if (gas_eos == energy_eqn && part.ptype == gas_type) {
+    timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
   }
 
 
@@ -129,8 +128,7 @@ DOUBLE SphIntegration<ndim>::Timestep
     ExceptionHandler::getIstance().raise("Error : Hydro timestep too large");
   }
 
-  assert(!(isnan(amag)) && !(isinf(amag)));
-  assert(!(isnan(timestep)) && !(isinf(timestep)));
+  assert(isfinite(amag) && isfinite(timestep));
 
   return timestep;
 }
