@@ -418,6 +418,12 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 #if defined MPI_PARALLEL
   mpicontrol->SetNeibSearch(mfvneib);
+  sinks->SetMpiControl(mpicontrol);
+  if (stringparams["out_file_form"]=="sf") {
+    string message = "The sf format is not supported with MPI! Use the column "
+        "or (better) the su format";
+    ExceptionHandler::getIstance().raise(message);
+  }
   MpiGhosts = new MpiGhostsSpecific<ndim, MeshlessFVParticle>(mpicontrol);
 #endif
 

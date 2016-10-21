@@ -126,6 +126,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     mpitree->Nhydro  = hydro->Nhydro;
     mpitree->Ntot    = hydro->Nhydro;
     mpitree->Ntotmax = hydro->Nhydromax;
+    assert(hydro->Nhydromax >= hydro->Nhydro);
 
     // Create all other MPI node objects
     this->AllocateMemory(mpitree->Ntotmax);
@@ -199,10 +200,6 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
 
     }
     //---------------------------------------------------------------------------------------------
-
-#ifdef OUTPUT_ALL
-    cout << "CHECKING SENDPARTICLES : " << mpinode[inode].ids << "   " << partdata << endl;
-#endif
 
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
