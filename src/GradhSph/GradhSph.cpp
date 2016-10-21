@@ -97,7 +97,7 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
       delete[] newsphdata;
     }
 
-	Nhydromax=N;
+    Nhydromax=N;
     allocated        = true;
     hydrodata_unsafe = sphdata;
     sphdata_unsafe   = sphdata;

@@ -168,6 +168,10 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
     }
     if (dn == nstep && gas_eos == energy_eqn) {
       part.u += 0.5*(part.dudt - part.dudt0)*(t - part.tlast); //timestep*(FLOAT) nstep;
+
+      // In spurious cases where correction term can lead to negative energies, simply use
+      // 1st-order integration (which should guarantee positive energy due to the CFL condition)
+      if (part.u <= (FLOAT) 0.0) part.u = part.u0 + part.dudt0*(t - part.tlast);
     }
 
   }
@@ -216,11 +220,19 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+
+      // If using an adiabatic energy equation, then explictly integrate the internal energy
       if (gas_eos == energy_eqn) {
         part.u     += 0.5*(part.dudt - part.dudt0)*(t - part.tlast); //timestep*(FLOAT) nstep;
+
+        // In spurious cases where correction term can lead to negative energies, simply use
+        // 1st-order integration (which should guarantee positive energy due to the CFL condition)
+        if (part.u <= (FLOAT) 0.0) part.u = part.u0 + part.dudt0*(t - part.tlast);
+
         part.u0    = part.u;
         part.dudt0 = part.dudt;
       }
+
       part.nlast  = n;
       part.tlast  = t;
       part.flags.unset_flag(active);
