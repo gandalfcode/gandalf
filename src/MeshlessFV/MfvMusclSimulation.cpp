@@ -199,10 +199,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     mfv->CopyDataToGhosts(simbox, partdata);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
-        for (int i=0; i< mfv->Nhydro; i++) {
-            for (int k=0; k<ndim; k++) partdata[i].a[k] = 0.0;
-            partdata[i].gpot=0.0;
-        }
     	mfvneib->UpdateGravityExportList(rank, mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
     	mpicontrol->ExportParticlesBeforeForceLoop(mfv);
 	  // Update pointer in case there has been a reallocation
