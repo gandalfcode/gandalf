@@ -140,9 +140,12 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   const FLOAT r[ndim],                 ///< [in] Position of new particle
   const FLOAT v[ndim])                 ///< [in] Velocity of new particle
 {
-  // First, check if there is space for the new particle.  Otherwisr, throw an exception.
+  // First, check if there is space for the new particle.
+  // If not, then increase particle memory by 20% by reallocating arrays.
   if (Nhydro >= Nhydromax) {
-    ExceptionHandler::getIstance().raise("Run out of memory for new hydro particles");
+    const int _Nhydromax = (int) ((FLOAT) 1.2*(FLOAT) Nhydromax);
+    AllocateMemory(_Nhydromax);
+    //ExceptionHandler::getIstance().raise("Run out of memory for new hydro particles");
   }
 
   // Find space for new particle at the end of the array and increment relevant counters.
