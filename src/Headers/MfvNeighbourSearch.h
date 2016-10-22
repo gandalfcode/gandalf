@@ -75,13 +75,13 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+  virtual void UpdateAllProperties(int, int, MeshlessFV<ndim> *,
                                    Nbody<ndim> *, DomainBox<ndim> &) = 0;
-  virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+  virtual void UpdateGradientMatrices(int, int, MeshlessFV<ndim> *,
                                       Nbody<ndim> *, DomainBox<ndim> &) = 0;
-  virtual void UpdateGodunovFluxes(int, int, FLOAT, MeshlessFVParticle<ndim> *,
+  virtual void UpdateGodunovFluxes(int, int, FLOAT,
                                    MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
-  virtual void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+  virtual void UpdateAllGravForces(int, int, MeshlessFV<ndim> *,
                                    Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
 
 };
@@ -144,13 +144,13 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+  virtual void UpdateAllProperties(int, int, MeshlessFV<ndim> *,
                                    Nbody<ndim> *, DomainBox<ndim> &);
-  virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+  virtual void UpdateGradientMatrices(int, int, MeshlessFV<ndim> *,
                                       Nbody<ndim> *, DomainBox<ndim> &);
-  virtual void UpdateGodunovFluxes(int, int, FLOAT, MeshlessFVParticle<ndim> *,
+  virtual void UpdateGodunovFluxes(int, int, FLOAT,
                                    MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
-  virtual void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *,
+  virtual void UpdateAllGravForces(int, int, MeshlessFV<ndim> *,
                                    Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
 
 };

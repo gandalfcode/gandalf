@@ -300,12 +300,14 @@ void HydroTree<ndim,ParticleType>::BuildTree
   const int Npart,                     ///< [in] No. of particles
   const int Npartmax,                  ///< [in] Max. no. of particles
   const FLOAT timestep,                ///< [in] Smallest physical timestep
-  Particle<ndim> *partdata,            ///< [inout] Particle data array
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
 
   debug2("[HydroTree::BuildTree]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_TREE");
+
+  Particle<ndim> *partdata = hydro->GetParticleArray();
+
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -375,10 +377,10 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
   const int Npart,                     ///< [in] No. of particles
   const int Npartmax,                  ///< [in] Max. no. of particles
   const FLOAT timestep,                ///< [in] Smallest physical timestep
-  Particle<ndim> *part_gen,            ///< [inout] Particle data array
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
-  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim> *partdata =
+      static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   // If no periodic ghosts exist, do not build tree
   if (hydro->NPeriodicGhost == 0) return;
@@ -471,10 +473,9 @@ int HydroTree<ndim,ParticleType>::GetGatherNeighbourList
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateActiveParticleCounters
- (Particle<ndim> *partdata_gen,        ///< [inout] Pointer to hydrodynamics particles array
-  Hydrodynamics<ndim> *hydro)          ///< [in] Pointer to hydrodynamics object
+ (Hydrodynamics<ndim> *hydro)          ///< [in] Pointer to hydrodynamics object
 {
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (partdata_gen);
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
   tree->UpdateActiveParticleCounters(partdata);
 }
 
@@ -546,14 +547,13 @@ template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
-  Particle<ndim> *part_gen,            ///< [inout] Pointer to SPH ptcl array
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int Nactive;                         // No. of active particles in cell
   int *activelist;                     // List of active particle ids
   NbodyParticle<ndim> *star;           // Pointer to star particle
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
 
   debug2("[GradhSphTree::UpdateAllStarGasForces]");
@@ -676,14 +676,13 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
  (int rank,                            ///< [in] MPI rank
   int Nhydro,                          ///< [in] No. of hydro particles
   int Ntot,                            ///< [in] No. of hydro + ghost particles
-  Particle<ndim> *part_gen,            ///< [inout] Pointer to Hydrodynamics ptcl array
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   int cactive;                          // No. of active cells
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   debug2("[GradhHydroTree::UpdateGravityExportForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_DISTANT_FORCES");
@@ -834,14 +833,13 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
  (int rank,                            ///< [in] MPI rank
   int Nhydro,                          ///< [in] No. of hydro particles
   int Ntot,                            ///< [in] No. of hydro + ghost particles
-  Particle<ndim> *part_gen,            ///< [inout] Pointer to Hydrodynamics ptcl array
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
 {
   int cactive;                         // No. of active cells
   TreeCellBase<ndim> **celllist;           // List of pointers to binary tree cells
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   debug2("[HydroTree::UpdateHydroExportList]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MPI_HYDRO_EXPORT");
@@ -938,8 +936,8 @@ void HydroTree<ndim,ParticleType>::BuildPrunedTree
   const int Nhydromax,                 ///< [in] Max. no. of hydro particles
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const MpiNode<ndim> *mpinode,        ///< [in] Pointer to MPI node array
-  Particle<ndim> *hydro_gen)           ///< [inout] Pointer to Hydrodynamics ptcl array
-{
+  Hydrodynamics<ndim> *hydro)          ///< [in] Pointer to Hydrodynamics object
+  {
   bool localNode;                              // Is this pruned tree for the local node?
   int i;                                       // Particle counter
   TreeBase<ndim> *treeptr;                     // Pointer to tree object in question
@@ -1140,10 +1138,9 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
   const int Npart,                     ///< No. of particles
   const int Npartmax,                  ///< Max. no. of particles
   const FLOAT timestep,                ///< Smallest physical timestep
-  Particle<ndim> *part_gen,            ///< Particle data array
   Hydrodynamics<ndim> *hydro)          ///< Pointer to Hydrodynamics object
 {
-  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
 
   // If no MPI ghosts exist, do not build tree
