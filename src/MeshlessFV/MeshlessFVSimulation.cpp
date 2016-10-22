@@ -628,7 +628,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set_flag(active);
 
   // Copy all other data from real hydro particles to ghosts
-  mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+  mfv->CopyDataToGhosts(simbox);
   //LocalGhosts->CopyHydroDataToGhosts(simbox,sph);
 
   mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
@@ -658,6 +658,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   mfvneib->UpdateAllProperties(mfv->Nhydro ,mfv->Ntot, mfv, nbody, simbox);
 
+
   mfv->CopyDataToGhosts(simbox);
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
@@ -681,11 +682,12 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
 
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox, partdata);
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
+
 
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
 #ifdef MPI_PARALLEL

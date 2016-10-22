@@ -71,7 +71,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   else {
     this->ComputeBlockTimesteps();
   }
-  mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+  mfv->CopyDataToGhosts(simbox);
 
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
@@ -196,7 +196,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     tghost = timestep*(FLOAT) (ntreebuildstep - 1);
     mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-    mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+    mfv->CopyDataToGhosts(simbox);
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                             mfv->Ntot, mfv->Nhydromax, timestep, mfv);
   }
@@ -206,11 +206,11 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   // Calculate all properties (and copy updated data to ghost particles)
   mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+  mfv->CopyDataToGhosts(simbox);
 
   // Calculate all matrices and gradients (and copy updated data to ghost particles)
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+  mfv->CopyDataToGhosts(simbox);
 
 
 

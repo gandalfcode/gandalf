@@ -71,6 +71,10 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   else {
     this->ComputeBlockTimesteps();
   }
+<<<<<<< HEAD
+=======
+  mfv->CopyDataToGhosts(simbox);
+>>>>>>> removed useless data from interface
 
 #ifdef MPI_PARALLEL
 
@@ -125,7 +129,11 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     tghost = timestep*(FLOAT) (ntreebuildstep - 1);
     mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+<<<<<<< HEAD
     // Update pointer in case there has been a reallocation
+=======
+    mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+>>>>>>> removed useless data from interface
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                             mfv->Ntot, mfv->Nhydromax, timestep, mfv);
     // Re-build and communicate the new pruned trees (since the trees will necessarily change
@@ -194,6 +202,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
     // Update the density to get the correct softening & grad-h terms.
     mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
+<<<<<<< HEAD
     mfv->CopyDataToGhosts(simbox, partdata);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
@@ -212,6 +221,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 #endif
     mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
     mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+=======
+    mfv->CopyDataToGhosts(simbox);
+>>>>>>> removed useless data from interface
 
     // Does only the star forces in mfv->self_gravity != 1
     mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox, ewald);
@@ -275,7 +287,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
 
 #ifdef MPI_PARALLEL
-  mfv->CopyDataToGhosts(simbox, partdata);
+  mfv->CopyDataToGhosts(simbox);
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
 
