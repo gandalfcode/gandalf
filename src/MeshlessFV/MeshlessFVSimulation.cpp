@@ -491,8 +491,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->ToggleNeighbourCheck(false);
   if (!this->initial_h_provided) {
     mfv->InitialSmoothingLengthGuess();
-    mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                       mfv->Nhydromax, timestep, mfv);
+    mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
     mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
     MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
@@ -500,8 +499,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       partdata[i].flags.set_flag(update_density) ;
   }
   else {
-    mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                       mfv->Nhydromax, timestep, mfv);
+    mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
   }
 
 #ifdef MPI_PARALLEL
@@ -510,8 +508,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Search ghost particles
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
-  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep ,mfv->Ntot,
-                          mfv->Nhydromax, timestep, mfv);
+  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro+mfv->NPeriodicGhost, mfv, mfv->kernp);
   for (int i=0; i<mfv->Nhydro+mfv->NPeriodicGhost; i++) {
@@ -521,8 +518,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
   // Update pointer in case there has been a reallocation
   partdata = mfv->GetMeshlessFVParticleArray();
-  mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                             mfv->Nhydromax, timestep, partdata, mfv);
+  mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #endif
 
   // Zero accelerations
@@ -542,6 +538,10 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // For Eigenvalue MAC, need non-zero values
   for (i=0; i<mfv->Nhydro; i++) partdata[i].gpot = big_number;
 
+  // Update neighbour tree
+  rebuild_tree = true;
+  mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
+
   // Calculate all hydro properties
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
@@ -551,8 +551,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Search ghost particles
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
-  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                          mfv->Nhydromax, timestep, mfv);
+  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
@@ -572,7 +571,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
   // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
-  mfvneib->BuildPrunedTree(rank, mfv->Nhydromax, simbox, mpicontrol->mpinode, partdata);
+  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
 #endif
   mfvneib->ToggleNeighbourCheck(true);
 
@@ -628,8 +627,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfv->CopyDataToGhosts(simbox);
   //LocalGhosts->CopyHydroDataToGhosts(simbox,sph);
 
-  mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                     mfv->Nhydromax, timestep, mfv);
+  mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
   mfvneib->InitialiseCellWorkCounters();
 #endif
@@ -643,6 +641,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                              mfv->Nhydromax, timestep, partdata, mfv);
 #endif
+
   // ..
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);

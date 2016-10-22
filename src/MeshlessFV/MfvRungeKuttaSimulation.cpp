@@ -93,10 +93,8 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Re-build/re-stock tree now particles have moved
-  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                     mfv->Ntot, mfv->Nhydromax, timestep, mfv);
-  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                          mfv->Ntot, mfv->Nhydromax, timestep, mfv);
+  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 
 
   // Search for new sink particles (if activated) and accrete to existing sinks
@@ -124,10 +122,8 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
 
     // Re-build/re-stock tree now particles have moved
-    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                       mfv->Ntot, mfv->Nhydromax, timestep, mfv);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                            mfv->Ntot, mfv->Nhydromax, timestep, mfv);
+    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 
   }
 
@@ -189,16 +185,14 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 
   // Rebuild or update local neighbour and gravity tree
-  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                     mfv->Ntot, mfv->Nhydromax, timestep, mfv);
+  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 
   // Search for new ghost particles and create on local processor
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     tghost = timestep*(FLOAT) (ntreebuildstep - 1);
     mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
     mfv->CopyDataToGhosts(simbox);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                            mfv->Ntot, mfv->Nhydromax, timestep, mfv);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
   }
 
   // Update all active cell counters in the tree
