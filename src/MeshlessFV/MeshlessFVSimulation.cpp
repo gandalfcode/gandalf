@@ -493,7 +493,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfv->InitialSmoothingLengthGuess();
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                        mfv->Nhydromax, timestep, mfv);
-    mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
+    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
     MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
     for (i=0; i<mfv->Nhydro; i++)
@@ -543,7 +543,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<mfv->Nhydro; i++) partdata[i].gpot = big_number;
 
   // Calculate all hydro properties
-  mfvneib->UpdateAllProperties(mfv->Nhydro ,mfv->Ntot, mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
@@ -558,21 +558,18 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
   // Update pointer in case there has been a reallocation
   partdata = mfv->GetMeshlessFVParticleArray();
-  mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                             mfv->Nhydromax, timestep, partdata, mfv);
+  mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv);
 #endif
 
 
   // Update neighbour tree
   rebuild_tree = true;
-  mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                     mfv->Nhydromax, timestep, mfv);
+  mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
   mfvneib->InitialiseCellWorkCounters();
 #endif
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
-  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                          mfv->Nhydromax, timestep, mfv);
+  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
   // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
   mfvneib->BuildPrunedTree(rank, mfv->Nhydromax, simbox, mpicontrol->mpinode, partdata);
@@ -637,8 +634,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->InitialiseCellWorkCounters();
 #endif
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
-  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                          mfv->Nhydromax, timestep, partdata, mfv);
+  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
@@ -656,7 +652,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     part.flags.set_flag(active);
   }
 
-  mfvneib->UpdateAllProperties(mfv->Nhydro ,mfv->Ntot, mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 
   mfv->CopyDataToGhosts(simbox);
@@ -682,8 +678,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
 
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
+  mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox);
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
@@ -698,11 +694,9 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
         }
     	mfvneib->UpdateGravityExportList(rank, mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
     	mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-	  // Update pointer in case there has been a reallocation
-	  partdata = mfv->GetMeshlessFVParticleArray();
     }
 #endif
-    mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox, ewald);
+    mfvneib->UpdateAllGravForces(mfv, nbody, simbox, ewald);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
     mpicontrol->GetExportedParticlesAccelerations(mfv);
@@ -714,7 +708,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
-    mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot, mfv, nbody);  //, simbox, ewald);
+    mfvneib->UpdateAllStarGasForces(mfv, nbody);  //, simbox, ewald);
 
     // We need to sum up the contributions from the different domains
 #if defined MPI_PARALLEL

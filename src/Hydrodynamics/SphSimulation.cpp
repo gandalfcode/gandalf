@@ -355,7 +355,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   sphneib->InitialiseCellWorkCounters();
 #endif
-    sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, sph, nbody);
+    sphneib->UpdateAllSphProperties(sph, nbody);
   }
   else {
     sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep,
@@ -402,7 +402,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).gpot = big_number;
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, sph, nbody);
+  sphneib->UpdateAllSphProperties(sph, nbody);
 
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
@@ -506,7 +506,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, sph, nbody);
+  sphneib->UpdateAllSphProperties(sph, nbody);
 
 
 #ifdef MPI_PARALLEL
@@ -541,13 +541,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Calculate SPH gravity and hydro forces, depending on which are activated
   if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-    sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, sph, nbody, simbox, ewald);
+    sphneib->UpdateAllSphForces(sph, nbody, simbox, ewald);
   }
   else if (sph->self_gravity == 1) {
-    sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, sph, nbody, simbox, ewald);
+    sphneib->UpdateAllSphGravForces(sph, nbody, simbox, ewald);
   }
   else if (sph->hydro_forces == 1) {
-    sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, sph, nbody, simbox);
+    sphneib->UpdateAllSphHydroForces(sph, nbody, simbox);
   }
   else{
     ExceptionHandler::getIstance().raise("Error: No forces included in simulation");
@@ -591,7 +591,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (sph->self_gravity == 1 && sph->Nhydro > 0) {
-    sphneib->UpdateAllStarGasForces(sph->Nhydro, sph->Ntot, sph, nbody);
+    sphneib->UpdateAllStarGasForces(sph, nbody);
 #if defined MPI_PARALLEL
     // We need to sum up the contributions from the different domains
     mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -744,7 +744,7 @@ void SphSimulation<ndim>::MainLoop(void)
       }
 
       // Calculate all SPH properties
-      sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, sph, nbody);
+      sphneib->UpdateAllSphProperties(sph, nbody);
 
       // Update the radiation field
       if (Nsteps%nradstep == 0 || recomputeRadiation) {
@@ -777,13 +777,13 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Calculate SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
-        sphneib->UpdateAllSphForces(sph->Nhydro, sph->Ntot, sph, nbody, simbox, ewald);
+        sphneib->UpdateAllSphForces(sph, nbody, simbox, ewald);
       }
       else if (sph->self_gravity == 1) {
-        sphneib->UpdateAllSphGravForces(sph->Nhydro, sph->Ntot, sph, nbody, simbox, ewald);
+        sphneib->UpdateAllSphGravForces(sph, nbody, simbox, ewald);
       }
       else if (sph->hydro_forces == 1) {
-        sphneib->UpdateAllSphHydroForces(sph->Nhydro, sph->Ntot, sph, nbody, simbox);
+        sphneib->UpdateAllSphHydroForces( sph, nbody, simbox);
       }
 
       // Add external potential for all active SPH particles
@@ -873,7 +873,7 @@ void SphSimulation<ndim>::MainLoop(void)
     }
 
     if (sph->self_gravity == 1 && sph->Nhydro > 0) {
-      sphneib->UpdateAllStarGasForces(sph->Nhydro,sph->Ntot,sph,nbody);
+      sphneib->UpdateAllStarGasForces(sph,nbody);
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -1606,7 +1606,7 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
     sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                             sph->Nhydromax, timestep, sph);
-    sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, sph, nbody);
+    sphneib->UpdateAllSphProperties(sph, nbody);
 
 
     //=============================================================================================

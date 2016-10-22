@@ -78,9 +78,7 @@ MeshlessFVTree<ndim,ParticleType>::~MeshlessFVTree()
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
- (int Nhydro,                              ///< [in] No. of SPH particles
-  int Ntot,                                ///< [in] No. of SPH + ghost particles
-  MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
+ (MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
@@ -94,6 +92,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   debug2("[MeshlessFVTree::UpdateAllProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_PROPERTIES");
 
+  int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 
 
@@ -319,9 +318,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
- (int Nhydro,                              ///< [in] No. of SPH particles
-  int Ntot,                                ///< [in] No. of SPH + ghost particles
-  MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
+ (MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
@@ -334,6 +331,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
   debug2("[MeshlessFVTree::UpdateGradientMatrices]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_GRADIENTS");
 
+  int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 
 
@@ -555,9 +553,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
- (const int Nhydro,                        ///< [in] No. of hydro particles
-  const int Ntot,                          ///< [in] No. of SPH + ghost particles
-  const FLOAT timestep,                    ///< [in] Lowest timestep value
+ (const FLOAT timestep,                    ///< [in] Lowest timestep value
   MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
@@ -571,6 +567,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   debug2("[MeshlessFVTree::UpdateGodunovFluxes]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_FLUXES");
 
+  int Nhydro = mfv->Nhydro ;
+  int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 
   // Find list of all cells that contain active particles
@@ -588,7 +586,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro, Ntot)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -820,9 +818,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  MeshlessFV<ndim> *mfv,               ///< [in] Pointer to SPH object
+ (MeshlessFV<ndim> *mfv,               ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
