@@ -82,9 +82,8 @@ protected:
                               const int, const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *) = 0;
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) = 0;
-  virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) = 0;
-  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
-                                      Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateActiveParticleCounters(Hydrodynamics<ndim> *) = 0;
+  virtual void UpdateAllStarGasForces(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual double GetMaximumSmoothingLength() const = 0;
   virtual TreeBase<ndim>* GetTree() const = 0;
   virtual TreeBase<ndim>* GetGhhotTree() const = 0;
@@ -163,14 +162,14 @@ protected:
                               const int, const FLOAT, Hydrodynamics<ndim> *);
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
-  virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
-                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual void UpdateActiveParticleCounters(Hydrodynamics<ndim> *);
+  virtual void UpdateAllStarGasForces(Hydrodynamics<ndim> *, Nbody<ndim> *);
   virtual double GetMaximumSmoothingLength() const;
   virtual TreeBase<ndim>* GetTree() const { return tree; }
   virtual TreeBase<ndim>* GetGhhotTree() const { return ghosttree; }
   virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
   virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
+
 
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const { return prunedtree; }

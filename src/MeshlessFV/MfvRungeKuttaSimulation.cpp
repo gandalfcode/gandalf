@@ -75,7 +75,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
-    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, mfv, nbody, simbox);
+    mfvneib->UpdateGodunovFluxes(timestep, mfv, nbody, simbox);
   }
 
   // Advance all global time variables
@@ -133,7 +133,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   // Calculate terms due to self-gravity
   if (mfv->self_gravity == 1) {
-    mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox, ewald);
+    mfvneib->UpdateAllGravForces(mfv, nbody, simbox, ewald);
   }
 
   // Compute N-body forces
@@ -153,7 +153,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
 
     if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
-      mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot, mfv, nbody);
+      mfvneib->UpdateAllStarGasForces(mfv, nbody);
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -205,11 +205,11 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateActiveParticleCounters(mfv);
 
   // Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox);
 
   // Calculate all matrices and gradients (and copy updated data to ghost particles)
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
+  mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
   mfv->CopyDataToGhosts(simbox);
 
 

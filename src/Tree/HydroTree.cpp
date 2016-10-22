@@ -545,14 +545,14 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to SPH object
+ (Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int Nactive;                         // No. of active particles in cell
   int *activelist;                     // List of active particle ids
   NbodyParticle<ndim> *star;           // Pointer to star particle
+
+  int Ntot = hydro->Ntot ;
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
 
