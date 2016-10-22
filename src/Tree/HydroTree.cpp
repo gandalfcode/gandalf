@@ -297,8 +297,6 @@ void HydroTree<ndim,ParticleType>::BuildTree
   const int n,                         ///< [in] Integer time
   const int ntreebuildstep,            ///< [in] Tree build frequency
   const int ntreestockstep,            ///< [in] Tree stocking frequency
-  const int Npart,                     ///< [in] No. of particles
-  const int Npartmax,                  ///< [in] Max. no. of particles
   const FLOAT timestep,                ///< [in] Smallest physical timestep
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
@@ -330,7 +328,7 @@ void HydroTree<ndim,ParticleType>::BuildTree
     assert(Ntotmax >= Ntot);
 
     tree->Ntot       = hydro->Nhydro;
-    tree->BuildTree(0, hydro->Nhydro-1, Npart, Npartmax, timestep, partdata);
+    tree->BuildTree(0, hydro->Nhydro-1, hydro->Ntot, hydro->Nhydromax, timestep, partdata);
 
     AllocateMemory(hydro->Ngather);
     if (Ntotmaxold < Ntotmax)
@@ -374,8 +372,6 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
   const int n,                         ///< [in] Integer time
   const int ntreebuildstep,            ///< [in] Tree build frequency
   const int ntreestockstep,            ///< [in] Tree stocking frequency
-  const int Npart,                     ///< [in] No. of particles
-  const int Npartmax,                  ///< [in] Max. no. of particles
   const FLOAT timestep,                ///< [in] Smallest physical timestep
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
@@ -674,8 +670,6 @@ double HydroTree<ndim,ParticleType>::GetMaximumSmoothingLength() const
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateGravityExportList
  (int rank,                            ///< [in] MPI rank
-  int Nhydro,                          ///< [in] No. of hydro particles
-  int Ntot,                            ///< [in] No. of hydro + ghost particles
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
@@ -831,8 +825,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateHydroExportList
  (int rank,                            ///< [in] MPI rank
-  int Nhydro,                          ///< [in] No. of hydro particles
-  int Ntot,                            ///< [in] No. of hydro + ghost particles
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
@@ -933,7 +925,6 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::BuildPrunedTree
  (const int rank,                      ///< [in] Rank of local MPI node
-  const int Nhydromax,                 ///< [in] Max. no. of hydro particles
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const MpiNode<ndim> *mpinode,        ///< [in] Pointer to MPI node array
   Hydrodynamics<ndim> *hydro)          ///< [in] Pointer to Hydrodynamics object
@@ -1135,8 +1126,6 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
   const int n,                         ///< Integer time
   const int ntreebuildstep,            ///< Tree build frequency
   const int ntreestockstep,            ///< Tree stocking frequency
-  const int Npart,                     ///< No. of particles
-  const int Npartmax,                  ///< Max. no. of particles
   const FLOAT timestep,                ///< Smallest physical timestep
   Hydrodynamics<ndim> *hydro)          ///< Pointer to Hydrodynamics object
 {
