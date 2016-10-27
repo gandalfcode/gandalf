@@ -1,0 +1,23 @@
+xlhs : boundary_lhs[0] = periodic
+xrhs : boundary_rhs[0] = periodic
+xlhs : boundary_lhs[1] = periodic
+xrhs : boundary_rhs[1] = periodic
+xlhs : boundary_lhs[2] = periodic
+xrhs : boundary_rhs[2] = periodic
+     : boxmin[0] = 0.0
+     : boxmin[1] = 0.0
+     : boxmin[2] = 0.0
+     : boxmax[0] = 1.0
+     : boxmax[1] = 1.0
+     : boxmax[2] = 1.0
+
+     : ic = random_cube
+     : gas_eos = isothermal
+
+     : courant_mult = 0.15
+     : accel_mult = 0.3
+
+     : alpha_visc = 1.0
+     : beta_visc = 2.0
+
+     : Npart = 128

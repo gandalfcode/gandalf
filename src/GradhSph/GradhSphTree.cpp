@@ -567,7 +567,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-   twork = timing->WallClockTime() - twork;
+  twork = timing->WallClockTime() - twork;
   int Nactivetot=0;
   for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
   for (int cc=0; cc<cactive; cc++) {

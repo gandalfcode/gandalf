@@ -149,41 +149,6 @@ SimulationBase::SimulationBase
  (Parameters* params)                ///< [in] Pointer to parameters object
 {
   simparams = new Parameters(*params);
-
-  timing = NULL;
-  level_max=0;
-  ndims=1;
-  dt_litesnap=0;
-  tsnapfirst=0;
-  recomputeRadiation=false;
-  ntreestockstep=1;
-  nbody_single_timestep=0;
-  ntreebuildstep=1;
-  dt_snap=0.2;
-  noutputstep=128;
-  ndiagstep=1024;
-  tlitesnapnext=0;
-  tend=1.0;
-  level_step=1;
-  sph_single_timestep=0;
-  level_diff_max=1;
-  sink_particles=0;
-  dt_max=0;
-  nradstep=1;
-  Nstepsmax=999999;
-  extra_sink_output=false;
-  dt_min_nbody=big_number_dp;
-  dt_min_hydro=big_number_dp;
-  pruning_level_max=6;
-  rebuild_tree=false; //i think this was being used uninitialised
-  tsnapnext=0;
-  pruning_level_min=6;
-  Nlevels=1;
-  nsystembuildstep=1;
-  dt_python=8.0;
-  tmax_wallclock=1e20;
-
-
   paramfile             = "";
   integration_step      = 1;
   litesnap              = 0;
