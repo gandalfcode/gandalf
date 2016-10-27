@@ -408,7 +408,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
   DomainBox<ndim> &simbox,                     ///< [in] Simulation box structure
   Hydrodynamics<ndim> *hydro)                  ///< [inout] Hydrodynamics object pointer
 {
-  bool okFlag;                                 // Flag true if enough ghost memory is allocated
   int c;                                       // Cell counter
   int i;                                       // Particle counter
   TreeCell<ndim> *cellptr;                     // Pointer to tree cell
@@ -420,197 +419,180 @@ void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
   hydro->Nmpighost      = 0;
   hydro->Ntot           = hydro->Nhydro;
 
-
   // If all boundaries are open, immediately return to main loop
   if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
       simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
       simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary) return;
 
-
   debug2("[HydroTree::SearchBoundaryGhostParticles]");
 
 
-  // Iterative loop in case not enough ghost memory has been allocated.  If not, then
-  // reallocate main arrays with more memory and run ghost search loop again.
+  // Create ghost particles in x-dimension
   //===============================================================================================
-  do {
+  if ((simbox.boundary_lhs[0] == openBoundary &&
+       simbox.boundary_rhs[0] == openBoundary) == 0) {
 
-    okFlag = true;
-    hydro->Nghost         = 0;
-    hydro->NPeriodicGhost = 0;
-    hydro->Nmpighost      = 0;
-    hydro->Ntot           = hydro->Nhydro;
+    // Start from root-cell
+    c = 0;
 
+    //---------------------------------------------------------------------------------------------
+    while (c < tree->Ncell) {
+      cellptr = &(tree->celldata[c]);
 
-    // Create ghost particles in x-dimension
-    //=============================================================================================
-    if ((simbox.boundary_lhs[0] == openBoundary &&
-         simbox.boundary_rhs[0] == openBoundary) == 0) {
-
-      // Start from root-cell
-      c = 0;
-
+      // If x-bounding box overlaps edge of x-domain, open cell
       //-------------------------------------------------------------------------------------------
-      while (c < tree->Ncell) {
-        cellptr = &(tree->celldata[c]);
+      if (cellptr->bbmin[0] + min((FLOAT) 0.0,cellptr->v[0]*tghost) <
+          simbox.boxmin[0] + grange*cellptr->hmax ||
+          cellptr->bbmax[0] + max((FLOAT) 0.0,cellptr->v[0]*tghost) >
+          simbox.boxmax[0] - grange*cellptr->hmax) {
 
-        // If x-bounding box overlaps edge of x-domain, open cell
-        //-----------------------------------------------------------------------------------------
-        if (cellptr->bbmin[0] + min((FLOAT) 0.0,cellptr->v[0]*tghost) <
-            simbox.boxmin[0] + grange*cellptr->hmax ||
-            cellptr->bbmax[0] + max((FLOAT) 0.0,cellptr->v[0]*tghost) >
-            simbox.boxmax[0] - grange*cellptr->hmax) {
-
-          // If not a leaf-cell, then open cell to first child cell
-          if (cellptr->level != tree->ltot) {
-            c++;
-          }
-          else if (cellptr->N == 0) {
-            c = cellptr->cnext;
-          }
-          // If leaf-cell, check through particles in turn to find ghosts
-          else if (cellptr->level == tree->ltot) {
-            i = cellptr->ifirst;
-            while (i != -1) {
-              hydro->CheckXBoundaryGhostParticle(i,tghost,simbox);
-              if (i == cellptr->ilast) break;
-              i = tree->inext[i];
-            };
-            c = cellptr->cnext;
-          }
+        // If not a leaf-cell, then open cell to first child cell
+        if (cellptr->level != tree->ltot) {
+          c++;
         }
-
-        // If not in range, then open next cell
-        //-----------------------------------------------------------------------------------------
-        else {
+        else if (cellptr->N == 0) {
           c = cellptr->cnext;
         }
-
-      }
-      //-------------------------------------------------------------------------------------------
-
-      hydro->Ntot = hydro->Nhydro + hydro->Nghost;
-    }
-
-
-    // Create ghost particles in y-dimension
-    //=============================================================================================
-    if (ndim >= 2 && (simbox.boundary_lhs[1] == openBoundary &&
-                      simbox.boundary_rhs[1] == openBoundary) == 0) {
-
-      // Start from root-cell
-      c = 0;
-
-      //-------------------------------------------------------------------------------------------
-      while (c < tree->Ncell) {
-        cellptr = &(tree->celldata[c]);
-
-        // If x-bounding box overlaps edge of x-domain, open cell
-        //-----------------------------------------------------------------------------------------
-        if (cellptr->bbmin[1] + min((FLOAT) 0.0,cellptr->v[1]*tghost) <
-            simbox.boxmin[1] + grange*cellptr->hmax ||
-            cellptr->bbmax[1] + max((FLOAT) 0.0,cellptr->v[1]*tghost) >
-            simbox.boxmax[1] - grange*cellptr->hmax) {
-
-          // If not a leaf-cell, then open cell to first child cell
-          if (cellptr->level != tree->ltot) {
-            c++;
-          }
-          else if (cellptr->N == 0) {
-            c = cellptr->cnext;
-          }
-          // If leaf-cell, check through particles in turn to find ghosts
-          else if (cellptr->level == tree->ltot) {
-            i = cellptr->ifirst;
-            while (i != -1) {
-              hydro->CheckYBoundaryGhostParticle(i,tghost,simbox);
-              if (i == cellptr->ilast) break;
-              i = tree->inext[i];
-            };
-            c = cellptr->cnext;
-          }
-        }
-
-        // If not in range, then open next cell
-        //-----------------------------------------------------------------------------------------
-        else {
+        // If leaf-cell, check through particles in turn to find ghosts
+        else if (cellptr->level == tree->ltot) {
+          i = cellptr->ifirst;
+          while (i != -1) {
+            hydro->CheckXBoundaryGhostParticle(i,tghost,simbox);
+            if (i == cellptr->ilast) break;
+            i = tree->inext[i];
+          };
           c = cellptr->cnext;
         }
-
       }
+
+      // If not in range, then open next cell
       //-------------------------------------------------------------------------------------------
-
-
-      // Check x-ghosts (which are not part of tree) by direct-sum
-      for (i=hydro->Nhydro; i<hydro->Ntot; i++) hydro->CheckYBoundaryGhostParticle(i,tghost,simbox);
-
-      hydro->Ntot = hydro->Nhydro + hydro->Nghost;
-    }
-
-
-    // Create ghost particles in z-dimension
-    //=============================================================================================
-    if (ndim == 3 && (simbox.boundary_lhs[2] == openBoundary &&
-        simbox.boundary_rhs[2] == openBoundary) == 0) {
-
-      // Start from root-cell
-      c = 0;
-
-      //-------------------------------------------------------------------------------------------
-      while (c < tree->Ncell) {
-        cellptr = &(tree->celldata[c]);
-
-        // If x-bounding box overlaps edge of x-domain, open cell
-        //-----------------------------------------------------------------------------------------
-        if (cellptr->bbmin[2] + min((FLOAT) 0.0,cellptr->v[2]*tghost) <
-            simbox.boxmin[2] + grange*cellptr->hmax ||
-            cellptr->bbmax[2] + max((FLOAT) 0.0,cellptr->v[2]*tghost) >
-            simbox.boxmax[2] - grange*cellptr->hmax) {
-
-          // If not a leaf-cell, then open cell to first child cell
-          if (cellptr->level != tree->ltot) {
-            c++;
-          }
-          else if (cellptr->N == 0) {
-            c = cellptr->cnext;
-          }
-          // If leaf-cell, check through particles in turn to find ghosts
-          else if (cellptr->level == tree->ltot) {
-            i = cellptr->ifirst;
-            while (i != -1) {
-              hydro->CheckZBoundaryGhostParticle(i,tghost,simbox);
-              if (i == cellptr->ilast) break;
-              i = tree->inext[i];
-            };
-            c = cellptr->cnext;
-          }
-        }
-
-        // If not in range, then open next cell
-        //-----------------------------------------------------------------------------------------
-        else {
-          c = cellptr->cnext;
-        }
-
+      else {
+        c = cellptr->cnext;
       }
-      //-------------------------------------------------------------------------------------------
 
-
-      // Check x- and y-ghosts (which are not part of tree) by direct-sum
-      for (i=hydro->Nhydro; i<hydro->Ntot; i++) hydro->CheckZBoundaryGhostParticle(i,tghost,simbox);
-
-      hydro->Ntot = hydro->Nhydro + hydro->Nghost;
     }
+    //---------------------------------------------------------------------------------------------
 
-    hydro->NPeriodicGhost = hydro->Nghost;
-    if (hydro->Ntot > Ntotmax) {
-      Ntotmax = hydro->Ntot;
-      ReallocateMemory();
-      okFlag = false;
-    }
+    hydro->Ntot = hydro->Nhydro + hydro->Nghost;
+  }
 
-  } while (!okFlag);
+
+  // Create ghost particles in y-dimension
   //===============================================================================================
+  if (ndim >= 2 && (simbox.boundary_lhs[1] == openBoundary &&
+                    simbox.boundary_rhs[1] == openBoundary) == 0) {
+
+    // Start from root-cell
+    c = 0;
+
+    //---------------------------------------------------------------------------------------------
+    while (c < tree->Ncell) {
+      cellptr = &(tree->celldata[c]);
+
+      // If x-bounding box overlaps edge of x-domain, open cell
+      //-------------------------------------------------------------------------------------------
+      if (cellptr->bbmin[1] + min((FLOAT) 0.0,cellptr->v[1]*tghost) <
+          simbox.boxmin[1] + grange*cellptr->hmax ||
+          cellptr->bbmax[1] + max((FLOAT) 0.0,cellptr->v[1]*tghost) >
+          simbox.boxmax[1] - grange*cellptr->hmax) {
+
+        // If not a leaf-cell, then open cell to first child cell
+        if (cellptr->level != tree->ltot) {
+          c++;
+        }
+        else if (cellptr->N == 0) {
+          c = cellptr->cnext;
+        }
+        // If leaf-cell, check through particles in turn to find ghosts
+        else if (cellptr->level == tree->ltot) {
+          i = cellptr->ifirst;
+          while (i != -1) {
+            hydro->CheckYBoundaryGhostParticle(i,tghost,simbox);
+            if (i == cellptr->ilast) break;
+            i = tree->inext[i];
+          };
+          c = cellptr->cnext;
+        }
+      }
+
+      // If not in range, then open next cell
+      //-------------------------------------------------------------------------------------------
+      else {
+        c = cellptr->cnext;
+      }
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+
+    // Check x-ghosts (which are not part of tree) by direct-sum
+    for (i=hydro->Nhydro; i<hydro->Ntot; i++) hydro->CheckYBoundaryGhostParticle(i,tghost,simbox);
+
+    hydro->Ntot = hydro->Nhydro + hydro->Nghost;
+  }
+
+
+  // Create ghost particles in z-dimension
+  //===============================================================================================
+  if (ndim == 3 && (simbox.boundary_lhs[2] == openBoundary &&
+      simbox.boundary_rhs[2] == openBoundary) == 0) {
+
+    // Start from root-cell
+    c = 0;
+
+    //---------------------------------------------------------------------------------------------
+    while (c < tree->Ncell) {
+      cellptr = &(tree->celldata[c]);
+
+      // If x-bounding box overlaps edge of x-domain, open cell
+      //-------------------------------------------------------------------------------------------
+      if (cellptr->bbmin[2] + min((FLOAT) 0.0,cellptr->v[2]*tghost) <
+          simbox.boxmin[2] + grange*cellptr->hmax ||
+          cellptr->bbmax[2] + max((FLOAT) 0.0,cellptr->v[2]*tghost) >
+          simbox.boxmax[2] - grange*cellptr->hmax) {
+
+        // If not a leaf-cell, then open cell to first child cell
+        if (cellptr->level != tree->ltot) {
+          c++;
+        }
+        else if (cellptr->N == 0) {
+          c = cellptr->cnext;
+        }
+        // If leaf-cell, check through particles in turn to find ghosts
+        else if (cellptr->level == tree->ltot) {
+          i = cellptr->ifirst;
+          while (i != -1) {
+            hydro->CheckZBoundaryGhostParticle(i,tghost,simbox);
+            if (i == cellptr->ilast) break;
+            i = tree->inext[i];
+          };
+          c = cellptr->cnext;
+        }
+      }
+
+      // If not in range, then open next cell
+      //-------------------------------------------------------------------------------------------
+      else {
+        c = cellptr->cnext;
+      }
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+
+    // Check x- and y-ghosts (which are not part of tree) by direct-sum
+    for (i=hydro->Nhydro; i<hydro->Ntot; i++) hydro->CheckZBoundaryGhostParticle(i,tghost,simbox);
+
+    hydro->Ntot = hydro->Nhydro + hydro->Nghost;
+  }
+
+  hydro->NPeriodicGhost = hydro->Nghost;
+  if (hydro->Ntot > Ntotmax) {
+    Ntotmax = hydro->Ntot;
+    ReallocateMemory();
+  }
+
 
   return;
 }
