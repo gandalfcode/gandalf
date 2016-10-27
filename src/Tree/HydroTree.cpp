@@ -497,12 +497,10 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
   hydro->Nmpighost      = 0;
   hydro->Ntot           = hydro->Nhydro;
 
-
   // If all boundaries are open, immediately return to main loop
   if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
       simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
       simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary) return;
-
 
   debug2("[HydroTree::SearchBoundaryGhostParticles]");
 
