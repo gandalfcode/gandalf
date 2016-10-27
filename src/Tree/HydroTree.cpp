@@ -606,6 +606,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
     if (hydro->Ntot > Ntotmax) {
       Ntotmax = hydro->Ntot;
       ReallocateMemory();
+      okFlag = false;
     }
 
   } while (!okFlag);
