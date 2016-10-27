@@ -507,8 +507,6 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
   debug2("[HydroTree::SearchBoundaryGhostParticles]");
 
 
-  // Create ghost particles in x-dimension
-  //===============================================================================================
   for (int j = 0; j < ndim; j++) {
     if ((simbox.boundary_lhs[j] != openBoundary || simbox.boundary_rhs[j] != openBoundary)) {
 
@@ -1204,7 +1202,6 @@ int HydroTree<ndim,ParticleType>::SearchMpiGhostParticles
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   vector<int> &export_list)            ///< [out] List of particle ids
 {
-
   const FLOAT grange = 2.0*ghost_range*kernrange;
 
   // Walk both trees.
@@ -1700,6 +1697,7 @@ void HydroTree<ndim,ParticleType>::CheckValidNeighbourList
   return;
 }
 #endif
+
 
 
 template class HydroTree<1,GradhSphParticle>;
