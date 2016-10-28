@@ -75,11 +75,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
 
   if (mfv->hydro_forces) {
-    mfvneib->UpdateHydroExportList(rank, mfv->Nhydro, mfv->Ntot, mfv, nbody, simbox);
+    mfvneib->UpdateHydroExportList(rank, mfv, nbody, simbox);
 
     mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-    // Update pointer in case there has been a reallocation
-    partdata = mfv->GetMeshlessFVParticleArray();
   }
 #endif
   // Update the numerical fluxes of all active particles
@@ -109,8 +107,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
     mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
     mpicontrol->LoadBalancing(mfv, nbody);
-    // Update pointer in case there has been a reallocation
-    partdata = mfv->GetMeshlessFVParticleArray();
   }
 #endif
 
@@ -127,22 +123,20 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     // Re-build and communicate the new pruned trees (since the trees will necessarily change
     // once there has been communication of particles to new domains)
 #ifdef MPI_PARALLEL
-      mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
-      mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
-      MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
+    mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
+    mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
+    MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
       mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,  timestep, mfv);
 #endif
   }
   else {
-	    mfv->CopyDataToGhosts(simbox,partdata);
-	    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-	                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+    mfv->CopyDataToGhosts(simbox);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
-	  MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
-      mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                                 mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+    mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 #endif
-    mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+    mfv->CopyDataToGhosts(simbox);
   }
 
 
@@ -172,7 +166,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
     // Re-build/re-stock tree now particles have moved
     mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
-    mfv->CopyDataToGhosts(simbox,partdata);
+    mfv->CopyDataToGhosts(simbox);
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
 	MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
@@ -186,14 +180,12 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Calculate terms due to self-gravity / stars
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
     // Update the density to get the correct softening & grad-h terms.
-    mfvneib->UpdateAllProperties( mfv, nbody, simbox);
+    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
     mfv->CopyDataToGhosts(simbox);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
-    	mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox);
-    	mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-	  // Update pointer in case there has been a reallocation
-	  partdata = mfv->GetMeshlessFVParticleArray();
+      mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox);
+      mpicontrol->ExportParticlesBeforeForceLoop(mfv);
     }
 #endif
     // Does only the star forces in mfv->self_gravity != 1
