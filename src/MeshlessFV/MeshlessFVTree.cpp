@@ -623,8 +623,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
-    for (int cc=0; cc<cactive; cc++) {
-      TreeCellBase<ndim>& cell = celllist[cc];
+    for (cc=0; cc<cactive; cc++) {
+     TreeCellBase<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
@@ -717,17 +717,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
           }
         }
         //-----------------------------------------------------------------------------------------
-
-        // Don't do the flux calculation if:
-        //  1) We're going to flag this particle for needing a smaller time-step
-        //  2) All fluxes are provided by neighbours
-        if (level_diff_max > 0 &&
-            (activepart[j].levelneib - activepart[j].level) > level_diff_max) {
-          Nrecalc++;
-          continue;
-        }
-        if (Nhydroaux == 0)
-          continue ;
 
         // Compute all neighbour contributions to hydro fluxes
         mfv->ComputeGodunovFlux(i, Nhydroaux, mfvlist, timestep, activepart[j], neibpart);
