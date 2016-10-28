@@ -295,7 +295,7 @@ protected:
   int Nprunedcellmax;                              ///< Max. number of cells in pruned tree
   int *Npartexport;                                ///< No. of ptcls to be exported (per MPI node)
 
-  vector<vector<int>> cellexportlist;              ///< List of cell ids
+  vector<vector<int> > cellexportlist;             ///< List of cell ids
   TreeBase<ndim> *mpighosttree;                    ///< Pointer to tree containing
                                                    ///< ghosts from other MPI procs.
   TreeBase<ndim> **prunedtree;                     ///< 'Pruned' tree for MPI nodes.

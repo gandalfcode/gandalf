@@ -346,7 +346,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
   tree->UpdateAllHmaxValues(mfvdata);
   if (ghosttree->Ntot > 0) ghosttree->UpdateAllHmaxValues(mfvdata);
 #ifdef MPI_PARALLEL
-  if (mfv->Nmpighost > 0) mpighosttree->UpdateaLLHmaxValues(mfvdata);
+  if (mfv->Nmpighost > 0) mpighosttree->UpdateAllHmaxValues(mfvdata);
 #endif
 
   // Set-up all OMP threads

@@ -516,7 +516,7 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
     if ((simbox.boundary_lhs[j] != openBoundary || simbox.boundary_rhs[j] != openBoundary)) {
 
       // Do the real particles using the tree
-      tree->GenerateBoundaryGhostParticles(tghost, grange, 0, simbox, hydro) ;
+      tree->GenerateBoundaryGhostParticles(tghost, grange, j, simbox, hydro) ;
 
       // Include ghosts-of-ghosts by doing ghosts explicitly.
       if (j > 0) for (i=hydro->Nhydro; i<hydro->Ntot; i++)
@@ -1411,7 +1411,7 @@ int HydroTree<ndim,ParticleType>::GetExportInfo
   const int size_cells      = tree->GetSizeOfExportedCellData(cactive) ;
   const int old_size        = send_buffer.size();
 
-  vector<TreeCell<ndim>*>& celllist = cellexportlist[iproc];
+  vector<int>& celllist = cellexportlist[iproc];
 
 
   assert(tree->Nimportedcell == 0);
@@ -1433,7 +1433,7 @@ int HydroTree<ndim,ParticleType>::GetExportInfo
 
   // Write the packed data
   int exported_particles =
-      tree->PackParticlesAndCellsForMPITransfer(cactive, cellexportlist[iproc],
+      tree->PackParticlesAndCellsForMPITransfer(cellexportlist[iproc],
                                                 ids_active_cells,
                                                 ids_active_particles,
                                                 send_buffer,
@@ -1441,7 +1441,7 @@ int HydroTree<ndim,ParticleType>::GetExportInfo
 
   assert(exported_particles == Nactive);
   assert(ids_active_particles.size() == static_cast<unsigned int>(Nactive)) ;
-  assert(ids_active_cells.size() == static_cast<unsigned int>(cactive)) ;
+//  assert(ids_active_cells.size() == static_cast<unsigned int>(cactive)) ;
 
   return size_particles + size_cells;
 }

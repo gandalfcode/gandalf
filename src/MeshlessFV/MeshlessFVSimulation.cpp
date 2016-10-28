@@ -516,7 +516,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro+mfv->NPeriodicGhost, mfv, mfv->kernp);
   for (int i=0; i<mfv->Nhydro+mfv->NPeriodicGhost; i++) {
     MeshlessFVParticle<ndim>& parti = partdata[i];
-    parti.hrangesqd = mfv->kernfacsqd*mfv->kernp->kernrangesqd*parti.h*parti.h;
+    parti.hrangesqd = mfv->kernp->kernrangesqd*parti.h*parti.h;
   }
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
   // Update pointer in case there has been a reallocation

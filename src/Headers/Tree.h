@@ -200,7 +200,7 @@ class TreeBase
 	virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) = 0;
 	virtual int FindBoxGhostParticles(const FLOAT, const FLOAT, const Box<ndim> &,
 	                                  vector<int> &export_list) = 0;
-	virtual int PackParticlesAndCellsForMPITransfer(int Ncells, const int* celllist,
+	virtual int PackParticlesAndCellsForMPITransfer(const vector<int>& celllist,
                                                     vector<int>& cell_ids, vector<int>& part_ids,
                                                     vector<char>& send_buffer,
                                                     Particle<ndim>*) = 0;
@@ -346,7 +346,7 @@ protected:
   virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) ;
   virtual int FindBoxGhostParticles(const FLOAT, const FLOAT, const Box<ndim> &,
                                     vector<int> &export_list) ;
-  virtual int PackParticlesAndCellsForMPITransfer(int Ncells, const int* celllist,
+  virtual int PackParticlesAndCellsForMPITransfer(const vector<int>& celllist,
                                                   vector<int>& cell_ids, vector<int>& part_ids,
                                                   vector<char>& send_buffer,
                                                   Particle<ndim>*);
@@ -414,12 +414,6 @@ protected:
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
   const DomainBox<ndim>& _domain ;     ///< Whole simulation domain
   Typemask gravmask ;                  ///< Particle types that contribute to gravity
-
-
-#if defined MPI_PARALLEL
-  int Nimportedcell;                      ///< No. of imported cells
-#endif
-
 };
 
 #endif

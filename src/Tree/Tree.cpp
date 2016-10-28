@@ -1655,8 +1655,7 @@ void Tree<ndim,ParticleType,TreeCell>::AddWorkCost(vector<TreeCellBase<ndim> >& 
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::PackParticlesAndCellsForMPITransfer
-(int Ncells,                                  ///< [in] Number of cells to pack
- const int* celllist,                         ///< [in] List of cells to pack
+(const vector<int>& celllist,                 ///< [in] List of cells to pack
  vector<int>& active_cells,                   ///< [out] List of active cells in buffer
  vector<int>& active_particles,               ///< [out] List of active particles in buffer
  vector<char>& send_buffer,                   ///< [out] Buffer of packed data
@@ -1673,6 +1672,7 @@ int Tree<ndim,ParticleType,TreeCell>::PackParticlesAndCellsForMPITransfer
   // Loop over all cells to be exported and include all cell and particle data
   //-----------------------------------------------------------------------------------------------
   int exported_particles = 0 ;
+  int Ncells = celllist.size();
   for (int cc=0; cc<Ncells; cc++) {
     active_cells.push_back(celllist[cc]) ;
     TreeCell<ndim>& cell_orig = celldata[celllist[cc]];

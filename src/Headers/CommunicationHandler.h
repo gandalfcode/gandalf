@@ -228,7 +228,7 @@ public:
   typedef MeshlessExportParticle DataType;
   typedef MeshlessForcesParticle ReturnDataType;
 
-  void ReceiveParticleAccelerations (ReturnDataType* pointer, MeshlessFVParticle<ndim>& p2) {
+  void ReceiveParticleAccelerations (const ReturnDataType* pointer, MeshlessFVParticle<ndim>& p2) {
 	    const ReturnDataType& p = *pointer;
 
 	    for (int k=0; k<ndim; k++) {
@@ -244,9 +244,8 @@ public:
 	    p2.gpot += p.gpot;
   }
 
-  void ReceiveParticle (void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
-    DataType& p = *reinterpret_cast<DataType*>(pointer);
-    MeshlessFV<ndim>* mfv = static_cast<MeshlessFV<ndim>* > (hydro);
+  void ReceiveParticle (const void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
+    const DataType& p = *reinterpret_cast<const DataType*>(pointer);
     p2.iorig = p.iorig;
     p2.flags = type_flag(p.flags);
     p2.ptype = p.ptype;
@@ -278,9 +277,9 @@ public:
 
   //Recompute h dependent stuff
   p2.rho = p2.ndens*p2.m;
-  p2.h = hydro->h_fac*powf(1/p2.ndens, MeshlessFV<ndim>::invndim);
+  p2.h = hydro->h_fac*powf(1/p2.ndens, (FLOAT)(1.)/ndim);
   p2.hfactor = pow(1/p2.h, ndim+1);
-  p2.hrangesqd = hydro->kernfacsqd*hydro->kernrange*hydro->kernrange*p2.h*p2.h;
+  p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
   }
 
 };
