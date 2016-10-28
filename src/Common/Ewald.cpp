@@ -92,7 +92,6 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     }
 
 
-
     // set ewald_periodicity for given type of boundary conditions
     ewald_periodicity = 0;
     if (simbox.boundary_lhs[0] == periodicBoundary && simbox.boundary_rhs[0] == periodicBoundary) {
@@ -105,6 +104,15 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
       ewald_periodicity+=4;
     }
 
+
+    // If 1d, 2d or 3d periodic gravity is required (i.e. ewald_periodicity > 0) and the
+    // GSL library is not included, then throw an exception with an error message.
+#ifndef GANDALF_GSL
+    if (ewald_periodicity > 0) {
+      ExceptionHandler::getIstance().raise("GSL not included in compilation; "
+                                           "required by periodic Ewald gravity");
+    }
+#endif
 
 
     // prepare useful constants for generating Ewald field
