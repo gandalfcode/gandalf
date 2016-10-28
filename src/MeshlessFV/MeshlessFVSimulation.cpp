@@ -744,12 +744,13 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
   if (nbody->nbody_softening == 1) {
-    nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
+    nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
   }
   else {
     nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
   }
   nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata);
+
 
   for (i=0; i<nbody->Nnbody; i++) {
     if (nbody->nbodydata[i]->active) {

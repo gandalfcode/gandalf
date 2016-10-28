@@ -90,6 +90,33 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   simunits.SetupUnits(simparams);
 
 
+  // Boundary condition variables
+  //-----------------------------------------------------------------------------------------------
+  simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
+  simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
+  simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+
+  if (ndim > 1) {
+    simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
+    simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
+    simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+    simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+  }
+
+  if (ndim == 3) {
+    simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
+    simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
+    simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+    simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+  }
+
+  for (int k=0; k<ndim; k++) {
+    simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
+    simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+  }
+
+
   // Set-up dummy SPH object in order to have valid pointers in N-body object
   hydro = new NullHydrodynamics<ndim>
     (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
@@ -119,6 +146,25 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   nbody->extpot = extpot;
 
 
+  // Create Ewald periodic gravity object
+  periodicBoundaries = IsAnyBoundaryPeriodic(simbox);
+  if (periodicBoundaries && intparams["self_gravity"] == 1) {
+    ewaldGravity = true;
+    ewald = new Ewald<ndim>
+      (simbox, intparams["gr_bhewaldseriesn"], intparams["in"], intparams["nEwaldGrid"],
+       floatparams["ewald_mult"], floatparams["ixmin"], floatparams["ixmax"],
+       floatparams["EFratio"], timing);
+    simbox.PeriodicGravity = true ;
+  }
+  else{
+    simbox.PeriodicGravity = false ;
+    if (IsAnyBoundaryReflecting(simbox) && intparams["self_gravity"]){
+      ExceptionHandler::getIstance().raise("Error: Reflecting boundaries and self-gravity is not "
+                                       "supported") ;
+    }
+  }
+
+
   // Set important variables for N-body objects
   nbody->Nstar          = intparams["Nstar"];
   nbody->Nstarmax       = intparams["Nstarmax"];
@@ -127,39 +173,6 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   nbodytree.gpesoft     = floatparams["gpesoft"];
   //nbody->perturbers     = intparams["perturbers"];
   //if (intparams["sub_systems"] == 1) subsystem->perturbers = intparams["perturbers"];
-
-
-  // Boundary condition variables
-  //-----------------------------------------------------------------------------------------------
-  simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
-  simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
-  simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
-  simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
-  //if (simbox.boundary_lhs[0] == "open") simbox.boxmin[0] = -big_number;
-  //if (simbox.boundary_rhs[0] == "open") simbox.boxmax[0] = big_number;
-
-  if (ndim > 1) {
-    simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
-    simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
-    simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
-    simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-    //if (simbox.boundary_lhs[1] == "open") simbox.boxmin[1] = -big_number;
-    //if (simbox.boundary_rhs[1] == "open") simbox.boxmax[1] = big_number;
-  }
-
-  if (ndim == 3) {
-    simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
-    simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
-    simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
-    simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
-    //if (simbox.boundary_lhs[2] == "open") simbox.boxmin[2] = -big_number;
-    //if (simbox.boundary_rhs[2] == "open") simbox.boxmax[2] = big_number;
-  }
-
-  for (int k=0; k<ndim; k++) {
-    simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
-    simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
-  }
 
 
   // Set other important simulation variables
@@ -232,7 +245,13 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     nbody->Nnbody = nbody->Nstar;
-    nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+    if (nbody->nbody_softening == 1) {
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+    }
+    else {
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+    }
+    //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->active) {
@@ -293,7 +312,13 @@ void NbodySimulation<ndim>::MainLoop(void)
       nbody->Nnbody = nbody->Nstar;
 
       // Calculate forces for all star by direct-sum
-      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      if (nbody->nbody_softening == 1) {
+        nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+      }
+      else {
+        nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+      }
+      //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
       nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
       // Now create nearest neighbour tree and build any sub-systems from tree
@@ -344,7 +369,13 @@ void NbodySimulation<ndim>::MainLoop(void)
       }
 
       // Calculate forces, force derivatives etc.., for active stars/systems
-      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      if (nbody->nbody_softening == 1) {
+        nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+      }
+      else {
+        nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+      }
+      //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
 
       for (i=0; i<nbody->Nnbody; i++) {
         if (nbody->nbodydata[i]->active) {

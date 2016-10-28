@@ -88,21 +88,17 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
 
   if (N > Nhydromax || !allocated) {
 
-	GradhSphParticle<ndim>* oldsphdata;
-	if (allocated) {
-		oldsphdata = sphdata;
-	}
-	else {
-	}
-
-
-    sphdata          = new struct GradhSphParticle<ndim>[N];
     if (allocated) {
-    	std::copy(oldsphdata,oldsphdata+Nhydromax,sphdata);
-        delete[] oldsphdata;
+      GradhSphParticle<ndim>* oldsphdata = sphdata;
+      sphdata = new struct GradhSphParticle<ndim>[N];
+      std::copy(oldsphdata, oldsphdata+Nhydromax, sphdata);
+      delete[] oldsphdata;
+    }
+    else {
+      sphdata = new struct GradhSphParticle<ndim>[N];
     }
 
-	Nhydromax=N;
+    Nhydromax=N;
     allocated        = true;
     hydrodata_unsafe = sphdata;
     sphdata_unsafe   = sphdata;
@@ -261,7 +257,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
     // Density must at least equal its self-contribution
     // (failure could indicate neighbour list problem)
-    assert(parti.rho >= parti.m*parti.hfactor*kern.w0(0.0));
+    assert(parti.rho >= (FLOAT) 0.999*parti.m*parti.hfactor*kern.w0(0.0));
 
     FLOAT invrho = 0 ;
     if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;

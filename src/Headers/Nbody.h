@@ -29,6 +29,8 @@
 #include "Precision.h"
 #include "CodeTiming.h"
 #include "Constants.h"
+#include "DomainBox.h"
+#include "Ewald.h"
 #include "ExternalPotential.h"
 #include "Hydrodynamics.h"
 #include "Parameters.h"
@@ -79,7 +81,8 @@ class Nbody
   //-----------------------------------------------------------------------------------------------
   virtual void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **) = 0;
   virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
-  virtual void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **) = 0;
+  virtual void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **,
+                                                 DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                           int *, int *, Hydrodynamics<ndim> *) = 0;
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
@@ -168,7 +171,7 @@ public:
 
   void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) {};
-  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **, DomainBox<ndim> &, Ewald<ndim> *);
   void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                   int *, int *, Hydrodynamics<ndim> *);
   void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
@@ -206,7 +209,7 @@ public:
 
   void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) {};
-  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **, DomainBox<ndim> &, Ewald<ndim> *);
   void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                   int *, int *, Hydrodynamics<ndim> *);
   void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **) {};
@@ -246,7 +249,7 @@ public:
 
   void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
-  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **, DomainBox<ndim> &, Ewald<ndim> *);
   void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                   int *, int *, Hydrodynamics<ndim> *);
   void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
@@ -320,7 +323,7 @@ public:
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
   void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
-  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **, DomainBox<ndim> &, Ewald<ndim> *);
   void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
                                   int *, int *, Hydrodynamics<ndim> *);
   void CorrectionTerms(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);

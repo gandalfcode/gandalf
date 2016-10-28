@@ -62,15 +62,9 @@ private:
   void AddAzimuthalDensityPerturbation(const int, const int, const FLOAT, const FLOAT *, FLOAT *);
   void AddBinaryStar(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
                      FLOAT *, FLOAT *, NbodyParticle<ndim> &, NbodyParticle<ndim> &);
-  void AddCubicLattice(const int, const int *, const DomainBox<ndim>&, const bool, FLOAT *);
-  void AddHexagonalLattice(const int, const int *, const DomainBox<ndim>&, const bool, FLOAT *);
-  int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *);
   void AddRotationalVelocityField(const int, const FLOAT, const FLOAT *, const FLOAT *, FLOAT *);
-  void AddRandomBox(const int, const DomainBox<ndim>, FLOAT *);
-  void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *);
   void Addr2Sphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
-  int CutSphere(const int, const int, const DomainBox<ndim>, const bool, FLOAT *);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   void GenerateTurbulentVelocityField(const int, const int, const DOUBLE, DOUBLE *);
   void InterpolateVelocityField(const int, const int, const FLOAT, const FLOAT,
@@ -79,10 +73,10 @@ private:
 
 public:
 
-  Ic(Simulation<ndim>* sim_aux, Hydrodynamics<ndim>* hydro_aux, FLOAT invndim_aux) :
-    sim(sim_aux), hydro(hydro_aux), invndim(invndim_aux),
-    simunits(sim_aux->simunits), simbox(sim_aux->simbox),
-    simparams(sim_aux->simparams), randnumb(sim_aux->randnumb)
+  Ic(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
+    sim(_sim), hydro(_hydro), invndim(_invndim),
+    simunits(_sim->simunits), simbox(_sim->simbox),
+    simparams(_sim->simparams), randnumb(_sim->randnumb)
   {
   };
 
@@ -119,6 +113,16 @@ public:
   void TurbIsothermSphere(void);
   void EvrardCollapse(void);
   void DustyBox(void);
+
+  // Static functions which can be used outside of Ic class
+  // (e.g. generating new particles on the fly in simulations)
+  //-----------------------------------------------------------------------------------------------
+  static void AddCubicLattice(const int, const int *, const DomainBox<ndim> &, const bool, FLOAT *);
+  static void AddHexagonalLattice(const int, const int *, const DomainBox<ndim> &, const bool, FLOAT *);
+  static int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *, RandomNumber *);
+  static void AddRandomBox(const int, const DomainBox<ndim>, FLOAT *, RandomNumber *);
+  static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
+  static int CutSphere(const int, const int, const DomainBox<ndim>, const bool, FLOAT *);
 
 };
 #endif
