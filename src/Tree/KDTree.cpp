@@ -76,7 +76,6 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
   Nthreads       = 1;
 #endif
 #if defined MPI_PARALLEL
-  Ncelltot       = 0;
   Nimportedcell  = 0;
 #endif
 }

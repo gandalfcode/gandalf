@@ -121,7 +121,6 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::gravmask ;
 #ifdef MPI_PARALLEL
   using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
-  using Tree<ndim,ParticleType,TreeCell>::Ncelltot;
 #endif
 
 

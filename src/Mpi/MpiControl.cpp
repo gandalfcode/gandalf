@@ -1174,3 +1174,6 @@ template class MpiControlType<3, GradhSphParticle>;
 template class MpiControlType<1, SM2012SphParticle>;
 template class MpiControlType<2, SM2012SphParticle>;
 template class MpiControlType<3, SM2012SphParticle>;
+template class MpiControlType<1, MeshlessFVParticle>;
+template class MpiControlType<2, MeshlessFVParticle>;
+template class MpiControlType<3, MeshlessFVParticle>;

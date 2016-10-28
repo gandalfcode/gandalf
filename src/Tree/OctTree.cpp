@@ -71,7 +71,6 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
   Nthreads       = 1;
 #endif
 #if defined MPI_PARALLEL
-  Ncelltot       = 0;
   Nimportedcell  = 0;
 #endif
 }

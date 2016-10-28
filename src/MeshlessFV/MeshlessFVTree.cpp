@@ -173,7 +173,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     int* neiblist = new int[Nneibmax];         // Local array of neighbour particle ids
     int* ptype    = new int[Nneibmax];         // Local array of particle types
     FLOAT* gpot   = new FLOAT[Nneibmax];       // Local array of particle potentials
-    FLOAT* gpot2  = new FLOAT[Nneibmax];       // Local reduced array of neighbour potentials
     FLOAT* drsqd  = new FLOAT[Nneibmax];       // Local array of distances (squared)
     FLOAT* m      = new FLOAT[Nneibmax];       // Local array of particle masses
     FLOAT* m2     = new FLOAT[Nneibmax];       // Local reduced array of neighbour masses
@@ -226,7 +225,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
           delete[] m2;
           delete[] m;
           delete[] drsqd;
-          delete[] gpot2;
           delete[] gpot;
           delete[] ptype;
           delete[] neiblist;
@@ -234,7 +232,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
           neiblist = new int[Nneibmax];
           ptype    = new int[Nneibmax];
           gpot     = new FLOAT[Nneibmax];
-          gpot2    = new FLOAT[Nneibmax];
           drsqd    = new FLOAT[Nneibmax];
           m        = new FLOAT[Nneibmax];
           m2       = new FLOAT[Nneibmax];
@@ -252,7 +249,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j         = neiblist[jj];
-          gpot[jj]  = mfvdata[j].gpot;
+          //gpot[jj]  = mfvdata[j].gpot;
           m[jj]     = mfvdata[j].m;
           ptype[jj] = mfvdata[j].ptype;
           for (k=0; k<ndim; k++) r[ndim*jj + k] = mfvdata[j].r[k];
@@ -281,7 +278,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
             // Record distance squared and masses for all potential gather neighbours
             if (drsqdaux <= hrangesqd) {
-              gpot[Ngather]  = gpot[jj];
+              //gpot[Ngather]  = gpot[jj];
               drsqd[Ngather] = drsqdaux;
               m2[Ngather]    = m[jj];
               Ngather++;
@@ -326,7 +323,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     delete[] m2;
     delete[] m;
     delete[] drsqd;
-    delete[] gpot2;
     delete[] gpot;
     delete[] ptype;
     delete[] neiblist;
@@ -342,7 +338,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+#ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
   // Update tree smoothing length values here
@@ -391,6 +389,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
   // Update ghost tree smoothing length values here
   tree->UpdateHmaxValues(tree->celldata[0], mfvdata);
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], mfvdata);
+#ifdef MPI_PARALLEL
+  if (mfv->Nmpighost > 0) mpighosttree->UpdateHmaxValues(mpighosttree->celldata[0],mfvdata);
+#endif
 
 
   // Set-up all OMP threads
@@ -445,6 +446,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
       Nneib = 0;
       Nneib = tree->ComputeNeighbourAndGhostList
         (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
+#ifdef MPI_PARALLEL
+      Nneib = mpighosttree->ComputeNeighbourList(cell,mfvdata,Nneibmax,Nneib,neiblist,neibpart);
+#endif
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour list.
@@ -467,6 +471,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         Nneib = 0;
         Nneib = tree->ComputeNeighbourAndGhostList
           (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
+#ifdef MPI_PARALLEL
+      Nneib = mpighosttree->ComputeNeighbourList(cell,mfvdata,Nneibmax,Nneib,neiblist,neibpart);
+#endif
       };
 
 
@@ -538,6 +545,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
         }
         mfvdata[i].vsig_max = activepart[j].vsig_max;
         mfvdata[i].levelneib = activepart[j].levelneib;
+        mfvdata[i].flags = activepart[j].flags;
       }
 
 
@@ -576,7 +584,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
-  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#ifdef OUTPUT_ALL
+  cout << "Time computing gradients : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
 
@@ -608,7 +618,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
   double twork = timing->WallClockTime();  // Start time (for load balancing)
 #endif
 
-  debug2("[MeshlessFVTree::UpdateGradientMatrices]");
+  debug2("[MeshlessFVTree::UpdateGodunovFluxes]");
   timing->StartTimingSection("MFV_UPDATE_FLUXES");
 
 
@@ -752,9 +762,15 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
           // or (v) neighbour is on same level as current particle but has larger id. value
           // (to only calculate each pair once).
           if (hydromask[neibpart[jj].ptype] == false || neibpart[jj].flags.is_dead()) continue ;
-          if ((!neibpart[jj].flags.is_mirror()) &&
-              (neiblist[jj] == i || activepart[j].level < neibpart[jj].level ||
-              (neibpart[jj].iorig < i && neibpart[jj].level == activepart[j].level))) continue;
+
+          bool need_fluxes =
+              (neibpart[jj].flags.is_mirror()) ||
+              (activepart[j].level > neibpart[jj].level) ||
+              (activepart[j].level == neibpart[jj].level &&
+               activepart[j].iorig < neibpart[jj].iorig) ;
+
+          if (not need_fluxes) continue ;
+
 
           // Compute relative position and distance quantities for pair
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
@@ -782,7 +798,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
       // Accumulate fluxes for neighbours
       for (int jj=0; jj<Nneib; jj++) {
-        i = neibpart[jj].iorig;
+        i = neiblist[jj] ;
         if (!neibpart[jj].flags.is_mirror()) {
 	        if (neibpart[jj].flags.check_flag(active))
 	          for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];
@@ -807,7 +823,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #pragma omp barrier
 #pragma omp critical
     {
-      for (i=0; i<Nhydro; i++) {
+      for (i=0; i<Ntot; i++) {
 	    if (mfvdata[i].flags.check_flag(active))
 	      for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
         for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
@@ -837,7 +853,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     int c = celllist[cc].id;
     tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
-  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#ifdef OUTPUT_ALL
+  cout << "Time computing fluxes : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
 #endif
 
 
@@ -1097,8 +1115,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k] = activepart[j].a[k];
-        partdata[i].gpot  = activepart[j].gpot;
+        for (k=0; k<ndim; k++) partdata[i].a[k] += activepart[j].a[k];
+        partdata[i].gpot  += activepart[j].gpot;
       }
 
     }

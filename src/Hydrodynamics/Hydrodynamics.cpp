@@ -307,7 +307,7 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   // Reallocate memory if necessary
   if (Nhydro+Nghost >= Nhydromax) {
 	  //TODO: should create a layer on top of AllocateMemory, it should not be called directly
-	  AllocateMemory(Nhydromax+1);
+	  AllocateMemory(1.1*Nhydromax+1);
   }
 
   int id_new_ghost = Nhydro + Nghost;
