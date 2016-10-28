@@ -696,12 +696,10 @@ void SphSimulation<ndim>::MainLoop(void)
   // Otherwise copy properties from original particles to ghost particles
   else {
     LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
-    sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                            sph->Ntot, sph->Nhydromax, timestep, partdata, sph);
+    sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
-    sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                               sph->Ntot, sph->Nhydromax, timestep, partdata, sph);
+    sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
     sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
   }

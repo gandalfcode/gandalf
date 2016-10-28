@@ -82,7 +82,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 {
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;		   // List of active tree cells
-  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
@@ -313,7 +312,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 {
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;                // List of active tree cells
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
@@ -551,7 +549,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 {
   int cactive;                         // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
@@ -861,7 +858,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 {
   int cactive;                         // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
