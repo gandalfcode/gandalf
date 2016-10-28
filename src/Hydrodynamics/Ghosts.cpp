@@ -344,4 +344,7 @@ template class MpiGhostsSpecific<3, GradhSphParticle>;
 template class MpiGhostsSpecific<1, SM2012SphParticle>;
 template class MpiGhostsSpecific<2, SM2012SphParticle>;
 template class MpiGhostsSpecific<3, SM2012SphParticle>;
+template class MpiGhostsSpecific<1, MeshlessFVParticle>;
+template class MpiGhostsSpecific<2, MeshlessFVParticle>;
+template class MpiGhostsSpecific<3, MeshlessFVParticle>;
 #endif

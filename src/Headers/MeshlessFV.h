@@ -399,4 +399,20 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
                           MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
 
 };
+
+
+//=================================================================================================
+//  MeshlessFV::UpdatePrimitiveVector
+/// Updates the primitive vector from particle quantities.
+//=================================================================================================
+template <int ndim>
+inline void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
+{
+  for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
+  part.Wprim[irho] = part.rho;
+  part.Wprim[ipress] = part.press;
+}
+
+
+
 #endif

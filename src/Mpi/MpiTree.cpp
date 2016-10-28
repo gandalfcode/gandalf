@@ -526,3 +526,6 @@ template class MpiTree<3,GradhSphParticle>;
 template class MpiTree<1,SM2012SphParticle>;
 template class MpiTree<2,SM2012SphParticle>;
 template class MpiTree<3,SM2012SphParticle>;
+template class MpiTree<1,MeshlessFVParticle>;
+template class MpiTree<2,MeshlessFVParticle>;
+template class MpiTree<3,MeshlessFVParticle>;

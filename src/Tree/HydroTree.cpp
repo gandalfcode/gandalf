@@ -78,10 +78,8 @@ HydroTree<ndim,ParticleType,TreeCell>::HydroTree
   Nthreads         = 1;
 #endif
 #ifdef MPI_PARALLEL
-  Ncellexport = new int[Nmpi];
   Npartexport = new int[Nmpi];
-  cellexportlist = new TreeCell<ndim>**[Nmpi];
-  for (int j=0; j<Nmpi; j++) cellexportlist[j] = NULL;
+  cellexportlist.resize(Nmpi);
   ids_sent_particles.resize(Nmpi);
   ids_sent_cells.resize(Nmpi);
   N_imported_part_per_proc.resize(Nmpi);
@@ -244,14 +242,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildTree
     AllocateMemory(hydro->Ngather);
     if (Ntotmaxold < Ntotmax)
     	ReallocateMemory();
-#ifdef MPI_PARALLEL
-    if (Ntotmax > Ntotmaxold) {
-      for (int i=Nmpi-1; i>=0; i--) delete[] cellexportlist[i];
-      for (int i=0; i<Nmpi; i++) cellexportlist[i] = new TreeCell<ndim>*[tree->gmax];
-      assert(tree->gmax > 0);
-    }
-#endif
-
   }
 
   // Else stock the tree
@@ -311,6 +301,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 #ifdef _OPENMP
   omp_set_nested(1);
 #endif
+
+  if (hydro->Ntot > Ntotmax) {
+	  Ntotmax = hydro->Ntot;
+	  Ntot = hydro->Ntot;
+	  ReallocateMemory();
+  }
 
 
   // For tree rebuild steps
@@ -936,18 +932,20 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   TreeCellBase<ndim> **celllist;           // List of pointers to binary tree cells
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
-  debug2("[GradhHydroTree::UpdateGravityExportForces]");
+  debug2("[HydroTree::UpdateGravityExportForces]");
   timing->StartTimingSection("HYDRO_DISTANT_FORCES");
 
 
   // Find list of all cells that contain active particles
   celllist = new TreeCellBase<ndim>*[2*tree->gtot];
+  assert(tree->Nimportedcell==0);
   cactive = tree->ComputeActiveCellPointers(celllist);
 
   // Reset all export lists
   for (int j=0; j<Nmpi; j++) {
-    Ncellexport[j] = 0;
     Npartexport[j] = 0;
+    cellexportlist[j].clear();
+    cellexportlist[j].reserve(tree->gmax);
   }
 
 
@@ -962,7 +960,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 #endif
     int cc;                                    // Aux. cell counter
     int i;                                     // Particle id
-    int index_cell;                            // ..
     int j;                                     // Aux. particle counter
     int k;                                     // Dimension counter
     int Nactive;                               // No. of active particles in current cell
@@ -1018,9 +1015,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         if (Ngravcelltemp == -1) {
 #pragma omp critical
           {
-            index_cell = Ncellexport[j]++;
+        	  cellexportlist[j].push_back(cellptr);
           }
-          cellexportlist[j][index_cell] = cellptr;
 #pragma omp atomic
           Npartexport[j] += Nactive;
         }
@@ -1109,8 +1105,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 
   // Reset all export lists
   for (int j=0; j<Nmpi; j++) {
-    Ncellexport[j] = 0;
     Npartexport[j] = 0;
+    cellexportlist[j].clear();
+    cellexportlist[j].reserve(tree->gmax);
   }
 
 
@@ -1147,13 +1144,11 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
         if (overlapflag) {
-          int index_cell;
 
 #pragma omp critical
           {
-            index_cell = Ncellexport[j]++;
+        	  cellexportlist[j].push_back(cellptr);
           }
-          cellexportlist[j][index_cell] = cellptr;
           const int Nactive = tree->ComputeActiveParticleList(cell, partdata, activelist);
 
 #pragma omp atomic
@@ -1369,6 +1364,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 
 	  treeptr->Ncell= count/sizeof(TreeCell<ndim>);
 
+#ifdef OUTPUT_ALL
+	  cout << "on rank " << rank << " we received a pruned tree with " << treeptr->Ncell << " from " << i << endl;
+#endif
+
 	  j++;
 
   }
@@ -1414,6 +1413,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
 #ifdef OUTPUT_ALL
   cout << "BUILDING TREE WITH " << hydro->Nmpighost << " MPI GHOSTS!!" << endl;
 #endif
+
+  if (hydro->Ntot > Ntotmax) {
+	  Ntotmax = hydro->Ntot;
+	  Ntot = hydro->Ntot;
+	  ReallocateMemory();
+  }
 
   // For tree rebuild steps
   //-----------------------------------------------------------------------------------------------
@@ -1797,7 +1802,7 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
   int rank,                            ///< ..
   int Nmpi)                            ///< [in] Array with information for the other mpi nodes
 {
-  int cactive = Ncellexport[iproc];
+  int cactive = cellexportlist[iproc].size();
   int Nactive = Npartexport[iproc];
   int activelist[Nleafmax];
   int exported_particles    = 0;
@@ -1813,7 +1818,7 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
   const int size_cells      = cactive*sizeof(StreamlinedCell);
   const int old_size        = send_buffer.size();
   int offset                = size_header + old_size;
-  TreeCell<ndim>** celllist = cellexportlist[iproc];
+  vector<TreeCell<ndim>*>& celllist = cellexportlist[iproc];
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   assert(tree->Nimportedcell == 0);
@@ -1891,7 +1896,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   if (first_unpack) {
     tree->Nimportedcell = 0;
-    tree->Ncelltot=tree->Ncell;
     assert(hydro->NImportedParticles == 0);
   }
 
@@ -1929,7 +1933,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
 	  if (hydro->Ntot + N_received_part_total > Ntotmax) {
 		  Ntotmax = hydro->Ntot + N_received_part_total;
-		  cout << "Ntotmax: " << Ntotmax << endl;
+		  //cout << "Ntotmax: " << Ntotmax << endl;
 		  ReallocateMemory();
 	  }
 
@@ -1981,9 +1985,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   // Update the tree counters
   tree->Nimportedcell += N_received_cells;
-  tree->Ncelltot += N_received_cells;
   tree->Ntot = hydro->Ntot;
   Ntot = hydro->Ntot;
+
+#ifdef OUTPUT_ALL
+  cout << "Importing " << N_received_particles << " from rank " << iproc << " on rank " << rank << endl;
+#endif
 
   return;
 }
@@ -2215,13 +2222,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
 }
 #endif
 
-
-//template class HydroTree<1,SphParticle,KDTreeCell>;
-//template class HydroTree<2,SphParticle,KDTreeCell>;
-//template class HydroTree<3,SphParticle,KDTreeCell>;
-//template class HydroTree<1,SphParticle,OctTreeCell>;
-//template class HydroTree<2,SphParticle,OctTreeCell>;
-//template class HydroTree<3,SphParticle,OctTreeCell>;
 
 template class HydroTree<1,GradhSphParticle,KDTreeCell>;
 template class HydroTree<2,GradhSphParticle,KDTreeCell>;

@@ -272,7 +272,6 @@ protected:
 
 #if defined MPI_PARALLEL
   int Nimportedcell;                      ///< No. of imported cells
-  int Ncelltot;                           ///< Total number of cells
 #endif
 
 };

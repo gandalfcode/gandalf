@@ -202,7 +202,7 @@ protected:
   virtual void GetBackExportInfo(vector<char > &,
                                  Hydrodynamics<ndim> *, const int, const int);
   virtual vector<char> ExportSize (const int iproc, Hydrodynamics<ndim>* hydro) {
-    int cactive = Ncellexport[iproc];
+    int cactive = cellexportlist[iproc].size();
     int Nactive = Npartexport[iproc];
 
     typename ParticleType<ndim>::HandlerType handler;
@@ -251,7 +251,6 @@ protected:
 	  hydro->Ntot -= hydro->NImportedParticles;
 	  assert(hydro->Ntot == hydro->Nhydro + hydro->Nghost);
 	  hydro->NImportedParticles=0;
-	  tree->Ncelltot = tree->Ncell;
 	  tree->Nimportedcell = 0;
   };
 #endif
@@ -308,9 +307,8 @@ protected:
 
 #ifdef MPI_PARALLEL
   int Nprunedcellmax;                              ///< Max. number of cells in pruned tree
-  int *Ncellexport;                                ///< No. of cells to be exported (per MPI node)
   int *Npartexport;                                ///< No. of ptcls to be exported (per MPI node)
-  TreeCell<ndim> ***cellexportlist;                ///< List of cells
+  vector<vector<TreeCell<ndim>*> > cellexportlist;                ///< List of cells to be exported
   Tree<ndim,ParticleType,TreeCell> *mpighosttree;  ///< Pointer to tree containing
                                                    ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.

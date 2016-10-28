@@ -212,22 +212,14 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   // Compute other terms once number density and smoothing length are known
   part.ndens     = ndens ;
   part.rho       = rho ;
-  part.h         = max(h_fac*powf(volume, (FLOAT) MeshlessFV<ndim>::invndim), h_lower_bound);
+  //part.h         = max(h_fac*powf(volume, MeshlessFV<ndim>::invndim), h_lower_bound);
+  part.h = h_fac*powf(volume, MeshlessFV<ndim>::invndim);
   part.hfactor   = pow(1/part.h, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
   part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
   part.invomega  = (FLOAT) 1.0/part.invomega;
   part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.h*part.zeta*part.invomega/part.ndens;
-
-  // Calculate the minimum neighbour potential (used later to identify new sinks)
-  if (create_sinks == 1) {
-    part.flags.set_flag(potmin);
-    for (j=0; j<Nneib; j++) {
-      if (gpot[j] > (FLOAT) 1.000000001*part.gpot &&
-          drsqd[j]*invhsqd < kern.kernrangesqd) part.flags.unset_flag(potmin);
-    }
-  }
 
   // Set important thermal variables here
   this->ComputeThermalProperties(part);
@@ -280,6 +272,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
       part.B[k][kk] = (FLOAT) 0.0;
     }
   }
+  if (create_sinks==1) part.flags.set_flag(potmin);
 
 
   // Loop over all potential neighbours in the list
@@ -311,6 +304,13 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
         min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
     part.levelneib = max(part.levelneib, neibpart[j].level) ;
+
+    // Calculate the minimum neighbour potential (used later to identify new sinks)
+    if (create_sinks == 1) {
+        if (neibpart[j].gpot > (FLOAT) 1.000000001*part.gpot &&
+            drsqd*invhsqd < kern.kernrangesqd) part.flags.unset_flag(potmin);
+    }
+
   }
   //-----------------------------------------------------------------------------------------------
 
