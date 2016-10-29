@@ -89,7 +89,7 @@ protected:
   virtual TreeBase<ndim>* GetGhhotTree() const = 0;
   virtual void SetTimingObject(CodeTiming*) = 0 ;
   virtual void ToggleNeighbourCheck(bool do_check) = 0 ;
-  virtual void UpdateTimestepsLimitsFromDistantParticles(int, int, Particle<ndim> *) = 0 ;
+  virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*) = 0 ;
 
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const = 0;
@@ -171,7 +171,7 @@ protected:
   virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
   virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
 
-  virtual void UpdateTimestepsLimitsFromDistantParticles(int, int, Particle<ndim> *);
+  virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*);
 
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const { return prunedtree; }

@@ -649,13 +649,11 @@ double HydroTree<ndim,ParticleType>::GetMaximumSmoothingLength() const
 
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
-(int Nhydro,                                      ///< [in] No. of hydro particles
- int Ntot,                                        ///< [in] No. of hydro + ghost particles
- Particle<ndim> *part_gen)                        ///< [inout] Pointer to Hydrodynamics ptcl array
+(Hydrodynamics<ndim>* hydro)                     ///<[inout] Pointer to Hydrodynamics object
  {
   int cactive;                          // No. of active cells
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   debug2("[HydroTree::UpdateTimestepsLimitsFromDistantParticles]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_DISTANT_TIMESTEPS");
