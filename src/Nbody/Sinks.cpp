@@ -333,12 +333,13 @@ template <int ndim>
 void Sinks<ndim>::AccreteMassToSinks
  (const int n,                         ///< [in] Integer timestep
   const FLOAT timestep,                ///< [in] Minimum timestep size
-  Particle<ndim> *partdata,            ///< [in] Pointer to main hydro particle array
   Hydrodynamics<ndim> *hydro,          ///< [inout] Object containing SPH ptcls
   Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
 {
   debug2("[Sinks::AccreteMassToSinks]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SINK_ACCRETE_MASS");
+
+  Particle<ndim> *partdata = hydro->GetParticleArray();
 
   // Allocate local memory and initialise values
   for (int i=0; i<hydro->Ntot; i++) hydro->GetParticlePointer(i).sinkid = -1;

@@ -141,7 +141,7 @@ class Sinks
                                  Hydrodynamics<ndim> *, Nbody<ndim> *);
   void CreateNewSinkParticle(const int, const FLOAT, Particle<ndim>&,
                              Hydrodynamics<ndim> *, Nbody<ndim> *);
-  void AccreteMassToSinks(const int, const FLOAT, Particle<ndim> *,
+  void AccreteMassToSinks(const int, const FLOAT,
                           Hydrodynamics<ndim> *, Nbody<ndim> *);
 
 
