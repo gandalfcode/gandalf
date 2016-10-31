@@ -99,7 +99,7 @@ public:
   typedef GradhSphExportParticle DataType;
   typedef GradSphForcesParticle ReturnDataType;
 
-  void ReceiveParticleAccelerations (ReturnDataType* pointer, GradhSphParticle<ndim>& p2) {
+  void ReceiveParticleAccelerations (const ReturnDataType* pointer, GradhSphParticle<ndim>& p2) {
 
     const ReturnDataType& p = *pointer;
 
@@ -114,8 +114,8 @@ public:
 
   }
 
-  void ReceiveParticle (void* pointer, GradhSphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
-    DataType& p = *reinterpret_cast<DataType*>(pointer);
+  void ReceiveParticle (const void* pointer, GradhSphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
+    const DataType& p = *reinterpret_cast<const DataType*>(pointer);
     //GradhSph<ndim>* sph = static_cast<GradhSph<ndim>*>(hydro);
 
     p2.iorig = p.iorig;
@@ -140,7 +140,7 @@ public:
 
     //Recompute things we store only for optimization
     p2.h = hydro->h_fac*powf(p2.m/p2.rho, Sph<ndim>::invndim);
-    p2.hrangesqd = hydro->kernfacsqd*hydro->kernrange*hydro->kernrange*p2.h*p2.h;
+    p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
     p2.hfactor = pow(1/p2.h,ndim+1);
     p2.sound = hydro->eos->SoundSpeed(p2);
     p2.flags.set_flag(active);
@@ -228,7 +228,7 @@ public:
   typedef MeshlessExportParticle DataType;
   typedef MeshlessForcesParticle ReturnDataType;
 
-  void ReceiveParticleAccelerations (ReturnDataType* pointer, MeshlessFVParticle<ndim>& p2) {
+  void ReceiveParticleAccelerations (const ReturnDataType* pointer, MeshlessFVParticle<ndim>& p2) {
 	    const ReturnDataType& p = *pointer;
 
 	    for (int k=0; k<ndim; k++) {
@@ -244,9 +244,8 @@ public:
 	    p2.gpot += p.gpot;
   }
 
-  void ReceiveParticle (void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
-    DataType& p = *reinterpret_cast<DataType*>(pointer);
-    MeshlessFV<ndim>* mfv = static_cast<MeshlessFV<ndim>* > (hydro);
+  void ReceiveParticle (const void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
+    const DataType& p = *reinterpret_cast<const DataType*>(pointer);
     p2.iorig = p.iorig;
     p2.flags = type_flag(p.flags);
     p2.ptype = p.ptype;
@@ -278,11 +277,9 @@ public:
 
   //Recompute h dependent stuff
   p2.rho = p2.ndens*p2.m;
-  p2.h = hydro->h_fac*powf(1/p2.ndens, MeshlessFV<ndim>::invndim);
+  p2.h = hydro->h_fac*powf(1/p2.ndens, (FLOAT)(1.)/ndim);
   p2.hfactor = pow(1/p2.h, ndim+1);
-  p2.hrangesqd = hydro->kernfacsqd*hydro->kernrange*hydro->kernrange*p2.h*p2.h;
-
-
+  p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
   }
 
 };
@@ -325,12 +322,12 @@ public:
   typedef SM2012ExportParticle DataType;
   typedef SM2012ForcesParticle ReturnDataType;
 
-  void ReceiveParticleAccelerations (ReturnDataType* pointer, SM2012SphParticle<ndim>& p2) {
+  void ReceiveParticleAccelerations (const ReturnDataType* pointer, SM2012SphParticle<ndim>& p2) {
     ExceptionHandler::getIstance().raise("not implemented");
   }
 
-  void ReceiveParticle (void* pointer, SM2012SphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
-    //DataType& p = *reinterpret_cast<DataType*>(pointer);
+  void ReceiveParticle (const void* pointer, SM2012SphParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
+    //const DataType& p = *reinterpret_cast<const DataType*>(pointer);
     ExceptionHandler::getIstance().raise("not implemented");
 
 
@@ -363,8 +360,8 @@ public:
 
   typedef TreeCellStreamlined DataType;
 
-  void ReceiveCell (void* pointer, TreeCellBase<ndim>& c2,int Ntot) {
-    const DataType& c = *reinterpret_cast<DataType*>(pointer);
+  void ReceiveCell (const void* pointer, TreeCellBase<ndim>& c2,int Ntot) {
+    const DataType& c = *reinterpret_cast<const DataType*>(pointer);
 
     c2.ifirst = c.ifirst + Ntot;
     c2.ilast = c.ilast + Ntot;
@@ -382,10 +379,10 @@ public:
     c.m = 0;
     c.hmax = 0;
     for (int k=0; k<ndim; k++) {
-      c.bbmin[k] = big_number;
-      c.bbmax[k] = -big_number;
-      c.hboxmin[k] = big_number;
-      c.hboxmax[k] = -big_number;
+      c.bb.min[k] = big_number;
+      c.bb.max[k] = -big_number;
+      c.hbox.min[k] = big_number;
+      c.hbox.max[k] = -big_number;
       c.r[k] = 0;
     }
 
@@ -394,12 +391,12 @@ public:
       const ParticleType<ndim>& p = partdata[i];
       for (int k=0; k<ndim; k++) {
         c.r[k] += p.m*p.r[k];
-        if (c.bbmin[k] > p.r[k]) c.bbmin[k] = p.r[k];
-        if (c.bbmax[k] < p.r[k]) c.bbmax[k] = p.r[k];
-        if (p.r[k] - kernrange*p.h < c.hboxmin[k])
-          c.hboxmin[k] = p.r[k] - kernrange*p.h;
-        if (p.r[k] + kernrange*p.h > c.hboxmax[k])
-          c.hboxmax[k] = p.r[k] + kernrange*p.h;
+        if (c.bb.min[k] > p.r[k]) c.bb.min[k] = p.r[k];
+        if (c.bb.max[k] < p.r[k]) c.bb.max[k] = p.r[k];
+        if (p.r[k] - kernrange*p.h < c.hbox.min[k])
+          c.hbox.min[k] = p.r[k] - kernrange*p.h;
+        if (p.r[k] + kernrange*p.h > c.hbox.max[k])
+          c.hbox.max[k] = p.r[k] + kernrange*p.h;
       }
       c.m += p.m;
       c.hmax = max(c.hmax,p.h);
@@ -408,8 +405,8 @@ public:
     FLOAT dr[ndim];
     for (int k=0; k<ndim; k++) {
       c.r[k] /= c.m;
-      c.rcell[k] = (FLOAT) 0.5*(c.bbmin[k] + c.bbmax[k]);
-      dr[k] = (FLOAT) 0.5*(c.bbmax[k] - c.bbmin[k]);
+      c.rcell[k] = (FLOAT) 0.5*(c.bb.min[k] + c.bb.max[k]);
+      dr[k] = (FLOAT) 0.5*(c.bb.max[k] - c.bb.min[k]);
     }
     c.rmax = sqrt(DotProduct(dr,dr,ndim));
 

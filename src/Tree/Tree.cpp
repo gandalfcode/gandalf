@@ -42,6 +42,12 @@
 #if defined _OPENMP
 #include <omp.h>
 #endif
+
+#ifdef MPI_PARALLEL
+#include "MpiExport.h"
+#include "CommunicationHandler.h"
+#endif
+
 using namespace std;
 
 
@@ -84,25 +90,25 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
- (vector<TreeCell<ndim> >& celllist)            ///< Array containing copies of cells with active ptcls
+ (vector<TreeCellBase<ndim> >& celllist)            ///< Array containing copies of cells with active ptcls
 {
   int c;                               // Cell counter
-
 
 #if defined (MPI_PARALLEL)
   celllist.reserve(Ncellmax);
 #else
   celllist.reserve(gtot);
 #endif
+
   for (c=0; c<Ncell; c++) {
     if (celldata[c].N <= Nleafmax && celldata[c].copen == -1 && celldata[c].Nactive > 0) {
-      celllist.push_back(celldata[c]);
+      celllist.push_back(TreeCellBase<ndim>(celldata[c]));
     }
   }
 
 #ifdef MPI_PARALLEL
   for (c=Ncell; c<Ncell+Nimportedcell; c++) {
-    if (celldata[c].Nactive > 0) celllist.push_back(celldata[c]);
+    if (celldata[c].Nactive > 0) celllist.push_back(TreeCellBase<ndim>(celldata[c]));
   }
 #endif
 
@@ -140,45 +146,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
 }
 
 
-/*
- * Now using template available in InlineFuncs
-//=================================================================================================
-//  Tree::BoxOverlap
-/// Check if two bounding boxes overlap.  If yes, then returns true.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-bool Tree<ndim,ParticleType,TreeCell>::BoxOverlap
- (const FLOAT box1min[ndim],           ///< [in] Minimum extent of box 1
-  const FLOAT box1max[ndim],           ///< [in] Maximum extent of box 1
-  const FLOAT box2min[ndim],           ///< [in] Minimum extent of box 2
-  const FLOAT box2max[ndim])           ///< [in] Maximum extent of box 2
-{
-  if (ndim == 1) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    return true;
-  }
-  else if (ndim == 2) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    return true;
-  }
-  else if (ndim == 3) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    if (box1min[2] > box2max[2]) return false;
-    if (box2min[2] > box1max[2]) return false;
-    return true;
-  }
-
-}
-*/
-
-
 //=================================================================================================
 //  Tree::ExtrapolateCellProperties
 /// Extrapolate important physical properties of all cells in the tree.
@@ -199,10 +166,10 @@ void Tree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
 
     for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bbmin[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bbmax[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hboxmin[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hboxmax[k] += celldata[c].v[k]*dt;
+    for (k=0; k<ndim; k++) celldata[c].bb.min[k] += celldata[c].v[k]*dt;
+    for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
+    for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
+    for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
     //celldata[c].rmax += celldata[c].drmaxdt*dt;
     //celldata[c].hmax += celldata[c].dhmaxdt*dt;
 
@@ -211,7 +178,6 @@ void Tree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
 
   return;
 }
-
 
 
 //=================================================================================================
@@ -332,8 +298,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   if (Nneib == -1) return -1;
 
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
-  for (k=0; k<ndim; k++) gatherboxmin[k] = cell.bbmin[k] - kernrange*hmax;
-  for (k=0; k<ndim; k++) gatherboxmax[k] = cell.bbmax[k] + kernrange*hmax;
+  for (k=0; k<ndim; k++) gatherboxmin[k] = cell.bb.min[k] - kernrange*hmax;
+  for (k=0; k<ndim; k++) gatherboxmax[k] = cell.bb.max[k] + kernrange*hmax;
 
 
   //===============================================================================================
@@ -341,7 +307,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(gatherboxmin,gatherboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
+    if (BoxOverlap(gatherboxmin,gatherboxmax,celldata[cc].bb.min,celldata[cc].bb.max)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -445,8 +411,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bbmin, cell.bbmax, celldata[cc].hboxmin, celldata[cc].hboxmax) ||
-        BoxOverlap(cell.hboxmin, cell.hboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
+    if (BoxOverlap(cell.bb.min, cell.bb.max, celldata[cc].hbox.min, celldata[cc].hbox.max) ||
+        BoxOverlap(cell.hbox.min, cell.hbox.max, celldata[cc].bb.min, celldata[cc].bb.max)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -556,15 +522,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   //===============================================================================================
   while (cc < Ncell) {
 
-    // Calculate closest periodic replica of cell
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    GhostFinder.NearestPeriodicVector(dr);
-    drsqd = DotProduct(dr, dr, ndim);
-
-    // Check if bounding spheres overlap with each other (for potential SPH neibs)
+    // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (drsqd <= pow(celldata[cc].rmax + cell.rmax + kernrange*cell.hmax,2) ||
-        drsqd <= pow(cell.rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
+    if (GhostFinder.PeriodicBoxOverlap(cell.bb, celldata[cc].hbox) ||
+        GhostFinder.PeriodicBoxOverlap(cell.hbox, celldata[cc].bb)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -655,7 +616,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
- (const TreeCell<ndim> &cell,          ///< [in] Pointer to cell
+ (const TreeCellBase<ndim> &cell,      ///< [in] Pointer to cell
   const Particle<ndim> *part_gen,      ///< [in] Particle data array
   //const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
@@ -668,7 +629,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   int *neiblist,                       ///< [out] List of all particle ids
   int *hydroneiblist,                  ///< [out] List of SPH neibpart ids
   int *directlist,                     ///< [out] List of direct-sum neibpart ids
-  TreeCell<ndim> *gravcell,            ///< [out] Array of local copies of tree cells
+  MultipoleMoment<ndim> *gravcell,     ///< [out] Array of local copies of tree cells
   Particle<ndim> *neib_out)            ///< [out] Array of local copies of neighbour particles
 {
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
@@ -773,11 +734,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
         Nneib++;
       }
       else if (Ngravcell < Ngravcellmax) {
-        gravcell[Ngravcell] = celldata[cc];
+        gravcell[Ngravcell] = MultipoleMoment<ndim>(celldata[cc]);
         for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k] ;
         GhostFinder.PeriodicDistanceCorrection(dr, dr_corr);
         for (k=0; k<ndim; k++) gravcell[Ngravcell].r[k] += dr_corr[k] ;
-        for (k=0; k<ndim; k++) gravcell[Ngravcell].rcell[k] += dr_corr[k];
         Ngravcell++;
       }
       else {
@@ -884,7 +844,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   int &Ngravcell,                      ///< [out] No. of cell interactions
   int *neiblist,                       ///< [out] List of SPH neighbour ids
   int *directlist,                     ///< [out] List of direct-sum neighbour ids
-  TreeCell<ndim> *gravcell,            ///< [out] List of cell ids
+  MultipoleMoment<ndim> *gravcell,            ///< [out] List of cell ids
   Particle<ndim> *part_gen)            ///< [in] Particle data array
 {
   ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>* >(part_gen) ;
@@ -958,7 +918,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
         }
       }
       else if (Ngravcell < Ngravcellmax && celldata[cc].N > 0) {
-        gravcell[Ngravcell++] = celldata[cc];
+        gravcell[Ngravcell++] = MultipoleMoment<ndim>(celldata[cc]);
       }
       else {
         return -1;
@@ -1030,7 +990,7 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(rp, rp, celldata[cc].bbmin, celldata[cc].bbmax)) {
+    if (BoxOverlap(rp, rp, celldata[cc].bb.min, celldata[cc].bb.max)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1062,7 +1022,62 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
   // return error code, -1
   return -1;
 }
+//=================================================================================================
+// Tree::GenerateBoundaryGhostParticles
+/// Creates the ghost particles by walking the tree. It checks whether the cell's smoothing
+/// volume is expected to overlap boundary within the given time range, including some safety
+/// factor.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::GenerateBoundaryGhostParticles
+(const FLOAT tghost,                              ///< [in] Ghost update time
+ const FLOAT ghost_range,                         ///< [in] Smoothing range of ghosts to include
+ const int j,                                     ///< [in] Direction that we are searching for ghosts
+ const DomainBox<ndim>& simbox,                   ///< [in] Simulation box domain.
+ Hydrodynamics<ndim>* hydro)
+ {
+  // Start from root-cell
+  int c = 0;
 
+  //---------------------------------------------------------------------------------------------
+  while (c < Ncell) {
+    TreeCell<ndim>* cellptr = &(celldata[c]);
+
+    // If x-bounding box overlaps edge of x-domain, open cell
+    //-------------------------------------------------------------------------------------------
+    if (cellptr->bb.min[j] + min((FLOAT) 0.0,cellptr->v[j]*tghost) <
+        simbox.min[j] + ghost_range*cellptr->hmax ||
+        cellptr->bb.max[j] + max((FLOAT) 0.0,cellptr->v[j]*tghost) >
+        simbox.max[j] - ghost_range*cellptr->hmax) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (cellptr->copen != -1) {
+        c = cellptr->copen;
+      }
+
+      else if (cellptr->N == 0)
+        c = cellptr->cnext;
+
+      // If leaf-cell, check through particles in turn to find ghosts
+      else if (cellptr->copen == -1) {
+       int i = cellptr->ifirst;
+        while (i != -1) {
+          hydro->CheckBoundaryGhostParticle(i,j,tghost,simbox);
+          if (i == cellptr->ilast) break;
+          i = inext[i];
+        };
+        c = cellptr->cnext;
+      }
+    }
+
+    // If not in range, then open next cell
+    //-------------------------------------------------------------------------------------------
+    else
+      c = cellptr->cnext;
+
+  }
+  //---------------------------------------------------------------------------------------------
+ }
 
 
 #ifdef MPI_PARALLEL
@@ -1082,12 +1097,10 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   const int pruning_level_min,         ///< [in] Minimum pruning level
   const int pruning_level_max,         ///< [in] Maximum pruning level
   const int Nprunedcellmax,            ///< [in] Max. no. of cell interactions
-  TreeCell<ndim> *prunedcells)         ///< [out] List of cell pointers in pruned tree
+  TreeBase<ndim> *prunedtree)         ///< [out] List of cell pointers in pruned tree
 {
   int c;                               // Cell counter
   int cnext;                           // id of next cell in tree
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
   int Nprunedcell = 0;                 // No. of cells in newly created pruned tree
   int *newCellIds;                     // New cell ids in pruned tree
@@ -1095,25 +1108,17 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rnode[ndim];                   // Position of cell
-  FLOAT rmin[ndim];                    // Minimum extent of MPI node
-  FLOAT rmax[ndim];                    // Maximum extent of MPI node
   FLOAT rsize[ndim];                   // Size of MPI node
 
   newCellIds = new int[Ncellmax + 1];
   for (c=0; c<Ncellmax+1; c++) newCellIds[c] = -1;
-  //newCellIds[Ncell] = Ncell;
-  //newCellIds[Ncellmax] = Ncellmax;
-  //assert(Nprunedcellmax <= Ncellmax);
 
-  for (k=0; k<ndim; k++) rmin[k] = mpinode.hbox.boxmin[k];
-  for (k=0; k<ndim; k++) rmax[k] = mpinode.hbox.boxmax[k];
-  for (k=0; k<ndim; k++) rnode[k] = (FLOAT) 0.5*(mpinode.hbox.boxmin[k] + mpinode.hbox.boxmax[k]);
-  for (k=0; k<ndim; k++) rsize[k] = mpinode.hbox.boxmax[k] - rnode[k];
+  for (k=0; k<ndim; k++) rnode[k] = (FLOAT) 0.5*(mpinode.hbox.min[k] + mpinode.hbox.max[k]);
+  for (k=0; k<ndim; k++) rsize[k] = mpinode.hbox.max[k] - rnode[k];
 
-  /*cout << "NODE      : " << rmin[0] << "    " << rnode[0] << "    " << rmax[0] << "    size : " << rsize[0] << endl;
-  cout << "FULL TREE : " << celldata[0].bbmin[0] << "    " << celldata[0].bbmax[0] << "    "
-       << celldata[0].rmax << "   " << celldata[0].hmax << endl;
-  cout << "Main tree? : " << c << "     Ncell : " << Ncell << "   " << Ncellmax << endl;*/
+
+  TreeCell<ndim>* prunedcells =
+      static_cast<Tree<ndim,ParticleType,TreeCell>*>(prunedtree)->celldata;
 
   c = 0;
 
@@ -1233,12 +1238,12 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
- (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+ (const TreeCellBase<ndim>& cell,      ///< [in] Pointer to cell
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int Ngravcell,                       ///< [in] Current no. of cells in array
-  TreeCell<ndim> *gravcelllist)        ///< [out] Array of cells
+  MultipoleMoment<ndim> *gravcelllist) ///< [out] Array of cells
 {
   int cc = 0;                          // Cell counter
   int k;                               // Dimension counter
@@ -1251,9 +1256,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   FLOAT rmax;                          // Radius of sphere containing particles
 
   // Make local copies of important cell properties
-  for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
-  hrangemax = cellptr->rmax + kernrange*cellptr->hmax;
-  rmax = cellptr->rmax;
+  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  hrangemax = cell.rmax + kernrange*cell.hmax;
+  rmax = cell.rmax;
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -1267,8 +1272,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
     // Check if bounding spheres overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (drsqd <= pow(celldata[cc].rmax + cellptr->rmax + kernrange*cellptr->hmax,2) ||
-        drsqd <= pow(cellptr->rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
+    if (drsqd <= pow(celldata[cc].rmax + hrangemax,2) ||
+        drsqd <= pow(rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1293,7 +1298,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
              celldata[cc].N > 0) {
 
-      gravcelllist[Ngravcelltemp++] = celldata[cc];
+      gravcelllist[Ngravcelltemp++] = MultipoleMoment<ndim>(celldata[cc]);
       if (Ngravcelltemp >= Ngravcellmax) {
         ExceptionHandler::getIstance().raise("Too many interaction cells "
                                              "in distant gravity interaction list!");
@@ -1345,7 +1350,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
- (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+ (const TreeCellBase<ndim> *cellptr,   ///< [in] Pointer to cell
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box object
 {
   int cc = 0;                          // Cell counter
@@ -1404,6 +1409,136 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
   return false;
 }
 
+//=================================================================================================
+//  Tree::FindBoxOverlapParticles
+/// \brief Compute the particles that are inside the specified box.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::FindBoxOverlapParticles
+(const Box<ndim>& nodebox,                     ///< [in] Box to check overlap of
+vector<int>& part_ids,                         ///< [out] ID's of particles found.
+const Particle<ndim> *part_gen)                ///< [in] List of particle data
+{
+  const ParticleType<ndim> *partdata = reinterpret_cast<const ParticleType<ndim> *>(part_gen) ;
+
+  // Start from root-cell
+  int c = 0;
+  int i ;
+  int Npart = 0;
+
+  //---------------------------------------------------------------------------------------------
+  while (c < Ncell) {
+    TreeCell<ndim>* cellptr = &(celldata[c]);
+
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    //-------------------------------------------------------------------------------------------
+    if (BoxOverlap(cellptr->bb.min, cellptr->bb.max, nodebox.min, nodebox.max)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (cellptr->copen != -1) {
+        c = cellptr->copen;
+      }
+
+      else if (cellptr->N == 0) {
+        c = cellptr->cnext;
+      }
+
+      // If leaf-cell, check through particles in turn to find ghosts and
+      // add to list to be exported
+      else if (cellptr->copen == -1) {
+        i = cellptr->ifirst;
+        while (i != -1) {
+          if (ParticleInBox(partdata[i], nodebox)) {
+            part_ids.push_back(i);
+            Npart++ ;
+          }
+          if (i == cellptr->ilast) break;
+          i = inext[i];
+        };
+        c = cellptr->cnext;
+      }
+    }
+
+    // If not in range, then open next cell
+    //-------------------------------------------------------------------------------------------
+    else {
+      c = cellptr->cnext;
+    }
+
+  }
+  //---------------------------------------------------------------------------------------------
+  return Npart;
+}
+
+//=================================================================================================
+//  Tree::FindBoxGhostParticles
+/// \brief Compute the ghost particles that overlap a given box.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::FindBoxGhostParticles
+(const FLOAT tghost,
+ const FLOAT ghost_range,
+ const Box<ndim> &box,
+ vector<int> &export_list)
+ {
+  FLOAT scattermin[ndim];              // Minimum 'scatter' box size due to particle motion
+  FLOAT scattermax[ndim];              // Maximum 'scatter' box size due to particle motion
+
+
+
+  // Start from root-cell of tree and walk all cells
+  //-----------------------------------------------------------------------------------------------
+  int c = 0 ;
+  int Nexport = 0 ;
+  while (c < Ncell) {
+    TreeCell<ndim>*  cellptr = &(celldata[c]);
+
+    // Construct maximum cell bounding box depending on particle velocities
+    for (int k=0; k<ndim; k++) {
+      scattermin[k] = cellptr->bb.min[k] +
+          min((FLOAT) 0.0, cellptr->v[k]*tghost) - ghost_range*cellptr->hmax;
+      scattermax[k] = cellptr->bb.max[k] +
+          max((FLOAT) 0.0, cellptr->v[k]*tghost) + ghost_range*cellptr->hmax;
+    }
+
+
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    //---------------------------------------------------------------------------------------------
+    if (BoxOverlap(scattermin, scattermax, box.min, box.max)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (cellptr->copen != -1) {
+        c = cellptr->copen;
+      }
+
+      else if (cellptr->N == 0) {
+        c = cellptr->cnext;
+      }
+
+      // If leaf-cell, check through particles in turn to find ghosts and
+      // add to list to be exported
+      else if (cellptr->copen == -1) {
+        int i = cellptr->ifirst;
+        while (i != -1) {
+          export_list.push_back(i);
+          Nexport++;
+          if (i == cellptr->ilast) break;
+          i = inext[i];
+        };
+        c = cellptr->cnext;
+      }
+    }
+
+    // If not in range, then open next cell
+    //---------------------------------------------------------------------------------------------
+    else {
+      c = cellptr->cnext;
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return Nexport ;
+}
 
 
 //=================================================================================================
@@ -1427,7 +1562,7 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
 
     // Compute what fraction of the cell h-box overlaps with the given MPI node box
     fracoverlap = FractionalBoxOverlap
-      (ndim, boxmin, boxmax, celldata[c].hboxmin, celldata[c].hboxmax);
+      (ndim, boxmin, boxmax, celldata[c].hbox.min, celldata[c].hbox.max);
 
     // If there is zero or full overlap, record the value and move to the next cell
     if (fracoverlap < small_number || fracoverlap > (FLOAT) 0.999999999999999999) {
@@ -1435,7 +1570,7 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
       c = celldata[c].cnext;
     }
 
-    // If there is a parital overlap for a non-leaf cell, then open cell to lower levels
+    // If there is a partial overlap for a non-leaf cell, then open cell to lower levels
     else if (celldata[c].copen != -1) {
       c = celldata[c].copen;
     }
@@ -1457,6 +1592,235 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
 
   return worktot;
 }
+
+
+//=================================================================================================
+//  Tree::GetSizeOfExportedParticleData
+/// Get size needed for packed particle data
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::GetSizeOfExportedParticleData(int Nparticles) const {
+  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+  return Nparticles*sizeof(StreamlinedPart) ;
+}
+//=================================================================================================
+//  Tree::GetSizeOfExportedCellData
+/// Get size needed for packed cell data
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::GetSizeOfExportedCellData(int Ncell) const {
+  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
+  return Ncell * sizeof(StreamlinedCell) ;
+}
+//=================================================================================================
+//  Tree::GetSizeOfReturnedParticleData
+/// Get size needed for packed particle data returned after force calculation
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::GetSizeOfReturnedParticleData(int Nparticles) const {
+  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+  return sizeof(StreamlinedPart) * Nparticles ;
+}
+//=================================================================================================
+//  Tree::GetSizeOCellData
+/// Get size needed for packed cell data returned after force calculation
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::GetSizeOfReturnedCellData(int Ncell) const {
+  return sizeof(double) * Ncell ;
+}
+
+//=================================================================================================
+//  Tree::AddWorkCost
+/// Add the work done for active particles to the tree cells
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::AddWorkCost(vector<TreeCellBase<ndim> >& celllist,
+                                                   double twork, int& Nactivetot_out) {
+   int cactive = celllist.size();
+   int Nactivetot=0;
+   for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+   for (int cc=0; cc<cactive; cc++) {
+     int c = celllist[cc].id;
+     celldata[c].worktot += twork*(DOUBLE) celldata[c].Nactive / (DOUBLE) Nactivetot;
+   }
+
+   Nactivetot_out =  Nactivetot ;
+}
+
+//=================================================================================================
+//  Tree::PackParticlesAndCellsForMPITransfer
+/// Packs the requested list of cells and their active particles into a byte (char) array
+/// for transfer.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::PackParticlesAndCellsForMPITransfer
+(const vector<int>& celllist,                 ///< [in] List of cells to pack
+ vector<int>& active_cells,                   ///< [out] List of active cells in buffer
+ vector<int>& active_particles,               ///< [out] List of active particles in buffer
+ vector<char>& send_buffer,                   ///< [out] Buffer of packed data
+ Particle<ndim>* part_gen)
+ {
+
+  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
+
+  ParticleType<ndim> * partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
+  std::vector<int> _activelist(Nleafmax) ;
+  int* activelist = &(_activelist[0]) ;
+
+  // Loop over all cells to be exported and include all cell and particle data
+  //-----------------------------------------------------------------------------------------------
+  int exported_particles = 0 ;
+  int Ncells = celllist.size();
+  for (int cc=0; cc<Ncells; cc++) {
+    active_cells.push_back(celllist[cc]) ;
+    TreeCell<ndim>& cell_orig = celldata[celllist[cc]];
+    const int Nactive_cell = ComputeActiveParticleList(cell_orig, partdata, activelist);
+    StreamlinedCell c (Nactive_cell, exported_particles);
+    append_bytes(send_buffer, &c) ;
+
+    // Copy active particles
+    for (int jpart=0; jpart<Nactive_cell; jpart++) {
+      active_particles.push_back(activelist[jpart]);
+      StreamlinedPart p = partdata[activelist[jpart]];
+      append_bytes(send_buffer, &p) ;
+    }
+    exported_particles += Nactive_cell;
+  }
+
+  return exported_particles ;
+ }
+
+//=================================================================================================
+//  Tree::UnpackParticlesAndCEllsFromMPITransfer
+/// Unpacks the cells and particles received in the MPI transfer.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsFromMPITransfer
+(int offset_part,                             ///< [in] Number of imported parts before these ones
+ int Npart,                                   ///< [in] Number of particles received
+ int offset_cells,                             ///< [in] Number of imported cells before these ones
+ int Ncell,                                   ///< [in] Number of cells received
+ const vector<char>& recv_buffer,             ///< [in] Received data
+ Hydrodynamics<ndim>* hydro)
+ {
+  typename ParticleType<ndim>::HandlerType handler;
+  typedef typename ParticleType<ndim>::HandlerType::DataType StreamlinedPart;
+
+  typename TreeCell<ndim>::HandlerType handler_cell;
+  typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
+
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+
+
+  //---------------------------------------------------------------------------------------------
+  int cell_count = 0;
+  int part_count = 0;
+  int particle_index = offset_part ;
+  vector<char>::const_iterator iter = recv_buffer.begin() ;
+  for (int icell=0; icell<Ncell; icell++) {
+    TreeCell<ndim>& dest_cell = celldata[icell + offset_cells];
+
+    handler_cell.ReceiveCell(&(*iter),dest_cell,offset_part);
+    dest_cell.id = icell+offset_cells;
+
+    iter += sizeof(StreamlinedCell);
+    cell_count++ ;
+    // Now copy the received particles inside the hydro particle main arrays
+    for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
+
+      handler.ReceiveParticle(&(*iter),partdata[particle_index],hydro);
+      inext[particle_index] = particle_index + 1;
+
+      particle_index++;
+      part_count++ ;
+      iter += sizeof(StreamlinedPart);
+    }
+
+    handler_cell.ReconstructProperties(dest_cell, partdata, kernrange);
+  }
+
+  assert(part_count == Npart) ;
+  assert(iter == recv_buffer.end()) ;
+ }
+
+//=================================================================================================
+//  Tree::PackParticlesAndCellsForMPIReturn
+/// Packs the exported particles for return after their force calculations.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::PackParticlesAndCellsForMPIReturn
+(int start_part,                         ///< [in] Index of the first particle to pack
+ int Npart,                              ///< [in] Number of particles to pack
+ int start_cell,                         ///< [in] Index of the first cell to send back
+ int Ncell,                              ///< [in] Number of cells to send back
+ vector<char>& send_buffer,              ///< [out] Buffer of packed data
+ Particle<ndim>* part_gen)
+ {
+  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+
+
+  // Copy the particles
+  int start_index = start_part ;
+  int end_index = start_index + Npart ;
+  for (int i=start_index; i<end_index; i++) {
+    StreamlinedPart p = partdata[i];
+    append_bytes(send_buffer, &p) ;
+  }
+
+  // Copy worktot
+  start_index = start_cell ;
+  end_index  = start_index + Ncell ;
+  for (int c=start_index; c<end_index; c++) {
+    append_bytes<double>(send_buffer, &(celldata[c].worktot)) ;
+  }
+
+  assert(send_buffer.size() == (Ncell*sizeof(double) + Npart*sizeof(StreamlinedPart))) ;
+ }
+
+
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsForMPIReturn
+(const vector<int>& part_ids,
+ const vector<int>& cell_ids,
+ vector<char>& recv_buffer,
+ Hydrodynamics<ndim>* hydro)
+ {
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
+
+  typename ParticleType<ndim>::HandlerType handler;
+  typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
+
+
+  int Npart = part_ids.size() ;
+  vector<char>::const_iterator iter = recv_buffer.begin() ;
+  for (int j=0; j<Npart; j++) {
+    const int i = part_ids[j];
+
+    const StreamlinedPart* received_particle = reinterpret_cast<const StreamlinedPart*>(&(*iter)) ;
+
+    assert(partdata[i].iorig == received_particle->iorig);
+
+    handler.ReceiveParticleAccelerations(received_particle,partdata[i]);
+
+    iter += sizeof(StreamlinedPart) ;
+  }
+
+  int Ncell = cell_ids.size() ;
+  for (int j=0; j<Ncell; j++) {
+    const int i = cell_ids[j];
+
+    double received_worktot;
+    unpack_bytes<double>(&received_worktot, iter) ;
+
+    celldata[i].worktot += received_worktot;
+  }
+  assert(iter == recv_buffer.end()) ;
+ }
+
+
 #endif
 
 
@@ -1486,10 +1850,14 @@ template class Tree<3,MeshlessFVParticle,OctTreeCell>;
 
 
 template class Tree<1,GradhSphParticle,TreeRayCell>;
-
 template class Tree<2,GradhSphParticle,TreeRayCell>;
-
 template class Tree<3,GradhSphParticle,TreeRayCell>;
+template class Tree<1,SM2012SphParticle,TreeRayCell>;
+template class Tree<2,SM2012SphParticle,TreeRayCell>;
+template class Tree<3,SM2012SphParticle,TreeRayCell>;
+template class Tree<1,MeshlessFVParticle,TreeRayCell>;
+template class Tree<2,MeshlessFVParticle,TreeRayCell>;
+template class Tree<3,MeshlessFVParticle,TreeRayCell>;
 
 
 template class Tree<1,GradhSphParticle,BruteForceTreeCell>;

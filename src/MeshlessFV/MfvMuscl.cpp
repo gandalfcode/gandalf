@@ -92,9 +92,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   FLOAT Aij[ndim];                     // Pseudo 'Area' vector
   FLOAT Aunit[ndim];                   // ..
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
-  FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
   FLOAT drsqd;                         // Distance squared
-  FLOAT invdrmagaux;                   // 1 / distance
   FLOAT psitildai[ndim];               // Normalised gradient psi value for particle i
   FLOAT psitildaj[ndim];               // Normalised gradient psi value for neighbour j
   FLOAT rface[ndim];                   // Position of working face (to compute Godunov fluxes)
@@ -121,8 +119,6 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     drsqd = DotProduct(draux, draux, ndim);
-    invdrmagaux = (FLOAT) 1.0/sqrt(drsqd + small_number);
-    for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
 
     // Calculate psitilda values
     for (k=0; k<ndim; k++) {

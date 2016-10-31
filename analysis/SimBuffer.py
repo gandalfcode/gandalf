@@ -22,7 +22,7 @@
 #==============================================================================
 import fnmatch
 import os
-from swig_generated.SphSim import SimulationBase, SphSnapshotBase, Parameters, CodeTiming
+from swig_generated.SphSim import SimulationBase, SphSnapshotBase, Parameters
 
 
 
@@ -145,7 +145,6 @@ this reason, all of its methods are static.
         
         # Create the parameter and timing object
         params = Parameters()
-        timing = CodeTiming()
         
         # If a paramfile name was given, read it
         if paramfile is not None:
@@ -159,7 +158,6 @@ this reason, all of its methods are static.
                 raise BufferException("You need to specify either a parameter file, or ndim and simtype")
             simtype = params.stringparams["sim"]
         sim = SimulationBase.SimulationFactory(ndim, simtype, params);
-        sim.timing = timing
         SimBuffer._add_simulation(sim)
         sim.snapshots = []
         return sim

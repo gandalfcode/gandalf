@@ -46,47 +46,16 @@ using namespace std;
 //  MeshlessFVTree::MeshlessFVTree
 /// MeshlessFVTree constructor.  Initialises various variables.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-MeshlessFVTree<ndim,ParticleType,TreeCell>::MeshlessFVTree
- (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
+template <int ndim, template<int> class ParticleType>
+MeshlessFVTree<ndim,ParticleType>::MeshlessFVTree
+ (string tree_type,
+  int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
- NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- MeshlessFVNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
- HydroTree<ndim,ParticleType,TreeCell>
-  (_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing)
-{
-  tree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-		                                      _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up ghost-particle tree object
-  ghosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-		  	  	  	  	  	  	  	  	  	       _macerror, _gravity_mac, _multipole, *_box, types);
-
-#ifdef MPI_PARALLEL
-  // Set-up ghost-particle tree object
-  mpighosttree = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-		                                              _macerror, _gravity_mac, _multipole, *_box, types);
-
-  // Set-up multiple pruned trees, one for each MPI process
-  prunedtree = new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
-  // new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
-  sendprunedtree =  new Tree<ndim,ParticleType,TreeCell>*[Nmpi] ;
-  //new_tree_array<ndim,ParticleType,TreeCell>(Nmpi);
-
-  for (int i=0; i<Nmpi; i++) {
-	prunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-														 _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-  for (int i=0; i<Nmpi; i++) {
-	sendprunedtree[i] = new_tree<ndim,ParticleType,TreeCell>(_Nleafmax, _thetamaxsqd, _kernrange,
-	    													 _macerror, _gravity_mac, _multipole, *_box, types);
-  }
-#endif
-
-
-}
+ HydroTree<ndim,ParticleType>
+  (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
+{ }
 
 
 
@@ -94,13 +63,9 @@ MeshlessFVTree<ndim,ParticleType,TreeCell>::MeshlessFVTree
 //  MeshlessFVTree::~MeshlessFVTree
 /// MeshlessFVTree destructor.  Deallocates tree memory upon object destruction.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-MeshlessFVTree<ndim,ParticleType,TreeCell>::~MeshlessFVTree()
+template <int ndim, template<int> class ParticleType>
+MeshlessFVTree<ndim,ParticleType>::~MeshlessFVTree()
 {
-  if (tree->allocated_tree) {
-    this->DeallocateMemory();
-    tree->DeallocateTreeMemory();
-  }
 }
 
 
@@ -111,8 +76,8 @@ MeshlessFVTree<ndim,ParticleType,TreeCell>::~MeshlessFVTree()
 /// Loops over all cells containing active particles, performs a tree walk for all particles in
 /// the cell, and then calls SPH class routine to compute properties from neighbours.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
  (int Nhydro,                              ///< [in] No. of SPH particles
   int Ntot,                                ///< [in] No. of SPH + ghost particles
   MeshlessFVParticle<ndim> *mfvdata,       ///< [inout] Pointer to SPH ptcl array
@@ -121,15 +86,14 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active tree cells
-  vector<TreeCell<ndim> > celllist;            // List of active cells
+  vector<TreeCellBase<ndim> > celllist;            // List of active cells
   //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[MeshlessFVTree::UpdateAllProperties]");
-  timing->StartTimingSection("MFV_PROPERTIES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_PROPERTIES");
 
 
   // Find list of all cells that contain active particles
@@ -137,7 +101,6 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("MFV_PROPERTIES");
     return;
   }
 
@@ -184,7 +147,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
       celldone = 1;
       hmax = cell.hmax;
 
@@ -332,21 +295,16 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-  }
+  twork = timing->RunningTime() - twork;
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
 
   // Update tree smoothing length values here
-  tree->UpdateHmaxValues(tree->celldata[0],mfvdata);
-
-  timing->EndTimingSection("MFV_PROPERTIES");
+  tree->UpdateAllHmaxValues(mfvdata);
 
   return;
 }
@@ -357,8 +315,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllProperties
 //  MeshlessFVTree::UpdateGradientMatrices
 /// Compute hydro forces for all active SPH particles.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
  (int Nhydro,                              ///< [in] No. of SPH particles
   int Ntot,                                ///< [in] No. of SPH + ghost particles
   MeshlessFVParticle<ndim> *mfvdata,       ///< [inout] Pointer to SPH ptcl array
@@ -367,14 +325,13 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  vector<TreeCell<ndim> > celllist;            // List of active cells
+  vector<TreeCellBase<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[MeshlessFVTree::UpdateGradientMatrices]");
-  timing->StartTimingSection("MFV_UPDATE_GRADIENTS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_GRADIENTS");
 
 
   // Find list of all cells that contain active particles
@@ -382,17 +339,15 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("MFV_UPDATE_GRADIENTS");
     return;
   }
 
   // Update ghost tree smoothing length values here
-  tree->UpdateHmaxValues(tree->celldata[0], mfvdata);
-  if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], mfvdata);
+  tree->UpdateAllHmaxValues(mfvdata);
+  if (ghosttree->Ntot > 0) ghosttree->UpdateAllHmaxValues(mfvdata);
 #ifdef MPI_PARALLEL
-  if (mfv->Nmpighost > 0) mpighosttree->UpdateHmaxValues(mpighosttree->celldata[0],mfvdata);
+  if (mfv->Nmpighost > 0) mpighosttree->UpdateAllHmaxValues(mfvdata);
 #endif
-
 
   // Set-up all OMP threads
   //===============================================================================================
@@ -434,7 +389,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell, mfvdata, activelist);
@@ -578,19 +533,13 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-  }
+  twork = timing->RunningTime() - twork;
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing gradients : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
-
-  timing->EndTimingSection("MFV_UPDATE_GRADIENTS");
 
   return;
 }
@@ -601,8 +550,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGradientMatrices
 //  MeshlessFVTree::UpdateGodunovFluxes
 /// Compute hydro forces for all active SPH particles.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
  (const int Nhydro,                        ///< [in] No. of hydro particles
   const int Ntot,                          ///< [in] No. of SPH + ghost particles
   const FLOAT timestep,                    ///< [in] Lowest timestep value
@@ -612,14 +561,13 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  vector<TreeCell<ndim> > celllist;            // List of active cells
+  vector<TreeCellBase<ndim> > celllist;            // List of active cells
 #ifdef MPI_PARALLEL
-  int Nactivetot = 0;                      // Total number of active particles
-  double twork = timing->WallClockTime();  // Start time (for load balancing)
+  double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[MeshlessFVTree::UpdateGodunovFluxes]");
-  timing->StartTimingSection("MFV_UPDATE_FLUXES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_FLUXES");
 
 
   // Find list of all cells that contain active particles
@@ -627,13 +575,12 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("MFV_UPDATE_FLUXES");
     return;
   }
 
   // Update ghost tree smoothing length values here
-  tree->UpdateHmaxValues(tree->celldata[0], mfvdata);
-  //if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0], mfvdata);
+  tree->UpdateAllHmaxValues(mfvdata);
+  //if (ghosttree->Ntot > 0) ghosttree->UpdateAllHmaxValues(ghosttree->celldata[0], mfvdata);
 
 
   // Set-up all OMP threads
@@ -682,7 +629,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
@@ -847,19 +794,14 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
-  twork = timing->WallClockTime() - twork;
-  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
-  for (int cc=0; cc<cactive; cc++) {
-    int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
-  }
+  twork = timing->RunningTime() - twork;
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
   cout << "Time computing fluxes : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
 
-
-  timing->EndTimingSection("MFV_UPDATE_FLUXES");
 
   return;
 }
@@ -873,8 +815,8 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
  (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   MeshlessFVParticle<ndim> *partdata,  ///< [inout] Pointer to SPH ptcl array
@@ -884,21 +826,24 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int cactive;                         // No. of active cells
-  vector<TreeCell<ndim> > celllist;            // List of active cells
+  vector<TreeCellBase<ndim> > celllist;            // List of active cells
   //ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[MeshlessFVTree::UpdateAllGravForces]");
-  timing->StartTimingSection("MFV_GRAV_FORCES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_GRAV_FORCES");
+
+#ifdef MPI_PARALLEL
+  double twork = timing->RunningTime();  // Start time (for load balancing)
+#endif
 
   // Update ghost tree smoothing length values here
-  tree->UpdateHmaxValues(tree->celldata[0], partdata);
+  tree->UpdateAllHmaxValues(partdata);
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) {
-    timing->EndTimingSection("MFV_GRAV_FORCES");
     return;
   }
 
@@ -939,9 +884,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     int *mfvauxlist  = new int[Nneibmax];        // ..
     int *directlist  = new int[Nneibmax];        // ..
     int	*gravlist    = new int[Nneibmax];        // ..
-    ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
-    ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
-    TreeCell<ndim>* gravcell       = cellbuf[ithread];         // ..
+    ParticleType<ndim>* activepart  = activepartbuf[ithread];   // ..
+    ParticleType<ndim>* neibpart    = neibpartbuf[ithread];     // ..
+    MultipoleMoment<ndim>* gravcell = cellbuf[ithread];         // ..
 
     bool self_gravity =  mfv->self_gravity == 1 ;
 
@@ -949,7 +894,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim>& cell = celllist[cc];
       macfactor = (FLOAT) 0.0;
 
       // Find list of active particles in current cell
@@ -999,7 +944,7 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
           directlist               = new int[Nneibmax];
           gravlist                 = new int[Nneibmax];
           neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmax];
-          cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmax];
+          cellbuf[ithread]         = new MultipoleMoment<ndim>[Ngravcellmax];
           neibpart                 = neibpartbuf[ithread];
           gravcell                 = cellbuf[ithread];
           okflag = tree->ComputeGravityInteractionAndGhostList
@@ -1068,12 +1013,12 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
             // Compute gravitational force due to distant cells
             if (multipole == "monopole") {
-            this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
-                                            activepart[j].r, Ngravcell, gravcell);
+            ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
+                                      activepart[j].r, Ngravcell, gravcell);
             }
             else if (multipole == "quadrupole") {
-              this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
-                                                activepart[j].r, Ngravcell, gravcell);
+              ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
+                                          activepart[j].r, Ngravcell, gravcell);
             }
 
             // Add the periodic correction force for SPH and direct-sum neighbours
@@ -1100,9 +1045,11 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
 
         // Compute 'fast' multipole terms here
         if (multipole == "fast_monopole") {
-          this->ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+          ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
         }
-
+        else if (multipole == "fast_quadrupole") {
+          ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+        }
       } // End of self-gravity for this cell
 
       // Compute all star forces for active particles
@@ -1133,20 +1080,20 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateAllGravForces
   }
   //===============================================================================================
 
-  timing->EndTimingSection("MFV_GRAV_FORCES");
+#ifdef MPI_PARALLEL
+  twork = timing->RunningTime() - twork;
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot) ;
+#ifdef OUTPUT_ALL
+  cout << "Time computing fluxes : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+#endif
 
   return;
 }
 
 
-template class MeshlessFVTree<1,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,KDTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,KDTreeCell>;
+template class MeshlessFVTree<1,MeshlessFVParticle>;
+template class MeshlessFVTree<2,MeshlessFVParticle>;
+template class MeshlessFVTree<3,MeshlessFVParticle>;
 
-template class MeshlessFVTree<1,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,OctTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,OctTreeCell>;
-
-template class MeshlessFVTree<1,MeshlessFVParticle,BruteForceTreeCell>;
-template class MeshlessFVTree<2,MeshlessFVParticle,BruteForceTreeCell>;
-template class MeshlessFVTree<3,MeshlessFVParticle,BruteForceTreeCell>;

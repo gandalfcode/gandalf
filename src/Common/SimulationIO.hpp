@@ -1563,7 +1563,7 @@ void WriteSerenFormArrayScalar_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 								   const std::vector<MPI_Ptype_info>& types,
 								   T unit=1)
 {
-  for (int itype=0; itype < types.size(); ++itype){
+  for (unsigned int itype=0; itype < types.size(); ++itype){
 	int ptype     = types[itype].ptype ;
 	int Nbefore   = types[itype].Nbefore ;
 	int Ntot_type = types[itype].Ntot_type ;
@@ -1595,7 +1595,7 @@ void WriteSerenFormArrayVector_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 								   const std::vector<MPI_Ptype_info>& types,
 								   T unit=1)
 {
-  for (int itype=0; itype < types.size(); ++itype){
+  for (unsigned int itype=0; itype < types.size(); ++itype){
 	int ptype     = types[itype].ptype ;
 	int Nbefore   = types[itype].Nbefore ;
 	int Ntot_type = types[itype].Ntot_type ;
@@ -1901,7 +1901,8 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
          							           simunits.u.outscale);
     MPI_Offset end;
     MPI_File_get_position(file,&end);
-    assert(end == (end_header + ((2*ndim + 4)*sizeof(FLOAT) + sizeof(int))*Ntot_hydro));
+    assert((unsigned int)end ==
+        (end_header + ((2*ndim + 4)*sizeof(FLOAT) + sizeof(int))*Ntot_hydro));
 
     free(buffer);
 

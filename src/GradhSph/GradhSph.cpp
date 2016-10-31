@@ -58,8 +58,6 @@ GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux, int self_gravity_aux
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp      = &kern;
-  this->kernfac    = (FLOAT) 1.0;
-  this->kernfacsqd = (FLOAT) 1.0;
   this->kernrange  = this->kernp->kernrange;
 }
 
@@ -88,18 +86,15 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
 
   if (N > Nhydromax || !allocated) {
 
-	GradhSphParticle<ndim>* oldsphdata;
-	if (allocated) {
-		oldsphdata = sphdata;
-	}
-	else {
-	}
+    GradhSphParticle<ndim>* newsphdata =
+        new struct GradhSphParticle<ndim>[N];
 
-
-    sphdata          = new struct GradhSphParticle<ndim>[N];
+    // Swap so that sphdata points to the new memory
+    std::swap(newsphdata, sphdata) ;
     if (allocated) {
-    	std::copy(oldsphdata,oldsphdata+Nhydromax,sphdata);
-        delete[] oldsphdata;
+      // Copy back particle data
+      std::copy(newsphdata,newsphdata+Nhydromax,sphdata);
+      delete[] newsphdata;
     }
 
 	Nhydromax=N;
@@ -313,7 +308,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   parti.h         = max(h_fac*pow(parti.m/parti.rho, Sph<ndim>::invndim), h_lower_bound);
   invh            = 1/parti.h;
   parti.hfactor   = pow(invh, ndim+1);
-  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
+  parti.hrangesqd = kern.kernrangesqd*parti.h*parti.h;
   parti.div_v     = (FLOAT) 0.0;
   assert(!(isinf(parti.h)) && !(isnan(parti.h)));
   assert(part.h >= h_lower_bound);

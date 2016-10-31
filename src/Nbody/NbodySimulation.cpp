@@ -106,7 +106,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   }
   else if (stringparams["external_potential"] == "vertical") {
     extpot = new VerticalPotential<ndim>
-      (intparams["kgrav"], floatparams["avert"], simbox.boxmin[intparams["kgrav"]]);
+      (intparams["kgrav"], floatparams["avert"], simbox.min[intparams["kgrav"]]);
   }
   else if (stringparams["external_potential"] == "plummer") {
     extpot = new PlummerPotential<ndim>(floatparams["mplummer"],floatparams["rplummer"]);
@@ -133,32 +133,32 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   //-----------------------------------------------------------------------------------------------
   simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
   simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
-  simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
-  simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
-  //if (simbox.boundary_lhs[0] == "open") simbox.boxmin[0] = -big_number;
-  //if (simbox.boundary_rhs[0] == "open") simbox.boxmax[0] = big_number;
+  simbox.min[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.max[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+  //if (simbox.boundary_lhs[0] == "open") simbox.min[0] = -big_number;
+  //if (simbox.boundary_rhs[0] == "open") simbox.max[0] = big_number;
 
   if (ndim > 1) {
     simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
     simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
-    simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
-    simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-    //if (simbox.boundary_lhs[1] == "open") simbox.boxmin[1] = -big_number;
-    //if (simbox.boundary_rhs[1] == "open") simbox.boxmax[1] = big_number;
+    simbox.min[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+    simbox.max[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+    //if (simbox.boundary_lhs[1] == "open") simbox.min[1] = -big_number;
+    //if (simbox.boundary_rhs[1] == "open") simbox.max[1] = big_number;
   }
 
   if (ndim == 3) {
     simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
     simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
-    simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
-    simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
-    //if (simbox.boundary_lhs[2] == "open") simbox.boxmin[2] = -big_number;
-    //if (simbox.boundary_rhs[2] == "open") simbox.boxmax[2] = big_number;
+    simbox.min[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+    simbox.max[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+    //if (simbox.boundary_lhs[2] == "open") simbox.min[2] = -big_number;
+    //if (simbox.boundary_rhs[2] == "open") simbox.max[2] = big_number;
   }
 
   for (int k=0; k<ndim; k++) {
-    simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
-    simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+    simbox.size[k] = simbox.max[k] - simbox.min[k];
+    simbox.half[k] = 0.5*simbox.size[k];
   }
 
 
@@ -469,7 +469,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
-  timing->StartTimingSection("BLOCK_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
 
 
   // Synchronise all timesteps and reconstruct block timestep structure.
@@ -657,8 +657,6 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 #if defined(VERIFY_ALL)
   //VerifyBlockTimesteps();
 #endif
-
-  timing->EndTimingSection("BLOCK_TIMESTEPS");
 
   return;
 }

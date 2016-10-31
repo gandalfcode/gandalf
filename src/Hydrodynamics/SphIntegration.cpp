@@ -165,18 +165,18 @@ void SphIntegration<ndim>::CheckBoundaries
 
       // Check if particle has crossed LHS boundary
       //-------------------------------------------------------------------------------------------
-      if (part.r[k] < simbox.boxmin[k]) {
+      if (part.r[k] < simbox.min[k]) {
 
         // Check if periodic boundary
         if (simbox.boundary_lhs[k] == periodicBoundary) {
-          part.r[k]  += simbox.boxsize[k];
-          part.r0[k] += simbox.boxsize[k];
+          part.r[k]  += simbox.size[k];
+          part.r0[k] += simbox.size[k];
         }
 
         // Check if wall or mirror boundary
         if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
-          part.r[k]  = (FLOAT) 2.0*simbox.boxmin[k] - part.r[k];
-          part.r0[k] = (FLOAT) 2.0*simbox.boxmin[k] - part.r0[k];
+          part.r[k]  = (FLOAT) 2.0*simbox.min[k] - part.r[k];
+          part.r0[k] = (FLOAT) 2.0*simbox.min[k] - part.r0[k];
           part.v[k]  = -part.v[k];
           part.v0[k] = -part.v0[k];
           part.a[k]  = -part.a[k];
@@ -187,18 +187,18 @@ void SphIntegration<ndim>::CheckBoundaries
 
       // Check if particle has crossed RHS boundary
       //-------------------------------------------------------------------------------------------
-      if (part.r[k] > simbox.boxmax[k]) {
+      if (part.r[k] > simbox.max[k]) {
 
         // Check if periodic boundary
         if (simbox.boundary_rhs[k] == periodicBoundary) {
-          part.r[k]  -= simbox.boxsize[k];
-          part.r0[k] -= simbox.boxsize[k];
+          part.r[k]  -= simbox.size[k];
+          part.r0[k] -= simbox.size[k];
         }
 
         // Check if wall or mirror boundary
         if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
-          part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
-          part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
+          part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
+          part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
           part.v[k]  = -part.v[k];
           part.v0[k] = -part.v0[k];
           part.a[k]  = -part.a[k];

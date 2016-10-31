@@ -25,6 +25,7 @@
 #define MPIEXPORT_H_
 
 #include <cstring>
+#include <vector>
 #include "Precision.h"
 
 

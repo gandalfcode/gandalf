@@ -25,12 +25,14 @@
 #define _CODE_TIMING_H_
 
 
+#include <assert.h>
 #include <map>
 #include <string>
 #include <time.h>
 #include <iostream>
 #include <iomanip>
 #include <sys/time.h>
+#include <vector>
 #include "Precision.h"
 using namespace std;
 
@@ -69,7 +71,14 @@ struct TimingBlock
     block_name     = "";
   }
 
+  void StartTiming() ;
+  void EndTiming() ;
+
+  int Pack(vector<char>&) const ;
+  void Unpack(vector<char>::const_iterator&);
+
 };
+
 
 
 
@@ -87,38 +96,151 @@ class CodeTiming
 #endif
  public:
 
+  class BlockTimer ;
+
+  //=================================================================================================
+  //  Class __BlockTimerProxy
+  /// \brief   Simply Proxy object to avoid copy-on-return of BlockTimer object (see below).
+  /// \details Can only be created directly by CodeTiming object member functions.
+  /// \author  R. A. Booth
+  /// \date    10/10/2016
+  //=================================================================================================
+  class __BlockTimerProxy {
+  private:
+    __BlockTimerProxy(const string& block_name_, CodeTiming* parent_, bool delayed_start_=false)
+  : block_name(block_name_), parent(parent_), delayed_start(delayed_start_)
+  { } ;
+
+  private:
+    friend class BlockTimer;
+    friend class CodeTiming;
+
+    string block_name;
+    CodeTiming* parent;
+    bool delayed_start;
+  };
+
+  //=================================================================================================
+  //  Class BlockTimer
+  /// \brief   Object orientated way of handling timing blocks.
+  /// \details In the standard usage pattern this class starts timing on construction and finishes
+  ///          timing on destruction, copying the result back to its parent CodeTiming object. As an
+  ///          alternative, it is also possible to start and end the timing manually
+  /// \author  R. A. Booth
+  /// \date    10/10/2016
+  //=================================================================================================
+  class BlockTimer {
+  public:
+    BlockTimer(const __BlockTimerProxy& proxy)
+    : block_name(proxy.block_name), parent(proxy.parent), level(-1), timing_in_progress(false)
+    {
+      if (not proxy.delayed_start)
+        StartTiming() ;
+    } ;
+
+    void StartTiming() {
+      assert(not timing_in_progress) ;
+      assert(parent != NULL) ;
+      level = parent->StartTimingBlock(block_name) ;
+      timing_in_progress = true ;
+    }
+
+    void EndTiming() {
+      parent->EndTimingBlock(level, block_name) ;
+      timing_in_progress = false ;
+    }
+
+    BlockTimer& operator=(const __BlockTimerProxy& proxy){
+      if (timing_in_progress)
+        EndTiming() ;
+     return *this = BlockTimer(proxy) ;
+    }
+
+    ~BlockTimer() {
+      if (timing_in_progress)
+        EndTiming() ;
+    }
+
+    friend class CodeTiming ;
+
+  private:
+      BlockTimer& operator=(const BlockTimer& timer) {
+        block_name = timer.block_name ;
+        parent = timer.parent ;
+        level = timer.level ;
+        timing_in_progress = timer.timing_in_progress;
+
+        return *this ;
+      }
+
+    string block_name ;
+    CodeTiming* parent ;
+    unsigned int level;
+    bool timing_in_progress;
+  };
+
+
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
   CodeTiming();
   ~CodeTiming();
 
-
-  // Other functions
+  // Create a timer for a new section. StartNewTimer also begins the timing.
   //-----------------------------------------------------------------------------------------------
-  void StartTimingSection(string);
-  void EndTimingSection(string);
-  void ComputeTimingStatistics(string);
-  double WallClockTime(void);
+  __BlockTimerProxy StartNewTimer(string block_name);
+  __BlockTimerProxy NewTimer(string block_name);
 
+  void ComputeTimingStatistics(string);
+
+  double RunningTime() const ;
+
+
+  // Private functions
+  //-----------------------------------------------------------------------------------------------
+ private:
+  int StartTimingBlock(const string& block_name) {
+    int level = activeblocks.size() ;
+    activeblocks.push_back(block_name) ;
+
+    TimingBlock& blk = GetBlock(level, block_name) ;
+    blk.block_name = block_name;
+    blk.timing_level = level ;
+    blk.StartTiming();
+
+    return level ;
+  }
+  void EndTimingBlock(unsigned int timing_level, const string& block_name) {
+    __check_timing_level(timing_level, block_name) ;
+    GetBlock(timing_level, block_name).EndTiming() ;
+    activeblocks.pop_back();
+  }
+  TimingBlock& GetBlock(unsigned int level, const string& block_name) {
+    if (blockmap.size() == level)
+      blockmap.push_back(map<string,TimingBlock>()) ;
+    assert(blockmap.size() > level) ;
+
+    return blockmap[level][block_name] ;
+  }
+
+  void __check_timing_level(unsigned int, const string&) const;
+
+#ifdef MPI_PARALLEL
+  void pack_timing_blocks_for_MPI_send(std::vector<char>&) const ;
+  void unpack_timing_blocks_from_MPI_send(std::vector<char>::const_iterator&,
+                                          std::vector<map<string, TimingBlock> >&) const ;
+
+#endif
 
   // CodeTiming class variables
   //-----------------------------------------------------------------------------------------------
-  static const int Nblockmax=128;          ///< Max. no. of code timing blocks
-  static const int Nlevelmax=8;            ///< Max. no. of timing levels
-  int level;                               ///< Current timing level
-  int Nlevel;                              ///< No. of timing levels
-  double tstart_wall;                      ///< Start of wall clock timing
-  double tend_wall;                        ///< End of wall clock timing
-  DOUBLE ttot;                             ///< Total time
-  DOUBLE ttot_wall;                        ///< Total wall clock time
-  clock_t tstart;                          ///< Start of integer clock
-  clock_t tend;                            ///< End of integer clock
+  double tstart_wall;                          ///< Start of wall clock timing
+  double tend_wall;                            ///< End of wall clock timing
+  double ttot;                                 ///< Total time
+  double ttot_wall;                            ///< Total wall clock time
+  clock_t tstart;                              ///< Start of integer clock
+  clock_t tend;                                ///< End of integer clock
 
-  int Nblock[Nlevelmax];                   ///< No. of timing blocks on a given level
-  int timingOrder[Nlevelmax][Nblockmax];   ///< Order (longest to shortest) of timing blocks
-  map<string,int> blockmap[Nlevelmax];     ///< Map of timing block names
-  TimingBlock block[Nlevelmax][Nblockmax]; ///< Array of timing blocks
-  TimingBlock *levelstack[Nlevelmax];      ///< Stack of current blocks being timed
-
+  vector<map<string,TimingBlock> > blockmap;   ///< Map of timing block names
+  vector<string> activeblocks;                 ///< Block currently being timed at each level ;
 };
 #endif

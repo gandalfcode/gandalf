@@ -172,7 +172,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     }
     // If we will output a snapshot (regular or for restarts), then delete all accreted particles
     if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->WallClockTime() - timing->tstart_wall > (FLOAT) 0.99*tmax_wallclock) {
+         timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock) {
       hydro->DeleteDeadParticles();
       rebuild_tree = true;
     }
@@ -286,7 +286,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     double hmax = mfvneib->GetMaximumSmoothingLength() ;
     hmax *= mfv->kernp->kernrange ;
     for (i=0; i < ndim; i++)
-      if (simbox.boxhalf[i] < 2*hmax){
+      if (simbox.half[i] < 2*hmax){
         string message = "Error: Smoothing length too large, self-interaction will occur" ;
     	ExceptionHandler::getIstance().raise(message);
       }

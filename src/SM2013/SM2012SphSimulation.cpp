@@ -230,28 +230,13 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
 
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new SM2012SphTree<ndim,SM2012SphParticle,BruteForceTreeCell>
-  	  (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-  	   floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-  	   stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
-  else if (stringparams["neib_search"] == "kdtree") {
-    sphneib = new SM2012SphTree<ndim,SM2012SphParticle,KDTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+  string tree_type = stringparams["neib_search"];
+
+  sphneib = new SM2012SphTree<ndim,SM2012SphParticle>
+     (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
-  }
-  else if (stringparams["neib_search"] == "octtree") {
-    sphneib = new SM2012SphTree<ndim,SM2012SphParticle,OctTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
-  }
-  else {
-    string message = "Unrecognised parameter : neib_search = "
-      + simparams->stringparams["neib_search"];
-    ExceptionHandler::getIstance().raise(message);
-  }
+
 
 #if defined MPI_PARALLEL
   mpicontrol->SetNeibSearch(sphneib);

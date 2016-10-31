@@ -53,11 +53,11 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
   debug2("[TreeRay::TreeRay]");
 
   // Set pointers to reference the tree (and pruned tree) objets in the Neighbour Search class
-  tree = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->_tree);
+  tree = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->GetTree());
 #if defined MPI_PARALLEL
   prunedtree = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
   for (int i=0; i<Nmpi; i++) {
-    prunedtree[i] = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->_prunedtree[i]);
+    prunedtree[i] = static_cast<OctTree<ndim,ParticleType,TreeCell>* > (neib->GetPrunedTree(i));
   }
 #endif
 
@@ -75,13 +75,13 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
 
   // Allocate arrays for rays
   minCellSize = (FLOAT) 0.0;
-  for (int k=0; k<ndim; k++) minCellSize = max(minCellSize, simbox.boxsize[k]);
+  for (int k=0; k<ndim; k++) minCellSize = max(minCellSize, simbox.size[k]);
   minCellSize    = minCellSize/powf(2.0, tree->lmax);
-  max_ray_length = sqrtf(DotProduct(simbox.boxsize, simbox.boxsize, ndim));
+  max_ray_length = sqrtf(DotProduct(simbox.size, simbox.size, ndim));
   bhNR           = rayRadRes*((int) (sqrtf(2.0*max_ray_length / minCellSize)) + 1);
 
-  cout << "boxsize : " << simbox.boxsize[0] << "   " << simbox.boxsize[1]
-       << "   " << simbox.boxsize[2] << endl;
+  cout << "boxsize : " << simbox.size[0] << "   " << simbox.size[1]
+       << "   " << simbox.size[2] << endl;
   cout << "minCellSize : " << minCellSize << "    max_ray_length : " << max_ray_length
        << "     bhNR : " << bhNR << endl;
 

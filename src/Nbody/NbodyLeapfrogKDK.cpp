@@ -226,7 +226,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
   FLOAT dt;                            // Timestep since start of step
 
   debug2("[NbodyLeapfrogKDK::AdvanceParticles]");
-  timing->StartTimingSection("NBODY_ADVANCE");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("NBODY_ADVANCE");
 
   // Advance positions and velocities of all star particles
   //-----------------------------------------------------------------------------------------------
@@ -248,8 +248,6 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
     else star[i]->active = false;
   }
   //-----------------------------------------------------------------------------------------------
-
-  timing->EndTimingSection("NBODY_ADVANCE");
 
   return;
 }
@@ -278,7 +276,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
   int nstep;                           // Particle (integer) step size
 
   debug2("[NbodyLeapfrogKDK::CorrectionTerms]");
-  timing->StartTimingSection("NBODY_CORRECTION_TERMS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("NBODY_CORRECTION_TERMS");
 
   // Loop over all star particles and calculate correction terms only for
   // those at end of step.
@@ -292,8 +290,6 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
     }
   }
   //-----------------------------------------------------------------------------------------------
-
-  timing->EndTimingSection("NBODY_CORRECTION_TERMS");
 
   return;
 }
@@ -319,7 +315,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
   int nstep;                           // Particle (integer) step size
 
   debug2("[NbodyLeapfrogKDK::EndTimestep]");
-  timing->StartTimingSection("NBODY_END_TIMESTEP");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("NBODY_END_TIMESTEP");
 
   // Loop over all star particles and set values for those at end of step
   //-----------------------------------------------------------------------------------------------
@@ -340,8 +336,6 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
     }
   }
   //-----------------------------------------------------------------------------------------------
-
-  timing->EndTimingSection("NBODY_END_TIMESTEP");
 
   return;
 }

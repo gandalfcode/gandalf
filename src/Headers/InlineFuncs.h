@@ -26,6 +26,7 @@
 #define _INLINE_FUNCS_H_
 
 
+#include <string.h>
 #include <assert.h>
 #include <string>
 #include <math.h>
@@ -541,10 +542,10 @@ static inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
 //  ..
 //=================================================================================================
 template <int ndim, template<int> class Particle >
-static inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box)
+static inline bool ParticleInBox (const Particle<ndim>& part,const Box<ndim>& box)
 {
   for (int k=0; k<ndim; k++) {
-    if (part.r[k] < box.boxmin[k] || part.r[k] > box.boxmax[k]) return false;
+    if (part.r[k] < box.min[k] || part.r[k] > box.max[k]) return false;
   }
   return true;
 }
@@ -681,5 +682,24 @@ inline void InvertMatrix(const FLOAT A[ndim][ndim], FLOAT B[ndim][ndim])
   __matrixInverter<ndim>::invert(A,B) ;
 }
 
+
+template<class T>
+inline void append_bytes(std::vector<char>& buffer, const T* element) {
+
+  const char* bytes_start = reinterpret_cast<const char*>(element);
+  const char* bytes_end = bytes_start + sizeof(T) ;
+
+  buffer.insert(buffer.end(), bytes_start, bytes_end) ;
+}
+
+template<class T>
+inline int unpack_bytes(T* element, std::vector<char>::const_iterator& it) {
+
+  void* element_unsafe = reinterpret_cast<void*> (element);
+  memcpy(element_unsafe, &(*it), sizeof(T)) ;
+  it += sizeof(T) ;
+
+  return sizeof(T) ;
+}
 
 #endif

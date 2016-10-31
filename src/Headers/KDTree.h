@@ -28,6 +28,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "Debug.h"
 #include "Precision.h"
 #include "Constants.h"
 #include "CodeTiming.h"
@@ -115,7 +116,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  void BuildTree(const int, const int, const int, const int, const FLOAT, ParticleType<ndim> *);
+  void BuildTree(const int, const int, const int, const int, const FLOAT, Particle<ndim> *);
   void AllocateTreeMemory(int,int,bool);
   void ReallocateMemory(int,int);
   void DeallocateTreeMemory(void);
@@ -125,12 +126,23 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void ExtrapolateCellProperties(const FLOAT);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   FLOAT QuickSelectSort(int, int, int, int, ParticleType<ndim> *);
-  void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
+  void StockTree(Particle<ndim> *part_gen) {
+    ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
+    StockTree(celldata[0], partdata) ;
+  }
+  void StockTree(TreeCell<ndim>&, ParticleType<ndim> *);
   void StockCellProperties(TreeCell<ndim> &, ParticleType<ndim> *);
-  void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
-  void UpdateActiveParticleCounters(ParticleType<ndim> *);
+  void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
+    ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
+    UpdateHmaxValues(celldata[0], partdata) ;
+  }
+  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *);
+  void UpdateActiveParticleCounters(Particle<ndim> *);
 #ifdef MPI_PARALLEL
-  void UpdateWorkCounters(TreeCell<ndim> &);
+  void UpdateWorkCounters() {
+    UpdateWorkCounters(celldata[0]) ;
+  }
+  void UpdateWorkCounters(TreeCell<ndim>&);
   int GetMaxCellNumber(const int _level) {return pow(2,_level+1)-1;};
 #endif
 #if defined(VERIFY_ALL)

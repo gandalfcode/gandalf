@@ -88,7 +88,7 @@ class TreeRayPhysics
  public:
 
   TreeRayPhysics() {};
-  ~TreeRayPhysics() {};
+  virtual ~TreeRayPhysics() {};
 
   //virtual void Init(void) = 0;
   virtual void FinaliseCell (TreeCell<ndim> &, FLOAT *, FLOAT **, FLOAT **) = 0;
@@ -136,9 +136,9 @@ class TreeRayOnTheSpot : public TreeRayPhysics<ndim,nfreq,TreeCell>
   ~TreeRayOnTheSpot();
 
   //virtual void Init(void) {};
-  virtual void FinaliseCell (TreeCell<ndim> &, FLOAT *, FLOAT **, FLOAT **);
+  void FinaliseCell (TreeCell<ndim> &, FLOAT *, FLOAT **, FLOAT **);
   //virtual void NodeContribution();
-  virtual void IntegrateRay(Rays *, FLOAT *);
+  void IntegrateRay(Rays *, FLOAT *);
 
 };
 
@@ -213,8 +213,8 @@ class TreeRay : public Radiation<ndim>
           DomainBox<ndim> &, SimUnits *, Parameters *, NeighbourSearch<ndim> *);
   ~TreeRay();
 
-  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
-                                    NbodyParticle<ndim> **, SinkParticle<ndim> *);
+  void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
+                            NbodyParticle<ndim> **, SinkParticle<ndim> *);
 
   void AddRadiationPointSource(SinkParticle<ndim> &);
   void CalculateCellRadiationProperties(TreeCell<ndim> &);

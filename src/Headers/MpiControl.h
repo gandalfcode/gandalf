@@ -191,8 +191,8 @@ inline Box<ndim> MpiControl<ndim>::MyDomain()
   if (!allocated_mpi) {
     Box<ndim> result;
     for (int k=0; k<ndim; k++) {
-      result.boxmin[k] = -big_number;
-      result.boxmax[k] = big_number;
+      result.min[k] = -big_number;
+      result.max[k] = big_number;
     }
     return result;
   }

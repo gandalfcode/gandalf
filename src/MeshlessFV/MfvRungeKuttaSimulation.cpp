@@ -119,7 +119,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
     // If we will output a snapshot (regular or for restarts), then delete all accreted particles
     if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->WallClockTime() - timing->tstart_wall > (FLOAT) 0.99*tmax_wallclock) {
+         timing->RunningTime() > (FLOAT) 0.99*tmax_wallclock) {
       hydro->DeleteDeadParticles();
       rebuild_tree = true;
     }
@@ -423,13 +423,13 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
     for (k=0; k<ndim; k++) {
       partdata[i].r[k] += (FLOAT) 0.5*partdata[i].v[k]*timestep;
-      //if (partdata[i].r[k] < simbox.boxmin[k])
+      //if (partdata[i].r[k] < simbox.min[k])
       //  if (simbox.boundary_lhs[k] == periodicBoundary) {
-      //    partdata[i].r[k] += simbox.boxsize[k];
+      //    partdata[i].r[k] += simbox.size[k];
       //  }
-      //if (partdata[i].r[k] > simbox.boxmax[k])
+      //if (partdata[i].r[k] > simbox.max[k])
       //  if (simbox.boundary_rhs[k] == periodicBoundary) {
-      //    partdata[i].r[k] -= simbox.boxsize[k];
+      //    partdata[i].r[k] -= simbox.size[k];
       //  }
     }
 
@@ -478,13 +478,13 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
     for (k=0; k<ndim; k++) {
       partdata[i].r[k] += (FLOAT) 0.5*partdata[i].v[k]*timestep;
-      if (partdata[i].r[k] < simbox.boxmin[k])
+      if (partdata[i].r[k] < simbox.min[k])
         if (simbox.boundary_lhs[k] == periodicBoundary) {
-          partdata[i].r[k] += simbox.boxsize[k];
+          partdata[i].r[k] += simbox.size[k];
         }
-      if (partdata[i].r[k] > simbox.boxmax[k])
+      if (partdata[i].r[k] > simbox.max[k])
         if (simbox.boundary_rhs[k] == periodicBoundary) {
-          partdata[i].r[k] -= simbox.boxsize[k];
+          partdata[i].r[k] -= simbox.size[k];
         }
     }
 
@@ -500,7 +500,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     double hmax = mfvneib->GetMaximumSmoothingLength() ;
     hmax *= mfv->kernp->kernrange ;
     for (i=0; i < ndim; i++)
-      if (simbox.boxhalf[i] < 2*hmax){
+      if (simbox.half[i] < 2*hmax){
         string message = "Error: Smoothing length too large, self-interaction will occur" ;
     	ExceptionHandler::getIstance().raise(message);
       }

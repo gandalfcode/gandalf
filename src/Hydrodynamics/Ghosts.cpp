@@ -67,18 +67,18 @@ void PeriodicGhosts<ndim>::CheckBoundaries
 
       // Check if particle has crossed LHS boundary
       //-------------------------------------------------------------------------------------------
-      if (part.r[k] < simbox.boxmin[k]) {
+      if (part.r[k] < simbox.min[k]) {
 
         // Check if periodic boundary
         if (simbox.boundary_lhs[k] == periodicBoundary) {
-          part.r[k]  += simbox.boxsize[k];
-          part.r0[k] += simbox.boxsize[k];
+          part.r[k]  += simbox.size[k];
+          part.r0[k] += simbox.size[k];
         }
 
         // Check if wall or mirror boundary
         if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
-          part.r[k]  = (FLOAT) 2.0*simbox.boxmin[k] - part.r[k];
-          part.r0[k] = (FLOAT) 2.0*simbox.boxmin[k] - part.r0[k];
+          part.r[k]  = (FLOAT) 2.0*simbox.min[k] - part.r[k];
+          part.r0[k] = (FLOAT) 2.0*simbox.min[k] - part.r0[k];
           part.v[k]  = -part.v[k];
           part.v0[k] = -part.v0[k];
           part.a[k]  = -part.a[k];
@@ -89,18 +89,18 @@ void PeriodicGhosts<ndim>::CheckBoundaries
 
       // Check if particle has crossed RHS boundary
       //-------------------------------------------------------------------------------------------
-      if (part.r[k] > simbox.boxmax[k]) {
+      if (part.r[k] > simbox.max[k]) {
 
         // Check if periodic boundary
         if (simbox.boundary_rhs[k] == periodicBoundary) {
-          part.r[k]  -= simbox.boxsize[k];
-          part.r0[k] -= simbox.boxsize[k];
+          part.r[k]  -= simbox.size[k];
+          part.r0[k] -= simbox.size[k];
         }
 
         // Check if wall or mirror boundary
         if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
-          part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
-          part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
+          part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
+          part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
           part.v[k]  = -part.v[k];
           part.v0[k] = -part.v0[k];
           part.a[k]  = -part.a[k];
@@ -156,20 +156,20 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     // only update one direction.
     if (ndim > 2) {
       if (itype & z_periodic_lhs) {
-        sphdata[i].r[2] += simbox.boxsize[2];
+        sphdata[i].r[2] += simbox.size[2];
         continue ;
       }
       else if (itype & z_periodic_rhs) {
-    	sphdata[i].r[2] -= simbox.boxsize[2];
+    	sphdata[i].r[2] -= simbox.size[2];
         continue ;
       }
       else if (itype & z_mirror_lhs) {
-        sphdata[i].r[2] = 2.0*simbox.boxmin[2] - sphdata[i].r[2];
+        sphdata[i].r[2] = 2.0*simbox.min[2] - sphdata[i].r[2];
         sphdata[i].v[2] *= -1 ;
         continue ;
       }
       else if (itype & z_mirror_rhs) {
-    	sphdata[i].r[2] = 2.0*simbox.boxmax[2] - sphdata[i].r[2];
+    	sphdata[i].r[2] = 2.0*simbox.max[2] - sphdata[i].r[2];
     	sphdata[i].v[2] *= -1 ;
         continue ;
       }
@@ -177,40 +177,40 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     }
     if (ndim > 1) {
       if (itype & y_periodic_lhs) {
-    	sphdata[i].r[1] += simbox.boxsize[1];
+    	sphdata[i].r[1] += simbox.size[1];
     	continue ;
       }
       else if (itype & y_periodic_rhs) {
-    	sphdata[i].r[1] -= simbox.boxsize[1];
+    	sphdata[i].r[1] -= simbox.size[1];
     	continue ;
       }
       else if (itype & y_mirror_lhs) {
-    	sphdata[i].r[1] = 2.0*simbox.boxmin[1] - sphdata[i].r[1];
+    	sphdata[i].r[1] = 2.0*simbox.min[1] - sphdata[i].r[1];
     	sphdata[i].v[1] *= -1 ;
     	continue ;
       }
       else if (itype & y_mirror_rhs) {
-        sphdata[i].r[1] = 2.0*simbox.boxmax[1] - sphdata[i].r[1];
+        sphdata[i].r[1] = 2.0*simbox.max[1] - sphdata[i].r[1];
         sphdata[i].v[1] *= -1 ;
         continue ;
       }
     }
 
     if (itype & x_periodic_lhs) {
-      sphdata[i].r[0] += simbox.boxsize[0];
+      sphdata[i].r[0] += simbox.size[0];
       continue ;
     }
     else if (itype & x_periodic_rhs) {
-      sphdata[i].r[0] -= simbox.boxsize[0];
+      sphdata[i].r[0] -= simbox.size[0];
       continue ;
     }
     else if (itype & x_mirror_lhs) {
-      sphdata[i].r[0] = 2.0*simbox.boxmin[0] - sphdata[i].r[0];
+      sphdata[i].r[0] = 2.0*simbox.min[0] - sphdata[i].r[0];
       sphdata[i].v[0] *= -1 ;
       continue ;
     }
     else if (itype & x_mirror_rhs) {
-      sphdata[i].r[0] = 2.0*simbox.boxmax[0] - sphdata[i].r[0];
+      sphdata[i].r[0] = 2.0*simbox.max[0] - sphdata[i].r[0];
       sphdata[i].v[0] *= -1 ;
       continue ;
     }

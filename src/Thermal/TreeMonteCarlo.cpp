@@ -88,9 +88,9 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
 
   // Re-build radiation tree from scratch
-  timing->StartTimingSection("RADTREE_BUILD");
+  CodeTiming::BlockTimer timer1 = timing->StartNewTimer("RADTREE_BUILD");
   radtree->BuildTree(Nhydro,Nhydro,sphdata);
-  timing->EndTimingSection("RADTREE_BUILD");
+  timer1.EndTiming();
 
   // Compute maximum radius of cell extent from co-ordinate centre, in order
   // to know where to emit external photons from
@@ -102,10 +102,10 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
 
   // Perform single iteration step on computing radiation field
-  timing->StartTimingSection("RADTREE_MONTE_CARLO");
+  CodeTiming::BlockTimer timer2 = timing->StartNewTimer("RADTREE_MONTE_CARLO");
   level = radtree->ltot;
   IterateRadiationField(level,Nhydro,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
-  timing->EndTimingSection("RADTREE_MONTE_CARLO");
+  timer2.EndTiming();
 
 
   // Update the radiation field on all higher cells

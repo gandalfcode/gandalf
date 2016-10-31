@@ -124,7 +124,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
   FLOAT rho_max;                       // Maximum density of sink candidates
 
   debug2("[Sinks::SearchForNewSinkParticles]");
-  timing->StartTimingSection("SEARCH_NEW_SINKS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_NEW_SINKS");
 
 
   // Continuous loop to search for new sinks.  If a new sink is found, then repeat
@@ -242,8 +242,6 @@ void Sinks<ndim>::SearchForNewSinkParticles
   //===============================================================================================
 
 
-  timing->EndTimingSection("SEARCH_NEW_SINKS");
-
   return;
 }
 
@@ -340,7 +338,7 @@ void Sinks<ndim>::AccreteMassToSinks
   Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
 {
   debug2("[Sinks::AccreteMassToSinks]");
-  timing->StartTimingSection("SINK_ACCRETE_MASS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SINK_ACCRETE_MASS");
 
   // Allocate local memory and initialise values
   for (int i=0; i<hydro->Ntot; i++) hydro->GetParticlePointer(i).sinkid = -1;
@@ -365,7 +363,7 @@ void Sinks<ndim>::AccreteMassToSinks
     int Nneib;                               // No. of particles inside sink
     int Nneibmax = 128;                      // Max. no. of particles inside sink
     int s;                                   // Sink counter
-    int saux;                                // Aux. sink i.d.
+    //  int saux;                                // Aux. sink i.d.
     FLOAT asqd;                              // Acceleration squared
     FLOAT dr[ndim];                          // Relative position vector
     FLOAT drmag;                             // Distance
@@ -378,7 +376,7 @@ void Sinks<ndim>::AccreteMassToSinks
     FLOAT macc_temp;                         // Temp. accreted mass variable
     FLOAT mold;                              // Old mass
     FLOAT mtemp;                             // Aux. mass variable
-    FLOAT rsqdmin;                           // Distance (sqd) to closest sink
+    //FLOAT rsqdmin;                           // Distance (sqd) to closest sink
     FLOAT rold[ndim];                        // Old sink position
     FLOAT vold[ndim];                        // Old sink velocity
     FLOAT wnorm;                             // Kernel normalisation factor
@@ -732,8 +730,6 @@ void Sinks<ndim>::AccreteMassToSinks
     }
     assert(part.flags.is_dead() || part.m > 0.0);
   }
-
-  timing->EndTimingSection("SINK_ACCRETE_MASS");
 
   return;
 }

@@ -56,8 +56,6 @@ SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux, int self_gravity_
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;
-  this->kernfac = (FLOAT) 1.0;
-  this->kernfacsqd = (FLOAT) 1.0;
 }
 
 
@@ -229,7 +227,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     parti.rho *= parti.hfactor;
     parti.q *= parti.hfactor;
 
-    FLOAT invrho ;
+    FLOAT invrho = 0;
     if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
@@ -274,7 +272,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   parti.h         = max(h_fac*powf(parti.m/parti.rho,Sph<ndim>::invndim), h_lower_bound);
   invh            = (FLOAT) 1.0/parti.h;
   parti.hfactor   = pow(invh,ndim+1);
-  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
+  parti.hrangesqd = kern.kernrangesqd*parti.h*parti.h;
   parti.div_v     = (FLOAT) 0.0;
   parti.dudt      = (FLOAT) 0.0;
 

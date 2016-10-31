@@ -94,25 +94,22 @@ void MeshlessFV<ndim>::AllocateMemory(int N)
 
   if (N > Nhydromax || !allocated) {
 
-	  MeshlessFVParticle<ndim>* oldhydrodata;
-		if (allocated) {
-			oldhydrodata = hydrodata;
-		}
-		else {
-		}
+    MeshlessFVParticle<ndim>* newhydrodata =
+        new struct MeshlessFVParticle<ndim>[N];
+
+    // Swap so that hydrodata points to the new memory
+    std::swap(newhydrodata, hydrodata) ;
+    if (allocated) {
+      // Copy back particle data
+      std::copy(newhydrodata,newhydrodata+Nhydromax,hydrodata);
+      delete[] newhydrodata;
+    }
 
 
-		hydrodata          = new struct MeshlessFVParticle<ndim>[N];
-	    if (allocated) {
-	    	std::copy(oldhydrodata,oldhydrodata+Nhydromax,hydrodata);
-	        delete[] oldhydrodata;
-	    }
-
-		Nhydromax=N;
-	    allocated        = true;
-	    hydrodata_unsafe = hydrodata;
-	  }
-
+    Nhydromax=N;
+    allocated        = true;
+    hydrodata_unsafe = hydrodata;
+  }
   assert(Nhydromax >= Nhydro);
   assert(hydrodata);
 
@@ -289,18 +286,18 @@ void MeshlessFV<ndim>::IntegrateParticles
 
         // Check if particle has crossed LHS boundary
         //-----------------------------------------------------------------------------------------
-        if (part.r[k] < simbox.boxmin[k]) {
+        if (part.r[k] < simbox.min[k]) {
 
           // Check if periodic boundary
           if (simbox.boundary_lhs[k] == periodicBoundary) {
-            part.r[k]  += simbox.boxsize[k];
-            part.r0[k] += simbox.boxsize[k];
+            part.r[k]  += simbox.size[k];
+            part.r0[k] += simbox.size[k];
           }
 
           // Check if wall or mirror boundary
           if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
-            part.r[k]  = (FLOAT) 2.0*simbox.boxmin[k] - part.r[k];
-            part.r0[k] = (FLOAT) 2.0*simbox.boxmin[k] - part.r0[k];
+            part.r[k]  = (FLOAT) 2.0*simbox.min[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.min[k] - part.r0[k];
             part.v[k]  = -part.v[k];
             part.v0[k] = -part.v0[k];
             part.a[k]  = -part.a[k];
@@ -310,18 +307,18 @@ void MeshlessFV<ndim>::IntegrateParticles
 
         // Check if particle has crossed RHS boundary
         //-----------------------------------------------------------------------------------------
-        if (part.r[k] > simbox.boxmax[k]) {
+        if (part.r[k] > simbox.max[k]) {
 
           // Check if periodic boundary
           if (simbox.boundary_rhs[k] == periodicBoundary) {
-            part.r[k]  -= simbox.boxsize[k];
-            part.r0[k] -= simbox.boxsize[k];
+            part.r[k]  -= simbox.size[k];
+            part.r0[k] -= simbox.size[k];
           }
 
           // Check if wall or mirror boundaryq
           if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
-            part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
-            part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
+            part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
             part.v[k]  = -part.v[k];
             part.v0[k] = -part.v0[k];
             part.a[k]  = -part.a[k];
@@ -492,7 +489,7 @@ void MeshlessFV<1>::InitialSmoothingLengthGuess(void)
   for (i=0; i<Nhydro; i++) {
     MeshlessFVParticle<1>& part = GetMeshlessFVParticlePointer(i);
     part.h         = h_guess;
-    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+    part.hrangesqd = kernp->kernrangesqd*part.h*part.h;
   }
 
   return;
@@ -523,7 +520,7 @@ void MeshlessFV<2>::InitialSmoothingLengthGuess(void)
   for (i=0; i<Nhydro; i++) {
     MeshlessFVParticle<2>& part = GetMeshlessFVParticlePointer(i);
     part.h         = h_guess;
-    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+    part.hrangesqd = kernp->kernrangesqd*part.h*part.h;
   }
 
   return;
@@ -554,7 +551,7 @@ void MeshlessFV<3>::InitialSmoothingLengthGuess(void)
   for (i=0; i<Nhydro; i++) {
     MeshlessFVParticle<3>& part = GetMeshlessFVParticlePointer(i);
     part.h         = h_guess;
-    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+    part.hrangesqd = kernp->kernrangesqd*part.h*part.h;
   }
 
   return;

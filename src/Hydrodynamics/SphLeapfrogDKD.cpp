@@ -87,7 +87,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogDKD::AdvanceParticles]");
-  timing->StartTimingSection("SPH_LFDKD_ADVANCE_PARTICLES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_LFDKD_ADVANCE_PARTICLES");
 
 
   // Advance positions and velocities of all SPH particles
@@ -130,8 +130,6 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
   }
   //-----------------------------------------------------------------------------------------------
 
-  timing->EndTimingSection("SPH_LFDKD_ADVANCE_PARTICLES");
-
   return;
 }
 
@@ -157,7 +155,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogDKD::EndTimestep]");
-  timing->StartTimingSection("SPH_LFDKD_END_TIMESTEP");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_LFDKD_END_TIMESTEP");
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,nstep) shared(sphdata)
@@ -181,8 +179,6 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
     }
   }
   //-----------------------------------------------------------------------------------------------
-
-  timing->EndTimingSection("SPH_LFDKD_END_TIMESTEP");
 
   return;
 }
@@ -210,7 +206,7 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogDKD::CheckTimesteps]");
-  timing->StartTimingSection("SPH_LFDKD_CHECK_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_LFDKD_CHECK_TIMESTEPS");
 
 
   //-----------------------------------------------------------------------------------------------
@@ -239,8 +235,6 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
     }
   }
   //-----------------------------------------------------------------------------------------------
-
-  timing->EndTimingSection("SPH_LFDKD_CHECK_TIMESTEPS");
 
   return activecount;
 }

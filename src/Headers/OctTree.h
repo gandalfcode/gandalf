@@ -132,17 +132,26 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  void BuildTree(const int, const int, const int, const int, const FLOAT, ParticleType<ndim> *);
+  void BuildTree(const int, const int, const int, const int, const FLOAT, Particle<ndim> *);
   void AllocateTreeMemory(int,int,bool);
   void ReallocateMemory(int,int);
   void DeallocateTreeMemory(void);
-  //bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
-  //void ExtrapolateCellProperties(FLOAT);
-  void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
-  void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
-  void UpdateActiveParticleCounters(ParticleType<ndim> *);
+  void StockTree(Particle<ndim> *part_gen) {
+    ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
+    StockTree(celldata[0], partdata) ;
+  }
+  void StockTree(TreeCell<ndim>&, ParticleType<ndim> *);
+  void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
+      ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
+      UpdateHmaxValues(celldata[0], partdata) ;
+    }
+  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *);
+  void UpdateActiveParticleCounters(Particle<ndim> *);
 #ifdef MPI_PARALLEL
-  void UpdateWorkCounters(TreeCell<ndim> &) {};
+  void UpdateWorkCounters() {
+      UpdateWorkCounters(celldata[0]) ;
+    }
+    void UpdateWorkCounters(TreeCell<ndim>&);
   int GetMaxCellNumber(const int _level) {return pow(pow(2,ndim),_level);};
 #endif
 #if defined(VERIFY_ALL)

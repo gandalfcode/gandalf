@@ -46,8 +46,8 @@ enum boundaryEnum{openBoundary, periodicBoundary, mirrorBoundary, wallBoundary, 
 //=================================================================================================
 template <int ndim>
 struct Box {
-  FLOAT boxmin[3];                     ///< Minimum bounding box extent
-  FLOAT boxmax[3];                     ///< Maximum bounding box extent
+  FLOAT min[ndim];                     ///< Minimum bounding box extent
+  FLOAT max[ndim];                     ///< Maximum bounding box extent
 };
 
 
@@ -70,18 +70,16 @@ MPI_Datatype CreateBoxType (Box<ndim> dummy) {
 
 //=================================================================================================
 //  Structure DomainBox
-/// \brief  Bounding box data structure.
+/// \brief  Bounding box data structure. Everything is 3D as the Ewald sum needs all 3 dimensions.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
 //=================================================================================================
 template <int ndim>
-struct DomainBox {
-  boundaryEnum boundary_lhs[3];        ///< LHS boundary types
-  boundaryEnum boundary_rhs[3];        ///< RHS boundary types
-  FLOAT boxmin[3];                     ///< Minimum bounding box extent
-  FLOAT boxmax[3];                     ///< Maximum bounding box extent
-  FLOAT boxsize[3];                    ///< Side-lengths of bounding box
-  FLOAT boxhalf[3];                    ///< Half side-lengths of bounding box
+struct DomainBox : public Box<3> {
+  boundaryEnum boundary_lhs[3];     ///< LHS boundary types
+  boundaryEnum boundary_rhs[3];     ///< RHS boundary types
+  FLOAT size[3];                    ///< Side-lengths of bounding box
+  FLOAT half[3];                    ///< Half side-lengths of bounding box
   bool PeriodicGravity ;               ///< Whether the domain is using periodic gravity.
 };
 
@@ -191,8 +189,8 @@ static inline bool BoxesOverlap (const Box<ndim>& A, const Box<ndim>& B)
   bool coord_overlap[ndim];
 
   for (int i=0; i<ndim; i++) {
-    coord_overlap[i] = valueInRange(A.boxmin[i], B.boxmin[i], B.boxmax[i]) ||
-                       valueInRange(B.boxmin[i], A.boxmin[i], A.boxmax[i]);
+    coord_overlap[i] = valueInRange(A.min[i], B.min[i], B.max[i]) ||
+                       valueInRange(B.min[i], A.min[i], A.max[i]);
   }
 
   bool result=true;
@@ -221,8 +219,8 @@ static inline void NearestPeriodicVector
   for (int k=0; k<ndim; k++) dr_corr[k] = 0.0;
   for (int k=0; k<ndim; k++) {
     if (box.boundary_lhs[k] == periodicBoundary && box.boundary_rhs[k] == periodicBoundary) {
-      if (dr[k] > box.boxhalf[k]) dr_corr[k] = -box.boxsize[k];
-      else if (dr[k] < -box.boxhalf[k]) dr_corr[k] = box.boxsize[k];
+      if (dr[k] > box.half[k]) dr_corr[k] = -box.size[k];
+      else if (dr[k] < -box.half[k]) dr_corr[k] = box.size[k];
     }
   }
   for (int k=0; k<ndim; k++) dr[k] += dr_corr[k];

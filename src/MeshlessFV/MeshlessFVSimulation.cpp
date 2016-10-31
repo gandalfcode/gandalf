@@ -217,26 +217,26 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   //-----------------------------------------------------------------------------------------------
   simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
   simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
-  simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
-  simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+  simbox.min[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.max[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
 
   if (ndim > 1) {
     simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
     simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
-    simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
-    simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+    simbox.min[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+    simbox.max[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
   }
 
   if (ndim == 3) {
     simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
     simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
-    simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
-    simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+    simbox.min[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+    simbox.max[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
   }
 
   for (int k=0; k<ndim; k++) {
-    simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
-    simbox.boxhalf[k] = (FLOAT) 0.5*simbox.boxsize[k];
+    simbox.size[k] = simbox.max[k] - simbox.min[k];
+    simbox.half[k] = (FLOAT) 0.5*simbox.size[k];
   }
 
 #ifdef MPI_PARALLEL
@@ -259,32 +259,12 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce") {
-    mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,BruteForceTreeCell>
-    (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-     floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-     stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
-  }
-  else if (stringparams["neib_search"] == "kdtree") {
-    mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,KDTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-      floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
-  }
-  else if (stringparams["neib_search"] == "octtree") {
-    mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle,OctTreeCell>
-     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-      floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing,  mfv->types);
-  }
-  else {
-    string message = "Unrecognised parameter : neib_search = "
-      + simparams->stringparams["neib_search"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-  ////mfvneib->kernp = mfv->kernp;
-  mfvneib->kernfac = mfv->kernfac;
-  ////mfvneib->kernrange = mfv->kernp->kernrange;
+  string tree_type = stringparams["neib_search"] ;
+
+  mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle>
+  (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+   floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
+   stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
 
 
   // Depending on the dimensionality, calculate expected neighbour number
@@ -413,7 +393,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   nbody->timing   = timing;
   //if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || sim == "godunov_hydro") {
     sinks->timing    = timing;
-    mfvneib->timing = timing;
+    mfvneib->SetTimingObject(timing);
   //}*/
 
 #if defined MPI_PARALLEL
@@ -503,7 +483,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // If the smoothing lengths have not been provided beforehand, then
   // calculate the initial values here
-  mfvneib->neibcheck = false;
+
+  mfvneib->ToggleNeighbourCheck(false);
   if (!this->initial_h_provided) {
     mfv->InitialSmoothingLengthGuess();
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
@@ -535,7 +516,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro+mfv->NPeriodicGhost, mfv, mfv->kernp);
   for (int i=0; i<mfv->Nhydro+mfv->NPeriodicGhost; i++) {
     MeshlessFVParticle<ndim>& parti = partdata[i];
-    parti.hrangesqd = mfv->kernfacsqd*mfv->kernp->kernrangesqd*parti.h*parti.h;
+    parti.hrangesqd = mfv->kernp->kernrangesqd*parti.h*parti.h;
   }
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
   // Update pointer in case there has been a reallocation
@@ -595,7 +576,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   partdata = mfv->GetMeshlessFVParticleArray();
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
                           mfv->Nhydromax, timestep, partdata, mfv);
-  mfvneib->neibcheck = true;
+  mfvneib->ToggleNeighbourCheck(true);
 
   // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
@@ -788,7 +769,7 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 
 
   debug2("[MeshlessFVSimulation::ComputeGlobalTimestep]");
-  timing->StartTimingSection("GLOBAL_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GLOBAL_TIMESTEPS");
 
 
   // Only update timestep when all particles are synced at end of last step.
@@ -859,8 +840,6 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
   }
   //-----------------------------------------------------------------------------------------------
 
-  timing->EndTimingSection("GLOBAL_TIMESTEPS");
-
   return;
 }
 
@@ -893,7 +872,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_hydro;                           // Aux. minimum hydro timestep
 
   debug2("[MeshlessFVSimulation::ComputeBlockTimesteps]");
-  timing->StartTimingSection("BLOCK_TIMESTEPS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
 
 
   dt_min_nbody = big_number_dp;
@@ -1282,8 +1261,6 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     cout << "Timestep fallen to zero : " << timestep << endl;
     ExceptionHandler::getIstance().raise("Timestep fallen to zero");
   }
-
-  timing->EndTimingSection("BLOCK_TIMESTEPS");
 
   return;
 

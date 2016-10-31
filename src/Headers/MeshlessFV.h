@@ -67,8 +67,6 @@ public:
   using Hydrodynamics<ndim>::hydrodata_unsafe;
   using Hydrodynamics<ndim>::hydro_forces;
   using Hydrodynamics<ndim>::invndim;
-  using Hydrodynamics<ndim>::kernfac;
-  using Hydrodynamics<ndim>::kernfacsqd;
   using Hydrodynamics<ndim>::kernp;
   using Hydrodynamics<ndim>::kernrange;
   using Hydrodynamics<ndim>::mmean;
@@ -199,8 +197,6 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::hydrodata;
   using MeshlessFV<ndim>::hydrodata_unsafe;
   using MeshlessFV<ndim>::invndim;
-  using MeshlessFV<ndim>::kernfac;
-  using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
   using MeshlessFV<ndim>::mmean;
@@ -285,8 +281,6 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MeshlessFV<ndim>::hydrodata;
   using MeshlessFV<ndim>::hydrodata_unsafe;
   using MeshlessFV<ndim>::invndim;
-  using MeshlessFV<ndim>::kernfac;
-  using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
   using MeshlessFV<ndim>::mmean;
@@ -355,8 +349,6 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MeshlessFV<ndim>::hydrodata;
   using MeshlessFV<ndim>::hydrodata_unsafe;
   using MeshlessFV<ndim>::invndim;
-  using MeshlessFV<ndim>::kernfac;
-  using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
   using MeshlessFV<ndim>::mmean;

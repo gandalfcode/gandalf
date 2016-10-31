@@ -48,9 +48,9 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
   ixmin(_ixmin),
   ixmax(_ixmax),
   EFratio(_EFratio),
-  lx_per(simbox.boxsize[0]),
-  ly_per(simbox.boxsize[1]),
-  lz_per(simbox.boxsize[2]),
+  lx_per(simbox.size[0]),
+  ly_per(simbox.size[1]),
+  lz_per(simbox.size[2]),
   timing(_timing),
   nEwaldGrid(_nEwaldGrid)
 {
@@ -83,7 +83,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     FILE *fo;                                    // File where Ewald field is printed
 
     debug2("[Ewald::Ewald]");
-    timing->StartTimingSection("EWALD");
+    CodeTiming::BlockTimer timer = timing->StartNewTimer("EWALD");
 
     // First check that we don't have any reflecting boundaries
     if (IsAnyBoundaryReflecting(simbox)){
@@ -126,7 +126,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
 
     // set sizes and number of cells for the Ewald field
     for (k=0; k<ndim; k++) {
-      Lewald[k] = EFratio*simbox.boxhalf[k];
+      Lewald[k] = EFratio*simbox.half[k];
       Ncells[k] = nEwaldGrid - 1;
     }
 
@@ -148,7 +148,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
         es_nrz = 0;
         es_nfy = 0;
         es_nfz = 0;
-        Lewald[1] = 4*simbox.boxhalf[0];
+        Lewald[1] = 4*simbox.half[0];
         Lewald[2] = Lewald[1];
         Ncells[1] = 4*(nEwaldGrid - 2)+1;
         Ncells[2] = Ncells[1];
@@ -161,7 +161,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
         es_nrz = 0;
         es_nfx = 0;
         es_nfz = 0;
-        Lewald[0] = 4*simbox.boxhalf[1];
+        Lewald[0] = 4*simbox.half[1];
         Lewald[2] = Lewald[0];
         Ncells[0] = 4*(nEwaldGrid - 2)+1;
         Ncells[2] = Ncells[0];
@@ -174,7 +174,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
         es_nry = 0;
         es_nfx = 0;
         es_nfy = 0;
-        Lewald[0] = 4*simbox.boxhalf[2];
+        Lewald[0] = 4*simbox.half[2];
         Lewald[1] = Lewald[0];
         Ncells[0] = 4*(nEwaldGrid - 2)+1;
         Ncells[1] = Ncells[0];
@@ -191,7 +191,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
         es_nfz = 0;
         cr2 = pow(ratio_p,2);
         cf2 = 1.0/cr2;
-        Lewald[2] = 4*simbox.boxhalf[0];
+        Lewald[2] = 4*simbox.half[0];
         Ncells[2] = 4*(nEwaldGrid - 2)+1;
         break;
 
@@ -205,7 +205,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
         es_nfy = 0;
         cr1 = pow(ratio_p,2);
         cf1 = 1.0/cr1;
-        Lewald[1] = 4*simbox.boxhalf[2];
+        Lewald[1] = 4*simbox.half[2];
         Ncells[1] = 4*(nEwaldGrid - 2)+1;
         break;
 
@@ -219,7 +219,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
         es_nfz = (int) (1+(gr_bhewaldseriesn)*ratio_p);
         cr3 = pow(ratio_p,2);
         cf3 = 1.0/cr1;
-        Lewald[0] = 4*simbox.boxhalf[1];
+        Lewald[0] = 4*simbox.half[1];
         Ncells[0] = 4*(nEwaldGrid - 2)+1;
         break;
 
@@ -461,8 +461,6 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
       printf("potC1p2i %16.10lf %16.10lf %16.10lf %16.10lf %8d\n",potC1p2i,2.0*linv*log(2*lz_per),
         ewald_field[Ngrid[0]-2],ewald_field[Ngrid[0]-2]+0.5/lz_per,Ngrid[0]-2);
     }
-
-    timing->EndTimingSection("EWALD");
 
   }
   //-----------------------------------------------------------------------------------------------

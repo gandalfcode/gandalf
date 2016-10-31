@@ -78,8 +78,6 @@ class Sph : public Hydrodynamics<ndim>
   using Hydrodynamics<ndim>::hmin_sink;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
   using Hydrodynamics<ndim>::invndim;
-  using Hydrodynamics<ndim>::kernfac;
-  using Hydrodynamics<ndim>::kernfacsqd;
   using Hydrodynamics<ndim>::kernp;
   using Hydrodynamics<ndim>::kernrange;
   using Hydrodynamics<ndim>::mmean;
@@ -189,8 +187,6 @@ public:
   using Sph<ndim>::hydrodata_unsafe;
   using Sph<ndim>::h_fac;
   using Sph<ndim>::kernp;
-  using Sph<ndim>::kernfac;
-  using Sph<ndim>::kernfacsqd;
   using Sph<ndim>::invndim;
   using Sph<ndim>::h_converge;
   using Sph<ndim>::hydro_forces;
@@ -261,7 +257,6 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
-  using Sph<ndim>::kernfacsqd;
   using Sph<ndim>::invndim;
   using Sph<ndim>::h_converge;
   using Sph<ndim>::hydrodata_unsafe;
@@ -329,7 +324,6 @@ class NullSph: public Sph<ndim>
   using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
-  using Sph<ndim>::kernfacsqd;
   using Sph<ndim>::invndim;
   using Sph<ndim>::h_converge;
   using Sph<ndim>::hydro_forces;

@@ -146,7 +146,6 @@ SphSnapshot<ndims>::SphSnapshot
     int Nstar = info.Nstar;
     if (Nstar>0) {
       this->data["star"]=Species(Nstar,"star");
-      Species& star = data["star"];
       Species::maptype& star_values = data["star"].values;
       star_values["x"]=vector<float>(Nstar);
       star_values["vx"]=vector<float>(Nstar);
@@ -407,7 +406,7 @@ template <int ndims>
 void SphSnapshot<ndims>::CopyDataFromSimulation()
 {
   StarParticle<ndims>* staraux = 0;    ///< ..
-  BinaryOrbit *orbitaux = 0;           ///< ..
+  //BinaryOrbit *orbitaux = 0;           ///< ..
 
   int Nhydro=0;
   int Nstar=0;
@@ -460,7 +459,6 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       _species.push_back("dust");
       data["dust"]=Species(Ndust,"dust");
 
-      Species& dust = data["dust"];
       Species::maptype& dust_values = data["dust"].values;
       dust_values["iorig"]=vector<float>(Ndust);
       dust_values["x"]=vector<float>(Ndust);
@@ -490,7 +488,6 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       _species.push_back("star");
       data["star"]=Species(Nstar,"star");
 
-      Species& star = data["star"];
       Species::maptype& star_values = data["star"].values;
       star_values["x"]=vector<float>(Nstar);
       star_values["vx"]=vector<float>(Nstar);
@@ -526,7 +523,6 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     itype = parttype_converter[itype];
 
     if (itype==gas) {
-      Species& sph = data["sph"];
       Species::maptype& sph_values = data["sph"].values;
       sph_values["iorig"][igas] = reinterpret_cast<float&>( part.iorig);
       sph_values["x"][igas] = (float) part.r[0];
@@ -550,7 +546,6 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       igas++;
     }
     else if (itype==dust) {
-      Species& dust = data["dust"];
       Species::maptype& dust_values = data["dust"].values;
       dust_values["iorig"][idust] = reinterpret_cast<float&>( part.iorig);
       dust_values["x"][idust] = (float) part.r[0];
@@ -576,7 +571,6 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
   // Loop over star particles and record particle data
   for (int i=0; i<Nstar; i++) {
-    Species& star = data["star"];
     Species::maptype& star_values = data["star"].values;
     star_values["x"][i] = (float) staraux[i].r[0];
     star_values["vx"][i] = (float) staraux[i].v[0];

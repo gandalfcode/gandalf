@@ -63,8 +63,6 @@ public:
   using Hydrodynamics<ndim>::eos;
   using Hydrodynamics<ndim>::h_fac;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
-  using Hydrodynamics<ndim>::kernfac;
-  using Hydrodynamics<ndim>::kernfacsqd;
   using Hydrodynamics<ndim>::kernp;
   using Hydrodynamics<ndim>::kernrange;
   using Hydrodynamics<ndim>::mmean;
