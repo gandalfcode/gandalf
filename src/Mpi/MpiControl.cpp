@@ -777,6 +777,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
   }
 
   // Sends are probably finished by now, but we do need to wait so that they can be deallocated
+  MPI_Waitall(Nmpi-1,sendreq_header,MPI_STATUSES_IGNORE);
   MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
 
   return;
