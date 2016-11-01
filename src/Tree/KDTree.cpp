@@ -938,7 +938,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 	  TreeCell<ndim> &child1 = celldata[cell.copen];
 	  TreeCell<ndim> &child2 = celldata[child1.cnext];
 
-
     if (child1.N > 0) {
       for (k=0; k<ndim; k++) cell.bb.min[k] = min(child1.bb.min[k],cell.bb.min[k]);
       for (k=0; k<ndim; k++) cell.bb.max[k] = max(child1.bb.max[k],cell.bb.max[k]);
