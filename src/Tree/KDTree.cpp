@@ -818,9 +818,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   FLOAT mi;                            // Mass of particle i
   FLOAT p = (FLOAT) 0.0;               // ..
   FLOAT lambda = (FLOAT) 0.0;          // ..
-  TreeCell<ndim> &child1 = celldata[cell.copen];
-  TreeCell<ndim> &child2 = celldata[child1.cnext];
-
 
   // Zero all summation variables for all cells
   if (stock_leaf) {
@@ -935,6 +932,9 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   // For non-leaf cells, sum together two children cells
   //-----------------------------------------------------------------------------------------------
   else if (cell.copen != -1) {
+
+	TreeCell<ndim> &child1 = celldata[cell.copen];
+	TreeCell<ndim> &child2 = celldata[child1.cnext];
 
     if (child1.N > 0) {
       for (k=0; k<ndim; k++) cell.bb.min[k] = min(child1.bb.min[k],cell.bb.min[k]);

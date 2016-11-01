@@ -107,19 +107,19 @@ void SphSimulation<ndim>::ProcessParameters(void)
   simbox.min[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
   simbox.max[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
 
-  if (ndim > 1) {
+  //if (ndim > 1) {
     simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
     simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
     simbox.min[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
     simbox.max[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-  }
+  //}
 
-  if (ndim == 3) {
+  //if (ndim == 3) {
     simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
     simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
     simbox.min[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
     simbox.max[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
-  }
+  //}
 
   for (int k=0; k<ndim; k++) {
     simbox.size[k] = simbox.max[k] - simbox.min[k];
@@ -698,6 +698,7 @@ void SphSimulation<ndim>::MainLoop(void)
     LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
     sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 #ifdef MPI_PARALLEL
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
     sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
