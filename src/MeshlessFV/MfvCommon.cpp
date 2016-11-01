@@ -339,8 +339,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 void MfvCommon<ndim, kernelclass,SlopeLimiter>::CopyDataToGhosts
- (DomainBox<ndim> &simbox,
-  MeshlessFVParticle<ndim> *partdata)      ///< [inout] Neighbour particle data
+ (DomainBox<ndim> &simbox)
 {
   int i;                                   // Particle id
   int iorig;                               // Original (real) particle id
@@ -349,6 +348,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::CopyDataToGhosts
 
   debug2("[MfvCommon::CopyDataToGhosts]");
 
+  MeshlessFVParticle<ndim> *partdata = this->GetMeshlessFVParticleArray();
 
   //-----------------------------------------------------------------------------------------------
 //#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,partdata)

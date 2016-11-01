@@ -60,7 +60,6 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   //int it;                              // Time-symmetric iteration counter
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
-  MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
 
   debug2("[MfvRungeKuttaSimulation::MainLoop]");
 
@@ -72,11 +71,11 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   else {
     this->ComputeBlockTimesteps();
   }
-  mfv->CopyDataToGhosts(simbox, partdata);
+  mfv->CopyDataToGhosts(simbox);
 
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
-    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
+    mfvneib->UpdateGodunovFluxes(timestep, mfv, nbody, simbox);
   }
 
   // Advance all global time variables
@@ -88,16 +87,14 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 
   // Integrate positions of particles
-  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, partdata);
+  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, mfv->GetMeshlessFVParticleArray());
 
   // Advance N-body particle positions
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Re-build/re-stock tree now particles have moved
-  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                     mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
-  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                          mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+  mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 
 
   // Search for new sink particles (if activated) and accrete to existing sinks
@@ -113,7 +110,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
       for (i=0; i<sinks->Nsink; i++) {
         mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
       }
-      sinks->AccreteMassToSinks(n, timestep, partdata, mfv, nbody);
+      sinks->AccreteMassToSinks(n, timestep, mfv, nbody);
       nbody->UpdateStellarProperties();
       //if (extra_sink_output) WriteExtraSinkOutput();
     }
@@ -125,16 +122,14 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
 
     // Re-build/re-stock tree now particles have moved
-    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                       mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 
   }
 
   // Calculate terms due to self-gravity
   if (mfv->self_gravity == 1) {
-    mfvneib->UpdateAllGravForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox, ewald);
+    mfvneib->UpdateAllGravForces(mfv, nbody, simbox, ewald);
   }
 
   // Compute N-body forces
@@ -154,7 +149,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
 
     if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
-      mfvneib->UpdateAllStarGasForces(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+      mfvneib->UpdateAllStarGasForces(mfv, nbody);
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -185,35 +180,31 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 
   // End-step terms for all hydro particles
-  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, partdata);
+  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
 
   // Rebuild or update local neighbour and gravity tree
-  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                     mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 
   // Search for new ghost particles and create on local processor
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     tghost = timestep*(FLOAT) (ntreebuildstep - 1);
     mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-    // Update pointer in case there has been a reallocation
-    partdata = mfv->GetMeshlessFVParticleArray();
-    mfv->CopyDataToGhosts(simbox, partdata);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                            mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
+    mfv->CopyDataToGhosts(simbox);
+    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
   }
 
   // Update all active cell counters in the tree
-  mfvneib->UpdateActiveParticleCounters(partdata, mfv);
+  mfvneib->UpdateActiveParticleCounters(mfv);
 
   // Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
+  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox);
 
   // Calculate all matrices and gradients (and copy updated data to ghost particles)
-  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
+  mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
+  mfv->CopyDataToGhosts(simbox);
 
 
 

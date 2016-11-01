@@ -82,14 +82,12 @@ class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                                      Sph<ndim> *, Nbody<ndim> *) = 0;
-  virtual void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                                       Nbody<ndim> *, DomainBox<ndim> &) =0 ;
-  virtual void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                                  Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
-  virtual void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                                      Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
+  virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
+                                  DomainBox<ndim> &, Ewald<ndim> *) = 0;
+  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *,
+                                      DomainBox<ndim> &, Ewald<ndim> *) = 0;
 
   //virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *,
   //                                    Sph<ndim> *, Nbody<ndim> *) = 0;
@@ -157,13 +155,12 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) = 0;
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                              Nbody<ndim> *, DomainBox<ndim> &) =0;
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                          Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) =0;
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                              Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) =0;
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
+  virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
+                                  DomainBox<ndim> &, Ewald<ndim> *) = 0;
+  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *,
+                                      DomainBox<ndim> &, Ewald<ndim> *) = 0;
   //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) =0;
 
 };
@@ -221,13 +218,12 @@ class GradhSphTree : public SphTree<ndim,ParticleType>
 
 
   //-----------------------------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                               Nbody<ndim> *, DomainBox<ndim> &);
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                          Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                              Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
+                                  DomainBox<ndim> &, Ewald<ndim> *);
+  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *,
+                                      DomainBox<ndim> &, Ewald<ndim> *);
 
 };
 
@@ -281,13 +277,12 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
 
 
   //-----------------------------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                               Nbody<ndim> *, DomainBox<ndim> &) {};
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                          Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                              Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *){};
+  virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
+  virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
+                                  DomainBox<ndim> &, Ewald<ndim> *){};
+  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *,
+                                      DomainBox<ndim> &, Ewald<ndim> *){};
 
 };
 

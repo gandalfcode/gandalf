@@ -76,15 +76,14 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const int, const int, const int, const int,
-                         const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) = 0;
-  virtual void BuildGhostTree(const bool, const int, const int, const int, const int,
-                              const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) = 0;
+  virtual void BuildTree(const bool, const int, const int,
+                         const int, const FLOAT, Hydrodynamics<ndim> *) = 0;
+  virtual void BuildGhostTree(const bool, const int, const int,
+                              const int, const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *) = 0;
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) = 0;
-  virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) = 0;
-  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
-                                      Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateActiveParticleCounters(Hydrodynamics<ndim> *) = 0;
+  virtual void UpdateAllStarGasForces(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual double GetMaximumSmoothingLength() const = 0;
   virtual TreeBase<ndim>* GetTree() const = 0;
   virtual TreeBase<ndim>* GetGhhotTree() const = 0;
@@ -95,10 +94,10 @@ protected:
   virtual TreeBase<ndim>** GetPrunedTrees() const = 0;
   virtual TreeBase<ndim>*  GetPrunedTree(int i) const = 0;
 
-  virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
-                               const MpiNode<ndim> *, Particle<ndim> *) = 0;
-  virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
-                                 const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) = 0;
+  virtual void BuildPrunedTree(const int, const DomainBox<ndim> &,
+                               const MpiNode<ndim> *, Hydrodynamics<ndim> *) = 0;
+  virtual void BuildMpiGhostTree(const bool, const int, const int, const int,
+                                 const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) = 0;
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*) = 0;
@@ -113,9 +112,9 @@ protected:
                                       Hydrodynamics<ndim> *, vector<int> &) {return 0;};
   virtual void UnpackExported(vector<char >& arrays, Hydrodynamics<ndim> *, const int,vector< vector<char> >&,
                               const int, const bool) = 0;
-  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+  virtual void UpdateGravityExportList(int, Hydrodynamics<ndim> *,
                                        Nbody<ndim> *, const DomainBox<ndim> &) = 0;
-  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+  virtual void UpdateHydroExportList(int, Hydrodynamics<ndim> *,
                                      Nbody<ndim> *, const DomainBox<ndim> &) = 0;
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
                                         Hydrodynamics<ndim>* hydro,
@@ -157,15 +156,14 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(const bool, const int, const int, const int, const int,
-                         const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void BuildGhostTree(const bool, const int, const int, const int, const int,
-                              const int, const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
+  virtual void BuildTree(const bool, const int, const int,
+                         const int, const FLOAT, Hydrodynamics<ndim> *);
+  virtual void BuildGhostTree(const bool, const int, const int,
+                              const int, const FLOAT, Hydrodynamics<ndim> *);
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
-  virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void UpdateAllStarGasForces(int, int, Particle<ndim> *,
-                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual void UpdateActiveParticleCounters(Hydrodynamics<ndim> *);
+  virtual void UpdateAllStarGasForces(Hydrodynamics<ndim> *, Nbody<ndim> *);
   virtual double GetMaximumSmoothingLength() const;
   virtual TreeBase<ndim>* GetTree() const { return tree; }
   virtual TreeBase<ndim>* GetGhhotTree() const { return ghosttree; }
@@ -177,10 +175,10 @@ protected:
   virtual TreeBase<ndim>** GetPrunedTrees() const { return prunedtree; }
   virtual TreeBase<ndim>*  GetPrunedTree(int i) const { return prunedtree[i]; }
 
-  virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
-                               const MpiNode<ndim> *, Particle<ndim> *);
-  virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
-                                 const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
+  virtual void BuildPrunedTree(const int, const DomainBox<ndim> &,
+                               const MpiNode<ndim> *, Hydrodynamics<ndim> *);
+  virtual void BuildMpiGhostTree(const bool, const int, const int, const int,
+                                 const FLOAT, Hydrodynamics<ndim> *);
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*);
@@ -213,9 +211,9 @@ protected:
                                       Hydrodynamics<ndim> *, vector<int> &);
   virtual void UnpackExported(vector<char> &, Hydrodynamics<ndim> *,
       const int, vector< vector<char> >&, const int, const bool);
-  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+  virtual void UpdateGravityExportList(int, Hydrodynamics<ndim> *,
                                        Nbody<ndim> *, const DomainBox<ndim> &);
-  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *, Hydrodynamics<ndim> *,
+  virtual void UpdateHydroExportList(int, Hydrodynamics<ndim> *,
                                      Nbody<ndim> *, const DomainBox<ndim> &);
   virtual void UnpackReturnedExportInfo(vector<char > &, Hydrodynamics<ndim> *, const int, const int);
   virtual void FindParticlesToTransfer(Hydrodynamics<ndim> *, vector<vector<int> >& ,

@@ -77,15 +77,12 @@ GradhSphTree<ndim,ParticleType>::~GradhSphTree()
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
- (int Nhydro,                              ///< [in] No. of SPH particles
-  int Ntot,                                ///< [in] No. of SPH + ghost particles
-  SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
-  Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
+ (Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;		   // List of active tree cells
-  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -93,6 +90,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   debug2("[GradhSphTree::UpdateAllSphProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_PROPERTIES");
 
+  int Ntot = sph->Ntot;
+  ParticleType<ndim>* sphdata =
+      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
@@ -306,22 +306,23 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
- (int Nhydro,                              ///< [in] No. of SPH particles
-  int Ntot,                                ///< [in] No. of SPH + ghost particles
-  SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
-  Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
+ (Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;                // List of active tree cells
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
 
   debug2("[GradhSphTree::UpdateAllSphHydroForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_HYDRO_FORCES");
+
+  ParticleType<ndim>* sphdata =
+      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
+
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
@@ -541,17 +542,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
-  Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
+ (Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int cactive;                         // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -559,6 +557,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   debug2("[GradhSphTree::UpdateAllSphForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_ALL_FORCES");
 
+  ParticleType<ndim>* sphdata =
+      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
@@ -851,17 +851,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
-  Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
+ (Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int cactive;                         // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -869,6 +866,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_ALL_GRAV_FORCES");
 
+  ParticleType<ndim>* sphdata =
+      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
