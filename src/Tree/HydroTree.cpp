@@ -339,7 +339,7 @@ void HydroTree<ndim,ParticleType>::BuildTree
   //-----------------------------------------------------------------------------------------------
   else if (n%ntreestockstep == 0) {
 
-    tree->StockTree(partdata);
+    tree->StockTree(partdata,true);
 
   }
 
@@ -411,7 +411,7 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
   //-----------------------------------------------------------------------------------------------
   else if (n%ntreestockstep == 0) {
 
-    ghosttree->StockTree(partdata);
+    ghosttree->StockTree(partdata,true);
 
   }
 
@@ -944,7 +944,6 @@ void HydroTree<ndim,ParticleType>::BuildPrunedTree
   // Update all work counters in the tree for load-balancing purposes
   tree->UpdateWorkCounters();
 
-
   MPI_Request req[Nmpi-1];
   MPI_Status status[Nmpi-1];
   int j=0;
@@ -1101,6 +1100,7 @@ void HydroTree<ndim,ParticleType>::BuildPrunedTree
 
 	  int cell_size = treeptr->GetTreeCellSize() ;
 	  treeptr->Ncell= count/cell_size;
+	  treeptr->first_stock = true;
 
 #ifdef OUTPUT_ALL
 	  cout << "on rank " << rank << " we received a pruned tree with " << treeptr->Ncell << " from " << i << endl;
@@ -1111,6 +1111,127 @@ void HydroTree<ndim,ParticleType>::BuildPrunedTree
   }
 
   return;
+}
+
+
+//=================================================================================================
+//  HydroTree::StockPrunedTree
+/// Stock the pruned trees without doing a full rebuild
+//=================================================================================================
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::StockPrunedTree
+(const int rank,				     ///< [in] Rank of local MPI node
+ Hydrodynamics<ndim>* hydro		)    ///< [inout] Pointer to hydrodynamics object
+{
+	  debug2("[HydroTree::StockPrunedTree]");
+	  CodeTiming::BlockTimer timer = timing->StartNewTimer("STOCK_PRUNED_TREE");
+
+	  Particle<ndim> *partdata = hydro->GetParticleArray();
+
+	  // Update all work counters in the tree for load-balancing purposes
+	  tree->UpdateWorkCounters();
+
+	  // First thing to do is posting the receives
+	  MPI_Request req[Nmpi-1];
+	  int which_completed[Nmpi-1];
+	  int req_completed=0;
+	  MPI_Status status[Nmpi-1];
+	  int j=0;
+
+	  vector< vector <char> > receive_buffer(Nmpi);
+
+	  for (int i=0; i<Nmpi; i++) {
+
+		  // No need to send anything to ourselves
+		  if (i==rank)
+			  continue;
+
+		  TreeBase<ndim>* treeptr = prunedtree[i];
+
+	      const int cell_size = treeptr->GetTreeCellSize() ;
+
+	      // Note that this is an overestimate; we are only receiving Nleaf cells
+	      const int max_size = cell_size*treeptr->Ncell;
+
+	      // Allocate buffer
+		  receive_buffer[i].resize(max_size);
+
+		  // Post the receive
+		  MPI_Irecv(&receive_buffer[i][0],max_size,MPI_CHAR,i,4,MPI_COMM_WORLD,&req[j]);
+
+		  j++;
+
+
+	  }
+
+	  MPI_Request send_req[Nmpi-1];
+	  vector<vector<char> > send_buffer(Nmpi);
+	  j=0;
+	  // Loop over all the local pruned trees. Stock them and send them one by one as they get ready
+	  for (int i=0; i<Nmpi; i++) {
+
+		  TreeBase<ndim>* treeptr;
+		  if (i==rank) {
+			  treeptr=prunedtree[i];
+		  }
+		  else {
+			  treeptr = sendprunedtree[i];
+		  }
+
+		  // Copy the stocked cells - easier than recomputing
+		  treeptr->UpdateLeafCells(tree);
+
+		  if (i != rank) {
+			  // Post the send
+			  const int Nleaf = treeptr->GetNLeafCells();
+			  const int cell_size = treeptr->GetTreeCellSize();
+			  const int size_send = cell_size*Nleaf;
+			  send_buffer[i].reserve(size_send);
+
+			  treeptr->CopyLeafCells(send_buffer[i],TreeBase<ndim>::to_buffer);
+
+			  assert(send_buffer[i].size() == size_send);
+
+			  MPI_Isend(&send_buffer[i][0],size_send,MPI_CHAR,i,4,MPI_COMM_WORLD,&send_req[i]);
+			  j++;
+
+		  }
+		  else {
+			  // Stock the tree (this is used for load balancing, even if we have a full version of this tree)
+			  treeptr->StockTree(partdata,false);
+		  }
+	  }
+
+	  // Now loop to see which receives are finished
+	  while (req_completed<Nmpi-1) {
+		  int completed_now;
+		  MPI_Waitsome(Nmpi-1,req,&completed_now,which_completed,status);
+
+		  // Unpack the infomration
+		  for (int i=0; i<completed_now; i++) {
+			  const int j=which_completed[i];
+			  int iproc=j;
+			  if (j >= rank)
+				  iproc += 1;
+			  TreeBase<ndim>* treeptr = prunedtree[iproc];
+			  // See how much information we have actually received
+			  int count;
+			  MPI_Get_count(&status[j], MPI_CHAR, &count);
+			  receive_buffer[iproc].resize(count);
+			  // Copy the information into the leaf cells
+			  treeptr->CopyLeafCells(receive_buffer[iproc],TreeBase<ndim>::from_buffer);
+			  // Stock the pruned tree (but not the leaf cells!)
+			  treeptr->StockTree(partdata,false);
+		  }
+
+		  req_completed += completed_now;
+
+	  }
+
+	  // Give a chance to the send requests to complete (even if they should already have) to free their resources
+	  MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
+
+
 }
 
 
@@ -1169,7 +1290,7 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
   //-----------------------------------------------------------------------------------------------
   else if (n%ntreestockstep == 0) {
 
-    mpighosttree->StockTree(partdata);
+    mpighosttree->StockTree(partdata,true);
 
   }
 
