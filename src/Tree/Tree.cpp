@@ -1298,9 +1298,8 @@ void Tree<ndim,ParticleType,TreeCell>::CopyLeafCells
 			append_bytes<TreeCell<ndim> >(buffer, &(celldata[j])) ;
 		else if (dir == TreeBase<ndim>::from_buffer)
 			unpack_bytes<TreeCell<ndim> >(&(celldata[j]), iter);
-		iter += sizeof(TreeCell<ndim>);
 	}
-	assert(iter == buffer.end());
+	if (dir== TreeBase<ndim>::from_buffer) assert(iter == buffer.end());
  }
 
 

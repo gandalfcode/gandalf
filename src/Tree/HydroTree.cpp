@@ -1180,7 +1180,7 @@ void HydroTree<ndim,ParticleType>::StockPrunedTree
 
 			  assert(send_buffer[i].size() == size_send);
 
-			  MPI_Isend(&send_buffer[i][0],size_send,MPI_CHAR,i,4,MPI_COMM_WORLD,&send_req[i]);
+			  MPI_Isend(&send_buffer[i][0],size_send,MPI_CHAR,i,4,MPI_COMM_WORLD,&send_req[j]);
 			  j++;
 
 		  }
