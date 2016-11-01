@@ -1271,7 +1271,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   TreeBase<ndim> *prunedtree)         ///< [out] List of cell pointers in pruned tree
 {
   int c;                               // Cell counter
-  int cnext;                           // id of next cell in tree
   int k;                               // Neighbour counter
   int Nprunedcell = 0;                 // No. of cells in newly created pruned tree
   int *newCellIds;                     // New cell ids in pruned tree
@@ -1396,8 +1395,10 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
 
+#ifndef NDEBUG
   // If selected, verify that pruned tree pointers are correctly set-up
   assert(Nprunedcell <= Nprunedcellmax);
+  int cnext;                           // id of next cell in tree
   for (c=0; c<Nprunedcell; c++) {
     if (prunedcells[c].copen != -1) cnext = prunedcells[c].copen;
     else cnext = prunedcells[c].cnext;
@@ -1406,6 +1407,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
+#endif
 
 
   delete[] newCellIds;
