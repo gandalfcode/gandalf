@@ -345,7 +345,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::DivideTreeCell
       cell.ifirst = -1;
       cell.ilast = -1;
     }
-    StockCellProperties(cell,partdata);
+    StockCellProperties(cell,partdata,true);
     return;
   }
 
@@ -447,7 +447,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::DivideTreeCell
 
 
   // Stock all cell properties once constructed
-  StockCellProperties(cell,partdata);
+  StockCellProperties(cell,partdata,true);
 
   return;
 }
@@ -547,30 +547,31 @@ FLOAT KDRadiationTree<ndim,nfreq,ParticleType,CellType>::QuickSelect
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockTree
 (CellType<ndim,nfreq> &cell,        ///< Reference to cell to be stocked
- ParticleType<ndim> *partdata)      ///< SPH particle data array
+ ParticleType<ndim> *partdata,      ///< SPH particle data array
+ bool stock_leaf)					///< Whether or not to stock leaf cells
 {
   int i;                            // Aux. child cell counter
 
   // If cell is not leaf, stock child cells
   if (cell.level != ltot) {
     if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(cell,partdata,stock_leaf) num_threads(2)
       for (i=0; i<2; i++) {
-        if (i == 0) StockTree(radcell[cell.c1],partdata);
-        else if (i == 1) StockTree(radcell[cell.c2],partdata);
+        if (i == 0) StockTree(radcell[cell.c1],partdata,stock_leaf);
+        else if (i == 1) StockTree(radcell[cell.c2],partdata,stock_leaf);
       }
 #pragma omp barrier
     }
     else {
       for (i=0; i<2; i++) {
-        if (i == 0) StockTree(radcell[cell.c1],partdata);
-        else if (i == 1) StockTree(radcell[cell.c2],partdata);
+        if (i == 0) StockTree(radcell[cell.c1],partdata,stock_leaf);
+        else if (i == 1) StockTree(radcell[cell.c2],partdata,stock_leaf);
       }
     }
   }
 
   // Stock node once all children are stocked
-  StockCellProperties(cell,partdata);
+  StockCellProperties(cell,partdata,stock_leaf);
 
   return;
 }
@@ -585,7 +586,8 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockTree
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockCellProperties
  (CellType<ndim,nfreq> &cell,          ///< Reference to current tree cell
-  ParticleType<ndim> *partdata)        ///< Particle data array
+  ParticleType<ndim> *partdata,        ///< Particle data array
+  bool stock_leaf)					   ///< Whether or not to stock leaf cells
 {
   int i;                                             // Particle counter
   int k;                                             // Dimension counter
@@ -618,7 +620,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockCellProperties
 
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
-  if (cell.level == ltot) {
+  if (cell.level == ltot && stock_leaf) {
 
     // Loop over all particles in cell summing their contributions
     i = cell.ifirst;

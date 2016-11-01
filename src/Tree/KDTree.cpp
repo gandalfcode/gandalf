@@ -465,7 +465,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
       cell.ifirst = -1;
       cell.ilast = -1;
     }
-    StockCellProperties(cell,partdata);
+    StockCellProperties(cell,partdata,true);
     return;
   }
 
@@ -586,7 +586,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   assert(!(cell.ifirst == -1 && cell.ilast == -1));
 
   // Stock all cell properties once constructed
-  StockCellProperties(cell,partdata);
+  StockCellProperties(cell,partdata,true);
 
   return;
 }
@@ -756,7 +756,8 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockTree
 (TreeCell<ndim> &cell,                ///< Reference to cell to be stocked
- ParticleType<ndim> *partdata)        ///< SPH particle data array
+ ParticleType<ndim> *partdata,        ///< SPH particle data array
+ bool stock_leaf)					  ///< Whether to stock leaf cells
 {
   int i;                               // Aux. child cell counter
 
@@ -764,29 +765,29 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
   if (cell.level != ltot) {
 #if defined _OPENMP
     if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(cell,partdata, stock_leaf) num_threads(2)
       for (i=0; i<2; i++) {
-        if (i == 0) StockTree(celldata[cell.c1],partdata);
-        else if (i == 1) StockTree(celldata[cell.c2],partdata);
+        if (i == 0) StockTree(celldata[cell.c1],partdata, stock_leaf);
+        else if (i == 1) StockTree(celldata[cell.c2],partdata, stock_leaf);
       }
 #pragma omp barrier
     }
     else {
       for (i=0; i<2; i++) {
-        if (i == 0) StockTree(celldata[cell.c1],partdata);
-        else if (i == 1) StockTree(celldata[cell.c2],partdata);
+        if (i == 0) StockTree(celldata[cell.c1],partdata, stock_leaf);
+        else if (i == 1) StockTree(celldata[cell.c2],partdata, stock_leaf);
       }
     }
 #else
     for (i=0; i<2; i++) {
-      if (i == 0) StockTree(celldata[cell.c1],partdata);
-      else if (i == 1) StockTree(celldata[cell.c2],partdata);
+      if (i == 0) StockTree(celldata[cell.c1],partdata, stock_leaf);
+      else if (i == 1) StockTree(celldata[cell.c2],partdata, stock_leaf);
     }
 #endif
   }
 
   // Stock node once all children are stocked
-  StockCellProperties(cell,partdata);
+  StockCellProperties(cell,partdata,stock_leaf);
 
   return;
 }
@@ -801,7 +802,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
  (TreeCell<ndim> &cell,                ///< Reference to current tree cell
-  ParticleType<ndim> *partdata)        ///< Particle data array
+  ParticleType<ndim> *partdata,        ///< Particle data array
+  bool stock_leaf)					   ///< Whether to stock leaf cells
 {
   int i;                               // Particle counter
   int iaux;                            // Aux. particle i.d. variable
@@ -838,7 +840,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
-  if (cell.level == ltot) {
+  if (cell.level == ltot && stock_leaf) {
 
     // First, check if any particles have been accreted and remove them
     // from the linked list.  If cell no longer contains any live particles,
@@ -928,7 +930,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   }
   // For non-leaf cells, sum together two children cells
   //-----------------------------------------------------------------------------------------------
-  else {
+  else if (cell.copen != -1) {
 
     TreeCell<ndim> &child1 = celldata[cell.c1];
     TreeCell<ndim> &child2 = celldata[cell.c2];

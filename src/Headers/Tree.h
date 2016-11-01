@@ -124,11 +124,16 @@ struct MultipoleMoment {
 template <int ndim>
 class TreeBase
 {
+protected:
+#ifdef MPI_PARALLEL
+	vector<int> Nleaf_indices; ///< Indices of the leaf cells (only used if this is a pruned tree)
+	vector<int> Nleaf_indices_inlocal; ///< Indices of the leaf cells in the full local tree
+#endif
  public:
 	TreeBase()
     : Ntot(0), Ncell(0)
 #ifdef MPI_PARALLEL
-   , Nimportedcell(0), Ncelltot(0)
+   , Nimportedcell(0), Ncelltot(0), first_stock(true)
 #endif
  {};
 	virtual ~TreeBase() { } ;
@@ -142,7 +147,7 @@ class TreeBase
 
 	virtual void BuildTree(const int, const int, const int, const int,
 	                       const FLOAT, Particle<ndim> *) = 0;
-	virtual void StockTree(Particle<ndim> *) = 0 ;
+	virtual void StockTree(Particle<ndim> *, bool) = 0 ;
 	virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 
@@ -164,14 +169,17 @@ class TreeBase
 	virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
 	                                              const int, const int, int &, int &, int &, int *, int *,
 	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
-#if defined(MPI_PARALLEL)
 	virtual int ComputeImportedCellList(vector<TreeCellBase<ndim> >& ) = 0;
+	int GetNLeafCells() {return Nleaf_indices.size();};
 	virtual int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
 	                                       const bool, const int, const int, const int, TreeBase<ndim> *) = 0;
 	virtual int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
 	                                                 const FLOAT, const int, int, MultipoleMoment<ndim> *) = 0;
 	virtual  bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &) = 0;
 	virtual  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
+	virtual void UpdateLeafCells(TreeBase<ndim>*)=0;
+	enum direction { to_buffer, from_buffer };
+	virtual void CopyLeafCells(vector<char>& buffer, direction)=0;
 #endif
 
 	virtual bool ComputeSignalVelocityFromDistantInteractions(const TreeCellBase<ndim>& cell,
@@ -244,6 +252,7 @@ class TreeBase
 #if defined MPI_PARALLEL
 	int Nimportedcell;                     ///< No. of imported cells
 	int Ncelltot;                          ///< Total number of cells
+	bool first_stock;		   ///< Whether this is the first time we are stocking this tree (only relevant if this is a received pruned tree)
 #endif
 };
 
@@ -262,12 +271,17 @@ class TreeBase
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class Tree : public TreeBase<ndim>
 {
+private:
+#ifdef MPI_PARALLEL
+	using TreeBase<ndim>::Nleaf_indices;
+	using TreeBase<ndim>::Nleaf_indices_inlocal;
+	using TreeBase<ndim>::first_stock;
+#endif
 protected:
 	int Ncellmax;                        ///< Max. allowed no. of grid cells
 	int Ntotmax;                         ///< Max. no. of points in list
 	const bool IAmPruned;				 ///< Whether we are a pruned tree
  public:
-
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
@@ -329,6 +343,8 @@ protected:
                                            const FLOAT, const int, int, MultipoleMoment<ndim> *);
   bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
+  virtual void UpdateLeafCells(TreeBase<ndim>*);
+  virtual void CopyLeafCells(vector<char>& buffer, enum TreeBase<ndim>::direction);
 #endif
 
 
@@ -337,7 +353,7 @@ protected:
   virtual void BuildTree(const int, const int, const int, const int,
                          const FLOAT, Particle<ndim> *) = 0;
   void UpdateAllHmaxValues(Particle<ndim>* sph_gen) = 0;
-  virtual void StockTree(Particle<ndim> *) = 0 ;
+  virtual void StockTree(Particle<ndim> *, bool) = 0 ;
   virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
   virtual double GetMaximumSmoothingLength() const {
     return celldata[0].hmax ;

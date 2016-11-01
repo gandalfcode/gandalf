@@ -434,7 +434,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   //-----------------------------------------------------------------------------------------------
 
 
-  StockTree(celldata[0],partdata);
+  StockTree(celldata[0],partdata,true);
 #if defined(VERIFY_ALL)
   ValidateTree(partdata);
 #endif
@@ -452,7 +452,8 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::StockTree
  (TreeCell<ndim> &rootcell,            ///< Reference to cell to be stocked
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
+  ParticleType<ndim> *partdata,        ///< SPH particle data array
+  bool stock_leaf)					   ///< Whether or not to stock leaf cells
 {
   int c,cc;                            // Cell counters
   int cend;                            // Last particle in cell
@@ -502,7 +503,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
       // If this is a leaf cell, sum over all particles
       //-------------------------------------------------------------------------------------------
-      if (cell.copen == -1) {
+      if (cell.copen == -1 && stock_leaf) {
 
         // First, check if any particles have been accreted and remove them
         // from the linked list.  If cell no longer contains any live particles,
@@ -594,7 +595,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       }
       // For non-leaf cells, sum over all child cells
       //-------------------------------------------------------------------------------------------
-      else {
+      else if (cell.copen != -1) {
 
         // Set limits for children (maximum of 8 but may be less)
         cc   = cell.copen;
