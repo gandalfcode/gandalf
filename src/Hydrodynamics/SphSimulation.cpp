@@ -662,7 +662,7 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
+    sphneib->StockPrunedTree(rank, sph);
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->LoadBalancing(sph, nbody);
   }
@@ -746,6 +746,10 @@ void SphSimulation<ndim>::MainLoop(void)
       // Also determines particles that must be exported to other nodes
       // if too close to the domain boundaries
 #ifdef MPI_PARALLEL
+      // Pruned trees are used only to compute which particles to export
+      // Therefore we don't need to update them at the start of the loop, and we can do it soon before we need them
+      sphneib->StockPrunedTree(rank, sph);
+
       if (sph->self_gravity == 1) {
         sphneib->UpdateGravityExportList(rank, sph, nbody, simbox);
       }

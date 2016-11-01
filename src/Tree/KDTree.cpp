@@ -765,26 +765,28 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
   int i;                               // Aux. child cell counter
 
   // If cell is not leaf, stock child cells
-  if (cell.level != ltot) {
+  if (cell.level != ltot && cell.copen != -1) {
+	  TreeCell<ndim>& child1 = celldata[cell.copen];
+	  TreeCell<ndim>& child2 = celldata[child1.cnext];
 #if defined _OPENMP
     if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,partdata, stock_leaf) num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(cell,partdata, stock_leaf,child1,child2) num_threads(2)
       for (i=0; i<2; i++) {
-        if (i == 0) StockTree(celldata[cell.c1],partdata, stock_leaf);
-        else if (i == 1) StockTree(celldata[cell.c2],partdata, stock_leaf);
+        if (i == 0) StockTree(child1,partdata, stock_leaf);
+        else if (i == 1) StockTree(child2,partdata, stock_leaf);
       }
 #pragma omp barrier
     }
     else {
       for (i=0; i<2; i++) {
-        if (i == 0) StockTree(celldata[cell.c1],partdata, stock_leaf);
-        else if (i == 1) StockTree(celldata[cell.c2],partdata, stock_leaf);
+        if (i == 0) StockTree(child1,partdata, stock_leaf);
+        else if (i == 1) StockTree(child2,partdata, stock_leaf);
       }
     }
 #else
     for (i=0; i<2; i++) {
-      if (i == 0) StockTree(celldata[cell.c1],partdata, stock_leaf);
-      else if (i == 1) StockTree(celldata[cell.c2],partdata, stock_leaf);
+      if (i == 0) StockTree(child1,partdata, stock_leaf);
+      else if (i == 1) StockTree(child2,partdata, stock_leaf);
     }
 #endif
   }
@@ -816,31 +818,32 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   FLOAT mi;                            // Mass of particle i
   FLOAT p = (FLOAT) 0.0;               // ..
   FLOAT lambda = (FLOAT) 0.0;          // ..
-  TreeCell<ndim> &child1 = celldata[cell.c1];
-  TreeCell<ndim> &child2 = celldata[cell.c2];
+  TreeCell<ndim> &child1 = celldata[cell.copen];
+  TreeCell<ndim> &child2 = celldata[child1.cnext];
 
 
   // Zero all summation variables for all cells
-  cell.Nactive  = 0;
-  cell.N        = 0;
-  cell.m        = (FLOAT) 0.0;
-  cell.hmax     = (FLOAT) 0.0;
-  cell.rmax     = (FLOAT) 0.0;
-  cell.dhmaxdt  = (FLOAT) 0.0;
-  cell.drmaxdt  = (FLOAT) 0.0;
-  cell.mac      = (FLOAT) 0.0;
-  cell.cdistsqd = big_number;
-  for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
-  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
-  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
-  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
-  for (k=0; k<ndim; k++) cell.vbox.min[k] = big_number;
-  for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
-
+  if (stock_leaf) {
+	  cell.Nactive  = 0;
+	  cell.N        = 0;
+	  cell.m        = (FLOAT) 0.0;
+	  cell.hmax     = (FLOAT) 0.0;
+	  cell.rmax     = (FLOAT) 0.0;
+	  cell.dhmaxdt  = (FLOAT) 0.0;
+	  cell.drmaxdt  = (FLOAT) 0.0;
+	  cell.mac      = (FLOAT) 0.0;
+	  cell.cdistsqd = big_number;
+	  for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
+	  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
+	  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
+	  for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
+	  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
+	  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
+	  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
+	  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
+	  for (k=0; k<ndim; k++) cell.vbox.min[k] = big_number;
+	  for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
+  }
 
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
