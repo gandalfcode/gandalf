@@ -136,11 +136,11 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void AllocateTreeMemory(int,int,bool);
   void ReallocateMemory(int,int);
   void DeallocateTreeMemory(void);
-  void StockTree(Particle<ndim> *part_gen) {
+  void StockTree(Particle<ndim> *part_gen, bool stock_leaf) {
     ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-    StockTree(celldata[0], partdata) ;
+    StockTree(celldata[0], partdata, stock_leaf) ;
   }
-  void StockTree(TreeCell<ndim>&, ParticleType<ndim> *);
+  void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool);
   void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
       ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
       UpdateHmaxValues(celldata[0], partdata) ;

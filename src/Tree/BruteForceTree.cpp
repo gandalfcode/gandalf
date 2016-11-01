@@ -292,9 +292,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
     }
     inext[ilast] = -1;
     ltot = 1;
-    if (Ntot > 0) StockTree(celldata[0], partdata);
+    if (Ntot > 0) StockTree(celldata[0], partdata, true);
     else ltot = 0;
-  }
 
   return;
 }
@@ -307,14 +306,16 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::StockTree
  (TreeCell<ndim> &cell,                ///< Reference to current tree cell
-  ParticleType<ndim> *partdata) {
+  ParticleType<ndim> *partdata,		   ///< Pointer to particle array
+  bool stock_leaf)					   ///< Wheter to stock also leaf cells
+  {
 
-  StockTreeProperties(cell, partdata) ;
+  if (stock_leaf) StockTreeProperties(cell, partdata) ;
 
   int c = cell.copen ;
   if (c == -1) c = cell.cnext ;
   for (; c < Ncell; c++)
-    StockTreeProperties(celldata[c], partdata) ;
+    if (stock_leaf) StockTreeProperties(celldata[c], partdata) ;
 }
 
 //=================================================================================================
@@ -324,7 +325,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTree
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
  (TreeCell<ndim> &cell,                ///< Reference to current tree cell
-  ParticleType<ndim> *partdata)        ///< Particle data array
+  ParticleType<ndim> *partdata)		   ///< Particle data array
 {
   int i;                               // Particle counter
   int iaux;                            // Aux. particle i.d. variable
