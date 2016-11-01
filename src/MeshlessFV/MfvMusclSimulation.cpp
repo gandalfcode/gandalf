@@ -61,7 +61,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
 
-  debug2("[MfvMusclSimulatimfv->GetMeshlessFVParticleArray()Loop]");
+  debug2("[MfvMusclSimulation:MainLoop]");
 
 
   // Compute timesteps for all particles
