@@ -199,31 +199,35 @@ public:
 	/// \date   09/10/2016
 	/// \return A boolean saying whether the boxes overlap
 	//=================================================================================================
-	bool PeriodicBoxOverlap(const Box<ndim>& box1, const Box<ndim>& box2) const
-	{
-	  if (!_any_periodic)
-	    return BoxOverlap(ndim, box1.min, box1.max, box2.min, box2.max) ;
-	  else {
-	    // Find the smallest possible distance between box centres
-        FLOAT dr[ndim];
-        FLOAT dr_corr[ndim];
-	    for (int k=0; k<ndim; k++)
-	      dr[k] = 0.5*((box2.max[k] + box2.min[k]) - (box1.max[k] + box1.min[k])) ;
+  bool PeriodicBoxOverlap(const Box<ndim>& box1, const Box<ndim>& box2) const
+  {
+    if (!_any_periodic) {
+      return BoxOverlap(ndim, box1.min, box1.max, box2.min, box2.max) ;
+    }
+    else {
 
-	    // Find whether the boxes can overlap.
-	    if (PeriodicDistanceCorrection(dr, dr_corr).is_periodic()) {
-	      Box<ndim> periodic_box ;
-	      for (int k=0; k<ndim; k++) {
-	        periodic_box.min[k] = box2.min[k] + dr_corr[k];
-	        periodic_box.max[k] = box2.max[k] + dr_corr[k];
-	      }
-	      return BoxOverlap(ndim, box1.min, box1.max, periodic_box.min, periodic_box.max) ;
-	    }
-	    else {
-	      return BoxOverlap(ndim, box1.min, box1.max, box2.min, box2.max) ;
-	    }
-	  }
-	}
+      // Find the smallest possible distance between box centres
+      FLOAT dr[ndim];
+      FLOAT dr_corr[ndim];
+      for (int k=0; k<ndim; k++) {
+        dr[k] = (FLOAT) 0.5*((box2.max[k] + box2.min[k]) - (box1.max[k] + box1.min[k]));
+        dr_corr[k] = (FLOAT) 0.0;
+      }
+
+      // Find whether the boxes can overlap.
+      if (PeriodicDistanceCorrection(dr, dr_corr).is_periodic()) {
+        Box<ndim> periodic_box;
+        for (int k=0; k<ndim; k++) {
+          periodic_box.min[k] = box2.min[k] + dr_corr[k];
+          periodic_box.max[k] = box2.max[k] + dr_corr[k];
+        }
+        return BoxOverlap(ndim, box1.min, box1.max, periodic_box.min, periodic_box.max);
+      }
+      else {
+        return BoxOverlap(ndim, box1.min, box1.max, box2.min, box2.max);
+      }
+    }
+  }
 
 	//=================================================================================================
 	/// \brief  Find the maximum number of mirrors required

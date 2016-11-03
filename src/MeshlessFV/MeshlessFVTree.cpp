@@ -88,7 +88,9 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active tree cells
-  vector<TreeCellBase<ndim> > celllist;            // List of active cells
+  //int Ntot = mfv->Ntot;
+  vector<TreeCellBase<ndim> > celllist;    // List of active cells
+  MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
   //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
@@ -97,18 +99,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   debug2("[MeshlessFVTree::UpdateAllProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_PROPERTIES");
 
-  int Ntot = mfv->Ntot;
-  MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
-
-
-
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
 
 
   // Set-up all OMP threads
