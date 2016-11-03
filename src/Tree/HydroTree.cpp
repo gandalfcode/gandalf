@@ -1207,7 +1207,7 @@ void HydroTree<ndim,ParticleType>::StockPrunedTree
 		  int completed_now;
 		  MPI_Waitsome(Nmpi-1,req,&completed_now,which_completed,status);
 
-		  // Unpack the infomration
+		  // Unpack the information
 		  for (int i=0; i<completed_now; i++) {
 			  const int j=which_completed[i];
 			  int iproc=j;
@@ -1216,7 +1216,7 @@ void HydroTree<ndim,ParticleType>::StockPrunedTree
 			  TreeBase<ndim>* treeptr = prunedtree[iproc];
 			  // See how much information we have actually received
 			  int count;
-			  MPI_Get_count(&status[j], MPI_CHAR, &count);
+			  MPI_Get_count(&status[i], MPI_CHAR, &count);
 			  receive_buffer[iproc].resize(count);
 			  // Copy the information into the leaf cells
 			  treeptr->CopyLeafCells(receive_buffer[iproc],TreeBase<ndim>::from_buffer);
