@@ -325,14 +325,12 @@ void HydroTree<ndim,ParticleType>::BuildTree
     Ntotmaxold = Ntotmax;
     Ntotmax    = max(Ntotmax, Ntot);
     Ntotmax    = max(Ntotmax, hydro->Nhydromax);
-    assert(Ntotmax >= Ntot);
-
-    tree->Ntot       = hydro->Nhydro;
-    tree->BuildTree(0, hydro->Nhydro-1, hydro->Ntot, hydro->Nhydromax, timestep, partdata);
+    tree->Ntot = hydro->Nhydro;
+    tree->BuildTree(0, hydro->Nhydro-1, hydro->Nhydro, hydro->Nhydromax, timestep, partdata);
 
     AllocateMemory(hydro->Ngather);
-    if (Ntotmaxold < Ntotmax)
-    	ReallocateMemory();
+    if (Ntotmaxold < Ntotmax) ReallocateMemory();
+
   }
 
   // Else stock the tree
