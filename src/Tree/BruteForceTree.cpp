@@ -231,68 +231,70 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   bool force_realloc=false;
   const int gmax_old = gmax;
   gmax = Npartmax + 1 ;
-  if (gmax>gmax_old)
-	  force_realloc=true;
+  if (gmax > gmax_old) force_realloc=true;
   gtot = Ncell = Ntot + 1;
   AllocateTreeMemory(Npartmax,Npartmax+1,force_realloc);
 
-  // Create bounding box of SPH particles
   for (k=0; k<ndim; k++) bbmin[k] = big_number;
   for (k=0; k<ndim; k++) bbmax[k] = -big_number;
-  for (i=0; i<Ntot; i++) {
-    for (k=0; k<ndim; k++) {
-      bbmax[k] = max(bbmax[k], partdata[i].r[k] + kernrange*partdata[i].h);
-      bbmin[k] = min(bbmin[k], partdata[i].r[k] - kernrange*partdata[i].h);
+
+  if (Npart > 0) {
+    ifirst = _ifirst;
+    ilast  = _ifirst + Npart - 1;
+    for (i=ifirst; i<=ilast; i++) {
+      for (k=0; k<ndim; k++) {
+        bbmax[k] = max(bbmax[k], partdata[i].r[k] + kernrange*partdata[i].h);
+        bbmin[k] = min(bbmin[k], partdata[i].r[k] - kernrange*partdata[i].h);
+      }
     }
   }
+  else {
+    ifirst = -1;
+    ilast  = -1;
+  }
+
 
   // Set properties for the cell
-  ifirst = _ifirst;
-  ilast  = _ilast;
   celldata[0].N      = Ntot;
   celldata[0].ifirst = ifirst;
-  celldata[0].ilast  = ilast ;
+  celldata[0].ilast  = ilast;
   celldata[0].cnext  = Ncell;
-  celldata[0].copen  = Ntot > 0 ? 1 : -1 ;
+  celldata[0].copen  = Ntot > 0 ? 1 : -1;
   celldata[0].id     = 0;
   celldata[0].level  = 0;
-  for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k] ;
-  for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k] ;
+  for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
+  for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
   // Now do the leaf cells
-  i = ifirst ;
-  for (int c = 1; c < Ncell; c++) {
-	celldata[c].N      = 1 ;
-	celldata[c].ifirst = i;
-	celldata[c].ilast  = i;
-	celldata[c].cnext  = c+1;
-	celldata[c].copen  = -1;
-	celldata[c].id     = c;
-	celldata[c].level  = 1;
-	for (k=0; k<ndim; k++) celldata[c].bb.min[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
-	for (k=0; k<ndim; k++) celldata[c].bb.max[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
-	for (k=0; k<ndim; k++) celldata[c].cexit[0][k] = -1; // TODO: Check this
-	for (k=0; k<ndim; k++) celldata[c].cexit[1][k] = -1;
-
-	g2c[c-1] = c ;
-
+  if (Npart > 0) {
+    i = ifirst;
+    for (int c = 1; c < Ncell; c++) {
+      celldata[c].N      = 1 ;
+      celldata[c].ifirst = i;
+      celldata[c].ilast  = i;
+      celldata[c].cnext  = c+1;
+      celldata[c].copen  = -1;
+      celldata[c].id     = c;
+      celldata[c].level  = 1;
+      for (k=0; k<ndim; k++) celldata[c].bb.min[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
+      for (k=0; k<ndim; k++) celldata[c].bb.max[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
+      for (k=0; k<ndim; k++) celldata[c].cexit[0][k] = -1; // TODO: Check this
+      for (k=0; k<ndim; k++) celldata[c].cexit[1][k] = -1;
 #ifdef MPI_PARALLEL
-  celldata[c].worktot = 0.0;
+      celldata[c].worktot = 0.0;
 #endif
-
-  	ids[i]   = i ;
-	inext[i] = i+1 ;
-	i++ ;
+      g2c[c-1] = c;
+      ids[i]   = i;
+      inext[i] = i+1;
+      i++ ;
+    }
+    inext[ilast] = -1;
+    ltot = 1;
+    if (Ntot > 0) StockTree(celldata[0], partdata);
+    else ltot = 0;
   }
-  inext[ilast] = -1;
-
-  ltot = 1 ;
-  if (Ntot > 0)
-	StockTree(celldata[0], partdata) ;
-  else
-	ltot = 0 ;
 
   return;
 }
@@ -586,6 +588,3 @@ template class BruteForceTree<3,SM2012SphParticle,BruteForceTreeCell>;
 template class BruteForceTree<1,MeshlessFVParticle,BruteForceTreeCell>;
 template class BruteForceTree<2,MeshlessFVParticle,BruteForceTreeCell>;
 template class BruteForceTree<3,MeshlessFVParticle,BruteForceTreeCell>;
-
-
-

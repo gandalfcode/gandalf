@@ -226,24 +226,16 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   int Nlist;                           // ..
   int *celllist;                       // List of cells to be processed
   FLOAT cellSize = (FLOAT) 0.0;        // Size of new cell (from centre to edge)
+  FLOAT bbmin[ndim];                   // Minimum extent of local bounding box
+  FLOAT bbmax[ndim];                   // Maximum extent of local bounding box
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
   debug2("[OctTree::BuildTree]");
   //timing->StartTimingSection("BUILD_OCT_TREE");
 
-  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory(Npartmax,0,false);
 
-
-  // Set properties for root cell before constructing tree
-  ifirst = _ifirst;
-  ilast  = _ilast;
-  Ncell  = 0;
-  ltot   = 0;
-  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
-  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
-  for (i=ifirst; i<=ilast; i++) inext[i] = i+1;
   for (c=0; c<Ncellmax; c++) {
     celldata[c].N      = 0;
     celldata[c].ifirst = -1;
@@ -253,27 +245,41 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     celldata[c].id     = c;
   }
 
-  // Return now if tree contains no particles
-  if (Ntot == 0) return;
+  // Create bounding box of SPH particles
+  for (k=0; k<ndim; k++) bbmin[k] = big_number;
+  for (k=0; k<ndim; k++) bbmax[k] = -big_number;
 
+  if (Npart > 0) {
+    ifirst = _ifirst;
+    ilast  = _ifirst + Npart - 1;
+    for (i=ifirst; i<=ilast; i++) {
+      for (k=0; k<ndim; k++) {
+        bbmax[k] = max(bbmax[k], partdata[i].r[k] + kernrange*partdata[i].h);
+        bbmin[k] = min(bbmin[k], partdata[i].r[k] - kernrange*partdata[i].h);
+      }
+    }
+    for (i=ifirst; i<=ilast; i++) ids[i] = i;
+    for (i=ifirst; i<ilast; i++) inext[i] = i+1;
+    inext[ilast] = -1;
+  }
+  else {
+    ifirst = -1;
+    ilast  = -1;
+  }
+
+
+  // Set properties for root cell before constructing tree
+  Ncell  = 1;
+  ltot   = 0;
   celldata[0].N      = Ntot;
   celldata[0].ifirst = _ifirst;
   celldata[0].ilast  = _ilast;
   celldata[0].level  = 0;
   celldata[0].copen  = -1;
-
-
-  // Compute the bounding box of all particles in root cell and the root cell size
-  for (k=0; k<ndim; k++) celldata[0].bb.min[k] = +big_number;
-  for (k=0; k<ndim; k++) celldata[0].bb.max[k] = -big_number;
-  for (i=_ifirst; i<=_ilast; i++) {
-    for (k=0; k<ndim; k++) celldata[0].bb.min[k] = min(celldata[0].bb.min[k], partdata[i].r[k]);
-    for (k=0; k<ndim; k++) celldata[0].bb.max[k] = max(celldata[0].bb.max[k], partdata[i].r[k]);
-  }
+  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
+  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
   for (k=0; k<ndim; k++) {
-    //celldata[0].rcell[k] = 0.5*(celldata[0].bb.min[k] + celldata[0].bb.max[k]);
     celldata[0].rcentre[k] = (FLOAT) 0.5*(celldata[0].bb.min[k] + celldata[0].bb.max[k]);
-    //cellSize = max(cellSize, celldata[0].bb.max[k] - celldata[0].rcell[k]);
     cellSize = max(cellSize, celldata[0].bb.max[k] - celldata[0].rcentre[k]);
   }
   rootCellSize = (FLOAT) 2.0*cellSize;
@@ -284,8 +290,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   if (Ntot > 0) {
 
     celllist     = new int[Npartmax];
-    ltot         = 0;
-    Ncell        = 1;
     Nlist        = 1;
     celllist[0]  = 0;
     firstCell[0] = 0;
