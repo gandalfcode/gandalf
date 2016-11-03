@@ -865,7 +865,10 @@ class MfvRungeKuttaSimulation : public MeshlessFVSimulation<ndim>
 template <int ndim>
 class NbodySimulation : public Simulation<ndim>
 {
+  using Simulation<ndim>::ewald;
+  using Simulation<ndim>::ewaldGravity;
   using Simulation<ndim>::Nmpi;
+  using Simulation<ndim>::periodicBoundaries;
   using Simulation<ndim>::restart;
   using Simulation<ndim>::simparams;
   using Simulation<ndim>::timing;
