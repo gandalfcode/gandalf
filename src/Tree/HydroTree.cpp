@@ -325,14 +325,12 @@ void HydroTree<ndim,ParticleType>::BuildTree
     Ntotmaxold = Ntotmax;
     Ntotmax    = max(Ntotmax, Ntot);
     Ntotmax    = max(Ntotmax, hydro->Nhydromax);
-    assert(Ntotmax >= Ntot);
-
-    tree->Ntot       = hydro->Nhydro;
-    tree->BuildTree(0, hydro->Nhydro-1, hydro->Ntot, hydro->Nhydromax, timestep, partdata);
+    tree->Ntot = hydro->Nhydro;
+    tree->BuildTree(0, hydro->Nhydro-1, hydro->Nhydro, hydro->Nhydromax, timestep, partdata);
 
     AllocateMemory(hydro->Ngather);
-    if (Ntotmaxold < Ntotmax)
-    	ReallocateMemory();
+    if (Ntotmaxold < Ntotmax) ReallocateMemory();
+
   }
 
   // Else stock the tree
@@ -497,18 +495,14 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
   hydro->Nmpighost      = 0;
   hydro->Ntot           = hydro->Nhydro;
 
-
   // If all boundaries are open, immediately return to main loop
   if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
       simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
       simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary) return;
 
-
   debug2("[HydroTree::SearchBoundaryGhostParticles]");
 
 
-  // Create ghost particles in x-dimension
-  //===============================================================================================
   for (int j = 0; j < ndim; j++) {
     if ((simbox.boundary_lhs[j] != openBoundary || simbox.boundary_rhs[j] != openBoundary)) {
 
@@ -519,16 +513,17 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
       if (j > 0) for (i=hydro->Nhydro; i<hydro->Ntot; i++)
         hydro->CheckBoundaryGhostParticle(i, j, tghost,simbox);
 
+
       hydro->Ntot = hydro->Nhydro + hydro->Nghost;
     }
   }
   hydro->NPeriodicGhost = hydro->Nghost;
 
-
   if (hydro->Ntot > Ntotmax) {
-	  Ntotmax = hydro->Ntot;
-	  ReallocateMemory();
+    Ntotmax = hydro->Ntot;
+    ReallocateMemory();
   }
+
 
   return;
 }
@@ -1204,13 +1199,12 @@ int HydroTree<ndim,ParticleType>::SearchMpiGhostParticles
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   vector<int> &export_list)            ///< [out] List of particle ids
 {
-
   const FLOAT grange = 2.0*ghost_range*kernrange;
 
   // Walk both trees.
   //-----------------------------------------------------------------------------------------------
-  int Nexport = tree->FindBoxGhostParticles(tghost, grange, mpibox, export_list) ;
-  Nexport += ghosttree->FindBoxGhostParticles(tghost, grange, mpibox, export_list) ;
+  int Nexport = tree->FindBoxGhostParticles(tghost, grange, mpibox, export_list);
+  Nexport += ghosttree->FindBoxGhostParticles(tghost, grange, mpibox, export_list);
 
   return Nexport;
 }
@@ -1485,7 +1479,6 @@ void HydroTree<ndim,ParticleType>::UnpackExported
 
 	  if (hydro->Ntot + N_received_part_total > Ntotmax) {
 		  Ntotmax = hydro->Ntot + N_received_part_total;
-		  //cout << "Ntotmax: " << Ntotmax << endl;
 		  ReallocateMemory();
 	  }
 
@@ -1701,6 +1694,7 @@ void HydroTree<ndim,ParticleType>::CheckValidNeighbourList
   return;
 }
 #endif
+
 
 
 template class HydroTree<1,GradhSphParticle>;

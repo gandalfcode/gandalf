@@ -1136,4 +1136,3 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 template class GradhSphTree<1,GradhSphParticle>;
 template class GradhSphTree<2,GradhSphParticle>;
 template class GradhSphTree<3,GradhSphParticle>;
-

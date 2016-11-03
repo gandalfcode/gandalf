@@ -1,3 +1,5 @@
+sudo: required
+dist: trusty
 language: cpp
 compiler:
   - clang
@@ -16,3 +18,5 @@ script:
  - export OMPI_CXX=$CXX
  - make executable -j 4 OPENMP=$OPENMP MPICPP=$MPICPP
  - export OMP_NUM_THREADS=4
+ - cd tests
+ - ./run_tests.sh
