@@ -112,7 +112,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,mfv,mfvdata,Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,mfv,mfvdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -509,7 +509,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   for (int t = neibmanagerbufflux.size(); t < Nthreads; ++t)
     neibmanagerbufflux.push_back(NeighbourManagerFlux(mfv, simbox));
 
-  int Nhydro = mfv->Nhydro ;
+  //int Nhydro = mfv->Nhydro;
   int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 
@@ -523,7 +523,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro, Ntot, simbox)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
