@@ -513,16 +513,17 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
       if (j > 0) for (i=hydro->Nhydro; i<hydro->Ntot; i++)
         hydro->CheckBoundaryGhostParticle(i, j, tghost,simbox);
 
+
       hydro->Ntot = hydro->Nhydro + hydro->Nghost;
     }
   }
   hydro->NPeriodicGhost = hydro->Nghost;
 
-
   if (hydro->Ntot > Ntotmax) {
-	  Ntotmax = hydro->Ntot;
-	  ReallocateMemory();
+    Ntotmax = hydro->Ntot;
+    ReallocateMemory();
   }
+
 
   return;
 }
@@ -1202,8 +1203,8 @@ int HydroTree<ndim,ParticleType>::SearchMpiGhostParticles
 
   // Walk both trees.
   //-----------------------------------------------------------------------------------------------
-  int Nexport = tree->FindBoxGhostParticles(tghost, grange, mpibox, export_list) ;
-  Nexport += ghosttree->FindBoxGhostParticles(tghost, grange, mpibox, export_list) ;
+  int Nexport = tree->FindBoxGhostParticles(tghost, grange, mpibox, export_list);
+  Nexport += ghosttree->FindBoxGhostParticles(tghost, grange, mpibox, export_list);
 
   return Nexport;
 }
