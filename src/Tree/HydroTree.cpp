@@ -1213,6 +1213,7 @@ void HydroTree<ndim,ParticleType>::StockPrunedTree
 	  CodeTiming::BlockTimer timer = timing->StartNewTimer("STOCK_PRUNED_TREE");
 
 	  Particle<ndim> *partdata = hydro->GetParticleArray();
+      tree->UpdateAllHmaxValues(partdata);
 
 	  // Update all work counters in the tree for load-balancing purposes
 	  tree->UpdateWorkCounters();
