@@ -1294,12 +1294,21 @@ void Tree<ndim,ParticleType,TreeCell>::CopyLeafCells
 	vector<char>::const_iterator iter = buffer.begin();
 	for (int i=0; i< Nleaf_indices.size(); i++) {
 		const int j=Nleaf_indices[i];
-		if (dir == TreeBase<ndim>::to_buffer)
+		if (dir == TreeBase<ndim>::to_buffer) {
+			assert(celldata[j].copen==-1);
 			append_bytes<TreeCell<ndim> >(buffer, &(celldata[j])) ;
-		else if (dir == TreeBase<ndim>::from_buffer)
+		}
+		else if (dir == TreeBase<ndim>::from_buffer) {
+			assert(celldata[j].copen==-1);
 			unpack_bytes<TreeCell<ndim> >(&(celldata[j]), iter);
+		}
 	}
-	if (dir== TreeBase<ndim>::from_buffer) assert(iter == buffer.end());
+	if (dir== TreeBase<ndim>::from_buffer) {
+		assert(iter == buffer.end());
+	}
+	else {
+		assert(buffer.size()/sizeof(TreeCell<ndim>)==Nleaf_indices.size());
+	}
  }
 
 
