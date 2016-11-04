@@ -765,7 +765,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
   int i;                               // Aux. child cell counter
 
   // If cell is not leaf, stock child cells
-  if (cell.level != ltot && cell.copen != -1) {
+  if (cell.copen != -1) {
 	  TreeCell<ndim>& child1 = celldata[cell.copen];
 	  TreeCell<ndim>& child2 = celldata[child1.cnext];
 #if defined _OPENMP
@@ -820,7 +820,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   FLOAT lambda = (FLOAT) 0.0;          // ..
 
   // Zero all summation variables for all cells
-  if (stock_leaf) {
+  if ((cell.level==ltot&&stock_leaf) || cell.copen != -1 ) {
 	  cell.Nactive  = 0;
 	  cell.N        = 0;
 	  cell.m        = (FLOAT) 0.0;
