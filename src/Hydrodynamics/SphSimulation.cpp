@@ -702,7 +702,6 @@ void SphSimulation<ndim>::MainLoop(void)
     MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
     sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
-    sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
   }
 
 
