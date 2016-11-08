@@ -655,13 +655,20 @@ void SphSimulation<ndim>::MainLoop(void)
   sphint->CheckBoundaries(simbox,sph);
 
 
-  // Perform the load-balancing step for MPI simulations.  First update the pruned trees on all
-  // processors, then compute the new load-balanced MPI domains and finally transfer the
+  // Perform the load-balancing step for MPI simulations.  Need to stock local and pruned trees,
+  // then compute the new load-balanced MPI domains and finally transfer the
   // particles to the new domains.
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    sphneib->StockPrunedTree(rank, sph);
+	// Horrible hack in order NOT to trigger a full tree rebuild
+	sphneib->BuildTree(rebuild_tree,Nsteps+1,2, ntreestockstep,timestep,sph);
+	if (rebuild_tree) {
+		  sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
+	}
+	else {
+		sphneib->StockPrunedTree(rank, sph);
+	}
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->LoadBalancing(sph, nbody);
   }
@@ -685,7 +692,6 @@ void SphSimulation<ndim>::MainLoop(void)
   // Re-build and communicate the new pruned trees (since the trees will necessarily change
   // once there has been communication of particles to new domains)
 #ifdef MPI_PARALLEL
-    sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
     sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
@@ -747,7 +753,12 @@ void SphSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
       // Pruned trees are used only to compute which particles to export
       // Therefore we don't need to update them at the start of the loop, and we can do it soon before we need them
-      sphneib->StockPrunedTree(rank, sph);
+      if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    	  sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
+      }
+      else {
+    	  sphneib->StockPrunedTree(rank, sph);
+      }
 
       if (sph->self_gravity == 1) {
         sphneib->UpdateGravityExportList(rank, sph, nbody, simbox);
