@@ -684,30 +684,17 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Search for new ghost particles and create on local processor
   //-----------------------------------------------------------------------------------------------
-  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    tghost = timestep*(FLOAT)(ntreebuildstep - 1);
-    sphneib->SearchBoundaryGhostParticles(tghost, simbox, sph);
-    sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
+  //tghost = timestep*(FLOAT)(ntreebuildstep - 1);
+  tghost = 0;
+  sphneib->SearchBoundaryGhostParticles(tghost, simbox, sph);
+  sphneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 
-  // Re-build and communicate the new pruned trees (since the trees will necessarily change
-  // once there has been communication of particles to new domains)
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
-    sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+    sphneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,
                                timestep, sph);
 #endif
-  }
-  // Otherwise copy properties from original particles to ghost particles
-  else {
-    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
-    sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
-#ifdef MPI_PARALLEL
-    mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
-    MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
-    sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
-#endif
-  }
 
 
   // Iterate if we need to immediately change SPH particle timesteps
