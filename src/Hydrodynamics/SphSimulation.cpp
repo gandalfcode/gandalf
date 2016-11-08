@@ -854,9 +854,8 @@ void SphSimulation<ndim>::MainLoop(void)
         nbody->nbodydata[i]->gpe = (FLOAT) 0.0;
       }
     }
-
-    if (sph->self_gravity == 1 && sph->Nhydro > 0) {
-      sphneib->UpdateAllStarGasForces(sph,nbody);
+    if (sph->self_gravity == 1) {
+      if (sph->Nhydro>0) sphneib->UpdateAllStarGasForces(sph,nbody);
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);
