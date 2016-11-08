@@ -1100,7 +1100,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   TreeBase<ndim> *prunedtree)         ///< [out] List of cell pointers in pruned tree
 {
   int c;                               // Cell counter
-  int cnext;                           // id of next cell in tree
   int k;                               // Neighbour counter
   int Nprunedcell = 0;                 // No. of cells in newly created pruned tree
   int *newCellIds;                     // New cell ids in pruned tree
@@ -1121,6 +1120,13 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
       static_cast<Tree<ndim,ParticleType,TreeCell>*>(prunedtree)->celldata;
 
   c = 0;
+
+  vector<int>& leaf_indices = static_cast<Tree<ndim,ParticleType,TreeCell>*>(prunedtree)->Nleaf_indices;
+  leaf_indices.clear();
+  leaf_indices.reserve(Nprunedcellmax);
+  vector<int>& leaf_indices_local = static_cast<Tree<ndim,ParticleType,TreeCell>*>(prunedtree)->Nleaf_indices_inlocal;
+  leaf_indices_local.clear();
+  leaf_indices_local.reserve(Nprunedcellmax);
 
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
@@ -1156,6 +1162,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     //---------------------------------------------------------------------------------------------
     if (localNode && celldata[c].level == pruning_level_min) {
       prunedcells[Nprunedcell].copen = -1;
+      leaf_indices_local.push_back(c);
       c = celldata[c].cnext;
     }
 
@@ -1164,6 +1171,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     //---------------------------------------------------------------------------------------------
     else if (celldata[c].level == pruning_level_max || celldata[c].copen == -1) {
       prunedcells[Nprunedcell].copen = -1;
+      leaf_indices_local.push_back(c);
       c = celldata[c].cnext;
     }
 
@@ -1185,15 +1193,19 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     //---------------------------------------------------------------------------------------------
     else {
       prunedcells[Nprunedcell].copen = -1;
+      leaf_indices_local.push_back(c);
       c = celldata[c].cnext;
     }
 
+    if (prunedcells[Nprunedcell].copen ==-1) {
+    	leaf_indices.push_back(Nprunedcell);
+    }
     Nprunedcell++;
 
   };
   //===============================================================================================
 
-
+  assert(leaf_indices.size() == leaf_indices_local.size() );
   newCellIds[Ncell] = Nprunedcell;
   newCellIds[Ncellmax] = Nprunedcell;
 
@@ -1212,8 +1224,10 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
 
+#ifndef NDEBUG
   // If selected, verify that pruned tree pointers are correctly set-up
   assert(Nprunedcell <= Nprunedcellmax);
+  int cnext;                           // id of next cell in tree
   for (c=0; c<Nprunedcell; c++) {
     if (prunedcells[c].copen != -1) cnext = prunedcells[c].copen;
     else cnext = prunedcells[c].cnext;
@@ -1222,6 +1236,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
+#endif
 
 
   delete[] newCellIds;
@@ -1229,6 +1244,72 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   return Nprunedcell;
 }
 
+//=================================================================================================
+//  Tree::UpdateLeafCells
+/// Copy information about the leaf cells from the original tree to the local pruned tree
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::UpdateLeafCells
+ (TreeBase<ndim>* tree)    ///< [in] Full tree of the local node
+ {
+	 TreeCell<ndim>* localcells =
+	      static_cast<Tree<ndim,ParticleType,TreeCell>*>(tree)->celldata;
+
+	for (int i=0; i< Nleaf_indices.size(); i++) {
+		const int ilocal=Nleaf_indices_inlocal[i];
+		const int ileaf = Nleaf_indices[i];
+		//Copy a few things that we need to "roll back"
+		TreeCell<ndim>& cell = celldata[ileaf];
+		const int copen = cell.copen;
+		const int cnext = cell.cnext;
+		cell = localcells[ilocal];
+		cell.copen = copen;
+		cell.cnext = cnext;
+	}
+ }
+
+
+//=================================================================================================
+//  Tree::CopyLeafCells
+/// Copy information from the updated leaf cells to a buffer to be sent to the other processors
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::CopyLeafCells
+ (vector<char>& buffer,       ///< [inout] Buffer to copy to/from
+  enum TreeBase<ndim>::direction dir)  ///< [in] Whether to copy to or from the buffer
+ {
+	// If we are at the receiving side for the first time, we need to construct the list of leaf cells
+	if (first_stock && dir==TreeBase<ndim>::from_buffer) {
+		Nleaf_indices.clear();
+		Nleaf_indices.reserve(Ncell);
+		for (int c=0; c<Ncell; c++) {
+			if (celldata[c].copen==-1) {
+				Nleaf_indices.push_back(c);
+			}
+		}
+		first_stock=false;
+	}
+
+	// Copy data to/from the buffer
+	vector<char>::const_iterator iter = buffer.begin();
+	for (int i=0; i< Nleaf_indices.size(); i++) {
+		const int j=Nleaf_indices[i];
+		if (dir == TreeBase<ndim>::to_buffer) {
+			assert(celldata[j].copen==-1);
+			append_bytes<TreeCell<ndim> >(buffer, &(celldata[j])) ;
+		}
+		else if (dir == TreeBase<ndim>::from_buffer) {
+			assert(celldata[j].copen==-1);
+			unpack_bytes<TreeCell<ndim> >(&(celldata[j]), iter);
+		}
+	}
+	if (dir== TreeBase<ndim>::from_buffer) {
+		assert(iter == buffer.end());
+	}
+	else {
+		assert(buffer.size()/sizeof(TreeCell<ndim>)==Nleaf_indices.size());
+	}
+ }
 
 
 //=================================================================================================

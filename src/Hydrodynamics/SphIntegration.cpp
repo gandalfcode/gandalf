@@ -153,6 +153,11 @@ void SphIntegration<ndim>::CheckBoundaries
 {
   debug2("[SphIntegration::CheckBoundaries]");
 
+  // If all boundaries are open, immediately return to main loop
+  if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
+      simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
+      simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary) return;
+
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   //===============================================================================================

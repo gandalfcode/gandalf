@@ -96,6 +96,7 @@ protected:
 
   virtual void BuildPrunedTree(const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Hydrodynamics<ndim> *) = 0;
+  virtual void StockPrunedTree(const int rank,Hydrodynamics<ndim>* hydro) = 0;
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int,
                                  const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) = 0;
@@ -177,6 +178,7 @@ protected:
 
   virtual void BuildPrunedTree(const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Hydrodynamics<ndim> *);
+  virtual void StockPrunedTree(const int rank,Hydrodynamics<ndim>* hydro);
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int,
                                  const FLOAT, Hydrodynamics<ndim> *);
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);

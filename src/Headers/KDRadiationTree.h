@@ -129,8 +129,8 @@ class KDRadiationTree
   int FindRayExitFace(CellType<ndim,nfreq> &, const FLOAT *, const FLOAT *, const FLOAT *, FLOAT &);
   void OptimiseTree(void);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
-  void StockTree(CellType<ndim,nfreq> &, ParticleType<ndim> *);
-  void StockCellProperties(CellType<ndim,nfreq> &, ParticleType<ndim> *);
+  void StockTree(CellType<ndim,nfreq> &, ParticleType<ndim> *, bool);
+  void StockCellProperties(CellType<ndim,nfreq> &, ParticleType<ndim> *, bool);
   void SumRadiationField(const int, CellType<ndim,nfreq> &);
 
 
