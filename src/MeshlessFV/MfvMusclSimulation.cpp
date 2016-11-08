@@ -82,6 +82,15 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 #ifdef MPI_PARALLEL
 
+  // Pruned trees are used only to compute which particles to export
+  // Therefore we don't need to update them at the start of the loop, and we can do it soon before we need them
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+	  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
+  }
+  else {
+	  mfvneib->StockPrunedTree(rank, mfv);
+  }
+
   if (mfv->hydro_forces) {
     mfvneib->UpdateHydroExportList(rank, mfv, nbody, simbox);
 
@@ -118,8 +127,15 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
-    mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
+	// Horrible hack in order NOT to trigger a full tree rebuild
+	mfvneib->BuildTree(rebuild_tree,Nsteps+1,2, ntreestockstep,timestep,mfv);
+	if (rebuild_tree) {
+		  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
+	}
+	else {
+		mfvneib->StockPrunedTree(rank, mfv);
+	}
+	mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
     mpicontrol->LoadBalancing(mfv, nbody);
   }
 #endif
@@ -131,28 +147,15 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->InitialiseCellWorkCounters();
 #endif
 
-  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    tghost = timestep*(FLOAT) (ntreebuildstep - 1);
-    mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
-    // Re-build and communicate the new pruned trees (since the trees will necessarily change
-    // once there has been communication of particles to new domains)
-#ifdef MPI_PARALLEL
-    mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
-    mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
-    MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
-      mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,  timestep, mfv);
-#endif
-  }
-  else {
-    mfv->CopyDataToGhosts(simbox);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
-#ifdef MPI_PARALLEL
-    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
-    mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
-#endif
-    mfv->CopyDataToGhosts(simbox);
-  }
+	//tghost = timestep*(FLOAT) (ntreebuildstep - 1);
+	tghost = 0;
+	mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+	mfvneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
+	#ifdef MPI_PARALLEL
+	mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
+	MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
+	  mfvneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,  timestep, mfv);
+	#endif
 
 
   // Search for new sink particles (if activated) and accrete to existing sinks
@@ -199,6 +202,12 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     mfv->CopyDataToGhosts(simbox);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
+      if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    	     mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
+    	}
+      else {
+    		 mfvneib->StockPrunedTree(rank, mfv);
+      }
       mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox);
       mpicontrol->ExportParticlesBeforeForceLoop(mfv);
     }
