@@ -332,11 +332,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
     return;
   }
 
-  // Update ghost tree smoothing length values here
-  tree->UpdateAllHmaxValues(sphdata);
-  //if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
-
-
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,nbody,simbox,sph,sphdata)
