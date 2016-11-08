@@ -261,7 +261,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
     // Density must at least equal its self-contribution
     // (failure could indicate neighbour list problem)
-    assert(parti.rho >= parti.m*parti.hfactor*kern.w0(0.0));
+    assert(parti.rho >= parti.m*parti.hfactor*kern.w0_s2(0.0));
 
     FLOAT invrho = 0 ;
     if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;
@@ -484,7 +484,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     //---------------------------------------------------------------------------------------------
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
+    for (k=0; k<ndim; k++) {
+    	parti.a[k] += neibpart[j].m*draux[k]*paux;
+    	assert(parti.a[k]==parti.a[k]);
+    }
     parti.levelneib = max(parti.levelneib,neibpart[j].level);
 
   }
