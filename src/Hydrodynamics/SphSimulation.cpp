@@ -731,9 +731,6 @@ void SphSimulation<ndim>::MainLoop(void)
         }
       }
 
-      // Copy properties from original particles to ghost particles
-      LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
-
       // Calculate gravitational forces from other distant MPI nodes.
       // Also determines particles that must be exported to other nodes
       // if too close to the domain boundaries
