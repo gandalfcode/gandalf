@@ -810,8 +810,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   FLOAT mi;                            // Mass of particle i
   FLOAT p = (FLOAT) 0.0;               // ..
   FLOAT lambda = (FLOAT) 0.0;          // ..
-  TreeCell<ndim> &child1 = celldata[cell.c1];
-  TreeCell<ndim> &child2 = celldata[cell.c2];
 
 
   // Zero all summation variables for all cells
@@ -927,6 +925,10 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   //-----------------------------------------------------------------------------------------------
   else {
 
+    TreeCell<ndim> &child1 = celldata[cell.c1];
+    TreeCell<ndim> &child2 = celldata[cell.c2];
+
+
     if (child1.N > 0) {
       for (k=0; k<ndim; k++) cell.bb.min[k] = min(child1.bb.min[k],cell.bb.min[k]);
       for (k=0; k<ndim; k++) cell.bb.max[k] = max(child1.bb.max[k],cell.bb.max[k]);
@@ -1024,9 +1026,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   else {
     cell.mac = (FLOAT) 0.0;
   }
-
-  //cout << "Work in cell[" << cell.id << "] : " << cell.worktot << "      level : " << cell.level << endl;
-
+  
 
   return;
 }

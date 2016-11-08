@@ -924,6 +924,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
     for (unsigned int j=0; j<ghost_export_list.size(); j++) {
       i = ghost_export_list[j];
       particles_to_export_per_node[inode].push_back(i);
+      assert(!partdata[i].flags.is_dead());
     }
 #ifdef OUTPUT_ALL
     cout << "Nexport : " << Nexport << "     size : " << ghost_export_list.size() << endl;
@@ -977,6 +978,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 
       // Record in iorig the location in memory of the particle
       particles_to_export[index].iorig = particles_on_this_node[iparticle];
+      assert(!particles_to_export[index].flags.is_dead());
       index++;
     }
   }
