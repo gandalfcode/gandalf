@@ -651,9 +651,8 @@ void SphSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Check all boundary conditions
-  // (DAVID : Move this function to sphint and create an analagous one
-  //  for N-body.  Also, only check this on tree-build steps)
-  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) sphint->CheckBoundaries(simbox,sph);
+  // (DAVID : create an analagous of this function for N-body)
+  sphint->CheckBoundaries(simbox,sph);
 
 
   // Perform the load-balancing step for MPI simulations.  First update the pruned trees on all
