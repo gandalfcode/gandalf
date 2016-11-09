@@ -287,6 +287,23 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Supernova feedback
+  //-----------------------------------------------------------------------------------------------
+  if (stringparams["supernova_feedback"] == "none") {
+    snDriver = new NullSupernovaDriver<ndim>(this);
+  }
+  else if (stringparams["supernova_feedback"] == "single") {
+    snDriver = new SedovTestDriver<ndim>(this,simparams, simunits);
+  }
+  else if (stringparams["supernova_feedback"] == "random") {
+    snDriver = new RandomSedovTestDriver<ndim>(this,simparams, simunits, simbox);
+  }
+  else {
+    string message = "Unrecognised parameter : external_potential = "
+      + simparams->stringparams["supernova_feedback"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 
   // Set pointers to timing object
   nbody->timing   = timing;

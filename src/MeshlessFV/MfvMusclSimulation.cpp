@@ -125,6 +125,16 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Apply Saitoh & Makino type time-step limiter
   mfv->CheckTimesteps(level_diff_max, level_step, n, timestep, 1);
 
+  // Reset rebuild tree flag in preparation for next timestep
+  //rebuild_tree = false;
+
+  // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..).
+  //-----------------------------------------------------------------------------------------------
+  if (n%(int) pow(2,level_step - level_max) == 0) {
+    snDriver->Update(n, level_step, level_max, t, hydro, mfvneib, randnumb);
+  }
+
+
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
 	// Horrible hack in order NOT to trigger a full tree rebuild
