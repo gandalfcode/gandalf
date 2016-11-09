@@ -59,7 +59,6 @@ class Ghosts
   //-----------------------------------------------------------------------------------------------
   virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
   virtual void CopyHydroDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
-  virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
 
 
 };
@@ -77,7 +76,6 @@ class PeriodicGhosts : public Ghosts<ndim>
 {
 public:
 
-  virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *);
 };
 
 
@@ -112,7 +110,6 @@ public:
 
   virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *) {};
   virtual void CopyHydroDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *);
-  virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *);
 };
 
 
@@ -132,7 +129,6 @@ public:
   //MpiGhosts(MpiControl<ndim>* mpicontrol_aux): mpicontrol(mpicontrol_aux) {};
   MpiGhosts(){};
 
-  virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *);
 };
 
 

@@ -40,84 +40,6 @@ using namespace std;
 
 
 //=================================================================================================
-//  Ghosts::CheckBoundaries
-/// Check all particles to see if any have crossed the simulation bounding box.
-/// If so, then move the particles to their new location on the other side of the periodic box.
-//================================================================================================
-template <int ndim>
-void PeriodicGhosts<ndim>::CheckBoundaries
- (DomainBox<ndim> simbox,
-  Hydrodynamics<ndim> *hydro)
-{
-  debug2("[PeriodicGhosts::CheckBoundaries]");
-
-  // Loop over all particles and check if any lie outside the periodic box.
-  // If so, then re-position with periodic wrapping.
-  //===============================================================================================
-#pragma omp parallel for default(none) shared(simbox,hydro)
-  for (int i=0; i<hydro->Nhydro; i++) {
-    Particle<ndim>& part = hydro->GetParticlePointer(i);
-
-    // --------------------------------------------------------------------------------------------
-    for (int k=0; k<ndim; k++) {
-
-      // Check if particle has crossed LHS boundary
-      //-------------------------------------------------------------------------------------------
-      if (part.r[k] < simbox.min[k]) {
-
-        // Check if periodic boundary
-        if (simbox.boundary_lhs[k] == periodicBoundary) {
-          part.r[k]  += simbox.size[k];
-          part.r0[k] += simbox.size[k];
-        }
-
-        // Check if wall or mirror boundary
-        if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
-          part.r[k]  = (FLOAT) 2.0*simbox.min[k] - part.r[k];
-          part.r0[k] = (FLOAT) 2.0*simbox.min[k] - part.r0[k];
-          part.v[k]  = -part.v[k];
-          part.v0[k] = -part.v0[k];
-          part.a[k]  = -part.a[k];
-          part.a0[k] = -part.a0[k];
-        }
-
-      }
-
-      // Check if particle has crossed RHS boundary
-      //-------------------------------------------------------------------------------------------
-      if (part.r[k] > simbox.max[k]) {
-
-        // Check if periodic boundary
-        if (simbox.boundary_rhs[k] == periodicBoundary) {
-          part.r[k]  -= simbox.size[k];
-          part.r0[k] -= simbox.size[k];
-        }
-
-        // Check if wall or mirror boundary
-        if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
-          part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
-          part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
-          part.v[k]  = -part.v[k];
-          part.v0[k] = -part.v0[k];
-          part.a[k]  = -part.a[k];
-          part.a0[k] = -part.a0[k];
-        }
-
-      }
-
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-  }
-  //===============================================================================================
-
-  return;
-}
-
-
-
-//=================================================================================================
 //  Ghosts::CopyHydroDataToGhosts
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=================================================================================================
@@ -215,18 +137,6 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
 
 
 //=================================================================================================
-//  NullGhosts::CheckBoundaries
-/// Empty function when no ghost particles are required.
-//=================================================================================================
-template <int ndim>
-void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
-{
-  return;
-}
-
-
-
-//=================================================================================================
 //  NullGhosts::CopyHydroDataToGhosts
 /// Empty function when no ghost particles are required.
 //=================================================================================================
@@ -239,15 +149,6 @@ void NullGhosts<ndim>::CopyHydroDataToGhosts(DomainBox<ndim> simbox, Hydrodynami
 
 
 #if defined MPI_PARALLEL
-//=================================================================================================
-//  MpiGhosts::CheckBoundaries
-/// ..
-//=================================================================================================
-template <int ndim>
-void MpiGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Hydrodynamics<ndim> *hydro)
-{
-  return;
-}
 
 
 
