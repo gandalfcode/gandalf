@@ -3634,7 +3634,7 @@ void Ic<ndim>::AddRandomBox
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
-      r[ndim*i + k] = box.min[k] + (box.max[k] - box.min[k])*sim->randnumb->floatrand();
+      r[ndim*i + k] = box.min[k] + (box.max[k] - box.min[k])*randnumb->floatrand();
     }
   }
 
@@ -3710,7 +3710,7 @@ int Ic<ndim>::AddLatticeSphere
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
-  for (k=0; k<ndim; k++) Nlattice[k] = (int) (3.0*powf((FLOAT) Npart, invndim));
+  for (k=0; k<ndim; k++) Nlattice[k] = (int) (3.0*powf((FLOAT) Npart, (FLOAT)1/ndim));
   for (k=0; k<ndim; k++) box1.min[k] = -2.0;
   for (k=0; k<ndim; k++) box1.max[k] = 2.0;
   Naux = Nlattice[0]*Nlattice[1]*Nlattice[2];
