@@ -34,6 +34,7 @@
 #include "EOS.h"
 #include "Debug.h"
 #include "InlineFuncs.h"
+#include "Simulation.h"
 using namespace std;
 
 
@@ -140,7 +141,8 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   const FLOAT m,                       ///< [in] Mass of new particle
   const FLOAT u,                       ///< [in] Specific internal energy of new particle
   const FLOAT r[ndim],                 ///< [in] Position of new particle
-  const FLOAT v[ndim])                 ///< [in] Velocity of new particle
+  const FLOAT v[ndim],                 ///< [in] Velocity of new particle
+  SimulationBase* sim)				   ///< [inout] Simulation object
 {
   // First, check if there is space for the new particle.
   // If not, then increase particle memory by 20% by reallocating arrays.
@@ -150,7 +152,7 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   }
 
   // Find space for new particle at the end of the array and increment relevant counters.
-  newParticles = true;
+  sim->rebuild_tree = true;
   int inew = Nhydro++;
   Ntot++;
   Particle<ndim> &part = GetParticlePointer(inew);

@@ -42,27 +42,6 @@ using namespace std;
 
 
 
-//=================================================================================================
-//  Supernova::Supernova
-/// Supernova class constructor
-/// This class contains the code to do a single supernova explosion
-//=================================================================================================
-template <int ndim>
-Supernova<ndim>::Supernova()
-{
-}
-
-
-
-//=================================================================================================
-//  Supernova::~Supernova
-/// Supernova class destructor
-//=================================================================================================
-template <int ndim>
-Supernova<ndim>::~Supernova()
-{
-}
-
 
 
 //=================================================================================================
@@ -173,7 +152,7 @@ void Supernova<ndim>::SupernovaInjection
 
     // Get new particle i
     Particle<ndim> &part = hydro->CreateNewParticle(gas, gas_type, n, level_step, level_max,
-                                                    t, hydro->mmean, uinj, rpart, vpart);
+                                                    t, hydro->mmean, uinj, rpart, vpart,sim);
 
     // Set SNid?
     // Set smoothing length?
