@@ -226,6 +226,10 @@ template class PeriodicGhostsSpecific<3, GradhSphParticle>;
 template class PeriodicGhostsSpecific<1, SM2012SphParticle>;
 template class PeriodicGhostsSpecific<2, SM2012SphParticle>;
 template class PeriodicGhostsSpecific<3, SM2012SphParticle>;
+template class PeriodicGhostsSpecific<1, MeshlessFVParticle>;
+template class PeriodicGhostsSpecific<2, MeshlessFVParticle>;
+template class PeriodicGhostsSpecific<3, MeshlessFVParticle>;
+
 
 #ifdef MPI_PARALLEL
 template class MpiGhosts<1>;

@@ -1034,7 +1034,132 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
   return;
 }
 
+//=================================================================================================
+//  Simulation::ProcessParameters
+/// Process all the options chosen in the parameters file, setting various
+/// simulation variables and creating important simulation objects.
+/// This initialises all the things in common between different schemes
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::ProcessParameters(void)
+{
 
+  debug2("[Simulation::ProcessParameters]");
+
+  map<string, string> &stringparams = simparams->stringparams;
+  map<string, int> &intparams = simparams->intparams;
+  map<string, double> &floatparams = simparams->floatparams;
+
+
+  // Sanity check for valid dimensionality
+  if (ndim < 1 || ndim > 3) {
+    std::ostringstream message;
+    message << "Invalid dimensionality chosen : ndim = " << ndim;
+    ExceptionHandler::getIstance().raise(message.str());
+  }
+
+  // Set-up random number generator object
+  //-----------------------------------------------------------------------------------------------
+  if (stringparams["rand_algorithm"] == "xorshift") {
+    randnumb = new XorshiftRand(intparams["randseed"]);
+  }
+  else if (stringparams["rand_algorithm"] == "none") {
+    randnumb = new DefaultSystemRand(intparams["randseed"]);
+  }
+  else {
+    string message = "Unrecognised parameter : rand_algorithm= " +
+      stringparams["rand_algorithm"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Set-up all output units for scaling parameters
+  simunits.SetupUnits(simparams);
+
+  // Boundary condition variables
+  //-----------------------------------------------------------------------------------------------
+  simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
+  simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
+  simbox.min[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.max[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+
+  simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
+  simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
+  simbox.min[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+  simbox.max[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+
+  simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
+  simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
+  simbox.min[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+  simbox.max[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+
+  for (int k=0; k<ndim; k++) {
+    simbox.size[k] = simbox.max[k] - simbox.min[k];
+    simbox.half[k] = (FLOAT) 0.5*simbox.size[k];
+  }
+
+
+  // Set external potential field object
+  if (stringparams["external_potential"] == "none") {
+    extpot = new NullPotential<ndim>();
+  }
+  else if (stringparams["external_potential"] == "vertical") {
+    extpot = new VerticalPotential<ndim>
+      (intparams["kgrav"], floatparams["avert"], simbox.min[intparams["kgrav"]]);
+  }
+  else if (stringparams["external_potential"] == "plummer") {
+    extpot = new PlummerPotential<ndim>(floatparams["mplummer"], floatparams["rplummer"]);
+  }
+  else {
+    string message = "Unrecognised parameter : external_potential = "
+      + simparams->stringparams["external_potential"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Create Ewald periodic gravity object
+  periodicBoundaries = IsAnyBoundaryPeriodic(simbox);
+  if (periodicBoundaries && intparams["self_gravity"] == 1) {
+    ewaldGravity = true;
+    ewald = new Ewald<ndim>
+      (simbox, intparams["gr_bhewaldseriesn"], intparams["in"], intparams["nEwaldGrid"],
+       floatparams["ewald_mult"], floatparams["ixmin"], floatparams["ixmax"],
+       floatparams["EFratio"], timing);
+    simbox.PeriodicGravity = true ;
+  }
+  else{
+    simbox.PeriodicGravity = false ;
+    if (IsAnyBoundaryReflecting(simbox) && intparams["self_gravity"]){
+      ExceptionHandler::getIstance().raise("Error: Reflecting boundaries and self-gravity is not "
+                                           "supported") ;
+    }
+  }
+
+  // Set other important simulation variables
+  dt_litesnap         = floatparams["dt_litesnap"]/simunits.t.outscale;
+  dt_python           = floatparams["dt_python"];
+  dt_snap             = floatparams["dt_snap"]/simunits.t.outscale;
+  extra_sink_output   = intparams["extra_sink_output"];
+  level_diff_max      = intparams["level_diff_max"];
+  litesnap            = intparams["litesnap"];
+  Nlevels             = intparams["Nlevels"];
+  ndiagstep           = intparams["ndiagstep"];
+  noutputstep         = intparams["noutputstep"];
+  nrestartstep        = intparams["nrestartstep"];
+  ntreebuildstep      = intparams["ntreebuildstep"];
+  ntreestockstep      = intparams["ntreestockstep"];
+  nsystembuildstep = intparams["nsystembuildstep"];
+  Nstepsmax           = intparams["Nstepsmax"];
+  out_file_form       = stringparams["out_file_form"];
+  pruning_level_min   = intparams["pruning_level_min"];
+  pruning_level_max   = intparams["pruning_level_max"];
+  run_id              = stringparams["run_id"];
+  sph_single_timestep = intparams["sph_single_timestep"];
+  tmax_wallclock      = floatparams["tmax_wallclock"];
+  tend                = floatparams["tend"]/simunits.t.outscale;
+  tlitesnapnext       = floatparams["tlitesnapfirst"]/simunits.t.outscale;
+  tsnapnext           = floatparams["tsnapfirst"]/simunits.t.outscale;
+
+}
 
 //=================================================================================================
 //  Simulation::AllocateParticleMemory
