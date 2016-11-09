@@ -38,10 +38,6 @@
 using namespace std;
 
 
-// Declare ghost_range constant here (prevents warnings with some compilers)
-template <int ndim>
-const FLOAT Ghosts<ndim>::ghost_range = 1.6;
-
 
 //=================================================================================================
 //  Ghosts::CheckBoundaries
