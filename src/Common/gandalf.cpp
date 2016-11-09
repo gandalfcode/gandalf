@@ -135,14 +135,18 @@ int main(int argc, char** argv)
 #if defined MPI_PARALLEL
   if (rank == 0) {
   cout << "Running with MPI, using " << n_mpi_cpus << " tasks" << endl;
+  }
 #endif
 #if defined _OPENMP
+  if (rank == 0) {
   cout << "Running with OPENMP, using " << omp_get_max_threads() << " threads" << endl;
+  }
 #if defined MPI_PARALLEL
+  if (rank == 0) {
   cout << "Hybrid OpenMP/MPI parallelization currently in use, for a total of "
        << n_mpi_cpus*omp_get_max_threads() << " cores" << endl;
-#endif
   }
+#endif
 #endif
 
   // Perform all set-up procedures
