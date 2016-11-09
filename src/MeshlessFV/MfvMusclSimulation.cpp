@@ -169,7 +169,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
     // Re-build/re-stock tree now particles have moved
     mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
-    mfv->CopyDataToGhosts(simbox);
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
 	MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
@@ -184,7 +184,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
     // Update the density to get the correct softening & grad-h terms.
     mfvneib->UpdateAllProperties(mfv, nbody, simbox);
-    mfv->CopyDataToGhosts(simbox);
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
       if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
@@ -265,7 +265,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 #ifdef MPI_PARALLEL
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
 
