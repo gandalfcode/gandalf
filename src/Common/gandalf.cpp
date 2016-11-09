@@ -130,9 +130,10 @@ int main(int argc, char** argv)
   sim->restart = restart;
 
   // Print out splash screen
-  if (rank == 0) sim->SplashScreen();
+  if (rank == 0) sim->SplashScreen(paramfile);
 
 #if defined MPI_PARALLEL
+  if (rank == 0) {
   cout << "Running with MPI, using " << n_mpi_cpus << " tasks" << endl;
 #endif
 #if defined _OPENMP
@@ -141,6 +142,7 @@ int main(int argc, char** argv)
   cout << "Hybrid OpenMP/MPI parallelization currently in use, for a total of "
        << n_mpi_cpus*omp_get_max_threads() << " cores" << endl;
 #endif
+  }
 #endif
 
   // Perform all set-up procedures

@@ -244,7 +244,7 @@ SimulationBase::~SimulationBase()
 //  SimulationBase::SplashScreen
 /// Write splash screen to standard output.
 //=================================================================================================
-void SimulationBase::SplashScreen(void)
+void SimulationBase::SplashScreen(string& paramfile)
 {
   cout << "******************************************************************************" << endl;
   cout << "*                                                                            *" << endl;
@@ -268,7 +268,7 @@ void SimulationBase::SplashScreen(void)
   cout << "*                  https://github.com/gandalfcode/gandalf                    *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "******************************************************************************" << endl;
-
+  cout << "Running from parameter file " << paramfile << endl;
   return;
 }
 
