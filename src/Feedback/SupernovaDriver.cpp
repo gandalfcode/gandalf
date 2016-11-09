@@ -141,7 +141,7 @@ void RandomSedovTestDriver<ndim>::Update
     FLOAT R_therm_kin = (FLOAT) 100000.0;
     FLOAT Minj        = (FLOAT) 0.005;
     FLOAT Rinj        = hydro->GetParticlePointer(0).h; //(FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) SNpos[k] = simbox->boxmin[k] + randnumb->floatrand()*simbox->boxsize[k];
+    for (int k=0; k<ndim; k++) SNpos[k] = simbox->min[k] + randnumb->floatrand()*simbox->size[k];
 
     supernova.SupernovaInjection(n, level_step, level_max, Nsupernova, t, SNpos, Einj,
                                  R_therm_kin, Minj, Rinj, hydro, neibsearch, randnumb);
