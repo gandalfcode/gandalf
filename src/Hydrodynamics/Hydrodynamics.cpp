@@ -126,6 +126,8 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
 //  Hydrodynamics::CreateNewParticle
 /// Create a new hydro particle in the main arrays at the end of the existing particles.
 /// Also triggers the re-creation of ghosts and another tree-build to include new particles.
+/// Needs to be called soon before the load balancing and tree rebuild because it will invalidate
+/// the tree and the ghosts
 //=================================================================================================
 template <int ndim>
 Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
