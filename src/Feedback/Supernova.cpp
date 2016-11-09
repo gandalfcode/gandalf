@@ -124,16 +124,20 @@ void Supernova<ndim>::SupernovaInjection
 
   // Total number of hot SN particles = new particles + existing particles within sphere
   nSNinject = Ninject + Nneib;
+
+#ifdef OUTPUT_ALL
   cout << "Adding " << Ninject << " new particles.  Heating " << Nneib << " other particles" << endl;
   cout << "Rinj : " << Rinj << endl;
+#endif
 
   // Give the particles their radial velocities
   vrad_mag = sqrt(2./( (FLOAT) nSNinject)/(hydro->mmean)*Einj*1./(R_therm_kin+1.));
   etherm_mag = (1.0/(1.0 + 1.0/R_therm_kin))*Einj/( (FLOAT) nSNinject);
   uinj = etherm_mag/(hydro->mmean);
+#ifdef OUTPUT_ALL
   cout << "etot : " << (1.0/(1.0 + 1.0/R_therm_kin))*Einj
        << "    etherm_mag : " << etherm_mag << "     uinj : " << uinj << endl;
-
+#endif
 
   // Loop over existing particles and accelerate them
   //-----------------------------------------------------------------------------------------------
