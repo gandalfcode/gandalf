@@ -397,6 +397,16 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
     mfv->timing = timing;
   //}*/
 
+    // Create ghost particle object
+    //-----------------------------------------------------------------------------------------------
+    if (IsAnyBoundarySpecial(simbox)) {
+      LocalGhosts = new PeriodicGhostsSpecific<ndim,GradhSphParticle >();
+    }
+    else {
+      LocalGhosts = new NullGhosts<ndim>();
+    }
+
+
 #if defined MPI_PARALLEL
   mpicontrol->SetNeibSearch(mfvneib);
   sinks->SetMpiControl(mpicontrol);
@@ -620,8 +630,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set_flag(active);
 
   // Copy all other data from real hydro particles to ghosts
-  mfv->CopyDataToGhosts(simbox);
-  //LocalGhosts->CopyHydroDataToGhosts(simbox,sph);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
   mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
@@ -647,7 +656,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 
-  mfv->CopyDataToGhosts(simbox);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
@@ -671,7 +680,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif

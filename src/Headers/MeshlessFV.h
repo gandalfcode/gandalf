@@ -125,7 +125,6 @@ public:
   virtual void ComputeDirectGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
                                        MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &) = 0;
-  virtual void CopyDataToGhosts(DomainBox<ndim> &) = 0;
 
 
   // Other functions.
@@ -242,7 +241,6 @@ class MfvCommon : public MeshlessFV<ndim>
                MeshlessFVParticle<ndim> &, Nbody<ndim> *);
   void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                     MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void CopyDataToGhosts(DomainBox<ndim> &);
   void ComputeSmoothedGravForces(const int, const int, int *,
                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void ComputeDirectGravForces(const int, const int, int *,
