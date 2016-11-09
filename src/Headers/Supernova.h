@@ -46,10 +46,11 @@
 template <int ndim>
 class Supernova
 {
+	SimulationBase* sim; ///< Pointer to simulation object
 public:
 
-  Supernova();
-  ~Supernova();
+  Supernova(SimulationBase* _sim): sim(_sim) {};
+  ~Supernova() {};
 
   // pass SN position, Einj, Etherm/Ekin, Minj, Rinj, SNid, hydro
   void SupernovaInjection(const int, const int, const int, const int, const FLOAT,
@@ -70,12 +71,15 @@ public:
 template <int ndim>
 class SupernovaDriver
 {
+protected:
+  int Nsupernova;                      ///< Number of supernovae
+  Supernova<ndim>  supernova;                 ///< Supernova object
 public:
 
-  int Nsupernova;                      ///< ..
 
-  //SupernovaDriver(Parameters *params, SimUnits &units, bool restart, FLOAT time);
-  SupernovaDriver() {Nsupernova = 0;}
+
+
+  SupernovaDriver(SimulationBase* sim): supernova(sim) {Nsupernova = 0;}
   ~SupernovaDriver() {};
 
   virtual void Update(const int, const int, const int, const FLOAT, Hydrodynamics<ndim> *, NeighbourSearch<ndim> *, RandomNumber *) = 0;
@@ -96,7 +100,7 @@ class NullSupernovaDriver : public SupernovaDriver<ndim>
 {
 public:
 
-  NullSupernovaDriver() {};
+  NullSupernovaDriver(SimulationBase* sim): SupernovaDriver<ndim>(sim) {};
   ~NullSupernovaDriver() {};
 
   virtual void Update(const int, const int, const int, const FLOAT, Hydrodynamics<ndim> *,
@@ -118,11 +122,11 @@ class SedovTestDriver : public SupernovaDriver<ndim>
 {
 public:
   using SupernovaDriver<ndim>::Nsupernova;
+  using SupernovaDriver<ndim>::supernova;
 
-  Supernova<ndim>  supernova;                 ///< ..
   FLOAT tsupernova;
 
-  SedovTestDriver(Parameters *params, SimUnits &units);
+  SedovTestDriver(SimulationBase* sim, Parameters *params, SimUnits &units);
   ~SedovTestDriver();
 
   virtual void Update(const int, const int, const int, const FLOAT,
@@ -144,13 +148,14 @@ class RandomSedovTestDriver : public SupernovaDriver<ndim>
 {
 public:
   using SupernovaDriver<ndim>::Nsupernova;
+  using SupernovaDriver<ndim>::supernova;
+
 
   FLOAT tnext;                                   ///< Time for next supernova explosion
   FLOAT tsupernova;                              ///< Time between supernovae
-  Supernova<ndim> supernova;                     ///< Instance of supernova class
   DomainBox<ndim> *simbox;                       ///< Pointer to simulation domain box
 
-  RandomSedovTestDriver(Parameters *params, SimUnits &units, DomainBox<ndim> &);
+  RandomSedovTestDriver(SimulationBase* sim, Parameters *params, SimUnits &units, DomainBox<ndim> &);
   ~RandomSedovTestDriver();
 
   virtual void Update(const int, const int, const int, const FLOAT,

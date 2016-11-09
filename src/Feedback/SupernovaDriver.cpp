@@ -46,7 +46,7 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 SedovTestDriver<ndim>::SedovTestDriver
- (Parameters *params, SimUnits &units) : SupernovaDriver<ndim>()
+ (SimulationBase* sim, Parameters *params, SimUnits &units) : SupernovaDriver<ndim>(sim)
 {
   // Local references to parameter variables for brevity
   map<string, int> &intparams = params->intparams;
@@ -105,7 +105,7 @@ void SedovTestDriver<ndim>::Update
 //=================================================================================================
 template <int ndim>
 RandomSedovTestDriver<ndim>::RandomSedovTestDriver
- (Parameters *params, SimUnits &units, DomainBox<ndim> &_simbox) : SupernovaDriver<ndim>()
+ (SimulationBase* sim, Parameters *params, SimUnits &units, DomainBox<ndim> &_simbox) : SupernovaDriver<ndim>(sim)
 {
   // Local references to parameter variables for brevity
   map<string, int> &intparams = params->intparams;

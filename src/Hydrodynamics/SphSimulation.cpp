@@ -151,13 +151,13 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // Supernova feedback
   //-----------------------------------------------------------------------------------------------
   if (stringparams["supernova_feedback"] == "none") {
-    snDriver = new NullSupernovaDriver<ndim>();
+    snDriver = new NullSupernovaDriver<ndim>(this);
   }
   else if (stringparams["supernova_feedback"] == "single") {
-    snDriver = new SedovTestDriver<ndim>(simparams, simunits);
+    snDriver = new SedovTestDriver<ndim>(this,simparams, simunits);
   }
   else if (stringparams["supernova_feedback"] == "random") {
-    snDriver = new RandomSedovTestDriver<ndim>(simparams, simunits, simbox);
+    snDriver = new RandomSedovTestDriver<ndim>(this,simparams, simunits, simbox);
   }
   else {
     string message = "Unrecognised parameter :  = supernova_feedback"
@@ -575,7 +575,6 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
   if (n%(int) pow(2,level_step - level_max) == 0) {
     snDriver->Update(n, level_step, level_max, t, hydro, sphneib, randnumb);
-    if (sph->newParticles) rebuild_tree = true;
   }
 
   // Check all boundary conditions
@@ -809,7 +808,6 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
   // Reset flags in preparation for next timestep
-  hydro->newParticles = false;
   rebuild_tree        = false;
   recomputeRadiation  = false;
 
