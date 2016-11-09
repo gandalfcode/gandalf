@@ -76,7 +76,9 @@ void SedovTestDriver<ndim>::Update
   // Create supernova at requested time (and ensure that only one is made)
   //-----------------------------------------------------------------------------------------------
   if (Nsupernova == 0 && t >= tsupernova) {
-    //cout << "ADDING SUPERNOVA!!" << endl;
+#ifdef OUTPUT_ALL
+    cout << "ADDING SUPERNOVA!!" << endl;
+#endif
 
     FLOAT SNpos[ndim];
     FLOAT Einj        = (FLOAT) 0.01;
@@ -146,8 +148,10 @@ void RandomSedovTestDriver<ndim>::Update
     supernova.SupernovaInjection(n, level_step, level_max, Nsupernova, t, SNpos, Einj,
                                  R_therm_kin, Minj, Rinj, hydro, neibsearch, randnumb);
     Nsupernova++;
-    cout << "ADDING SUPERNOVA!   Nsupernova : " << Nsupernova << endl;
 
+#ifdef OUTPUT_ALL
+    cout << "ADDING SUPERNOVA!   Nsupernova : " << Nsupernova << endl;
+#endif
     tnext = ((FLOAT) Nsupernova + 0.5)*tsupernova;
   }
   //-----------------------------------------------------------------------------------------------

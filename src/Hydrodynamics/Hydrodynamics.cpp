@@ -143,9 +143,8 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   // First, check if there is space for the new particle.
   // If not, then increase particle memory by 20% by reallocating arrays.
   if (Nhydro >= Nhydromax) {
-    const int _Nhydromax = (int) ((FLOAT) 1.2*(FLOAT) Nhydromax);
+    const int _Nhydromax = (int) (1.2*Nhydromax);
     AllocateMemory(_Nhydromax);
-    //ExceptionHandler::getIstance().raise("Run out of memory for new hydro particles");
   }
 
   // Find space for new particle at the end of the array and increment relevant counters.
