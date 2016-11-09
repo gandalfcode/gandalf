@@ -146,7 +146,7 @@ public:
   using SupernovaDriver<ndim>::Nsupernova;
 
   FLOAT tnext;                                   ///< Time for next supernova explosion
-  FLOAT tsupernova;                              ///< Average time inbetween supernovae
+  FLOAT tsupernova;                              ///< Time between supernovae
   Supernova<ndim> supernova;                     ///< Instance of supernova class
   DomainBox<ndim> *simbox;                       ///< Pointer to simulation domain box
 

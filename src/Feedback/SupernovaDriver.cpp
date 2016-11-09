@@ -134,7 +134,7 @@ void RandomSedovTestDriver<ndim>::Update
   RandomNumber *randnumb)                    ///< Pointer to random number generator
 {
 
-  // Use random number generator to decide if new supernova should be created or not
+  // Use random number generator to decide the position of the supernova
   //-----------------------------------------------------------------------------------------------
   if (t >= tnext) {
 
