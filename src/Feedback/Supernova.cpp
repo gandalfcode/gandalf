@@ -84,6 +84,11 @@ void Supernova<ndim>::SupernovaInjection
   FLOAT uinj;                                // internal energy to be added to the particles [code units u = erg/g]
   int *neiblist = new int[Nneibmax];         // ..
 
+#ifdef MPI_PARALLEL
+  string message = "Supernova injection currently not working with MPI!";
+  ExceptionHandler::getIstance().raise(message);
+#endif
+
   // Randomly draw the new position within Rinj
   pos = new FLOAT[ndim*Ninject];
   Ic<ndim>::AddRandomSphere(Ninject, SNpos, Rinj, pos, randnumb);
