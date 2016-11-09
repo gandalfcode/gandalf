@@ -6,7 +6,7 @@ compiler:
   - gcc
 env:
   matrix:
-  - OPENMP=1 MPICPP=mpic++ OMP_NUM_THREADS=2
+  - OPENMP=1 MPICPP=mpic++ OMP_NUM_THREADS=2 OMP_WAIT_POLICY=PASSIVE
   - OPENMP=1 OMP_NUM_THREADS=4
   - OPENMP=0 MPICPP=mpic++ 
   - OPENMP=0
