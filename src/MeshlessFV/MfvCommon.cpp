@@ -218,6 +218,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
   part.invomega  = (FLOAT) 1.0/part.invomega;
   part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.m*part.h*part.zeta*part.invomega/part.ndens;
+  
 
   // Set important thermal variables here
   this->ComputeThermalProperties(part);

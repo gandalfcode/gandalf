@@ -707,7 +707,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
           if (not need_fluxes) continue ;
 
-
           // Compute relative position and distance quantities for pair
           for (int k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux, draux, ndim) + small_number;
@@ -752,7 +751,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     // Could be simply atomic?
 #pragma omp critical
     {
-      //for (i=0; i<Nhydro; i++) {
       for (i=0; i<Ntot; i++) {
         if (mfvdata[i].flags.check_flag(active)) {
           for (int k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
