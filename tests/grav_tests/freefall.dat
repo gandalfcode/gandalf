@@ -8,7 +8,7 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = FREEFALL1
-Select SPH simulation                       : sim = mfvmuscl
+Select SPH simulation                       : sim = gradhsph
 Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
 No. of SPH particles                        : Nhydro = 4000
@@ -43,7 +43,7 @@ Diagnostic output frequency                 : ndiagstep = 16
 #------------------------
 # Thermal physics options
 #------------------------
-Switch-on hydrodynamical forces             : hydro_forces = 1
+Switch-on hydrodynamical forces             : hydro_forces = 0
 Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
@@ -80,7 +80,7 @@ SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.5
-No. of block timestep levels                : Nlevels = 5
+No. of block timestep levels                : Nlevels = 1
 
 
 #-------------

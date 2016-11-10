@@ -7,8 +7,8 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BB1-MFV
-Run SPH simulation                          : sim = mfvmuscl
+Simulation run id string                    : run_id = BB1
+Run SPH simulation                          : sim = gradhsph
 Select shocktube initial conditions         : ic = bb
 Input file format                           : in_file_form = su
 Output file format                          : out_file_form = su
