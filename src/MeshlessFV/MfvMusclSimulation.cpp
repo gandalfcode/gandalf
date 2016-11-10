@@ -108,7 +108,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Apply Saitoh & Makino type time-step limiter
-  mfv->CheckTimesteps(level_diff_max, level_step, n, mfv->Nhydro, timestep, partdata, 1);
+  mfv->CheckTimesteps(level_diff_max, level_step, n, timestep, 1);
 
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {

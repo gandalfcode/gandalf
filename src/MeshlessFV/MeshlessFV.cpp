@@ -445,9 +445,7 @@ int MeshlessFV<ndim>::CheckTimesteps
 (const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
  const int level_step,                ///< [in] Level of base timestep
  const int n,                         ///< [in] Integer time in block time struct
- const int Npart,                     ///< [in] Number of particles
  double timestep,                     ///< [in] Timestep
- MeshlessFVParticle<ndim>* mfvdata,
  int mode_)
  {
   int dn;                              // Integer time since beginning of step
@@ -455,6 +453,9 @@ int MeshlessFV<ndim>::CheckTimesteps
   int nnewstep;                        // New integer timestep
   int activecount = 0;                 // No. of newly active particles
   int i;                               // Particle counter
+
+
+  MeshlessFVParticle<ndim> *mfvdata = GetMeshlessFVParticleArray() ;
 
   debug2("[MeshlessFV::CheckTimesteps]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MESHLESS_CHECK_TIMESTEPS");
@@ -466,7 +467,7 @@ int MeshlessFV<ndim>::CheckTimesteps
   //-----------------------------------------------------------------------------------------------
   #pragma omp parallel for default(none) private(dn,i,level_new,nnewstep) \
     shared(mfvdata,cout) reduction(+:activecount)
-  for (i=0; i<Npart; i++) {
+  for (i=0; i<Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfvdata[i];
     if (part.flags.is_dead()) continue;
 
