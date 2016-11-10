@@ -1687,6 +1687,7 @@ void HydroTree<ndim,ParticleType>::CheckValidNeighbourList
 #endif
 
 
+
 template class HydroTree<1,GradhSphParticle>;
 template class HydroTree<2,GradhSphParticle>;
 template class HydroTree<3,GradhSphParticle>;

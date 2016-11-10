@@ -128,38 +128,6 @@ void RiemannSolver<ndim>::RotateVector
 
 
 //=================================================================================================
-//  ExactRiemannSolver::Prefun
-/// Exact Riemann solver, based on approach outlined by Toro (1999).
-//=================================================================================================
-template <int ndim>
-FLOAT ExactRiemannSolver<ndim>::Prefun
- (const FLOAT pk,                      ///< [in] LHS pressure
-  const FLOAT dk,                      ///< [in] LHS density
-  const FLOAT ck,                      ///< [in] LHS sound speed
-  const FLOAT pstar,                   ///< [in] Pressure in the central 'star' region
-  FLOAT &fprime)                       ///< [out] Velocity of intermediate state
-{
-  FLOAT ak, bk, f, pratio, qrt;
-
-  if (pstar <= pk) {
-    // rarefaction wave
-    pratio = pstar/pk;
-    f = g4*ck*(pow(pratio, g1) - 1.0);
-    fprime = (1.0/(dk*ck))*pow(pratio, -g2);
-  } else {
-    //  shock wave
-    ak = g5/dk;
-    bk = g6*pk;
-    qrt = sqrt(ak/(bk + pstar));
-    f = (pstar - pk)*qrt;
-    fprime = (1.0 - 0.5*(pstar - pk)/(bk + pstar))*qrt;
-  }
-
-  return f;
-}
-
-
-//=================================================================================================
 //  ExactRiemannSolver::SolveRiemannProblem
 /// Exact Riemann solver, based on approach outlined by Toro (1999).
 //=================================================================================================
@@ -240,9 +208,6 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
   //-----------------------------------------------------------------------------------------------
   do {
     iteration++;
-
-    //fl = Prefun(pl, dl, cl, pstar, flprime);
-    //fr = Prefun(pr, dr, cr, pstar, frprime);
 
     // Calculate contribution to f and fprime for LHS
     if (pstar > pl) {

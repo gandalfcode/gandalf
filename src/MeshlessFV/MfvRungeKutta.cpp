@@ -65,11 +65,8 @@ template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
-  const FLOAT timestep,                ///< ..
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  FLOAT *drmag,                        ///< [in] Distances of gather neighbours
-  FLOAT *invdrmag,                     ///< [in] Inverse distances of gather neibs
-  FLOAT *dr,                           ///< [in] Position vector of gather neibs
+  const int *neiblist,                 ///< [in] id of gather neibs in neibpart
+  const FLOAT timestep,                ///< [in] Minimum timestep size
   MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
   MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
 {

@@ -110,7 +110,6 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
   void SampleExactSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, FLOAT &, FLOAT &, FLOAT &);
-  FLOAT Prefun(const FLOAT, const FLOAT, const FLOAT, const FLOAT, FLOAT &);
 
 };
 

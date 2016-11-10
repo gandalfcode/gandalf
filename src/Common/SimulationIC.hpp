@@ -116,8 +116,8 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "cdiscontinuity") {
     icGenerator.ContactDiscontinuity();
   }
-  else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
-           ic == "ewaldslab" ||  ic == "ewaldcylinder") {
+  else if (ic == "ewaldsine" || ic == "jeans" ||
+           ic == "ewaldsine2" || ic == "ewaldslab" || ic == "ewaldcylinder") {
     icGenerator.EwaldDensity();
   }
   else if (ic == "gaussianring") {

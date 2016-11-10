@@ -244,50 +244,48 @@ void MeshlessFV<ndim>::IntegrateParticles
   const DomainBox<ndim> &simbox,       ///< [in] Simulation box
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
 {
-  int dn;                              // Integer time since beginning of step
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
-
   debug2("[MeshlessFV::IntegrateParticles]");
 
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<Nhydro; i++) {
-
+  for (int i=0; i<Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
-    dn = n - part.nlast;
-    FLOAT dt = dn * timestep ;
+    if (part.flags.is_dead()) continue;
 
-	// Predict the conserved quantities
-	FLOAT Qcons[nvar] ;
+    const int dn = n - part.nlast;
+    const FLOAT dt = timestep*(FLOAT) dn;
+    FLOAT Qcons[nvar];
+
     if (dn == part.nstep) {
-      part.flags.set_flag(active) ;
-
-      for (k=0; k<nvar; k++)
-        Qcons[k] = part.Qcons0[k] + part.dQ[k];
+      part.flags.set_flag(active);
+      for (int k=0; k<nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQ[k];
     }
     else {
-      part.flags.unset_flag(active) ;
-
-      for (k=0; k<nvar; k++)
-        Qcons[k] = part.Qcons0[k] + part.dQdt[k]*dt ;
+      part.flags.unset_flag(active);
+      for (int k=0; k<nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQdt[k]*dt;
     }
+    for (int k=0; k<ndim; k++) Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt;
 
-    for (k=0; k<ndim; k++)
-      Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt ;
+
+    // Some sanity-checking
+    assert(isnormal(Qcons[irho]));
+    assert(isnormal(Qcons[ipress]));
+
 
     // Compute primitive values and update all main array quantities
     this->UpdateArrayVariables(part, Qcons);
     this->ComputeThermalProperties(part);
-    this->UpdatePrimitiveVector(part) ;
+    this->UpdatePrimitiveVector(part);
 
 
-	if (!staticParticles) {
-      //-------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
+    if (!staticParticles) {
       part.flags.set_flag(update_density);
 
-      for (k=0; k<ndim; k++) {
-        part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*dt;
+      //-------------------------------------------------------------------------------------------
+      for (int k=0; k<ndim; k++) {
+        part.r[k] = part.r0[k] + (FLOAT) 0.5*(part.v0[k] + part.v[k])*dt;
+
 
         // Check if particle has crossed LHS boundary
         //-----------------------------------------------------------------------------------------
@@ -334,9 +332,9 @@ void MeshlessFV<ndim>::IntegrateParticles
         //-----------------------------------------------------------------------------------------
 
       }
-      //-------------------------------------------------------------------------------------------
-
     }
+    //---------------------------------------------------------------------------------------------
+
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -358,22 +356,19 @@ void MeshlessFV<ndim>::EndTimestep
   const FLOAT timestep,                ///< [in] Base timestep value
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
 {
-  int i;                               // Particle counter
-
   debug2("[MeshlessFV::EndTimestep]");
   //timing->StartTimingSection("MFV_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(partdata)
-  for (i=0; i<Npart; i++) {
-
+  for (int i=0; i<Npart; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];    // Local reference to particle
+    if (part.flags.is_dead()) continue;
+
     int dn = n - part.nlast;                         // Integer time since beginning of step
     int k;                                           // Dimension counter
     int nstep = part.nstep;                          // Particle (integer) step size
-
-    if (part.flags.is_dead()) continue;
 
 
     // If particle is at the end of its timestep
@@ -418,6 +413,10 @@ void MeshlessFV<ndim>::EndTimestep
       for (int k=0; k<ndim; k++) part.a[k] = 0.0;
       part.gpot=0.0;
 
+      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
+
+      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
+
     }
     //---------------------------------------------------------------------------------------------
     else {
@@ -454,11 +453,14 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOA
   part.u = eos->SpecificInternalEnergy(part);
   part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
-
-  assert(part.m > (FLOAT) 0.0);
+  assert(isnormal(part.m));
+  assert(isnormal(part.u));
+  assert(isnormal(part.press));
+  /*assert(part.m > (FLOAT) 0.0);
   assert(part.u > (FLOAT) 0.0);
-  assert(part.press > (FLOAT) 0.0);
+  assert(part.press > (FLOAT) 0.0);*/
 
+  return;
 }
 
 

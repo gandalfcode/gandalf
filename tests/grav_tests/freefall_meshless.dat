@@ -7,8 +7,8 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = FREEFALL1
-Select SPH simulation                       : sim = gradhsph
+Simulation run id string                    : run_id = FREEFALL1_MESHLESS
+Select SPH simulation                       : sim = meshlessfv
 Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
 No. of SPH particles                        : Nhydro = 4000

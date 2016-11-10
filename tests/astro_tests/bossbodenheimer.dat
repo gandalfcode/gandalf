@@ -8,12 +8,12 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = BB1
-Run SPH simulation                          : sim = sph
+Run SPH simulation                          : sim = gradhsph
 Select shocktube initial conditions         : ic = bb
 Input file format                           : in_file_form = su
 Output file format                          : out_file_form = su
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nhydro = 10000
+No. of SPH particles                        : Nhydro = 8000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037
@@ -39,9 +39,9 @@ Angular velocity unit                       : angveloutunit = rad_s
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.025
-Regular snapshot output frequency           : dt_snap = 0.005
-Time of first snapshot                      : tsnapfirst = 0.00
+Simulation end time                         : tend = 0.05
+Regular snapshot output frequency           : dt_snap = 0.0005
+Time of first snapshot                      : tsnapfirst = 0.01
 Screen output frequency (in no. of steps)   : noutputstep = 16
 Diagnostic output frequency                 : ndiagstep = 32
 
@@ -69,6 +69,7 @@ Switch-on self-gravity of gas               : self_gravity = 1
 #----------------------------------------
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
+Tabulate SPH kernel                         : tabulated_kernel = 1
 
 
 #---------------------------------
@@ -78,6 +79,15 @@ Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#---------------------------------
+# Finite-Volume options
+#---------------------------------
+Riemann solver                              : riemann_solver = exact
+Slope limiter                               : slope_limiter = balsara2004
+Finite mass scheme?                         : zero_mass_flux = 1
+Fix particle positions?                     : static_particles = 0
 
 
 #----------------------
@@ -115,9 +125,3 @@ Tree re-build frequency                     : ntreebuildstep = 1
 No. of particles in leaf cell               : Nleafmax = 6
 Tree opening angle (squared)                : thetamaxsqd = 0.15
 Multipole option                            : multipole = fast_monopole
-
-
-#---------------------
-# Optimisation options
-#---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 1
