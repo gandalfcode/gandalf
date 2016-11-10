@@ -1,0 +1,94 @@
+#-------------------------------------------------------------------
+# Freefall collapse test
+# Freefall (i.e. pressureless) collapse of a uniform density sphere.
+#-------------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = FREEFALL1_MESHLESS
+Select SPH simulation                       : sim = meshlessfv
+Select shocktube initial conditions         : ic = sphere
+Dimensionality of cube                      : ndim = 3
+No. of SPH particles                        : Nhydro = 4000
+Local arrangement of particles              : particle_distribution = cubic_lattice
+Mass of sphere                              : mcloud = 1.0
+Radius of sphere                            : radius = 1.0
+Use dimensionless units                     : dimensionless = 1
+
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS boundary type in x-dimension            : boundary_lhs[0] = open
+RHS boundary type in x-dimension            : boundary_rhs[0] = open
+LHS boundary type in y-dimension            : boundary_lhs[1] = open
+RHS boundary type in y-dimension            : boundary_rhs[1] = open
+LHS boundary type in z-dimension            : boundary_lhs[2] = open
+RHS boundary type in z-dimension            : boundary_rhs[2] = open
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 1.05
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.05
+Screen output frequency (in no. of steps)   : noutputstep = 1
+Diagnostic output frequency                 : ndiagstep = 16
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 0
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+
+#---------------------------------
+# Finite-Volume options
+#---------------------------------
+Riemann solver                              : riemann_solver = exact
+Slope limiter                               : slope_limiter = balsara2004
+Finite mass scheme?                         : zero_mass_flux = 1
+Fix particle positions?                     : static_particles = 0
+
+
+
+#----------------
+# Gravity options
+#----------------
+Switch-off self-gravity of gas              : self_gravity = 1
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+Tabulate SPH kernel                         : tabulated_kernel = 1
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 1
+
+
+#-------------
+# Tree options
+#-------------
+SPH neighbour search algorithm              : neib_search = kdtree
+No. of particles in leaf cell               : Nleafmax = 6
+Tree opening angle (squared)                : thetamaxsqd = 0.15
+Multipole option                            : multipole = fast_monopole
+Tree build frequency                        : ntreebuildstep = 8
+Tree restocking frequency                   : ntreestockstep = 1

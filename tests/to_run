@@ -1,8 +1,10 @@
 hydro_tests/adshock.dat
 hydro_tests/adsod.dat
 hydro_tests/khi.dat
+hydro_tests/adsod_meshless.dat
 misc_tests/randomcube.dat
 grav_tests/freefall.dat
+grav_tests/freefall_meshless.dat
 gravhydro_tests/hybridplummer.dat
 dust_tests/dustysedov.dat
 dust_tests/dustyshock.dat
