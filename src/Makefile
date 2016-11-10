@@ -36,7 +36,7 @@ PYFOLDER = ../analysis/swig_generated
 #GTEST = /Users#/david/astro/code/gtest-1.6.0/include
 
 
-VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/Feedback:$(PWD)/src/GodunovSph
+VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/Feedback
 VPATH +=$(PWD)/src/GradhSph:$(PWD)/src/Headers
 VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
 VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
