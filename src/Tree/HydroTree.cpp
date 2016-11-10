@@ -129,12 +129,6 @@ HydroTree<ndim,ParticleType>::HydroTree
 template <int ndim, template <int> class ParticleType>
 HydroTree<ndim,ParticleType>::~HydroTree()
 {
-  /*
-  if (tree->allocated_tree) {
-    DeallocateMemory();
-    tree->DeallocateTreeMemory();
-  }
-*/
   // Free up the trees that we own.
   delete tree ;
   delete ghosttree ;
@@ -300,11 +294,10 @@ void HydroTree<ndim,ParticleType>::BuildTree
   const FLOAT timestep,                ///< [in] Smallest physical timestep
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
-
-  debug2("[HydroTree::BuildTree]");
+  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
   CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_TREE");
 
-  Particle<ndim> *partdata = hydro->GetParticleArray();
+  debug2("[HydroTree::BuildTree]");
 
 
   // Activate nested parallelism for tree building routines
@@ -325,14 +318,12 @@ void HydroTree<ndim,ParticleType>::BuildTree
     Ntotmaxold = Ntotmax;
     Ntotmax    = max(Ntotmax, Ntot);
     Ntotmax    = max(Ntotmax, hydro->Nhydromax);
-    assert(Ntotmax >= Ntot);
-
-    tree->Ntot       = hydro->Nhydro;
-    tree->BuildTree(0, hydro->Nhydro-1, hydro->Ntot, hydro->Nhydromax, timestep, partdata);
+    tree->Ntot = hydro->Nhydro;
+    tree->BuildTree(0, hydro->Nhydro-1, hydro->Nhydro, hydro->Nhydromax, timestep, partdata);
 
     AllocateMemory(hydro->Ngather);
-    if (Ntotmaxold < Ntotmax)
-    	ReallocateMemory();
+    if (Ntotmaxold < Ntotmax) ReallocateMemory();
+
   }
 
   // Else stock the tree
@@ -375,14 +366,11 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
   const FLOAT timestep,                ///< [in] Smallest physical timestep
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
-  ParticleType<ndim> *partdata =
-      static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
-
-  // If no periodic ghosts exist, do not build tree
-  if (hydro->NPeriodicGhost == 0) return;
+  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_GHOST_TREE");
 
   debug2("[HydroTree::BuildGhostTree]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_GHOST_TREE");
+
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -1130,13 +1118,10 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
   Hydrodynamics<ndim> *hydro)          ///< Pointer to Hydrodynamics object
 {
   ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
-
-
-  // If no MPI ghosts exist, do not build tree
-  //if (hydroNmpighost == 0) return;
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_MPIGHOST_TREE");
 
   debug2("[HydroTree::BuildMpiGhostTree]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_MPIGHOST_TREE");
+
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -1485,7 +1470,6 @@ void HydroTree<ndim,ParticleType>::UnpackExported
 
 	  if (hydro->Ntot + N_received_part_total > Ntotmax) {
 		  Ntotmax = hydro->Ntot + N_received_part_total;
-		  //cout << "Ntotmax: " << Ntotmax << endl;
 		  ReallocateMemory();
 	  }
 

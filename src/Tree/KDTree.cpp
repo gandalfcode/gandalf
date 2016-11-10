@@ -243,8 +243,7 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   ltot_old = ltot;
 
   bool force_realloc=false;
-  if (Npartmax > Ntotmax)
-	  force_realloc=true;
+  if (Npartmax > Ntotmax) force_realloc=true;
 
   Ntotmax = Npartmax;
 
@@ -254,8 +253,7 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   ComputeTreeSize();
 
   // Allocate (or reallocate if needed) all tree memory
-  if (gmax_old<gmax || Ncellmax>Ncellmax_old)
-	  force_realloc=true;
+  if (gmax_old<gmax || Ncellmax>Ncellmax_old) force_realloc=true;
   AllocateTreeMemory(Npartmax,0,force_realloc);
 
 
@@ -268,41 +266,39 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   // Create bounding box of SPH particles
   for (k=0; k<ndim; k++) bbmin[k] = big_number;
   for (k=0; k<ndim; k++) bbmax[k] = -big_number;
-  for (i=0; i<Ntot; i++) {
-    for (k=0; k<ndim; k++) {
-      if (partdata[i].r[k] + kernrange*partdata[i].h > bbmax[k]) {
-        bbmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
-      }
-      if (partdata[i].r[k] - kernrange*partdata[i].h < bbmin[k]) {
-        bbmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+
+  if (Npart > 0) {
+    ifirst = _ifirst;
+    ilast  = _ifirst + Npart - 1;
+    for (i=ifirst; i<=ilast; i++) {
+      for (k=0; k<ndim; k++) {
+        bbmax[k] = max(bbmax[k], partdata[i].r[k] + kernrange*partdata[i].h);
+        bbmin[k] = min(bbmin[k], partdata[i].r[k] - kernrange*partdata[i].h);
       }
     }
+    for (i=ifirst; i<=ilast; i++) ids[i] = i;
+    for (i=ifirst; i<ilast; i++) inext[i] = i+1;
+    inext[ilast] = -1;
+  }
+  else {
+    ifirst = -1;
+    ilast  = -1;
   }
 
 
   // Set properties for root cell before constructing tree
-  ifirst = _ifirst;
-  ilast  = _ilast;
   celldata[0].N      = Ntot;
   celldata[0].ifirst = ifirst;
   celldata[0].ilast  = ilast;
   celldata[0].cnext  = Ncellmax;
-  for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k]; //-big_number;
-  for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k]; //big_number;
+  for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
+  for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
-  for (i=ifirst; i<ilast; i++) inext[i] = i+1;
-  inext[ilast] = -1;
 
 
-  // If number of particles remains unchanged, use old id list
-  // (nearly sorted list should be faster for quick select).
+  // If there are particles in the tree, eecursively build tree from root node down
   if (Ntot > 0) {
-//    if (Ntot != Ntotold) {
-      for (i=ifirst; i<=ilast; i++) ids[i] = i;
-//    }
-
-    // Recursively build tree from root node down
     DivideTreeCell(ifirst, ilast, partdata, celldata[0]);
 #if defined(VERIFY_ALL)
     ValidateTree(partdata);
@@ -814,8 +810,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   FLOAT mi;                            // Mass of particle i
   FLOAT p = (FLOAT) 0.0;               // ..
   FLOAT lambda = (FLOAT) 0.0;          // ..
-  TreeCell<ndim> &child1 = celldata[cell.c1];
-  TreeCell<ndim> &child2 = celldata[cell.c2];
 
 
   // Zero all summation variables for all cells
@@ -931,6 +925,10 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   //-----------------------------------------------------------------------------------------------
   else {
 
+    TreeCell<ndim> &child1 = celldata[cell.c1];
+    TreeCell<ndim> &child2 = celldata[cell.c2];
+
+
     if (child1.N > 0) {
       for (k=0; k<ndim; k++) cell.bb.min[k] = min(child1.bb.min[k],cell.bb.min[k]);
       for (k=0; k<ndim; k++) cell.bb.max[k] = max(child1.bb.max[k],cell.bb.max[k]);
@@ -1028,9 +1026,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   else {
     cell.mac = (FLOAT) 0.0;
   }
-
-  //cout << "Work in cell[" << cell.id << "] : " << cell.worktot << "      level : " << cell.level << endl;
-
+  
 
   return;
 }

@@ -222,8 +222,10 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart.flags.unset_flag(active);
   ghostpart.flags.set_flag(ghosttype); // Allow ghost to have multiple ghost flags
   ghostpart.iorig  = i;
-
   Nghost++;
+
+  // Some sanity-checking since dead ghosts should not ever be CreateBoundaryGhostParticle
+  assert(!ghostpart.flags.is_dead());
 
   return;
 }

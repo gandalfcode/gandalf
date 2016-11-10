@@ -72,8 +72,17 @@ int main(int argc, char** argv)
 #ifdef _OPENMP
   // Check that OpenMP and MPI can work together
   if (mpi_thread_support == MPI_THREAD_SINGLE)
+#ifdef OPEN_MPI
+    if (rank==0) {
+      cout << "Warning: we detected that you are running with OpenMP and MPI" << endl;
+      cout << "Your MPI implementation is OpenMPI, and it reported that it cannot be used "
+          "with OpenMP. However we know that often OpenMPI does that even when there is "
+          "no problem. We will go ahead, but please check carefully the result" << endl;
+    }
+#else
     ExceptionHandler::getIstance().raise("This implementation of MPI is not interoperable with OpenMP, aborting!"
         "Refer to your system administrator to know how to solve this problem");
+#endif
   else {
     string message;
     if (mpi_thread_support == MPI_THREAD_FUNNELED) {
@@ -121,16 +130,22 @@ int main(int argc, char** argv)
   sim->restart = restart;
 
   // Print out splash screen
-  if (rank == 0) sim->SplashScreen();
+  if (rank == 0) sim->SplashScreen(paramfile);
 
 #if defined MPI_PARALLEL
+  if (rank == 0) {
   cout << "Running with MPI, using " << n_mpi_cpus << " tasks" << endl;
+  }
 #endif
 #if defined _OPENMP
+  if (rank == 0) {
   cout << "Running with OPENMP, using " << omp_get_max_threads() << " threads" << endl;
+  }
 #if defined MPI_PARALLEL
+  if (rank == 0) {
   cout << "Hybrid OpenMP/MPI parallelization currently in use, for a total of "
        << n_mpi_cpus*omp_get_max_threads() << " cores" << endl;
+  }
 #endif
 #endif
 

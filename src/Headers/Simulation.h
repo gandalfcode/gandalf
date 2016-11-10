@@ -122,7 +122,7 @@ class SimulationBase
   void SetParam(string key, int value);
   void SetParam(string ket, double value);
   void SetupSimulation(void);
-  void SplashScreen(void);
+  void SplashScreen(string&);
 
 
   virtual void ImportArray(double* input, int size, string quantity, string type="sph") = 0;

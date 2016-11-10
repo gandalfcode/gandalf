@@ -1,12 +1,14 @@
+sudo: required
+dist: trusty
 language: cpp
 compiler:
   - clang
   - gcc
 env:
   matrix:
-  - OPENMP=1 MPICPP=mpic++
-  - OPENMP=1
-  - OPENMP=0 MPICPP=mpic++
+  - OPENMP=1 MPICPP=mpic++ OMP_NUM_THREADS=2 OMP_WAIT_POLICY=PASSIVE
+  - OPENMP=1 OMP_NUM_THREADS=4
+  - OPENMP=0 MPICPP=mpic++ 
   - OPENMP=0
 before_install:
   - sudo apt-get update -qq
@@ -14,5 +16,6 @@ before_install:
   - sudo apt-get install -y openmpi-bin libopenmpi-dev
 script: 
  - export OMPI_CXX=$CXX
- - make executable -j 4 OPENMP=$OPENMP MPICPP=$MPICPP
- - export OMP_NUM_THREADS=4
+ - make executable -j 2 OPENMP=$OPENMP MPICPP=$MPICPP
+ - cd tests
+ - ./run_tests.sh

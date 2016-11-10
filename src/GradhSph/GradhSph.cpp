@@ -167,9 +167,14 @@ void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
   // Reorder all arrays following with new order, with dead particles at end
   if (Ndead == 0) return;
 
-  // Reduce particle counters once dead particles have been removed
-  Nhydro -= Ndead;
-  Ntot -= Ndead;
+  // Reduce hydro particle counters once dead particles have been removed and reset all
+  // other particle counters since a ghost and tree rebuild is required.
+  this->NPeriodicGhost = 0;
+  this->Nmpighost      = 0;
+  Nhydro               -= Ndead;
+  Ntot                 = Nhydro;
+
+  // Some sanity checking to ensure there are no dead particles remaining
   for (i=0; i<Nhydro; i++) {
     assert(!sphdata[i].flags.is_dead());
   }
