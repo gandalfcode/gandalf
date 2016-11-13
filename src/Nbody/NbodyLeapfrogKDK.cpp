@@ -102,66 +102,39 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   for (i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
-    if (simbox.PeriodicGravity){
 
-      // Sum grav. contributions for all other stars (excluding star itself)
-      //-------------------------------------------------------------------------------------------
-      for (j=0; j<N; j++) {
-        if (i == j) continue;
+    // Sum grav. contributions for all other stars (excluding star itself)
+    //---------------------------------------------------------------------------------------------
+    for (j=0; j<N; j++) {
+      if (i == j) continue;
 
-        for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-        NearestPeriodicVector(simbox, dr, dr_corr);
+      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
 
-        for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-        drsqd    = DotProduct(dr,dr,ndim);
-        drmag    = sqrt(drsqd) + small_number;
-        invdrmag = (FLOAT) 1.0/drmag;
-        invhmean = (FLOAT) 2.0/(star[i]->h + star[j]->h);
-        drdt     = DotProduct(dv,dr,ndim)*invdrmag;
-        paux     = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
-        wmean    = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
+      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      drsqd    = DotProduct(dr,dr,ndim);
+      drmag    = sqrt(drsqd) + small_number;
+      invdrmag = (FLOAT) 1.0/drmag;
+      invhmean = (FLOAT) 2.0/(star[i]->h + star[j]->h);
+      drdt     = DotProduct(dv,dr,ndim)*invdrmag;
+      paux     = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
+      wmean    = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
 
-        // Add contribution to main star array
-        star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
-        for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
-        for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
-          (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+      // Add contribution to main star array
+      star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
+      for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
+      for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
+        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
 
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
         ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
         for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
         star[i]->gpot += potperiodic;
-
       }
-      //-------------------------------------------------------------------------------------------
 
     }
-    else {
-
-      // Sum grav. contributions for all other stars (excluding star itself)
-      //-------------------------------------------------------------------------------------------
-      for (j=0; j<N; j++) {
-        if (i == j) continue;
-
-        for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-        for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-        drsqd    = DotProduct(dr,dr,ndim);
-        drmag    = sqrt(drsqd) + small_number;
-        invdrmag = (FLOAT) 1.0/drmag;
-        invhmean = (FLOAT) 2.0/(star[i]->h + star[j]->h);
-        drdt     = DotProduct(dv,dr,ndim)*invdrmag;
-        paux     = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
-        wmean    = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
-
-        // Add contribution to main star array
-        star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
-        for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
-        for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
-          (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
-
-      }
-      //-------------------------------------------------------------------------------------------
-
-    }
+    //---------------------------------------------------------------------------------------------
 
   }
   //-----------------------------------------------------------------------------------------------
