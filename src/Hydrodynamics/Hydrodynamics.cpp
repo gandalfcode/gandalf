@@ -134,15 +134,11 @@ template <int ndim>
 Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
  (const enum ptype _ptype,             ///< [in] ptype of new particle
   const enum parttype _parttype,       ///< [in] parttype of new particle
-  const int n,                         ///< [in] Current integer time
-  const int level_step,                ///< [in] ..
-  const int level_max,                 ///< [in] Current maximum block timestep level
-  const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT m,                       ///< [in] Mass of new particle
   const FLOAT u,                       ///< [in] Specific internal energy of new particle
   const FLOAT r[ndim],                 ///< [in] Position of new particle
   const FLOAT v[ndim],                 ///< [in] Velocity of new particle
-  SimulationBase* sim)				   ///< [inout] Simulation object
+  SimulationBase* sim)                 ///< [inout] Simulation object
 {
   // First, check if there is space for the new particle.
   // If not, then increase particle memory by 20% by reallocating arrays.
@@ -160,11 +156,11 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   // Set all particle properties from given arguments
   part.iorig     = inew;
   part.ptype     = _parttype;
-  part.level     = level_max;
-  part.levelneib = level_max;
-  part.nstep     = pow(2,level_step - part.level);
-  part.nlast     = n - part.nstep;
-  part.tlast     = t;
+  part.level     = sim->level_max;
+  part.levelneib = sim->level_max;
+  part.nstep     = pow(2,sim->level_step - part.level);
+  part.nlast     = sim->n - part.nstep;
+  part.tlast     = sim->t;
   part.m         = m;
   part.h         = (FLOAT) 1.0;
   part.u         = u;
