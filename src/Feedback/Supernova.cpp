@@ -156,12 +156,11 @@ void Supernova<ndim>::SupernovaInjection
     for (k=0; k<ndim; k++) vpart[k] = (rpart[k] - SNpos[k])/drmag * vrad_mag;
 
     // Get new particle i
-    Particle<ndim> &part = hydro->CreateNewParticle(gas, gas_type, n, level_step, level_max,
-                                                    t, hydro->mmean, uinj, rpart, vpart,sim);
+    Particle<ndim> &part = hydro->CreateNewParticle
+      (gas, gas_type, hydro->mmean, uinj, rpart, vpart, sim);
 
-    // Set SNid?
-    // Set smoothing length?
   }
+  //-----------------------------------------------------------------------------------------------
 
 
   delete[] pos;
