@@ -34,6 +34,7 @@
 #include "EOS.h"
 #include "Debug.h"
 #include "InlineFuncs.h"
+#include "Simulation.h"
 using namespace std;
 
 
@@ -118,6 +119,63 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
     ExceptionHandler::getIstance().raise(message);
   }
 
+}
+
+
+
+//=================================================================================================
+//  Hydrodynamics::CreateNewParticle
+/// Create a new hydro particle in the main arrays at the end of the existing particles.
+/// Also triggers the re-creation of ghosts and another tree-build to include new particles.
+/// Needs to be called soon before the load balancing and tree rebuild because it will invalidate
+/// the tree and the ghosts
+//=================================================================================================
+template <int ndim>
+Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
+ (const enum ptype _ptype,             ///< [in] ptype of new particle
+  const enum parttype _parttype,       ///< [in] parttype of new particle
+  const FLOAT m,                       ///< [in] Mass of new particle
+  const FLOAT u,                       ///< [in] Specific internal energy of new particle
+  const FLOAT r[ndim],                 ///< [in] Position of new particle
+  const FLOAT v[ndim],                 ///< [in] Velocity of new particle
+  SimulationBase* sim)                 ///< [inout] Simulation object
+{
+  // First, check if there is space for the new particle.
+  // If not, then increase particle memory by 20% by reallocating arrays.
+  if (Nhydro >= Nhydromax) {
+    const int _Nhydromax = (int) (1.2*Nhydromax);
+    AllocateMemory(_Nhydromax);
+  }
+
+  // Find space for new particle at the end of the array and increment relevant counters.
+  sim->rebuild_tree = true;
+  int inew = Nhydro++;
+  Ntot++;
+  Particle<ndim> &part = GetParticlePointer(inew);
+
+  // Set all particle properties from given arguments
+  part.iorig     = inew;
+  part.ptype     = _parttype;
+  part.level     = sim->level_max;
+  part.levelneib = sim->level_max;
+  part.nstep     = pow(2,sim->level_step - part.level);
+  part.nlast     = sim->n - part.nstep;
+  part.tlast     = sim->t;
+  part.m         = m;
+  part.h         = (FLOAT) 1.0;
+  part.u         = u;
+  part.u0        = u;
+  part.dudt      = (FLOAT) 0.0;
+  for (int k=0; k<ndim; k++) part.r[k] = r[k];
+  for (int k=0; k<ndim; k++) part.v[k] = v[k];
+  for (int k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+  for (int k=0; k<ndim; k++) part.r0[k] = r[k];
+  for (int k=0; k<ndim; k++) part.v0[k] = v[k];
+  for (int k=0; k<ndim; k++) part.a0[k] = (FLOAT) 0.0;
+
+  part.flags.set_flag(active);
+
+  return part;
 }
 
 

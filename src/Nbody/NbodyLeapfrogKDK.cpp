@@ -76,11 +76,15 @@ NbodyLeapfrogKDK<ndim, kernelclass>::~NbodyLeapfrogKDK()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
- (int N,                               ///< Number of stars
-  NbodyParticle<ndim> **star)          ///< Array of stars/systems
+ (int N,                               ///< [in] Number of stars
+  NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int i,j,k;                           // Star and dimension counters
+  FLOAT aperiodic[ndim];               // ..
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // ..
   FLOAT drdt;                          // Rate of change of distance
   FLOAT drmag;                         // ..
   FLOAT drsqd;                         // Distance squared
@@ -88,6 +92,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   FLOAT invdrmag;                      // 1 / drmag
   FLOAT invhmean;                      // ..
   FLOAT paux;                          // ..
+  FLOAT potperiodic;                   // ..
   FLOAT wmean;                         // ..
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectSmoothedGravForces]");
@@ -97,12 +102,15 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   for (i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
+
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
     for (j=0; j<N; j++) {
       if (i == j) continue;
 
       for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
+
       for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       drsqd    = DotProduct(dr,dr,ndim);
       drmag    = sqrt(drsqd) + small_number;
@@ -117,6 +125,13 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
       for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
       for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
         (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
+        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        star[i]->gpot += potperiodic;
+      }
 
     }
     //---------------------------------------------------------------------------------------------

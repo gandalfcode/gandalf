@@ -221,7 +221,7 @@ void Ic<ndim>::BinaryAccretion(void)
     if (Nbox1 > 0) {
       r1 = new FLOAT[ndim*Nbox1];
       if (part_dist == "random") {
-        AddRandomBox(Nbox1, box1, r1);
+        AddRandomBox(Nbox1, box1, r1, sim->randnumb);
       }
       else if (part_dist == "cubic_lattice") {
         AddCubicLattice(Nbox1, Nlattice1, box1, true, r1);
@@ -255,7 +255,7 @@ void Ic<ndim>::BinaryAccretion(void)
     if (Nbox2 > 0) {
       r2 = new FLOAT[ndim*Nbox2];
       if (part_dist == "random") {
-        AddRandomBox(Nbox2, box2, r2);
+        AddRandomBox(Nbox2, box2, r2, sim->randnumb);
       }
       else if (part_dist == "cubic_lattice") {
         AddCubicLattice(Nbox2, Nlattice2, box2, true, r2);
@@ -617,7 +617,7 @@ void Ic<ndim>::UniformBox(void)
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
     r = new FLOAT[ndim*Npart];
-    AddRandomBox(Npart, simbox, r);
+    AddRandomBox(Npart, simbox, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
     Npart = Nbox;
@@ -698,10 +698,10 @@ void Ic<ndim>::UniformSphere(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r, sim->randnumb);
     if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -1165,10 +1165,10 @@ void Ic<ndim>::NohProblem(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r, sim->randnumb);
     if (Nsphere != Npart) cout << "Warning! Unable to converge to required "
                                << "no. of ptcls due to lattice symmetry" << endl;
     Npart = Nsphere;
@@ -1408,10 +1408,10 @@ void Ic<ndim>::BossBodenheimer(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r, sim->randnumb);
     if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -1538,7 +1538,7 @@ void Ic<ndim>::BlobTest(void)
   }
   vector<FLOAT> r_background(ndim*Nbox);
   if (particle_dist == "random") {
-    AddRandomBox(Nbox, simbox, &r_background[0]);
+    AddRandomBox(Nbox, simbox, &r_background[0], sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
     AddCubicLattice(Nbox, Nlattice, simbox, true, &r_background[0]);
@@ -1574,10 +1574,10 @@ void Ic<ndim>::BlobTest(void)
   vector<FLOAT> r(ndim*Nsphere);
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Nsphere, rcentre, radius, &r[0]);
+    AddRandomSphere(Nsphere, rcentre, radius, &r[0], sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Nsphere, rcentre, radius, particle_dist, &r[0]);
+    Nsphere = AddLatticeSphere(Nsphere, rcentre, radius, particle_dist, &r[0], sim->randnumb);
 //    if (Nsphere != Npart) cout << "Warning! Unable to converge to required "
 //                               << "no. of ptcls due to lattice symmetry" << endl;
   }
@@ -1691,10 +1691,10 @@ void Ic<ndim>::TurbulentCore(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r, sim->randnumb);
     assert(Nsphere <= Npart);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
@@ -1846,10 +1846,10 @@ void Ic<ndim>::BondiAccretion(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r, sim->randnumb);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -2447,7 +2447,7 @@ void Ic<ndim>::BlastWave(void)
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
-    AddRandomBox(Nbox, simbox, r);
+    AddRandomBox(Nbox, simbox, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
     AddCubicLattice(Nbox, Nlattice, simbox, true, r);
@@ -2580,7 +2580,7 @@ void Ic<ndim>::SedovBlastWave(void)
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
-    AddRandomBox(Nbox, simbox, r);
+    AddRandomBox(Nbox, simbox, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
     AddCubicLattice(Nbox, Nlattice, simbox, true, r);
@@ -2610,24 +2610,8 @@ void Ic<ndim>::SedovBlastWave(void)
   hydro->Ntot = hydro->Nhydro;
   for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
 
-  // Search ghost particles
-  //sim->sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
-
   sim->initial_h_provided = true;
   sim->rebuild_tree = true;
-  //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     //hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
-
-  //sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
-
-  // Update neighbour tre
-  sim->rebuild_tree = true;
-  //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     //hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
-
-  // Calculate all SPH properties
-  //sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
-
 
 
   // Now calculate which particles are hot
@@ -2637,7 +2621,10 @@ void Ic<ndim>::SedovBlastWave(void)
   for (i=0; i<Nbox; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     drsqd = DotProduct(part.r,part.r,ndim);
-    if (drsqd < r_hot*r_hot) {
+    hotlist[i] = 0;
+    Ncold++;
+
+    /*if (drsqd < r_hot*r_hot) {
       hotlist[i] = 1;
       if (smooth_ic == 1) part.u = part.m*hydro->kernp->w0(hydro->kernp->kernrange*sqrt(drsqd)/r_hot);
       else part.u = part.m;
@@ -2648,7 +2635,7 @@ void Ic<ndim>::SedovBlastWave(void)
     else {
       hotlist[i] = 0;
       Ncold++;
-    }
+    }*/
   }
 
   // Normalise the energies
@@ -2915,10 +2902,10 @@ void Ic<ndim>::SpitzerExpansion(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart, rcentre, radius, r);
+    AddRandomSphere(Npart, rcentre, radius, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r);
+    Nsphere = AddLatticeSphere(Npart, rcentre, radius, particle_dist, r, sim->randnumb);
     if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
@@ -3624,14 +3611,15 @@ template <int ndim>
 void Ic<ndim>::AddRandomBox
  (const int Npart,                     ///< [in] No. of particles
   const DomainBox<ndim> box,           ///< [in] Bounding box containing particles
-  FLOAT *r)                            ///< [out] Positions of particles
+  FLOAT *r,                            ///< [out] Positions of particles
+  RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
 {
   debug2("[Ic::AddRandomBox]");
   assert(r);
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
-      r[ndim*i + k] = box.min[k] + (box.max[k] - box.min[k])*sim->randnumb->floatrand();
+      r[ndim*i + k] = box.min[k] + (box.max[k] - box.min[k])*randnumb->floatrand();
     }
   }
 
@@ -3649,7 +3637,8 @@ void Ic<ndim>::AddRandomSphere
  (const int Npart,                     ///< [in] No. of particles in sphere
   const FLOAT rcentre[ndim],           ///< [in] Position of sphere centre
   const FLOAT radius,                  ///< [in] Radius of sphere
-  FLOAT *r)                            ///< [out] Positions of particles in sphere
+  FLOAT *r,                            ///< [out] Positions of particles in sphere
+  RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
 {
   int i,k;                             // Particle and dimension counters
   FLOAT rad;                           // Radius of particle
@@ -3665,7 +3654,7 @@ void Ic<ndim>::AddRandomSphere
     // Continously loop until random particle lies inside sphere
     do {
       for (k=0; k<ndim; k++)
-      rpos[k] = (FLOAT) 1.0 - (FLOAT) 2.0*sim->randnumb->floatrand();
+      rpos[k] = (FLOAT) 1.0 - (FLOAT) 2.0*randnumb->floatrand();
       rad = DotProduct(rpos,rpos,ndim);
     } while (rad > 1.0);
 
@@ -3688,7 +3677,8 @@ int Ic<ndim>::AddLatticeSphere
   const FLOAT rcentre[ndim],           ///< [in] Position of sphere centre
   const FLOAT radius,                  ///< [in] Radius of sphere
   const string particle_dist,          ///< [in] String of lattice type
-  FLOAT *r)                            ///< [out] Positions of particles in sphere
+  FLOAT *r,                            ///< [out] Positions of particles in sphere
+  RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
 {
   int i,k;                             // Particle and dimension counters
   int Naux;                            // Aux. particle number
@@ -3705,7 +3695,7 @@ int Ic<ndim>::AddLatticeSphere
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
-  for (k=0; k<ndim; k++) Nlattice[k] = (int) (3.0*powf((FLOAT) Npart, invndim));
+  for (k=0; k<ndim; k++) Nlattice[k] = (int) (3.0*powf((FLOAT) Npart, (FLOAT)1/ndim));
   for (k=0; k<ndim; k++) box1.min[k] = -2.0;
   for (k=0; k<ndim; k++) box1.max[k] = 2.0;
   Naux = Nlattice[0]*Nlattice[1]*Nlattice[2];
@@ -3732,7 +3722,7 @@ int Ic<ndim>::AddLatticeSphere
   // during tree construction)
   if (ndim == 2) {
     FLOAT rtemp[ndim];
-    theta = twopi*sim->randnumb->floatrand();
+    theta = twopi*randnumb->floatrand();
     for (i=0; i<Naux; i++) {
       for (k=0; k<ndim; k++) rtemp[k] = raux[ndim*i + k];
       raux[ndim*i] = rtemp[0]*cos(theta) - rtemp[1]*sin(theta);
@@ -3740,9 +3730,9 @@ int Ic<ndim>::AddLatticeSphere
     }
   }
   else if (ndim == 3) {
-    theta = acos(sqrtf(sim->randnumb->floatrand()));
-    phi   = twopi*sim->randnumb->floatrand();
-    psi   = twopi*sim->randnumb->floatrand();
+    theta = acos(sqrtf(randnumb->floatrand()));
+    phi   = twopi*randnumb->floatrand();
+    psi   = twopi*randnumb->floatrand();
     EulerAngleArrayRotation(Naux, phi, theta, psi, raux);
   }
 
@@ -4724,10 +4714,10 @@ void Ic<ndim>::EvrardCollapse()
 	pos = new FLOAT[ndim*Npart];
 
     if (particle_dist == "random") {
-	  AddRandomSphere(Npart, rcentre, radius, pos);
+	  AddRandomSphere(Npart, rcentre, radius, pos, sim->randnumb);
     }
 	else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-	  Npart = AddLatticeSphere(Npart, rcentre, radius, particle_dist, pos) ;
+	  Npart = AddLatticeSphere(Npart, rcentre, radius, particle_dist, pos, sim->randnumb) ;
 	}
 	else {
 	  string message = "Invalid particle distribution option";
@@ -4851,7 +4841,7 @@ void Ic<ndim>::DustyBox(void)
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
-    AddRandomBox(Nbox, simbox, r);
+    AddRandomBox(Nbox, simbox, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
     AddCubicLattice(Nbox, Nlattice, simbox, true, r);

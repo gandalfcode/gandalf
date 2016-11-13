@@ -47,6 +47,8 @@ using namespace std;
 template <int ndim>
 class EOS;
 
+class SimulationBase;
+
 static const FLOAT ghost_range = 2.5;
 
 
@@ -84,6 +86,9 @@ public:
   void CheckBoundaryGhostParticle(const int, const int, const FLOAT, const DomainBox<ndim> &);
 
   void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
+  Particle<ndim>& CreateNewParticle(const enum ptype, const enum parttype, const FLOAT,
+                                    const FLOAT, const FLOAT*, const FLOAT*,SimulationBase*);
+
 
 
   // Functions needed to hide some implementation details

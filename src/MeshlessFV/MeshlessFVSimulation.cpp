@@ -363,6 +363,23 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Supernova feedback
+  //-----------------------------------------------------------------------------------------------
+  if (stringparams["supernova_feedback"] == "none") {
+    snDriver = new NullSupernovaDriver<ndim>(this);
+  }
+  else if (stringparams["supernova_feedback"] == "single") {
+    snDriver = new SedovTestDriver<ndim>(this,simparams, simunits);
+  }
+  else if (stringparams["supernova_feedback"] == "random") {
+    snDriver = new RandomSedovTestDriver<ndim>(this,simparams, simunits, simbox);
+  }
+  else {
+    string message = "Unrecognised parameter : external_potential = "
+      + simparams->stringparams["supernova_feedback"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 
   // Set other important simulation variables
   dt_litesnap         = floatparams["dt_litesnap"]/simunits.t.outscale;
@@ -707,12 +724,13 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
   if (nbody->nbody_softening == 1) {
-    nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
+    nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
   }
   else {
     nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
   }
   nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata);
+
 
   for (i=0; i<nbody->Nnbody; i++) {
     if (nbody->nbodydata[i]->active) {
