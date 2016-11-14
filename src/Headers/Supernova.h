@@ -74,10 +74,9 @@ class SupernovaDriver
 protected:
   int Nsupernova;                      ///< Number of supernovae
   Supernova<ndim>  supernova;                 ///< Supernova object
+
+
 public:
-
-
-
 
   SupernovaDriver(SimulationBase* sim): supernova(sim) {Nsupernova = 0;}
   ~SupernovaDriver() {};
@@ -177,6 +176,7 @@ class SilccSupernovaDriver : public SupernovaDriver<ndim>
 {
 public:
   using SupernovaDriver<ndim>::Nsupernova;
+  using SupernovaDriver<ndim>::supernova;
 
   int SNid;
   FLOAT tsupernova;
@@ -188,10 +188,9 @@ public:
   FLOAT *SNposy;
   FLOAT *SNposz;
   FLOAT *SNEinj;
-  Supernova<ndim>  supernova;                 ///< ..
+  //Supernova<ndim>  supernova;                 ///< ..
 
-
-  SilccSupernovaDriver(Parameters *params, SimUnits &units);
+  SilccSupernovaDriver(SimulationBase* sim, Parameters *params, SimUnits &units);
   ~SilccSupernovaDriver();
 
   virtual void Update(const int, const int, const int, const FLOAT,

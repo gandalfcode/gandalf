@@ -37,8 +37,8 @@ PYFOLDER = ../analysis/swig_generated
 
 
 VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/Feedback
-VPATH +=$(PWD)/src/GradhSph:$(PWD)/src/Headers
-VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
+VPATH +=$(PWD)/src/GradhSph:$(PWD)/src/Headers:$(PWD)/src/Hydrodynamics
+VPATH +=$(PWD)/src/Ic:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
 VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
 VPATH +=$(PWD)/src/UnitTesting
 INCLUDE += -I$(PWD)/src/Headers
