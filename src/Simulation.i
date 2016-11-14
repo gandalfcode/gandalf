@@ -195,6 +195,13 @@ throw StopError("CTRL-C received");
 import_array();
 ExceptionHandler::makeExceptionHandler(python);
 %}
+
+#ifdef MPI_PARALLEL
+%pythonprepend SimulationBase::SimulationFactory(int,string,Parameters*) %{
+   from mpi4py import MPI
+%}
+#endif
+
 %numpy_typemaps(float, NPY_FLOAT, int)
  /* %include <boost_any.i> */
 

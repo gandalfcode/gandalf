@@ -292,6 +292,10 @@ void SimulationBase::SetParam
     string msg = "Error: Not possible to change the number of dimensions!";
     ExceptionHandler::getIstance().raise(msg);
   }
+  if (key == "sim") {
+    string msg = "Error: Cannot change the type of simulation afterwards!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
 
   simparams->SetParameter(key, value);
 }
