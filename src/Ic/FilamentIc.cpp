@@ -77,8 +77,8 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
     grid[2] = 2048;
   }
   Box<ndim> box;
-  for (int k=0; k<ndim; k++) box.boxmin[k] = simbox.boxmin[k];
-  for (int k=0; k<ndim; k++) box.boxmax[k] = simbox.boxmax[k];
+  for (int k=0; k<ndim; k++) box.min[k] = simbox.min[k];
+  for (int k=0; k<ndim; k++) box.max[k] = simbox.max[k];
   mtot = this->CalculateMassInBox(grid, box);
 
   std::cout << "rho0 : " << rho0*simunits.rho.outscale << " " << simunits.rho.outunit << std::endl;

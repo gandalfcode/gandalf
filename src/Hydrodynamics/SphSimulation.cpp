@@ -155,13 +155,13 @@ void SphSimulation<ndim>::ProcessParameters(void)
     snDriver = new NullSupernovaDriver<ndim>(this);
   }
   else if (stringparams["supernova_feedback"] == "single") {
-    snDriver = new SedovTestDriver<ndim>(this,simparams, simunits);
+    snDriver = new SedovTestDriver<ndim>(this, simparams, simunits);
   }
   else if (stringparams["supernova_feedback"] == "random") {
-    snDriver = new RandomSedovTestDriver<ndim>(this,simparams, simunits, simbox);
+    snDriver = new RandomSedovTestDriver<ndim>(this, simparams, simunits, simbox);
   }
   else if (stringparams["supernova_feedback"] == "silcc") {
-    snDriver = new SilccSupernovaDriver<ndim>(simparams, simunits);
+    snDriver = new SilccSupernovaDriver<ndim>(this, simparams, simunits);
   }
   else {
     string message = "Unrecognised parameter :  = supernova_feedback"
@@ -1501,7 +1501,6 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
   FLOAT alphaRegMax = 0.1;                         // Particle displacement magnitude
   FLOAT rhoReg = 0.5;                              // ..
   FLOAT *rreg = new FLOAT[ndim*sph->Nhydromax];    // Array of particle positions
-  SphParticle<ndim> *partdata = sph->GetSphParticleArray();
 
   DomainBox<ndim> localBox = simbox;
   for (int k=0; k<ndim; k++) localBox.boundary_lhs[k] = periodicBoundary;
@@ -1527,7 +1526,7 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
     sphneib->UpdateAllSphProperties(sph, nbody);
 
     //=============================================================================================
-#pragma omp parallel default(none) shared(alphaReg, partdata, rhoReg, rreg)
+#pragma omp parallel default(none) shared(alphaReg, rhoReg, rreg)
     {
       int k;
       FLOAT dr[ndim];
@@ -1575,8 +1574,8 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
           //   << part.rho << "   " << icGenerator->GetValue("rho", part.r) << endl;;
 
         for (int k=0; k<ndim; k++) {
-          rreg[ndim*i + k] = min(rreg[ndim*i + k], simbox.boxsize[k]);
-          rreg[ndim*i + k] = max(rreg[ndim*i + k], -simbox.boxsize[k]);
+          rreg[ndim*i + k] = min(rreg[ndim*i + k], simbox.size[k]);
+          rreg[ndim*i + k] = max(rreg[ndim*i + k], -simbox.size[k]);
         }
 
       }

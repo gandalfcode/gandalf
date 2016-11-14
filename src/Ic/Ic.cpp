@@ -46,18 +46,18 @@ FLOAT Ic<ndim>::CalculateMassInBox
   FLOAT dV = 1.0;
 
   for (int k=0; k<ndim; k++) {
-    dr[k] = (box.boxmax[k] - box.boxmin[k]) / (FLOAT) grid[k];
+    dr[k] = (box.max[k] - box.min[k]) / (FLOAT) grid[k];
     dV *= dr[k];
   }
 
   if (ndim == 3) {
 
     for (int i=0; i<grid[0]; i++) {
-      r[0] = box.boxmin[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
+      r[0] = box.min[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
       for (int j=0; j<grid[1]; j++) {
-        r[1] = box.boxmin[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
+        r[1] = box.min[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
         for (int k=0; k<grid[2]; k++) {
-          r[2] = box.boxmin[2] + ((FLOAT) k + (FLOAT) 0.5)*dr[2];
+          r[2] = box.min[2] + ((FLOAT) k + (FLOAT) 0.5)*dr[2];
           rho = this->GetValue("rho", r);
           mtot += rho;
         }
@@ -3887,7 +3887,7 @@ void Ic<ndim>::AddBinaryStar
 template <int ndim>
 void Ic<ndim>::AddRandomBox
  (const int Npart,                     ///< [in] No. of particles
-  const DomainBox<ndim> box,           ///< [in] Bounding box containing particles
+  const DomainBox<ndim> &box,          ///< [in] Bounding box containing particles
   FLOAT *r,                            ///< [out] Positions of particles
   RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
 {
@@ -4077,7 +4077,7 @@ template <int ndim>
 void Ic<ndim>::AddCubicLattice
  (const int Npart,                     ///< [in] No. of particles in lattice
   const int Nlattice[ndim],            ///< [in] Ptcls per dimension in lattice
-  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
+  const DomainBox<ndim> &box,          ///< [in] Bounding box of particles
   const bool normalise,                ///< [in] Normalise lattice shape and size
   FLOAT *r)                            ///< [out] Positions of particles
 {
@@ -4122,7 +4122,7 @@ void Ic<ndim>::AddCubicLattice
   }
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(cout,Nlattice,r,spacing) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(cout,box,Nlattice,r,spacing) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
@@ -4149,7 +4149,7 @@ template <int ndim>
 void Ic<ndim>::AddHexagonalLattice
  (const int Npart,                     ///< [in] No. of particles in lattice
   const int Nlattice[3],               ///< [in] Ptcls per dimension in lattice
-  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
+  const DomainBox<ndim> &box,          ///< [in] Bounding box of particles
   const bool normalise,                ///< [in] Normalise lattice shape and size
   FLOAT *r)                            ///< [out] Positions of particles
 {
@@ -4194,7 +4194,7 @@ void Ic<ndim>::AddHexagonalLattice
 
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(Nlattice,r,rad) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(box,Nlattice,r,rad) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
@@ -4223,7 +4223,7 @@ template <int ndim>
 int Ic<ndim>::CutSphere
  (const int Nsphere,                   ///< [in] Desired no. of particles in sphere
   const int Naux,                      ///< [in] No. of input particles
-  const DomainBox<ndim> box,           ///< [in] Bounding box of particles
+  const DomainBox<ndim> &box,          ///< [in] Bounding box of particles
   const bool exact,                    ///< [in] Flag if we require exact numbers (not used)
   FLOAT *r)                            ///< [inout] Positions of particles
 {
