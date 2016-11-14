@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <math.h>
 #include "Constants.h"
 #include "Debug.h"
@@ -119,7 +120,7 @@ RandomSedovTestDriver<ndim>::RandomSedovTestDriver
 
 
 //=================================================================================================
-//  SedovTestDriver::Update
+//  RandomTestDriver::Update
 /// ...
 //=================================================================================================
 template <int ndim>
@@ -159,11 +160,129 @@ void RandomSedovTestDriver<ndim>::Update
 
 
 
+//=================================================================================================
+//  SilccSupernovaDriver::SilccSupernovaDriver
+/// ...
+//=================================================================================================
+template <int ndim>
+SilccSupernovaDriver<ndim>::SilccSupernovaDriver
+ (SimulationBase* sim, Parameters *params, SimUnits &units) : SupernovaDriver<ndim>(sim)
+{
+  // Local references to parameter variables for brevity
+  map<string, int> &intparams = params->intparams;
+  map<string, double> &floatparams = params->floatparams;
+  map<string, string> &stringparams = params->stringparams;
+
+
+  // Parameters to be read from the file
+  ifstream file;
+  ifstream SNinfile;
+  string SNfile;
+  string line;
+  int i;
+  int nSN;
+
+  Minj = floatparams["Minj"]/(units.m.outscale);
+  Rinj = floatparams["Rinj"]/(units.r.outscale);
+  SNfile = stringparams["SNfile_name"];
+  R_therm_kin = floatparams["R_therm_kin"];
+  SNid = 0;
+
+  cout << "Minj: " << Minj << endl;
+  cout << "Rinj: " << Rinj << endl;
+
+  file.open(SNfile.c_str(), ios::in);
+
+
+  //-----------------------------------------------------------------------------------------------
+  if (file.good()) {
+    i = 0;
+    getline(file, line);
+    getline(file, line);
+    istringstream istr(line);
+    istr >> nSN;
+
+    SNtime = new FLOAT[nSN];
+    SNposx = new FLOAT[nSN];
+    SNposy = new FLOAT[nSN];
+    SNposz = new FLOAT[nSN];
+    SNEinj = new FLOAT[nSN];
+
+    // read table
+    //---------------------------------------------------------------------------------------------
+    while (getline(file, line)) {
+      istringstream istr(line);
+
+      if (istr >> SNtime[i] >> SNposx[i] >> SNposy[i] >> SNposz[i] >> SNEinj[i]) {
+
+        SNtime[i] = SNtime[i]/(units.t.outscale*units.t.outcgs);
+        SNposx[i] = SNposx[i]/(units.r.outscale*units.r.outcgs);
+        SNposy[i] = SNposy[i]/(units.r.outscale*units.r.outcgs);
+        SNposz[i] = SNposz[i]/(units.r.outscale*units.r.outcgs);
+        SNEinj[i] = SNEinj[i]/(units.E.outscale*units.E.outcgs);
+        i++;
+      }
+    }
+    //---------------------------------------------------------------------------------------------
+
+  }
+  //-----------------------------------------------------------------------------------------------
+  else {
+    cout << "Dateifehler" << endl;
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  SNinfile.close();
+}
+
+
+
+//=================================================================================================
+//  SilccSupernovaDriver::Update
+/// ...
+//=================================================================================================
+template <int ndim>
+void SilccSupernovaDriver<ndim>::Update
+ (const int n,                               ///< Current integer time
+  const int level_step,                      ///< ..
+  const int level_max,                       ///< Max. block timestep level
+  const FLOAT t,                             ///< Physical simulation time
+  Hydrodynamics<ndim> *hydro,                ///< Pointer to hydrodynamics object
+  NeighbourSearch<ndim> *neibsearch,         ///< Pointer to neighbour search object
+  RandomNumber *randnumb)                    ///< Pointer to random number generator
+{
+
+  // Create supernova at requested time (and ensure that only one is made)
+  //-----------------------------------------------------------------------------------------------
+  if (t >= SNtime[SNid]) {
+
+    cout << "ADDING SUPERNOVA " << SNid <<  " !!" << endl;
+
+    FLOAT SNpos[ndim];
+    //FLOAT Rinj        = hydro->GetParticlePointer(0).h; //(FLOAT) 0.0;
+    SNpos[0] = SNposx[SNid];
+    SNpos[1] = SNposy[SNid];
+    SNpos[2] = SNposz[SNid];
+
+    supernova.SupernovaInjection(n, level_step, level_max, SNid, t, SNpos, SNEinj[SNid],
+                                 R_therm_kin, Minj, Rinj, hydro, neibsearch, randnumb);
+    SNid++;
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
 template class SedovTestDriver<1>;
 template class RandomSedovTestDriver<1>;
+template class SilccSupernovaDriver<1>;
 
 template class SedovTestDriver<2>;
 template class RandomSedovTestDriver<2>;
+template class SilccSupernovaDriver<2>;
 
 template class SedovTestDriver<3>;
 template class RandomSedovTestDriver<3>;
+template class SilccSupernovaDriver<3>;
