@@ -134,8 +134,6 @@ public:
   void RTI(void);
   void SedovBlastWave(void);
   void ShearFlow(void);
-  void ShockTube(void);
-  void Silcc(void);
   void SoundWave(void);
   void SpitzerExpansion(void);
   void TripleStar(void);
@@ -376,10 +374,42 @@ protected:
 public:
 
   PolytropeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  virtual ~PolytropeIc();
+  ~PolytropeIc();
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
+
+};
+
+
+
+//=================================================================================================
+//  Class ShocktubeIc
+/// \brief   Class to generate shocktube problem initial conditions.
+/// \details Class to generate shocktube problem initial conditions.
+/// \author  D. A. Hubber
+/// \date    22/15/2016
+//=================================================================================================
+template <int ndim>
+class ShocktubeIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  ShocktubeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~ShocktubeIc() {};
+
+  virtual void Generate(void);
 
 };
 
@@ -423,7 +453,7 @@ protected:
 public:
 
   SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  virtual ~SilccIc() {};
+  ~SilccIc() {};
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
