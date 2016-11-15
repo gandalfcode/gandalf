@@ -130,7 +130,6 @@ public:
   void ContactDiscontinuity(void);
   void EwaldDensity(void);
   void GaussianRing(void);
-  void GreshoVortex(void);
   void NohProblem(void);
   void PlummerSphere(void);
   void QuadrupleStar(void);
@@ -221,9 +220,41 @@ public:
 
 
 //=================================================================================================
+//  Class GreshoVortexIc
+/// \brief   Class to generate initial conditions for 2d Gresho vortex-type simulations.
+/// \details Class to generate initial conditions for 2d Gresho vortex-type simulations.
+/// \author  D. A. Hubber
+/// \date    15/11/2016
+//=================================================================================================
+template <int ndim>
+class GreshoVortexIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  GreshoVortexIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~GreshoVortexIc() {};
+
+  virtual void Generate(void);
+  virtual FLOAT GetValue(const std::string, const FLOAT *);
+
+};
+
+
+
+//=================================================================================================
 //  Class KhiIc
-/// \brief   Class to generate initial conditions for Kelvin-Helmholtz instabilty.
-/// \details Class to generate initial conditions for a Kelvin-Helmholtz instabilty.
+/// \brief   Class to generate initial conditions for 2d Kelvin-Helmholtz instabilty.
+/// \details Class to generate initial conditions for a 2d Kelvin-Helmholtz instabilty.
 /// \author  D. A. Hubber
 /// \date    15/11/2016
 //=================================================================================================
