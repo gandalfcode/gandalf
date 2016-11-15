@@ -92,6 +92,11 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
+  else if (ic == "binaryacc") {
+    icGenerator = new BinaryAccretionIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
+  }
+  //-----------------------------------------------------------------------------------------------
   else if (ic == "filament") {
     icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
     icGenerator->Generate();
@@ -125,9 +130,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "binary") {
       icGenerator->BinaryStar();
-    }
-    else if (ic == "binaryacc") {
-      icGenerator->BinaryAccretion();
     }
     else if (ic == "blastwave") {
       icGenerator->BlastWave();
