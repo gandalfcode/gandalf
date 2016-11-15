@@ -175,6 +175,38 @@ public:
 
 
 //=================================================================================================
+//  Class BinaryAccretionIc
+/// \brief   Binary accretion simulation IC class.
+/// \details Binary accretion simulation IC class.
+/// \author  D. A. Hubber
+/// \date    15/11/2016
+//=================================================================================================
+template <int ndim>
+class BinaryAccretionIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  BinaryAccretionIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~BinaryAccretionIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+
+//=================================================================================================
 //  Class FilamentIc
 /// \brief   Class to generate a simple filament for ICs.
 /// \details Class to generate a simple filament for ICs.
