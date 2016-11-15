@@ -97,6 +97,11 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
+  else if (ic == "bb" || ic == "bossbodenheimer") {
+    icGenerator = new BossBodenheimerIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
+  }
+  //-----------------------------------------------------------------------------------------------
   else if (ic == "filament") {
     icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
     icGenerator->Generate();
@@ -125,10 +130,7 @@ void Simulation<ndim>::GenerateIC(void)
   else {
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
 
-    if (ic == "bb") {
-      icGenerator->BossBodenheimer();
-    }
-    else if (ic == "binary") {
+    if (ic == "binary") {
       icGenerator->BinaryStar();
     }
     else if (ic == "blastwave") {
