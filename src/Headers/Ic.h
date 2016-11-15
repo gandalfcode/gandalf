@@ -122,11 +122,9 @@ public:
 
   // Initial conditions routines
   //-----------------------------------------------------------------------------------------------
-  void BinaryAccretion(void);
   void BinaryStar(void);
   void BlastWave(void);
   void BondiAccretion(void);
-  void BossBodenheimer(void);
   void ContactDiscontinuity(void);
   void EwaldDensity(void);
   void GaussianRing(void);
@@ -203,6 +201,36 @@ public:
 
 };
 
+
+
+//=================================================================================================
+//  Class BossBodenheimerIc
+/// \brief   Boss-Bodenheimer simulation IC class.
+/// \details Boss-Bodenheimer simulation IC class.
+/// \author  D. A. Hubber
+/// \date    15/11/2016
+//=================================================================================================
+template <int ndim>
+class BossBodenheimerIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  BossBodenheimerIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~BossBodenheimerIc() {};
+
+  virtual void Generate(void);
+
+};
 
 
 
