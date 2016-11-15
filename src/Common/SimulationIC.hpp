@@ -92,6 +92,11 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
+  else if (ic == "python") {
+    icGenerator = new NullIc<ndim>(this, hydro, invndim);
+    return;
+  }
+  //-----------------------------------------------------------------------------------------------
   else if (ic == "binaryacc") {
     icGenerator = new BinaryAccretionIc<ndim>(this, hydro, invndim);
     icGenerator->Generate();
@@ -119,6 +124,11 @@ void Simulation<ndim>::GenerateIC(void)
   //-----------------------------------------------------------------------------------------------
   else if (ic == "polytrope") {
     icGenerator = new PolytropeIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ic == "sedov") {
+    icGenerator = new SedovBlastwaveIc<ndim>(this, hydro, invndim);
     icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
@@ -170,9 +180,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "rti") {
       icGenerator->RTI();
-    }
-    else if (ic == "sedov") {
-      icGenerator->SedovBlastWave();
     }
     else if (ic == "shearflow") {
       icGenerator->ShearFlow();
