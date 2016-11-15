@@ -94,12 +94,7 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual void Generate(void) {};
   virtual FLOAT GetValue(const std::string, const FLOAT *) {return (FLOAT) 0.0;}
-  virtual FLOAT GetDensity(const FLOAT rad) {
-    FLOAT r[ndim];
-    for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
-    r[0] = rad;
-    return GetValue("rho", r);
-  }
+  virtual FLOAT GetDensity(const FLOAT rad) {return (FLOAT) 0.0;}
 
 
   // Other common functions
@@ -136,7 +131,6 @@ public:
   void EwaldDensity(void);
   void GaussianRing(void);
   void GreshoVortex(void);
-  void KHI(void);
   void NohProblem(void);
   void PlummerSphere(void);
   void QuadrupleStar(void);
@@ -217,10 +211,41 @@ protected:
 public:
 
   FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  virtual ~FilamentIc() {};
+  ~FilamentIc() {};
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
+
+};
+
+
+
+//=================================================================================================
+//  Class KhiIc
+/// \brief   Class to generate initial conditions for Kelvin-Helmholtz instabilty.
+/// \details Class to generate initial conditions for a Kelvin-Helmholtz instabilty.
+/// \author  D. A. Hubber
+/// \date    15/11/2016
+//=================================================================================================
+template <int ndim>
+class KhiIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  KhiIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~KhiIc() {};
+
+  virtual void Generate(void);
 
 };
 

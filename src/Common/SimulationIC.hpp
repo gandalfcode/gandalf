@@ -93,7 +93,12 @@ void Simulation<ndim>::GenerateIC(void)
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "filament") {
-    icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
+    icGenerator = new KhiIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ic == "khi") {
+    icGenerator = new KhiIc<ndim>(this, hydro, invndim);
     icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
@@ -137,9 +142,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "gresho") {
       icGenerator->GreshoVortex();
-    }
-    else if (ic == "khi") {
-      icGenerator->KHI();
     }
     else if (ic == "noh") {
       icGenerator->NohProblem();
