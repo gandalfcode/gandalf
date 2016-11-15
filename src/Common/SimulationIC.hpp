@@ -122,6 +122,11 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
+  else if (ic == "shocktube") {
+    icGenerator = new ShocktubeIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
+  }
+  //-----------------------------------------------------------------------------------------------
   else if (ic == "silcc") {
     icGenerator = new SilccIc<ndim>(this, hydro, invndim);
     icGenerator->Generate();
@@ -166,9 +171,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "shearflow") {
       icGenerator->ShearFlow();
-    }
-    else if (ic == "shocktube") {
-      icGenerator->ShockTube();
     }
     else if (ic == "soundwave") {
       icGenerator->SoundWave();
