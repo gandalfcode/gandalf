@@ -218,10 +218,10 @@ OBJ += Sinks.o
 OBJ += Ghosts.o
 OBJ += SphSnapshot.o
 OBJ += CodeTiming.o
-OBJ += Ic.o FilamentIc.o KhiIc.o PolytropeIc.o SilccIc.o
 OBJ += Dust.o
 OBJ += Particle.o RandomNumber.o
 OBJ += Supernova.o SupernovaDriver.o
+OBJ += Ic.o FilamentIc.o GreshoVortexIc.o KhiIc.o PolytropeIc.o SilccIc.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
