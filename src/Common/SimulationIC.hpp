@@ -99,52 +99,46 @@ void Simulation<ndim>::GenerateIC(void)
   //-----------------------------------------------------------------------------------------------
   else if (ic == "binaryacc") {
     icGenerator = new BinaryAccretionIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "bb" || ic == "bossbodenheimer") {
     icGenerator = new BossBodenheimerIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "filament") {
     icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "gresho") {
     icGenerator = new GreshoVortexIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "khi") {
     icGenerator = new KhiIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "polytrope") {
     icGenerator = new PolytropeIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "sedov") {
     icGenerator = new SedovBlastwaveIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "shocktube") {
     icGenerator = new ShocktubeIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "silcc") {
     icGenerator = new SilccIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ic == "soundwave") {
+    icGenerator = new SoundwaveIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "turbcore") {
     icGenerator = new TurbulentCoreIc<ndim>(this, hydro, invndim);
-    icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
   else {
@@ -184,9 +178,6 @@ void Simulation<ndim>::GenerateIC(void)
     else if (ic == "shearflow") {
       icGenerator->ShearFlow();
     }
-    else if (ic == "soundwave") {
-      icGenerator->SoundWave();
-    }
     else if (ic == "sphere") {
       icGenerator->UniformSphere();
     }
@@ -223,6 +214,10 @@ void Simulation<ndim>::GenerateIC(void)
 
   }
   //-----------------------------------------------------------------------------------------------
+
+
+  // Finally, generate the initial conditions
+  icGenerator->Generate();
 
   // Scale particle data to dimensionless code units if required
   if (rescale_particle_data) ConvertToCodeUnits();
