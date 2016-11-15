@@ -216,7 +216,8 @@ OBJ += Dust.o
 OBJ += Particle.o RandomNumber.o
 OBJ += Supernova.o SupernovaDriver.o
 OBJ += Ic.o BinaryAccretionIc.o BossBodenheimerIc.o FilamentIc.o GreshoVortexIc.o
-OBJ += KhiIc.o PolytropeIc.o SedovBlastwaveIc.o ShocktubeIc.o SilccIc.o TurbulentCoreIc.o
+OBJ += KhiIc.o PolytropeIc.o SedovBlastwaveIc.o ShocktubeIc.o
+OBJ += SilccIc.o SoundwaveIc.o TurbulentCoreIc.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
