@@ -495,6 +495,38 @@ public:
 
 
 //=================================================================================================
+//  Class SoundwaveIc
+/// \brief   Class to generate simple 1d soundwave initial conditions.
+/// \details Class to generate simple 1d soundwave initial conditions.
+/// \author  D. A. Hubber, S. Walch
+/// \date    15/11/2016
+//=================================================================================================
+template <int ndim>
+class SoundwaveIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  SoundwaveIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~SoundwaveIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
 //  Class TurbulentCoreIc
 /// \brief   Class to generate simple turbulent core ICs.
 /// \details Class to generate simple turbulent core ICs.
