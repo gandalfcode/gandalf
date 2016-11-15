@@ -132,6 +132,11 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator->Generate();
   }
   //-----------------------------------------------------------------------------------------------
+  else if (ic == "turbcore") {
+    icGenerator = new TurbulentCoreIc<ndim>(this, hydro, invndim);
+    icGenerator->Generate();
+  }
+  //-----------------------------------------------------------------------------------------------
   else {
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
 
@@ -183,9 +188,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "triple") {
       icGenerator->TripleStar();
-    }
-    else if (ic == "turbcore") {
-      icGenerator->TurbulentCore();
     }
     else if (ic == "isothermsphere") {
       icGenerator->IsothermSphere();
