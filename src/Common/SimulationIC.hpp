@@ -83,7 +83,7 @@ void Simulation<ndim>::GenerateIC(void)
   }
 
 
-  // If not a restart, generate initial conditions either from external file or created on the fly.
+  // Gnerate initial conditions either from external file
   //-----------------------------------------------------------------------------------------------
   if (ic == "file") {
     ReadSnapshotFile(simparams->stringparams["in_file"], simparams->stringparams["in_file_form"]);
@@ -91,56 +91,50 @@ void Simulation<ndim>::GenerateIC(void)
     this->initial_h_provided = false;
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
   }
+  // Generate initial conditions via python scripts
   //-----------------------------------------------------------------------------------------------
   else if (ic == "python") {
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
     return;
   }
+  // Generate initial conditions on-the-fly via various IC class functions
   //-----------------------------------------------------------------------------------------------
   else if (ic == "binaryacc") {
     icGenerator = new BinaryAccretionIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "bb" || ic == "bossbodenheimer") {
     icGenerator = new BossBodenheimerIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "dustybox") {
     icGenerator = new DustyBoxIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
+  else if (ic == "evrard") {
+    icGenerator = new EvrardCollapseIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "filament") {
     icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "gresho") {
     icGenerator = new GreshoVortexIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "khi") {
     icGenerator = new KhiIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "polytrope") {
     icGenerator = new PolytropeIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "sedov") {
     icGenerator = new SedovBlastwaveIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "shocktube") {
     icGenerator = new ShocktubeIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "silcc") {
     icGenerator = new SilccIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "soundwave") {
     icGenerator = new SoundwaveIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
   else if (ic == "turbcore") {
     icGenerator = new TurbulentCoreIc<ndim>(this, hydro, invndim);
   }
@@ -150,9 +144,6 @@ void Simulation<ndim>::GenerateIC(void)
 
     if (ic == "binary") {
       icGenerator->BinaryStar();
-    }
-    else if (ic == "blastwave") {
-      icGenerator->BlastWave();
     }
     else if (ic == "bondi") {
       icGenerator->BondiAccretion();
@@ -199,9 +190,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "turbisothermsphere") {
       icGenerator->TurbIsothermSphere();
-    }
-    else if (ic == "evrard"){
-      icGenerator->EvrardCollapse();
     }
     else if (ic == "python") {
       return;
