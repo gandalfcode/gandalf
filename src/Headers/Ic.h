@@ -123,7 +123,6 @@ public:
   // Initial conditions routines
   //-----------------------------------------------------------------------------------------------
   void BinaryStar(void);
-  void BlastWave(void);
   void BondiAccretion(void);
   void ContactDiscontinuity(void);
   void EwaldDensity(void);
@@ -138,13 +137,11 @@ public:
   void SpitzerExpansion(void);
   void TripleStar(void);
   void BlobTest(void);
-  void TurbulentCore(void);
   void UniformBox(void);
   void UniformSphere(void);
   void IsothermSphere(void);
   void RotIsothermSphere(void);
   void TurbIsothermSphere(void);
-  void EvrardCollapse(void);
 
 };
 
@@ -231,7 +228,6 @@ public:
 
 
 
-
 //=================================================================================================
 //  Class DustyBoxIc
 /// \brief   ...
@@ -262,6 +258,35 @@ public:
 };
 
 
+
+//=================================================================================================
+//  Class EvrardCollapseIc
+/// \brief   ...
+/// \details ...
+/// \author  ...
+/// \date    16/11/2016
+//=================================================================================================
+template <int ndim>
+class EvrardCollapseIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  EvrardCollapseIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~EvrardCollapseIc() {};
+
+  virtual void Generate(void);
+
+};
 
 
 

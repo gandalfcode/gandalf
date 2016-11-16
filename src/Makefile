@@ -219,7 +219,8 @@ OBJ += CodeTiming.o
 OBJ += Dust.o
 OBJ += Particle.o RandomNumber.o
 OBJ += Supernova.o SupernovaDriver.o
-OBJ += Ic.o BinaryAccretionIc.o BossBodenheimerIc.o DustyBoxIc.o FilamentIc.o GreshoVortexIc.o
+OBJ += Ic.o BinaryAccretionIc.o BossBodenheimerIc.o DustyBoxIc.o
+OBJ += EvrardCollapseIc.o FilamentIc.o GreshoVortexIc.o
 OBJ += KhiIc.o PolytropeIc.o SedovBlastwaveIc.o ShocktubeIc.o
 OBJ += SilccIc.o SoundwaveIc.o TurbulentCoreIc.o
 
