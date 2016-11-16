@@ -105,6 +105,10 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator = new BossBodenheimerIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
+  else if (ic == "dustybox") {
+    icGenerator = new DustyBoxIc<ndim>(this, hydro, invndim);
+  }
+  //-----------------------------------------------------------------------------------------------
   else if (ic == "filament") {
     icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
   }
@@ -198,9 +202,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "evrard"){
       icGenerator->EvrardCollapse();
-    }
-    else if (ic == "dustybox"){
-      icGenerator->DustyBox();
     }
     else if (ic == "python") {
       return;
