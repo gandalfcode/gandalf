@@ -209,8 +209,6 @@ OBJ += KDRadiationTree.o TreeMonteCarlo.o
 OBJ += MonochromaticIonisationMonteCarlo.o
 OBJ += chealpix.o TreeRay.o TreeRayOnTheSpot.o
 OBJ += EnergyEquation.o EnergyRadws.o
-#OBJ += SimGhostParticles.o
-#OBJ += Render.o
 OBJ += Nbody.o NbodyLeapfrogKDK.o NbodyLeapfrogDKD.o
 OBJ += NbodyHermite4.o NbodyHermite4TS.o NbodyHermite6TS.o
 OBJ += NbodySystemTree.o
@@ -221,7 +219,7 @@ OBJ += CodeTiming.o
 OBJ += Dust.o
 OBJ += Particle.o RandomNumber.o
 OBJ += Supernova.o SupernovaDriver.o
-OBJ += Ic.o BinaryAccretionIc.o BossBodenheimerIc.o FilamentIc.o GreshoVortexIc.o
+OBJ += Ic.o BinaryAccretionIc.o BossBodenheimerIc.o DustyBoxIc.o FilamentIc.o GreshoVortexIc.o
 OBJ += KhiIc.o PolytropeIc.o SedovBlastwaveIc.o ShocktubeIc.o
 OBJ += SilccIc.o SoundwaveIc.o TurbulentCoreIc.o
 

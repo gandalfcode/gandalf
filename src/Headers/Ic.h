@@ -145,7 +145,6 @@ public:
   void RotIsothermSphere(void);
   void TurbIsothermSphere(void);
   void EvrardCollapse(void);
-  void DustyBox(void);
 
 };
 
@@ -229,6 +228,40 @@ public:
   virtual void Generate(void);
 
 };
+
+
+
+
+//=================================================================================================
+//  Class DustyBoxIc
+/// \brief   ...
+/// \details ...
+/// \author  ...
+/// \date    16/11/2016
+//=================================================================================================
+template <int ndim>
+class DustyBoxIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  DustyBoxIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~DustyBoxIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
 
 
 
