@@ -102,6 +102,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "binaryacc") {
     icGenerator = new BinaryAccretionIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "bondi") {
+    icGenerator = new BondiAccretionIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "bb" || ic == "bossbodenheimer") {
     icGenerator = new BossBodenheimerIc<ndim>(this, hydro, invndim);
   }
@@ -145,9 +148,6 @@ void Simulation<ndim>::GenerateIC(void)
     if (ic == "binary") {
       icGenerator->BinaryStar();
     }
-    else if (ic == "bondi") {
-      icGenerator->BondiAccretion();
-    }
     else if (ic == "box") {
       icGenerator->UniformBox();
     }
@@ -190,9 +190,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "turbisothermsphere") {
       icGenerator->TurbIsothermSphere();
-    }
-    else if (ic == "python") {
-      return;
     }
     //---------------------------------------------------------------------------------------------
     else {
