@@ -5,11 +5,16 @@ compiler:
   - clang
   - gcc
 env:
-  matrix:
   - OPENMP=1 MPICPP=mpic++ OMP_NUM_THREADS=2 OMP_WAIT_POLICY=PASSIVE
   - OPENMP=1 OMP_NUM_THREADS=4
   - OPENMP=0 MPICPP=mpic++ 
   - OPENMP=0
+matrix:
+  exclude:
+  - compiler: clang
+    env: OPENMP=1 OMP_NUM_THREADS=4
+  - compiler: clang
+    env: OPENMP=1 MPICPP=mpic++ OMP_NUM_THREADS=2 OMP_WAIT_POLICY=PASSIVE
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y openmpi-bin libopenmpi-dev
