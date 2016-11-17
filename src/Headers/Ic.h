@@ -125,7 +125,6 @@ public:
   void ContactDiscontinuity(void);
   void EwaldDensity(void);
   void GaussianRing(void);
-  void NohProblem(void);
   void QuadrupleStar(void);
   void RTI(void);
   void SedovBlastWave(void);
@@ -420,6 +419,37 @@ public:
 
   KhiIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   ~KhiIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
+//  Class NohIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    17/11/2016
+//=================================================================================================
+template <int ndim>
+class NohIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  NohIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~NohIc() {};
 
   virtual void Generate(void);
 
