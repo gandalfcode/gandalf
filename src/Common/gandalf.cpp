@@ -126,7 +126,10 @@ int main(int argc, char** argv)
 
   // Read parameters file immediately and record to file
   params->ReadParamsFile(paramfile);
-  params->RecordParametersToFile();
+#ifdef MPI_PARALLEL
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  if (rank == 0) params->RecordParametersToFile();
 
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"],
