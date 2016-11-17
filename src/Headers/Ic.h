@@ -134,9 +134,6 @@ public:
   void BlobTest(void);
   void UniformBox(void);
   void UniformSphere(void);
-  void IsothermSphere(void);
-  void RotIsothermSphere(void);
-  void TurbIsothermSphere(void);
 
 };
 
@@ -420,6 +417,37 @@ public:
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
+
+};
+
+
+
+//=================================================================================================
+//  Class IsothermalSphereIc
+/// \brief   Class to generate ...
+/// \details Class to generate ...
+/// \author  ...
+/// \date    17/11/2016
+//=================================================================================================
+template <int ndim>
+class IsothermalSphereIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  IsothermalSphereIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~IsothermalSphereIc() {};
+
+  virtual void Generate(void);
 
 };
 
