@@ -126,7 +126,6 @@ public:
   void EwaldDensity(void);
   void GaussianRing(void);
   void NohProblem(void);
-  void PlummerSphere(void);
   void QuadrupleStar(void);
   void RTI(void);
   void SedovBlastWave(void);
@@ -421,6 +420,37 @@ public:
 
   KhiIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   ~KhiIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
+//  Class PlummerSphereIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    17/11/2016
+//=================================================================================================
+template <int ndim>
+class PlummerSphereIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  PlummerSphereIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~PlummerSphereIc() {};
 
   virtual void Generate(void);
 
