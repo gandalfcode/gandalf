@@ -31,6 +31,7 @@ before_install:
 script: 
  - export OMPI_CXX=$CXX
  - export PYTHONPATH=$PYTHONPATH:$PWD/..
+ - export OMPI_MCA_mpi_yield_when_idle=1
  - python --version
  - which python
  - make  -j 2 OPENMP=$OPENMP MPICPP=$MPICPP
