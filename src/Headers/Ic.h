@@ -123,7 +123,6 @@ public:
   //-----------------------------------------------------------------------------------------------
   void BinaryStar(void);
   void ContactDiscontinuity(void);
-  void EwaldDensity(void);
   void GaussianRing(void);
   void QuadrupleStar(void);
   void RTI(void);
@@ -311,6 +310,37 @@ public:
 
   EvrardCollapseIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   ~EvrardCollapseIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
+//  Class EwaldIc
+/// \brief   ...
+/// \details ...
+/// \author  ...
+/// \date    16/11/2016
+//=================================================================================================
+template <int ndim>
+class EwaldIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  EwaldIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~EwaldIc() {};
 
   virtual void Generate(void);
 

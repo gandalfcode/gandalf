@@ -114,6 +114,10 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "evrard") {
     icGenerator = new EvrardCollapseIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
+           ic == "ewaldslab" ||  ic == "ewaldcylinder") {
+    icGenerator = new EwaldIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "filament") {
     icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
   }
@@ -159,10 +163,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "cdiscontinuity") {
       icGenerator->ContactDiscontinuity();
-    }
-    else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
-             ic == "ewaldslab" ||  ic == "ewaldcylinder") {
-      icGenerator->EwaldDensity();
     }
     else if (ic == "quadruple") {
       icGenerator->QuadrupleStar();
