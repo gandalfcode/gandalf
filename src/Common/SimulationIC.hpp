@@ -124,6 +124,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "gresho") {
     icGenerator = new GreshoVortexIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "isothermsphere" || ic == "rotisothermsphere" || ic == "turbisothermsphere") {
+    icGenerator = new IsothermalSphereIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "khi") {
     icGenerator = new KhiIc<ndim>(this, hydro, invndim);
   }
@@ -181,15 +184,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "triple") {
       icGenerator->TripleStar();
-    }
-    else if (ic == "isothermsphere") {
-      icGenerator->IsothermSphere();
-    }
-    else if (ic == "rotisothermsphere") {
-      icGenerator->RotIsothermSphere();
-    }
-    else if (ic == "turbisothermsphere") {
-      icGenerator->TurbIsothermSphere();
     }
     //---------------------------------------------------------------------------------------------
     else {
