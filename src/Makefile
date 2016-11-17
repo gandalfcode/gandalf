@@ -154,7 +154,7 @@ endif
 
 
 # Include expensive verification code
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 ifeq ($(DEBUG_LEVEL),1)
 CFLAGS +=
 else ifeq ($(DEBUG_LEVEL),2)
@@ -170,11 +170,9 @@ endif
 #endif
 
 
-#CFLAGS += -DVERIFY_BINARY_TREE
-
 
 # Object files to be compiled
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 SWIG_HEADERS = Simulation.i
 WRAP_OBJ = Simulation_wrap.o
 OBJ = Parameters.o SimUnits.o
@@ -213,7 +211,8 @@ OBJ += CodeTiming.o
 OBJ += Dust.o
 OBJ += Particle.o RandomNumber.o
 OBJ += Supernova.o SupernovaDriver.o
-OBJ += Ic.o BinaryAccretionIc.o BossBodenheimerIc.o DustyBoxIc.o
+OBJ += Ic.o BinaryAccretionIc.o BondiAccretionIc.o
+OBJ += BossBodenheimerIc.o DustyBoxIc.o
 OBJ += EvrardCollapseIc.o FilamentIc.o GreshoVortexIc.o
 OBJ += KhiIc.o PolytropeIc.o SedovBlastwaveIc.o ShocktubeIc.o
 OBJ += SilccIc.o SoundwaveIc.o TurbulentCoreIc.o

@@ -71,7 +71,6 @@ protected:
   void AddRotationalVelocityField(const int, const FLOAT, const FLOAT *, const FLOAT *, FLOAT *);
   void Addr2Sphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
-  void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   void GenerateTurbulentVelocityField(const int, const int, const DOUBLE, DOUBLE *);
   void InterpolateVelocityField(const int, const int, const FLOAT, const FLOAT,
                                 const FLOAT *, const DOUBLE *, FLOAT *);
@@ -123,7 +122,6 @@ public:
   // Initial conditions routines
   //-----------------------------------------------------------------------------------------------
   void BinaryStar(void);
-  void BondiAccretion(void);
   void ContactDiscontinuity(void);
   void EwaldDensity(void);
   void GaussianRing(void);
@@ -192,6 +190,38 @@ public:
   ~BinaryAccretionIc() {};
 
   virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
+//  Class BondiAccretionIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    17/11/2016
+//=================================================================================================
+template <int ndim>
+class BondiAccretionIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  BondiAccretionIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~BondiAccretionIc() {};
+
+  virtual void Generate(void);
+  void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
 
 };
 
