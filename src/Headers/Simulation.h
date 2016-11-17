@@ -102,6 +102,8 @@ class SimulationBase
 
  public:
 
+  static const bool MPI;
+
   static SimulationBase* SimulationFactory(int ndim, string simtype, Parameters* params);
 
 

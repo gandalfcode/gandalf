@@ -50,6 +50,11 @@ using namespace std;
 template <int ndim>
 const FLOAT Simulation<ndim>::invndim = 1.0/ndim;
 
+#ifdef MPI_PARALLEL
+const bool SimulationBase::MPI=true;
+#else
+const bool SimulationBase::MPI=false;
+#endif
 
 //=================================================================================================
 //  SimulationBase::SimulationFactory

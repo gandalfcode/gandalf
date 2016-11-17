@@ -60,6 +60,10 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &n_mpi_cpus);
 
+  // Determines if we have been spawned from python
+  MPI_Comm parent;
+  MPI_Comm_get_parent(&parent);
+
   // Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
 
@@ -159,6 +163,9 @@ int main(int argc, char** argv)
   sim->timing->ComputeTimingStatistics(sim->run_id);
 
 #ifdef MPI_PARALLEL
+  if (parent != MPI_COMM_NULL){
+     MPI_Barrier(parent);
+  }
   MPI_Finalize();
 #endif
 
