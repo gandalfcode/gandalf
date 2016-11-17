@@ -214,7 +214,8 @@ OBJ += Supernova.o SupernovaDriver.o
 OBJ += Ic.o BinaryAccretionIc.o BondiAccretionIc.o
 OBJ += BossBodenheimerIc.o DustyBoxIc.o
 OBJ += EvrardCollapseIc.o FilamentIc.o GreshoVortexIc.o
-OBJ += KhiIc.o PlummerSphereIc.o PolytropeIc.o SedovBlastwaveIc.o ShocktubeIc.o
+OBJ += KhiIc.o NohIc.o PlummerSphereIc.o
+OBJ += PolytropeIc.o SedovBlastwaveIc.o ShocktubeIc.o
 OBJ += SilccIc.o SoundwaveIc.o TurbulentCoreIc.o
 
 ifeq ($(MPI),1)

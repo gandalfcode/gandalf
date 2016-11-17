@@ -123,6 +123,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "khi") {
     icGenerator = new KhiIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "noh") {
+    icGenerator = new NohIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "plummer") {
     icGenerator = new PlummerSphereIc<ndim>(this, hydro, invndim);
   }
@@ -160,9 +163,6 @@ void Simulation<ndim>::GenerateIC(void)
     else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
              ic == "ewaldslab" ||  ic == "ewaldcylinder") {
       icGenerator->EwaldDensity();
-    }
-    else if (ic == "noh") {
-      icGenerator->NohProblem();
     }
     else if (ic == "quadruple") {
       icGenerator->QuadrupleStar();
