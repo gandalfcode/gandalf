@@ -124,6 +124,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "gresho") {
     icGenerator = new GreshoVortexIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "binary" || ic == "triple" || ic == "quadruple") {
+    icGenerator = new HierarchicalSystemIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "isothermsphere" || ic == "rotisothermsphere" || ic == "turbisothermsphere") {
     icGenerator = new IsothermalSphereIc<ndim>(this, hydro, invndim);
   }
@@ -158,17 +161,11 @@ void Simulation<ndim>::GenerateIC(void)
   else {
     icGenerator = new NullIc<ndim>(this, hydro, invndim);
 
-    if (ic == "binary") {
-      icGenerator->BinaryStar();
-    }
-    else if (ic == "box") {
+    if (ic == "box") {
       icGenerator->UniformBox();
     }
     else if (ic == "cdiscontinuity") {
       icGenerator->ContactDiscontinuity();
-    }
-    else if (ic == "quadruple") {
-      icGenerator->QuadrupleStar();
     }
     else if (ic == "rti") {
       icGenerator->RTI();
@@ -181,9 +178,6 @@ void Simulation<ndim>::GenerateIC(void)
     }
     else if (ic == "spitzer") {
       icGenerator->SpitzerExpansion();
-    }
-    else if (ic == "triple") {
-      icGenerator->TripleStar();
     }
     //---------------------------------------------------------------------------------------------
     else {
