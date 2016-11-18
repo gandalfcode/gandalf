@@ -423,6 +423,37 @@ public:
 
 
 //=================================================================================================
+//  Class HierarchicalSystemIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    18/11/2016
+//=================================================================================================
+template <int ndim>
+class HierarchicalSystemIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  HierarchicalSystemIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~HierarchicalSystemIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
 //  Class IsothermalSphereIc
 /// \brief   Class to generate ...
 /// \details Class to generate ...
