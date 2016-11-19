@@ -142,6 +142,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "polytrope") {
     icGenerator = new PolytropeIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "rti") {
+    icGenerator = new RtiIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "sedov") {
     icGenerator = new SedovBlastwaveIc<ndim>(this, hydro, invndim);
   }
@@ -167,9 +170,6 @@ void Simulation<ndim>::GenerateIC(void)
     else if (ic == "cdiscontinuity") {
       icGenerator->ContactDiscontinuity();
     }
-    else if (ic == "rti") {
-      icGenerator->RTI();
-    }
     else if (ic == "shearflow") {
       icGenerator->ShearFlow();
     }
@@ -179,12 +179,13 @@ void Simulation<ndim>::GenerateIC(void)
     else if (ic == "spitzer") {
       icGenerator->SpitzerExpansion();
     }
-    //---------------------------------------------------------------------------------------------
-    else {
-      string message = "Unrecognised parameter : ic = " + ic;
-      ExceptionHandler::getIstance().raise(message);
-    }
-    //---------------------------------------------------------------------------------------------
+  
+  //-----------------------------------------------------------------------------------------------
+  /*else {
+    string message = "Unrecognised parameter : ic = " + ic;
+    ExceptionHandler::getIstance().raise(message);
+  }*/
+  //-----------------------------------------------------------------------------------------------
 
   }
   //-----------------------------------------------------------------------------------------------
