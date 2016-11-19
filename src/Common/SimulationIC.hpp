@@ -151,11 +151,17 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "shocktube") {
     icGenerator = new ShocktubeIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "shearflow") {
+    icGenerator = new ShearflowIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "silcc") {
     icGenerator = new SilccIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "soundwave") {
     icGenerator = new SoundwaveIc<ndim>(this, hydro, invndim);
+  }
+  else if (ic == "spitzer") {
+    icGenerator = new SpitzerExpansionIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "turbcore") {
     icGenerator = new TurbulentCoreIc<ndim>(this, hydro, invndim);
@@ -170,21 +176,16 @@ void Simulation<ndim>::GenerateIC(void)
     else if (ic == "cdiscontinuity") {
       icGenerator->ContactDiscontinuity();
     }
-    else if (ic == "shearflow") {
-      icGenerator->ShearFlow();
-    }
     else if (ic == "sphere") {
       icGenerator->UniformSphere();
     }
-    else if (ic == "spitzer") {
-      icGenerator->SpitzerExpansion();
-    }
-  
+
+
   //-----------------------------------------------------------------------------------------------
-  /*else {
+  else {
     string message = "Unrecognised parameter : ic = " + ic;
     ExceptionHandler::getIstance().raise(message);
-  }*/
+  }
   //-----------------------------------------------------------------------------------------------
 
   }
