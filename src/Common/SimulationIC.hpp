@@ -108,6 +108,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "bb" || ic == "bossbodenheimer") {
     icGenerator = new BossBodenheimerIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "cdiscontinuity") {
+    icGenerator = new ContactDiscontinuityIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "dustybox") {
     icGenerator = new DustyBoxIc<ndim>(this, hydro, invndim);
   }
@@ -172,9 +175,6 @@ void Simulation<ndim>::GenerateIC(void)
 
     if (ic == "box") {
       icGenerator->UniformBox();
-    }
-    else if (ic == "cdiscontinuity") {
-      icGenerator->ContactDiscontinuity();
     }
     else if (ic == "sphere") {
       icGenerator->UniformSphere();

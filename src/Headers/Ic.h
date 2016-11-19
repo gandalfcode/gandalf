@@ -246,6 +246,37 @@ public:
 
 
 //=================================================================================================
+//  Class ContactDiscontinuityIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    19/11/2016
+//=================================================================================================
+template <int ndim>
+class ContactDiscontinuityIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  ContactDiscontinuityIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~ContactDiscontinuityIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
 //  Class DustyBoxIc
 /// \brief   ...
 /// \details ...
