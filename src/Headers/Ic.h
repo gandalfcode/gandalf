@@ -121,16 +121,9 @@ public:
 
   // Initial conditions routines
   //-----------------------------------------------------------------------------------------------
-  void BinaryStar(void);
   void ContactDiscontinuity(void);
   void GaussianRing(void);
-  void QuadrupleStar(void);
-  void RTI(void);
   void SedovBlastWave(void);
-  void ShearFlow(void);
-  void SoundWave(void);
-  void SpitzerExpansion(void);
-  void TripleStar(void);
   void BlobTest(void);
   void UniformBox(void);
   void UniformSphere(void);
@@ -685,6 +678,38 @@ public:
 
 
 //=================================================================================================
+//  Class ShearflowIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    19/11/2016
+//=================================================================================================
+template <int ndim>
+class ShearflowIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  ShearflowIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~ShearflowIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
 //  Class ShocktubeIc
 /// \brief   Class to generate shocktube problem initial conditions.
 /// \details Class to generate shocktube problem initial conditions.
@@ -788,6 +813,38 @@ public:
 
   SoundwaveIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   ~SoundwaveIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
+//  Class SpitzerExpansionIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    19/11/2016
+//=================================================================================================
+template <int ndim>
+class SpitzerExpansionIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  SpitzerExpansionIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~SpitzerExpansionIc() {};
 
   virtual void Generate(void);
 
