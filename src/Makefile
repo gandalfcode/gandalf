@@ -215,8 +215,8 @@ OBJ += Ic.o BinaryAccretionIc.o BondiAccretionIc.o
 OBJ += BossBodenheimerIc.o DustyBoxIc.o
 OBJ += EvrardCollapseIc.o EwaldIc.o FilamentIc.o GreshoVortexIc.o
 OBJ += HierarchicalSystemIc.o IsothermalSphereIc.o KhiIc.o NohIc.o PlummerSphereIc.o
-OBJ += PolytropeIc.o RtiIc.o SedovBlastwaveIc.o ShocktubeIc.o
-OBJ += SilccIc.o SoundwaveIc.o TurbulentCoreIc.o
+OBJ += PolytropeIc.o RtiIc.o SedovBlastwaveIc.o ShearflowIc.o ShocktubeIc.o
+OBJ += SilccIc.o SoundwaveIc.o SpitzerExpansionIc.o TurbulentCoreIc.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
