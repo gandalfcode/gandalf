@@ -912,4 +912,36 @@ public:
   virtual void Generate(void);
 
 };
+
+
+
+//=================================================================================================
+//  Class UniformIc
+/// \brief
+/// \details
+/// \author  D. A. Hubber
+/// \date    15/11/2016
+//=================================================================================================
+template <int ndim>
+class UniformIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  UniformIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~UniformIc() {};
+
+  virtual void Generate(void);
+
+};
 #endif

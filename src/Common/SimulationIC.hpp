@@ -169,25 +169,13 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "turbcore") {
     icGenerator = new TurbulentCoreIc<ndim>(this, hydro, invndim);
   }
-  //-----------------------------------------------------------------------------------------------
-  else {
-    icGenerator = new NullIc<ndim>(this, hydro, invndim);
-
-    if (ic == "box") {
-      icGenerator->UniformBox();
-    }
-    else if (ic == "sphere") {
-      icGenerator->UniformSphere();
-    }
-
-
+  else if (ic == "box" || ic == "sphere") {
+    icGenerator = new UniformIc<ndim>(this, hydro, invndim);
+  }
   //-----------------------------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : ic = " + ic;
     ExceptionHandler::getIstance().raise(message);
-  }
-  //-----------------------------------------------------------------------------------------------
-
   }
   //-----------------------------------------------------------------------------------------------
 
