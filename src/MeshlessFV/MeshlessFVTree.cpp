@@ -759,19 +759,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
       }
     }
 
-
-#ifdef _OPENMP
-    int Nthreads = omp_get_num_threads() ;
-#else
-    int Nthreads = 1 ;
-#endif
-#pragma omp barrier
-#pragma omp for schedule(static)
-    for(i=0; i<Ntot; ++i) {
-      for (k=0; k < Nthreads; ++k)
-        mfvdata[i].levelneib = max(mfvdata[i].levelneib, levelneibbuf[k][i]) ;
-    }
-
     // Free-up local memory for OpenMP thread
     delete[] rdmdtBuffer;
     delete[] dQBuffer;
