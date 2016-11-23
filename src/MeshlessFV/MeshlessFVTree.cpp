@@ -623,7 +623,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
-    for (cc=0; cc<cactive; cc++) {
+    for (int cc=0; cc<cactive; cc++) {
      TreeCellBase<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
