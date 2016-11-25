@@ -1,6 +1,5 @@
 from gandalf.analysis.facade import *
 from gandalf.analysis.compute import L1errornorm
-import os
 import unittest
 
 class SoundWaveTest(unittest.TestCase):
@@ -25,7 +24,7 @@ class SoundWaveMeshlessTest(SoundWaveTest):
         self.sim=newsim(paramfile="tests/hydro_tests/soundwave.dat",sim='meshlessfv',ndim=1)
         self.sim.SetParam("Nhydro",64)
         self.sim.SetParam("kernel","m4")
+        self.sim.SetParam("riemann_solver","hllc")
         self.run_id="SOUNDWAVE_MESHLESS"
         self.sim.SetParam("run_id",self.run_id)
-        #self.sim.SetParam("sim","meshlessfv")
         self.expected_l1error = 2e-3
