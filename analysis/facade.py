@@ -89,8 +89,35 @@ try:
 except AttributeError:
     interactive=True
     
-class dummy_popen:
-    def __init__(self,comm):
+class Async_sim_fetcher:
+    '''Object returned by run_async, to be used to get information on the status
+    of the simuation.
+    
+    Methods
+        poll
+            Return True if the simulation has finished, False otherwise
+        wait
+            Block execution until the simulation has finished, and subsequently
+            load into memory the snapshots produced during the run.
+        read_snaps
+            Load into memory the snapshots produced. You need to call this function
+            only poll reports that the simulation has finished; if using wait
+            this is done automatically. An Exception will be raised if attempting
+            to call this function for a simulation that has not finished yet.
+    '''
+    def __init__(self,sim):
+        self._sim=sim
+        
+    def read_snaps(self):
+        finished=self.poll()
+        if not finished:
+            raise Exception("The simulation has not finished yet, you can't read the snapshots.")
+        SimBuffer.load_snapshots(self._sim)
+        
+    
+class MPI_Popen(Async_sim_fetcher):
+    def __init__(self,sim,comm):
+        Async_sim_fetcher.__init__(self, sim)
         self._comm=comm
         self._barrier=None
         
@@ -101,6 +128,7 @@ class dummy_popen:
             if self._barrier is None:
                 self._barrier=self._comm.Ibarrier()
             self._barrier.wait()
+        self.read_snaps()
         return 0
         
     def poll(self):
@@ -109,15 +137,29 @@ class dummy_popen:
         if self._barrier is None:
             self._barrier=self._comm.Ibarrier()
         test=self._barrier.test()[0]
-        if test:
-            return 0
-        else:
-            return None
+        return test
         
     def _major_version(self):
         from mpi4py import MPI
         major_vers=int(MPI.Get_version()[0])
         return major_vers
+    
+class proxy_Popen(Async_sim_fetcher):
+    def __init__(self,sim,p):
+        Async_sim_fetcher.__init__(self, sim)
+        self._p = p
+        
+    def wait(self):
+        errorcode=self._p.wait()
+        self.read_snaps()
+        return errorcode
+    
+    def poll(self):
+        code= self._p.poll()
+        if code is None:
+            return False
+        else:
+            return True
             
 
 
@@ -664,10 +706,12 @@ def run(no=None):
         update("live")
 
 def run_async(maxprocs=4):
-    '''Run a simulation in async mode. Uses the current simulation object to
-    run in the background a simulation with the gandalf executable. Note that
-    there is NO communication with Python (i.e. you can't inspect the results
-    as the simulation is running).
+    '''Run the current simulation in async mode, i.e. in the background. Return
+    an Async_sim_fetcher object that can be used the query the status of the 
+    simulation (see its documentation for more details). The results will NOT 
+    be available until the user calls wait on the returned object, or, if the 
+    simulation has already finished (which can be checked by calling poll),
+    calling load_snaps.
     
     Keyword Args:
         maxproc (int): if compiled with MPI, specifies how many processes
@@ -683,12 +727,13 @@ def run_async(maxprocs=4):
     if sim.MPI:
         from mpi4py import MPI
         comm=MPI.COMM_SELF.Spawn(gandalf_path, param_path, maxprocs=maxprocs)
-        p=dummy_popen(comm)
-        return p
+        async_fetcher=dummy_popen(sim,comm)
+        return async_fetcher
     else:
         print param_path
         p=subprocess.Popen([gandalf_path,param_path])
-        return p
+        async_fetcher=proxy_Popen(sim,p)
+        return async_fetcher
 
 
 #------------------------------------------------------------------------------

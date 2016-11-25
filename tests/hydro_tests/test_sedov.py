@@ -14,7 +14,6 @@ class SedovTest(unittest.TestCase):
     def test_error(self):
         p=run_async()
         p.wait()
-        loadsim(self.run_id)
         snap(-1)
         errnorm=L1errornorm("sedov","R","press",xmin=0.4,xmax=1)
         self.assertLess(errnorm,self.expected_l1error)

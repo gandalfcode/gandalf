@@ -14,7 +14,6 @@ class SoundWaveTest(unittest.TestCase):
     def test_error(self):
         p=run_async()
         p.wait()
-        loadsim(self.run_id)
         snap(-1)
         errnorm=L1errornorm("soundwave","x","rho",0.01,0.99)
         self.assertLess(errnorm,self.expected_l1error)

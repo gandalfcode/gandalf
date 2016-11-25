@@ -14,7 +14,6 @@ class AdSodTest(unittest.TestCase):
     def test_error(self):
         p=run_async()
         p.wait()
-        loadsim(self.run_id)
         snap(-1)
         errnorm=L1errornorm("shocktube","x","vx",-1.0,1.0)
         self.assertLess(errnorm,self.expected_l1error)
