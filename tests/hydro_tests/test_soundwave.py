@@ -10,18 +10,13 @@ class SoundWaveTest(unittest.TestCase):
         self.run_id="SOUNDWAVE_SPH"
         self.sim.SetParam("run_id",self.run_id)
         self.expected_l1error = 1e-4
-        setupsim()
     
 
     def test_error(self):
-        if self.sim.MPI:
-            from mpi4py import MPI
-            comm=MPI.COMM_SELF.Spawn('bin/gandalf', args=self.run_id+'.param', maxprocs=4)
-            comm.Barrier()
-            loadsim(self.run_id)
-            snap(-1)
-        else:
-            run()
+        p=run_async()
+        p.wait()
+        loadsim(self.run_id)
+        snap(-1)
         errnorm=L1errornorm("soundwave","x","rho",0.01,0.99)
         self.assertLess(errnorm,self.expected_l1error)
 
@@ -33,5 +28,4 @@ class SoundWaveMeshlessTest(SoundWaveTest):
         self.run_id="SOUNDWAVE_MESHLESS"
         self.sim.SetParam("run_id",self.run_id)
         #self.sim.SetParam("sim","meshlessfv")
-        setupsim()
         self.expected_l1error = 2e-3

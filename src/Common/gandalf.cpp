@@ -167,7 +167,13 @@ int main(int argc, char** argv)
 
 #ifdef MPI_PARALLEL
   if (parent != MPI_COMM_NULL){
+#if MPI_VERSION>=3
+    MPI_Request req;
+    MPI_Ibarrier(parent,&req);
+    MPI_Wait(&req,MPI_STATUS_IGNORE);
+#else
      MPI_Barrier(parent);
+#endif
   }
   MPI_Finalize();
 #endif

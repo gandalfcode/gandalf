@@ -27,6 +27,7 @@ import defaults
 from multiprocessing import Manager, Queue, Event
 from plotting import PlottingProcess
 from gandalf.analysis.SimBuffer import SimBuffer, BufferException
+import subprocess
 
 manager = Manager()
 
@@ -87,6 +88,37 @@ try:
     interactive=False
 except AttributeError:
     interactive=True
+    
+class dummy_popen:
+    def __init__(self,comm):
+        self._comm=comm
+        self._barrier=None
+        
+    def wait(self):
+        if self._major_version()<3:
+            self._comm.Barrier()
+        else:
+            if self._barrier is None:
+                self._barrier=self._comm.Ibarrier()
+            self._barrier.wait()
+        return 0
+        
+    def poll(self):
+        if self._major_version()<3:
+            raise NotImplementedError("This MPI version does not support polling. You need to wait!")
+        if self._barrier is None:
+            self._barrier=self._comm.Ibarrier()
+        test=self._barrier.test()[0]
+        if test:
+            return 0
+        else:
+            return None
+        
+    def _major_version(self):
+        from mpi4py import MPI
+        major_vers=int(MPI.Get_version()[0])
+        return major_vers
+            
 
 
 #TODO: add function for resizing (programmatically) the figure
@@ -630,6 +662,33 @@ def run(no=None):
 
         SimBuffer.load_live_snapshot(sim)
         update("live")
+
+def run_async(maxprocs=4):
+    '''Run a simulation in async mode. Uses the current simulation object to
+    run in the background a simulation with the gandalf executable. Note that
+    there is NO communication with Python (i.e. you can't inspect the results
+    as the simulation is running).
+    
+    Keyword Args:
+        maxproc (int): if compiled with MPI, specifies how many processes
+                        to use
+    '''
+    
+    #get the current simulation from the buffer
+    sim=SimBuffer.get_current_sim()
+    setupsim()
+    param_path=sim.GetParam('run_id')+'.param'
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    gandalf_path=os.path.join(dir_path,'../bin/gandalf')
+    if sim.MPI:
+        from mpi4py import MPI
+        comm=MPI.COMM_SELF.Spawn(gandalf_path, param_path, maxprocs=maxprocs)
+        p=dummy_popen(comm)
+        return p
+    else:
+        print param_path
+        p=subprocess.Popen([gandalf_path,param_path])
+        return p
 
 
 #------------------------------------------------------------------------------
