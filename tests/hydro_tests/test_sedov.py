@@ -1,6 +1,5 @@
 from gandalf.analysis.facade import *
 from gandalf.analysis.compute import L1errornorm
-import os
 import unittest
 
 class SedovTest(unittest.TestCase):
