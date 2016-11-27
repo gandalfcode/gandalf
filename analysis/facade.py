@@ -107,9 +107,13 @@ class Async_sim_fetcher:
     '''
     def __init__(self,sim):
         self._sim=sim
+        self._finished=False
         
     def read_snaps(self):
-        finished=self.poll()
+        try:
+            finished=self.poll()
+        except NotImplementedError:
+            finished=self._finished
         if not finished:
             raise Exception("The simulation has not finished yet, you can't read the snapshots.")
         SimBuffer.load_snapshots(self._sim)
@@ -124,6 +128,7 @@ class MPI_Popen(Async_sim_fetcher):
     def wait(self):
         if self._major_version()<3:
             self._comm.Barrier()
+            self._finished=True
         else:
             if self._barrier is None:
                 self._barrier=self._comm.Ibarrier()
