@@ -727,7 +727,7 @@ def run_async(maxprocs=4):
     if sim.MPI:
         from mpi4py import MPI
         comm=MPI.COMM_SELF.Spawn(gandalf_path, param_path, maxprocs=maxprocs)
-        async_fetcher=dummy_popen(sim,comm)
+        async_fetcher=MPI_Popen(sim,comm)
         return async_fetcher
     else:
         print param_path
