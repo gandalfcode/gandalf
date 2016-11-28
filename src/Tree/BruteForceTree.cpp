@@ -295,6 +295,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
     ltot = 1;
     if (Ntot > 0) StockTree(celldata[0], partdata, true);
     else ltot = 0;
+  }
 
   return;
 }
