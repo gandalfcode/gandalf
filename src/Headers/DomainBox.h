@@ -75,12 +75,12 @@ MPI_Datatype CreateBoxType (Box<ndim> dummy) {
 /// \date   03/04/2013
 //=================================================================================================
 template <int ndim>
-struct DomainBox : public Box<3> {
-  boundaryEnum boundary_lhs[3];     ///< LHS boundary types
-  boundaryEnum boundary_rhs[3];     ///< RHS boundary types
-  FLOAT size[3];                    ///< Side-lengths of bounding box
-  FLOAT half[3];                    ///< Half side-lengths of bounding box
-  bool PeriodicGravity ;               ///< Whether the domain is using periodic gravity.
+struct DomainBox : public Box<ndim> {
+  boundaryEnum boundary_lhs[3];        ///< LHS boundary types
+  boundaryEnum boundary_rhs[3];        ///< RHS boundary types
+  FLOAT size[ndim];                    ///< Side-lengths of bounding box
+  FLOAT half[ndim];                    ///< Half side-lengths of bounding box
+  bool PeriodicGravity;                ///< Whether the domain is using periodic gravity.
 };
 
 

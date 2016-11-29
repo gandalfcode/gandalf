@@ -36,37 +36,59 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 FLOAT Ic<ndim>::CalculateMassInBox
- (const int grid[ndim],
-  const Box<ndim> &box)
+ (const Box<ndim> &box)
 {
+  int maxGridSize = 512;
+  int grid[ndim];
   FLOAT dr[ndim];
   FLOAT r[ndim];
-  FLOAT rho;
-  FLOAT mtot = (FLOAT) 0.0;
-  FLOAT dV = 1.0;
+  FLOAT mtot      = (FLOAT) 0.0;
+  FLOAT dV        = (FLOAT) 1.0;
+  FLOAT lengthmax = (FLOAT) 0.0;
 
+  // Calculate the maximum box length and then the appropriate grid spacing in each direction
   for (int k=0; k<ndim; k++) {
-    dr[k] = (box.max[k] - box.min[k]) / (FLOAT) grid[k];
-    dV *= dr[k];
+    lengthmax = max(lengthmax, (box.max[k] - box.min[k]));
+  }
+  for (int k=0; k<ndim; k++) {
+    grid[k] = (int) ((FLOAT) maxGridSize*(box.max[k] - box.min[k])/lengthmax);
+    dr[k]   = (box.max[k] - box.min[k]) / (FLOAT) grid[k];
+    dV      *= dr[k];
   }
 
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 1) {
+    for (int i=0; i<grid[0]; i++) {
+      r[0] = box.min[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
+      mtot += this->GetValue("rho", r);
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 2) {
+    for (int i=0; i<grid[0]; i++) {
+      r[0] = box.min[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
+      for (int j=0; j<grid[1]; j++) {
+        r[1] = box.min[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
+        mtot += this->GetValue("rho", r);
+      }
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
   if (ndim == 3) {
-
     for (int i=0; i<grid[0]; i++) {
       r[0] = box.min[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
       for (int j=0; j<grid[1]; j++) {
         r[1] = box.min[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
         for (int k=0; k<grid[2]; k++) {
           r[2] = box.min[2] + ((FLOAT) k + (FLOAT) 0.5)*dr[2];
-          rho = this->GetValue("rho", r);
-          mtot += rho;
+          mtot += this->GetValue("rho", r);
         }
       }
     }
-
-    mtot *= dV;
-
   }
+  //-----------------------------------------------------------------------------------------------
+
+  mtot *= dV;
 
   return mtot;
 }
@@ -157,11 +179,11 @@ void Ic<ndim>::CheckInitialConditions(void)
     okflag = true;
 
     // Check that main particle properties are valid floating point numbers
-    if (part.m <= (FLOAT) 0.0 || isnan(part.m) || isinf(part.m)) okflag = false;
-    if (part.u < (FLOAT) 0.0 || isnan(part.u) || isinf(part.u)) okflag = false;
+    if (!isnormal(part.m)) okflag = false;
+    if (!isfinite(part.u)) okflag = false;
     for (k=0; k<ndim; k++) {
-      if (isnan(part.r[k]) || isinf(part.r[k])) okflag = false;
-      if (isnan(part.v[k]) || isinf(part.v[k])) okflag = false;
+      if (!isfinite(part.r[k])) okflag = false;
+      if (!isfinite(part.v[k])) okflag = false;
     }
 
     // Check that all particles reside inside any defined boundaries
@@ -696,6 +718,70 @@ void Ic<ndim>::AddBinaryStar
   else {
     string message = "Binary test not available in 1D";
     ExceptionHandler::getIstance().raise(message);
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Ic::GetMaximumDensityField
+/// Populate given bounding box with random particles.
+//=================================================================================================
+template <int ndim>
+FLOAT Ic<ndim>::GetMaximumDensity
+ (const Box<ndim> &box,                ///< [in] Bounding box containing particles
+  RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
+{
+  int numSamples = 1000000;
+  FLOAT rhoMax = (FLOAT) 0.0;
+  FLOAT rrand[ndim];
+
+  for (int i=0; i<numSamples; i++) {
+    for (int k=0; k<ndim; k++) {
+      rrand[k] = box.min[k] + (box.max[k] - box.min[k])*randnumb->floatrand();
+    }
+    rhoMax = max(rhoMax, GetValue("rho", rrand));
+  }
+
+  return rhoMax;
+}
+
+
+
+//=================================================================================================
+//  Ic::AddMonteCarloDensityField
+/// Populate given bounding box with random particles.
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::AddMonteCarloDensityField
+ (const int Npart,                     ///< [in] No. of particles
+  const Box<ndim> &box,                ///< [in] Bounding box containing particles
+  FLOAT *r,                            ///< [out] Positions of particles
+  RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
+{
+  FLOAT rho;
+  FLOAT rhoMax = GetMaximumDensity(box, randnumb);
+  FLOAT rrand[ndim];
+
+  debug2("[Ic::AddMonteCarloDensityField]");
+  assert(r);
+
+  //-----------------------------------------------------------------------------------------------
+  for (int i=0; i<Npart; i++) {
+
+    // Iterate with random Monte-Carlo sampling of the density field
+    do {
+      for (int k=0; k<ndim; k++) {
+        rrand[k] = box.min[k] + (box.max[k] - box.min[k])*randnumb->floatrand();
+      }
+      rho = rhoMax*randnumb->floatrand();
+    } while (GetValue("rho", rrand) < rho);
+
+    // Copy "correct" particle position to array for IC generation
+    for (int k=0; k<ndim; k++) r[ndim*i + k] = rrand[k];
   }
   //-----------------------------------------------------------------------------------------------
 

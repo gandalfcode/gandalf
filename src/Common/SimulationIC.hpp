@@ -118,7 +118,8 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator = new EvrardCollapseIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
-           ic == "ewaldslab" ||  ic == "ewaldcylinder") {
+           ic == "ewaldslab" ||  ic == "ewaldcylinder" ||
+           ic == "jeans") {
     icGenerator = new EwaldIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "filament") {
@@ -171,6 +172,9 @@ void Simulation<ndim>::GenerateIC(void)
   }
   else if (ic == "box" || ic == "sphere") {
     icGenerator = new UniformIc<ndim>(this, hydro, invndim);
+  }
+  else if (ic == "test") {
+    icGenerator = new TestIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
   else {
