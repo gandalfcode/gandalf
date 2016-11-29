@@ -122,7 +122,7 @@ def TimeData(quantity, id=None):
         except Exception:
             raise KeyError("TimeData: we do not know how to compute " + quantity)
         #if the quantity exists, we can now build a data fetcher on the fly
-        if id==None:
+        if id is None:
             raise KeyError("TimeData: you didn't specify the id of the particle for plotting quantity " + quantity)
         id=int(id)
         from compute import particle_data

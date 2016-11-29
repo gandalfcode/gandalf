@@ -17,7 +17,7 @@ class FreeFallTest(unittest.TestCase):
     def test_error(self):
         p=run_async()
         fetcher_5=CreateTimeData('lr',lagrangian_radii,mfrac=0.5)
-        fetcher_t=CreateTimeData('t',timeratiofreefall)
+        fetcher_t=CreateTimeData('tr',timeratiofreefall)
         p.wait()
         time=fetcher_t.fetch()[1]
         lr_5=fetcher_5.fetch()[1]
@@ -25,7 +25,6 @@ class FreeFallTest(unittest.TestCase):
         for i,t in enumerate(time):
             analytical_r[i]=freefall_analytical_radius(t)
         errnorm= np.linalg.norm(analytical_r*lr_5[0] - lr_5, ord=1)/time.size
-        print errnorm        
         self.assertLess(errnorm,self.expected_l1error)
 
 class FreeFallMeshlessTest(FreeFallTest):

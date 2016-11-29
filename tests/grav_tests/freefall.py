@@ -36,19 +36,19 @@ if __name__=="__main__":
     CreateTimeData('lr1',lagrangian_radii,mfrac=0.1)
     r_5=CreateTimeData('lr2',lagrangian_radii,mfrac=0.5).fetch()[1]
     CreateTimeData('lr3',lagrangian_radii,mfrac=0.9,label='r/R$_0$')
-    time=CreateTimeData('t',timeratiofreefall).fetch()[1]
+    time=CreateTimeData('tr',timeratiofreefall).fetch()[1]
     initial_radius=r_5[0]
     r_5/=r_5[0]
     
     analytical_5 = np.empty_like(r_5)
     for i,t in enumerate(time):
-        analytical_5[i]=analytical(t)
+        analytical_5[i]=freefall_analytical_radius(t)
     
     # Plot Lagrangian radii as a function of time
-    time_plot("t","lr3",linestyle='-')
+    time_plot("tr","lr3",linestyle='-')
     limit("lr3",0.0,1.05)
-    time_plot("t","lr2",overplot=True,linestyle='-')
-    time_plot("t","lr1",overplot=True,linestyle='-')
+    time_plot("tr","lr2",overplot=True,linestyle='-')
+    time_plot("tr","lr1",overplot=True,linestyle='-')
     plt.plot(time,analytical_5*initial_radius)
     plt.gca().set_ylabel('r/R$_0$')
     plt.gca().set_xlabel('t/t$_\mathrm{ff}$')
