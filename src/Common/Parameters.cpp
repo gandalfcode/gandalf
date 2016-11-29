@@ -392,7 +392,6 @@ void Parameters::SetDefaultValues(void)
   stringparams["particle_distribution"] = "cubic_lattice";
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
-  intparams["regularise_particle_ics"] = 0;
   intparams["Nreg"] = 1;
   intparams["field_type"] = 1;
   intparams["gridsize"] = 64;
@@ -446,7 +445,13 @@ void Parameters::SetDefaultValues(void)
   floatparams["asound"] = 1.0;
   floatparams["zmax"] = 1.0;
   floatparams["thermal_energy"] = 1.0;
-  floatparams["mach"]=2.7;
+  floatparams["mach"] = 2.7;
+
+  // Regularising initial conditions parameters
+  //-----------------------------------------------------------------------------------------------
+  intparams["regularise_particle_ics"] = 0;
+  floatparams["alpha_reg"] = 0.5;
+  floatparams["rho_reg"] = 0.5;
 
   // SILCC initial conditions parameters
   //-----------------------------------------------------------------------------------------------
