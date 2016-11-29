@@ -75,6 +75,9 @@ protected:
   void InterpolateVelocityField(const int, const int, const FLOAT, const FLOAT,
                                 const FLOAT *, const DOUBLE *, FLOAT *);
 
+  void AddMonteCarloDensityField(const int, const Box<ndim> &, FLOAT *, RandomNumber *);
+  virtual FLOAT GetMaximumDensity(const Box<ndim> &, RandomNumber *);
+
 
 public:
 
@@ -100,9 +103,8 @@ public:
   //-----------------------------------------------------------------------------------------------
   void CheckInitialConditions(void);
   void CalculateMassTable(std::string, FLOAT, FLOAT);
-  FLOAT CalculateMassInBox(const int*, const Box<ndim>&);
+  FLOAT CalculateMassInBox(const Box<ndim>&);
   FLOAT FindMassIntegratedPosition(FLOAT);
-
 
 
   // Static functions which can be used outside of Ic class
@@ -942,6 +944,41 @@ public:
   ~UniformIc() {};
 
   virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
+//  Class TestIc
+/// \brief
+/// \details
+/// \author  D. A. Hubber
+/// \date    15/11/2016
+//=================================================================================================
+template <int ndim>
+class TestIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+    FLOAT mtot;
+
+
+public:
+
+  TestIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~TestIc() {};
+
+  virtual void Generate(void);
+  virtual FLOAT GetValue(const std::string, const FLOAT *);
 
 };
 #endif

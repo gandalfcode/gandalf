@@ -322,7 +322,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Regularise particle positions (if selected in parameters file)
   if (simparams->intparams["regularise_particle_ics"] == 1) {
-    RegulariseParticleDistribution(simparams->intparams["Nreg"]);
+    RegulariseInitialConditions(simparams->intparams["Nreg"]);
   }
 
   // Search ghost particles
@@ -1497,32 +1497,31 @@ void SphSimulation<ndim>::WriteExtraSinkOutput(void)
 /// ...
 //=================================================================================================
 template <int ndim>
-void SphSimulation<ndim>::RegulariseParticleDistribution
+void SphSimulation<ndim>::RegulariseInitialConditions
  (const int Nreg)                                  ///< [in] No. of regularisation steps
 {
-  FLOAT alphaReg = 0.0;                            // ..
-  FLOAT alphaRegMax = 0.1;                         // Particle displacement magnitude
-  FLOAT rhoReg = 0.5;                              // ..
+  FLOAT alphaReg = simparams->floatparams["alpha_reg"];
+  FLOAT rhoReg = simparams->floatparams["rho_reg"];
   FLOAT *rreg = new FLOAT[ndim*sph->Nhydromax];    // Array of particle positions
 
+  // Prepare box for constraining regularised
   DomainBox<ndim> localBox = simbox;
   for (int k=0; k<ndim; k++) localBox.boundary_lhs[k] = periodicBoundary;
   for (int k=0; k<ndim; k++) localBox.boundary_rhs[k] = periodicBoundary;
+  FLOAT mBox = icGenerator->CalculateMassInBox(localBox);
 
-  debug1("[SphSimulation::RegulariseParticleDistribution]");
+
+  debug1("[SphSimulation::RegulariseInitialConditions]");
 
   //===============================================================================================
   for (int ireg=0; ireg<Nreg; ireg++) {
 
-    //if (ireg%10 == 0) cout << "REGULARISE : " << ireg << "   " << Nreg << endl;
-
-    // Increase alphaReg for last few iterations to improve particle order
-    if (ireg >= Nreg - 20) {
-      alphaReg = (FLOAT) (ireg + 21 - Nreg)*alphaRegMax / 20.0;
-    }
-
     // Buid/re-build tree, create ghosts and update particle properties
     rebuild_tree = true;
+    for (int i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim> &part = sph->GetSphParticlePointer(i);
+      part.flags.set_flag(active);
+    }
     sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, sph);
     sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
@@ -1531,7 +1530,6 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
     //=============================================================================================
 #pragma omp parallel default(none) shared(alphaReg, rhoReg, rreg)
     {
-      int k;
       FLOAT dr[ndim];
       FLOAT drsqd;
       int *neiblist = new int[sph->Nhydromax];
@@ -1541,8 +1539,8 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
 #pragma omp for
       for (int i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim> &part = sph->GetSphParticlePointer(i);
-        FLOAT invhsqd = (FLOAT) 1.0/(part.h*part.h) ;
-        for (k=0; k<ndim; k++) rreg[ndim*i + k] = (FLOAT) 0.0;
+        FLOAT invhsqd = (FLOAT) 1.0/(part.h*part.h);
+        for (int k=0; k<ndim; k++) rreg[ndim*i + k] = (FLOAT) 0.0;
 
         // Find list of gather neighbours
         int Nneib = sphneib->GetGatherNeighbourList(part.r, sph->kernrange*part.h,
@@ -1555,26 +1553,25 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
           int j = neiblist[jj];
           SphParticle<ndim> &neibpart = sph->GetSphParticlePointer(j);
 
-          for (k=0; k<ndim; k++) dr[k] = neibpart.r[k] - part.r[k];
+          for (int k=0; k<ndim; k++) dr[k] = neibpart.r[k] - part.r[k];
           drsqd = DotProduct(dr, dr, ndim);
           if (drsqd >= part.hrangesqd) continue;
           //for (k=0; k<ndim; k++) rreg[ndim*i + k] -= dr[k]*sph->kernp->w0_s2(drsqd*invhsqd);
 
+          // Constrain rho difference to 10 - 1000% (in case of steep density changes/gradients)
           FLOAT rhotrue = icGenerator->GetValue("rho", neibpart.r);
           FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue + small_number);
           rhofrac = max(rhofrac, -0.1);
           rhofrac = min(rhofrac, 10.0);
-          //cout << "rhotrue : " << icGenerator->GetValue("rho", neibpart.r) << "   " << neibpart.rho << endl;
 
-          for (k=0; k<ndim; k++) {
+          for (int k=0; k<ndim; k++) {
             rreg[ndim*i + k] -=
               dr[k]*sph->kernp->w0_s2(drsqd*invhsqd)*(rhoReg*rhofrac + alphaReg);
           }
 
         }
         //-----------------------------------------------------------------------------------------
-        //cout << "rreg[" << i << "] : " << rreg[ndim*i] << "   " << rreg[ndim+i+1] << "   "
-          //   << part.rho << "   " << icGenerator->GetValue("rho", part.r) << endl;;
+
 
         for (int k=0; k<ndim; k++) {
           rreg[ndim*i + k] = min(rreg[ndim*i + k], simbox.size[k]);
@@ -1590,7 +1587,7 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
 #pragma omp for
       for (int i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim> &part = sph->GetSphParticlePointer(i);
-        for (k=0; k<ndim; k++) part.r[k] += rreg[ndim*i + k];
+        for (int k=0; k<ndim; k++) part.r[k] += rreg[ndim*i + k];
       }
 
       delete[] neiblist;
@@ -1599,7 +1596,6 @@ void SphSimulation<ndim>::RegulariseParticleDistribution
     //=============================================================================================
 
     // Check that new positions don't fall outside the domain box
-    //sphint->CheckBoundaries(simbox, sph);
     sphint->CheckBoundaries(localBox, sph);
 
   }

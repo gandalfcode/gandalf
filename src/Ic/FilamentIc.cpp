@@ -50,7 +50,6 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
   Lfilament = (FLOAT) 1.6;
   temp0     = simparams->floatparams["temp0"];
 
-
   // Some sanity checking to ensure correct units are used for these ICs
   if (simparams->stringparams["routunit"] != "pc") {
     ExceptionHandler::getIstance().raise("r unit not set to pc");
@@ -70,16 +69,10 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
   u0 = temp0/gammaone/mu_bar;
 
   // Compute total mass inside simulation box
-  int grid[ndim];
-  if (ndim == 3) {
-    grid[0] = 256;
-    grid[1] = 256;
-    grid[2] = 2048;
-  }
   Box<ndim> box;
   for (int k=0; k<ndim; k++) box.min[k] = simbox.min[k];
   for (int k=0; k<ndim; k++) box.max[k] = simbox.max[k];
-  mtot = this->CalculateMassInBox(grid, box);
+  mtot = this->CalculateMassInBox(box);
 
   std::cout << "rho0 : " << rho0*simunits.rho.outscale << " " << simunits.rho.outunit << std::endl;
   std::cout << "mtot : " << mtot*simunits.m.outscale << " " << simunits.m.outunit << std::endl;
@@ -104,31 +97,20 @@ void FilamentIc<ndim>::Generate(void)
   //-----------------------------------------------------------------------------------------------
   if (ndim == 3) {
 
-    int i;                               // Particle counter
-    int k;                               // Dimension counter
-    FLOAT *r;
-
-    // Create local copies of initial conditions parameters
-    int Npart          = simparams->intparams["Nhydro"];
-    FLOAT gammaone     = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+    FLOAT Rsqd;
+    int Npart      = simparams->intparams["Nhydro"];
+    FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
 
     debug2("[FilamentIc::Generate]");
-
 
     // Allocate local and main particle memory
     hydro->Nhydro = Npart;
     sim->AllocateParticleMemory();
     mp = 1.0*mtot / (FLOAT) Npart;
-
     std::cout << "Nhydro : " << Npart << std::endl;
 
-    FLOAT Rsqd;
-    r = new FLOAT[ndim*Npart];
-    //this->AddRandomBox(Npart, simbox, r, sim->randnumb);
-
-
     // Record particle properties in main memory
-    for (i=0; i<hydro->Nhydro; i++) {
+    for (int i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
 
       do {
@@ -138,11 +120,10 @@ void FilamentIc<ndim>::Generate(void)
         Rsqd = part.r[0]*part.r[0] + part.r[1]*part.r[1];
       } while (Rsqd > Rfilament*Rfilament);
 
-      //for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
-      for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
       part.m = mp;
       part.u = u0;
-      part.ptype = gas_type;
+      part.ptype = gas;
     }
 
   }
@@ -177,9 +158,6 @@ FLOAT FilamentIc<ndim>::GetValue
     FLOAT z = r[2];
     if (R < Rfilament && fabs(z) < Lfilament) {
       return rho0 / ((FLOAT) 1.0 + radsqd/r0/r0 + z*z/r0/r0/aconst/aconst);
-      //return rho0 / ((FLOAT) 1.0 + radsqd/r0/r0);
-      //return rho0;
-      //return rho0 / ((FLOAT) 1.0 + z*z/r0/r0/aconst/aconst);
     }
     else {
       return (FLOAT) 0.0;

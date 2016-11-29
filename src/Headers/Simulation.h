@@ -266,7 +266,7 @@ class Simulation : public SimulationBase
   virtual void ProcessNbodyParameters(void);
   virtual void ProcessParameters(void)=0;
   virtual void RecordDiagnostics(void);
-  virtual void RegulariseParticleDistribution(const int) {};
+  virtual void RegulariseInitialConditions(const int) {};
   virtual void SetComFrame(void);
   virtual void SmoothParticleQuantity(const int, FLOAT *) {};
   virtual void UpdateDiagnostics(void);
@@ -420,7 +420,7 @@ class SphSimulation : public Simulation<ndim>
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
-  virtual void RegulariseParticleDistribution(const int);
+  virtual void RegulariseInitialConditions(const int);
   virtual void SmoothParticleQuantity(const int, FLOAT *);
 
   Sph<ndim> *sph;                      ///< SPH algorithm pointer
