@@ -106,7 +106,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // Integrate positions of particles
-  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, mfv->GetMeshlessFVParticleArray());
+  mfv->IntegrateParticles(n, t, timestep, simbox);
 
   // Advance N-body particle positions
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
@@ -254,7 +254,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // End-step terms for all hydro particles
-  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+  mfv->EndTimestep(n, t, timestep);
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Update all active cell counters in the tree
@@ -264,7 +264,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 #ifdef MPI_PARALLEL
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif

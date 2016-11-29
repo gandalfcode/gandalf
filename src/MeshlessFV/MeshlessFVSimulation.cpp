@@ -129,6 +129,9 @@ MeshlessFV<ndim>* _MeshlessTimeIntegFactory
   else if (sim == "mfvrk") {
     return _MeshlessFactorySlopes<ndim, Kernel, MfvRungeKutta>(simparams, simunits) ;
   }
+  else if (sim == "mfvlf") {
+    return _MeshlessFactorySlopes<ndim, Kernel, MfvLeapFrog>(simparams, simunits) ;
+  }
 
   string message = "Invalid option for the simulation type parameter: " + sim;
   ExceptionHandler::getIstance().raise(message);
@@ -292,6 +295,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   nbody->timing   = timing;
   //if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || sim == "godunov_hydro") {
     sinks->timing    = timing;
+    mfv->timing = timing;
     mfvneib->SetTimingObject(timing);
   //}*/
 
@@ -632,7 +636,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Call EndTimestep to set all 'beginning-of-step' variables
-  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+  mfv->EndTimestep(n, t, timestep);
   nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
   this->CalculateDiagnostics();

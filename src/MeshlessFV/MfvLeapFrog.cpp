@@ -1,5 +1,5 @@
 //=================================================================================================
-//  MfvMuscl.cpp
+//  MfvLeapFrog.cpp
 //  Contains all functions for calculating Meshless Finite-Volume Hydrodynamics quantities.
 //
 //  This file is part of GANDALF :
@@ -41,12 +41,12 @@ using namespace std;
 
 
 //=================================================================================================
-//  MfvMuscl::MfvMuscl
-/// MfvMuscl class constructor.  Calls main SPH class constructor and also
+//  MfvLeapFrog::MfvLeapFrog
+/// MfvLeapFrog class constructor.  Calls main SPH class constructor and also
 /// sets additional kernel-related quantities
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
-MfvMuscl<ndim, kernelclass,SlopeLimiter>::MfvMuscl
+MfvLeapFrog<ndim, kernelclass,SlopeLimiter>::MfvLeapFrog
  (int _hydro_forces, int _self_gravity, FLOAT _accel_mult, FLOAT _courant_mult,
   FLOAT _h_fac, FLOAT _h_converge, FLOAT _gamma, string _gas_eos, string KernelName,
   int size_part, SimUnits &units, Parameters *params):
@@ -57,12 +57,12 @@ MfvMuscl<ndim, kernelclass,SlopeLimiter>::MfvMuscl
 
 
 //=================================================================================================
-//  MfvMuscl::ComputeGodunovFlux
+//  MfvLeapFrog::ComputeGodunovFlux
 /// Calculate the Godunov flux between particle i and all neighbours storing all the partial
 /// sums of conserved variables, dQ, between neighbours.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
-void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
+void MfvLeapFrog<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   const int *neiblist,                 ///< [in] id of gather neibs in neibpart
@@ -147,6 +147,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     for (var=0; var<nvar; var++) Wj[var] = neibpart[j].Wprim[var] + dW[var];
     for (k=0; k<ndim; k++) Wj[k] -= vface[k];
 
+
     // Time-integrate RHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wj, gradW, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
@@ -198,14 +199,14 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
 /// Calculate or reset all quantities for all particles that reach the end of their timesteps.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
-void MfvMuscl<ndim, kernelclass,SlopeLimiter>::IntegrateParticles
+void MfvLeapFrog<ndim, kernelclass,SlopeLimiter>::IntegrateParticles
  (const int n,                         ///< [in] Integer time in block time struct
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
   const DomainBox<ndim> &simbox)       ///< [in] Simulation box
 {
-  debug2("[MeshlessFVMuscl::IntegrateParticles]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFVMUSCL_INTEGRATE_PARTICLES");
+  debug2("[MeshlessFVLeapFrog::IntegrateParticles]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFVLF_INTEGRATE_PARTICLES");
 
   MeshlessFVParticle<ndim>* partdata = GetMeshlessFVParticleArray() ;
 
@@ -240,14 +241,13 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::IntegrateParticles
     this->ComputeThermalProperties(part);
     this->UpdatePrimitiveVector(part);
 
-
     //---------------------------------------------------------------------------------------------
     if (!staticParticles) {
       part.flags.set_flag(update_density);
 
       //-------------------------------------------------------------------------------------------
       for (int k=0; k<ndim; k++) {
-        part.r[k] = part.r0[k] + (FLOAT) 0.5*(part.v0[k] + part.v[k])*dt;
+        part.r[k] = part.r0[k] + part.v0[k] * dt;
 
 
         // Check if particle has crossed LHS boundary
@@ -281,7 +281,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::IntegrateParticles
             part.r0[k] -= simbox.size[k];
           }
 
-          // Check if wall or mirror boundaryq
+          // Check if wall or mirror boundary
           if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
             part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
             part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
@@ -312,13 +312,13 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::IntegrateParticles
 /// Calculate or reset all quantities for all particles that reach the end of their timesteps.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
-void MfvMuscl<ndim, kernelclass,SlopeLimiter>::EndTimestep
+void MfvLeapFrog<ndim, kernelclass,SlopeLimiter>::EndTimestep
  (const int n,                         ///< [in] Integer time in block time struct
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep)                ///< [in] Base timestep value
 {
-  debug2("[MeshlessFVMuscl::EndTimestep]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFVMUSCL_END_TIMESTEP");
+  debug2("[MeshlessFVLeapFrog::EndTimestep]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFVLF_END_TIMESTEP");
 
   MeshlessFVParticle<ndim>* partdata = GetMeshlessFVParticleArray() ;
 
@@ -335,7 +335,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::EndTimestep
 
     // If particle is at the end of its timestep
     //---------------------------------------------------------------------------------------------
-    if (dn == nstep) {
+    if (dn == 0) {
 
       // Integrate all conserved quantities to end of the step (adding sums from neighbours)
       FLOAT Qcons[nvar] ;
@@ -365,7 +365,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::EndTimestep
       // Update all values to the beginning of the next step
       part.nlast  = n;
       part.tlast  = t;
-      part.flags.set_flag(active);
+      part.flags.unset_flag(active);
       for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
@@ -374,11 +374,6 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::EndTimestep
       for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
       for (k=0; k<ndim; k++) part.a[k] = 0.0;
       part.gpot=0.0;
-
-      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
-
-      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
-
     }
     //---------------------------------------------------------------------------------------------
     else {
@@ -396,63 +391,63 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::EndTimestep
 
 
 
-template class MfvMuscl<1, M4Kernel, NullLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, M4Kernel, NullLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, M4Kernel, NullLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, QuinticKernel, NullLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, QuinticKernel, NullLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, QuinticKernel, NullLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, TabulatedKernel, NullLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, TabulatedKernel, NullLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, TabulatedKernel, NullLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, M4Kernel, NullLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, M4Kernel, NullLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, M4Kernel, NullLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, QuinticKernel, NullLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, QuinticKernel, NullLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, QuinticKernel, NullLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, TabulatedKernel, NullLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, TabulatedKernel, NullLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, TabulatedKernel, NullLimiter<3,MeshlessFVParticle> >;
 
 
-template class MfvMuscl<1, M4Kernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, M4Kernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, M4Kernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, QuinticKernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, QuinticKernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, QuinticKernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, TabulatedKernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, TabulatedKernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, TabulatedKernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, M4Kernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, M4Kernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, M4Kernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, QuinticKernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, QuinticKernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, QuinticKernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, TabulatedKernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, TabulatedKernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, TabulatedKernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
 
-template class MfvMuscl<1, M4Kernel, TVDScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, M4Kernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, M4Kernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, QuinticKernel, TVDScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, QuinticKernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, QuinticKernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, TabulatedKernel,TVDScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, TabulatedKernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, TabulatedKernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, M4Kernel, TVDScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, M4Kernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, M4Kernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, QuinticKernel, TVDScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, QuinticKernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, QuinticKernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, TabulatedKernel,TVDScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, TabulatedKernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, TabulatedKernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
 
-template class MfvMuscl<1, M4Kernel, ScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, M4Kernel, ScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, M4Kernel, ScalarLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, QuinticKernel, ScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, QuinticKernel, ScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, QuinticKernel, ScalarLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, TabulatedKernel, ScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, TabulatedKernel, ScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, TabulatedKernel, ScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, M4Kernel, ScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, M4Kernel, ScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, M4Kernel, ScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, QuinticKernel, ScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, QuinticKernel, ScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, QuinticKernel, ScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, TabulatedKernel, ScalarLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, TabulatedKernel, ScalarLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, TabulatedKernel, ScalarLimiter<3,MeshlessFVParticle> >;
 
-template class MfvMuscl<1, M4Kernel, Springel2009Limiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, M4Kernel, Springel2009Limiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, M4Kernel, Springel2009Limiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, QuinticKernel, Springel2009Limiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, QuinticKernel, Springel2009Limiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, QuinticKernel, Springel2009Limiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, TabulatedKernel, Springel2009Limiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, TabulatedKernel, Springel2009Limiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, TabulatedKernel, Springel2009Limiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, M4Kernel, Springel2009Limiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, M4Kernel, Springel2009Limiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, M4Kernel, Springel2009Limiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, QuinticKernel, Springel2009Limiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, QuinticKernel, Springel2009Limiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, QuinticKernel, Springel2009Limiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, TabulatedKernel, Springel2009Limiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, TabulatedKernel, Springel2009Limiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, TabulatedKernel, Springel2009Limiter<3,MeshlessFVParticle> >;
 
-template class MfvMuscl<1, M4Kernel, GizmoLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, M4Kernel, GizmoLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, M4Kernel, GizmoLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, QuinticKernel, GizmoLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, QuinticKernel, GizmoLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, QuinticKernel, GizmoLimiter<3,MeshlessFVParticle> >;
-template class MfvMuscl<1, TabulatedKernel, GizmoLimiter<1,MeshlessFVParticle> >;
-template class MfvMuscl<2, TabulatedKernel, GizmoLimiter<2,MeshlessFVParticle> >;
-template class MfvMuscl<3, TabulatedKernel, GizmoLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, M4Kernel, GizmoLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, M4Kernel, GizmoLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, M4Kernel, GizmoLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, QuinticKernel, GizmoLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, QuinticKernel, GizmoLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, QuinticKernel, GizmoLimiter<3,MeshlessFVParticle> >;
+template class MfvLeapFrog<1, TabulatedKernel, GizmoLimiter<1,MeshlessFVParticle> >;
+template class MfvLeapFrog<2, TabulatedKernel, GizmoLimiter<2,MeshlessFVParticle> >;
+template class MfvLeapFrog<3, TabulatedKernel, GizmoLimiter<3,MeshlessFVParticle> >;

@@ -209,11 +209,11 @@ this reason, all of its methods are static.
         ndim = parameters.intparams["ndim"]
         fileformat = parameters.stringparams["out_file_form"]
         simtype = parameters.stringparams["sim"]
-        timing = CodeTiming()
+        #timing = CodeTiming()
         
         # Construct the simulation object and initialize it
         sim = SimulationBase.SimulationFactory(ndim, simtype, parameters);
-        sim.timing = timing
+        #sim.timing = timing
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
         

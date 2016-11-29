@@ -155,8 +155,6 @@ int main(int argc, char** argv)
   // Run entire simulation until specified end-time in parameters file.
   sim->Run();
 
-  // Compile timing statistics from complete simulation
-  sim->timing->ComputeTimingStatistics(sim->run_id);
 
 #ifdef MPI_PARALLEL
   MPI_Finalize();

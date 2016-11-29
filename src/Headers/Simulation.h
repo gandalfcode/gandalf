@@ -852,6 +852,101 @@ class MfvRungeKuttaSimulation : public MeshlessFVSimulation<ndim>
 
 };
 
+//=================================================================================================
+//  Class MfvRungeKutta
+/// \brief   Meshless Finite-volume simulation class using TVD Runge-Kutta integration
+/// \details Meshless Finite-volume simulation class using TVD Runge-Kutta integration
+/// \author  D. A. Hubber, J. Ngoumou, S. Heigl
+/// \date    27/04/2015
+//=================================================================================================
+template <int ndim>
+class MfvLeapFrogSimulation : public MeshlessFVSimulation<ndim>
+{
+ public:
+  using Simulation<ndim>::ewaldGravity;
+  using Simulation<ndim>::extra_sink_output;
+  using Simulation<ndim>::periodicBoundaries;
+  using Simulation<ndim>::Nmpi;
+  using Simulation<ndim>::pruning_level_min;
+  using Simulation<ndim>::pruning_level_max;
+  using Simulation<ndim>::restart;
+  using Simulation<ndim>::simparams;
+  using Simulation<ndim>::timing;
+  using Simulation<ndim>::extpot;
+  using Simulation<ndim>::ewald;
+  using Simulation<ndim>::kill_simulation;
+  using Simulation<ndim>::hydro;
+  //using Simulation<ndim>::mfv;
+  //using Simulation<ndim>::mfvneib;
+  using Simulation<ndim>::nbody;
+  using Simulation<ndim>::sinks;
+  using Simulation<ndim>::subsystem;
+  using Simulation<ndim>::nbodytree;
+  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::uint;
+  using Simulation<ndim>::litesnap;
+  using Simulation<ndim>::LocalGhosts;
+  using Simulation<ndim>::simbox;
+  using Simulation<ndim>::simunits;
+  using Simulation<ndim>::Nstepsmax;
+  using Simulation<ndim>::run_id;
+  using Simulation<ndim>::out_file_form;
+  using Simulation<ndim>::tend;
+  using Simulation<ndim>::noutputstep;
+  using Simulation<ndim>::nbody_single_timestep;
+  using Simulation<ndim>::ParametersProcessed;
+  using Simulation<ndim>::n;
+  using Simulation<ndim>::Nblocksteps;
+  using Simulation<ndim>::Nfullsteps;
+  using Simulation<ndim>::Nlevels;
+  using Simulation<ndim>::Nsteps;
+  using Simulation<ndim>::t;
+  using Simulation<ndim>::timestep;
+  using Simulation<ndim>::level_step;
+  using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tlitesnapnext;
+  using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_litesnap;
+  using Simulation<ndim>::dt_min_nbody;
+  using Simulation<ndim>::dt_min_hydro;
+  using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::dt_python;
+  using Simulation<ndim>::level_diff_max;
+  using Simulation<ndim>::level_max;
+  using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::nresync;
+  using Simulation<ndim>::dt_max;
+  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::sink_particles;
+  using Simulation<ndim>::randnumb;
+  using Simulation<ndim>::rank;
+  using Simulation<ndim>::rebuild_tree;
+  using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::nrestartstep;
+  using Simulation<ndim>::ntreebuildstep;
+  using Simulation<ndim>::ntreestockstep;
+  using Simulation<ndim>::tmax_wallclock;
+  using Simulation<ndim>::radiation;
+  using MeshlessFVSimulation<ndim>::mfv;
+  using MeshlessFVSimulation<ndim>::mfvneib;
+#ifdef MPI_PARALLEL
+  using Simulation<ndim>::mpicontrol;
+  using Simulation<ndim>::MpiGhosts;
+#endif
+
+  MfvLeapFrogSimulation (Parameters* parameters) : MeshlessFVSimulation<ndim>(parameters) {};
+  virtual void PostInitialConditionsSetup(void);
+  virtual void MainLoop(void);
+  //virtual void ComputeGlobalTimestep(void);
+  //virtual void ComputeBlockTimesteps(void);
+  //virtual void ProcessParameters(void);
+  //virtual void WriteExtraSinkOutput(void);
+
+  //MeshlessFV<ndim> *mfv;                       ///< Meshless FV hydrodynamics algorithm pointer
+  //MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< ..
+
+};
+
 
 
 //=================================================================================================

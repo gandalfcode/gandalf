@@ -130,10 +130,9 @@ public:
   // Other functions.
   //-----------------------------------------------------------------------------------------------
   void ComputeThermalProperties(MeshlessFVParticle<ndim> &);
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
+  virtual void EndTimestep(const int, const FLOAT, const FLOAT) = 0;
+  virtual void IntegrateParticles(const int, const FLOAT, const FLOAT, const DomainBox<ndim> &) = 0;
   void InitialSmoothingLengthGuess(void);
-  void IntegrateParticles(const int, const int, const FLOAT, const FLOAT,
-                          const DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
   FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &, FLOAT [nvar]);
@@ -170,6 +169,7 @@ public:
   //MeshlessFVType MeshlessFVtype[Ntypes];        ///< Array of MeshlessFV types
 
   MeshlessFVParticle<ndim> *hydrodata;
+  CodeTiming *timing;                   ///< Pointer to code timing object
 
 };
 
@@ -209,6 +209,7 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::Ntot;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
+  using MeshlessFV<ndim>::timing;
   using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::hmin_sink;
 
@@ -292,6 +293,9 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MeshlessFV<ndim>::Ntot;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
+  using MeshlessFV<ndim>::timing;
+  using MeshlessFV<ndim>::GetMeshlessFVParticleArray;
+  using MeshlessFV<ndim>::GetMeshlessFVParticlePointer;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
@@ -313,12 +317,15 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   MfvMuscl(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
            FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
            string KernelName, int size_MeshlessFV_part, SimUnits &units, Parameters *params);
-  ~MfvMuscl();
+  ~MfvMuscl() {} ;
 
 
   //-----------------------------------------------------------------------------------------------
   void ComputeGodunovFlux(const int, const int, const int *, const FLOAT,
                           MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+
+  void EndTimestep(const int, const FLOAT, const FLOAT);
+  void IntegrateParticles(const int, const FLOAT, const FLOAT, const DomainBox<ndim> &);
 
 };
 
@@ -360,6 +367,9 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MeshlessFV<ndim>::Ntot;
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
+  using MeshlessFV<ndim>::timing;
+  using MeshlessFV<ndim>::GetMeshlessFVParticleArray;
+  using MeshlessFV<ndim>::GetMeshlessFVParticlePointer;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
@@ -388,7 +398,79 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   void ComputeGodunovFlux(const int, const int, const int *, const FLOAT,
                           MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
 
+  void EndTimestep(const int, const FLOAT, const FLOAT);
+  void IntegrateParticles(const int, const FLOAT, const FLOAT, const DomainBox<ndim> &);
+
 };
+
+//=================================================================================================
+//  Class MfvLeapFrog
+//=================================================================================================
+//template <int ndim>
+template <int ndim, template<int> class kernelclass, class SlopeLimiterType>
+class MfvLeapFrog : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
+{
+ public:
+
+  using Hydrodynamics<ndim>::create_sinks;
+  using Hydrodynamics<ndim>::hmin_sink;
+  using MeshlessFV<ndim>::allocated;
+  using MeshlessFV<ndim>::gamma_eos;
+  using MeshlessFV<ndim>::gammam1;
+  using MeshlessFV<ndim>::h_converge;
+  using MeshlessFV<ndim>::h_fac;
+  using MeshlessFV<ndim>::hydrodata;
+  using MeshlessFV<ndim>::hydrodata_unsafe;
+  using MeshlessFV<ndim>::invndim;
+  using MeshlessFV<ndim>::kernp;
+  using MeshlessFV<ndim>::kernrange;
+  using MeshlessFV<ndim>::mmean;
+  using MeshlessFV<ndim>::Ngather;
+  using MeshlessFV<ndim>::Nghost;
+  using MeshlessFV<ndim>::NImportedParticles;
+  using MeshlessFV<ndim>::Nhydro;
+  using MeshlessFV<ndim>::Nhydromax;
+  using MeshlessFV<ndim>::Nmpighost;
+  using MeshlessFV<ndim>::NPeriodicGhost;
+  using MeshlessFV<ndim>::Ntot;
+  using MeshlessFV<ndim>::size_hydro_part;
+  using MeshlessFV<ndim>::staticParticles;
+  using MeshlessFV<ndim>::timing;
+  using MeshlessFV<ndim>::GetMeshlessFVParticleArray;
+  using MeshlessFV<ndim>::GetMeshlessFVParticlePointer;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
+
+  static const int nvar = ndim + 2;
+  static const int ivx = 0;
+  static const int ivy = 1;
+  static const int ivz = 2;
+  static const int irho = ndim;
+  static const int ietot = ndim + 1;
+  static const int ipress = ndim + 1;
+
+
+  // Constructor
+  //-----------------------------------------------------------------------------------------------
+  MfvLeapFrog(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
+                FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux,
+                string KernelName, int size_MeshlessFV_part, SimUnits &units, Parameters *params);
+  ~MfvLeapFrog() {};
+
+
+  // ..
+  //-----------------------------------------------------------------------------------------------
+  void ComputeGodunovFlux(const int, const int, const int *, const FLOAT,
+                          MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+
+  void EndTimestep(const int, const FLOAT, const FLOAT);
+  void IntegrateParticles(const int, const FLOAT, const FLOAT, const DomainBox<ndim> &);
+
+};
+
 
 
 //=================================================================================================

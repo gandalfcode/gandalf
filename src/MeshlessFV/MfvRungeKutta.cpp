@@ -75,37 +75,34 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   int k;                               // Dimension counter
   int var;                             // Particle state vector variable counter
   FLOAT Aij[ndim];                     // Pseudo 'Area' vector
+  FLOAT Aunit[ndim];                   // ..
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
-  FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
   FLOAT drsqd;                         // Distance squared
-  FLOAT invdrmagaux;                   // 1 / distance
   FLOAT psitildai[ndim];               // Normalised gradient psi value for particle i
   FLOAT psitildaj[ndim];               // Normalised gradient psi value for neighbour j
   FLOAT rface[ndim];                   // Position of working face (to compute Godunov fluxes)
   FLOAT vface[ndim];                   // Velocity of working face (to compute Godunov fluxes)
   FLOAT flux[nvar][ndim];              // Flux tensor
-  FLOAT Wleft[nvar];                   // Primitive vector for LHS of Riemann problem
-  FLOAT Wright[nvar];                  // Primitive vector for RHS of Riemann problem
+  FLOAT Wi[nvar];                      // Primitive vector for LHS of Riemann problem
+  FLOAT Wj[nvar];                      // Primitive vector for RHS of Riemann problem
   FLOAT Wdot[nvar];                    // Time derivative of primitive vector
   FLOAT gradW[nvar][ndim];             // Gradient of primitive vector
   FLOAT dW[nvar];                      // Change in primitive quantities
   const FLOAT dt = timestep*(FLOAT) part.nstep;    // Timestep of given particle
-
-  FLOAT invh_i   = 1/part.h;
-  FLOAT volume_i = 1/part.ndens;
+  const FLOAT invh_i   = 1.0/part.h;
+  const FLOAT volume_i = 1.0/part.ndens;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
-    FLOAT invh_j   = 1/neibpart[j].h;
-    FLOAT volume_j = 1/neibpart[j].ndens;
+    const FLOAT invh_j   = (FLOAT) 1.0/neibpart[j].h;
+    const FLOAT volume_j = (FLOAT) 1/neibpart[j].ndens;
 
-    for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
+    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     drsqd = DotProduct(draux, draux, ndim);
-    invdrmagaux = 1.0/sqrt(drsqd + small_number);
-    for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
+
 
     // Calculate psitilda values
     for (k=0; k<ndim; k++) {
@@ -113,12 +110,15 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
       psitildaj[k] = (FLOAT) 0.0;
       for (int kk=0; kk<ndim; kk++) {
         psitildai[k] += neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*
-            kern.w0_s2(drsqd*invh_j*invh_j)*volume_j;
+          kern.w0_s2(drsqd*invh_j*invh_j)*volume_j;
         psitildaj[k] -= part.B[k][kk]*draux[kk]*part.hfactor*
-            kern.w0_s2(drsqd*invh_i*invh_i)*volume_i;
+          kern.w0_s2(drsqd*invh_i*invh_i)*volume_i;
       }
       Aij[k] = volume_i*psitildaj[k] - volume_j*psitildai[k];
     }
+
+    FLOAT Amag = sqrt(DotProduct(Aij, Aij, ndim) + small_number);
+    for (k=0; k<ndim; k++) Aunit[k] = Aij[k] / Amag;
 
     // Calculate position and velocity of the face
     if (staticParticles) {
@@ -127,68 +127,168 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     }
     else {
       for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
-      //for (k=0; k<ndim; k++) rface[k] = part.r[k] +
-      //  part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
-      for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
-      for (k=0; k<ndim; k++) vface[k] = part.v[k] +
-        (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
+      for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
     }
 
     // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
     limiter.ComputeLimitedSlopes(part, neibpart[j], draux, gradW, dW);
-    for (var=0; var<nvar; var++) Wleft[var] = part.Wprim[var] + dW[var];
-    for (k=0; k<ndim; k++) Wleft[k] -= vface[k];
+    for (var=0; var<nvar; var++) Wi[var] = part.Wprim[var] + dW[var];
+    for (k=0; k<ndim; k++) Wi[k] -= vface[k];
+
 
     // Compute slope-limited values for RHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - neibpart[j].r[k];
     limiter.ComputeLimitedSlopes(neibpart[j], part, draux, gradW, dW);
-    for (var=0; var<nvar; var++) Wright[var] = neibpart[j].Wprim[var] + dW[var];
-    for (k=0; k<ndim; k++) Wright[k] -= vface[k];
+    for (var=0; var<nvar; var++) Wj[var] = neibpart[j].Wprim[var] + dW[var];
+    for (k=0; k<ndim; k++) Wj[k] -= vface[k];
 
-    assert(Wleft[irho] > 0.0);
-    assert(Wleft[ipress] > 0.0);
-    assert(Wright[irho] > 0.0);
-    assert(Wright[ipress] > 0.0);
+
+    // Pressure and density floors incase of very strong gradients/shocks or pathological cases
+    Wi[irho] = max(Wi[irho], small_number);
+    Wj[irho] = max(Wj[irho], small_number);
+    Wi[ipress] = max(Wi[ipress], small_number);
+    Wj[ipress] = max(Wj[ipress], small_number);
+
+    assert(isnormal(Wi[irho]));
+    assert(isnormal(Wi[ipress]));
+    assert(isnormal(Wj[irho]));
+    assert(isnormal(Wj[ipress]));
 
     // Calculate Godunov flux using the selected Riemann solver
-    if (RiemannSolverType == exact)
-      riemannExact.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
-    else
-      riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    if (RiemannSolverType == exact) {
+      riemannExact.ComputeFluxes(Wj, Wi, Aunit, vface, flux);
+    }
+    else {
+      riemannHLLC.ComputeFluxes(Wj, Wi, Aunit, vface, flux);
+    }
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      part.dQ[var] -= 0.5*DotProduct(flux[var], Aij, ndim)*dt;
-      neibpart[j].dQ[var] += 0.5*DotProduct(flux[var], Aij, ndim)*dt;
+      const FLOAT f = DotProduct(flux[var], Aij, ndim);
+      part.dQ[var] += f*dt;
+      part.dQdt[var] += f;
+      neibpart[j].dQ[var] -= f*dt;
+      neibpart[j].dQdt[var] -= f;
     }
 
-    // Time-integrate LHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
-    for (k=0; k<ndim; k++) Wdot[k] += part.a[k];
-    for (var=0; var<nvar; var++) Wleft[var] += (FLOAT) Wdot[var]*dt;
-
-    // Time-integrate RHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
-    for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
-    for (var=0; var<nvar; var++) Wright[var] += (FLOAT) Wdot[var]*dt;
-
-    assert(Wleft[irho] > 0.0);
-    assert(Wleft[ipress] > 0.0);
-    assert(Wright[irho] > 0.0);
-    assert(Wright[ipress] > 0.0);
-
-    // Calculate Godunov flux using the selected Riemann solver
-    if (RiemannSolverType == exact)
-      riemannExact.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
-    else
-      riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
-
-    // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
-    for (var=0; var<nvar; var++) {
-      part.dQ[var] -= 0.5*DotProduct(flux[var], Aij, ndim)*dt;
-      neibpart[j].dQ[var] += 0.5*DotProduct(flux[var], Aij, ndim)*dt;
+    // Compute mass-loss moments for gravitational correction terms
+    for (k=0; k<ndim; k++) {
+      part.rdmdt[k] -= (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim);
+      neibpart[j].rdmdt[k] += (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim);
     }
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  MeshlessFV<ndim>::IntegrateParticles
+/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
+//=================================================================================================
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::IntegrateParticles
+ (const int n,                         ///< [in] Integer time in block time struct
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep,                ///< [in] Base timestep value
+  const DomainBox<ndim> &simbox)       ///< [in] Simulation box
+{
+  debug2("[MfvRungeKutta:::IntegrateParticles]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFVRK_INTEGRATE_PARTICLES");
+
+  MeshlessFVParticle<ndim>* partdata = GetMeshlessFVParticleArray() ;
+
+  // Integrate all conserved variables to end of timestep
+  //-----------------------------------------------------------------------------------------------
+  for (int i=0; i<Nhydro; i++) {
+    MeshlessFVParticle<ndim> &part = partdata[i];
+    if (part.flags.is_dead()) continue;
+    const int dn = n - part.nlast;
+    const FLOAT dt = timestep*(FLOAT) dn;
+    FLOAT Qcons[nvar];
+
+    for (int k=0; k<nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQdt[k]*dt;
+    for (int k=0; k<ndim; k++) Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt;
+
+    part.flags.unset_flag(active);
+    if (dn == part.nstep) {
+      part.flags.set_flag(active);
+      // TODO: This should be done at the step mid-point
+      for (int k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
+      for (int k=0; k<ndim; k++) part.rdmdt[k]  = 0;
+    }
+
+
+    // Some sanity-checking
+    assert(isnormal(Qcons[irho]));
+    assert(isnormal(Qcons[ipress]));
+
+
+    // Compute primitive values and update all main array quantities
+    this->UpdateArrayVariables(part, Qcons);
+    this->ComputeThermalProperties(part);
+    this->UpdatePrimitiveVector(part);
+
+
+    //---------------------------------------------------------------------------------------------
+    if (!staticParticles) {
+      part.flags.set_flag(update_density);
+
+      //-------------------------------------------------------------------------------------------
+      for (int k=0; k<ndim; k++) {
+        part.r[k] = part.r0[k] + (FLOAT) 0.5*(part.v0[k] + part.v[k])*dt;
+
+        // Check if particle has crossed LHS boundary
+        //-----------------------------------------------------------------------------------------
+        if (part.r[k] < simbox.min[k]) {
+
+          // Check if periodic boundary
+          if (simbox.boundary_lhs[k] == periodicBoundary) {
+            part.r[k]  += simbox.size[k];
+            part.r0[k] += simbox.size[k];
+          }
+
+          // Check if wall or mirror boundary
+          if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
+            part.r[k]  = (FLOAT) 2.0*simbox.min[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.min[k] - part.r0[k];
+            part.v[k]  = -part.v[k];
+            part.v0[k] = -part.v0[k];
+            part.a[k]  = -part.a[k];
+            part.a0[k] = -part.a0[k];
+          }
+        }
+
+        // Check if particle has crossed RHS boundary
+        //-----------------------------------------------------------------------------------------
+        if (part.r[k] > simbox.max[k]) {
+
+          // Check if periodic boundary
+          if (simbox.boundary_rhs[k] == periodicBoundary) {
+            part.r[k]  -= simbox.size[k];
+            part.r0[k] -= simbox.size[k];
+          }
+
+          // Check if wall or mirror boundary
+          if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
+            part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
+            part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
+            part.v[k]  = -part.v[k];
+            part.v0[k] = -part.v0[k];
+            part.a[k]  = -part.a[k];
+            part.a0[k] = -part.a0[k];
+          }
+
+        }
+        //-----------------------------------------------------------------------------------------
+
+      }
+    }
+    //---------------------------------------------------------------------------------------------
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -196,6 +296,90 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
 
   return;
 }
+
+
+
+//=================================================================================================
+//  MeshlessFV<ndim>::EndTimestep
+/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
+//=================================================================================================
+template <int ndim, template<int> class kernelclass, class SlopeLimiter>
+void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::EndTimestep
+ (const int n,                         ///< [in] Integer time in block time struct
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep)                ///< [in] Base timestep value
+{
+  debug2("[MfvRungeKutta::EndTimestep]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFVRK_END_TIMESTEP");
+
+  MeshlessFVParticle<ndim>* partdata = GetMeshlessFVParticleArray() ;
+
+  //-----------------------------------------------------------------------------------------------
+#pragma omp parallel for default(none) shared(partdata)
+  for (int i=0; i<Nhydro; i++) {
+    MeshlessFVParticle<ndim> &part = partdata[i];    // Local reference to particle
+    if (part.flags.is_dead()) continue;
+
+    int dn = n - part.nlast;                         // Integer time since beginning of step
+    int k;                                           // Dimension counter
+    int nstep = part.nstep;                          // Particle (integer) step size
+
+
+    // If particle is at the end of its timestep
+    //---------------------------------------------------------------------------------------------
+    if (dn == nstep) {
+      // Integrate all conserved quantities to end of the step (adding sums from neighbours)
+      FLOAT Qcons[nvar] ;
+      for (int var=0; var<nvar; var++) {
+        // Factor of 0.5 here is because we are averaging the flux from both the start and end of
+        // the step
+        Qcons[var] = part.Qcons0[var] + 0.5*part.dQ[var];
+        part.dQ[var]    = (FLOAT) 0.0;
+        part.dQdt[var]  = (FLOAT) 0.0;
+      }
+
+      // Further update conserved quantities if computing gravitational/nbody  contributions
+      for (k=0; k<ndim; k++) {
+        Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+                (part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
+        part.v[k] = Qcons[k] / Qcons[irho] ;
+      }
+      Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+        (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
+           Qcons[irho]*DotProduct(part.v, part.a, ndim) +
+         DotProduct(part.a0, part.rdmdt0, ndim) +
+         DotProduct(part.a, part.rdmdt, ndim));
+
+      // Compute primitive values and update all main array quantities
+      this->UpdateArrayVariables(part, Qcons);
+      this->ComputeThermalProperties(part);
+      this->UpdatePrimitiveVector(part) ;
+
+      // Update all values to the beginning of the next step
+      part.nlast  = n;
+      part.tlast  = t;
+      part.flags.set_flag(active);
+      for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
+      for (k=0; k<ndim; k++) part.a[k]      = 0;
+      for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
+      for (k=0; k<ndim; k++) part.rdmdt0[k] = 0;
+      for (k=0; k<ndim; k++) part.rdmdt[k]  = 0;
+      part.gpot = 0;
+    }
+    //---------------------------------------------------------------------------------------------
+    else {
+      part.flags.unset_flag(active);
+    }
+    //---------------------------------------------------------------------------------------------
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
 
 
 

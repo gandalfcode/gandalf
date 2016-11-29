@@ -69,13 +69,6 @@ SimulationBase* SimulationBase::SimulationFactory
     ExceptionHandler::getIstance().raise(msg.str());
   }
 
-  // Check simulation type is valid
-  if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" &&
-      simtype != "meshlessfv" && simtype != "mfvmuscl" && simtype != "mfvrk" &&
-      simtype != "nbody" ) {
-    string msg = "Error: the simulation type " + simtype + " was not recognized";
-    ExceptionHandler::getIstance().raise(msg);
-  }
 
 
   // Set ndim and simtype inside the parameters
@@ -98,6 +91,9 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<1>(params);
     }
+    else if (simtype == "mfvlf") {
+      return new MfvLeapFrogSimulation<1>(params);
+    }
     else if (simtype == "nbody") {
       return new NbodySimulation<1>(params);
     }
@@ -114,6 +110,9 @@ SimulationBase* SimulationBase::SimulationFactory
     }
     else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<2>(params);
+    }
+    else if (simtype == "mfvlf") {
+      return new MfvLeapFrogSimulation<2>(params);
     }
     else if (simtype == "nbody") {
       return new NbodySimulation<2>(params);
@@ -132,10 +131,22 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<3>(params);
     }
+    else if (simtype == "mfvlf") {
+      return new MfvLeapFrogSimulation<3>(params);
+    }
     else if (simtype == "nbody") {
       return new NbodySimulation<3>(params);
     }
   }
+
+  // Check simulation type is valid
+  {
+    string msg = "Error: the simulation type " + simtype + " was not recognized";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+
+
   return NULL;
 }
 
@@ -406,6 +417,7 @@ void SimulationBase::Run
   CalculateDiagnostics();
   OutputDiagnostics();
   UpdateDiagnostics();
+  timing->ComputeTimingStatistics(run_id);
 
   cout << "Final t : " << t*simunits.t.outscale << " " << simunits.t.outunit
        << "    Total no. of steps : " << Nsteps << endl;
@@ -449,6 +461,8 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
   //-----------------------------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget && tdiff < dt_python) {
 
+    CodeTiming::BlockTimer timer = timing->StartNewTimer("INTERACTIVE_RUN");
+
     // Evolve the simulation one step
     MainLoop();
 
@@ -479,6 +493,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
     CalculateDiagnostics();
     OutputDiagnostics();
     UpdateDiagnostics();
+    timing->ComputeTimingStatistics(run_id);
   }
 
   return snap_list;

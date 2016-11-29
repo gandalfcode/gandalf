@@ -184,6 +184,7 @@ OBJ += SM2012SphSimulation.o SM2012Sph.o
 OBJ += MeshlessFVSimulation.o FV.o MeshlessFV.o MfvCommon.o
 OBJ += MfvMusclSimulation.o MfvMuscl.o
 OBJ += MfvRungeKuttaSimulation.o MfvRungeKutta.o
+OBJ += MfvLeapFrogSimulation.o MfvLeapFrog.o
 OBJ += NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
