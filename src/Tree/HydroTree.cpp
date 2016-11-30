@@ -697,13 +697,11 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
     int j;                                     // Aux. particle counter
     int k;                                     // Dimension counter
     int Nactive;                               // No. of active particles in current cell
-    int Ngravcell=0;                           // No. of gravity cells
-    int Ngravcellmax = Nprunedcellmax;         // Max. size of gravity cell pointer array
     int Ngravcelltemp;                         // Aux. gravity cell counter
     FLOAT macfactor;                           // Gravity MAC factor for cell
     int *activelist                = activelistbuf[ithread];
     ParticleType<ndim> *activepart = activepartbuf[ithread];
-    MultipoleMoment<ndim> *gravcelllist   = new MultipoleMoment<ndim>[Ngravcellmax];
+    vector<MultipoleMoment<ndim> > gravcelllist;
 
 
     // Loop over all active cells
@@ -712,7 +710,8 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
     for (cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim>& cell = celllist[cc] ;
       macfactor = (FLOAT) 0.0;
-      Ngravcell = 0;
+      gravcelllist.clear();
+
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell, partdata, activelist);
@@ -739,9 +738,9 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       //-------------------------------------------------------------------------------------------
       for (j=0; j<Nmpi; j++) {
         if (j == rank) continue;
-
+        const int Ngravcellold = gravcelllist.size();
         Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
-          (cell, simbox, macfactor, Ngravcellmax, Ngravcell, gravcelllist);
+          (cell, simbox, macfactor,gravcelllist);
 
         // If pruned tree is too close to be used (flagged by -1), then record cell id
         // for exporting those particles to other MPI processes
@@ -752,10 +751,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
           }
 #pragma omp atomic
           Npartexport[j] += Nactive;
-        }
-        else {
-          Ngravcell = Ngravcelltemp;
-          // assert(Ngravcell <= Ngravcellmax);
+          gravcelllist.resize(Ngravcellold);
         }
 
       }
@@ -768,11 +764,11 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
         if (multipole == "monopole") {
           ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
-                                    activepart[j].r, Ngravcell, gravcelllist);
+                                    activepart[j].r, gravcelllist.size(), &gravcelllist[0]);
         }
         else if (multipole == "quadrupole") {
           ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
-                                      activepart[j].r, Ngravcell, gravcelllist);
+                                      activepart[j].r, gravcelllist.size(), &gravcelllist[0]);
         }
 
       }
@@ -781,7 +777,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
-        ComputeFastMonopoleForces(Nactive, Ngravcell, gravcelllist, cell, activepart);
+        ComputeFastMonopoleForces(Nactive, gravcelllist.size(), &gravcelllist[0], cell, activepart);
       }
 
       // Add all active particles contributions to main array
@@ -793,9 +789,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
     }
     //=============================================================================================
-
-    // Free-up local memory for OpenMP thread
-    delete[] gravcelllist;
 
   }
   //===============================================================================================
