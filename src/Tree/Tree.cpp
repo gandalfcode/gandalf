@@ -1493,13 +1493,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
  (const TreeCellBase<ndim>& cell,      ///< [in] Pointer to cell
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
-  const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
-  int Ngravcell,                       ///< [in] Current no. of cells in array
-  MultipoleMoment<ndim> *gravcelllist) ///< [out] Array of cells
+  vector<MultipoleMoment<ndim> >& gravcelllist) ///< [out] Array of cells
 {
   int cc = 0;                          // Cell counter
   int k;                               // Dimension counter
-  int Ngravcelltemp = Ngravcell;       // Aux. cell counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT dr_corr[ndim];                 // Correction displacement for periodic boundaries
   FLOAT drsqd;                         // Distance squared
@@ -1550,11 +1547,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
              celldata[cc].N > 0) {
 
-      gravcelllist[Ngravcelltemp++] = MultipoleMoment<ndim>(celldata[cc]);
-      if (Ngravcelltemp >= Ngravcellmax) {
-        ExceptionHandler::getIstance().raise("Too many interaction cells "
-                                             "in distant gravity interaction list!");
-      }
+      gravcelllist.push_back(MultipoleMoment<ndim>(celldata[cc]));
       cc = celldata[cc].cnext;
 
     }
@@ -1589,7 +1582,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   };
   //===============================================================================================
 
-  return Ngravcelltemp;
+  return 0;
 }
 
 

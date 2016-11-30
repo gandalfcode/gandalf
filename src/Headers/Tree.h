@@ -174,7 +174,7 @@ protected:
 	virtual int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
 	                                       const bool, const int, const int, const int, TreeBase<ndim> *) = 0;
 	virtual int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
-	                                                 const FLOAT, const int, int, MultipoleMoment<ndim> *) = 0;
+	                                                 const FLOAT, vector<MultipoleMoment<ndim> >&) = 0;
 	virtual  bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &) = 0;
 	virtual  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
 	virtual void UpdateLeafCells(TreeBase<ndim>*)=0;
@@ -340,7 +340,7 @@ protected:
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeBase<ndim> *);
   int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
-                                           const FLOAT, const int, int, MultipoleMoment<ndim> *);
+                                           const FLOAT, vector<MultipoleMoment<ndim> >&);
   bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
   virtual void UpdateLeafCells(TreeBase<ndim>*);
