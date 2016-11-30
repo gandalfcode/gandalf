@@ -229,29 +229,5 @@ static inline void NearestPeriodicVector
 }
 
 
-//=================================================================================================
-/// \brief  Helper function to find if two boxes overlap
-/// \author D. A. Hubber, G. Rosotti
-/// \date   12/11/2013
-/// \return A boolean saying whether the boxes overlap
-//=================================================================================================
-template <int ndim>
-inline bool FractionalBoxOverlap
- (Box<ndim> &box1,                     ///< ..
-  Box<ndim> &box2,                     ///< ..
-  DomainBox<ndim> &simbox,             ///< ..
-  FLOAT &overlapfrac)                  ///< ..
-{
-  int k;
-  FLOAT dr[ndim];
-
-  // First, calculate relative position vector between boxes
-  for (k=0; k<ndim; k++) dr[k] = box2.r[k] - box1.r[k];
-
-  // Calculate closest position vector to nearest
-
-
-  return false;
-}
 
 #endif

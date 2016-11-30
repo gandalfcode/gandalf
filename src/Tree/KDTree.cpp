@@ -291,13 +291,15 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].ifirst = ifirst;
   celldata[0].ilast  = ilast;
   celldata[0].cnext  = Ncellmax;
+  celldata[0].hmax = 0;
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
+  for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
 
-  // If there are particles in the tree, eecursively build tree from root node down
+  // If there are particles in the tree, recursively build tree from root node down
   if (Ntot > 0) {
     DivideTreeCell(ifirst, ilast, partdata, celldata[0]);
 #if defined(VERIFY_ALL)

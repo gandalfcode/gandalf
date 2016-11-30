@@ -429,8 +429,8 @@ static inline FLOAT FractionalBoxOverlap
   FLOAT overlap = (FLOAT) 1.0;         // Overlap area/volume of boxes
   FLOAT frac    = (FLOAT) 0.0;         // Fraction of box1 that is overlapped by box 2
 
-  for (k=0; k<ndim; k++) assert(box1min[k] < box1max[k]);
-  for (k=0; k<ndim; k++) assert(box2min[k] < box2max[k]);
+  for (k=0; k<ndim; k++) if (box1min[k]<big_number || box1max[k]>-big_number) assert(box1min[k] < box1max[k]);
+  for (k=0; k<ndim; k++) if (box2min[k]<big_number || box2max[k]>-big_number) assert(box2min[k] < box2max[k]);
 
   for (k=0; k<ndim; k++) {
     area *= (box1max[k] - box1min[k]);
