@@ -89,7 +89,7 @@ protected:
   virtual TreeBase<ndim>* GetGhhotTree() const = 0;
   virtual void SetTimingObject(CodeTiming*) = 0 ;
   virtual void ToggleNeighbourCheck(bool do_check) = 0 ;
-  virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*) = 0 ;
+  virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool) = 0 ;
 
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const = 0;
@@ -145,6 +145,7 @@ class HydroTree : public virtual NeighbourSearch<ndim>
   vector<vector<int> > ids_sent_cells;
   vector<int> N_imported_part_per_proc;
   vector<int> N_imported_cells_per_proc;
+  int rank;
 protected:
 #endif
  public:
@@ -171,7 +172,7 @@ protected:
   virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
   virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
 
-  virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*);
+  virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool);
 
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const { return prunedtree; }
@@ -308,7 +309,8 @@ protected:
                              FLOAT kernrange, FLOAT macerror,
                              string gravity_mac, string multipole,
                              const DomainBox<ndim>& domain,
-                             const ParticleTypeRegister& reg) ;
+                             const ParticleTypeRegister& reg,
+							 const bool IAmPruned) ;
 };
 
 

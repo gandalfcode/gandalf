@@ -63,8 +63,14 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   debug2("[MfvMusclSimulation:MainLoop]");
 
-  if (time_step_limiter_type == "conservative")
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv) ;
+  if (time_step_limiter_type == "conservative") {
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
+#ifdef MPI_PARALLEL
+    mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
+    mpicontrol->GetExportedParticlesAccelerations(mfv);
+#endif
+  }
 
   // Compute timesteps for all particles
   if (Nlevels == 1) {

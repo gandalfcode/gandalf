@@ -50,9 +50,10 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
                                              FLOAT kernrangeaux, FLOAT macerroraux,
                                              string gravity_mac_aux, string multipole_aux,
                                              const DomainBox<ndim>& domain,
-                                    		 const ParticleTypeRegister& reg) :
+                                    		 const ParticleTypeRegister& reg,
+											 const bool IAmPruned) :
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                   macerroraux, gravity_mac_aux, multipole_aux, domain, reg)
+                                   macerroraux, gravity_mac_aux, multipole_aux, domain, reg,IAmPruned)
 {
   allocated_tree = false;
   ifirst         = -1;
@@ -488,6 +489,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       cell.drmaxdt  = (FLOAT) 0.0;
       cell.mac      = (FLOAT) 0.0;
       cell.cdistsqd = big_number;
+      cell.maxsound = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;

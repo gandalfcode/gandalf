@@ -181,7 +181,8 @@ class MeshlessCommunicationHandler {
     	}
     	m = p.m;
     	ndens = p.ndens;
-
+    	vsig_max = p.vsig_max;
+    	sound = p.sound;
     }
 
     int iorig;
@@ -197,7 +198,8 @@ class MeshlessCommunicationHandler {
     FLOAT Wprim[ndim+2];
     FLOAT grad[ndim+2][ndim];
     FLOAT B[ndim][ndim];
-
+    FLOAT vsig_max;
+    FLOAT sound;
   };
 
   struct MeshlessForcesParticle {
@@ -213,6 +215,7 @@ class MeshlessCommunicationHandler {
       }
       iorig = p.iorig;
       gpot = p.gpot;
+      vsig_max = p.vsig_max;
 
     }
 
@@ -222,6 +225,7 @@ class MeshlessCommunicationHandler {
     FLOAT rdmdt[ndim];
     FLOAT a[ndim];
     FLOAT gpot;
+    FLOAT vsig_max;
   };
 
 public:
@@ -242,6 +246,7 @@ public:
 	    }
 
 	    p2.gpot += p.gpot;
+	    p2.vsig_max = max(p2.vsig_max,p.vsig_max);
   }
 
   void ReceiveParticle (const void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
@@ -274,6 +279,8 @@ public:
   p2.m = p.m;
   p2.ndens = p.ndens;
   p2.gpot = 0.0;
+  p2.vsig_max=p.vsig_max;
+  p2.sound=p.sound;
 
   //Recompute h dependent stuff
   p2.rho = p2.ndens*p2.m;
@@ -378,11 +385,14 @@ public:
 
     c.m = 0;
     c.hmax = 0;
+    c.maxsound = 0;
     for (int k=0; k<ndim; k++) {
       c.bb.min[k] = big_number;
       c.bb.max[k] = -big_number;
       c.hbox.min[k] = big_number;
       c.hbox.max[k] = -big_number;
+      c.vbox.min[k] = big_number;
+      c.vbox.max[k] = -big_number;
       c.r[k] = 0;
     }
 
@@ -397,9 +407,12 @@ public:
           c.hbox.min[k] = p.r[k] - kernrange*p.h;
         if (p.r[k] + kernrange*p.h > c.hbox.max[k])
           c.hbox.max[k] = p.r[k] + kernrange*p.h;
+        if (p.v[k] > c.vbox.max[k]) c.vbox.max[k] = p.v[k];
+        if (p.v[k] < c.vbox.min[k]) c.vbox.min[k] = p.v[k];
       }
       c.m += p.m;
       c.hmax = max(c.hmax,p.h);
+      c.maxsound = max(c.maxsound,p.sound);
     }
 
     FLOAT dr[ndim];

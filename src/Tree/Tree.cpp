@@ -85,8 +85,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
 //=================================================================================================
 //  Tree::ComputeActiveCellList
-/// Returns the number of cells containing active particles, 'Nactive', and
-/// the i.d. list of cells contains active particles, 'celllist'
+/// Return the number of cells containing active particles and
+/// modifies in place the i.d. list of cells contains active particles, 'celllist'
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
@@ -114,6 +114,25 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 
   return celllist.size();
 }
+
+#ifdef MPI_PARALLEL
+//=================================================================================================
+//  Tree::ComputeImportedCellList
+/// Return the number of imported cells containing active particles and
+/// modifies in place the list list of imported cells, 'celllist'
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::ComputeImportedCellList
+ (vector<TreeCellBase<ndim> >& celllist)            ///< Array containing copies of cells with active ptcls
+{
+  celllist.reserve(Nimportedcell);
+  for (int c=Ncell; c<Ncell+Nimportedcell; c++) {
+    if (celldata[c].Nactive > 0) celllist.push_back(TreeCellBase<ndim>(celldata[c]));
+  }
+
+  return celllist.size();
+}
+#endif
 
 
 
@@ -982,7 +1001,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 /// for opening the tree cells.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteractions
+bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteractions
 (const TreeCellBase<ndim>& cell,                       ///< [in] Pointer to cell
  int Nactive,
  Particle<ndim>* active_gen,
@@ -1071,6 +1090,12 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
         continue ;
       }
 
+      if (IAmPruned) {
+    	  // If we are in a pruned tree, we can't open this cell
+    	  // Return immediately - the cell will be exported
+    	  return true;
+      }
+
       // Leaf cell so update vsig_max for each particle
       int i = celldata[cc].ifirst;
       while (i != -1) {
@@ -1115,6 +1140,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
 
     cc = celldata[cc].cnext;
   }
+  return false;
 }
 
 

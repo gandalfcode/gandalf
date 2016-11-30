@@ -91,21 +91,22 @@ HydroTree<ndim,ParticleType>::HydroTree
   ids_sent_cells.resize(Nmpi);
   N_imported_part_per_proc.resize(Nmpi);
   N_imported_cells_per_proc.resize(Nmpi);
+  MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 #endif
 
 
   // Set-up main tree object
   tree = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-                    _macerror, _gravity_mac, _multipole, *_box, types);
+                    _macerror, _gravity_mac, _multipole, *_box, types,false);
 
   // Set-up ghost-particle tree object
   ghosttree = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-      _macerror, _gravity_mac, _multipole, *_box, types);
+      _macerror, _gravity_mac, _multipole, *_box, types,false);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
   mpighosttree = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-                            _macerror, _gravity_mac, _multipole, *_box, types);
+                            _macerror, _gravity_mac, _multipole, *_box, types,false);
 
   // Set-up multiple pruned trees, one for each MPI process
   prunedtree = new TreeBase<ndim>*[Nmpi] ;
@@ -113,9 +114,9 @@ HydroTree<ndim,ParticleType>::HydroTree
 
   for (int i=0; i<Nmpi; i++) {
     prunedtree[i] = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-                               _macerror, _gravity_mac, _multipole, *_box, types);
+                               _macerror, _gravity_mac, _multipole, *_box, types,true);
     sendprunedtree[i] = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-                                   _macerror, _gravity_mac, _multipole, *_box, types);
+                                   _macerror, _gravity_mac, _multipole, *_box, types,true);
   }
 #endif
 }
@@ -153,32 +154,33 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
  FLOAT kernrange, FLOAT macerror,
  string gravity_mac, string multipole,
  const DomainBox<ndim>& domain,
- const ParticleTypeRegister& reg)
+ const ParticleTypeRegister& reg,
+ const bool IAmPruned)
 {
   TreeBase<ndim> * t = NULL;
   if (tree_type == "bruteforce") {
     typedef BruteForceTree<ndim,ParticleType, BruteForceTreeCell> __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg) ;
+                   gravity_mac,  multipole,domain, reg,IAmPruned) ;
   }
   else if (tree_type == "kdtree") {
     typedef KDTree<ndim,ParticleType, KDTreeCell>  __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg) ;
+                   gravity_mac,  multipole,domain, reg,IAmPruned) ;
   }
   else if (tree_type == "octtree") {
     typedef OctTree<ndim,ParticleType, OctTreeCell>  __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg) ;
+                   gravity_mac,  multipole,domain, reg,IAmPruned) ;
   }
   else if (tree_type == "treeray") {
     typedef OctTree<ndim,ParticleType, TreeRayCell> __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg) ;
+                   gravity_mac,  multipole,domain, reg,IAmPruned) ;
   }
   else {
     string message = "Tree Type not recognised: " + tree_type ;
@@ -649,7 +651,8 @@ double HydroTree<ndim,ParticleType>::GetMaximumSmoothingLength() const
 
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
-(Hydrodynamics<ndim>* hydro)                     ///<[inout] Pointer to Hydrodynamics object
+(Hydrodynamics<ndim>* hydro,                     ///<[inout] Pointer to Hydrodynamics object
+ const bool only_imported_particles)								///<[in] Wheter we need to loop only over imported particles (relevant only for MPI)
  {
   int cactive;                          // No. of active cells
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
@@ -659,7 +662,28 @@ void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
   CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_DISTANT_TIMESTEPS");
 
   // Find list of all cells that contain active particles
-  cactive = tree->ComputeActiveCellList(celllist);
+  if (only_imported_particles) {
+#ifdef MPI_PARALLEL
+	  cactive = tree->ComputeImportedCellList(celllist);
+#else
+	  string message = "This should not happen - bug in UpdateTimestepsLimitsFromDistantParticles!";
+	  ExceptionHandler::getIstance().raise(message);
+#endif
+  }
+  else {
+	  cactive = tree->ComputeActiveCellList(celllist);
+  }
+
+#ifdef MPI_PARALLEL
+    // Reset all export lists
+    if (!only_imported_particles) {
+		for (int j=0; j<Nmpi; j++) {
+		  Npartexport[j] = 0;
+		  cellexportlist[j].clear();
+		  cellexportlist[j].reserve(tree->gmax);
+		}
+    }
+#endif
 
 #pragma omp parallel default(none) shared(celllist,cactive,cout,partdata)
   {
@@ -669,10 +693,10 @@ void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
     const int ithread = 0;
 #endif
     int cc;                                    // Aux. cell counter
-    int j;                                     // Aux. particle counter
     int Nactive;                               // No. of active particles in current cell
     int *activelist                = activelistbuf[ithread];
     ParticleType<ndim> *activepart = activepartbuf[ithread];
+
 
 
     // Loop over all active cells
@@ -686,11 +710,37 @@ void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
       if (Nactive == 0) continue ;
 
       // Make local copies of active particles & update vsig_max
-      for (j=0; j<Nactive; j++) activepart[j] = partdata[activelist[j]];
+      for (int j=0; j<Nactive; j++) activepart[j] = partdata[activelist[j]];
 
       tree->ComputeSignalVelocityFromDistantInteractions(cell, Nactive, activepart, partdata);
 
-      for (j=0; j<Nactive; j++) {
+#ifdef MPI_PARALLEL
+      if (!only_imported_particles) {
+		  // Loop over pruned trees as well
+		  // Doing it after the local tree walk is more efficient as vsig_max might have been already increased
+		  // TODO: is it more efficient to have this loop inside or outside the one over particles? In this way we are trashing
+		  // the cache of the pruned tree. We should probably swap them. Need to think carefully about openMP though
+		  for (int i=0; i<Nmpi; i++) {
+			  if (i==rank) continue;
+
+			  bool to_export=prunedtree[i]->ComputeSignalVelocityFromDistantInteractions(cell, Nactive, activepart, partdata);
+
+			  // If the previous function returned true, we need to export this particle
+			  if (to_export) {
+	#pragma omp critical
+			  {
+				  cellexportlist[i].push_back(cell.id);
+			  }
+
+	#pragma omp atomic
+			  Npartexport[i] += Nactive;
+			  }
+
+		  }
+      }
+#endif
+
+      for (int j=0; j<Nactive; j++) {
         partdata[activelist[j]].vsig_max = activepart[j].vsig_max;
       }
     }
