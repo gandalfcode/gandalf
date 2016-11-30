@@ -697,6 +697,7 @@ def run(no=None):
     #setup the simulation
     if not sim.setup:
         sim.SetupSimulation()
+        sim.simparams.RecordParametersToFile()
     SimBuffer.load_live_snapshot(sim)
 
     while sim.t < sim.tend and sim.Nsteps < sim.Nstepsmax:
@@ -710,7 +711,7 @@ def run(no=None):
         SimBuffer.load_live_snapshot(sim)
         update("live")
 
-def run_async(maxprocs=4):
+def run_async(no=None,maxprocs=4):
     '''Run the current simulation in async mode, i.e. in the background. Return
     an Async_sim_fetcher object that can be used the query the status of the 
     simulation (see its documentation for more details). The results will NOT 
@@ -719,13 +720,26 @@ def run_async(maxprocs=4):
     calling load_snaps.
     
     Keyword Args:
+        no(int): Simulation number
         maxproc (int): if compiled with MPI, specifies how many processes
                         to use
     '''
     
-    #get the current simulation from the buffer
-    sim=SimBuffer.get_current_sim()
-    setupsim()
+    #get the correct simulation object from the buffer
+    try:
+        if no is None:
+            sim = SimBuffer.get_current_sim()
+        else:
+            no = int(no)
+            sim = SimBuffer.get_sim_no(no)
+    except BufferError as e:
+        handle(e)
+        
+    #setup the simulation
+    if not sim.setup:
+        sim.SetupSimulation()
+        sim.simparams.RecordParametersToFile()
+        
     param_path=sim.GetParam('run_id')+'.param'
     dir_path = os.path.dirname(os.path.realpath(__file__))
     gandalf_path=os.path.join(dir_path,'../bin/gandalf')
