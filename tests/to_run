@@ -2,6 +2,3 @@ hydro_tests/adshock.dat
 hydro_tests/khi.dat
 misc_tests/randomcube.dat
 gravhydro_tests/hybridplummer.dat
-dust_tests/dustysedov.dat
-dust_tests/dustyshock.dat
-dust_tests/dustywave.dat
