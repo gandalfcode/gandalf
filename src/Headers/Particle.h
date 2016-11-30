@@ -267,6 +267,7 @@ struct Particle
     iorig = -1;
     flags = none;
     ptype = gas_type;
+    levelneib = 0;
     level = 0;
     nstep = 0;
     nlast = 0;
