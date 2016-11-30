@@ -95,7 +95,6 @@ No. of block timestep levels                : Nlevels = 1
 SPH neighbour search algorithm              : neib_search = kdtree
 No. of particles in leaf cell               : Nleafmax = 12
 Tree opening angle (squared)                : thetamaxsqd = 0.2
-Tree re-build frequency                     : ntreebuildstep = 8
 Tree stock frequency                        : ntreestockstep = 1
 
 
