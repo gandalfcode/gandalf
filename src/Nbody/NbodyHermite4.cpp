@@ -141,7 +141,9 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectHydroForces
   int Ndirect,                         ///< [in] ..
   int *hydrolist,                      ///< [in] ..
   int *directlist,                     ///< [in] ..
-  Hydrodynamics<ndim> *hydro)          ///< [in] Hydroydnmaics object
+  Hydrodynamics<ndim> *hydro,          ///< [in] Hydroydnmaics object
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int j,jj,k;                          // Star and dimension counters
   FLOAT dr[ndim];                     // Relative position vector
@@ -221,23 +223,25 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectHydroForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
-(int N,                             ///< Number of stars
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+ (int N,                               ///< [in] Number of stars
+  NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                        // Star and dimension counters
-  FLOAT a[ndim];                   // Acceleration
-  FLOAT adot[ndim];                // 1st time derivative of accel (jerk)
-  FLOAT a2dot[ndim];               // 2nd time deriivative of acceleration
-  FLOAT afac,bfac,cfac;            // Aux. summation variables
-  FLOAT da[ndim];                  // Relative acceleration
-  FLOAT dadot[ndim];               // Relative jerk
-  FLOAT dr[ndim];                  // Relative position vector
-  FLOAT drdt;                      // Rate of change of distance
-  FLOAT drsqd;                     // Distance squared
-  FLOAT dv[ndim];                  // Relative velocity vector
-  FLOAT invdrmag;                  // 1 / drmag
-  FLOAT invdrsqd;                  // 1 / drsqd
-  FLOAT dvsqd;                     // Velocity squared
+  int i,j,k;                           // Star and dimension counters
+  FLOAT a[ndim];                       // Acceleration
+  FLOAT adot[ndim];                    // 1st time derivative of accel (jerk)
+  FLOAT a2dot[ndim];                   // 2nd time deriivative of acceleration
+  FLOAT afac,bfac,cfac;                // Aux. summation variables
+  FLOAT da[ndim];                      // Relative acceleration
+  FLOAT dadot[ndim];                   // Relative jerk
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT dvsqd;                         // Velocity squared
 
   debug2("[NbodyHermite4::CalculateAllStartupQuantities]");
 
@@ -301,17 +305,17 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
-(int n,                             ///< Integer time
- int N,                             ///< No. of stars/systems
- FLOAT t,                          ///< Current time
- FLOAT timestep,                   ///< Smallest timestep value
- NbodyParticle<ndim> **star)        ///< Main star/system array
+ (int n,                               ///< [in] Integer time
+  int N,                               ///< [in] No. of stars/systems
+  FLOAT t,                             ///< [in] Current time
+  FLOAT timestep,                      ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
-  FLOAT dt;                        // Timestep since start of step
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  int nstep;                           // Particle (integer) step size
+  FLOAT dt;                            // Timestep since start of step
 
   debug2("[NbodyHermite4::AdvanceParticles]");
 
@@ -349,19 +353,19 @@ void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
-(int n,                             ///< Integer time
- int N,                             ///< No. of stars/systems
- FLOAT t,                          ///< Current time
- FLOAT timestep,                   ///< Smallest timestep value
- NbodyParticle<ndim> **star)        ///< Main star/system array
+ (int n,                               ///< [in] Integer time
+  int N,                               ///< [in] No. of stars/systems
+  FLOAT t,                             ///< [in] Current time
+  FLOAT timestep,                      ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
-  FLOAT dt;                        // Physical time step size
-  FLOAT dt3;                       // dt*dt*dt
-  FLOAT invdt;                     // 1 / dt
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  int nstep;                           // Particle (integer) step size
+  FLOAT dt;                            // Physical time step size
+  FLOAT dt3;                           // dt*dt*dt
+  FLOAT invdt;                         // 1 / dt
 
   debug2("[NbodyHermite4::CorrectionTerms]");
 
@@ -411,18 +415,18 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::PerturberCorrectionTerms
-(int n,                             ///< Integer time
- int N,                             ///< No. of stars/systems
- FLOAT t,                          ///< Current time
- FLOAT timestep,                   ///< Smallest timestep value
- NbodyParticle<ndim> **star)        ///< Main star/system array
+ (int n,                               ///< [in] Integer time
+  int N,                               ///< [in] No. of stars/systems
+  FLOAT t,                             ///< [in] Current time
+  FLOAT timestep,                      ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
-  FLOAT dt;                        // Physical time step size
-  FLOAT invdt;                     // 1 / dt
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  int nstep;                           // Particle (integer) step size
+  FLOAT dt;                            // Physical time step size
+  FLOAT invdt;                         // 1 / dt
 
   debug2("[NbodyHermite4::PerturberCorrectionTerms]");
 
@@ -456,16 +460,16 @@ void NbodyHermite4<ndim, kernelclass>::PerturberCorrectionTerms
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::EndTimestep
-(int n,                             ///< Integer time
- int N,                             ///< No. of stars/systems
- FLOAT t,                          ///< Current time
- FLOAT timestep,                   ///< Smallest timestep value
- NbodyParticle<ndim> **star)        ///< Main star/system array
+ (int n,                               ///< [in] Integer time
+  int N,                               ///< [in] No. of stars/systems
+  FLOAT t,                             ///< [in] Current time
+  FLOAT timestep,                      ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  int nstep;                           // Particle (integer) step size
 
   debug2("[NbodyHermite4::EndTimestep]");
 

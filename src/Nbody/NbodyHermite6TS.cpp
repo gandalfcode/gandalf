@@ -235,14 +235,16 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
   int Ndirect,                         ///< [in] ..
   int *hydrolist,                      ///< [in] ..
   int *directlist,                     ///< [in] ..
-  Hydrodynamics<ndim> *hydro)          ///< [in] Hydrodynamics object
+  Hydrodynamics<ndim> *hydro,          ///< [in] Hydrodynamics object
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int j,jj,k;                       // Star and dimension counters
-  FLOAT dr[ndim];                  // Relative position vector
-  FLOAT drmag;                     // Distance
-  FLOAT drsqd;                     // Distance squared
-  FLOAT drdt;                      // Rate of change of distance
-  FLOAT dv[ndim];                  // Relative velocity vector
+  int j,jj,k;                          // Star and dimension counters
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT invhmean;                  // 1 / hmean
   FLOAT invdrmag;                  // 1 / drmag
   FLOAT paux;                      // Aux. force variable
@@ -316,23 +318,25 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
-(int N,                             ///< Number of stars
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+ (int N,                               ///< Number of stars
+  NbodyParticle<ndim> **star,          ///< Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                        // Star and dimension counters
-  FLOAT a[ndim];                   // Acceleration
-  FLOAT adot[ndim];                // 1st time derivative of accel (jerk)
-  FLOAT a2dot[ndim];               // 2nd time deriivative of acceleration
-  FLOAT afac,bfac,cfac;            // Aux. summation variables
-  FLOAT da[ndim];                  // Relative acceleration
-  FLOAT dadot[ndim];               // Relative jerk
-  FLOAT dr[ndim];                  // Relative position vector
-  FLOAT drdt;                      // Rate of change of distance
-  FLOAT drsqd;                     // Distance squared
-  FLOAT dv[ndim];                  // Relative velocity vector
-  FLOAT invdrmag;                  // 1 / drmag
-  FLOAT invdrsqd;                  // 1 / drsqd
-  FLOAT dvsqd;                     // Velocity squared
+  int i,j,k;                           // Star and dimension counters
+  FLOAT a[ndim];                       // Acceleration
+  FLOAT adot[ndim];                    // 1st time derivative of accel (jerk)
+  FLOAT a2dot[ndim];                   // 2nd time deriivative of acceleration
+  FLOAT afac,bfac,cfac;                // Aux. summation variables
+  FLOAT da[ndim];                      // Relative acceleration
+  FLOAT dadot[ndim];                   // Relative jerk
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT dvsqd;                         // Velocity squared
 
   debug2("[NbodyHermite6TS::CalculateAllStartupQuantities]");
 

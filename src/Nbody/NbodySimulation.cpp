@@ -221,10 +221,10 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
       nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     }
     else {
-      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     }
     //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-    nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
+    nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->active) {
         nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r,nbody->nbodydata[i]->v,
@@ -288,10 +288,10 @@ void NbodySimulation<ndim>::MainLoop(void)
         nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
       }
       else {
-        nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+        nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
       }
       //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-      nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
+      nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
 
       // Now create nearest neighbour tree and build any sub-systems from tree
       nbodytree.CreateNbodySystemTree(nbody);
@@ -345,7 +345,7 @@ void NbodySimulation<ndim>::MainLoop(void)
         nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
       }
       else {
-        nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+        nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
       }
       //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
 
@@ -358,7 +358,7 @@ void NbodySimulation<ndim>::MainLoop(void)
       }
 
       // Calculate correction step for all stars at end of step
-      nbody->CorrectionTerms(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
+      nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
     }
     //---------------------------------------------------------------------------------------------
@@ -373,8 +373,8 @@ void NbodySimulation<ndim>::MainLoop(void)
       if (nbody->nbodydata[i]->Ncomp > 1) {
         // The cast is needed because the function is defined only in SystemParticle, not in
         // NbodyParticle.  The safety of the cast relies on the correctness of the Ncomp value.
-        subsystem->IntegrateInternalMotion(static_cast<SystemParticle<ndim>* >
-                                           (nbody->nbodydata[i]), n, t - timestep, t);
+        subsystem->IntegrateInternalMotion
+         (static_cast<SystemParticle<ndim>* > (nbody->nbodydata[i]), n, t - timestep, t, simbox, ewald);
       }
     }
   }
@@ -397,7 +397,7 @@ void NbodySimulation<ndim>::MainLoop(void)
 
 
   // Set all end-of-step variables
-  nbody->EndTimestep(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
+  nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   return;
 }

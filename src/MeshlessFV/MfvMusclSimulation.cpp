@@ -247,8 +247,10 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       }
     }
 
-    if (mfv->self_gravity == 1) {
-      if (mfv->Nhydro > 0) mfvneib->UpdateAllStarGasForces(mfv, nbody);
+
+    if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
+      mfvneib->UpdateAllStarGasForces(mfv, nbody, simbox, ewald);
+
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -260,7 +262,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     }
     else {
-      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     }
 
     for (i=0; i<nbody->Nnbody; i++) {

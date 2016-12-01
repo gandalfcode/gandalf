@@ -532,13 +532,15 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
  (Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int Nactive;                         // No. of active particles in cell
   int *activelist;                     // List of active particle ids
   NbodyParticle<ndim> *star;           // Pointer to star particle
 
-  int Ntot = hydro->Ntot ;
+  int Ntot = hydro->Ntot;
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
 
@@ -556,7 +558,7 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) private(star)\
-  shared(activelist,hydro,Nactive,Ntot,nbody,partdata,cout)
+  shared(activelist,ewald,hydro,Nactive,Ntot,nbody,partdata,simbox,cout)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -604,7 +606,7 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
       };
 
       // Compute contributions to star force from nearby hydro particles
-      nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, hydro);
+      nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, hydro, simbox, ewald);
 
       // Compute gravitational force due to distant cells
       if (multipole == "monopole" || multipole == "fast_monopole") {

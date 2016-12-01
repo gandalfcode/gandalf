@@ -625,7 +625,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
-    mfvneib->UpdateAllStarGasForces(mfv, nbody);  //, simbox, ewald);
+    mfvneib->UpdateAllStarGasForces(mfv, nbody, simbox, ewald);  //, simbox, ewald);
 
     // We need to sum up the contributions from the different domains
 #if defined MPI_PARALLEL
@@ -637,9 +637,9 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
   }
   else {
-    nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+    nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
   }
-  nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata);
+  nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
 
 
   for (i=0; i<nbody->Nnbody; i++) {

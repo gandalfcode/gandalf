@@ -143,7 +143,9 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
   int Ndirect,                         ///< [in] No. of distant SPH ptcls.
   int *hydrolist,                      ///< [in] List of neighbour ids
   int *directlist,                     ///< [in] List of distant ptcl ids
-  Hydrodynamics<ndim> *hydro)          ///< [in] Array of SPH particles
+  Hydrodynamics<ndim> *hydro,          ///< [in] Array of SPH particles
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int j,jj,k;                          // Star and dimension counters
   FLOAT dr[ndim];                      // Relative position vector
