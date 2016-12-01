@@ -82,18 +82,18 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int i,j,k;                           // Star and dimension counters
-  FLOAT aperiodic[ndim];               // ..
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
-  FLOAT dr_corr[ndim];                 // ..
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
   FLOAT drdt;                          // Rate of change of distance
-  FLOAT drmag;                         // ..
+  FLOAT drmag;                         // Distance
   FLOAT drsqd;                         // Distance squared
   FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT invdrmag;                      // 1 / drmag
-  FLOAT invhmean;                      // ..
-  FLOAT paux;                          // ..
-  FLOAT potperiodic;                   // ..
-  FLOAT wmean;                         // ..
+  FLOAT invhmean;                      // Inverse of mean smoothing length
+  FLOAT paux;                          // Aux. variable to compute grav. force
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
+  FLOAT wmean;                         // Mean kernel value
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectSmoothedGravForces]");
 
@@ -123,7 +123,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
       for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
       for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
-        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
+        (FLOAT) 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
 
       // Add periodic gravity contribution (if activated)
       if (simbox.PeriodicGravity) {
@@ -153,7 +154,9 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectHydroForces
   int Ndirect,                         ///< [in] No. of direct sum gas particles
   int *hydrolist,                      ///< [in] List of SPH neib. particles
   int *directlist,                     ///< [in] List of direct cum gas particles
-  Hydrodynamics<ndim> *hydro)          ///< [in] Array of SPH particles
+  Hydrodynamics<ndim> *hydro,          ///< [in] Array of SPH particles
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int j,jj,k;                          // SPH particle and dimension counters
   FLOAT dr[ndim];                      // Relative position vector
