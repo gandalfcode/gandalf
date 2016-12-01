@@ -718,8 +718,6 @@ void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
       if (!only_imported_particles) {
 		  // Loop over pruned trees as well
 		  // Doing it after the local tree walk is more efficient as vsig_max might have been already increased
-		  // TODO: is it more efficient to have this loop inside or outside the one over particles? In this way we are trashing
-		  // the cache of the pruned tree. We should probably swap them. Need to think carefully about openMP though
 		  for (int i=0; i<Nmpi; i++) {
 			  if (i==rank) continue;
 
