@@ -29,7 +29,7 @@
 #include "Debug.h"
 #include "Exception.h"
 #include "Hydrodynamics.h"
-#include "IC.h"
+#include "Ic.h"
 #include "InlineFuncs.h"
 #include "Nbody.h"
 #include "NbodyParticle.h"
