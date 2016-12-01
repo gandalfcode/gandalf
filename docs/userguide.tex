@@ -713,6 +713,13 @@ minmod        & = simplified implementation of minmod slope limiter
 \item \var{zero\_mass\_flux} : Use Meshless-Finite Mass scheme to prevent mass-flux between particles?   ($1$ or $0$)
 \item \var{static\_particles} : Use static particles (Eulerian approach)?  ($1$ or $0$)
 
+\item \var{time\_step\_limiter} : Use an additional limiter on the time-steps \\
+\begin{tabular}{ll}
+none		 & = No additional limiter \\
+conservative & = Predictive global timestep limiter of Springel (2009) \\
+simple		 & = Saitoh \& Makino type limiter. Reduces the time step if it is detected to be too large.
+\end{tabular}
+
 \end{itemize}
 
 
