@@ -214,15 +214,20 @@ void Nbody<ndim>::UpdateStellarProperties(void)
 //=================================================================================================
 template <int ndim>
 void Nbody<ndim>::CalculateDirectGravForces
- (int N,                               ///< Number of stars
-  NbodyParticle<ndim> **star)          ///< Array of stars/systems
+ (int N,                               ///< [in] Number of stars
+  NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int i,j,k;                           // Star and dimension counters
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
   FLOAT drdt;                          // Rate of change of distance
   FLOAT drsqd;                         // Distance squared
   FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT invdrmag;                      // 1 / drmag
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
 
   debug2("[Nbody::CalculateDirectGravForces]");
 
@@ -237,6 +242,8 @@ void Nbody<ndim>::CalculateDirectGravForces
       if (i == j) continue;
 
       for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
+
       for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       drsqd = DotProduct(dr, dr, ndim);
       invdrmag = (FLOAT) 1.0/sqrt(drsqd);
@@ -246,6 +253,13 @@ void Nbody<ndim>::CalculateDirectGravForces
       for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) star[i]->adot[k] +=
         star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
+        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        star[i]->gpot += potperiodic;
+      }
 
     }
     //---------------------------------------------------------------------------------------------
@@ -259,6 +273,89 @@ void Nbody<ndim>::CalculateDirectGravForces
 
 
 //=================================================================================================
+//  SphIntegration::CheckBoundaries
+/// Check all particles to see if any have crossed the simulation bounding box.
+/// If so, then move the particles to their new location on the other side of the periodic box.
+//=================================================================================================
+template <int ndim>
+void Nbody<ndim>::CheckBoundaries
+ (int n,                               ///< [in] Integer time
+  int N,                               ///< [in] No. of stars/systems
+  FLOAT t,                             ///< [in] Current time
+  FLOAT timestep,                      ///< [in] Smallest timestep value
+  DomainBox<ndim> &simbox,             ///< [in] Main simulation domain box
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
+{
+  debug2("[SphIntegration::CheckBoundaries]");
+
+
+  // Loop over all particles and check if any lie outside the periodic box.
+  // If so, then re-position with periodic wrapping.
+  //===============================================================================================
+#pragma omp parallel for default(none) shared(N,simbox,star)
+  for (int i=0; i<N; i++) {
+
+    // --------------------------------------------------------------------------------------------
+    for (int k=0; k<ndim; k++) {
+
+      // Check if particle has crossed LHS boundary
+      //-------------------------------------------------------------------------------------------
+      if (star[i]->r[k] < simbox.min[k]) {
+
+        // Check if periodic boundary
+        if (simbox.boundary_lhs[k] == periodicBoundary) {
+          star[i]->r[k]  += simbox.size[k];
+          star[i]->r0[k] += simbox.size[k];
+        }
+
+        // Check if wall or mirror boundary
+        if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
+          star[i]->r[k]  = (FLOAT) 2.0*simbox.min[k] - star[i]->r[k];
+          star[i]->r0[k] = (FLOAT) 2.0*simbox.min[k] - star[i]->r0[k];
+          star[i]->v[k]  = -star[i]->v[k];
+          star[i]->v0[k] = -star[i]->v0[k];
+          star[i]->a[k]  = -star[i]->a[k];
+          star[i]->a0[k] = -star[i]->a0[k];
+        }
+
+      }
+
+      // Check if particle has crossed RHS boundary
+      //-------------------------------------------------------------------------------------------
+      if (star[i]->r[k] > simbox.max[k]) {
+
+        // Check if periodic boundary
+        if (simbox.boundary_rhs[k] == periodicBoundary) {
+          star[i]->r[k]  -= simbox.size[k];
+          star[i]->r0[k] -= simbox.size[k];
+        }
+
+        // Check if wall or mirror boundary
+        if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
+          star[i]->r[k]  = (FLOAT) 2.0*simbox.max[k] - star[i]->r[k];
+          star[i]->r0[k] = (FLOAT) 2.0*simbox.max[k] - star[i]->r0[k];
+          star[i]->v[k]  = -star[i]->v[k];
+          star[i]->v0[k] = -star[i]->v0[k];
+          star[i]->a[k]  = -star[i]->a[k];
+          star[i]->a0[k] = -star[i]->a0[k];
+        }
+
+      }
+
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+  }
+  //===============================================================================================
+
+  return;
+}
+
+
+
+
+//=================================================================================================
 //  Nbody::CalculatePerturberForces
 /// Calculate perturber tidal forces on all stars in a N-body sub-system.
 //=================================================================================================
@@ -268,6 +365,8 @@ void Nbody<ndim>::CalculatePerturberForces
   int Npert,                           ///< [in] Number of perturbing stars
   NbodyParticle<ndim> **star,          ///< [in] Array of stars/systems
   NbodyParticle<ndim> *perturber,      ///< [in] Array of perturbing stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald,                  ///< [in] Ewald gravity object pointer
   FLOAT *apert,                        ///< [out] Tidal acceleration due to perturbers
   FLOAT *adotpert)                     ///< [out] Tidal jerk due to perturbers
 {
@@ -354,7 +453,9 @@ void Nbody<ndim>::IntegrateInternalMotion
  (SystemParticle<ndim>* systemi,       ///< [inout] System to integrate the internal motionv for
   const int n,                         ///< [in]    Integer time
   const FLOAT tstart,                  ///< [in]    Initial (local) simulation time
-  const FLOAT tend)                    ///< [in]    Final (current) simulation
+  const FLOAT tend,                    ///< [in]    Final (current) simulation
+  DomainBox<ndim> &simbox,             ///< [in]    Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in]    Ewald gravity object pointer
 {
   int i;                               // Particle counter
   int it;                              // Iteration counter
@@ -442,7 +543,7 @@ void Nbody<ndim>::IntegrateInternalMotion
   }
 
   if (perturbers == 1 && Npert > 0) {
-    this->CalculatePerturberForces(Nchildren, Npert, children, perturber, apert, adotpert);
+    this->CalculatePerturberForces(Nchildren, Npert, children, perturber, simbox, ewald, apert, adotpert);
     for (i=0; i<Nchildren; i++) {
       for (k=0; k<ndim; k++) aext[k]     -= children[i]->m*children[i]->a[k];
       for (k=0; k<ndim; k++) adotext[k]  -= children[i]->m*children[i]->adot[k];
@@ -456,7 +557,7 @@ void Nbody<ndim>::IntegrateInternalMotion
   gpotext /= systemi->m;
 
   // Calculate forces, derivatives and other terms
-  CalculateDirectGravForces(Nchildren, children);
+  CalculateDirectGravForces(Nchildren, children, simbox, ewald);
 
   // Add perturbing force and jerk to all child stars
   for (i=0; i<Nchildren; i++) {
@@ -467,7 +568,7 @@ void Nbody<ndim>::IntegrateInternalMotion
   }
 
   // Calculate higher order derivatives
-  this->CalculateAllStartupQuantities(Nchildren, children);
+  this->CalculateAllStartupQuantities(Nchildren, children, simbox, ewald);
 
 
   // Main time integration loop
@@ -519,11 +620,11 @@ void Nbody<ndim>::IntegrateInternalMotion
       }
 
       // Calculate forces, derivatives and other terms
-      CalculateDirectGravForces(Nchildren, children);
+      CalculateDirectGravForces(Nchildren, children, simbox, ewald);
 
       // Add perturbation terms
       if (perturbers == 1 && Npert > 0) {
-        this->CalculatePerturberForces(Nchildren, Npert, children, perturber, apert, adotpert);
+        this->CalculatePerturberForces(Nchildren, Npert, children, perturber, simbox, ewald, apert, adotpert);
       }
 
       // Apply correction terms
@@ -547,7 +648,7 @@ void Nbody<ndim>::IntegrateInternalMotion
         // The cast is needed because the function is defined only in SystemParticle, not in
         // NbodyParticle.  The safety of the cast relies on the correctness of the Ncomp value.
         IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > (children[i]),
-                                n, tlocal - dt, tlocal);
+                                n, tlocal - dt, tlocal, simbox, ewald);
       }
     }
 
@@ -615,7 +716,7 @@ void Nbody<ndim>::UpdateChildStars
   int i;                               // ..
   int k;                               // ..
   int Nchildren;                       // ..
-  FLOAT msystot=0.0;                   // ..
+  FLOAT msystot = (FLOAT)0.0;          // ..
   FLOAT rcom[ndim];                    // ..
   FLOAT vcom[ndim];                    // ..
   FLOAT acom[ndim];                    // ..

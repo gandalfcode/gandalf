@@ -93,7 +93,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
   nbody->extpot = extpot;
 
 
-
   // Set all other SPH parameter variables
   sph->Nhydromax       = intparams["Nhydromax"];
   sph->create_sinks    = intparams["create_sinks"];
@@ -505,7 +504,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (sph->self_gravity == 1 && sph->Nhydro > 0) {
-    sphneib->UpdateAllStarGasForces(sph, nbody);
+    sphneib->UpdateAllStarGasForces(sph, nbody, simbox, ewald);
 #if defined MPI_PARALLEL
     // We need to sum up the contributions from the different domains
     mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -516,9 +515,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
   }
   else {
-    nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+    nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
   }
-  nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata);
+  nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
 
   for (i=0; i<nbody->Nnbody; i++) {
     if (nbody->nbodydata[i]->active) {
@@ -777,7 +776,7 @@ void SphSimulation<ndim>::MainLoop(void)
       }
     }
     if (sph->self_gravity == 1) {
-      if (sph->Nhydro>0) sphneib->UpdateAllStarGasForces(sph,nbody);
+      if (sph->Nhydro>0) sphneib->UpdateAllStarGasForces(sph, nbody, simbox, ewald);
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -789,7 +788,7 @@ void SphSimulation<ndim>::MainLoop(void)
       nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     }
     else {
-      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata, simbox, ewald);
     }
 
     for (i=0; i<nbody->Nnbody; i++) {
@@ -803,7 +802,7 @@ void SphSimulation<ndim>::MainLoop(void)
     // Calculate correction step for all stars at end of step, except the
     // final iteration (since correction is computed in EndStep also).
     //if (it < nbody->Npec - 1)
-    nbody->CorrectionTerms(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
+    nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   }
   //-----------------------------------------------------------------------------------------------
