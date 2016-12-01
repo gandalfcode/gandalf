@@ -1,5 +1,5 @@
 //=================================================================================================
-//  IC.h
+//  Ic.h
 //  Contains class for generating the initial conditions
 //
 //  This file is part of GANDALF :
