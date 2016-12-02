@@ -394,6 +394,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   //if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || sim == "godunov_hydro") {
     sinks->timing    = timing;
     mfvneib->SetTimingObject(timing);
+    mfv->timing = timing;
   //}*/
 
 #if defined MPI_PARALLEL
@@ -406,6 +407,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   }
   MpiGhosts = new MpiGhostsSpecific<ndim, MeshlessFVParticle>(mpicontrol);
 #endif
+
+  time_step_limiter_type = stringparams["time_step_limiter"] ;
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
@@ -672,7 +675,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
-
 
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
 #ifdef MPI_PARALLEL

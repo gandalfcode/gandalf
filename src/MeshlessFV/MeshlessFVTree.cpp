@@ -60,6 +60,7 @@ MeshlessFVTree<ndim,ParticleType>::MeshlessFVTree
 
 
 
+
 //=================================================================================================
 //  MeshlessFVTree::~MeshlessFVTree
 /// MeshlessFVTree destructor.  Deallocates tree memory upon object destruction.
@@ -584,7 +585,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   tree->UpdateAllHmaxValues(mfvdata);
   //if (ghosttree->Ntot > 0) ghosttree->UpdateAllHmaxValues(ghosttree->celldata[0], mfvdata);
 
-
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro, Ntot)
@@ -624,7 +624,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (int cc=0; cc<cactive; cc++) {
-      TreeCellBase<ndim>& cell = celllist[cc];
+     TreeCellBase<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
@@ -715,7 +715,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
           if (drsqd < hrangesqdi || drsqd < neibpart[jj].hrangesqd) {
             mfvlist[Nhydroaux++] = jj;
           }
-
         }
         //-----------------------------------------------------------------------------------------
 
@@ -728,7 +727,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
       // Accumulate fluxes for neighbours
       for (int jj=0; jj<Nneib; jj++) {
-        i = neiblist[jj] ;
+        i = neiblist[jj];
         if (!neibpart[jj].flags.is_mirror()) {
           for (int k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart[jj].rdmdt[k];
           for (int k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart[jj].dQdt[k];

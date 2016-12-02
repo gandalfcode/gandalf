@@ -73,6 +73,7 @@ struct TreeCellBase {
   FLOAT m;                             ///< Mass contained in cell
   FLOAT rmax;                          ///< Radius of bounding sphere
   FLOAT hmax;                          ///< Maximum smoothing length inside cell
+  FLOAT maxsound;                      ///< Maximum sound speed inside the cell
   FLOAT drmaxdt;                       ///< Rate of change of bounding sphere
   FLOAT dhmaxdt;                       ///< Rate of change of maximum h
   FLOAT q[5];                          ///< Quadrupole moment tensor
@@ -164,6 +165,7 @@ class TreeBase
 	                                              const int, const int, int &, int &, int &, int *, int *,
 	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
 #if defined(MPI_PARALLEL)
+	virtual int ComputeImportedCellList(vector<TreeCellBase<ndim> >& ) = 0;
 	virtual int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
 	                                       const bool, const int, const int, const int, TreeBase<ndim> *) = 0;
 	virtual int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
@@ -171,6 +173,11 @@ class TreeBase
 	virtual  bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &) = 0;
 	virtual  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
 #endif
+
+	virtual bool ComputeSignalVelocityFromDistantInteractions(const TreeCellBase<ndim>& cell,
+	                                                          int Nactive, Particle<ndim>* active_gen,
+	                                                          Particle<ndim>* part_gen) = 0;
+
 	virtual int FindLeafCell(const FLOAT *) = 0;
 
 	//-----------------------------------------------------------------------------------------------
@@ -258,16 +265,17 @@ class Tree : public TreeBase<ndim>
 protected:
 	int Ncellmax;                        ///< Max. allowed no. of grid cells
 	int Ntotmax;                         ///< Max. no. of points in list
+	const bool IAmPruned;				 ///< Whether we are a pruned tree
  public:
 
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
-       const ParticleTypeRegister& pt_reg) :
+       const ParticleTypeRegister& pt_reg,const bool _IAmPruned) :
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd), _domain(domain),
-    gravmask(pt_reg.gravmask)
+    gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned)
     {};
 
   virtual ~Tree() { } ;
@@ -308,8 +316,13 @@ protected:
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
                                         MultipoleMoment<ndim> *, Particle<ndim> *);
+
+  virtual bool ComputeSignalVelocityFromDistantInteractions(const TreeCellBase<ndim>& cell,
+                                                            int Nactive, Particle<ndim>* active_gen,
+                                                            Particle<ndim>* part_gen);
   virtual int FindLeafCell(const FLOAT *);
 #ifdef MPI_PARALLEL
+  int ComputeImportedCellList(vector<TreeCellBase<ndim> >& );
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeBase<ndim> *);
   int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,

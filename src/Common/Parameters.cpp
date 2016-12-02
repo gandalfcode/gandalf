@@ -278,10 +278,11 @@ void Parameters::SetDefaultValues(void)
 
   // Meshless Finite-Volume parameters
   //-----------------------------------------------------------------------------------------------
-  stringparams["riemann_solver"] = "exact";
-  stringparams["slope_limiter"] = "springel2009";
-  intparams["zero_mass_flux"] = 0;
+  stringparams["riemann_solver"] = "hllc";
+  stringparams["slope_limiter"] = "gizmo";
+  intparams["zero_mass_flux"] = 1;
   intparams["static_particles"] = 0;
+  stringparams["time_step_limiter"] = "none";
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------

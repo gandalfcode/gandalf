@@ -63,6 +63,14 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   debug2("[MfvMusclSimulation:MainLoop]");
 
+  if (time_step_limiter_type == "conservative") {
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
+#ifdef MPI_PARALLEL
+    mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
+    mpicontrol->GetExportedParticlesAccelerations(mfv);
+#endif
+  }
 
   // Compute timesteps for all particles
   if (Nlevels == 1) {
@@ -81,6 +89,8 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   }
 #endif
   // Update the numerical fluxes of all active particles
+  // Iterate to ensure level hierarchy of active particles is correct
+
   if (mfv->hydro_forces) {
     mfvneib->UpdateGodunovFluxes(timestep, mfv, nbody, simbox);
   }
@@ -88,6 +98,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
   if (mfv->hydro_forces) mpicontrol->GetExportedParticlesAccelerations(mfv);
 #endif
+
   // Advance all global time variables
   n++;
   Nsteps++;
@@ -102,6 +113,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Advance N-body particle positions
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
+  // Apply Saitoh & Makino type time-step limiter
+  mfv->CheckTimesteps(level_diff_max, level_step, n, timestep, 1);
+
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
@@ -109,6 +123,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     mpicontrol->LoadBalancing(mfv, nbody);
   }
 #endif
+
 
   // Re-build/re-stock tree now particles have moved
   mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);

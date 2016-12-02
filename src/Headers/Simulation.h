@@ -658,6 +658,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   MeshlessFV<ndim> *mfv;                       ///< Meshless FV hydrodynamics algorithm pointer
   MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< Meshless FV neighbour search object pointer
 
+  string time_step_limiter_type;               ///< Time step limiting algorithm to employ
 };
 
 
@@ -737,6 +738,7 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::radiation;
   using MeshlessFVSimulation<ndim>::mfv;
   using MeshlessFVSimulation<ndim>::mfvneib;
+  using MeshlessFVSimulation<ndim>::time_step_limiter_type;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
@@ -834,6 +836,7 @@ class MfvRungeKuttaSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::radiation;
   using MeshlessFVSimulation<ndim>::mfv;
   using MeshlessFVSimulation<ndim>::mfvneib;
+  using MeshlessFVSimulation<ndim>::time_step_limiter_type;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;

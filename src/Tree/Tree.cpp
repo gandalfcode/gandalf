@@ -85,8 +85,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
 //=================================================================================================
 //  Tree::ComputeActiveCellList
-/// Returns the number of cells containing active particles, 'Nactive', and
-/// the i.d. list of cells contains active particles, 'celllist'
+/// Return the number of cells containing active particles and
+/// modifies in place the i.d. list of cells contains active particles, 'celllist'
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
@@ -114,6 +114,25 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 
   return celllist.size();
 }
+
+#ifdef MPI_PARALLEL
+//=================================================================================================
+//  Tree::ComputeImportedCellList
+/// Return the number of imported cells containing active particles and
+/// modifies in place the list list of imported cells, 'celllist'
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int Tree<ndim,ParticleType,TreeCell>::ComputeImportedCellList
+ (vector<TreeCellBase<ndim> >& celllist)            ///< Array containing copies of cells with active ptcls
+{
+  celllist.reserve(Nimportedcell);
+  for (int c=Ncell; c<Ncell+Nimportedcell; c++) {
+    if (celldata[c].Nactive > 0) celllist.push_back(TreeCellBase<ndim>(celldata[c]));
+  }
+
+  return celllist.size();
+}
+#endif
 
 
 
@@ -583,7 +602,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
     int Nmax = NumGhosts + Nneib;
     while (Nneib < Nmax) {
-      //neibpart[Nneib].iorig = i;
       for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
       drsqd = DotProduct(dr, dr, ndim);
       FLOAT h2 = rmax + kernrange*neibpart[Nneib].h;
@@ -970,6 +988,159 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   assert(VerifyUniqueIds(Nneib, Ntot, neiblist));
 
   return 1;
+}
+
+//=================================================================================================
+//  Tree::ComputeSignalVelocityFromDistantInteractions
+/// Computes an effective signal velocity from distant interactions in order to ensure that the
+/// timesteps used are small enough to detect approaching shocks. It does this for each of the
+/// active particles included in a list by walking the tree and opening the cells if:
+///   1) They overlap
+///   2) dt * ( cs_1 + cs_2 - Delta v) > Delta r.
+/// The time-step used in the tree walk is continually updated to use to most stringent condition
+/// for opening the tree cells.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteractions
+(const TreeCellBase<ndim>& cell,                       ///< [in] Pointer to cell
+ int Nactive,
+ Particle<ndim>* active_gen,
+ Particle<ndim>* part_gen)
+{
+  ParticleType<ndim> *activepart = reinterpret_cast<ParticleType<ndim>*>(active_gen);
+  ParticleType<ndim> *partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
+
+  FLOAT rcell[ndim] ;
+  FLOAT half[ndim] ;
+  for (int k=0; k<ndim; k++) rcell[k] = 0.5 * (cell.bb.max[k] + cell.bb.min[k]) ;
+  for (int k=0; k<ndim; k++) half[k]  = 0.5 * (cell.bb.max[k] - cell.bb.min[k]) ;
+
+  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
+  const int MaxNumGhosts = GhostFinder.MaxNumGhosts() ;
+
+  // Make an initial guess of the minimum time-step
+  FLOAT dt_min = 0;
+  for(int n=0; n < Nactive; n++) {
+    ParticleType<ndim>& part = activepart[n] ;
+    if (part.vsig_max > 0)
+      dt_min = max(dt_min, part.h / part.vsig_max) ;
+    else
+      dt_min = big_number ;
+  }
+
+  // Walk the tree
+  int cc = 0;                          // Cell counter (start at root cell)
+  int k;
+  //===============================================================================================
+  while (cc < Ncell) {
+    TreeCell<ndim>& other = celldata[cc];
+
+    // Compute the distance between two cells and their combined size
+    FLOAT dr[ndim] ;
+    for (k=0; k<ndim; k++)
+      dr[k] = 0.5*(other.bb.max[k] + other.bb.min[k]) - rcell[k] ;
+
+    GhostFinder.NearestPeriodicVector(dr) ;
+
+    FLOAT width[ndim] ;
+    for (k=0; k<ndim; k++) width[k] = half[k] + 0.5 * (other.bb.max[k] - other.bb.min[k]) ;
+
+    // If there is overlap, open the cell
+    bool open = true ;
+    for (k=0; k<ndim; k++) open &= width[k] > fabs(dr[k]) ;
+
+    // Also open the cell if waves can interact within dt_min
+    if (!open) {
+      // Compute the minimum distance between the cells and the dvdr
+      FLOAT dvdr = 0 ;
+      FLOAT rmin = 0 ;
+      for(k=0; k<ndim; k++) {
+        if (dr[k] > 0) {
+          FLOAT drk = dr[k] - width[k] ;
+          rmin += drk*drk ;
+
+          dvdr += drk * (other.vbox.min[k] - cell.vbox.max[k]) ;
+        }
+        else {
+          FLOAT drk = dr[k] + width[k] ;
+          rmin += drk*drk ;
+
+          dvdr += drk * (other.vbox.max[k] - cell.vbox.min[k]) ;
+        }
+      }
+      rmin  = sqrt(rmin) ;
+      dvdr /= rmin + small_number ;
+
+      FLOAT vsig = cell.maxsound + other.maxsound - dvdr ;
+
+      if (dt_min * vsig > rmin)
+        open = true ;
+    }
+
+    if (open) {
+      // If not a leaf cell, open it.
+      if (celldata[cc].copen != -1) {
+        cc = celldata[cc].copen;
+        continue ;
+      }
+
+      // Ignore any empty cells
+      if (celldata[cc].N == 0) {
+        cc = celldata[cc].cnext;
+        continue ;
+      }
+
+      if (IAmPruned) {
+    	  // If we are in a pruned tree, we can't open this cell
+    	  // Return immediately - the cell will be exported
+    	  return true;
+      }
+
+      // Leaf cell so update vsig_max for each particle
+      int i = celldata[cc].ifirst;
+      while (i != -1) {
+        std::vector<ParticleType<ndim> > neibpart(MaxNumGhosts) ;
+        int NumGhosts = GhostFinder.ConstructAllGhosts(partdata[i], &(neibpart[0]));
+
+        for (int j=0; j<Nactive; j++) {
+          ParticleType<ndim>& part = activepart[j] ;
+
+          for (int l=0; l<NumGhosts; l++) {
+            double dvdr = 0 ;
+            double dr = 0 ;
+            for (k=0; k<ndim; k++)  {
+              double drk = part.r[k] - neibpart[l].r[k] ;
+              dvdr += drk * (part.v[k] - neibpart[l].v[k]);
+              dr += drk*drk ;
+            }
+            if (dr > 0) {
+              dr = sqrt(dr) ;
+              dvdr /= dr + small_number ;
+
+              FLOAT vsig = part.sound + neibpart[l].sound - dvdr ;
+              part.vsig_max = max(part.vsig_max, vsig*part.h/dr) ;
+              assert(part.vsig_max >= 0) ;
+            }
+          }
+        }
+        if (i == celldata[cc].ilast) break;
+        i = inext[i];
+      }
+
+      // Construct the new guess for dt_min
+      dt_min = 0 ;
+      for(int n=0; n < Nactive; n++) {
+        ParticleType<ndim>& part = activepart[n] ;
+        if (part.vsig_max > 0)
+          dt_min = max(dt_min, part.h / part.vsig_max) ;
+        else
+          dt_min = big_number ;
+      }
+    }
+
+    cc = celldata[cc].cnext;
+  }
+  return false;
 }
 
 

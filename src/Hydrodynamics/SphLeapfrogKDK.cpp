@@ -242,7 +242,6 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
-
  (const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
   const int level_step,                ///< [in] Level of base timestep
   const int n,                         ///< [in] Integer time in block time struct
