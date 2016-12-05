@@ -554,8 +554,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     	// TODO: These functions should accept vectors so that the functions can
     	//       automatically manage their size.
         Nneib = 0;
-        Nneib = _tree->ComputeNeighbourAndGhostList(cell, sphdata, Nneibmax, Nneib,
-        		 								   &(neiblist[0]), &(neibpart[0]));
+        //Nneib = _tree->ComputeNeighbourAndGhostList(cell, sphdata, Nneibmax, Nneib,
+        //		 								   &(neiblist[0]), &(neibpart[0]));
 #ifdef MPI_PARALLEL
         // Ghosts are already in the mpi tree
         Nneib = mpighosttree->ComputeNeighbourList(cell, sphdata, Nneibmax, Nneib,

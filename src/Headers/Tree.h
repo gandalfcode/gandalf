@@ -29,6 +29,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "TreeCell.h"
 #include "CodeTiming.h"
 #include "Constants.h"
 #include "DomainBox.h"
@@ -39,6 +40,7 @@
 #include "Particle.h"
 #include "Precision.h"
 #include "SmoothingKernel.h"
+#include "NeighbourManager.h"
 #ifdef MPI_PARALLEL
 #include "MpiNode.h"
 template<int ndim> class TreeCommunicationHandler;
@@ -46,41 +48,6 @@ template<int ndim> class TreeCommunicationHandler;
 using namespace std;
 
 
-
-//=================================================================================================
-//  Struct TreeCellBase
-/// Base tree cell data structure which contains all data elements common to all trees.
-//=================================================================================================
-template <int ndim>
-struct TreeCellBase {
-  int cnext;                           ///< i.d. of next cell if not opened
-  int copen;                           ///< i.d. of first child cell
-  int id;                              ///< Cell id
-  int level;                           ///< Level of cell on tree
-  int ifirst;                          ///< i.d. of first particle in cell
-  int ilast;                           ///< i.d. of last particle in cell
-  int N;                               ///< No. of particles in cell
-  int Nactive;                         ///< No. of active particles in cell
-  int cexit[2][ndim];                  ///< Left and right exit cells (per dim)
-  FLOAT cdistsqd;                      ///< Minimum distance to use COM values
-  FLOAT mac;                           ///< Multipole-opening criterion value
-  Box<ndim> bb ;                       ///< Bounding box
-  Box<ndim> hbox;                      ///< Bounding box for smoothing volume
-  Box<ndim> vbox ;                     ///< Velocity space bounding box
-  FLOAT rcell[ndim];                   ///< Geometric centre of cell bounding box
-  FLOAT r[ndim];                       ///< Position of cell COM
-  FLOAT v[ndim];                       ///< Velocity of cell COM
-  FLOAT m;                             ///< Mass contained in cell
-  FLOAT rmax;                          ///< Radius of bounding sphere
-  FLOAT hmax;                          ///< Maximum smoothing length inside cell
-  FLOAT maxsound;                      ///< Maximum sound speed inside the cell
-  FLOAT drmaxdt;                       ///< Rate of change of bounding sphere
-  FLOAT dhmaxdt;                       ///< Rate of change of maximum h
-  FLOAT q[5];                          ///< Quadrupole moment tensor
-#ifdef MPI_PARALLEL
-  double worktot;                      ///< Total work in cell
-#endif
-};
 
 //=================================================================================================
 //  Struct MultipoleMoment
@@ -160,8 +127,8 @@ protected:
 			                               const FLOAT, const int, int &, int *) = 0 ;
 	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
-	virtual int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-	                                         const int, int &, int *, Particle<ndim> *) = 0 ;
+	virtual void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+	                                         NeighbourManagerBase&) = 0 ;
 	virtual int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                                  const FLOAT, const int,
 	                                                  const int, int &, int &, int &, int &, int *, int *,
@@ -322,8 +289,8 @@ protected:
                                  const FLOAT, const int, int &, int *);
   int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                            const int, int &, int *, Particle<ndim> *);
-  int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-                                   const int, int &, int *, Particle<ndim> *);
+  void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+		  	  	  	  	  	  	  	 NeighbourManagerBase&);
   int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 		                                    const FLOAT, const int,
                                             const int, int &, int &, int &, int &, int *, int *,

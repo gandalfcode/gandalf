@@ -84,6 +84,7 @@ HydroTree<ndim,ParticleType>::HydroTree
 #else
   Nthreads         = 1;
 #endif
+  neibmanagerbuf.resize(Nthreads);
 #ifdef MPI_PARALLEL
   Npartexport = new int[Nmpi];
   cellexportlist.resize(Nmpi);
