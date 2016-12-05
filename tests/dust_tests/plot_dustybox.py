@@ -53,38 +53,43 @@ class DriftVelocitySolution(object):
         eps = self._eps
         return self.vcom(t) + (1-eps) * self.dv(t)
     
-
-# Load the sim
-loadsim('DUSTYBOX')
-
-# Set up the analytical solution
-params = SimBuffer.get_sim_no(get_sim_no('current')).simparams
-K  = params.floatparams['drag_coeff']
-vg = params.floatparams['vfluid1[0]']
-vd = params.floatparams['vfluid2[0]']
-if params.stringparams['dust_forces'] == 'test_particle':
-    eps = 0 
-elif params.stringparams['dust_forces'] == 'full_twofluid':
-    rhod = params.floatparams['dust_mass_factor']
-    eps = rhod / (1. + rhod)
-else:
-    raise AttributeError('Dust simulation type not recognises')
-
-sol = DriftVelocitySolution(K, vg, vd, eps=eps)
-
-# Find the maximum time
-tmax = snap(-1).t
-t = np.linspace(0, tmax, 10**3)
-
-# Plot the gas
-time_plot('t', 'vx', id=0, type='sph')
-plt.plot(t, sol.vg(t), 'k')
-
-# Plot the dust
-time_plot('t', 'vx', id=0, type='dust', overplot=True)
-plt.plot(t, sol.vd(t), 'k--')
-
-plt.xlim(0, t[-1])
-limit('vx',min(vd, vg), max(vd, vg), window='all')
-plt.show()
-
+def DriftVelocitySolutionFactory():
+    params = SimBuffer.get_current_sim().simparams
+    K  = params.floatparams['drag_coeff']
+    vg = params.floatparams['vfluid1[0]']
+    vd = params.floatparams['vfluid2[0]']
+    if params.stringparams['dust_forces'] == 'test_particle':
+        eps = 0 
+    elif params.stringparams['dust_forces'] == 'full_twofluid':
+        rhod = params.floatparams['dust_mass_factor']
+        eps = rhod / (1. + rhod)
+    else:
+        raise AttributeError('Dust simulation type not recognises')
+    sol = DriftVelocitySolution(K, vg, vd, eps=eps)
+    return sol
+    
+if __name__=="__main__":
+    # Load the sim
+    loadsim('DUSTYBOX')
+    
+    # Set up the analytical solution
+    sol=DriftVelocitySolutionFactory()
+    
+    
+    
+    # Find the maximum time
+    tmax = snap(-1).t
+    t = np.linspace(0, tmax, 10**3)
+    
+    # Plot the gas
+    time_plot('t', 'vx', id=0, type='sph')
+    plt.plot(t, sol.vg(t), 'k')
+    
+    # Plot the dust
+    time_plot('t', 'vx', id=0, type='dust', overplot=True)
+    plt.plot(t, sol.vd(t), 'k--')
+    
+    plt.xlim(0, t[-1])
+    limit('vx',min(sol.vd(t).min(), sol.vg(t).min()), max(sol.vd(t).max(), sol.vg(t).max()), window='all')
+    plt.show()
+    

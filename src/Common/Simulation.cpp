@@ -50,6 +50,11 @@ using namespace std;
 template <int ndim>
 const FLOAT Simulation<ndim>::invndim = 1.0/ndim;
 
+#ifdef MPI_PARALLEL
+const bool SimulationBase::MPI=true;
+#else
+const bool SimulationBase::MPI=false;
+#endif
 
 //=================================================================================================
 //  SimulationBase::SimulationFactory
@@ -290,6 +295,10 @@ void SimulationBase::SetParam
   }
   if (key == "ndim") {
     string msg = "Error: Not possible to change the number of dimensions!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+  if (key == "sim") {
+    string msg = "Error: Cannot change the type of simulation afterwards!";
     ExceptionHandler::getIstance().raise(msg);
   }
 

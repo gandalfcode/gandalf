@@ -203,25 +203,36 @@ this reason, all of its methods are static.
         
         # Create parameters object and read parameters file using given run_id
         paramfile = run_id + '.param'
-        run_id_base = os.path.basename(run_id)
         parameters = Parameters()
         parameters.ReadParamsFile(paramfile)
         ndim = parameters.intparams["ndim"]
-        fileformat = parameters.stringparams["out_file_form"]
         simtype = parameters.stringparams["sim"]
-        timing = CodeTiming()
         
         # Construct the simulation object and initialize it
         sim = SimulationBase.SimulationFactory(ndim, simtype, parameters);
-        sim.timing = timing
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
         
+        SimBuffer.load_snapshots(sim,buffer_flag)
+        
+        
+    @staticmethod
+    def load_snapshots(sim,buffer_flag='cache'):
+        
+        run_id = sim.GetParam('run_id')
+        
+        run_id_base = os.path.basename(run_id)
+
+        
         # Get list of all files in the directory containing the parameter file
+        paramfile = run_id + '.param'
         paramfilepath = os.path.join(os.getcwd(),paramfile)
         dirname = os.path.dirname(paramfilepath)
         folderfiles = os.listdir(dirname)
         folderfiles.sort()
+        
+        fileformat = sim.GetParam('out_file_form')
+        ndim = int(sim.GetParam('ndim'))
         
         # Search for all the files containing the given run_id string
         filetest = run_id_base + '.' + fileformat + '.?????'

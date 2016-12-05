@@ -60,6 +60,10 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &n_mpi_cpus);
 
+  // Determines if we have been spawned from python
+  MPI_Comm parent;
+  MPI_Comm_get_parent(&parent);
+
   // Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
 
@@ -122,7 +126,10 @@ int main(int argc, char** argv)
 
   // Read parameters file immediately and record to file
   params->ReadParamsFile(paramfile);
-  params->RecordParametersToFile();
+#ifdef MPI_PARALLEL
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  if (rank == 0) params->RecordParametersToFile();
 
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"],
@@ -159,6 +166,15 @@ int main(int argc, char** argv)
   sim->timing->ComputeTimingStatistics(sim->run_id);
 
 #ifdef MPI_PARALLEL
+  if (parent != MPI_COMM_NULL){
+#if MPI_VERSION>=3
+    MPI_Request req;
+    MPI_Ibarrier(parent,&req);
+    MPI_Wait(&req,MPI_STATUS_IGNORE);
+#else
+     MPI_Barrier(parent);
+#endif
+  }
   MPI_Finalize();
 #endif
 

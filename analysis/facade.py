@@ -27,6 +27,7 @@ import defaults
 from multiprocessing import Manager, Queue, Event
 from plotting import PlottingProcess
 from gandalf.analysis.SimBuffer import SimBuffer, BufferException
+import subprocess
 
 manager = Manager()
 
@@ -87,6 +88,84 @@ try:
     interactive=False
 except AttributeError:
     interactive=True
+    
+class Async_sim_fetcher:
+    '''Object returned by run_async, to be used to get information on the status
+    of the simuation.
+    
+    Methods
+        poll
+            Return True if the simulation has finished, False otherwise
+        wait
+            Block execution until the simulation has finished, and subsequently
+            load into memory the snapshots produced during the run.
+        read_snaps
+            Load into memory the snapshots produced. You need to call this function
+            only poll reports that the simulation has finished; if using wait
+            this is done automatically. An Exception will be raised if attempting
+            to call this function for a simulation that has not finished yet.
+    '''
+    def __init__(self,sim):
+        self._sim=sim
+        self._finished=False
+        
+    def read_snaps(self):
+        try:
+            finished=self.poll()
+        except NotImplementedError:
+            finished=self._finished
+        if not finished:
+            raise Exception("The simulation has not finished yet, you can't read the snapshots.")
+        SimBuffer.load_snapshots(self._sim)
+        
+    
+class MPI_Popen(Async_sim_fetcher):
+    def __init__(self,sim,comm):
+        Async_sim_fetcher.__init__(self, sim)
+        self._comm=comm
+        self._barrier=None
+        
+    def wait(self):
+        if self._major_version()<3:
+            self._comm.Barrier()
+            self._finished=True
+        else:
+            if self._barrier is None:
+                self._barrier=self._comm.Ibarrier()
+            self._barrier.wait()
+        self.read_snaps()
+        return 0
+        
+    def poll(self):
+        if self._major_version()<3:
+            raise NotImplementedError("This MPI version does not support polling. You need to wait!")
+        if self._barrier is None:
+            self._barrier=self._comm.Ibarrier()
+        test=self._barrier.test()[0]
+        return test
+        
+    def _major_version(self):
+        from mpi4py import MPI
+        major_vers=int(MPI.Get_version()[0])
+        return major_vers
+    
+class proxy_Popen(Async_sim_fetcher):
+    def __init__(self,sim,p):
+        Async_sim_fetcher.__init__(self, sim)
+        self._p = p
+        
+    def wait(self):
+        errorcode=self._p.wait()
+        self.read_snaps()
+        return errorcode
+    
+    def poll(self):
+        code= self._p.poll()
+        if code is None:
+            return False
+        else:
+            return True
+            
 
 
 #TODO: add function for resizing (programmatically) the figure
@@ -618,6 +697,7 @@ def run(no=None):
     #setup the simulation
     if not sim.setup:
         sim.SetupSimulation()
+        sim.simparams.RecordParametersToFile()
     SimBuffer.load_live_snapshot(sim)
 
     while sim.t < sim.tend and sim.Nsteps < sim.Nstepsmax:
@@ -630,6 +710,49 @@ def run(no=None):
 
         SimBuffer.load_live_snapshot(sim)
         update("live")
+
+def run_async(no=None,maxprocs=4):
+    '''Run the current simulation in async mode, i.e. in the background. Return
+    an Async_sim_fetcher object that can be used the query the status of the 
+    simulation (see its documentation for more details). The results will NOT 
+    be available until the user calls wait on the returned object, or, if the 
+    simulation has already finished (which can be checked by calling poll),
+    calling load_snaps.
+    
+    Keyword Args:
+        no(int): Simulation number
+        maxproc (int): if compiled with MPI, specifies how many processes
+                        to use
+    '''
+    
+    #get the correct simulation object from the buffer
+    try:
+        if no is None:
+            sim = SimBuffer.get_current_sim()
+        else:
+            no = int(no)
+            sim = SimBuffer.get_sim_no(no)
+    except BufferError as e:
+        handle(e)
+        
+    #setup the simulation
+    if not sim.setup:
+        sim.SetupSimulation()
+        sim.simparams.RecordParametersToFile()
+        
+    param_path=sim.GetParam('run_id')+'.param'
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    gandalf_path=os.path.join(dir_path,'../bin/gandalf')
+    if sim.MPI:
+        from mpi4py import MPI
+        comm=MPI.COMM_SELF.Spawn(gandalf_path, param_path, maxprocs=maxprocs)
+        async_fetcher=MPI_Popen(sim,comm)
+        return async_fetcher
+    else:
+        print param_path
+        p=subprocess.Popen([gandalf_path,param_path])
+        async_fetcher=proxy_Popen(sim,p)
+        return async_fetcher
 
 
 #------------------------------------------------------------------------------
