@@ -398,8 +398,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
       // Compute neighbour list for cell from real and periodic ghost particles
       Nneib = 0;
-      Nneib = tree->ComputeNeighbourAndGhostList
-        (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
+      //Nneib = tree->ComputeNeighbourAndGhostList
+        //(cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
 #ifdef MPI_PARALLEL
       Nneib = mpighosttree->ComputeNeighbourList(cell,mfvdata,Nneibmax,Nneib,neiblist,neibpart);
 #endif
@@ -423,8 +423,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
         neibpartbuf[ithread]      = new ParticleType<ndim>[Nneibmax];
         neibpart                  = neibpartbuf[ithread];
         Nneib = 0;
-        Nneib = tree->ComputeNeighbourAndGhostList
-          (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
+        //Nneib = tree->ComputeNeighbourAndGhostList
+          //(cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
 #ifdef MPI_PARALLEL
       Nneib = mpighosttree->ComputeNeighbourList(cell,mfvdata,Nneibmax,Nneib,neiblist,neibpart);
 #endif
@@ -639,8 +639,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
       // Compute neighbour list for cell from real and periodic ghost particles
       Nneib = 0;
-      Nneib = tree->ComputeNeighbourAndGhostList
-        (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
+      //Nneib = tree->ComputeNeighbourAndGhostList
+        //(cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour list.
@@ -661,8 +661,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
         neibpartbuf[ithread]      = new ParticleType<ndim>[Nneibmax];
         neibpart                  = neibpartbuf[ithread];
         Nneib = 0;
-        Nneib = tree->ComputeNeighbourAndGhostList
-          (cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
+        //Nneib = tree->ComputeNeighbourAndGhostList
+          //(cell, mfvdata, Nneibmax, Nneib, neiblist, neibpart);
       };
 
       for (j=0; j<Nneib; j++) {

@@ -478,45 +478,24 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 //=================================================================================================
 //  Tree::ComputeNeighbourAndGhostList
 /// Computes and returns number of SPH neighbours (Nneib), including lists of ids, from the
-/// tree walk for all active particles inside cell c.  If the interaction list array overflows,
-/// returns with error code (-1) to reallocate more memory.
+/// tree walk for all active particles inside cell c.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
+void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
  (const TreeCellBase<ndim> &cell,      ///< [in] Pointer to cell
   const Particle<ndim> *part_gen,      ///< [in] Particle data array
-  //const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
-  const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
+  NeighbourManagerBase& neibmanager)
+/*  const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
   int &Nneib,                          ///< [out] Total no. of neighbours
   int *neiblist,                       ///< [out] List of all particle ids
-  Particle<ndim> *neib_out)            ///< [out] Array of local copies of neighbour particles
+  Particle<ndim> *neib_out)            ///< [out] Array of local copies of neighbour particles*/
 {
-  int cc = 0;                          // Cell counter
-  int i;                               // Particle id
-  int k;                               // Neighbour counter
-  int Ntemp = 0;                       // Aux. counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT rc[ndim];                      // Position of cell
-  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
-  const FLOAT rmax = cell.rmax;
-
-  const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
-  ParticleType<ndim>* neibpart = reinterpret_cast<ParticleType<ndim>* >(neib_out) ;
-  assert(neibpart != NULL);
-  assert(partdata != NULL);
-
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Declare objects/variables required for creating ghost particles
   const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
-  int MaxGhosts = GhostFinder.MaxNumGhosts() ;
 
   // Start with root cell and walk through entire tree
-  Nneib = 0;
-  Ntemp = 0;
-  std::vector<int> tempneib ;
-  tempneib.reserve(Nneibmax);
+  int cc = 0;                          // Cell counter
 
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
@@ -539,24 +518,13 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-        i = celldata[cc].ifirst;
+        int i = celldata[cc].ifirst;
         while (i != -1) {
-          if (Ntemp >= Nneibmax) { // Check that we have enough memory
-            return -1;
-          }
-          else {
-            tempneib.push_back(i) ;
-            Ntemp++ ;
-          }
+          neibmanager.add_tempneib(i) ;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
         }
        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Ntemp + Nleafmax >= Nneibmax) {
-        return -1;
       }
 
     }
@@ -572,36 +540,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   //===============================================================================================
 
 
-  // Now load the particles
-  for (int ii=0; ii < Ntemp; ++ii) {
-    i = tempneib[ii] ;
 
-    if (Nneib + MaxGhosts > Nneibmax)
-      return -1 ;
-
-    int NumGhosts = GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib);
-
-    int Nmax = NumGhosts + Nneib;
-    while (Nneib < Nmax) {
-      //neibpart[Nneib].iorig = i;
-      for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
-      drsqd = DotProduct(dr, dr, ndim);
-      FLOAT h2 = rmax + kernrange*neibpart[Nneib].h;
-      if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
-        neiblist[Nneib] = i;
-        Nneib++ ;
-      }
-      else if (Nmax > Nneib) {
-        Nmax-- ;
-        if (Nmax > Nneib)
-          neibpart[Nneib] = neibpart[Nmax];
-      }
-    }// Loop over Ghosts
-  }
-
-  assert(Ntemp <= Nneibmax);
-  assert(Nneib <= Nneibmax);
-  return Nneib;
 }
 
 
@@ -701,7 +640,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
           hydroneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
 
-          GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
+          //GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
 
           Nneib++;
           if (i == celldata[cc].ilast) break;
@@ -729,7 +668,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;
 
-        GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
+        //GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart + Nneib) ;
 
         Nneib++;
       }

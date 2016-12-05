@@ -177,6 +177,8 @@ protected:
 template <int ndim, template<int> class ParticleType>
 class GradhSphTree : public SphTree<ndim,ParticleType>
 {
+private:
+	using HydroTree<ndim,ParticleType>::neibmanagerbuf;
  public:
 
   using SphTree<ndim,ParticleType>::activelistbuf;
