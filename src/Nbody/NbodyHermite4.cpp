@@ -81,15 +81,18 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int i,j,k;                           // Star and dimension counters
-  FLOAT dr[ndim];                     // Relative position vector
-  FLOAT drdt;                         // Rate of change of distance
-  FLOAT drmag;                        // Distance
-  FLOAT drsqd;                        // Distance squared
-  FLOAT dv[ndim];                     // Relative velocity vector
-  FLOAT invdrmag;                     // 1 / drmag
-  FLOAT invhmean;                     // 1 / mean of star smoothing lengths
-  FLOAT paux;                         // Common force factor
-  FLOAT wmean;                        // Mean-h kernel factor
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT invhmean;                      // 1 / mean of star smoothing lengths
+  FLOAT paux;                          // Common force factor
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
+  FLOAT wmean;                         // Mean-h kernel factor
 
   debug2("[NbodyHermite4::CalculateDirectSmoothedGravForces]");
 
@@ -105,10 +108,11 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
       for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
       for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-      drsqd    = DotProduct(dr,dr,ndim);
+      NearestPeriodicVector(simbox, dr, dr_corr);
+      drsqd    = DotProduct(dr, dr, ndim);
       drmag    = sqrt(drsqd);
-      invdrmag = 1.0/sqrt(drsqd);
-      invhmean = 2.0/(star[i]->h + star[j]->h);
+      invdrmag = (FLOAT) 1.0/sqrt(drsqd);
+      invhmean = (FLOAT) 2.0/(star[i]->h + star[j]->h);
       drdt     = DotProduct(dv,dr,ndim)*invdrmag;
       paux     = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
       wmean    = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
@@ -117,7 +121,15 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
       for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
       for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
-        3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
+        (FLOAT) 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
+        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        star[i]->gpot += potperiodic;
+      }
 
     }
     //---------------------------------------------------------------------------------------------
@@ -137,24 +149,27 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CalculateDirectHydroForces
  (NbodyParticle<ndim> *star,           ///< [inout] Pointer to star
-  int Nhydro,                          ///< [in] Number of gas particles
-  int Ndirect,                         ///< [in] ..
-  int *hydrolist,                      ///< [in] ..
-  int *directlist,                     ///< [in] ..
+  int Nhydro,                          ///< [in] No. of hydro neighbours (i.e. overlapping kernels)
+  int Ndirect,                         ///< [in] No. of direct-sum gravity particles
+  int *hydrolist,                      ///< [in] List of hydro neighour ids
+  int *directlist,                     ///< [in] List of direct-sum particle ids
   Hydrodynamics<ndim> *hydro,          ///< [in] Hydroydnmaics object
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int j,jj,k;                          // Star and dimension counters
-  FLOAT dr[ndim];                     // Relative position vector
-  FLOAT drmag;                        // Distance
-  FLOAT drsqd;                        // Distance squared
-  FLOAT drdt;                         // Rate of change of distance
-  FLOAT dv[ndim];                     // Relative velocity vector
-  FLOAT invhmean;                     // 1 / hmean
-  FLOAT invdrmag;                     // 1 / drmag
-  FLOAT paux;                         // Aux. force variable
-  FLOAT wkern;                        // SPH kernel value
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invhmean;                      // 1 / hmean
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT paux;                          // Aux. force variable
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
+  FLOAT wkern;                         // SPH kernel value
 
   debug2("[NbodyHermite4::CalculateDirectHydroForces]");
 
@@ -168,6 +183,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectHydroForces
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];
+    NearestPeriodicVector(simbox, dr, dr_corr);
     drsqd    = DotProduct(dr,dr,ndim);
     drmag    = sqrt(drsqd);
     invdrmag = 1.0/drmag;
@@ -181,6 +197,13 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectHydroForces
     for (k=0; k<ndim; k++) star->adot[k] += paux*dv[k] -
       3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*part.m*drdt*wkern*invdrmag*dr[k];
     star->gpot += part.m*invhmean*kern.wpot(drmag*invhmean);
+
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(part.m, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+      star->gpot += potperiodic;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -196,6 +219,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectHydroForces
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];
+    NearestPeriodicVector(simbox, dr, dr_corr);
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
@@ -206,6 +230,13 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectHydroForces
     for (k=0; k<ndim; k++) star->adot[k] +=
       part.m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
     star->gpot += part.m*invdrmag;
+
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(part.m, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+      star->gpot += potperiodic;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -231,17 +262,20 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
   int i,j,k;                           // Star and dimension counters
   FLOAT a[ndim];                       // Acceleration
   FLOAT adot[ndim];                    // 1st time derivative of accel (jerk)
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT a2dot[ndim];                   // 2nd time deriivative of acceleration
   FLOAT afac,bfac,cfac;                // Aux. summation variables
   FLOAT da[ndim];                      // Relative acceleration
   FLOAT dadot[ndim];                   // Relative jerk
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
   FLOAT drdt;                          // Rate of change of distance
   FLOAT drsqd;                         // Distance squared
   FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT dvsqd;                         // Velocity squared
   FLOAT invdrmag;                      // 1 / drmag
   FLOAT invdrsqd;                      // 1 / drsqd
-  FLOAT dvsqd;                         // Velocity squared
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
 
   debug2("[NbodyHermite4::CalculateAllStartupQuantities]");
 
@@ -250,8 +284,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
 
-    for (k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
-    for (k=0; k<ndim; k++) star[i]->a3dot[k] = 0.0;
+    for (k=0; k<ndim; k++) star[i]->a2dot[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) star[i]->a3dot[k] = (FLOAT) 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -262,6 +296,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
       for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       for (k=0; k<ndim; k++) da[k] = star[j]->a[k] - star[i]->a[k];
       for (k=0; k<ndim; k++) dadot[k] = star[j]->adot[k] - star[i]->adot[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
       dvsqd = DotProduct(dv,dv,ndim);
       invdrsqd = 1.0/drsqd;
@@ -270,6 +305,13 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
       for (k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) adot[k] =
         star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
+        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        star[i]->gpot += potperiodic;
+      }
 
       // Now compute 2nd and 3rd order derivatives
       afac = DotProduct(dv,dr,ndim)*invdrsqd;
@@ -325,15 +367,15 @@ void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
 
     // Compute time since beginning of step
     nstep = star[i]->nstep;
-    dn = n - star[i]->nlast;
-    //dt = timestep*(FLOAT) dn;
-    dt = t - star[i]->tlast;
+    dn    = n - star[i]->nlast;
+    //dt    = timestep*(FLOAT) dn;
+    dt    = t - star[i]->tlast;
 
     // Advance positions to third order and velocities to second order
-    for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] +
-      star[i]->v0[k]*dt + 0.5*star[i]->a0[k]*dt*dt + onesixth*star[i]->adot0[k]*dt*dt*dt;
+    for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] + star[i]->v0[k]*dt +
+      (FLOAT) 0.5*star[i]->a0[k]*dt*dt + onesixth*star[i]->adot0[k]*dt*dt*dt;
     for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] +
-      star[i]->a0[k]*dt + 0.5*star[i]->adot0[k]*dt*dt;
+      star[i]->a0[k]*dt + (FLOAT) 0.5*star[i]->adot0[k]*dt*dt;
 
     // If at end of step, set system particle as active
     if (dn == nstep) star[i]->active = true;
@@ -372,14 +414,14 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
+    dn    = n - star[i]->nlast;
     nstep = star[i]->nstep;
 
     if (dn == nstep) {
       //dt = timestep*(FLOAT) nstep;
-      dt = t - star[i]->tlast;
-      dt3 = powf(dt,3);
-      invdt = 1.0 / dt;
+      dt    = t - star[i]->tlast;
+      dt3   = powf(dt, 3);
+      invdt = (FLOAT) 1.0 / dt;
 
       for (k=0; k<ndim; k++) {
         star[i]->a2dot[k] = (-6.0*(star[i]->a0[k] - star[i]->a[k]) -
@@ -433,13 +475,13 @@ void NbodyHermite4<ndim, kernelclass>::PerturberCorrectionTerms
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
+    dn    = n - star[i]->nlast;
     nstep = star[i]->nstep;
 
     if (dn == nstep) {
       //dt = timestep*(FLOAT) nstep;
-      dt = t - star[i]->tlast;
-      invdt = 1.0 / dt;
+      dt    = t - star[i]->tlast;
+      invdt = (FLOAT) 1.0 / dt;
 
       for (k=0; k<ndim; k++) star[i]->a[k] += star[i]->apert[k]*invdt;
       for (k=0; k<ndim; k++) star[i]->adot[k] += star[i]->adotpert[k]*invdt;

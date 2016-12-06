@@ -323,7 +323,7 @@ public:
   NbodyHermite6TS(int, int, int, DOUBLE, string, int);
   ~NbodyHermite6TS();
 
-  void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectGravForces(int, NbodyParticle<ndim> **, DomainBox<ndim> &, Ewald<ndim> *);
   void AdvanceParticles(int, int, FLOAT, FLOAT, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **, DomainBox<ndim> &, Ewald<ndim> *);
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **, DomainBox<ndim> &, Ewald<ndim> *);
