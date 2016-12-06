@@ -242,13 +242,11 @@ void Nbody<ndim>::CalculateDirectGravForces
       if (i == j) continue;
 
       for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      NearestPeriodicVector(simbox, dr, dr_corr);
-
       for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-      drsqd = DotProduct(dr, dr, ndim);
+      NearestPeriodicVector(simbox, dr, dr_corr);
+      drsqd    = DotProduct(dr, dr, ndim);
       invdrmag = (FLOAT) 1.0/sqrt(drsqd);
-      drdt = DotProduct(dv,dr,ndim)*invdrmag;
-
+      drdt     = DotProduct(dv,dr,ndim)*invdrmag;
       star[i]->gpot += star[j]->m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) star[i]->adot[k] +=
@@ -371,11 +369,14 @@ void Nbody<ndim>::CalculatePerturberForces
   FLOAT *adotpert)                     ///< [out] Tidal jerk due to perturbers
 {
   int i,j,k;                           // Star and dimension counters
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
   FLOAT drdt;                          // Rate of change of distance
   FLOAT drsqd;                         // Distance squared
   FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT invdrmag;                      // 1 / drmag
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
   FLOAT rcom[ndim];                    // Position of centre-of-mass
   FLOAT vcom[ndim];                    // Velocity of centre-of-mass
   FLOAT msystot = (FLOAT) 0.0;         // Total system mass
@@ -396,6 +397,7 @@ void Nbody<ndim>::CalculatePerturberForces
   // Calculate the accel. and jerk of the perturber on the system COM
   for (j=0; j<Npert; j++) {
     for (k=0; k<ndim; k++) dr[k] = rcom[k] - perturber[j].r[k];
+    NearestPeriodicVector(simbox, dr, dr_corr);
     for (k=0; k<ndim; k++) dv[k] = vcom[k] - perturber[j].v[k];
     drsqd = DotProduct(dr, dr, ndim);
     invdrmag = (FLOAT) 1.0/sqrt(drsqd);
@@ -403,6 +405,12 @@ void Nbody<ndim>::CalculatePerturberForces
     for (k=0; k<ndim; k++) apert[ndim*j + k] = -msystot*dr[k]*pow(invdrmag,3);
     for (k=0; k<ndim; k++) adotpert[ndim*j + k] =
       -msystot*pow(invdrmag,3)*(dv[k] - (FLOAT) 3.0*drdt*invdrmag*dr[k]);
+
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(msystot, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) apert[k] += aperiodic[k];
+    }
   }
 
   // Loop over all (active) stars
@@ -415,6 +423,8 @@ void Nbody<ndim>::CalculatePerturberForces
     for (j=0; j<Npert; j++) {
 
       for (k=0; k<ndim; k++) dr[k] = perturber[j].r[k] - star[i]->r[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
+
       for (k=0; k<ndim; k++) dv[k] = perturber[j].v[k] - star[i]->v[k];
       drsqd = DotProduct(dr, dr, ndim);
       invdrmag = (FLOAT) 1.0/sqrt(drsqd);
@@ -431,6 +441,12 @@ void Nbody<ndim>::CalculatePerturberForces
       for (k=0; k<ndim; k++) apert[ndim*j + k] -= star[i]->m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) adotpert[ndim*j + k] -=
         star[i]->m*pow(invdrmag,3)*(dv[k] - (FLOAT) 3.0*drdt*invdrmag*dr[k]);
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[i]->m, dr, aperiodic, potperiodic);
+        for (k=0; k<ndim; k++) apert[k] += aperiodic[k];
+      }
 
     }
     //---------------------------------------------------------------------------------------------
