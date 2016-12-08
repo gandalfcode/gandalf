@@ -71,7 +71,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   else {
     this->ComputeBlockTimesteps();
   }
-  mfv->CopyDataToGhosts(simbox);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
@@ -191,7 +191,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     tghost = timestep*(FLOAT) (ntreebuildstep - 1);
     mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-    mfv->CopyDataToGhosts(simbox);
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
     mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
   }
 
@@ -200,11 +200,11 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   // Calculate all properties (and copy updated data to ghost particles)
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
   // Calculate all matrices and gradients (and copy updated data to ghost particles)
   mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
 
 
@@ -226,7 +226,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   else {
     this->ComputeBlockTimesteps();
   }
-  mfv->CopyDataToGhosts(simbox, partdata);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
 
   // Update the numerical fluxes of all active particles
@@ -403,7 +403,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
     part.flags.set_flag(active);
   }
-  mfv->CopyDataToGhosts(simbox, partdata);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
 
 
@@ -428,13 +428,13 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 
   // Calculate all properties at the half-step
-  mfv->CopyDataToGhosts(simbox, partdata);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
   mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
   // Calculate all properties at the half-step
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
   mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
 
 
@@ -452,9 +452,9 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 
   // Calculate all properties at the half-step
-  mfv->CopyDataToGhosts(simbox, partdata);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-  mfv->CopyDataToGhosts(simbox, partdata);
+  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
   mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody, simbox);
 
 

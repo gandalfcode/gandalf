@@ -347,8 +347,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
   }
 
   // Update ghost tree smoothing length values here
-  tree->UpdateAllHmaxValues(mfvdata);
-  if (ghosttree->Ntot > 0) ghosttree->UpdateAllHmaxValues(mfvdata);
 #ifdef MPI_PARALLEL
   if (mfv->Nmpighost > 0) mpighosttree->UpdateAllHmaxValues(mfvdata);
 #endif
@@ -581,10 +579,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     return;
   }
 
-  // Update ghost tree smoothing length values here
-  tree->UpdateAllHmaxValues(mfvdata);
-  //if (ghosttree->Ntot > 0) ghosttree->UpdateAllHmaxValues(ghosttree->celldata[0], mfvdata);
-
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro, Ntot)
@@ -812,9 +806,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 #endif
 
   MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
-
-  // Update ghost tree smoothing length values here
-  tree->UpdateAllHmaxValues(partdata);
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);

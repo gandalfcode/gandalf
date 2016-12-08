@@ -60,6 +60,7 @@ template class SphSimulation<3>;
 //  SphSimulation::ProcessParameters
 /// Process all the options chosen in the parameters file, setting various
 /// simulation variables and creating important simulation objects.
+/// SPH specific version
 //=================================================================================================
 template <int ndim>
 void SphSimulation<ndim>::ProcessParameters(void)
@@ -74,57 +75,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   debug2("[SphSimulation::ProcessParameters]");
 
-
-  // Sanity check for valid dimensionality
-  if (ndim < 1 || ndim > 3) {
-    std::ostringstream message;
-    message << "Invalid dimensionality chosen : ndim = " << ndim;
-    ExceptionHandler::getIstance().raise(message.str());
-  }
-
-  // Set-up random number generator object
-  //-----------------------------------------------------------------------------------------------
-  if (stringparams["rand_algorithm"] == "xorshift") {
-    randnumb = new XorshiftRand(intparams["randseed"]);
-  }
-  else if (stringparams["rand_algorithm"] == "none") {
-    randnumb = new DefaultSystemRand(intparams["randseed"]);
-  }
-  else {
-    string message = "Unrecognised parameter : rand_algorithm= " +
-      stringparams["rand_algorithm"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-
-  // Set-up all output units for scaling parameters
-  simunits.SetupUnits(simparams);
-
-  // Boundary condition variables
-  //-----------------------------------------------------------------------------------------------
-  simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
-  simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
-  simbox.min[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
-  simbox.max[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
-
-  if (ndim > 1) {
-    simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
-    simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
-    simbox.min[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
-    simbox.max[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-  }
-
-  if (ndim == 3) {
-    simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
-    simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
-    simbox.min[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
-    simbox.max[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
-  }
-
-  for (int k=0; k<ndim; k++) {
-    simbox.size[k] = simbox.max[k] - simbox.min[k];
-    simbox.half[k] = 0.5*simbox.size[k];
-  }
+  // Common set-up
+  Simulation<ndim>::ProcessParameters();
 
 
   // Set-up main SPH objects depending on which SPH algorithm we are using
@@ -135,43 +87,10 @@ void SphSimulation<ndim>::ProcessParameters(void)
   this->ProcessNbodyParameters();
 
 
-  // Set external potential field object and set pointers to object
-  if (stringparams["external_potential"] == "none") {
-    extpot = new NullPotential<ndim>();
-  }
-  else if (stringparams["external_potential"] == "vertical") {
-    extpot = new VerticalPotential<ndim>
-      (intparams["kgrav"], floatparams["avert"], simbox.min[intparams["kgrav"]]);
-  }
-  else if (stringparams["external_potential"] == "plummer") {
-    extpot = new PlummerPotential<ndim>(floatparams["mplummer"], floatparams["rplummer"]);
-  }
-  else {
-    string message = "Unrecognised parameter : external_potential = "
-      + simparams->stringparams["external_potential"];
-    ExceptionHandler::getIstance().raise(message);
-  }
+  // Set pointers to external potential field object
   sph->extpot = extpot;
   nbody->extpot = extpot;
 
-
-  // Create Ewald periodic gravity object
-  periodicBoundaries = IsAnyBoundaryPeriodic(simbox);
-  if (periodicBoundaries && intparams["self_gravity"] == 1) {
-    ewaldGravity = true;
-    ewald = new Ewald<ndim>
-      (simbox, intparams["gr_bhewaldseriesn"], intparams["in"], intparams["nEwaldGrid"],
-       floatparams["ewald_mult"], floatparams["ixmin"], floatparams["ixmax"],
-       floatparams["EFratio"], timing);
-    simbox.PeriodicGravity = true ;
-  }
-  else{
-    simbox.PeriodicGravity = false ;
-    if (IsAnyBoundaryReflecting(simbox) && intparams["self_gravity"]){
-      ExceptionHandler::getIstance().raise("Error: Reflecting boundaries and self-gravity is not "
-    		                               "supported") ;
-    }
-  }
 
 
   // Set all other SPH parameter variables
@@ -229,30 +148,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
 #endif
 
-  // Set other important simulation variables
-  dt_litesnap         = floatparams["dt_litesnap"]/simunits.t.outscale;
-  dt_python           = floatparams["dt_python"];
-  dt_snap             = floatparams["dt_snap"]/simunits.t.outscale;
-  extra_sink_output   = intparams["extra_sink_output"];
-  level_diff_max      = intparams["level_diff_max"];
-  litesnap            = intparams["litesnap"];
-  Nlevels             = intparams["Nlevels"];
-  ndiagstep           = intparams["ndiagstep"];
-  noutputstep         = intparams["noutputstep"];
-  nradstep            = intparams["nradstep"];
-  nrestartstep        = intparams["nrestartstep"];
-  ntreebuildstep      = intparams["ntreebuildstep"];
-  ntreestockstep      = intparams["ntreestockstep"];
-  Nstepsmax           = intparams["Nstepsmax"];
-  out_file_form       = stringparams["out_file_form"];
-  pruning_level_min   = intparams["pruning_level_min"];
-  pruning_level_max   = intparams["pruning_level_max"];
-  run_id              = stringparams["run_id"];
-  sph_single_timestep = intparams["sph_single_timestep"];
-  tmax_wallclock      = floatparams["tmax_wallclock"];
-  tend                = floatparams["tend"]/simunits.t.outscale;
-  tlitesnapnext       = floatparams["tlitesnapfirst"]/simunits.t.outscale;
-  tsnapnext           = floatparams["tsnapfirst"]/simunits.t.outscale;
 
 
   // Set pointers to timing object
@@ -651,18 +546,24 @@ void SphSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Check all boundary conditions
-  // (DAVID : Move this function to sphint and create an analagous one
-  //  for N-body.  Also, only check this on tree-build steps)
-  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) sphint->CheckBoundaries(simbox,sph);
+  // (DAVID : create an analagous of this function for N-body)
+  sphint->CheckBoundaries(simbox,sph);
 
 
-  // Perform the load-balancing step for MPI simulations.  First update the pruned trees on all
-  // processors, then compute the new load-balanced MPI domains and finally transfer the
+  // Perform the load-balancing step for MPI simulations.  Need to stock local and pruned trees,
+  // then compute the new load-balanced MPI domains and finally transfer the
   // particles to the new domains.
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
+	// Horrible hack in order NOT to trigger a full tree rebuild
+	sphneib->BuildTree(rebuild_tree,Nsteps+1,2, ntreestockstep,timestep,sph);
+	if (rebuild_tree) {
+		  sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
+	}
+	else {
+		sphneib->StockPrunedTree(rank, sph);
+	}
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->LoadBalancing(sph, nbody);
   }
@@ -678,31 +579,17 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Search for new ghost particles and create on local processor
   //-----------------------------------------------------------------------------------------------
-  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    tghost = timestep*(FLOAT)(ntreebuildstep - 1);
-    sphneib->SearchBoundaryGhostParticles(tghost, simbox, sph);
-    sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
+  //tghost = timestep*(FLOAT)(ntreebuildstep - 1);
+  tghost = 0;
+  sphneib->SearchBoundaryGhostParticles(tghost, simbox, sph);
+  sphneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 
-  // Re-build and communicate the new pruned trees (since the trees will necessarily change
-  // once there has been communication of particles to new domains)
 #ifdef MPI_PARALLEL
-    sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
-    sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+    sphneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,
                                timestep, sph);
 #endif
-  }
-  // Otherwise copy properties from original particles to ghost particles
-  else {
-    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
-    sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
-#ifdef MPI_PARALLEL
-    MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
-    sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
-#endif
-    sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
-  }
 
 
   // Iterate if we need to immediately change SPH particle timesteps
@@ -739,13 +626,19 @@ void SphSimulation<ndim>::MainLoop(void)
         }
       }
 
-      // Copy properties from original particles to ghost particles
-      LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
-
       // Calculate gravitational forces from other distant MPI nodes.
       // Also determines particles that must be exported to other nodes
       // if too close to the domain boundaries
 #ifdef MPI_PARALLEL
+      // Pruned trees are used only to compute which particles to export
+      // Therefore we don't need to update them at the start of the loop, and we can do it soon before we need them
+      if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    	  sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
+      }
+      else {
+    	  sphneib->StockPrunedTree(rank, sph);
+      }
+
       if (sph->self_gravity == 1) {
         sphneib->UpdateGravityExportList(rank, sph, nbody, simbox);
       }

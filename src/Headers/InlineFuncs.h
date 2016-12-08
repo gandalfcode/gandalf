@@ -418,55 +418,6 @@ static inline bool BoxOverlap
 /// Returns what fraction of box 1 overlaps box 2
 //=================================================================================================
 static inline FLOAT FractionalBoxOverlap
- (const int ndim,
-  FLOAT *box1min,                      ///< Minimum extent of box 1
-  FLOAT *box1max,                      ///< Maximum extent of box 1
-  FLOAT *box2min,                      ///< Minimum extent of box 2
-  FLOAT *box2max)                      ///< Maximum extent of box 2
-{
-  int k;                             // ..
-  FLOAT area    = (FLOAT) 1.0;       // ..
-  FLOAT overlap = (FLOAT) 1.0;       // ..
-  FLOAT frac    = (FLOAT) 0.0;       // ..
-
-  for (k=0; k<ndim; k++) assert(box1min[k] < box1max[k]);
-  for (k=0; k<ndim; k++) assert(box2min[k] < box2max[k]);
-
-  for (k=0; k<ndim; k++) {
-    area *= (box1max[k] - box1min[k]);
-    if (box1max[k] <= box2min[k] || box1min[k] >= box2max[k]) {
-      overlap *= (FLOAT) 0.0;
-    }
-    else if (box1min[k] > box2min[k] && box1max[k] < box2max[k]) {
-      overlap *= (box1max[k] - box1min[k]);
-    }
-    else if (box1min[k] < box2min[k] && box1max[k] > box2max[k]) {
-      overlap *= (box2max[k] - box2min[k]);
-    }
-    else if (box1min[k] < box2min[k] && box1max[k] < box2max[k]) {
-      overlap *= (box1max[k] - box2min[k]);
-    }
-    else if (box1min[k] > box2min[k] && box1max[k] > box2max[k]) {
-      overlap *= (box2max[k] - box1min[k]);
-    }
-    else {
-      cout << "Should never get here!! " << overlap << "    area : " << area << endl;
-    }
-  }
-
-  if (area > 0.0) frac = overlap/area;
-  assert(frac >= 0.0 && frac <= 1.0);
-
-  return frac;
-}
-
-
-
-//=================================================================================================
-//  FractionalBoxOverlap
-/// Returns what fraction of box 1 overlaps box 2
-//=================================================================================================
-static inline FLOAT FractionalBoxOverlap
  (const int ndim,                      ///< Dimensionality
   const FLOAT *box2min,                ///< Minimum extent of box 1
   const FLOAT *box2max,                ///< Maximum extent of box 1
@@ -478,8 +429,8 @@ static inline FLOAT FractionalBoxOverlap
   FLOAT overlap = (FLOAT) 1.0;         // Overlap area/volume of boxes
   FLOAT frac    = (FLOAT) 0.0;         // Fraction of box1 that is overlapped by box 2
 
-  for (k=0; k<ndim; k++) assert(box1min[k] < box1max[k]);
-  for (k=0; k<ndim; k++) assert(box2min[k] < box2max[k]);
+  for (k=0; k<ndim; k++) if (box1min[k]<big_number || box1max[k]>-big_number) assert(box1min[k] < box1max[k]);
+  for (k=0; k<ndim; k++) if (box2min[k]<big_number || box2max[k]>-big_number) assert(box2min[k] < box2max[k]);
 
   for (k=0; k<ndim; k++) {
     area *= (box1max[k] - box1min[k]);
