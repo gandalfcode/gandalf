@@ -258,7 +258,7 @@ protected:
     	   TreeBase<ndim>(domain),
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
-    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd), _domain(domain),
+    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd),
     gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned)
     {};
 
