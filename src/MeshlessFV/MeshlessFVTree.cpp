@@ -355,7 +355,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,nbody,mfv,mfvdata,Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,nbody,mfv,mfvdata,Ntot,simbox)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -528,7 +528,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro, Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro, Ntot, simbox)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
