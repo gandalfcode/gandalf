@@ -371,7 +371,7 @@ struct GradhSphParticle : public SphParticle<ndim>
 
   class HydroForcesParticle {
   public:
-	  HydroForcesParticle(): ptype(gas_type), level(0), levelneib(0), iorig(0), flags(none), r({0}), v({0}), a({0}),
+	  HydroForcesParticle(): ptype(gas_type), level(0), levelneib(0), iorig(0), flags(none), r(), v(), a(),
 	  m(0), rho (0), h(0), hrangesqd(0), hfactor(0), pfactor(0), sound(0), u(0), alpha(0)
 	  {};
 
@@ -521,7 +521,7 @@ struct MeshlessFVParticle : public Particle<ndim>
 
   class GradientParticle {
   public:
-	  GradientParticle (): level(0), ptype(gas_type), iorig(0), levelneib(0), flags(none), r({}), v({}), Wprim({}), sound(0),
+	  GradientParticle (): level(0), ptype(gas_type), iorig(0), levelneib(0), flags(none), r(), v(), Wprim(), sound(0),
 	  gpot(0), h(0), hrangesqd(0) {};
 	  GradientParticle (const MeshlessFVParticle<ndim>& p) {
 		  level=p.level;
@@ -561,8 +561,8 @@ struct MeshlessFVParticle : public Particle<ndim>
 
   class FluxParticle {
   public:
-	  FluxParticle (): ptype(gas_type), flags(none), level(0), iorig(0), r({0}), v({0}), a({0}), Wprim({0}), dQ({0}),
-	  dQdt({0}), rdmdt({0}), h(0), hrangesqd(0), ndens(0), hfactor(0) {
+	  FluxParticle (): ptype(gas_type), flags(none), level(0), iorig(0), r(), v(), a(), Wprim(), dQ(),
+	  dQdt(), rdmdt(), h(0), hrangesqd(0), ndens(0), hfactor(0) {
 		  for (int k=0; k<ndim; k++)
 			  for (int kk=0; kk<ndim; kk++)
 				  B[k][kk]=0;
