@@ -476,6 +476,66 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
 
 //=================================================================================================
+//  Tree::ComputeNeighbourList
+/// Computes and returns number of neighbour, 'Nneib', and the list of neighbour ids,
+/// 'neiblist', for all particles inside cell 'c'.  Includes all particles in the selected cell,
+/// plus all particles contained in adjacent cells (including diagonal cells).
+//================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
+ (const TreeCellBase<ndim> &cell,      ///< [in] Cell pointer
+	NeighbourManagerBase& neibmanager)            ///< [inout] NeighbourManager object
+{
+
+  int cc = 0;                          // Cell counter
+  int i;
+
+  //===============================================================================================
+  while (cc < Ncell) {
+
+    // Check if bounding boxes overlap with each other
+    //---------------------------------------------------------------------------------------------
+    if (BoxOverlap(cell.bb.min, cell.bb.max, celldata[cc].hbox.min, celldata[cc].hbox.max) ||
+        BoxOverlap(cell.hbox.min, cell.hbox.max, celldata[cc].bb.min, celldata[cc].bb.max)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (celldata[cc].copen != -1) {
+        cc = celldata[cc].copen;
+      }
+
+      // Ignore empty cells
+      else if (celldata[cc].N == 0) {
+        cc = celldata[cc].cnext;
+      }
+
+      // If leaf-cell, add particles to list
+      else if (celldata[cc].copen == -1) {
+        i = celldata[cc].ifirst;
+        while (i != -1) {
+          neibmanager.AddNeib(i);
+          if (i == celldata[cc].ilast) break;
+          i = inext[i];
+        };
+        cc = celldata[cc].cnext;
+      }
+
+
+    }
+
+    // If not in range, then open next cell
+    //---------------------------------------------------------------------------------------------
+    else {
+      cc = celldata[cc].cnext;
+    }
+
+  };
+  //===============================================================================================
+
+}
+
+
+
+//=================================================================================================
 //  Tree::ComputeNeighbourAndGhostList
 /// Computes and returns number of SPH neighbours (Nneib), including lists of ids, from the
 /// tree walk for all active particles inside cell c.
@@ -485,10 +545,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
  (const TreeCellBase<ndim> &cell,      ///< [in] Pointer to cell
   const Particle<ndim> *part_gen,      ///< [in] Particle data array
   NeighbourManagerBase& neibmanager)
-/*  const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
-  int &Nneib,                          ///< [out] Total no. of neighbours
-  int *neiblist,                       ///< [out] List of all particle ids
-  Particle<ndim> *neib_out)            ///< [out] Array of local copies of neighbour particles*/
 {
 
   // Declare objects/variables required for creating ghost particles
@@ -520,7 +576,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
       else if (celldata[cc].copen == -1) {
         int i = celldata[cc].ifirst;
         while (i != -1) {
-          neibmanager.add_tempneib(i) ;
+          neibmanager.AddPeriodicNeib(i) ;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
         }

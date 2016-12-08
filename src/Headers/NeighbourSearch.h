@@ -45,7 +45,6 @@
 #include "OctTree.h"
 #include "BruteForceTree.h"
 #include "Tree.h"
-#include "NeighbourManager.h"
 #if defined MPI_PARALLEL
 #include "MpiExport.h"
 #include "MpiNode.h"
@@ -148,7 +147,6 @@ class HydroTree : public virtual NeighbourSearch<ndim>
   vector<int> N_imported_cells_per_proc;
 #endif
 protected:
-  vector<NeighbourManager<ndim, ParticleType > > neibmanagerbuf;
  public:
 
 

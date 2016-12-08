@@ -71,7 +71,7 @@ class EOS
     gammaMinusOne(_gamma - (FLOAT) 1.0),
     oneMinusGamma((FLOAT) 1.0 - _gamma) {};
 
-  virtual FLOAT Pressure(Particle<ndim> &) = 0;
+  template <class ParticleType> FLOAT Pressure(const ParticleType& part) {return gammam1*part.rho*part.u;} ;
   virtual FLOAT EntropicFunction(Particle<ndim> &) = 0;
   virtual FLOAT SoundSpeed(Particle<ndim> &) = 0;
   virtual FLOAT Temperature(Particle<ndim> &) = 0;
@@ -106,7 +106,6 @@ class Isothermal: public EOS<ndim>
   Isothermal(FLOAT, FLOAT, FLOAT, SimUnits *);
   ~Isothermal();
 
-  FLOAT Pressure(Particle<ndim> &);
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
@@ -137,7 +136,6 @@ class Barotropic: public EOS<ndim>
   Barotropic(FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~Barotropic();
 
-  FLOAT Pressure(Particle<ndim> &);
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
@@ -170,7 +168,6 @@ class Barotropic2: public EOS<ndim>
   Barotropic2(FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~Barotropic2();
 
-  FLOAT Pressure(Particle<ndim> &);
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
@@ -204,7 +201,6 @@ class Adiabatic: public EOS<ndim>
   Adiabatic(FLOAT, FLOAT, FLOAT);
   ~Adiabatic();
 
-  FLOAT Pressure(Particle<ndim> &);
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
@@ -235,7 +231,6 @@ class IonisingRadiation: public EOS<ndim>
   IonisingRadiation(string, FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~IonisingRadiation();
 
-  FLOAT Pressure(Particle<ndim> &);
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
@@ -269,7 +264,6 @@ class MCRadiationEOS: public EOS<ndim>
   MCRadiationEOS(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~MCRadiationEOS();
 
-  FLOAT Pressure(Particle<ndim> &);
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
@@ -303,7 +297,6 @@ class Radws : public EOS<ndim>
   Radws(FLOAT, FLOAT, FLOAT);
   ~Radws();
 
-  FLOAT Pressure(Particle<ndim> &);
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
