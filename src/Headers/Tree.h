@@ -29,6 +29,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "TreeCell.h"
 #include "CodeTiming.h"
 #include "Constants.h"
 #include "DomainBox.h"
@@ -39,6 +40,7 @@
 #include "Particle.h"
 #include "Precision.h"
 #include "SmoothingKernel.h"
+#include "NeighbourManagerBase.h"
 #ifdef MPI_PARALLEL
 #include "MpiNode.h"
 template<int ndim> class TreeCommunicationHandler;
@@ -46,40 +48,6 @@ template<int ndim> class TreeCommunicationHandler;
 using namespace std;
 
 
-
-//=================================================================================================
-//  Struct TreeCellBase
-/// Base tree cell data structure which contains all data elements common to all trees.
-//=================================================================================================
-template <int ndim>
-struct TreeCellBase {
-  int cnext;                           ///< i.d. of next cell if not opened
-  int copen;                           ///< i.d. of first child cell
-  int id;                              ///< Cell id
-  int level;                           ///< Level of cell on tree
-  int ifirst;                          ///< i.d. of first particle in cell
-  int ilast;                           ///< i.d. of last particle in cell
-  int N;                               ///< No. of particles in cell
-  int Nactive;                         ///< No. of active particles in cell
-  int cexit[2][ndim];                  ///< Left and right exit cells (per dim)
-  FLOAT cdistsqd;                      ///< Minimum distance to use COM values
-  FLOAT mac;                           ///< Multipole-opening criterion value
-  Box<ndim> bb ;                       ///< Bounding box
-  Box<ndim> hbox;                      ///< Bounding box for smoothing volume
-  Box<ndim> vbox ;                     ///< Velocity space bounding box
-  FLOAT rcell[ndim];                   ///< Geometric centre of cell bounding box
-  FLOAT r[ndim];                       ///< Position of cell COM
-  FLOAT v[ndim];                       ///< Velocity of cell COM
-  FLOAT m;                             ///< Mass contained in cell
-  FLOAT rmax;                          ///< Radius of bounding sphere
-  FLOAT hmax;                          ///< Maximum smoothing length inside cell
-  FLOAT drmaxdt;                       ///< Rate of change of bounding sphere
-  FLOAT dhmaxdt;                       ///< Rate of change of maximum h
-  FLOAT q[5];                          ///< Quadrupole moment tensor
-#ifdef MPI_PARALLEL
-  double worktot;                      ///< Total work in cell
-#endif
-};
 
 //=================================================================================================
 //  Struct MultipoleMoment
@@ -124,13 +92,14 @@ template <int ndim>
 class TreeBase
 {
 protected:
+    const DomainBox<ndim>& _domain ;     ///< Whole simulation domain
 #ifdef MPI_PARALLEL
 	vector<int> Nleaf_indices; ///< Indices of the leaf cells (only used if this is a pruned tree)
 	vector<int> Nleaf_indices_inlocal; ///< Indices of the leaf cells in the full local tree
 #endif
  public:
-	TreeBase()
-    : Ntot(0), Ncell(0)
+	TreeBase(  const DomainBox<ndim>& domain)
+    : _domain(domain), Ntot(0), Ncell(0)
 #ifdef MPI_PARALLEL
    , Nimportedcell(0), Ncelltot(0), first_stock(true)
 #endif
@@ -139,7 +108,7 @@ protected:
 
 	virtual void ReallocateMemory (int,int) = 0;
 
-
+	const DomainBox<ndim>& GetDomain() {return _domain;};
 	virtual int MaxNumPartInLeafCell() const = 0 ;
 	virtual FLOAT MaxKernelRange() const = 0 ;
 	virtual int MaxNumCells() const = 0 ;
@@ -159,8 +128,9 @@ protected:
 			                               const FLOAT, const int, int &, int *) = 0 ;
 	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
-	virtual int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-	                                         const int, int &, int *, Particle<ndim> *) = 0 ;
+	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
+	virtual void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+	                                         NeighbourManagerBase&) = 0 ;
 	virtual int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                                  const FLOAT, const int,
 	                                                  const int, int &, int &, int &, int &, int *, int *,
@@ -279,9 +249,10 @@ protected:
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
        const ParticleTypeRegister& pt_reg) :
+    	   TreeBase<ndim>(domain),
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
-    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd), _domain(domain),
+    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd),
     gravmask(pt_reg.gravmask)
     {
     };
@@ -315,8 +286,9 @@ protected:
                                  const FLOAT, const int, int &, int *);
   int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                            const int, int &, int *, Particle<ndim> *);
-  int ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-                                   const int, int &, int *, Particle<ndim> *);
+  void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
+  void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+		  	  	  	  	  	  	  	 NeighbourManagerBase&);
   int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 		                                    const FLOAT, const int,
                                             const int, int &, int &, int &, int &, int *, int *,
@@ -416,6 +388,7 @@ protected:
   using TreeBase<ndim>::lmax;
   using TreeBase<ndim>::ltot;
   using TreeBase<ndim>::ltot_old;
+  using TreeBase<ndim>::_domain;
 #if defined MPI_PARALLEL
   using TreeBase<ndim>::Nimportedcell;
   using TreeBase<ndim>::Ncelltot;
@@ -430,7 +403,6 @@ protected:
   int *ids;                            ///< Particle ids
   int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
-  const DomainBox<ndim>& _domain ;     ///< Whole simulation domain
   Typemask gravmask ;                  ///< Particle types that contribute to gravity
 };
 

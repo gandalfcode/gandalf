@@ -145,8 +145,8 @@ class HydroTree : public virtual NeighbourSearch<ndim>
   vector<vector<int> > ids_sent_cells;
   vector<int> N_imported_part_per_proc;
   vector<int> N_imported_cells_per_proc;
-protected:
 #endif
+protected:
  public:
 
 

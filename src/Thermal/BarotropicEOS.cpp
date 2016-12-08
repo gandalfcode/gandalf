@@ -59,18 +59,6 @@ Barotropic<ndim>::~Barotropic()
 
 
 //=============================================================================
-//  Barotropic::Pressure
-/// Calculates and returns thermal pressure of referenced particle
-//=============================================================================
-template <int ndim>
-FLOAT Barotropic<ndim>::Pressure(Particle<ndim> &part)
-{
-  return gammam1*part.rho*part.u;
-}
-
-
-
-//=============================================================================
 //  Barotropic::EntropicFunction
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for 
 /// referenced particle

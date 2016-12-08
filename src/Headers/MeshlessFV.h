@@ -116,10 +116,10 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                        MeshlessFVParticle<ndim> &, Nbody<ndim> *) = 0;
-  virtual void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
-  virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
-                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
+  virtual void ComputeGradients(const int, const int, int *, MeshlessFVParticle<ndim> &,
+		  typename MeshlessFVParticle<ndim>::GradientParticle* ) = 0;
+  virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *,
+                                  MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::FluxParticle*) = 0;
   virtual void ComputeSmoothedGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
                                          MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeDirectGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
@@ -229,16 +229,13 @@ class MfvCommon : public MeshlessFV<ndim>
            string KernelName, int size_MeshlessFV_part, SimUnits &units, Parameters *params);
   virtual ~MfvCommon();
 
-  virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
-                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
-
   // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles
   // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)
   //-----------------------------------------------------------------------------------------------
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                MeshlessFVParticle<ndim> &, Nbody<ndim> *);
-  void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                    MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeGradients(const int, const int, int *,
+                                    MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::GradientParticle*);
   void CopyDataToGhosts(DomainBox<ndim> &);
   void ComputeSmoothedGravForces(const int, const int, int *,
                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
@@ -319,8 +316,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 
 
   //-----------------------------------------------------------------------------------------------
-  void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
-		  	  	  	  	  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeGodunovFlux(const int, const int, const FLOAT, int *,
+		  	  	  	  	  MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::FluxParticle*);
 
 };
 
@@ -387,8 +384,8 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 
   // ..
   //-----------------------------------------------------------------------------------------------
-  void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
-                          MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeGodunovFlux(const int, const int, const FLOAT, int *,
+                          MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::FluxParticle*);
 
 };
 
