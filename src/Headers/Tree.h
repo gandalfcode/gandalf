@@ -129,8 +129,7 @@ protected:
 	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
 	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
-	virtual void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-	                                         NeighbourManagerBase&) = 0 ;
+	virtual void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&) = 0 ;
 	virtual int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                                  const FLOAT, const int,
 	                                                  const int, int &, int &, int &, int &, int *, int *,
@@ -293,8 +292,7 @@ protected:
   int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                            const int, int &, int *, Particle<ndim> *);
   void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
-  void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-		  	  	  	  	  	  	  	 NeighbourManagerBase&);
+  void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&);
   int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 		                                    const FLOAT, const int,
                                             const int, int &, int &, int &, int &, int *, int *,

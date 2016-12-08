@@ -376,7 +376,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
       neibmanager.clear();
-      tree->ComputeNeighbourAndGhostList(cell, sphdata, neibmanager);
+      tree->ComputeNeighbourAndGhostList(cell, neibmanager);
       neibmanager.EndSearch(cell,sphdata,simbox,kernrange);
 
       // Loop over all active particles in the cell

@@ -391,7 +391,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
       // Compute neighbour list for cell from real and periodic ghost particles
       neibmanager.clear();
-      tree->ComputeNeighbourAndGhostList(cell, mfvdata, neibmanager);
+      tree->ComputeNeighbourAndGhostList(cell, neibmanager);
 #ifdef MPI_PARALLEL
       mpighosttree->ComputeNeighbourList(cell,neibmanager);
 #endif
@@ -574,7 +574,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
       // Compute neighbour list for cell from real and periodic ghost particles
       neibmanager.clear();
-      tree->ComputeNeighbourAndGhostList(cell, mfvdata, neibmanager);
+      tree->ComputeNeighbourAndGhostList(cell, neibmanager);
       neibmanager.EndSearch(cell,mfvdata,simbox,kernrange);
 
 

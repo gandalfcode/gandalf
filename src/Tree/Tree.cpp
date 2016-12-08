@@ -562,7 +562,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
  (const TreeCellBase<ndim> &cell,      ///< [in] Pointer to cell
-  const Particle<ndim> *part_gen,      ///< [in] Particle data array
   NeighbourManagerBase& neibmanager)
 {
 
