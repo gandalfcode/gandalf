@@ -556,8 +556,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       _tree->ComputeNeighbourAndGhostList(cell, sphdata, neibmanager);
 #ifdef MPI_PARALLEL
         // Ghosts are already in the mpi tree
-        Nneib = mpighosttree->ComputeNeighbourList(cell, sphdata, Nneibmax, Nneib,
-        		 								   &(neiblist[0]), &(neibpart[0]));
+        mpighosttree->ComputeNeighbourList(cell, neibmanager);
 #endif
       neibmanager.EndSearch(cell,sphdata,simbox,kernrange);
 
