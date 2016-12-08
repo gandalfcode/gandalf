@@ -870,7 +870,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     wkern *= neibpart[j].m / neibpart[j].rho ;
 
     for (k=0; k<ndim; k++) {
-    	draux[k] /= drmag;
+    	if (drmag>0) draux[k] /= drmag;
     	dv[k] = neibpart[j].v[k] - parti.v[k] ;
     	da[k] = neibpart[j].a[k] - parti.a[k] ;
     }
