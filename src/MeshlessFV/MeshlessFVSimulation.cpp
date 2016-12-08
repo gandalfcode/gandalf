@@ -85,27 +85,27 @@ MeshlessFV<ndim>*  _MeshlessFactorySlopes
   string limiter = simparams->stringparams["slope_limiter"];
 
   if (limiter == "null") {
-    typedef NullLimiter<ndim, MeshlessFVParticle> Limiter;
+    typedef NullLimiter<ndim> Limiter;
     return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
   }
   else if (limiter == "zeroslope") {
-    typedef ZeroSlopeLimiter<ndim, MeshlessFVParticle> Limiter;
+    typedef ZeroSlopeLimiter<ndim> Limiter;
     return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
   }
   else if (limiter == "tvdscalar" || limiter == "tess2011") {
-    typedef TVDScalarLimiter<ndim, MeshlessFVParticle> Limiter;
+    typedef TVDScalarLimiter<ndim> Limiter;
     return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
   }
   else if (limiter == "scalar" || limiter == "balsara2004") {
-    typedef ScalarLimiter<ndim, MeshlessFVParticle> Limiter;
+    typedef ScalarLimiter<ndim> Limiter;
     return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
   }
   else if (limiter == "springel2009") {
-    typedef Springel2009Limiter<ndim, MeshlessFVParticle> Limiter;
+    typedef Springel2009Limiter<ndim> Limiter;
     return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
   }
   else if (limiter == "gizmo") {
-    typedef GizmoLimiter<ndim, MeshlessFVParticle> Limiter;
+    typedef GizmoLimiter<ndim> Limiter;
     return MeshlessFactoryFull<ndim, MeshlessType<ndim,Kernel,Limiter> >(simparams,simunits) ;
   }
 

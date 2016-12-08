@@ -13,24 +13,18 @@
 using namespace std;
 #include "TreeCell.h"
 #include "GhostNeighbours.hpp"
-
-class NeighbourManagerBase {
-protected:
-	vector<int> tempneib;
-public:
-	void add_tempneib(const int i) {
-		tempneib.push_back(i);
-	}
-};
+#include "NeighbourManagerBase.h"
 
 
-template <int ndim, template<int> class ParticleType>
+
+template <int ndim, class ParticleType>
 class NeighbourManager : public NeighbourManagerBase {
 private:
+	int _NPeriodicGhosts;
 	vector<int> neiblist;
-	vector<ParticleType<ndim> > neibpart;
+	vector<ParticleType > neibpart;
 
-	vector<int> sphlist;
+	vector<int> culled_neiblist;
 
 	vector<FLOAT> dr;
 	vector<FLOAT> drmag;
@@ -42,10 +36,12 @@ public:
 	void clear() {
 		neiblist.clear();
 		tempneib.clear();
+		tempperneib.clear();
 		neibpart.clear();
 	}
 
-	void EndSearch(const TreeCellBase<ndim> &cell, const ParticleType<ndim>* partdata, const DomainBox<ndim>& domain,
+	template<class InParticleType>
+	void EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata, const DomainBox<ndim>& domain,
 			const FLOAT kernrange) {
 
 		  assert(partdata != NULL);
@@ -66,8 +62,10 @@ public:
 		  int Nneib = 0;
 
 		  // Now load the particles
-		  for (int ii=0; ii < tempneib.size(); ii++) {
-		    const int i = tempneib[ii] ;
+		  // First the ones that need ghosts to be created on the fly
+		  for (int ii=0; ii < tempperneib.size(); ii++) {
+		    const int i = tempperneib[ii] ;
+			if (partdata[i].flags.is_dead()) continue;
 
 
 		    const int NumGhosts = GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart);
@@ -94,11 +92,40 @@ public:
 		  assert(Nneib==neiblist.size());
 		  assert (Nneib==neibpart.size());
 
+		  _NPeriodicGhosts = Nneib;
+
+
+		  for (int ii=0; ii<tempneib.size(); ii++) {
+			  const int i = tempneib[ii];
+			  if (partdata[i].flags.is_dead()) continue;
+
+			  for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
+			    drsqd = DotProduct(dr,dr,ndim);
+			    if (drsqd < hrangemaxsqd || drsqd <
+			        (rmax + kernrange*partdata[i].h)*(rmax + kernrange*partdata[i].h)) {
+			      neibpart.push_back(partdata[i]);
+			      neiblist.push_back(i);
+			      Nneib++;
+			    }
+		  }
+
+		  assert(Nneib==neiblist.size());
+		  assert(neiblist.size()==neibpart.size());
+
 
 	}
 
-	int GetNeibList(const ParticleType<ndim>& p,const Typemask& hydromask, int** neiblist_p, ParticleType<ndim>** neibpart_p,
-			FLOAT** drmag_p, FLOAT** dr_p, int* levelneib) {
+	int GetNumAllNeib() {
+		return neiblist.size();
+	}
+
+	std::pair<int,ParticleType*> GetNeibI(int i) {
+		return make_pair(neiblist[i],&neibpart[i]);
+	}
+
+	template<class InParticleType>
+	int GetParticleNeib(const InParticleType& p,const Typemask& hydromask, int** neiblist_p,
+			ParticleType** neibpart_p, const bool do_pair_once) {
 
 
 	    FLOAT rp[ndim];                                // Local copy of particle position
@@ -112,16 +139,7 @@ public:
 
         const GhostNeighbourFinder<ndim> GhostFinder(_domain);
 
-
-        // Validate that gather neighbour list is correct
-#if defined(VERIFY_ALL)
-        if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
-                                                     Nneib, neiblist, sphdata, "all");
-#endif
-
-        dr.clear();
-        drmag.clear();
-        sphlist.clear();
+        culled_neiblist.clear();
 
         // Compute distances and the inverse between the current particle and all neighbours here,
         // for both gather and inactive scatter neibs.  Only consider particles with j > i to
@@ -129,34 +147,48 @@ public:
         //-----------------------------------------------------------------------------------------
         for (int jj=0; jj<neibpart.size(); jj++) {
 
-          // Skip non-hydro particles and the current active particle.
-          if (hydromask[neibpart[jj].ptype] == false) continue;
+
+			// Skip if (i) neighbour particle type does not interact hydrodynamically with particle,
+			// (ii) neighbour is a dead (e.g. accreted) particle. Additionally, if do_pair_once is true,
+        	/// (iii) same i.d. as current active particle, (iv) neighbour is on lower timestep level (i.e.
+        	// timestep is shorter), or (v) neighbour is on same level as current particle but has larger id. value
+			// (to only calculate each pair once).
+        	if (hydromask[neibpart[jj].ptype] == false) continue;
+
+        	if (p.iorig==neibpart[jj].iorig) continue;
+
+        	if (do_pair_once) {
+
+			  const bool need_interaction =
+								  (neibpart[jj].flags.is_mirror()) ||
+								  (p.level > neibpart[jj].level) ||
+								  (p.level == neibpart[jj].level &&
+								   p.iorig < neibpart[jj].iorig) ;
+
+			  if (not need_interaction) continue;
+        	}
 
           for (int k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-          GhostFinder.NearestPeriodicVector(draux);
-          drsqd = DotProduct(draux, draux, ndim) + small_number;
+          if (jj<_NPeriodicGhosts) {
+			  GhostFinder.NearestPeriodicVector(draux);
+          }
+		  drsqd = DotProduct(draux,draux,ndim)+small_number;
 
-          if (drsqd <= small_number) continue ;
+//          if (drsqd <= small_number) continue ;
 
           // Compute relative position and distance quantities for pair
           if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
-        	const FLOAT drmagi = sqrt(drsqd);
-            drmag.push_back(drmagi);
-            const FLOAT invdrmag = (FLOAT) 1.0/drmagi;
-            for (int k=0; k<ndim; k++) dr.push_back(draux[k]*invdrmag);
-            levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],p.level);
-            sphlist.push_back(jj);
+            culled_neiblist.push_back(jj);
+            if (jj<_NPeriodicGhosts) for (int k=0; k<ndim; k++) neibpart[jj].r[k] = draux[k]+rp[k];
           }
         }
 
-        *neiblist_p=&sphlist[0];
+        *neiblist_p=&culled_neiblist[0];
         *neibpart_p=&neibpart[0];
-        *drmag_p=&drmag[0];
-        *dr_p=&dr[0];
 
-        assert(drmag.size()==sphlist.size());
 
-        return sphlist.size();
+
+        return culled_neiblist.size();
 
 	}
 

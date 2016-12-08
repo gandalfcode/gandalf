@@ -49,19 +49,6 @@ Adiabatic<ndim>::~Adiabatic()
 }
 
 
-
-//=================================================================================================
-//  Adiabatic::Pressure
-/// Calculates and returns thermal pressure of referenced particle
-//=================================================================================================
-template <int ndim>
-FLOAT Adiabatic<ndim>::Pressure(Particle<ndim> &part)
-{
-  return gammam1*part.rho*part.u;
-}
-
-
-
 //=================================================================================================
 //  Adiabatic::EntropicFunction
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle

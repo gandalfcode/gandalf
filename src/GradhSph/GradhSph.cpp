@@ -52,9 +52,9 @@ GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux, int self_gravity_aux
   FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
   aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
   string gas_eos_aux, string KernelName, SimUnits &units, Parameters *params):
-  Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+  GradhSphBase<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
             h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
-            gas_eos_aux, KernelName, sizeof(GradhSphParticle<ndim>), units, params),
+            gas_eos_aux, KernelName, units, params),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp      = &kern;
@@ -401,11 +401,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   const int *neiblist,                 ///< [in] id of gather neibs in neibpart
-  const FLOAT *drmag,                  ///< [in] Distances of gather neighbours
-  const FLOAT *invdrmag,               ///< [in] Inverse distances of gather neibs
-  const FLOAT *dr,                     ///< [in] Position vector of gather neibs
-  SphParticle<ndim> &part,             ///< [inout] Particle i data
-  SphParticle<ndim> *neibpart_gen)     ///< [inout] Neighbour particle data
+  GradhSphParticle<ndim> &parti,             ///< [inout] Particle i data
+  typename GradhSphParticle<ndim>::HydroForcesParticle* neibpart)     ///< [inout] Neighbour particle data
 {
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
@@ -418,15 +415,12 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   FLOAT vsignal;                       // Signal velocity
   FLOAT paux;                          // Aux. pressure force variable
   FLOAT winvrho;                       // 0.5*(wkerni + wkernj)*invrhomean
-  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
-  GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
   // Some basic sanity-checking in case of invalid input into routine
-  assert(neibpart_gen != NULL);
   assert(!parti.flags.is_dead());
 
-  FLOAT invh_i   = 1/parti.h;
-  FLOAT invrho_i = 1/parti.rho;
+  const FLOAT invh_i   = 1/parti.h;
+  const FLOAT invrho_i = 1/parti.rho;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
@@ -434,13 +428,16 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     j = neiblist[jj];
     assert(!neibpart[j].flags.is_dead());
 
-    FLOAT invh_j   = 1/neibpart[j].h;
-    FLOAT invrho_j = 1/neibpart[j].rho;
+    const FLOAT invh_j   = 1/neibpart[j].h;
+    const FLOAT invrho_j = 1/neibpart[j].rho;
 
-    wkerni = parti.hfactor*kern.w1(drmag[jj]*invh_i);
-    wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*invh_j);
+    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k]-parti.r[k];
+    const FLOAT drmag = sqrt(DotProduct(draux,draux,ndim));
+    if (drmag>0) for (k=0; k<ndim; k++) draux[k] /= drmag;
 
-    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+    wkerni = parti.hfactor*kern.w1(drmag*invh_i);
+    wkernj = neibpart[j].hfactor*kern.w1(drmag*invh_j);
+
     dvdr = DotProduct(neibpart[j].v,draux, ndim);
     dvdr -= DotProduct(parti.v,draux,ndim);
 
@@ -489,6 +486,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     	assert(parti.a[k]==parti.a[k]);
     }
     parti.levelneib = max(parti.levelneib,neibpart[j].level);
+    neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
 
   }
   //-----------------------------------------------------------------------------------------------

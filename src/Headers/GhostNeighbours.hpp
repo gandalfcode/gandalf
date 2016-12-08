@@ -221,8 +221,8 @@ public:
 	/// \date   27/10/2015
 	/// \return The number of neighbours found
 	//===============================================================================================
-	template<template <int> class InParticleType, template<int> class OutParticleType>
-	int ConstructGhostsScatterGather(const InParticleType<ndim>& p, vector<OutParticleType<ndim> >& ngbs) const
+	template<template <int> class InParticleType, class OutParticleType>
+	int ConstructGhostsScatterGather(const InParticleType<ndim>& p, vector<OutParticleType>& ngbs) const
 	{
 	  // First find the nearest periodic mirror
 	  ngbs.push_back(p);
@@ -311,8 +311,8 @@ private:
 	/// \date   27/10/2015
 	/// \return The number of neighbours found
 	//===============================================================================================
-	template<template <int> class ParticleType>
-	void _MakePeriodicGhost(ParticleType<ndim>& p) const {
+	template<class ParticleType>
+	void _MakePeriodicGhost(ParticleType& p) const {
 	  FLOAT dr[ndim] ;
 
 	  for (int k=0; k <ndim; k++)
@@ -336,8 +336,8 @@ private:
 	/// \date   27/10/2015
 	/// \return The number of neighbours found
 	//===============================================================================================
-	template<template <int> class ParticleType>
-	int _MakeReflectedGhostsGather(ParticleType<ndim>* ngbs) const {
+	template<class ParticleType>
+	int _MakeReflectedGhostsGather(ParticleType* ngbs) const {
 	  int nc = 1 ;
 	  // Loop over the possible directions for reflections
 	  for (int k = 0; k < ndim; k++){
@@ -349,7 +349,7 @@ private:
 			double rk = 2*_domain.min[k] - ngbs[n].r[k] ;
 			if (rk > _hbox.min[k]) {
 			  ngbs[nc] = ngbs[n] ;
-			  reflect(ngbs[nc], k, _domain.min[k]) ;
+			  reflect<ParticleType::NDIM>(ngbs[nc], k, _domain.min[k]) ;
 			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][0]) ;
 			  nc++ ;
 			}
@@ -361,7 +361,7 @@ private:
 			double rk = 2*_domain.max[k] - ngbs[n].r[k] ;
 			if (rk < _hbox.max[k]) {
 			  ngbs[nc] = ngbs[n] ;
-			  reflect(ngbs[nc], k, _domain.max[k]) ;
+			  reflect<ParticleType::NDIM>(ngbs[nc], k, _domain.max[k]) ;
 			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][1]) ;
 			  nc++ ;
 			}
@@ -379,11 +379,11 @@ private:
 	/// \date   27/10/2015
 	/// \return The number of neighbours found
 	//===============================================================================================
-	template<template <int> class ParticleType>
-	int _MakeReflectedScatterGatherGhosts(vector<ParticleType<ndim> >& ngbs) const {
+	template<class ParticleType>
+	int _MakeReflectedScatterGatherGhosts(vector<ParticleType>& ngbs) const {
 	  int nc = 1 ;
 	  const int old_size = ngbs.size();
-	  const ParticleType<ndim>& real_particle = ngbs.back();
+	  const ParticleType& real_particle = ngbs.back();
 	  FLOAT h2 = real_particle.hrangesqd ;
 	  FLOAT r[ndim];
 	  for (int k=0; k<ndim; k++) r[k]=real_particle.r[k];
@@ -400,7 +400,7 @@ private:
 		  if (dx*dx < h2 || x > _hbox.min[k]){
 			for (int n=0; n < Nghost; n++){
 			  ngbs.push_back(ngbs[n+old_size]);
-			  reflect(ngbs.back(), k, _domain.min[k]) ;
+			  reflect<ParticleType::NDIM>(ngbs.back(), k, _domain.min[k]) ;
 			  ngbs.back().flags.set_flag(mirror_bound_flags[k][0]) ;
 			  nc++;
 			}
@@ -413,7 +413,7 @@ private:
 		  if (dx*dx < h2 || x < _hbox.max[k]){
 			for (int n=0; n < Nghost; n++){
 			 ngbs.push_back(ngbs[n+old_size]);
-			 reflect(ngbs.back(), k, _domain.max[k]) ;
+			 reflect<ParticleType::NDIM>(ngbs.back(), k, _domain.max[k]) ;
 			 ngbs.back().flags.set_flag(mirror_bound_flags[k][1]) ;
 			 nc++ ;
 			}

@@ -45,6 +45,7 @@
 #include "KDTree.h"
 #include "OctTree.h"
 #include "BruteForceTree.h"
+#include "NeighbourManager.h"
 #if defined MPI_PARALLEL
 #include "MpiExport.h"
 #include "MpiNode.h"
@@ -178,7 +179,9 @@ template <int ndim, template<int> class ParticleType>
 class GradhSphTree : public SphTree<ndim,ParticleType>
 {
 private:
-	using HydroTree<ndim,ParticleType>::neibmanagerbuf;
+	  typedef typename ParticleType<ndim>::HydroForcesParticle HydroParticle;
+	  typedef NeighbourManager<ndim, HydroParticle > NeighbourManagerHydro;
+	  vector<NeighbourManagerHydro> neibmanagerbufhydro;
  public:
 
   using SphTree<ndim,ParticleType>::activelistbuf;

@@ -42,7 +42,7 @@ using namespace std;
 /// \author  D. A. Hubber
 /// \date    23/03/2015
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
+template <int ndim>
 class SlopeLimiter
 {
  public:
@@ -50,11 +50,12 @@ class SlopeLimiter
   SlopeLimiter() {};
   virtual ~SlopeLimiter() {};
 
+  template <class Part1Type, class Part2Type>
+  void CellLimiter(Part1Type& parti,
+                           const Part2Type* neibpart, const int* neiblist, int Nneib) {};
 
-  virtual void CellLimiter(ParticleType<ndim> &parti,
-                           const ParticleType<ndim>* neibpart, const int* neiblist, int Nneib) {} ;
-
-  virtual void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+  template <class Part1Type, class Part2Type>
+  void ComputeLimitedSlopes(Part1Type& parti, Part2Type& partj,
                                     FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2]) {
     for (int var=0; var<ndim+2; var++) {
       dW[var] = DotProduct(parti.grad[var], draux, ndim);
@@ -73,8 +74,8 @@ class SlopeLimiter
 /// \author  D. A. Hubber
 /// \date    28/08/2015
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class ZeroSlopeLimiter : public SlopeLimiter<ndim,ParticleType>
+template <int ndim>
+class ZeroSlopeLimiter : public SlopeLimiter<ndim>
 {
  public:
 
@@ -82,7 +83,8 @@ class ZeroSlopeLimiter : public SlopeLimiter<ndim,ParticleType>
   ~ZeroSlopeLimiter() {};
 
   //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+  template <class Part1Type, class Part2Type>
+  void ComputeLimitedSlopes(Part1Type& parti, Part2Type& partj,
                             FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
   {
     for (int var=0; var<ndim+2; var++) {
@@ -102,8 +104,8 @@ class ZeroSlopeLimiter : public SlopeLimiter<ndim,ParticleType>
 /// \author  D. A. Hubber
 /// \date    23/03/2015
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class NullLimiter : public SlopeLimiter<ndim,ParticleType>
+template <int ndim>
+class NullLimiter : public SlopeLimiter<ndim>
 {
  public:
 
@@ -124,8 +126,8 @@ class NullLimiter : public SlopeLimiter<ndim,ParticleType>
 /// \author  R. A. Booth
 /// \date    14/09/2016
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class TVDScalarLimiter : public SlopeLimiter<ndim,ParticleType>
+template <int ndim>
+class TVDScalarLimiter : public SlopeLimiter<ndim>
 {
  public:
 
@@ -134,8 +136,9 @@ class TVDScalarLimiter : public SlopeLimiter<ndim,ParticleType>
   {};
 
   //===============================================================================================
-  void CellLimiter(ParticleType<ndim> &parti,
-                   const ParticleType<ndim>* neibpart, const int* neiblist, int Nneib) {
+  template <class Part1Type, class Part2Type>
+  void CellLimiter(Part1Type& parti,
+                   const Part2Type* neibpart, const int* neiblist, int Nneib) {
     double dr[ndim] ;
     double alpha[ndim+2] ;
     int j, jj, k, var ;
@@ -182,8 +185,8 @@ private:
 /// \author  R. A. Booth
 /// \date    14/09/2016
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class ScalarLimiter: public SlopeLimiter<ndim,ParticleType>
+template <int ndim>
+class ScalarLimiter: public SlopeLimiter<ndim>
 {
  public:
 
@@ -192,8 +195,9 @@ class ScalarLimiter: public SlopeLimiter<ndim,ParticleType>
   {};
 
   //===============================================================================================
-  void CellLimiter(ParticleType<ndim> &parti,
-                   const ParticleType<ndim>* neibpart, const int* neiblist, int Nneib) {
+  template <class Part1Type, class Part2Type>
+  void CellLimiter(Part1Type& parti,
+                   const Part2Type* neibpart, const int* neiblist, int Nneib) {
     double dr[ndim], drmax ;
     double Wmax[ndim+2], Wmin[ndim+2] ;
     int j, jj, k, var ;
@@ -252,8 +256,8 @@ private:
 /// \author  R. A. Booth, D. A. Hubber
 /// \date    14/09/2016
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class Springel2009Limiter: public SlopeLimiter<ndim,ParticleType>
+template <int ndim>
+class Springel2009Limiter: public SlopeLimiter<ndim>
 {
  public:
 
@@ -262,8 +266,9 @@ class Springel2009Limiter: public SlopeLimiter<ndim,ParticleType>
   {};
 
   //===============================================================================================
-  void CellLimiter(ParticleType<ndim> &parti,
-                   const ParticleType<ndim>* neibpart, const int* neiblist, int Nneib) {
+  template <class Part1Type, class Part2Type>
+  void CellLimiter(Part1Type& parti,
+                   const Part2Type* neibpart, const int* neiblist, int Nneib) {
     double dr[ndim] ;
     double dWmax[ndim+2], dWmin[ndim+2] ;
     double alpha[ndim+2] ;
@@ -327,8 +332,8 @@ private:
 /// \author  D. A. Hubber
 /// \date    23/03/2015
 //=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class GizmoLimiter : public ScalarLimiter<ndim,ParticleType>
+template <int ndim>
+class GizmoLimiter : public ScalarLimiter<ndim>
 {
  public:
 
@@ -336,7 +341,8 @@ class GizmoLimiter : public ScalarLimiter<ndim,ParticleType>
   ~GizmoLimiter() {};
 
   //===============================================================================================
-  void ComputeLimitedSlopes(ParticleType<ndim> &parti, ParticleType<ndim> &partj,
+  template <class Part1Type, class Part2Type>
+  void ComputeLimitedSlopes(Part1Type& parti, Part2Type& partj,
                             FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2])
   {
     int var;
