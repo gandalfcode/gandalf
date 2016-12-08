@@ -169,6 +169,7 @@ protected:
 	virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
 	                                              const int, const int, int &, int &, int &, int *, int *,
 	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
+#if defined(MPI_PARALLEL)
 	virtual int ComputeImportedCellList(vector<TreeCellBase<ndim> >& ) = 0;
 	int GetNLeafCells() {return Nleaf_indices.size();};
 	virtual int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
