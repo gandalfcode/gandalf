@@ -94,66 +94,78 @@ FLOAT Ic<ndim>::CalculateMassInBox
 }
 
 
-//=================================================================================================
-//  Ic::CalculateMassTable
-/// Calculates the integrated mass distribution from a given density profile.
-//=================================================================================================
-template <int ndim>
-void Ic<ndim>::CalculateMassTable
- (std::string posString,
-  FLOAT xmin,
-  FLOAT xmax)
-{
-  posQuantity = posString;
-  Ntable = 1001;
-  xTable = new FLOAT[Ntable];
-  mTable = new FLOAT[Ntable];
-  mFracTable = new FLOAT[Ntable];
-
-  xTable[0] = xmin;
-  mTable[0] = (FLOAT) 0.0;
-
-  for (int i=1; i<Ntable; i++) {
-    xTable[i] = xmin + (FLOAT) i*(xmax - xmin)/(FLOAT) (Ntable - 1);
-    if (posString == "x" || posString == "y" || posString == "z") {
-      mTable[i] = mTable[i-1] + (FLOAT) 0.5*(GetDensity(xTable[i-1]) + GetDensity(xTable[i]))*
-        (xTable[i] - xTable[i-1]);
-    }
-    else if (posString == "r" && ndim == 3) {
-      mTable[i] = mTable[i-1] + (FLOAT) 4.0*pi*(GetDensity(xTable[i])*pow(xTable[i],3) -
-                                                GetDensity(xTable[i-1])*pow(xTable[i-1],3))/3.0;
-    }
-    else {
-      std::cout << "Unrecognised position quantity : " << posString << std::endl;
-    }
-    cout << "i : " << i << "    x : " << xTable[i] << "     mTable[" << i << "] : " << mTable[i] << endl;
-  }
-
-  // Calculate normalised/fractional mass table
-  for (int i=0; i<Ntable; i++) mFracTable[i] = mTable[i]/mTable[Ntable-1];
-
-  return;
-}
-
-
 
 //=================================================================================================
-//  Ic::FindMassIntegratedPosition
-/// Performs some simple sanity checks on all initial conditions
+//  Ic::GetSmoothedValue
+/// Calculates the smoothed value of the required quantity 'var' at the position 'rsmooth' for
+/// a smoothing kernel 'kern' and smoothing length 'h'.  Numerically calculates the smoothed
+/// integral by discretising over the smoothing kernel extent with a grid of size 'gridsize' in
+/// each dimension.  Returns the final smoothed quantity.
 //=================================================================================================
 template <int ndim>
-FLOAT Ic<ndim>::FindMassIntegratedPosition(FLOAT mfrac)
+FLOAT Ic<ndim>::GetSmoothedValue
+ (const std::string var,
+  const FLOAT rsmooth[ndim],
+  const FLOAT h,
+  SmoothingKernel<ndim> *kern)
 {
-  int itable = 0;
-  FLOAT xValue;
-  for (int i=1; i<Ntable; i++) {
-    itable = i;
-    if (mfrac >= mFracTable[i-1] && mfrac < mFracTable[i]) break;
+  const int gridSize  = 3;
+  const FLOAT hrange  = kern->kernrange*h;
+  const FLOAT invh    = (FLOAT) 1.0/h;
+  const FLOAT invhsqd = invh*invh;
+  const FLOAT hfactor = pow(invh, ndim);
+  const FLOAT dV      = pow(2.0*hrange/(FLOAT) gridSize, ndim);
+  FLOAT sumValue      = (FLOAT) 0.0;
+  FLOAT lengthmax     = (FLOAT) 0.0;
+  FLOAT dr[ndim];
+  FLOAT drsqd;
+  FLOAT r[ndim];
+
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 1) {
+    for (int i=0; i<gridSize; i++) {
+      dr[0] = ((FLOAT) i + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
+      drsqd = dr[0]*dr[0];
+      r[0]  = rsmooth[0] + dr[0];
+      sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetValue("rho", r);
+    }
   }
+  //-----------------------------------------------------------------------------------------------
+  else if (ndim == 2) {
+    for (int i=0; i<gridSize; i++) {
+      for (int j=0; j<gridSize; j++) {
+        dr[0] = ((FLOAT) i + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
+        dr[1] = ((FLOAT) j + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
+        r[0]  = rsmooth[0] + dr[0];
+        r[1]  = rsmooth[1] + dr[1];
+        drsqd = dr[0]*dr[0] + dr[1]*dr[1];
+        sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetValue("rho", r);
+      }
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ndim == 3) {
+    for (int i=0; i<gridSize; i++) {
+      for (int j=0; j<gridSize; j++) {
+        for (int k=0; k<gridSize; k++) {
+          dr[0] = ((FLOAT) i + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
+          dr[1] = ((FLOAT) j + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
+          dr[2] = ((FLOAT) k + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
+          r[0]  = rsmooth[0] + dr[0];
+          r[1]  = rsmooth[1] + dr[1];
+          r[2]  = rsmooth[2] + dr[2];
+          drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
+          sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetValue("rho", r);
+        }
+      }
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
 
-  xValue = xTable[itable];
+  // Normalise summation/integral with the volume of each individual summation point
+  sumValue *= dV;
 
-  return xValue;
+  return sumValue;
 }
 
 
@@ -239,384 +251,6 @@ void Ic<ndim>::CheckInitialConditions(void)
   }
 
   return;
-}
-
-
-
-//=================================================================================================
-//  Ic::ComputeIsothermalLaneEmdenEquation
-/// Create initial conditions for binary accretion simulation.
-//=================================================================================================
-template <int ndim>
-void Ic<ndim>::ComputeIsothermalLaneEmdenSolution
- (const int Nmax,                            ///< ..
-  const FLOAT delta_xi,                      ///< ..
-  FLOAT *muArray,                            ///< ..
-  FLOAT *phiArray,                           ///< ..
-  FLOAT *psiArray,                           ///< ..
-  FLOAT *xiArray)                            ///< ..
-{
-  int i;
-  FLOAT k1_phi, k1_psi;
-  FLOAT k2_phi, k2_psi;
-  FLOAT k3_phi, k3_psi;
-  FLOAT k4_phi, k4_psi;
-  FLOAT phi;
-  FLOAT psi;
-  FLOAT xi;
-
-  debug2("[Ic::ComputeIsothermalLaneEmdenSolution]");
-
-  // Tabulate central values using boundary conditions
-  xiArray[0]  = (FLOAT) 0.0;
-  psiArray[0] = (FLOAT) 0.0;
-  phiArray[0] = (FLOAT) 0.0;
-  muArray[0]  = (FLOAT) 0.0;
-
-  // Use first few terms of series solution for first step
-  // (due to singularity in differential equation at xi = 0)
-  xi  = delta_xi;
-  psi = onesixth*pow(xi,2) - pow(xi,4)/(FLOAT) 120.0 + pow(xi,6)/(FLOAT) 1890.0;
-  phi = onethird*xi - pow(xi,3)/(FLOAT) 30.0 + pow(xi,5)/(FLOAT) 315.0;
-  xiArray[1]  = xi;
-  psiArray[1] = psi;
-  phiArray[1] = phi;
-  muArray[1]  = phi*xi*xi;
-
-
-  // Now loop over all over integration points
-  //-----------------------------------------------------------------------------------------------
-  for (i=2; i<Nmax; i++) {
-
-    // Solve using 4th order Runge-Kutta method
-    k1_phi = delta_xi*(exp(-psi) - (FLOAT) 2.0*phi/xi);
-    k1_psi = delta_xi*phi;
-
-    k2_phi = delta_xi*(exp(-psi - (FLOAT) 0.5*k1_psi) -
-      (FLOAT) 2.0*(phi + (FLOAT) 0.5*k1_phi)/(xi + (FLOAT) 0.5*delta_xi));
-    k2_psi = delta_xi*(phi + (FLOAT) 0.5*k1_phi);
-
-    k3_phi = delta_xi*(exp(-psi - (FLOAT) 0.5*k2_psi) -
-      (FLOAT) 2.0*(phi + (FLOAT) 0.5*k2_phi)/(xi + (FLOAT) 0.5*delta_xi));
-    k3_psi = delta_xi*(phi + (FLOAT) 0.5*k2_phi);
-
-    k4_phi = delta_xi*(exp(-psi - k3_psi) - (FLOAT) 2.0*(phi + k3_phi)/(xi + delta_xi));
-    k4_psi = delta_xi*(phi + k3_phi);
-
-    phi = phi + onesixth*(k1_phi + k4_phi) + onethird*(k2_phi + k3_phi);
-    psi = psi + onesixth*(k1_psi + k4_psi) + onethird*(k2_psi + k3_psi);
-    xi = (FLOAT) i*delta_xi;
-
-    // Tabulate values
-    xiArray[i]  = xi;
-    psiArray[i] = psi;
-    phiArray[i] = phi;
-    muArray[i]  = phi*xi*xi;
-  }
-  //-----------------------------------------------------------------------------------------------
-
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  Ic::ComputeLaneEmdenEquation
-/// Create initial conditions for binary accretion simulation.
-//=================================================================================================
-template <int ndim>
-void Ic<ndim>::ComputeLaneEmdenSolution
- (const int Nmax,                            ///< ..
-  const FLOAT delta_xi,                      ///< ..
-  const FLOAT npoly,                         ///< ..
-  FLOAT *muArray,                            ///< ..
-  FLOAT *phiArray,                           ///< ..
-  FLOAT *psiArray,                           ///< ..
-  FLOAT *xiArray)                            ///< ..
-{
-  int i;
-  FLOAT k1_phi, k1_psi;
-  FLOAT k2_phi, k2_psi;
-  FLOAT k3_phi, k3_psi;
-  FLOAT k4_phi, k4_psi;
-  FLOAT phi;
-  FLOAT psi;
-  FLOAT xi;
-
-  debug2("[Ic::ComputeLaneEmdenSolution]");
-
-  // Tabulate central values using boundary conditions
-  xiArray[0]  = (FLOAT) 0.0;
-  psiArray[0] = (FLOAT) 0.0;
-  phiArray[0] = (FLOAT) 0.0;
-  muArray[0]  = (FLOAT) 0.0;
-
-  // Use first few terms of series solution for first step
-  // (due to singularity in differential equation at xi = 0)
-  xi  = delta_xi;
-  psi = onesixth*pow(xi,2) - pow(xi,4)/(FLOAT) 120.0 + pow(xi,6)/(FLOAT) 1890.0;
-  phi = onethird*xi - pow(xi,3)/(FLOAT) 30.0 + pow(xi,5)/(FLOAT) 315.0;
-  xiArray[1]  = xi;
-  psiArray[1] = psi;
-  phiArray[1] = phi;
-  muArray[1]  = phi*xi*xi;
-
-
-  // Now loop over all over integration points
-  //-----------------------------------------------------------------------------------------------
-  for (i=2; i<Nmax; i++) {
-
-    // Solve using 4th order Runge-Kutta method
-    k1_phi = delta_xi*(exp(-psi) - (FLOAT) 2.0*phi/xi);
-    k1_psi = delta_xi*phi;
-
-    k2_phi = delta_xi*(exp(-psi - (FLOAT) 0.5*k1_psi) -
-      (FLOAT) 2.0*(phi + (FLOAT) 0.5*k1_phi)/(xi + (FLOAT) 0.5*delta_xi));
-    k2_psi = delta_xi*(phi + (FLOAT) 0.5*k1_phi);
-
-    k3_phi = delta_xi*(exp(-psi - (FLOAT) 0.5*k2_psi) -
-      (FLOAT) 2.0*(phi + (FLOAT) 0.5*k2_phi)/(xi + (FLOAT) 0.5*delta_xi));
-    k3_psi = delta_xi*(phi + (FLOAT) 0.5*k2_phi);
-
-    k4_phi = delta_xi*(exp(-psi - k3_psi) - (FLOAT) 2.0*(phi + k3_phi)/(xi + delta_xi));
-    k4_psi = delta_xi*(phi + k3_phi);
-
-    phi = phi + onesixth*(k1_phi + k4_phi) + onethird*(k2_phi + k3_phi);
-    psi = psi + onesixth*(k1_psi + k4_psi) + onethird*(k2_psi + k3_psi);
-    xi = (FLOAT) i*delta_xi;
-
-    // Tabulate values
-    xiArray[i]  = xi;
-    psiArray[i] = psi;
-    phiArray[i] = phi;
-    muArray[i]  = phi*xi*xi;
-  }
-  //-----------------------------------------------------------------------------------------------
-
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  Ic::BlobTest
-/// Set-up the infamous blob test loved by cosmologists
-//=================================================================================================
-template <int ndim>
-void Ic<ndim>::BlobTest(void)
-{
-
-  // Create local copies of initial conditions parameters
-  const FLOAT radius   = simparams->floatparams["radius"];
-  const FLOAT rhofluid = simparams->floatparams["rhofluid1"];
-  const FLOAT rhosphere = simparams->floatparams["rhofluid2"];
-  const FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
-  const FLOAT gamma = simparams->floatparams["gamma_eos"];
-  const FLOAT press = simparams->floatparams["press1"];
-  const FLOAT mach = simparams->floatparams["mach"];
-
-  const string particle_dist = simparams->stringparams["particle_distribution"];
-
-  debug2("[Ic::BlobTest]");
-
-  FLOAT volume_sphere;
-  if (ndim == 1) volume_sphere = (FLOAT) 2.0*radius;
-  else if (ndim == 2) volume_sphere = pi*radius*radius;
-  else if (ndim == 3) volume_sphere = (FLOAT) 4.0*onethird*pi*pow(radius,3);
-
-  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
-  FLOAT rcentre[ndim];
-  for (int k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
-
-  FLOAT volume_box=1;
-  for (int k=0; k<ndim; k++) {
-    volume_box *= (simbox.max[k]-simbox.min[k]);
-  }
-  // Add an uniform background
-  int Nlattice[3];
-  Nlattice[0]=simparams->intparams["Nlattice1[0]"];
-  Nlattice[1]=simparams->intparams["Nlattice1[1]"];
-  Nlattice[2]=simparams->intparams["Nlattice1[2]"];
-  int Nbox=1;
-  for (int k=0; k<ndim; k++) {
-    Nbox *= Nlattice[k];
-  }
-  vector<FLOAT> r_background(ndim*Nbox);
-  if (particle_dist == "random") {
-    AddRandomBox(Nbox, simbox, &r_background[0], sim->randnumb);
-  }
-  else if (particle_dist == "cubic_lattice") {
-    AddCubicLattice(Nbox, Nlattice, simbox, true, &r_background[0]);
-  }
-  else if (particle_dist == "hexagonal_lattice") {
-    AddHexagonalLattice(Nbox, Nlattice, simbox, true, &r_background[0]);
-  }
-  else {
-    string message = "Invalid particle distribution option";
-    ExceptionHandler::getIstance().raise(message);
-  }
-  // Count how many particles are NOT inside the sphere
-  vector<FLOAT> r_back_accepted;
-  r_back_accepted.reserve(ndim*Nbox);
-  for (int i=0; i< Nbox; i++) {
-    FLOAT distance=0;
-    for (int k=0; k<ndim; k++) {
-      distance += r_background[ndim*i+k]*r_background[ndim*i+k];
-    }
-    distance = sqrt(distance);
-    if (distance>radius) {
-      for (int k=0; k<ndim; k++)
-        r_back_accepted.push_back(r_background[ndim*i+k]);
-    }
-  }
-  Nbox = r_back_accepted.size()/ndim;
-
-  const FLOAT mass_box = rhofluid*(volume_box-volume_sphere);
-  const FLOAT mpart = mass_box/Nbox;
-
-
-  int Nsphere = rhosphere*volume_sphere/mpart;
-  vector<FLOAT> r(ndim*Nsphere);
-  // Create the sphere depending on the choice of initial particle distribution
-  if (particle_dist == "random") {
-    AddRandomSphere(Nsphere, rcentre, radius, &r[0], sim->randnumb);
-  }
-  else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Nsphere, rcentre, radius, particle_dist, &r[0], sim->randnumb);
-//    if (Nsphere != Npart) cout << "Warning! Unable to converge to required "
-//                               << "no. of ptcls due to lattice symmetry" << endl;
-  }
-  else {
-    string message = "Invalid particle distribution option";
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-
-
-  // Allocate local and main particle memory
-  int Npart = Nsphere+Nbox;
-  hydro->Nhydro = Npart;
-  sim->AllocateParticleMemory();
-
-  cout << "Box: " << Nbox << "particles" << endl;
-  cout << "Sphere: " << Nsphere << "particles" << endl;
-  cout << "Total: " << Npart << "particles" << endl;
-
-
-  // Record particle properties in main memory
-  for (int i=0; i<Npart; i++) {
-    Particle<ndim>& part = hydro->GetParticlePointer(i);
-
-    part.m = mpart;
-    if (i < Nsphere) {
-      for (int k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
-      part.rho = rhosphere;
-    }
-    else {
-      for (int k=0; k<ndim; k++) part.r[k] = r_back_accepted[ndim*(i-Nsphere) + k];
-      part.rho = rhofluid;
-    }
-
-    part.h = hydro->h_fac*pow(part.m/part.rho,invndim);
-    // IC are in pressure equilibrium
-    part.u = press/part.rho/gammaone;
-    if (i >= Nsphere) {
-      const FLOAT sound = sqrt(gamma*gammaone*part.u);
-      const FLOAT v_back = mach*sound;
-      part.v[0] = v_back;
-    }
-  }
-
-  sim->initial_h_provided = true;
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  Ic::GaussianRing
-/// Initialise a rotating gaussian ring around a star to measure the numerical viscosity of
-/// the numerical method (see e.g. Murray 1996)
-//=================================================================================================
-template <int ndim>
-void Ic<ndim>::GaussianRing(void)
-{
-  // Run the test only in 2d
-    if (ndim != 2) {
-        ExceptionHandler::getIstance().raise("Gaussian ring test only in 2D");
-    }
-}
-template <>
-void Ic<2>::GaussianRing(void)
-{
-	debug2("[Ic::GaussianRing]");
-
-	const int ndim = 2;
-
-	//int Nhydro = simparams->intparams["Nhydro"];
-	int Nhydro = 13188*2; //I've hard-coded it to reproduce Murray 1996
-	const FLOAT temp0     = simparams->floatparams["temp0"];
-	const FLOAT mu_bar    = simparams->floatparams["mu_bar"];
-//	const FLOAT alpha = simparams->floatparams["alpha_visc"];
-	const FLOAT c_s = sqrt(temp0/mu_bar);
-	cout << "sound speed: " << c_s << endl;
-//	const FLOAT nu = 1./8. * alpha * c_s * 0.01;
-
-	// Parameters of the gaussian
-	const FLOAT rcentre = 0.85;
-	const FLOAT width = 0.025;
-	const FLOAT inner_edge = 0.80;
-	const FLOAT outer_edge = 0.90;
-	const int nrings = 21;
-
-	const int Nperring = Nhydro/nrings;
-	Nhydro=nrings*Nperring;
-
-	// Allocate memory
-	hydro->Nhydro = Nhydro;
-	sim->nbody->Nstar=1;
-	sim->AllocateParticleMemory();
-
-	// Set up the star
-	StarParticle<ndim>& star = sim->nbody->stardata[0];
-	star.m=1;
-
-	// Set up the particles
-	for (int i=0; i<Nhydro; i++) {
-
-		Particle<ndim>& part = hydro->GetParticlePointer(i);
-
-		// Position
-		const int iring = i/Nperring;
-		const FLOAT ring_spacing = (outer_edge-inner_edge)/(nrings-1);
-		const FLOAT r = inner_edge + iring*ring_spacing;
-		const FLOAT phi_spacing = 2*M_PI/Nperring;
-		const FLOAT phi = phi_spacing*(i-iring*Nperring);
-
-		part.r[0] = r*cos(phi);
-		part.r[1] = r*sin(phi);
-
-		// Velocity
-		const FLOAT vphi = 1./sqrt(r);
-		const FLOAT vr=0.0;
-		//const FLOAT vr = -3*nu/2/r + 6*nu/width/width * (r-rcentre);
-
-		part.v[0] = vr*cos(phi)-vphi*sin(phi);
-		part.v[1] = vr*sin(phi)+vphi*cos(phi);
-
-
-		// Density (and mass)
-		const FLOAT sigma = exp (-pow((r-rcentre)/width,2));
-		part.m = 0.01/Nhydro*sigma;
-
-	}
-
-	sim->initial_h_provided = false;
-
-
 }
 
 

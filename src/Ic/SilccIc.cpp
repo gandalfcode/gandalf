@@ -80,18 +80,13 @@ SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOA
   FLOAT sigma_gas = m_box/box_area;
 
 
-  // Generate mass table
-  this->CalculateMassTable("z", simbox.min[ndim-1], simbox.max[ndim-1]);
-  cout << "Compare masses;  m_box : " << m_box <<  "    m_table : " << this->mTable[this->Ntable-1]*box_area << endl;
-
-
   // TESTING :
   //m_box = 1.2*0.5*box_area + 0.8*0.5*box_area;
-  cout << "m_box : " << m_box << "   m_exp : " << m_exp << "   m_uniform : " << m_uniform << endl;
+  /*cout << "m_box : " << m_box << "   m_exp : " << m_exp << "   m_uniform : " << m_uniform << endl;
   cout << "rho_midplane : " << rho_midplane*simunits.rho.outscale << "   rho_star : " << rho_star*simunits.rho.outscale << endl;
   cout << "rho_a : " << rho_a*simunits.rho.outscale << "   " << "    box_area : " <<  box_area << endl;
   cout << "a_midplane : " << a_midplane << "   " << h_midplane << "   " << endl;
-  cout << "sigma_gas : " << sigma_gas*simunits.sigma.outscale << endl;
+  cout << "sigma_gas : " << sigma_gas*simunits.sigma.outscale << endl;*/
 
 }
 
@@ -114,36 +109,34 @@ void SilccIc<ndim>::Generate(void)
     FLOAT z;                             // z-position of newly inserted particle
 
     // Create local copies of initial conditions parameters
-    int Npart          = simparams->intparams["Nhydro"];
-    FLOAT gammaone     = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+    int Npart      = simparams->intparams["Nhydro"];
+    FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
 
     debug2("[SilccIc::Generate]");
-
 
     // Allocate local and main particle memory
     hydro->Nhydro = Npart;
     sim->AllocateParticleMemory();
     mp = m_box / (FLOAT) Npart;
 
-    std::cout << "Nhydro : " << Npart << std::endl;
+    FLOAT *r = new FLOAT[ndim*Npart];
+    Ic<ndim>::AddMonteCarloDensityField(Npart, simbox, r, sim->randnumb);
 
-
-    // Record particle properties in main memory
-    for (i=0; i<hydro->Nhydro; i++) {
+    // Copy positions to main array and initialise all other variables
+    for (int i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-
-      part.r[0] = simbox.min[0] + simbox.size[0]*sim->randnumb->floatrand();
-      part.r[1] = simbox.min[1] + simbox.size[1]*sim->randnumb->floatrand();
-      part.r[2] = this->FindMassIntegratedPosition(sim->randnumb->floatrand());
-
-
-      for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) {
+        part.r[k] = r[ndim*i + k];
+        part.v[k] = (FLOAT) 0.0;
+        part.a[k] = (FLOAT) 0.0;
+      }
       part.m = mp;
-      part.u = (FLOAT) 1.5;
-      //part.h = hydro->h_fac*powf(mp/rho,invndim);
-      part.ptype = gas_type;
-
+      part.u = u0;
+      part.iorig = i;
+      part.ptype = gas;
     }
+
+    delete[] r;
 
   }
   //-----------------------------------------------------------------------------------------------

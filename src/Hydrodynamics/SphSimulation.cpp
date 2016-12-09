@@ -1035,8 +1035,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_step = level_max + integration_step - 1;
     dt_max     = timestep*powf(2.0, level_max);
 
-    cout << "LEVEL_MAX : " << level_max << "   " << dt_max << "   " << dt_min_hydro << endl;
-
     // Calculate the maximum level occupied by all SPH particles
     level_max_sph   = min(ComputeTimestepLevel(dt_min_hydro, dt_max), level_max);
     level_max_nbody = min(ComputeTimestepLevel(dt_min_nbody, dt_max), level_max);
@@ -1519,12 +1517,12 @@ void SphSimulation<ndim>::RegulariseInitialConditions
       part.flags.set_flag(active);
     }
     sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, sph);
-    sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
+    sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, localBox, sph);
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
     sphneib->UpdateAllSphProperties(sph, nbody);
 
     //=============================================================================================
-#pragma omp parallel default(none) shared(alphaReg, rhoReg, rreg)
+#pragma omp parallel default(none) shared(alphaReg, rhoReg, rreg, cout)
     {
       FLOAT dr[ndim];
       FLOAT drsqd;
@@ -1543,6 +1541,7 @@ void SphSimulation<ndim>::RegulariseInitialConditions
                                                     sph->GetSphParticleArray(),
                                                     sph->Ntot, sph->Nhydromax, neiblist);
 
+
         // Loop over all neighbours and calculate position correction for regularisation
         //-----------------------------------------------------------------------------------------
         for (int jj=0; jj<Nneib; jj++) {
@@ -1552,11 +1551,14 @@ void SphSimulation<ndim>::RegulariseInitialConditions
           for (int k=0; k<ndim; k++) dr[k] = neibpart.r[k] - part.r[k];
           drsqd = DotProduct(dr, dr, ndim);
           if (drsqd >= part.hrangesqd) continue;
-          //for (k=0; k<ndim; k++) rreg[ndim*i + k] -= dr[k]*sph->kernp->w0_s2(drsqd*invhsqd);
 
           // Constrain rho difference to 10 - 1000% (in case of steep density changes/gradients)
-          FLOAT rhotrue = icGenerator->GetValue("rho", neibpart.r);
+          FLOAT rhotrue = icGenerator->GetSmoothedValue("rho", neibpart.r, neibpart.h, sph->kernp);
+          //FLOAT rhotrue = icGenerator->GetValue("rho", neibpart.r);
           FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue + small_number);
+          //std::cout << "rho : " << icGenerator->GetValue("rho", neibpart.r) << "    rhosmooth : "
+          //          << icGenerator->GetSmoothedValue("rho", neibpart.r, neibpart.h, sph->kernp) << std::endl;
+          //std::cout << "rho : " << rhotrue << "   " << neibpart.rho << "   " << rhofrac << std::endl;
           rhofrac = max(rhofrac, -0.1);
           rhofrac = min(rhofrac, 10.0);
 
@@ -1599,19 +1601,5 @@ void SphSimulation<ndim>::RegulariseInitialConditions
 
   delete[] rreg;
 
-  return;
-}
-
-
-
-//=================================================================================================
-//  SphSimulation::SmoothParticleQuantity
-/// ...
-//=================================================================================================
-template <int ndim>
-void SphSimulation<ndim>::SmoothParticleQuantity
- (const int Npart,
-  FLOAT *values)
-{
   return;
 }
