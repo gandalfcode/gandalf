@@ -814,7 +814,9 @@ void GradhSph<ndim, kernelclass>::FinishReturnExport () {
 #endif
 
 
-
+template class GradhSphBase<1>;
+template class GradhSphBase<2>;
+template class GradhSphBase<3>;
 template class GradhSph<1, M4Kernel>;
 template class GradhSph<2, M4Kernel>;
 template class GradhSph<3, M4Kernel>;
