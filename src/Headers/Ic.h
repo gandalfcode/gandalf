@@ -29,6 +29,7 @@
 #include "Hydrodynamics.h"
 #include "InlineFuncs.h"
 #include "Simulation.h"
+#include "SmoothingKernel.h"
 #include "RandomNumber.h"
 #if defined(FFTW_TURBULENCE)
 #include "fftw3.h"
@@ -102,9 +103,8 @@ public:
   // Other common functions
   //-----------------------------------------------------------------------------------------------
   void CheckInitialConditions(void);
-  void CalculateMassTable(std::string, FLOAT, FLOAT);
   FLOAT CalculateMassInBox(const Box<ndim>&);
-  FLOAT FindMassIntegratedPosition(FLOAT);
+  FLOAT GetSmoothedValue(const std::string, const FLOAT *, const FLOAT, SmoothingKernel<ndim> *);
 
 
   // Static functions which can be used outside of Ic class
@@ -115,8 +115,6 @@ public:
   static int AddLatticeSphere(const int, const FLOAT *, const FLOAT, const string, FLOAT *, RandomNumber *);
   static void AddRandomBox(const int, const DomainBox<ndim> &, FLOAT *, RandomNumber *);
   static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
-  static void ComputeIsothermalLaneEmdenSolution(const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
-  static void ComputeLaneEmdenSolution(const int, const FLOAT, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   static int CutSphere(const int, const int, const DomainBox<ndim> &, const bool, FLOAT *);
 
 
@@ -177,6 +175,38 @@ public:
 
   BinaryAccretionIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   ~BinaryAccretionIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
+//  Class BlobIc
+/// \brief   ...
+/// \details ...
+/// \author  ...
+/// \date    09/12/2016
+//=================================================================================================
+template <int ndim>
+class BlobIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  BlobIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~BlobIc() {};
 
   virtual void Generate(void);
 
@@ -417,6 +447,38 @@ public:
 
 
 //=================================================================================================
+//  Class GaussianRingIc
+/// \brief   ...
+/// \details ...
+/// \author  ...
+/// \date    09/12/2016
+//=================================================================================================
+template <int ndim>
+class GaussianRingIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  GaussianRingIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ~GaussianRingIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+
+//=================================================================================================
 //  Class GreshoVortexIc
 /// \brief   Class to generate initial conditions for 2d Gresho vortex-type simulations.
 /// \details Class to generate initial conditions for 2d Gresho vortex-type simulations.
@@ -641,6 +703,9 @@ public:
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
+  static void ComputeIsothermalLaneEmdenSolution(const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
+  static void ComputeLaneEmdenSolution(const int, const FLOAT, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
+
 
 };
 
@@ -944,41 +1009,6 @@ public:
   ~UniformIc() {};
 
   virtual void Generate(void);
-
-};
-
-
-
-//=================================================================================================
-//  Class TestIc
-/// \brief
-/// \details
-/// \author  D. A. Hubber
-/// \date    15/11/2016
-//=================================================================================================
-template <int ndim>
-class TestIc : public Ic<ndim>
-{
-protected:
-
-  using Ic<ndim>::hydro;
-  using Ic<ndim>::invndim;
-  using Ic<ndim>::randnumb;
-  using Ic<ndim>::sim;
-  using Ic<ndim>::simbox;
-  using Ic<ndim>::simparams;
-  using Ic<ndim>::simunits;
-
-    FLOAT mtot;
-
-
-public:
-
-  TestIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~TestIc() {};
-
-  virtual void Generate(void);
-  virtual FLOAT GetValue(const std::string, const FLOAT *);
 
 };
 #endif

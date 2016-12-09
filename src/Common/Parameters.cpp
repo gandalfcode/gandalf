@@ -450,8 +450,8 @@ void Parameters::SetDefaultValues(void)
   // Regularising initial conditions parameters
   //-----------------------------------------------------------------------------------------------
   intparams["regularise_particle_ics"] = 0;
-  floatparams["alpha_reg"] = 0.5;
-  floatparams["rho_reg"] = 0.5;
+  floatparams["alpha_reg"] = 0.1;
+  floatparams["rho_reg"] = 0.8;
 
   // SILCC initial conditions parameters
   //-----------------------------------------------------------------------------------------------
@@ -461,6 +461,13 @@ void Parameters::SetDefaultValues(void)
   floatparams["rho_star"] = 1.0;
   floatparams["sigma_star"] = 30.0;
   floatparams["z_d"] = 100.0;
+
+  // Filament ICs
+  //-----------------------------------------------------------------------------------------------
+  floatparams["n0"] = 7.1e4;
+  floatparams["r0"] = 0.027;
+  floatparams["Rfilament"] = 0.075;
+  floatparams["Lfilament"] = 1.6;
 
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------

@@ -162,6 +162,164 @@ FLOAT PolytropeIc<ndim>::GetValue
 
 
 
+//=================================================================================================
+//  PolytropeIc::ComputeIsothermalLaneEmdenEquation
+/// Create initial conditions for binary accretion simulation.
+//=================================================================================================
+template <int ndim>
+void PolytropeIc<ndim>::ComputeIsothermalLaneEmdenSolution
+ (const int Nmax,                            ///< ..
+  const FLOAT delta_xi,                      ///< ..
+  FLOAT *muArray,                            ///< ..
+  FLOAT *phiArray,                           ///< ..
+  FLOAT *psiArray,                           ///< ..
+  FLOAT *xiArray)                            ///< ..
+{
+  int i;
+  FLOAT k1_phi, k1_psi;
+  FLOAT k2_phi, k2_psi;
+  FLOAT k3_phi, k3_psi;
+  FLOAT k4_phi, k4_psi;
+  FLOAT phi;
+  FLOAT psi;
+  FLOAT xi;
+
+  debug2("[PolytropeIc::ComputeIsothermalLaneEmdenSolution]");
+
+  // Tabulate central values using boundary conditions
+  xiArray[0]  = (FLOAT) 0.0;
+  psiArray[0] = (FLOAT) 0.0;
+  phiArray[0] = (FLOAT) 0.0;
+  muArray[0]  = (FLOAT) 0.0;
+
+  // Use first few terms of series solution for first step
+  // (due to singularity in differential equation at xi = 0)
+  xi  = delta_xi;
+  psi = onesixth*pow(xi,2) - pow(xi,4)/(FLOAT) 120.0 + pow(xi,6)/(FLOAT) 1890.0;
+  phi = onethird*xi - pow(xi,3)/(FLOAT) 30.0 + pow(xi,5)/(FLOAT) 315.0;
+  xiArray[1]  = xi;
+  psiArray[1] = psi;
+  phiArray[1] = phi;
+  muArray[1]  = phi*xi*xi;
+
+
+  // Now loop over all over integration points
+  //-----------------------------------------------------------------------------------------------
+  for (i=2; i<Nmax; i++) {
+
+    // Solve using 4th order Runge-Kutta method
+    k1_phi = delta_xi*(exp(-psi) - (FLOAT) 2.0*phi/xi);
+    k1_psi = delta_xi*phi;
+
+    k2_phi = delta_xi*(exp(-psi - (FLOAT) 0.5*k1_psi) -
+      (FLOAT) 2.0*(phi + (FLOAT) 0.5*k1_phi)/(xi + (FLOAT) 0.5*delta_xi));
+    k2_psi = delta_xi*(phi + (FLOAT) 0.5*k1_phi);
+
+    k3_phi = delta_xi*(exp(-psi - (FLOAT) 0.5*k2_psi) -
+      (FLOAT) 2.0*(phi + (FLOAT) 0.5*k2_phi)/(xi + (FLOAT) 0.5*delta_xi));
+    k3_psi = delta_xi*(phi + (FLOAT) 0.5*k2_phi);
+
+    k4_phi = delta_xi*(exp(-psi - k3_psi) - (FLOAT) 2.0*(phi + k3_phi)/(xi + delta_xi));
+    k4_psi = delta_xi*(phi + k3_phi);
+
+    phi = phi + onesixth*(k1_phi + k4_phi) + onethird*(k2_phi + k3_phi);
+    psi = psi + onesixth*(k1_psi + k4_psi) + onethird*(k2_psi + k3_psi);
+    xi = (FLOAT) i*delta_xi;
+
+    // Tabulate values
+    xiArray[i]  = xi;
+    psiArray[i] = psi;
+    phiArray[i] = phi;
+    muArray[i]  = phi*xi*xi;
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  PolytropeIc::ComputeLaneEmdenEquation
+/// Create initial conditions for binary accretion simulation.
+//=================================================================================================
+template <int ndim>
+void PolytropeIc<ndim>::ComputeLaneEmdenSolution
+ (const int Nmax,                            ///< ..
+  const FLOAT delta_xi,                      ///< ..
+  const FLOAT npoly,                         ///< ..
+  FLOAT *muArray,                            ///< ..
+  FLOAT *phiArray,                           ///< ..
+  FLOAT *psiArray,                           ///< ..
+  FLOAT *xiArray)                            ///< ..
+{
+  int i;
+  FLOAT k1_phi, k1_psi;
+  FLOAT k2_phi, k2_psi;
+  FLOAT k3_phi, k3_psi;
+  FLOAT k4_phi, k4_psi;
+  FLOAT phi;
+  FLOAT psi;
+  FLOAT xi;
+
+  debug2("[PolytropeIc::ComputeLaneEmdenSolution]");
+
+  // Tabulate central values using boundary conditions
+  xiArray[0]  = (FLOAT) 0.0;
+  psiArray[0] = (FLOAT) 0.0;
+  phiArray[0] = (FLOAT) 0.0;
+  muArray[0]  = (FLOAT) 0.0;
+
+  // Use first few terms of series solution for first step
+  // (due to singularity in differential equation at xi = 0)
+  xi  = delta_xi;
+  psi = onesixth*pow(xi,2) - pow(xi,4)/(FLOAT) 120.0 + pow(xi,6)/(FLOAT) 1890.0;
+  phi = onethird*xi - pow(xi,3)/(FLOAT) 30.0 + pow(xi,5)/(FLOAT) 315.0;
+  xiArray[1]  = xi;
+  psiArray[1] = psi;
+  phiArray[1] = phi;
+  muArray[1]  = phi*xi*xi;
+
+
+  // Now loop over all over integration points
+  //-----------------------------------------------------------------------------------------------
+  for (i=2; i<Nmax; i++) {
+
+    // Solve using 4th order Runge-Kutta method
+    k1_phi = delta_xi*(exp(-psi) - (FLOAT) 2.0*phi/xi);
+    k1_psi = delta_xi*phi;
+
+    k2_phi = delta_xi*(exp(-psi - (FLOAT) 0.5*k1_psi) -
+      (FLOAT) 2.0*(phi + (FLOAT) 0.5*k1_phi)/(xi + (FLOAT) 0.5*delta_xi));
+    k2_psi = delta_xi*(phi + (FLOAT) 0.5*k1_phi);
+
+    k3_phi = delta_xi*(exp(-psi - (FLOAT) 0.5*k2_psi) -
+      (FLOAT) 2.0*(phi + (FLOAT) 0.5*k2_phi)/(xi + (FLOAT) 0.5*delta_xi));
+    k3_psi = delta_xi*(phi + (FLOAT) 0.5*k2_phi);
+
+    k4_phi = delta_xi*(exp(-psi - k3_psi) - (FLOAT) 2.0*(phi + k3_phi)/(xi + delta_xi));
+    k4_psi = delta_xi*(phi + k3_phi);
+
+    phi = phi + onesixth*(k1_phi + k4_phi) + onethird*(k2_phi + k3_phi);
+    psi = psi + onesixth*(k1_psi + k4_psi) + onethird*(k2_psi + k3_psi);
+    xi = (FLOAT) i*delta_xi;
+
+    // Tabulate values
+    xiArray[i]  = xi;
+    psiArray[i] = psi;
+    phiArray[i] = phi;
+    muArray[i]  = phi*xi*xi;
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  return;
+}
+
+
+
+
 template class PolytropeIc<1>;
 template class PolytropeIc<2>;
 template class PolytropeIc<3>;
