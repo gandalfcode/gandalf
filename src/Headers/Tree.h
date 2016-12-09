@@ -49,33 +49,6 @@ using namespace std;
 
 
 
-//=================================================================================================
-//  Struct MultipoleMoment
-/// Structure to hold the multipole moment data.
-//=================================================================================================
-template<int ndim>
-struct MultipoleMoment {
-  MultipoleMoment()
-  {
-    for (int k=0; k<ndim; k++) r[k] = 0 ;
-    for (int k=0; k<5; k++) q[k] = 0 ;
-    m = 0;
-    id = 0;
-  }
-
-  explicit MultipoleMoment(const TreeCellBase<ndim>& cell)
-  {
-    for (int k=0; k<ndim; k++) r[k] = cell.r[k] ;
-    for (int k=0; k<5; k++) q[k] = cell.q[k] ;
-    m = cell.m;
-    id = cell.id;
-  }
-
-  FLOAT r[ndim];                       ///< Position of cell COM
-  FLOAT m;                             ///< Mass contained in cell
-  FLOAT q[5];                          ///< Quadrupole moment tensor
-  int id ;
-};
 
 
 //=================================================================================================
@@ -130,10 +103,7 @@ protected:
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
 	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
 	virtual void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&) = 0 ;
-	virtual int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-	                                                  const FLOAT, const int,
-	                                                  const int, int &, int &, int &, int &, int *, int *,
-	                                                  int *, MultipoleMoment<ndim> *, Particle<ndim> *)=0;
+	virtual void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const FLOAT, NeighbourManagerDim<ndim>& neibmanager)=0;
 	virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
 	                                              const int, const int, int &, int &, int &, int *, int *,
 	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
@@ -293,10 +263,7 @@ protected:
                            const int, int &, int *, Particle<ndim> *);
   void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
   void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&);
-  int ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-		                                    const FLOAT, const int,
-                                            const int, int &, int &, int &, int &, int *, int *,
-                                            int *, MultipoleMoment<ndim> *, Particle<ndim> *);
+  void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const FLOAT, NeighbourManagerDim<ndim>& neibmanager);
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
                                         MultipoleMoment<ndim> *, Particle<ndim> *);

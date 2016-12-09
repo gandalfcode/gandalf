@@ -5,8 +5,8 @@
  *      Author: rosotti
  */
 
-#ifndef SRC_HEADERS_NEIGHBOURMANAGER_H_
-#define SRC_HEADERS_NEIGHBOURMANAGER_H_
+#ifndef NEIGHBOURMANAGER_H_
+#define NEIGHBOURMANAGER_H_
 
 
 #include <vector>
@@ -15,29 +15,43 @@ using namespace std;
 #include "GhostNeighbours.hpp"
 #include "NeighbourManagerBase.h"
 
-
+struct ListLength {
+    int Nhydro;
+    int Ndirect;
+    int Ngrav;
+};
 
 template <int ndim, class ParticleType>
-class NeighbourManager : public NeighbourManagerBase {
+class NeighbourManager : public NeighbourManagerDim<ndim> {
 private:
 	int _NPeriodicGhosts;
+    int _NCellDirectNeib;
 	vector<int> neiblist;
+    vector<int> directlist;
 	vector<ParticleType > neibpart;
 
 	vector<int> culled_neiblist;
+    vector<int> gravlist;
 
 	vector<FLOAT> dr;
 	vector<FLOAT> drmag;
 
 	DomainBox<ndim> _domain;
+
 public:
-	using NeighbourManagerBase::tempneib;
+	using NeighbourManagerDim<ndim>::tempneib;
+    using NeighbourManagerDim<ndim>::tempperneib;
+    using NeighbourManagerDim<ndim>::tempdirectneib;
+    using NeighbourManagerDim<ndim>::gravcell;
 
 	void clear() {
 		neiblist.clear();
 		tempneib.clear();
 		tempperneib.clear();
 		neibpart.clear();
+		tempdirectneib.clear();
+		gravcell.clear();
+        directlist.clear();
 	}
 
 	template<class InParticleType>
@@ -115,6 +129,79 @@ public:
 
 	}
 
+	template<class InParticleType>
+    void EndSearchGravity (const TreeCellBase<ndim> &cell, const InParticleType* partdata, const DomainBox<ndim>& domain,
+			const FLOAT kernrange, Typemask& gravmask) {
+    
+
+		  assert(partdata != NULL);
+
+		  _domain = domain;
+
+		  FLOAT dr[ndim];                      // Relative position vector
+		  FLOAT drsqd;                         // Distance squared
+		  FLOAT rc[ndim];                      // Position of cell
+		  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
+		  const FLOAT rmax = cell.rmax;
+		  for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+
+
+		  const GhostNeighbourFinder<ndim> GhostFinder(domain, cell) ;
+		  int MaxGhosts = GhostFinder.MaxNumGhosts() ;
+          assert(MaxGhosts==1);
+
+          assert(neibpart.size()==0);
+
+		  // Now load the particles
+
+          // Start from direct neighbours
+          for (int ii=0; ii< tempdirectneib.size(); ii++) {
+            const int i = tempdirectneib[ii] ;
+            const InParticleType& part = partdata[i];
+            // Forget immediately: direct particles and particles that do not interact gravitationally
+			if (part.flags.is_dead()) continue;
+            if (!gravmask[part.ptype]) continue;
+
+            // Now create the particle
+		    GhostFinder.ConstructGhostsScatterGather(part, neibpart);
+            directlist.push_back(neibpart.size()-1);
+
+
+          }
+
+
+          // Now look at the hydro candidate neighbours
+		  for (int ii=0; ii < tempperneib.size(); ii++) {
+		    const int i = tempperneib[ii] ;
+			if (partdata[i].flags.is_dead()) continue;
+
+
+		    GhostFinder.ConstructGhostsScatterGather(partdata[i], neibpart);
+
+            const int index_part = neibpart.size()-1;
+
+	        for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
+	        drsqd = DotProduct(dr, dr, ndim);
+	        FLOAT h2 = rmax + kernrange*partdata[i].h;
+		    if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
+		      neiblist.push_back(index_part);
+		    }
+		    else {
+              // Hydro candidates that fail the test get demoted to direct neighbours
+              directlist.push_back(index_part);
+		    }
+
+		  }
+
+          _NCellDirectNeib = directlist.size();
+
+    }
+
+	int GetGravCell (MultipoleMoment<ndim>** gravcell_p) {
+		*gravcell_p = &gravcell[0];
+		return gravcell.size();
+	}
+
 	int GetNumAllNeib() {
 		return neiblist.size();
 	}
@@ -142,8 +229,7 @@ public:
         culled_neiblist.clear();
 
         // Compute distances and the inverse between the current particle and all neighbours here,
-        // for both gather and inactive scatter neibs.  Only consider particles with j > i to
-        // compute pair forces once unless particle j is inactive.
+        // for both gather and inactive scatter neibs.
         //-----------------------------------------------------------------------------------------
         for (int jj=0; jj<neibpart.size(); jj++) {
 
@@ -192,7 +278,65 @@ public:
 
 	}
 
+	template<class InParticleType>
+	ListLength GetParticleNeibGravity(const InParticleType& p,const Typemask& hydromask, const Typemask& gravmask, int** neiblist_p,
+			int** directlist_p, int** gravlist_p, ParticleType** neibpart_p, const bool do_grav) {
+
+        FLOAT rp[ndim];
+        FLOAT draux[ndim];
+
+        for (int k=0; k<ndim; k++) rp[k] = p.r[k];
+        const FLOAT hrangesqdi = p.hrangesqd;
+
+        const GhostNeighbourFinder<ndim> GhostFinder(_domain);
+
+        culled_neiblist.clear();
+        gravlist.clear();
+        // Particles that are already in the directlist stay there; we just add the ones that were demoted
+        directlist.resize(_NCellDirectNeib);
+
+        // Go through the hydro neighbour candidates and check the distance. The ones that are not real neighbours
+        // are demoted to the direct list
+        for (int jj=0; jj < neiblist.size(); jj++) {
+          int ii = neiblist[jj];
+
+          // Compute relative position and distance quantities for pair
+          for (int k=0; k<ndim; k++) draux[k] = neibpart[ii].r[k] - rp[k];
+          GhostFinder.NearestPeriodicVector(draux);
+          const FLOAT drsqd = DotProduct(draux,draux,ndim) + small_number;
+
+          if (drsqd <= small_number) continue ;
+
+          // Record if neighbour is direct-sum or and SPH neighbour.
+          // If SPH neighbour, also record max. timestep level for neighbour
+          if (drsqd > hrangesqdi && drsqd >= neibpart[ii].hrangesqd && do_grav) {
+            if (gravmask[neibpart[ii].ptype]) directlist.push_back(ii);
+          }
+          else {
+            if (hydromask[neibpart[ii].ptype]){
+              culled_neiblist.push_back(ii);
+            }
+            else if (gravmask[neibpart[ii].ptype] && do_grav){
+              gravlist.push_back(ii);
+            }
+          }
+        }
+        //-----------------------------------------------------------------------------------------
+        ListLength listlength;
+        listlength.Nhydro=culled_neiblist.size();
+        listlength.Ndirect=directlist.size();
+        listlength.Ngrav=gravlist.size();
+
+        *neiblist_p = &neiblist[0];
+        *directlist_p = &directlist[0];
+        *gravlist_p = &gravlist[0];
+        *neibpart_p = &neibpart[0];
+
+        return listlength;
+
+    }
+
 };
 
 
-#endif /* SRC_HEADERS_NEIGHBOURMANAGER_H_ */
+#endif /* NEIGHBOURMANAGER_H_ */

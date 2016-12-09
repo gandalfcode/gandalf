@@ -517,8 +517,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  SphParticle<ndim> &part,             ///< [inout] Particle i data
-  SphParticle<ndim> *neibpart_gen)     ///< [inout] Neighbour particle data
+  GradhSphParticle<ndim> &parti,             ///< [inout] Particle i data
+  typename GradhSphParticle<ndim>::HydroForcesParticle *neibpart)     ///< [inout] Neighbour particle data
 {
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
@@ -534,9 +534,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   FLOAT vsignal;                       // Signal velocity
   FLOAT paux;                          // Aux. pressure force variable
   FLOAT winvrho;                       // 0.5*(wkerni + wkernj)*invrhomean
-
-  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
-  GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
   FLOAT invh_i   = 1/parti.h;
   FLOAT invrho_i = 1/parti.rho;
@@ -617,6 +614,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // Add velocity divergence and neighbour timestep level terms
     parti.div_v -= neibpart[j].m*dvdr*wkerni;
     parti.levelneib = max(parti.levelneib,neibpart[j].level);
+    neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -647,8 +645,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  SphParticle<ndim> &part,             ///< [inout] Particle i data
-  SphParticle<ndim> *neibpart_gen)     ///< [inout] Neighbour particle data
+  GradhSphParticle<ndim> &parti,             ///< [inout] Particle i data
+  typename GradhSphParticle<ndim>::HydroForcesParticle* neibpart)     ///< [inout] Neighbour particle data
 {
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
@@ -660,8 +658,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
   FLOAT invdrmag;                      // 1 / distance
   FLOAT gaux;                          // Aux. grav. potential variable
   FLOAT paux;                          // Aux. pressure force variable
-  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
-  GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
   FLOAT invh_i = 1/parti.h;
 
@@ -707,13 +703,13 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
 /// Compute the contribution to the total gravitational force of particle 'i'
 /// due to 'Nneib' neighbouring particles in the list 'neiblist'.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
+template <int ndim>
+void GradhSphBase<ndim>::ComputeDirectGravForces
  (const int i,                         ///< id of particle
   const int Ndirect,                   ///< No. of nearby 'gather' neighbours
   int *directlist,                     ///< id of gather neighbour in neibpart
-  SphParticle<ndim> &part,             ///< Particle i data
-  SphParticle<ndim> *sph_gen)          ///< Neighbour particle data
+  GradhSphParticle<ndim> &parti,             ///< Particle i data
+  typename GradhSphParticle<ndim>::HydroForcesParticle* sphdata)          ///< Neighbour particle data
 {
   int j;                               // Neighbour particle id
   int jj;                              // Aux. neighbour loop counter
@@ -722,8 +718,6 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   FLOAT drsqd;                         // Distance squared
   FLOAT invdrmag;                      // 1 / distance
   FLOAT invdr3;                        // 1 / dist^3
-  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
-  GradhSphParticle<ndim>* sphdata = static_cast<GradhSphParticle<ndim>* > (sph_gen);
 
 
   // Loop over all neighbouring particles in list

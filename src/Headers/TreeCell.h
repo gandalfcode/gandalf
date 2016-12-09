@@ -44,5 +44,35 @@ struct TreeCellBase {
 #endif
 };
 
+//=================================================================================================
+//  Struct MultipoleMoment
+/// Structure to hold the multipole moment data.
+//=================================================================================================
+template<int ndim>
+struct MultipoleMoment {
+  MultipoleMoment()
+  {
+    for (int k=0; k<ndim; k++) r[k] = 0 ;
+    for (int k=0; k<5; k++) q[k] = 0 ;
+    m = 0;
+    id = 0;
+  }
+
+  explicit MultipoleMoment(const TreeCellBase<ndim>& cell)
+  {
+    for (int k=0; k<ndim; k++) r[k] = cell.r[k] ;
+    for (int k=0; k<5; k++) q[k] = cell.q[k] ;
+    m = cell.m;
+    id = cell.id;
+  }
+
+  FLOAT r[ndim];                       ///< Position of cell COM
+  FLOAT m;                             ///< Mass contained in cell
+  FLOAT q[5];                          ///< Quadrupole moment tensor
+  int id ;
+};
+
+
+
 
 #endif /* SRC_HEADERS_TREECELL_H_ */

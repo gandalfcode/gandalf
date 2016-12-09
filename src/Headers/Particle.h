@@ -372,7 +372,7 @@ struct GradhSphParticle : public SphParticle<ndim>
   class HydroForcesParticle {
   public:
 	  HydroForcesParticle(): ptype(gas_type), level(0), levelneib(0), iorig(0), flags(none), r(), v(), a(),
-	  m(0), rho (0), h(0), hrangesqd(0), hfactor(0), pfactor(0), sound(0), u(0), alpha(0)
+	  m(0), rho (0), h(0), hrangesqd(0), hfactor(0), pfactor(0), sound(0), u(0), alpha(0), zeta(0)
 	  {};
 
 	  HydroForcesParticle(const GradhSphParticle& p) {
@@ -395,6 +395,7 @@ struct GradhSphParticle : public SphParticle<ndim>
 		  sound=p.sound;
 		  u=p.u;
 		  alpha=p.alpha;
+          zeta=p.zeta;
 	  }
 
 	  int ptype;
@@ -414,6 +415,7 @@ struct GradhSphParticle : public SphParticle<ndim>
 	  FLOAT sound;
 	  FLOAT u;
 	  FLOAT alpha;
+      FLOAT zeta;
 	  static const int NDIM=ndim;
 
   };
