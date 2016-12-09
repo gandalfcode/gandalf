@@ -859,7 +859,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     FLOAT invh_j =  1/neibpart[j].h ;
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - parti.r[k];
-    const FLOAT drmag = DotProduct(draux,draux,ndim);
+    const FLOAT drmag =  sqrt(DotProduct(draux,draux,ndim));
 
 
     if (parti.ptype == gas_type)
