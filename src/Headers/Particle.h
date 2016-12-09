@@ -28,10 +28,10 @@
 #include "Parameters.h"
 #include "Precision.h"
 #include "Constants.h"
+#include "Exception.h"
 #ifdef MPI_PARALLEL
 #include <stddef.h>
 #include "mpi.h"
-#include "Exception.h"
 template<int ndim> class GradhSphCommunicationHandler;
 template<int ndim> class MeshlessCommunicationHandler;
 template<int ndim> class SM2012CommunicationHandler;
@@ -619,6 +619,35 @@ struct MeshlessFVParticle : public Particle<ndim>
 
   };
 
+  class GravParticle {
+  public:
+	  GravParticle(): ptype(gas_type), flags(none), m(0), h(0), hrangesqd(0), hfactor(0),
+	  zeta(0), r() { }
+
+	  GravParticle(const MeshlessFVParticle<ndim>& p) {
+		  ptype=p.ptype;
+		  flags=p.flags.get();
+		  m=p.m;
+		  h=p.h;
+		  hrangesqd=p.hrangesqd;
+		  hfactor=p.hfactor;
+		  zeta=p.zeta;
+		  for (int k=0; k<ndim; k++) r[k]=p.r[k];
+	  }
+
+	  int ptype;
+	  type_flag flags;
+	  FLOAT m;
+	  FLOAT h;
+	  FLOAT hrangesqd;
+	  FLOAT hfactor;
+	  FLOAT zeta;
+	  FLOAT r[ndim];
+
+	  static const int NDIM=ndim;
+
+  };
+
 };
 
 
@@ -684,6 +713,11 @@ inline void reflect(typename MeshlessFVParticle<ndim>::GradientParticle& part, i
 
    part.Wprim[k] *= -1 ;
 
+}
+
+template <int ndim>
+inline void reflect(typename MeshlessFVParticle<ndim>::GravParticle& part, int k, double x_mirror) {
+   ExceptionHandler::getIstance().raise("You should not use mirror boundaries with gravity!!!!");
 }
 
 

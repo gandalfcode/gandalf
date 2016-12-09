@@ -100,6 +100,9 @@ class MeshlessFVTree: public MeshlessFVNeighbourSearch<ndim>, public HydroTree<n
 	  typedef typename ParticleType<ndim>::GradientParticle GradientParticle;
 	  typedef NeighbourManager<ndim, GradientParticle > NeighbourManagerGradient;
 	  vector<NeighbourManagerGradient> neibmanagerbufgradient;
+	  typedef typename ParticleType<ndim>::GravParticle GravParticle;
+	  typedef NeighbourManager<ndim, GravParticle> NeighbourManagerGrav;
+	  vector<NeighbourManagerGrav> neibmanagerbufgrav;
 #if defined MPI_PARALLEL
 protected:
 #endif

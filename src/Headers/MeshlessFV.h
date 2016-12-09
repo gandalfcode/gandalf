@@ -121,9 +121,9 @@ public:
   virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *,
                                   MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::FluxParticle*) = 0;
   virtual void ComputeSmoothedGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
-                                         MeshlessFVParticle<ndim> *) = 0;
+                                         typename MeshlessFVParticle<ndim>::GravParticle *) = 0;
   virtual void ComputeDirectGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
-                                       MeshlessFVParticle<ndim> *) = 0;
+                                       typename MeshlessFVParticle<ndim>::GravParticle *) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &) = 0;
 
 
@@ -239,9 +239,9 @@ class MfvCommon : public MeshlessFV<ndim>
   void ComputeGradients(const int, const int, int *,
                                     MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::GradientParticle*);
   void ComputeSmoothedGravForces(const int, const int, int *,
-                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+                                 MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::GravParticle*);
   void ComputeDirectGravForces(const int, const int, int *,
-                               MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+                               MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::GravParticle*);
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel

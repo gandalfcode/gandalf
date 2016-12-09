@@ -347,9 +347,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
   MeshlessFVParticle<ndim> &parti,     ///< [inout] Particle i data
-  MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
-  //MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  //MeshlessFVParticle<ndim> *neib_gen)  ///< [inout] Neighbour particle data
+  typename MeshlessFVParticle<ndim>::GravParticle* neibpart)  ///< [inout] Neighbour particle data
 {
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
@@ -407,8 +405,8 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
  (const int i,                         ///< id of particle
   const int Ndirect,                   ///< No. of nearby 'gather' neighbours
   int *directlist,                     ///< id of gather neighbour in neibpart
-  MeshlessFVParticle<ndim> &part,      ///< Particle i data
-  MeshlessFVParticle<ndim> *neib_gen)  ///< Neighbour particle data
+  MeshlessFVParticle<ndim> &parti,      ///< Particle i data
+  typename MeshlessFVParticle<ndim>::GravParticle* neibdata)  ///< Neighbour particle data
 {
   int j;                               // Neighbour particle id
   int jj;                              // Aux. neighbour loop counter
@@ -417,9 +415,6 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
   FLOAT drsqd;                         // Distance squared
   FLOAT invdrmag;                      // 1 / distance
   FLOAT invdr3;                        // 1 / dist^3
-  MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
-  MeshlessFVParticle<ndim>* neibdata = static_cast<MeshlessFVParticle<ndim>* > (neib_gen);
-
 
   // Loop over all neighbouring particles in list
   //-----------------------------------------------------------------------------------------------
