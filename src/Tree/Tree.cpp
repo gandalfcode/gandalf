@@ -699,7 +699,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
         neibmanager.AddDirectNeib(i);
       }
       else {
-    	neibmanager.AddGravCell(celldata[cc]);
+    	neibmanager.AddGravCell(MultipoleMoment<ndim>(celldata[cc]));
       }
       cc = celldata[cc].cnext;
 
