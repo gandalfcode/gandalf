@@ -423,11 +423,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Calculate SPH gravity and hydro forces, depending on which are activated
-  if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
+  if (sph->self_gravity == 1) {
     sphneib->UpdateAllSphForces(sph, nbody, simbox, ewald);
-  }
-  else if (sph->self_gravity == 1) {
-    sphneib->UpdateAllSphGravForces(sph, nbody, simbox, ewald);
   }
   else if (sph->hydro_forces == 1) {
     sphneib->UpdateAllSphHydroForces(sph, nbody, simbox);
@@ -652,11 +649,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Calculate SPH gravity and hydro forces, depending on which are activated
-      if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
+      if (sph->self_gravity == 1) {
         sphneib->UpdateAllSphForces(sph, nbody, simbox, ewald);
-      }
-      else if (sph->self_gravity == 1) {
-        sphneib->UpdateAllSphGravForces(sph, nbody, simbox, ewald);
       }
       else if (sph->hydro_forces == 1) {
         sphneib->UpdateAllSphHydroForces( sph, nbody, simbox);
