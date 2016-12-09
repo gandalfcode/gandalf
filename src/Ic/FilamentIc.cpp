@@ -42,13 +42,15 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
 
   // Hard-wired (for now) constants + other parameters
-  aconst    = (FLOAT) 10.9;
-  n0        = (FLOAT) 7.1e4;
-  rho0      = (FLOAT) 1000.0*m_hydrogen*mu_bar*n0;
-  r0        = (FLOAT) 0.027;
-  Rfilament = (FLOAT) 0.075;
-  Lfilament = (FLOAT) 1.6;
+  n0        = simparams->floatparams["n0"];
+  r0        = simparams->floatparams["r0"];
+  Rfilament = simparams->floatparams["Rfilament"];
+  Lfilament = simparams->floatparams["Lfilament"];
   temp0     = simparams->floatparams["temp0"];
+
+  // Constant and derived quantities
+  aconst    = (FLOAT) 10.9;
+  rho0      = (FLOAT) 1000.0*m_hydrogen*mu_bar*n0;
 
   // Some sanity checking to ensure correct units are used for these ICs
   if (simparams->stringparams["routunit"] != "pc") {
@@ -77,11 +79,6 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
   std::cout << "rho0 : " << rho0*simunits.rho.outscale << " " << simunits.rho.outunit << std::endl;
   std::cout << "mtot : " << mtot*simunits.m.outscale << " " << simunits.m.outunit << std::endl;
 
-  FLOAT vol = pi*Rfilament*Rfilament*Lfilament;
-  std::cout << "volume : " << vol*simunits.r.outscale*simunits.r.outscale*simunits.r.outscale
-            << " pc^3" << std::endl;
-  std::cout << "Uniform mass : " << rho0*vol*simunits.m.outscale << " " << simunits.m.outunit << std::endl;
-
 }
 
 
@@ -107,24 +104,25 @@ void FilamentIc<ndim>::Generate(void)
     hydro->Nhydro = Npart;
     sim->AllocateParticleMemory();
     mp = 1.0*mtot / (FLOAT) Npart;
-    std::cout << "Nhydro : " << Npart << std::endl;
 
-    // Record particle properties in main memory
+    FLOAT *r = new FLOAT[ndim*Npart];
+    Ic<ndim>::AddMonteCarloDensityField(Npart, simbox, r, sim->randnumb);
+
+    // Copy positions to main array and initialise all other variables
     for (int i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-
-      do {
-        part.r[0] = Rfilament*(1.0 - 2.0*sim->randnumb->floatrand());
-        part.r[1] = Rfilament*(1.0 - 2.0*sim->randnumb->floatrand());
-        part.r[2] = 0.5*Lfilament*(1.0 - 2.0*sim->randnumb->floatrand());
-        Rsqd = part.r[0]*part.r[0] + part.r[1]*part.r[1];
-      } while (Rsqd > Rfilament*Rfilament);
-
-      for (int k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) {
+        part.r[k] = r[ndim*i + k];
+        part.v[k] = (FLOAT) 0.0;
+        part.a[k] = (FLOAT) 0.0;
+      }
       part.m = mp;
       part.u = u0;
+      part.iorig = i;
       part.ptype = gas;
     }
+
+    delete[] r;
 
   }
   //-----------------------------------------------------------------------------------------------

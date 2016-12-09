@@ -102,6 +102,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "binaryacc") {
     icGenerator = new BinaryAccretionIc<ndim>(this, hydro, invndim);
   }
+  else if (ic == "blob") {
+    icGenerator = new BlobIc<ndim>(this, hydro, invndim);
+  }
   else if (ic == "bondi") {
     icGenerator = new BondiAccretionIc<ndim>(this, hydro, invndim);
   }
@@ -124,6 +127,9 @@ void Simulation<ndim>::GenerateIC(void)
   }
   else if (ic == "filament") {
     icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
+  }
+  else if (ic == "gaussianring") {
+    icGenerator = new GaussianRingIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "gresho") {
     icGenerator = new GreshoVortexIc<ndim>(this, hydro, invndim);
@@ -172,9 +178,6 @@ void Simulation<ndim>::GenerateIC(void)
   }
   else if (ic == "box" || ic == "sphere") {
     icGenerator = new UniformIc<ndim>(this, hydro, invndim);
-  }
-  else if (ic == "test") {
-    icGenerator = new TestIc<ndim>(this, hydro, invndim);
   }
   //-----------------------------------------------------------------------------------------------
   else {
