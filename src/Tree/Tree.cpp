@@ -699,11 +699,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
         neibmanager.AddDirectNeib(i);
       }
       else {
-        MultipoleMoment<ndim> moment (celldata[cc]);
-        for (int k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k] ;
-        GhostFinder.PeriodicDistanceCorrection(dr, dr_corr);
-        for (int k=0; k<ndim; k++) moment.r[k] += dr_corr[k] ;
-    	neibmanager.AddGravCell(moment);
+    	neibmanager.AddGravCell(celldata[cc]);
       }
       cc = celldata[cc].cnext;
 
