@@ -241,7 +241,7 @@ public:
 			// (to only calculate each pair once).
         	if (hydromask[neibpart[jj].ptype] == false) continue;
 
-        	if (p.iorig==neibpart[jj].iorig) continue;
+        	//if (p.iorig==neibpart[jj].iorig) continue;
 
         	if (do_pair_once) {
 
