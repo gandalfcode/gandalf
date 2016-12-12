@@ -96,8 +96,7 @@ public:
   // Virtual functions
   //-----------------------------------------------------------------------------------------------
   virtual void Generate(void) {};
-  virtual FLOAT GetValue(const std::string, const FLOAT *) {return (FLOAT) 0.0;}
-  virtual FLOAT GetDensity(const FLOAT rad) {return (FLOAT) 0.0;}
+  virtual FLOAT GetValue(const std::string, const FLOAT *);
 
 
   // Other common functions

@@ -7,16 +7,14 @@ import numpy as np
 import time
 
 # Create a new (but unspecified) 1D simulation object
-sim = newsim(ndim=1)
+sim = newsim(ndim=1,sim='gradhsph')
 
 # Set all important code parameters
 sim.SetParam('ic','python')
-sim.SetParam('sim','sph')
 sim.SetParam('sph','gradh')
 sim.SetParam('run_id','SHOCK1')
 sim.SetParam('sph_integration','lfkdk')
 sim.SetParam('gas_eos','energy_eqn')
-sim.SetParam('energy_integration','PEC')
 sim.SetParam('gamma_eos',1.6666666666666666)
 sim.SetParam('Nhydro',200)
 sim.SetParam('tend',0.075)

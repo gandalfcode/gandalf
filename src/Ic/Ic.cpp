@@ -96,6 +96,21 @@ FLOAT Ic<ndim>::CalculateMassInBox
 
 
 //=================================================================================================
+//  Ic::GetValue
+/// Default GetValue function for undefined case to throw an exception if ever called.
+//=================================================================================================
+template <int ndim>
+FLOAT Ic<ndim>::GetValue
+ (const std::string var,
+  const FLOAT r[ndim])
+{
+  ExceptionHandler::getIstance().raise("Error : GetValue function not defined");
+  return (FLOAT) 0.0;
+}
+
+
+
+//=================================================================================================
 //  Ic::GetSmoothedValue
 /// Calculates the smoothed value of the required quantity 'var' at the position 'rsmooth' for
 /// a smoothing kernel 'kern' and smoothing length 'h'.  Numerically calculates the smoothed
