@@ -302,6 +302,7 @@ public:
       else {
         if (hydromask[neibdata[ii].ptype]){
           culled_neiblist.push_back(ii);
+          if (jj<_NPeriodicGhosts) for (int k=0; k<ndim; k++) neibdata[ii].r[k] = draux[k]+rp[k];
         }
         else if (gravmask[neibdata[ii].ptype] && do_grav){
           gravlist.push_back(ii);
