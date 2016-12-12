@@ -162,7 +162,7 @@ void SedovBlastwaveIc<ndim>::Generate(void)
     hotlist[i] = 0;
     Ncold++;
 
-    /*if (drsqd < r_hot*r_hot) {
+    if (drsqd < r_hot*r_hot) {
       hotlist[i] = 1;
       if (smooth_ic == 1) part.u = part.m*hydro->kernp->w0(hydro->kernp->kernrange*sqrt(drsqd)/r_hot);
       else part.u = part.m;
@@ -173,7 +173,7 @@ void SedovBlastwaveIc<ndim>::Generate(void)
     else {
       hotlist[i] = 0;
       Ncold++;
-    }*/
+    }
   }
 
   // Normalise the energies
