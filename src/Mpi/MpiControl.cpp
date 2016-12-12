@@ -920,7 +920,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   for (iaux=0; iaux<overlapping_nodes.size(); iaux++) {
     inode = overlapping_nodes[iaux];
     ghost_export_list.clear();
-    Nexport = neibsearch->SearchMpiGhostParticles(tghost, mpinode[inode].domain,
+    Nexport = neibsearch->SearchMpiGhostParticles(tghost, mpinode[inode].rbox,
                                                   hydro, ghost_export_list);
     for (unsigned int j=0; j<ghost_export_list.size(); j++) {
       i = ghost_export_list[j];
