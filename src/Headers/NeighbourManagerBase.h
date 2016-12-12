@@ -18,14 +18,15 @@ protected:
 	vector<int> tempdirectneib;
 
 public:
+	/* Add a neighbour that does not need automatic ghost generation */
+    void AddNeib(const int i) {
+        tempneib.push_back(i);
+    }
+    /* Add a neighbour that we need ghosts of */
 	void AddPeriodicNeib(const int i) {
 		tempperneib.push_back(i);
 	}
-
-	void AddNeib(const int i) {
-		tempneib.push_back(i);
-	}
-
+	/* Add a distant particle for gravity force */
 	void AddDirectNeib(const int i) {
 		tempdirectneib.push_back(i);
 	}

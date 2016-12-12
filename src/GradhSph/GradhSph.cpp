@@ -689,6 +689,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
+    parti.levelneib = max(parti.levelneib,sphdata[j].level);
   }
 
   //===============================================================================================
@@ -737,9 +738,6 @@ void GradhSphBase<ndim>::ComputeDirectGravForces
 
     // Sanity-checkt to ensure particles are really un-softened direct-sum neighbours
     assert(drsqd >= parti.hrangesqd && drsqd >= sphdata[j].hrangesqd);
-
-    parti.levelneib = max(parti.levelneib,sphdata[j].level);
-
 
   }
   //-----------------------------------------------------------------------------------------------
