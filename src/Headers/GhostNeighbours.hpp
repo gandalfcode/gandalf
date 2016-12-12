@@ -382,7 +382,7 @@ private:
 	template<class ParticleType>
 	int _MakeReflectedScatterGatherGhosts(vector<ParticleType>& ngbs) const {
 	  int nc = 1 ;
-	  const int old_size = ngbs.size();
+	  const int old_size = ngbs.size()-1;
 	  const ParticleType& real_particle = ngbs.back();
 	  FLOAT h2 = real_particle.hrangesqd ;
 	  FLOAT r[ndim];
