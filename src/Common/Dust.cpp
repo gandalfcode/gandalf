@@ -494,7 +494,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 #endif
 
 #ifdef _OPENMP
-  int Nthreads  = omp_get_num_threads() ;
+  int Nthreads  = omp_get_max_threads() ;
 #else
   int Nthreads  = 1 ;
 #endif

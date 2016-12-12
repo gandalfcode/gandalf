@@ -125,6 +125,9 @@ public:
       }
     }
 
+    assert(directlist.size() == neibdata.size() &&
+           neib_idx.size()   == neibdata.size()) ;
+
     // Now look at the hydro candidate neighbours
     // First the ones that need ghosts to be created on the fly
     int Nneib = directlist.size();
