@@ -279,7 +279,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 #ifdef MPI_PARALLEL
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
   MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
