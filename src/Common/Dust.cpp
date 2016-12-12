@@ -64,11 +64,6 @@ public:
 	DustSphNgbFinder(TreeBase<ndim> * t,TreeBase<ndim> * gt=NULL)
 	: _tree(t), _ghosttree(gt)
 	{
-#ifdef _OPENMP
-		neibmanagerbuf.resize(omp_get_max_threads());
-#else
-		neibmanagerbuf.resize(1);
-#endif
 	} ;
 	virtual ~DustSphNgbFinder() { } ;
 
@@ -493,9 +488,21 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;    // List of active cells
 
+
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
+
+#ifdef _OPENMP
+  int Nthreads  = omp_get_num_threads() ;
+#else
+  int Nthreads  = 1 ;
+#endif
+  for (int t = neibmanagerbuf.size(); t < Nthreads; ++t)
+    neibmanagerbuf.push_back(NeighbourManager<ndim,
+                                              ParticleType<ndim> >(types,_tree->MaxKernelRange(),
+                                                                   _tree->GetDomain()));
+
 
   debug2("[DustSphNgbFinder::FindNeibForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("DUST_GAS_PAIRWISE_FORCES");
@@ -532,8 +539,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     vector<ParticleType<ndim> > activepart(_tree->MaxNumPartInLeafCell()); // Local array of parts
     vector<int>                 levelneib(Ntot,0);                         // Ngb t-step level
     NeighbourManager<ndim,ParticleType<ndim> >& neibmanager = neibmanagerbuf[ithread];
-    const FLOAT kernrange = _tree->MaxKernelRange();
-    const DomainBox<ndim>& simbox = _tree->GetDomain();
 
 
     // Loop over all active cells
@@ -558,7 +563,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
         // Ghosts are already in the mpi tree
         mpighosttree->ComputeNeighbourList(cell, neibmanager);
 #endif
-      neibmanager.EndSearch(cell,sphdata,simbox,kernrange);
+      neibmanager.EndSearch(cell,sphdata);
 
       const int Nneib_cell = neibmanager.GetNumAllNeib();
 

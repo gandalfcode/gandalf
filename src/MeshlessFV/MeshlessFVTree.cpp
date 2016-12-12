@@ -58,9 +58,7 @@ MeshlessFVTree<ndim,ParticleType>::MeshlessFVTree
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 {
-	neibmanagerbufflux.resize(Nthreads);
-	neibmanagerbufgradient.resize(Nthreads);
-	neibmanagerbufgrav.resize(Nthreads);
+
 }
 
 
@@ -338,6 +336,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
   debug2("[MeshlessFVTree::UpdateGradientMatrices]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_GRADIENTS");
 
+  // Make sure we have enough neibmanagers
+  for (int t = neibmanagerbufgradient.size(); t < Nthreads; ++t)
+    neibmanagerbufgradient.push_back(NeighbourManagerGradient(mfv, simbox));
+
   int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 
@@ -396,7 +398,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 #ifdef MPI_PARALLEL
       mpighosttree->ComputeNeighbourList(cell,neibmanager);
 #endif
-      neibmanager.EndSearch(cell,mfvdata,simbox,kernrange);
+      neibmanager.EndSearch(cell,mfvdata);
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
@@ -515,6 +517,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   debug2("[MeshlessFVTree::UpdateGodunovFluxes]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_FLUXES");
 
+  // Make sure we have enough neibmanagers
+  for (int t = neibmanagerbufflux.size(); t < Nthreads; ++t)
+    neibmanagerbufflux.push_back(NeighbourManagerFlux(mfv, simbox));
+
   int Nhydro = mfv->Nhydro ;
   int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
@@ -576,7 +582,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
       // Compute neighbour list for cell from real and periodic ghost particles
       neibmanager.clear();
       tree->ComputeNeighbourAndGhostList(cell, neibmanager);
-      neibmanager.EndSearch(cell,mfvdata,simbox,kernrange);
+      neibmanager.EndSearch(cell,mfvdata);
 
 
       // Loop over all active particles in the cell
@@ -687,6 +693,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
   debug2("[MeshlessFVTree::UpdateAllGravForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_GRAV_FORCES");
 
+  // Make sure we have enough neibmanagers
+  for (int t = neibmanagerbufgrav.size(); t < Nthreads; ++t)
+    neibmanagerbufgrav.push_back(NeighbourManagerGrav(mfv, simbox));
+
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -767,7 +777,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
         // Compute neighbour list for cell depending on physics options
         neibmanager.clear();
         tree->ComputeGravityInteractionAndGhostList(cell, macfactor, neibmanager);
-        neibmanager.EndSearchGravity(cell,partdata,simbox,kernrange,gravmask);
+        neibmanager.EndSearchGravity(cell,partdata);
 
         MultipoleMoment<ndim>* gravcell;
         const int Ngravcell = neibmanager.GetGravCell(&gravcell);

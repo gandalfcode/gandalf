@@ -56,13 +56,12 @@ GradhSphTree<ndim,ParticleType>::GradhSphTree
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 {
-	neibmanagerbufhydro.resize(Nthreads);
 }
 
 
 
 //=================================================================================================
-//  GradhSphTree::~GradhSphTree
+//  GradhSphTree::~GradhSphTreeNeighbourManagerHydro
 /// GradhSphTree destructor.  Deallocates tree memory upon object destruction.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
@@ -323,6 +322,10 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   debug2("[GradhSphTree::UpdateAllSphHydroForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_HYDRO_FORCES");
 
+  // Make sure we have enough neibmanagers
+  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t)
+    neibmanagerbufhydro.push_back(NeighbourManagerHydro(sph, simbox));
+
   ParticleType<ndim>* sphdata =
       reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 
@@ -377,7 +380,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
       neibmanager.clear();
       tree->ComputeNeighbourAndGhostList(cell, neibmanager);
-      neibmanager.EndSearch(cell,sphdata,simbox,kernrange);
+      neibmanager.EndSearch(cell,sphdata);
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
@@ -487,6 +490,10 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   debug2("[GradhSphTree::UpdateAllSphForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_ALL_FORCES");
 
+  // Make sure we have enough neibmanagers
+  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t)
+    neibmanagerbufhydro.push_back(NeighbourManagerHydro(sph, simbox));
+
   ParticleType<ndim>* sphdata =
       reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 
@@ -555,7 +562,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       // Compute neighbour list for cell depending on physics options
       neibmanager.clear();
       tree->ComputeGravityInteractionAndGhostList(cell, macfactor,neibmanager);
-      neibmanager.EndSearchGravity(cell,sphdata,simbox,kernrange,gravmask);
+      neibmanager.EndSearchGravity(cell,sphdata);
 
       MultipoleMoment<ndim>* gravcell;
       const int Ngravcell = neibmanager.GetGravCell(&gravcell);
