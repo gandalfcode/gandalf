@@ -646,8 +646,12 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
       // Compute all star forces for active particles
-      for (int j=0; j<Nactive; j++) {
-        sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+      if (nbody->Nnbody > 0) {
+		  for (int j=0; j<Nactive; j++) {
+			  if (activelist[j] < sph->Nhydro) {
+				  sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+			  }
+		  }
       }
 
       // Add all active particles contributions to main array
