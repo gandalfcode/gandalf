@@ -33,7 +33,7 @@ private:
   vector<ParticleType > neibdata;
 
   vector<int> culled_neiblist;
-  vector<int> gravlist;
+  vector<int> smoothgravlist;
 
   vector<FLOAT> dr;
   vector<FLOAT> drmag;
@@ -112,18 +112,18 @@ public:
 
   template<class InParticleType>
   ListLength GetParticleNeibGravity(const InParticleType& p,const Typemask& hydromask, int** neiblist_p,
-      int** directlist_p, int** gravlist_p, ParticleType** neibdata_p) {
+      int** directlist_p, int** smoothgravlist_p, ParticleType** neibdata_p) {
 
     TrimNeighbourLists<InParticleType,_false_type>(p, hydromask) ;
 
     ListLength listlength;
     listlength.Nhydro=culled_neiblist.size();
     listlength.Ndirect=directlist.size();
-    listlength.Ngrav=gravlist.size();
+    listlength.Ngrav=smoothgravlist.size();
 
     *neiblist_p = &neiblist[0];
     *directlist_p = &directlist[0];
-    *gravlist_p = &gravlist[0];
+    *smoothgravlist_p = &smoothgravlist[0];
     *neibdata_p = &neibdata[0];
 
     return listlength;
@@ -258,7 +258,7 @@ private:
     Typemask gravmask = _types->gravmask ;
 
     culled_neiblist.clear();
-    gravlist.clear();
+    smoothgravlist.clear();
     // Particles that are already in the directlist stay there; we just add the ones that were demoted
     directlist.resize(_NCellDirectNeib);
 
@@ -275,7 +275,7 @@ private:
       GhostFinder.NearestPeriodicVector(draux);
       const FLOAT drsqd = DotProduct(draux,draux,ndim) + small_number;
 
-      if (drsqd <= small_number) continue ;
+      //if (drsqd <= small_number) continue ;
 
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
@@ -289,7 +289,7 @@ private:
             GhostFinder.ApplyPeriodicDistanceCorrection(neibdata[ii].r, draux);
         }
         else if (gravmask[neibdata[ii].ptype]) {
-          gravlist.push_back(ii);
+          smoothgravlist.push_back(ii);
         }
       }
     }
