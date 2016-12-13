@@ -80,14 +80,46 @@ void Nbody<ndim>::AllocateMemory(int N)
 {
   debug2("[Nbody::AllocateMemory]");
 
-  if (N > Nstarmax) {
-    if (allocated) DeallocateMemory();
+  if (N > Nstarmax  || !allocated ) {
+
+	const int Nnbodymaxold = Nnbodymax;
+	const int Nstarmaxold = Nstarmax;
+	const int Nsystemmaxold = Nsystemmax;
+
     Nstarmax   = N;
     Nsystemmax = N;
     Nnbodymax  = Nstarmax + Nsystemmax;
-    nbodydata  = new NbodyParticle<ndim>*[Nnbodymax];
-    stardata   = new StarParticle<ndim>[Nstarmax];
-    system     = new SystemParticle<ndim>[Nsystemmax];
+
+	NbodyParticle<ndim>** newnbodydata = new NbodyParticle<ndim>*[Nnbodymax];
+	StarParticle<ndim>* newstardata = new StarParticle<ndim>[Nstarmax];
+	SystemParticle<ndim>* newsystem = new SystemParticle<ndim>[Nsystemmax];
+
+	if (Nsystem>0) {
+		string message ("Error: cannot reallocate Nbody memory when using systems!");
+		ExceptionHandler::getIstance().raise(message);
+	}
+
+	// Swap the pointers
+	std::swap(newnbodydata,nbodydata);
+	std::swap(newstardata,stardata);
+	std::swap(newsystem,system);
+
+    if (allocated) {
+    	//Copy the data to the new arrays
+    	std::copy(newstardata,newstardata+Nstarmaxold,stardata);
+    	std::copy(newsystem,newsystem+Nsystemmaxold,system);
+
+    	// Nbodydata is an array of pointers to the stars and it's not simply copied
+    	for (int i=0; i<Nnbody; i++) {
+    		const int offset = (StarParticle<ndim>*)newnbodydata[i]-newstardata;
+    		assert(offset<Nstar);
+    		nbodydata[i]=stardata+offset;
+    	}
+
+    	delete[] newnbodydata;
+    	delete[] newstardata;
+    	delete[] newsystem;
+    }
     allocated  = true;
   }
 

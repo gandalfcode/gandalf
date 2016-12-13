@@ -721,6 +721,7 @@ void Sinks<ndim>::AccreteMassToSinks
   mpicontrol->UpdateSinksAfterAccretion(this);
 #endif
 
+#ifndef NDEBUG
   // Quick sanity-check for accreted particles
   for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -731,6 +732,7 @@ void Sinks<ndim>::AccreteMassToSinks
     }
     assert(part.flags.is_dead() || part.m > 0.0);
   }
+#endif
 
   return;
 }
