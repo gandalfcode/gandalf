@@ -268,7 +268,7 @@ private:
       int ii = neiblist[jj];
 
       // If do_pair_once is true then only get the neighbour for the first of the two times the
-      if (not _first_appearance(p, neibdata[jj], do_pair_once())) continue ;
+      if (not _first_appearance(p, neibdata[ii], do_pair_once())) continue ;
 
       // Compute relative position and distance quantities for pair
       for (int k=0; k<ndim; k++) draux[k] = neibdata[ii].r[k] - rp[k];
