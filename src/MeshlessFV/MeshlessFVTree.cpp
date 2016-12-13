@@ -795,7 +795,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 		    int* gravlist;
 		    GravParticle* neibpart;
 		    const bool do_grav=true;
-		    const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,gravmask,&neiblist,&directlist,&gravlist,&neibpart,do_grav);
+		    const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,&neiblist,&directlist,&gravlist,&neibpart);
 
 
             // Compute forces with hydro neighbours

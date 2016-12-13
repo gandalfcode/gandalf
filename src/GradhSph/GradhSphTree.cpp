@@ -573,17 +573,13 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         const int i = activelist[j];
 
         const bool do_grav  = sph->types[activepart[j].ptype].self_gravity ;
-
-        Typemask hydromask ;
-        for (int k=0; k< Ntypes; ++k){
-        	hydromask[k] = sph->types[activepart[j].ptype].hydromask[k] ;
-        }
+        Typemask hydromask = sph->types[activepart[j].ptype].hydromask ;
 
         int* neiblist;
         int* directlist;
         int* gravlist;
         HydroParticle* neibpart;
-        const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,gravmask,&neiblist,&directlist,&gravlist,&neibpart,do_grav);
+        const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,&neiblist,&directlist,&gravlist,&neibpart);
 
         // Compute forces between SPH neighbours (hydro and gravity)
         typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;

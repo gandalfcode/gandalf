@@ -138,33 +138,61 @@ public:
 	}
 
 	//=================================================================================================
-	/// \brief  Find 'periodic' correction vector.
+	/// \brief  Apply 'periodic' correction.
 	/// \author D. A. Hubber, G. Rosotti
 	/// \date   12/11/2013
 	/// \return A boolean saying whether the boxes overlap
 	//=================================================================================================
-	type_flag PeriodicDistanceCorrection(const FLOAT dr[ndim], FLOAT dr_corr[ndim]) const
+	type_flag ApplyPeriodicDistanceCorrection(FLOAT r[ndim], FLOAT dr[ndim]) const
 	{
 	  type_flag bound ;
 	  if (_any_periodic)
 		{
 	   	  for (int k=0; k<ndim; k++) {
-	   	    if (_periodic_bound[k]) {
+	   	    if (_periodic_bound[k])
 	   	      if (dr[k] > _domain.half[k]) {
-	   	        dr_corr[k] =- _domain.size[k];
+	   	        dr[k]  = - _domain.size[k];
+	   	        r[k]  += - _domain.size[k];
 	   	        bound.set_flag(periodic_bound_flags[k][1]) ;
 	   	      }
 	   	      else if (dr[k] < -_domain.half[k]) {
-	   	        dr_corr[k] = _domain.size[k];
+	   	        dr[k]  = _domain.size[k];
+	   	        r[k]  += _domain.size[k] ;
 	   	        bound.set_flag(periodic_bound_flags[k][0]) ;
 	   	      }
-	   	      else
-	   	    	dr_corr[k] = 0 ;
-	   	    }
 	   	  }
 		}
 	  return bound ;
 	}
+
+    //=================================================================================================
+    /// \brief  Find 'periodic' correction vector.
+    /// \author D. A. Hubber, G. Rosotti
+    /// \date   12/11/2013
+    /// \return A boolean saying whether the boxes overlap
+    //=================================================================================================
+    type_flag PeriodicDistanceCorrection(const FLOAT dr[ndim], FLOAT dr_corr[ndim]) const
+    {
+      type_flag bound ;
+      if (_any_periodic)
+        {
+          for (int k=0; k<ndim; k++) {
+            if (_periodic_bound[k]) {
+              if (dr[k] > _domain.half[k]) {
+                dr_corr[k] =- _domain.size[k];
+                bound.set_flag(periodic_bound_flags[k][1]) ;
+              }
+              else if (dr[k] < -_domain.half[k]) {
+                dr_corr[k] = _domain.size[k];
+                bound.set_flag(periodic_bound_flags[k][0]) ;
+              }
+              else
+                dr_corr[k] = 0 ;
+            }
+          }
+        }
+      return bound ;
+    }
 	//=================================================================================================
 	/// \brief  Find out whether two boxes overlap in a domain that might be periodic
 	/// \author R. A. Booth

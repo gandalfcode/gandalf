@@ -79,7 +79,7 @@ public:
   static const unsigned long int a2 = 35;
   static const unsigned long int a3 = 4;
   static const unsigned long int amod = 4768777513237032717;
-  static const FLOAT invrandmax = 1.0/1.84467440737095e19;
+  static const FLOAT invrandmax;
 
 
  //public:

@@ -212,7 +212,7 @@ OBJ += SphSnapshot.o
 OBJ += CodeTiming.o
 OBJ += IC.o
 OBJ += Dust.o
-OBJ += Particle.o
+OBJ += Particle.o RandomNumber.o
 
 
 ifeq ($(MPI),1)
