@@ -104,6 +104,16 @@ void Ic<ndim>::CheckInitialConditions(void)
 	  ptype = part.ptype ;
   }
 
+  // If there are stars and sinks, check that sinks have been initialised
+  if (sim->nbody->Nstar>0 && simparams->intparams["sink_particles"]) {
+	  SinkParticle<ndim>* sinks = sim->sinks->sink;
+	  for (int i=0; i<sim->nbody->Nstar; i++) {
+		  if (sinks[i].racc==0) {
+			  ExceptionHandler::getIstance().raise("If using sinks, you must set racc!!");
+		  }
+	  }
+  }
+
   if (!valid_ic) {
     string message = "Invalid initial conditions for SPH particles";
     ExceptionHandler::getIstance().raise(message);

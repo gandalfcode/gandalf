@@ -119,7 +119,7 @@ class MpiControl
                                                 Parameters*, DomainBox<ndim>, bool&) = 0;
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* hydro)=0;
-  void UpdateSinksAfterAccretion(Sinks<ndim>* sink);
+  void UpdateSinksAfterAccretion(Sinks<ndim>* sink, vector<int>&);
 
   Box<ndim> MyDomain();
 

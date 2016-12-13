@@ -42,6 +42,11 @@ struct TreeCellBase {
 #ifdef MPI_PARALLEL
   double worktot;                      ///< Total work in cell
 #endif
+
+  TreeCellBase (): cnext(-1), copen(-1), rmax(0), hmax(0), maxsound(0), r(), rcell() {
+
+  }
+
 };
 
 //=================================================================================================

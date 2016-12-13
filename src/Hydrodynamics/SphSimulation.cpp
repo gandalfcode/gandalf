@@ -209,8 +209,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (int i=0; i<sinks->Nsink; i++) {
       sinks->sink[i].star   = &(nbody->stardata[i]);
       sinks->sink[i].istar  = i;
-      sinks->sink[i].radius = hydro->kernp->kernrange*nbody->stardata[i].h;
-      //sinks->sink[i].radius = simparams->floatparams["sink_radius"];
     }
   }
 

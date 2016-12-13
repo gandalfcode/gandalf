@@ -406,21 +406,20 @@ void MpiControl<ndim>::ComputeTotalStarGasForces
 //=================================================================================================
 template <int ndim>
 void MpiControl<ndim>::UpdateSinksAfterAccretion
- (Sinks<ndim>* sink)                             ///< [inout] Pointer to sinks array
+ (Sinks<ndim>* sink,						///< [inout] Pointer to sinks array
+	vector<int>& owner)				///< [in] Vector associating sinks to their owner
 {
   const int number_variables = ndim*8 + 11;      // ..
   int local_sinks = 0;                           // ..
   int offset = 0;                                // ..
   Box<ndim> mydomain = this->MyDomain();         // ..
-  vector<int> owner(sink->Nsink);                // ..
   vector<int> N_sinks_per_rank(Nmpi);            // ..
 
-  // Find out how many stars we have locally and for each processor; also store owner of each sink
-  for (int s=0; s<sink->Nsink; s++) {
-    if (ParticleInBox(*(sink->sink[s].star), mydomain)) {
-      local_sinks++;
-      owner[s] = rank;
-    }
+  for (int i=0; i<owner.size(); i++) {
+	  if (owner[i] != -1) {
+		  local_sinks++;
+		  assert(owner[i] == rank);
+	  }
   }
   N_sinks_per_rank[rank] = local_sinks;
 
@@ -429,6 +428,13 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
 
   // Send around the number of sinks per node
   MPI_Allreduce(MPI_IN_PLACE, &N_sinks_per_rank[0], Nmpi, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+
+  assert(std::accumulate(N_sinks_per_rank.begin(),N_sinks_per_rank.end(),0)==sink->Nsink);
+#ifndef NDEBUG
+  for (int i=0; i<sink->Nsink; i++) {
+	  assert(owner[i]>=0);
+  }
+#endif
 
   // Allocate buffers
   const int size_send_buffer = sizeof(DOUBLE)*local_sinks*number_variables;

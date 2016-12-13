@@ -348,6 +348,7 @@ void Sinks<ndim>::AccreteMassToSinks
 #ifdef MPI_PARALLEL
   Box<ndim> mydomain = mpicontrol->MyDomain();
   list<int> ghosts_accreted;
+  vector<int> owner(Nsink,-1);
 #endif
 
 
@@ -395,6 +396,7 @@ void Sinks<ndim>::AccreteMassToSinks
       // For MPI simulations, only consider sink particles owned by this domain
 #if defined MPI_PARALLEL
       if (!ParticleInBox(*(sink[s].star), mydomain)) continue;
+      owner[s]=mpicontrol->rank;
 #endif
 
       // Find the list of particles inside
@@ -718,7 +720,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
 #if defined MPI_PARALLEL
   mpicontrol->UpdateMpiGhostParents(ghosts_accreted, hydro);
-  mpicontrol->UpdateSinksAfterAccretion(this);
+  mpicontrol->UpdateSinksAfterAccretion(this,owner);
 #endif
 
 #ifndef NDEBUG
