@@ -352,6 +352,14 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
   }
 
+  // Perform initial MPI decomposition
+  //-----------------------------------------------------------------------------------------------
+#ifdef MPI_PARALLEL
+  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams, simbox,
+                                               this->initial_h_provided);
+  this->AllocateParticleMemory();
+#endif
+
   // Copy information from the stars to the sinks
   if (simparams->intparams["sink_particles"]==1) {
     sinks->Nsink = nbody->Nstar;
@@ -364,13 +372,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
   }
 
-  // Perform initial MPI decomposition
-  //-----------------------------------------------------------------------------------------------
-#ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams, simbox,
-                                               this->initial_h_provided);
-  this->AllocateParticleMemory();
-#endif
 
   // Set time variables here (for now)
   nresync = 0;   // DAVID : Need to adapt this for block timesteps
