@@ -99,9 +99,9 @@ public:
 
 
     if (do_pair_once)
-      TrimNeighbourLists<InParticleType,_true_type>(p, hydromask) ;
+      TrimNeighbourLists<InParticleType,_true_type>(p, hydromask, false) ;
     else
-      TrimNeighbourLists<InParticleType,_false_type>(p, hydromask) ;
+      TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, false) ;
 
 
     *neiblist_p=&culled_neiblist[0];
@@ -114,7 +114,7 @@ public:
   ListLength GetParticleNeibGravity(const InParticleType& p,const Typemask& hydromask, int** neiblist_p,
       int** directlist_p, int** smoothgravlist_p, ParticleType** neibdata_p) {
 
-    TrimNeighbourLists<InParticleType,_false_type>(p, hydromask) ;
+    TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true) ;
 
     ListLength listlength;
     listlength.Nhydro=culled_neiblist.size();
@@ -245,7 +245,7 @@ private:
 
 
   template<class InParticleType, class do_pair_once>
-  void TrimNeighbourLists(const InParticleType& p, const Typemask& hydromask)
+  void TrimNeighbourLists(const InParticleType& p, const Typemask& hydromask, bool keep_grav)
   {
     FLOAT rp[ndim];
     FLOAT draux[ndim];
@@ -282,13 +282,13 @@ private:
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
       if (drsqd > hrangesqdi && drsqd >= neibdata[ii].hrangesqd) {
-        if (gravmask[neibdata[ii].ptype]) directlist.push_back(ii);
+        if (keep_grav && gravmask[neibdata[ii].ptype]) directlist.push_back(ii);
       }
       else {
         if (hydromask[neibdata[ii].ptype]){
           culled_neiblist.push_back(ii);
         }
-        else if (gravmask[neibdata[ii].ptype]) {
+        else if (keep_grav && gravmask[neibdata[ii].ptype]) {
           smoothgravlist.push_back(ii);
         }
       }
