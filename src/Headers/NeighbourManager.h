@@ -272,7 +272,9 @@ private:
 
       // Compute relative position and distance quantities for pair
       for (int k=0; k<ndim; k++) draux[k] = neibdata[ii].r[k] - rp[k];
-      GhostFinder.NearestPeriodicVector(draux);
+      if (jj < _NPeriodicGhosts && hydromask[neibdata[ii].ptype])
+        GhostFinder.ApplyPeriodicDistanceCorrection(neibdata[ii].r, draux);
+
       const FLOAT drsqd = DotProduct(draux,draux,ndim) + small_number;
 
       //if (drsqd <= small_number) continue ;
@@ -285,8 +287,6 @@ private:
       else {
         if (hydromask[neibdata[ii].ptype]){
           culled_neiblist.push_back(ii);
-          if (ii<_NPeriodicGhosts)
-            GhostFinder.ApplyPeriodicDistanceCorrection(neibdata[ii].r, draux);
         }
         else if (gravmask[neibdata[ii].ptype]) {
           smoothgravlist.push_back(ii);
