@@ -69,6 +69,7 @@ template <int ndim, template<int> class ParticleType>
 void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecomposition
  (Hydrodynamics<ndim> *hydro,          ///< Pointer to main Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< Pointer to main N-body object
+  Sinks<ndim>* sinks,				   ///< Pointer to sinks object
   Parameters *simparams,               ///< Simulation parameters
   DomainBox<ndim> simbox,              ///< Simulation domain box
   bool &initial_h_provided)            ///< Receives from root whether or not initial h was provided
@@ -305,6 +306,11 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
   if (nbody->Nstar > 0) {
     MPI_Bcast(nbody->stardata, sizeof(StarParticle<ndim>)*nbody->Nstar,
               MPI_BYTE, 0, MPI_COMM_WORLD);
+    if (simparams->intparams["sink_particles"]==1) {
+    	sinks->AllocateMemory(nbody->Nstar);
+    	MPI_Bcast(sinks->sink, sizeof(SinkParticle<ndim>)*nbody->Nstar,
+    			MPI_BYTE, 0, MPI_COMM_WORLD);
+    }
   }
 
   return;
@@ -321,8 +327,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
- (Hydrodynamics<ndim> *hydro,          ///< [inout] Pointer to main Hydrodynamics object
-  Nbody<ndim> *nbody)                  ///< [inout] Pointer to main N-body object
+ (Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to main Hydrodynamics object
 {
   int c;                               // MPI tree cell counter
 //  int c2;                              // i.d. of second child cell

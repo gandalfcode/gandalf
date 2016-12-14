@@ -351,6 +351,21 @@ void Sinks<ndim>::AccreteMassToSinks
   vector<int> owner(Nsink,-1);
 #endif
 
+  // Compute average mass (needed by smooth accretion)
+  hydro->mmean = (FLOAT) 0.0;
+  for (int i=0; i<hydro->Nhydro; i++) hydro->mmean += hydro->GetParticlePointer(i).m;
+  int Npart = hydro->Nhydro;
+#ifdef MPI_PARALLEL
+  MPI_Allreduce(MPI_IN_PLACE,&Npart,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce(MPI_IN_PLACE,&(hydro->mmean),1,GANDALF_MPI_FLOAT,MPI_SUM,MPI_COMM_WORLD);
+#endif
+  hydro->mmean /= Npart;
+
+  // Update hmin_sink
+  hydro->hmin_sink = big_number;
+  for (int i=0; i<Nsink; i++) {
+    hydro->hmin_sink = min(hydro->hmin_sink, (FLOAT) sink[i].star->h);
+  }
 
   // Set-up all parallel threads for computing sink accretion
   //===============================================================================================
@@ -388,7 +403,6 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
     // Determine which sink each SPH particle accretes to.  If none, flag -1
-    // (note we should really use the tree to compute this)
     //---------------------------------------------------------------------------------------------
 #pragma omp for schedule(dynamic,1)
     for (s=0; s<Nsink; s++) {

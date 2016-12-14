@@ -115,9 +115,9 @@ class MpiControl
   //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *);
   virtual void ExportParticlesBeforeForceLoop(Hydrodynamics<ndim> *) = 0;
   virtual void GetExportedParticlesAccelerations(Hydrodynamics<ndim> *) = 0;
-  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
+  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *, Sinks<ndim>*,
                                                 Parameters*, DomainBox<ndim>, bool&) = 0;
-  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+  virtual void LoadBalancing(Hydrodynamics<ndim> *) = 0;
   virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* hydro)=0;
   void UpdateSinksAfterAccretion(Sinks<ndim>* sink, vector<int>&);
 
@@ -170,9 +170,6 @@ public:
   MpiControlType();
   ~MpiControlType() {};
 
-  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
-                                                Parameters*, DomainBox<ndim>, bool&) = 0;
-  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual void ExportParticlesBeforeForceLoop (Hydrodynamics<ndim> *);
   virtual void GetExportedParticlesAccelerations (Hydrodynamics<ndim> *);
   virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>*);
@@ -245,9 +242,9 @@ public:
   MpiKDTreeDecomposition();
   //virtual ~MpiKDTreeDecomposition();
 
-  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
+  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *, Sinks<ndim>*,
                                                 Parameters*, DomainBox<ndim>, bool&);
-  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *);
+  virtual void LoadBalancing(Hydrodynamics<ndim> *);
 
 };
 #endif

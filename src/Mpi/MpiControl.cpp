@@ -412,7 +412,6 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
   const int number_variables = ndim*8 + 11;      // ..
   int local_sinks = 0;                           // ..
   int offset = 0;                                // ..
-  Box<ndim> mydomain = this->MyDomain();         // ..
   vector<int> N_sinks_per_rank(Nmpi);            // ..
 
   for (int i=0; i<owner.size(); i++) {

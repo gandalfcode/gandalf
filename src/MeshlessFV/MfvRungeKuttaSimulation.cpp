@@ -103,13 +103,6 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
       sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
     }
     if (sinks->Nsink > 0) {
-      mfv->mmean = (FLOAT) 0.0;
-      for (i=0; i<mfv->Nhydro; i++) mfv->mmean += mfv->GetMeshlessFVParticlePointer(i).m;
-      mfv->mmean /= (FLOAT) mfv->Nhydro;
-      mfv->hmin_sink = big_number;
-      for (i=0; i<sinks->Nsink; i++) {
-        mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
-      }
       sinks->AccreteMassToSinks(n, timestep, mfv, nbody);
       nbody->UpdateStellarProperties();
       //if (extra_sink_output) WriteExtraSinkOutput();

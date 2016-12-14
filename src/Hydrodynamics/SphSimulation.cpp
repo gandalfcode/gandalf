@@ -197,9 +197,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(sph, nbody, simparams, simbox,
-                                               this->initial_h_provided);
   this->AllocateParticleMemory();
+  mpicontrol->CreateInitialDomainDecomposition(sph, nbody, sinks, simparams, simbox,
+                                               this->initial_h_provided);
 #endif
 
   // Copy information from the stars to the sinks
@@ -564,7 +564,7 @@ void SphSimulation<ndim>::MainLoop(void)
 		sphneib->StockPrunedTree(rank, sph);
 	}
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
-    mpicontrol->LoadBalancing(sph, nbody);
+    mpicontrol->LoadBalancing(sph);
   }
 #endif
 
@@ -795,14 +795,6 @@ void SphSimulation<ndim>::MainLoop(void)
       sinks->SearchForNewSinkParticles(n, t ,sph, nbody);
     }
     if (sinks->Nsink > 0) {
-      sph->mmean = (FLOAT) 0.0;
-      for (i=0; i<sph->Nhydro; i++) sph->mmean += sph->GetSphParticlePointer(i).m;
-      sph->mmean /= (FLOAT) sph->Nhydro;
-      sph->hmin_sink = big_number;
-      for (i=0; i<sinks->Nsink; i++) {
-        sph->hmin_sink = min(sph->hmin_sink, (FLOAT) sinks->sink[i].star->h);
-      }
-
       sinks->AccreteMassToSinks(n, timestep, sph, nbody);
       nbody->UpdateStellarProperties();
       if (extra_sink_output) WriteExtraSinkOutput();
