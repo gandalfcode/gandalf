@@ -95,13 +95,15 @@ void Ic<ndim>::CheckInitialConditions(void)
   //-----------------------------------------------------------------------------------------------
 
   //Check particles are sorted in type order
-  int ptype =  hydro->GetParticlePointer(0).ptype;
-  for (i=1; i<hydro->Nhydro; i++) {
-	  Particle<ndim>& part = hydro->GetParticlePointer(i);
-	  if (part.ptype < ptype){
-	    ExceptionHandler::getIstance().raise("Error Particles must be ordered by ptype");
+  if (hydro->Nhydro>0) {
+	  int ptype =  hydro->GetParticlePointer(0).ptype;
+	  for (i=1; i<hydro->Nhydro; i++) {
+		  Particle<ndim>& part = hydro->GetParticlePointer(i);
+		  if (part.ptype < ptype){
+			ExceptionHandler::getIstance().raise("Error Particles must be ordered by ptype");
+		  }
+		  ptype = part.ptype ;
 	  }
-	  ptype = part.ptype ;
   }
 
   // If there are stars and sinks, check that sinks have been initialised
@@ -1952,7 +1954,7 @@ void Ic<ndim>::BondiAccretion(void)
   // Now add star/sink particle
   rsink *= rsonic;
   nbody->Nstar = 1;
-  sinks->Nsink = 1;
+//  sinks->Nsink = 1;
   for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
   for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
   nbody->stardata[0].m      = msink;
@@ -3757,7 +3759,8 @@ int Ic<ndim>::AddLatticeSphere
   // during tree construction)
   if (ndim == 2) {
     FLOAT rtemp[ndim];
-    theta = twopi*sim->randnumb->floatrand();
+    //theta = twopi*sim->randnumb->floatrand();
+    theta=0;
     for (i=0; i<Naux; i++) {
       for (k=0; k<ndim; k++) rtemp[k] = raux[ndim*i + k];
       raux[ndim*i] = rtemp[0]*cos(theta) - rtemp[1]*sin(theta);
