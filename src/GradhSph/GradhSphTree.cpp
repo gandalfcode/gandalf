@@ -633,10 +633,10 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
-        ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+        ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart, sph->types);
       }
       else if (multipole == "fast_quadrupole") {
-        ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+        ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart, sph->types);
       }
 
 

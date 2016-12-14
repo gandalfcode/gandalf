@@ -840,10 +840,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 
         // Compute 'fast' multipole terms here
         if (multipole == "fast_monopole") {
-          ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+          ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart, mfv->types);
         }
         else if (multipole == "fast_quadrupole") {
-          ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart);
+          ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart, mfv->types);
         }
       } // End of self-gravity for this cell
 
