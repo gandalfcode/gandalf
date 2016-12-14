@@ -368,7 +368,6 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
   int i,j,k;                           // Star and dimension counters
   FLOAT a[ndim];                       // Acceleration
   FLOAT adot[ndim];                    // 1st time derivative of accel (jerk)
-  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT a2dot[ndim];                   // 2nd time deriivative of acceleration
   FLOAT afac,bfac,cfac;                // Aux. summation variables
   FLOAT da[ndim];                      // Relative acceleration
@@ -381,10 +380,8 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
   FLOAT dvsqd;                         // Velocity squared
   FLOAT invdrmag;                      // 1 / drmag
   FLOAT invdrsqd;                      // 1 / drsqd
-  FLOAT potperiodic;                   // Periodic correction for grav. potential
 
   debug2("[NbodyHermite4::CalculateAllStartupQuantities]");
-
 
   // Loop over all stars
   //-----------------------------------------------------------------------------------------------
@@ -411,13 +408,6 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
       for (k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) adot[k] =
         star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
-
-      // Add periodic gravity contribution (if activated)
-      if (simbox.PeriodicGravity) {
-        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
-        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
-        star[i]->gpot += potperiodic;
-      }
 
       // Now compute 2nd and 3rd order derivatives
       afac = DotProduct(dv,dr,ndim)*invdrsqd;
