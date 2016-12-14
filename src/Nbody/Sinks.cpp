@@ -355,7 +355,7 @@ void Sinks<ndim>::AccreteMassToSinks
   // Set-up all parallel threads for computing sink accretion
   //===============================================================================================
 #if defined MPI_PARALLEL
-#pragma omp parallel default(none) shared(ghosts_accreted,hydro,mydomain,nbody,partdata)
+#pragma omp parallel default(none) shared(ghosts_accreted,hydro,mydomain,nbody,partdata,owner)
 #else
 #pragma omp parallel default(none) shared(hydro,nbody,partdata)
 #endif
