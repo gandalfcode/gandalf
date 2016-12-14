@@ -68,6 +68,7 @@ void EwaldIc<ndim>::Generate(void)
     FLOAT ugas;                          // Internal energy of gas
     FLOAT volume;                        // Simulation box volume
     FLOAT *r;                            // Particle positions
+    Nbody<ndim>* nbody = sim->nbody;     // Pointer to N-body object
 
     // Make local copies of parameters for setting up problem
     Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
@@ -80,6 +81,7 @@ void EwaldIc<ndim>::Generate(void)
     string z_boundary_lhs = simparams->stringparams["boundary_lhs[2]"];
     string z_boundary_rhs = simparams->stringparams["boundary_rhs[2]"];
     string ic       = simparams->stringparams["ic"];
+    string simType  = simparams->stringparams["sim"];
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
     FLOAT press1    = simparams->floatparams["press1"];
     FLOAT gamma     = simparams->floatparams["gamma_eos"];
@@ -106,19 +108,20 @@ void EwaldIc<ndim>::Generate(void)
     kwave  = twopi/lambda;
     //omegawave = twopi*csound/lambda;
 
-    // Allocate local and main particle memory
-    if (ndim == 3) {
-      Npart = Nlattice1[0]*Nlattice1[1]*Nlattice1[2];
+    // Set particle number (depending on simulation type) and allocate memory
+    Npart = Nlattice1[0]*Nlattice1[1]*Nlattice1[2];
+    if (simType == "nbody") {
+      nbody->Nstar = Npart;
     }
-    hydro->Nhydro = Npart;
-    //Nlattice1[0] = Npart;
+    else {
+      hydro->Nhydro = Npart;
+    }
     sim->AllocateParticleMemory();
-    r = new FLOAT[ndim*hydro->Nhydro];
+    r = new FLOAT[ndim*Npart];
 
-    // determine orientation of the problem (variable periodicity)
-    // controls orientation of density structure in the case of
-    // mixed boundary conditions (i.e. normal to the plane or axis
-    // of the cylinder)
+    // Determine orientation of the problem (variable periodicity).  Controls orientation
+    // of density structure in the case of mixed boundary conditions
+    // (i.e. normal to the plane or axis of the cylinder)
     periodicity = 0;
     if (x_boundary_lhs == "periodic" && x_boundary_rhs == "periodic") {
       periodicity += 1;
@@ -144,19 +147,36 @@ void EwaldIc<ndim>::Generate(void)
       // Add sinusoidal density perturbation to particle distribution
       Ic<ndim>::AddSinusoidalDensityPerturbation(Npart, amp, lambda, r);
 
-      // Set all other particle quantities
+      // Create star-lattice for N-body simulations.  Otherwise hydro particles
       //-------------------------------------------------------------------------------------------
-      for (i=0; i<Npart; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (simType == "nbody") {
 
-        // Set positions in main array with corresponind velocity perturbation
-        for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
-        for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
-        part.m = rhofluid1*volume/(FLOAT) Npart;
-        part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
+        // Add stars
+        for (int i=0; i<Npart; i++) {
+          for (int k=0; k<ndim; k++) nbody->stardata[i].v[k] = (FLOAT) 0.0;
+          for (int k=0; k<ndim; k++) nbody->stardata[i].r[k] = r[ndim*i + k];
+          nbody->stardata[i].m    = rhofluid1*volume/(FLOAT) Npart;
+          nbody->stardata[i].h    = (FLOAT) 0.1 / (FLOAT) Npart;
+          nbody->stardata[i].invh = (FLOAT) 1.0 / nbody->stardata[i].h;
+        }
 
-        if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
-        else part.u = press1/rhofluid1/gammaone;
+      }
+      //-------------------------------------------------------------------------------------------
+      else {
+
+        // Set all particle quantities
+        for (i=0; i<Npart; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+
+          // Set positions in main array with corresponind velocity perturbation
+          for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+          for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+          part.m = rhofluid1*volume/(FLOAT) Npart;
+          part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
+
+          if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+          else part.u = press1/rhofluid1/gammaone;
+        }
 
       }
       //-------------------------------------------------------------------------------------------

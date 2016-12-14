@@ -150,20 +150,28 @@ class jeans (AnalyticalSolution):
         self.wlambda = self.xR - self.xL
         self.kwave   = 2.0*3.14159/self.wlambda
 
-        if sim.simparams.stringparams["gas_eos"] == "isothermal":
-            self.gamma = 1.0
-            self.csound = np.sqrt(self.temp0/self.mu_bar)
-        else:
-            self.gamma = simfloatparams["gamma_eos"]
-            self.csound = np.sqrt(self.gamma*self.press/self.rho)
+        if sim.simparams.stringparams["sim"] == "nbody":
+            self.gamma  = 1.0
+            self.csound = 0.0
+            self.omega  = np.sqrt(4.0*3.14159*self.rho)
+            self.wlambdaJeans = 0.0
 
-        self.wlambdaJeans = np.sqrt(3.14159*self.csound*self.csound/self.rho)
-        if self.wlambda < self.wlambdaJeans:
-            self.omega = 2.0*3.14159*self.csound*np.sqrt(1.0/self.wlambda/self.wlambda - 1.0/self.wlambdaJeans/self.wlambdaJeans)
-        elif self.wlambdaJeans < self.wlambda:
-            self.omega = 2.0*3.14159*self.csound*np.sqrt(1.0/self.wlambdaJeans/self.wlambdaJeans - 1.0/self.wlambda/self.wlambda)
         else:
-            self.omega = 0.0
+
+            if sim.simparams.stringparams["gas_eos"] == "isothermal":
+                self.gamma = 1.0
+                self.csound = np.sqrt(self.temp0/self.mu_bar)
+            else:
+                self.gamma = simfloatparams["gamma_eos"]
+                self.csound = np.sqrt(self.gamma*self.press/self.rho)
+
+            self.wlambdaJeans = np.sqrt(3.14159*self.csound*self.csound/self.rho)
+            if self.wlambda < self.wlambdaJeans:
+                self.omega = 2.0*3.14159*self.csound*np.sqrt(1.0/self.wlambda/self.wlambda - 1.0/self.wlambdaJeans/self.wlambdaJeans)
+            elif self.wlambdaJeans < self.wlambda:
+                self.omega = 2.0*3.14159*self.csound*np.sqrt(1.0/self.wlambdaJeans/self.wlambdaJeans - 1.0/self.wlambda/self.wlambda)
+            else:
+                self.omega = 0.0
 
     def compute(self, ix, iy):
         x = np.arange(self.xL,self.xR,1.0/self.iMAX)
