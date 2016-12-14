@@ -145,19 +145,18 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 
   // Create Ewald periodic gravity object
   periodicBoundaries = IsAnyBoundaryPeriodic(simbox);
-  if (periodicBoundaries && intparams["self_gravity"] == 1) {
+  if (periodicBoundaries) {
     ewaldGravity = true;
     ewald = new Ewald<ndim>
       (simbox, intparams["gr_bhewaldseriesn"], intparams["in"], intparams["nEwaldGrid"],
        floatparams["ewald_mult"], floatparams["ixmin"], floatparams["ixmax"],
        floatparams["EFratio"], timing);
-    simbox.PeriodicGravity = true ;
+    simbox.PeriodicGravity = true;
   }
   else{
     simbox.PeriodicGravity = false ;
-    if (IsAnyBoundaryReflecting(simbox) && intparams["self_gravity"]){
-      ExceptionHandler::getIstance().raise("Error: Reflecting boundaries and self-gravity is not "
-                                       "supported") ;
+    if (IsAnyBoundaryReflecting(simbox)) {
+      ExceptionHandler::getIstance().raise("Error: Reflecting boundaries not supported");
     }
   }
 
