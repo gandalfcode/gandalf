@@ -861,12 +861,12 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       for (j=0; j<Nactive; j++) {
 
         if (multipole == "monopole") {
-          ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
-                                    activepart[j].r, gravcelllist.size(), &gravcelllist[0]);
+          ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a, activepart[j].r,
+                                    gravcelllist.size(), &gravcelllist[0]);
         }
         else if (multipole == "quadrupole") {
-          ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
-                                      activepart[j].r, gravcelllist.size(), &gravcelllist[0]);
+          ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a, activepart[j].r,
+                                      gravcelllist.size(), &gravcelllist[0]);
         }
 
       }
@@ -875,7 +875,12 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole") {
-        ComputeFastMonopoleForces(Nactive, gravcelllist.size(), &gravcelllist[0], cell, activepart);
+        ComputeFastMonopoleForces(Nactive, gravcelllist.size(), &gravcelllist[0], cell,
+                                 activepart, hydro->types);
+      }
+      if (multipole == "fast_quadrupole") {
+        ComputeFastQuadrupoleForces(Nactive, gravcelllist.size(), &gravcelllist[0], cell,
+                                    activepart, hydro->types);
       }
 
       // Add all active particles contributions to main array
