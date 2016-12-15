@@ -76,7 +76,10 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
+  virtual void UpdateAllProperties(Hydrodynamics<ndim>* hydro, Nbody<ndim>* nbody) {
+    UpdateAllProperties(static_cast<MeshlessFV<ndim>*>(hydro), nbody) ;
+  }
+  virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateGradientMatrices(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateGodunovFluxes(FLOAT, MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateAllGravForces(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &,
@@ -150,7 +153,7 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *);
   virtual void UpdateGradientMatrices(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateGodunovFluxes(FLOAT, MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllGravForces(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &,

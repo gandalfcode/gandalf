@@ -293,7 +293,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateActiveParticleCounters(mfv);
 
   //Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody);
 
 #ifdef MPI_PARALLEL
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);

@@ -21,6 +21,7 @@
 //=================================================================================================
 
 
+#include <cmath>
 #include <fstream>
 #include <sstream>
 #include "Precision.h"
@@ -28,6 +29,31 @@
 #include "Ic.h"
 using namespace std;
 
+
+// Silcc PartilceRegularizer
+template <int ndim>
+class SilccRegularizer
+    : public Regularization::DefaultRegularizerFunctionBase<ndim>
+{
+  FLOAT a_midplane, rho_midplane, h_midplane, rho_a ;
+public:
+  SilccRegularizer(Parameters* simparams, FLOAT a_m, FLOAT rho_m, FLOAT h_m, FLOAT _rho_a)
+  : Regularization::DefaultRegularizerFunctionBase<ndim>(simparams),
+    a_midplane(a_m), rho_midplane(rho_m), h_midplane(h_m),
+    rho_a(_rho_a)
+    { } ;
+
+  virtual ~SilccRegularizer() { } ;
+
+  virtual FLOAT density(const FLOAT *r) const {
+    if (fabs(r[ndim-1]) <= a_midplane) {
+      return rho_midplane*exp(-r[ndim-1]*r[ndim-1]/h_midplane/h_midplane);
+    }
+    else {
+      return rho_a;
+    }
+  }
+};
 
 
 //=================================================================================================
@@ -178,7 +204,14 @@ FLOAT SilccIc<ndim>::GetValue
   }
 }
 
-
+//=================================================================================================
+//  Silcc::GetParticleRegularizer
+/// Return the regularizer based upon the density.
+//=================================================================================================
+template <int ndim>
+Regularization::RegularizerFunction<ndim>* SilccIc<ndim>::GetParticleRegularizer() const {
+  return new SilccRegularizer<ndim>(simparams, a_midplane, rho_midplane, h_midplane, rho_a) ;
+}
 
 template class SilccIc<1>;
 template class SilccIc<2>;

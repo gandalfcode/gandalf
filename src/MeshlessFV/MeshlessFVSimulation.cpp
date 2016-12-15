@@ -219,6 +219,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
       floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
 
+  neib = mfvneib ;
 
   // Depending on the dimensionality, calculate expected neighbour number
   //-----------------------------------------------------------------------------------------------
@@ -417,7 +418,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   if (!this->initial_h_provided) {
     mfv->InitialSmoothingLengthGuess();
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
-    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+    mfvneib->UpdateAllProperties(mfv, nbody);
 
     for (i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
@@ -466,7 +467,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 
   // Calculate all hydro properties
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody);
 
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
@@ -579,8 +580,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       part.flags.set_flag(active);
     }
 
-    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
-
+    mfvneib->UpdateAllProperties(mfv, nbody);
 
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL

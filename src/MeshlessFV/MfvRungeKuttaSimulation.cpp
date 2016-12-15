@@ -202,6 +202,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
+
   // Calculate all matrices and gradients (and copy updated data to ghost particles)
   mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
