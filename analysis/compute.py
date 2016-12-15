@@ -107,7 +107,7 @@ def COM(snap, quantity='x', type="default", unit="default"):
 
 #------------------------------------------------------------------------------
 def L1errornorm(ic, x=None, y=None, xmin=None, xmax=None, normalise=None,
-                sim="current", snap="current"):
+                sim="current", snap="current", type="sph"):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
 
     # Get the simulation number from the buffer
@@ -118,7 +118,7 @@ def L1errornorm(ic, x=None, y=None, xmin=None, xmax=None, normalise=None,
     adata = command1.prepareData(Singletons.globallimits)
 
     # Instantiate and setup the 2nd command object to retrieve particle data
-    command2 = Commands.ParticlePlotCommand(x, y, "sph", snap, simno)
+    command2 = Commands.ParticlePlotCommand(x, y, type, snap, simno)
     pdata = command2.prepareData(Singletons.globallimits)
 
     # Cut arrays if limits are provided
