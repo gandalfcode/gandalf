@@ -83,8 +83,7 @@ MeshlessFVTree<ndim,ParticleType>::~MeshlessFVTree()
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
  (MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
-  DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
+  Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells

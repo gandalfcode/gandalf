@@ -266,7 +266,6 @@ class Simulation : public SimulationBase
   virtual void ProcessNbodyParameters(void);
   virtual void ProcessParameters(void)=0;
   virtual void RecordDiagnostics(void);
-  virtual void RegulariseInitialConditions(const int) {};
   virtual void SetComFrame(void);
   virtual void UpdateDiagnostics(void);
 
@@ -308,6 +307,7 @@ class Simulation : public SimulationBase
   Sinks<ndim> *sinks;                  ///< Sink particle object
   SphIntegration<ndim> *sphint;        ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;   ///< SPH Neighbour scheme pointer
+  NeighbourSearch<ndim> *neib;        ///< Generic pointer to neighbour search
   SupernovaDriver<ndim> *snDriver;     ///< Supernova feedback driver
 #ifdef MPI_PARALLEL
   MpiControl<ndim>* mpicontrol;        ///< MPI control object
@@ -401,6 +401,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::snDriver;
   using Simulation<ndim>::sphneib;
+  using Simulation<ndim>::neib;
   using Simulation<ndim>::radiation;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
@@ -419,7 +420,6 @@ class SphSimulation : public Simulation<ndim>
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
-  virtual void RegulariseInitialConditions(const int);
 
   Sph<ndim> *sph;                      ///< SPH algorithm pointer
   DustBase<ndim>* sphdust ;               ///< Dust algorithm pointer
@@ -488,6 +488,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::sinks;
   using SphSimulation<ndim>::sph;
   using SphSimulation<ndim>::sphneib;
+  using SphSimulation<ndim>::neib;
   using SphSimulation<ndim>::tmax_wallclock;
   using SphSimulation<ndim>::sphdust ;
 #ifdef MPI_PARALLEL
@@ -563,6 +564,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::sinks;
   using SphSimulation<ndim>::sph;
   using SphSimulation<ndim>::sphneib;
+  using SphSimulation<ndim>::neib;
   using SphSimulation<ndim>::tmax_wallclock;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
@@ -649,6 +651,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
+  using Simulation<ndim>::neib;
   using Simulation<ndim>::radiation;
   using Simulation<ndim>::snDriver;
 #ifdef MPI_PARALLEL

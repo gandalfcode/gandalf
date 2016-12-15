@@ -141,7 +141,7 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator = new IsothermalSphereIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "khi") {
-    icGenerator = new KhiIc<ndim>(this, hydro, invndim);
+    icGenerator = new KelvinHelmholtzIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "noh") {
     icGenerator = new NohIc<ndim>(this, hydro, invndim);
@@ -153,7 +153,7 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator = new PolytropeIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "rti") {
-    icGenerator = new RtiIc<ndim>(this, hydro, invndim);
+    icGenerator = new RayleighTaylorIc<ndim>(this, hydro, invndim);
   }
   else if (ic == "sedov") {
     icGenerator = new SedovBlastwaveIc<ndim>(this, hydro, invndim);
@@ -189,6 +189,19 @@ void Simulation<ndim>::GenerateIC(void)
 
   // Finally, generate the initial conditions
   icGenerator->Generate();
+
+  // Smooth the particle distribution?
+  if (simparams->intparams["regularise_particle_ics"] == 1) {
+    using Regularization::RegularizerFunction;
+    using Regularization::ParticleRegularizer;
+
+    RegularizerFunction<ndim> * reg_func = icGenerator->GetParticleRegularizer() ;
+
+    ParticleRegularizer<ndim>(simparams, simbox)(hydro, neib, nbody, *reg_func) ;
+
+    delete reg_func ;
+  }
+
 
   // Scale particle data to dimensionless code units if required
   if (rescale_particle_data) ConvertToCodeUnits();

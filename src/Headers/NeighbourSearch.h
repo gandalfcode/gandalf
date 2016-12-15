@@ -81,10 +81,11 @@ protected:
   virtual void BuildGhostTree(const bool, const int, const int,
                               const int, const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *) = 0;
-  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) = 0;
+  virtual void SearchBoundaryGhostParticles(FLOAT, const DomainBox<ndim> &, Hydrodynamics<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(Hydrodynamics<ndim> *) = 0;
   virtual void UpdateAllStarGasForces(Hydrodynamics<ndim> *, Nbody<ndim> *,
                                       DomainBox<ndim> &, Ewald<ndim> *) = 0;
+  virtual void UpdateAllProperties(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual double GetMaximumSmoothingLength() const = 0;
   virtual TreeBase<ndim>* GetTree() const = 0;
   virtual TreeBase<ndim>* GetGhhotTree() const = 0;
@@ -165,7 +166,7 @@ protected:
   virtual void BuildGhostTree(const bool, const int, const int,
                               const int, const FLOAT, Hydrodynamics<ndim> *);
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, Particle<ndim> *, int, int, int *);
-  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
+  virtual void SearchBoundaryGhostParticles(FLOAT, const DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Hydrodynamics<ndim> *);
   virtual void UpdateAllStarGasForces(Hydrodynamics<ndim> *, Nbody<ndim> *,
                                       DomainBox<ndim> &, Ewald<ndim> *);

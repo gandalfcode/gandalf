@@ -83,6 +83,9 @@ class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
+  virtual void UpdateAllProperties(Hydrodynamics<ndim>* hydro, Nbody<ndim>* nbody) {
+    UpdateAllSphProperties(static_cast<Sph<ndim>*>(hydro), nbody) ;
+  }
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,

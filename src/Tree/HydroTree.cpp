@@ -475,7 +475,7 @@ void HydroTree<ndim,ParticleType>::UpdateActiveParticleCounters
 template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
  (FLOAT tghost,                                ///< [in] Ghost particle 'lifetime'
-  DomainBox<ndim> &simbox,                     ///< [in] Simulation box structure
+  const DomainBox<ndim> &simbox,               ///< [in] Simulation box structure
   Hydrodynamics<ndim> *hydro)                  ///< [inout] Hydrodynamics object pointer
 {
   int i;                                       // Particle counter
