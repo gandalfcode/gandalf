@@ -25,18 +25,25 @@
 #define _IC_H_
 
 
+#include "Exception.h"
 #include "Precision.h"
 #include "Hydrodynamics.h"
 #include "InlineFuncs.h"
 #include "Simulation.h"
 #include "SmoothingKernel.h"
 #include "RandomNumber.h"
+#include "Parameters.h"
 #if defined(FFTW_TURBULENCE)
 #include "fftw3.h"
 #endif
 
-
-
+// Fwd Declarations
+template <int ndim> class NeighbourSearch ;
+template <int ndim> class Nbody ;
+template <int ndim> struct Particle ;
+namespace Regularization {
+  template <int ndim> class RegularizerFunction ;
+}
 //=================================================================================================
 //  Class Ic
 /// \brief   Class containing functions for generating initial conditions.
@@ -97,7 +104,10 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual void Generate(void) {};
   virtual FLOAT GetValue(const std::string, const FLOAT *);
-
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const {
+    ExceptionHandler::getIstance().raise("GetParticleRegularizer not implemented");
+    return NULL ;
+  } ;
 
   // Other common functions
   //-----------------------------------------------------------------------------------------------
@@ -205,7 +215,7 @@ protected:
 public:
 
   BlobIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~BlobIc() {};
+  virtual ~BlobIc() {};
 
   virtual void Generate(void);
 
@@ -236,7 +246,7 @@ protected:
 public:
 
   BondiAccretionIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~BondiAccretionIc() {};
+  virtual ~BondiAccretionIc() {};
 
   virtual void Generate(void);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
@@ -268,7 +278,7 @@ protected:
 public:
 
   BossBodenheimerIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~BossBodenheimerIc() {};
+  virtual ~BossBodenheimerIc() {};
 
   virtual void Generate(void);
 
@@ -299,7 +309,7 @@ protected:
 public:
 
   ContactDiscontinuityIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~ContactDiscontinuityIc() {};
+  virtual ~ContactDiscontinuityIc() {};
 
   virtual void Generate(void);
 
@@ -330,7 +340,7 @@ protected:
 public:
 
   DustyBoxIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~DustyBoxIc() {};
+  virtual ~DustyBoxIc() {};
 
   virtual void Generate(void);
 
@@ -361,7 +371,7 @@ protected:
 public:
 
   EvrardCollapseIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~EvrardCollapseIc() {};
+  virtual ~EvrardCollapseIc() {};
 
   virtual void Generate(void);
 
@@ -392,7 +402,7 @@ protected:
 public:
 
   EwaldIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~EwaldIc() {};
+  virtual ~EwaldIc() {};
 
   virtual void Generate(void);
 
@@ -436,7 +446,7 @@ protected:
 public:
 
   FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~FilamentIc() {};
+  virtual ~FilamentIc() {};
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
@@ -469,7 +479,7 @@ protected:
 public:
 
   GaussianRingIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~GaussianRingIc() {};
+  virtual ~GaussianRingIc() {};
 
   virtual void Generate(void);
 
@@ -500,7 +510,7 @@ protected:
 public:
 
   GreshoVortexIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~GreshoVortexIc() {};
+  virtual ~GreshoVortexIc() {};
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
@@ -532,7 +542,7 @@ protected:
 public:
 
   HierarchicalSystemIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~HierarchicalSystemIc() {};
+  virtual ~HierarchicalSystemIc() {};
 
   virtual void Generate(void);
 
@@ -563,7 +573,7 @@ protected:
 public:
 
   IsothermalSphereIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~IsothermalSphereIc() {};
+  virtual ~IsothermalSphereIc() {};
 
   virtual void Generate(void);
 
@@ -572,14 +582,14 @@ public:
 
 
 //=================================================================================================
-//  Class KhiIc
+//  Class KelvinHelmholtzIc
 /// \brief   Class to generate initial conditions for 2d Kelvin-Helmholtz instabilty.
 /// \details Class to generate initial conditions for a 2d Kelvin-Helmholtz instabilty.
 /// \author  D. A. Hubber
 /// \date    15/11/2016
 //=================================================================================================
 template <int ndim>
-class KhiIc : public Ic<ndim>
+class KelvinHelmholtzIc : public Ic<ndim>
 {
 protected:
 
@@ -593,8 +603,8 @@ protected:
 
 public:
 
-  KhiIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~KhiIc() {};
+  KelvinHelmholtzIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  virtual ~KelvinHelmholtzIc() {};
 
   virtual void Generate(void);
 
@@ -625,7 +635,7 @@ protected:
 public:
 
   NohIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~NohIc() {};
+  virtual ~NohIc() {};
 
   virtual void Generate(void);
 
@@ -656,7 +666,7 @@ protected:
 public:
 
   PlummerSphereIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~PlummerSphereIc() {};
+  virtual ~PlummerSphereIc() {};
 
   virtual void Generate(void);
 
@@ -698,7 +708,7 @@ protected:
 public:
 
   PolytropeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~PolytropeIc();
+  virtual ~PolytropeIc();
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
@@ -711,14 +721,14 @@ public:
 
 
 //=================================================================================================
-//  Class RtiIc
+//  Class RayleighTaylorIc
 /// \brief   Class to generate Rayleigh-Taylor instability initial conditions.
 /// \details Class to generate Rayleigh-Taylor instability initial conditions.
 /// \author  D. A. Hubber
 /// \date    18/11/2016
 //=================================================================================================
 template <int ndim>
-class RtiIc : public Ic<ndim>
+class RayleighTaylorIc : public Ic<ndim>
 {
 protected:
 
@@ -733,8 +743,8 @@ protected:
 
 public:
 
-  RtiIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~RtiIc() {};
+  RayleighTaylorIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  virtual ~RayleighTaylorIc() {};
 
   virtual void Generate(void);
 
@@ -766,7 +776,7 @@ protected:
 public:
 
   SedovBlastwaveIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~SedovBlastwaveIc() {};
+  virtual ~SedovBlastwaveIc() {};
 
   virtual void Generate(void);
 
@@ -798,7 +808,7 @@ protected:
 public:
 
   ShearflowIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~ShearflowIc() {};
+  virtual ~ShearflowIc() {};
 
   virtual void Generate(void);
 
@@ -830,7 +840,7 @@ protected:
 public:
 
   ShocktubeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~ShocktubeIc() {};
+  virtual ~ShocktubeIc() {};
 
   virtual void Generate(void);
 
@@ -840,8 +850,8 @@ public:
 
 //=================================================================================================
 //  Class SilccIc
-/// \brief   Class to generate SILCC-like initial conditions
-/// \details Class to generate SILCC-like initial conditions
+/// \brief   TODO: NEEDS A MORE GENERAL DESCRIPTION
+/// \details TODO: NEEDS A MORE GENERAL DESCRIPTION
 /// \author  D. A. Hubber, S. Walch
 /// \date    20/03/2016
 //=================================================================================================
@@ -876,10 +886,12 @@ protected:
 public:
 
   SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~SilccIc() {};
+  virtual ~SilccIc() {};
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const ;
+
 
 };
 
@@ -909,7 +921,7 @@ protected:
 public:
 
   SoundwaveIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~SoundwaveIc() {};
+  virtual ~SoundwaveIc() {};
 
   virtual void Generate(void);
 
@@ -973,7 +985,7 @@ protected:
 public:
 
   TurbulentCoreIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~TurbulentCoreIc() {};
+  virtual ~TurbulentCoreIc() {};
 
   virtual void Generate(void);
 
@@ -1005,9 +1017,65 @@ protected:
 public:
 
   UniformIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
-  ~UniformIc() {};
+  virtual ~UniformIc() {};
 
   virtual void Generate(void);
 
 };
+
+namespace Regularization {
+
+// Base class for regularization funciton interface
+template<int ndim>
+class RegularizerFunction {
+public:
+  virtual ~RegularizerFunction() { } ;
+
+  virtual FLOAT operator()(const Particle<ndim>&, const Particle<ndim>&) const  = 0 ;
+};
+
+// Standard regularizer based upon density and particle disorder
+template<int ndim>
+class DefaultRegularizerFunctionBase : public RegularizerFunction<ndim> {
+  FLOAT alphaReg, rhoReg ;
+public:
+  DefaultRegularizerFunctionBase(Parameters* simparams)
+  : alphaReg(simparams->floatparams["alpha_reg"]),
+    rhoReg  (simparams->floatparams["rho_reg"])
+{ } ;
+
+  virtual ~DefaultRegularizerFunctionBase() { } ;
+
+  virtual FLOAT operator()(const Particle<ndim>& part,
+                           const Particle<ndim>& neibpart) const
+   {
+     FLOAT rhotrue = density(neibpart.r) ;
+     FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue + small_number);
+     rhofrac = std::min(std::max(rhofrac, -0.1), 10.0) ;
+
+     return rhoReg*rhofrac + alphaReg;
+   }
+
+  virtual FLOAT density(const FLOAT*) const = 0 ;
+};
+
+//=================================================================================================
+//  Class ParticleRegularizer
+/// \brief Regularizes the particle distribution based upon the provided regularization criteria.
+//=================================================================================================
+template<int ndim>
+class ParticleRegularizer {
+  DomainBox<ndim> localBox;
+  int Nreg ;
+
+public:
+  ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& simbox) ;
+
+  void operator()(Hydrodynamics<ndim>* hydro, NeighbourSearch<ndim> *neib, Nbody<ndim>* nbody,
+                  const RegularizerFunction<ndim>& regularizer) const ;
+};
+
+} // namespace Regularization
+
+
 #endif
