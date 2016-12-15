@@ -108,7 +108,7 @@ class MpiControl
   void AllocateMemory(int);
   void DeallocateMemory(void);
   void SetNeibSearch(NeighbourSearch<ndim>* _neibsearch) {neibsearch = _neibsearch;}
-  void CollateDiagnosticsData(Diagnostics<ndim> &);
+  void CollateDiagnosticsData(Diagnostics&);
   void UpdateAllBoundingBoxes(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *);
   void ComputeTotalStarGasForces(Nbody<ndim> * nbody);
 

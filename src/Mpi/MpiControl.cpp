@@ -71,7 +71,7 @@ MpiControl<ndim>::MpiControl()
   }
 
   // Create diagnostics data structure in database
-  diagnostics_type = Diagnostics<ndim>::CreateMpiDataType();
+  diagnostics_type = Diagnostics::CreateMpiDataType();
   MPI_Type_commit(&diagnostics_type);
 
   // Create and commit the box datatype
@@ -1118,11 +1118,11 @@ void MpiControlType<ndim, ParticleType>::ReceiveParticles
 //=================================================================================================
 template <int ndim>
 void MpiControl<ndim>::CollateDiagnosticsData
- (Diagnostics<ndim> &diag)             ///< Main diagnostics object
+ (Diagnostics &diag)             ///< Main diagnostics object
 {
   int inode;                           // MPI node counter
   int k;                               // Dimension counter
-  Diagnostics<ndim> diagaux;           // Aux. diagnostics struct
+  Diagnostics diagaux;           // Aux. diagnostics struct
   MPI_Status status;                   // MPI communication status message
 
   //-----------------------------------------------------------------------------------------------
