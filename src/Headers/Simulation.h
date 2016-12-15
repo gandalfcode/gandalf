@@ -136,7 +136,7 @@ protected:
   virtual void ProcessParameters(void)=0;
   virtual void SetComFrame(void)=0;
 
-  Diagnostics InitialiseDiagnostics() {
+  void InitialiseDiagnostics() {
 	  CalculateDiagnostics();
 	  diag0=diag;
   }

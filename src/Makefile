@@ -59,7 +59,7 @@ CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
 ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
-CLANGOPT += -O3 -g -pg -Wall
+CLANGOPT += -O1 -g  -Wall -fPIC -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
 else ifeq ($(COMPILER_MODE),STANDARD)
 GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
@@ -74,12 +74,12 @@ endif
 
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
-ifeq ($(findstring g++,$(CPP)),g++)
-OPT += $(GCCOPT)
+ifeq ($(findstring clang,$(CPP)),clang)
+OPT += $(CLANGOPT)
 else ifeq ($(CPP),icpc)
 OPT += $(ICCOPT)
-else ifeq ($(CPP),clang)
-OPT += $(CLANGOPT)
+else ifeq ($(findstring g++,$(CPP)),g++)
+OPT += $(GCCOPT)
 else ifeq ($(CPP),mpic++)
 MPI = 1
 OPT += $(GCCOPT)
