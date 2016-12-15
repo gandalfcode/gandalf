@@ -22,9 +22,9 @@ Use dimensionless units                     : dimensionless = 1
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 10.0
-Regular snapshot output frequency           : dt_snap = 0.2
-First snapshot                              : tsnapfirst = 0.2
+Simulation end time                         : tend = 62.8318
+Regular snapshot output frequency           : dt_snap = 62.8318
+First snapshot                              : tsnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
 Diagnostic output frequency                 : ndiagstep = 256
 

@@ -411,10 +411,8 @@ void SimulationBase::Run
   }
   //-----------------------------------------------------------------------------------------------
 
-  FinaliseSimulation();
   CalculateDiagnostics();
   OutputDiagnostics();
-  UpdateDiagnostics();
 
   cout << "Final t : " << t*simunits.t.outscale << " " << simunits.t.outunit
        << "    Total no. of steps : " << Nsteps << endl;
@@ -461,9 +459,6 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
     // Evolve the simulation one step
     MainLoop();
 
-    // Update all diagnostics (including binaries) here for now
-    if (t >= tsnapnext) CalculateDiagnostics();
-
     // Call output routine
     filename = Output();
 
@@ -484,10 +479,8 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
   // Calculate and process all diagnostic quantities
   if (t >= tend || Nsteps >= Ntarget) {
-    FinaliseSimulation();
     CalculateDiagnostics();
     OutputDiagnostics();
-    UpdateDiagnostics();
   }
 
   return snap_list;
@@ -584,7 +577,6 @@ string SimulationBase::Output(void)
   if (Nblocksteps%ndiagstep == 0 && n == nresync) {
     CalculateDiagnostics();
     OutputDiagnostics();
-    UpdateDiagnostics();
     timing->ComputeTimingStatistics(run_id);
 
   }
@@ -676,6 +668,9 @@ void SimulationBase::SetupSimulation(void)
   // Perform the rest of the initialisation, calculating all initial particle
   // quantities and setting up trees.
   PostInitialConditionsSetup();
+
+  // Compute initial diagnostics (energy etc.) and store them
+  InitialiseDiagnostics();
 
   // Initial output before simulation begins
   Output();
@@ -1583,21 +1578,6 @@ void Simulation<ndim>::SetComFrame(void)
   CalculateDiagnostics();
 
   return;
-}
-
-
-
-//=================================================================================================
-//  Simulation::UpdateDiagnostics
-/// Update energy error value after computing diagnostic quantities.
-//=================================================================================================
-template <int ndim>
-void Simulation<ndim>::UpdateDiagnostics(void)
-{
-  if (rank == 0) {
-    diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
-    cout << "Eerror : " << diag.Eerror << endl;
-  }
 }
 
 

@@ -38,7 +38,6 @@
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
 //=================================================================================================
-template <int ndim>
 struct Diagnostics
 {
   int Nhydro;                          ///< Total no. of SPH particles
@@ -50,18 +49,18 @@ struct Diagnostics
   DOUBLE ketot;                        ///< Total kinetic energy
   DOUBLE gpetot;                       ///< Total grav. potential energy
   DOUBLE mtot;                         ///< Total mass in simulation
-  DOUBLE mom[ndim];                    ///< Total momentum vector
+  DOUBLE mom[3];                    ///< Total momentum vector
   DOUBLE angmom[3];                    ///< Total angular momentum vector
-  DOUBLE force[ndim];                  ///< Net force
-  DOUBLE rcom[ndim];                   ///< Position of centre of mass
-  DOUBLE vcom[ndim];                   ///< Velocity of centre of mass
+  DOUBLE force[3];                  ///< Net force
+  DOUBLE rcom[3];                   ///< Position of centre of mass
+  DOUBLE vcom[3];                   ///< Velocity of centre of mass
 
 #ifdef MPI_PARALLEL
   static MPI_Datatype CreateMpiDataType() {
     MPI_Datatype diagnostic_type;
     MPI_Datatype types[1] = {MPI_BYTE};
     MPI_Aint offsets[1] = {0};
-    int blocklen[1] = {sizeof(Diagnostics<ndim>)};
+    int blocklen[1] = {sizeof(Diagnostics)};
     MPI_Type_create_struct(1,blocklen,offsets,types,&diagnostic_type);
     return diagnostic_type;
   }

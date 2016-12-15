@@ -234,3 +234,4 @@ ExceptionHandler::makeExceptionHandler(python);
 %include "Render.h"
 %include "SmoothingKernel.h"
 %include "UnitInfo.h"
+%include "Diagnostics.h"

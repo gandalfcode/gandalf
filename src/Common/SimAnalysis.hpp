@@ -175,6 +175,10 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   mpicontrol->CollateDiagnosticsData(diag);
 #endif
 
+  if (rank == 0) {
+    diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
+  }
+
   RecordDiagnostics();
 
   return;
@@ -228,6 +232,8 @@ void Simulation<ndim>::OutputDiagnostics(void)
     cout << "force       : " << diag.force[0] << "   "
          << diag.force[1] << "   " << diag.force[2] << endl;
   }
+
+  cout << "Eerror : " << diag.Eerror << endl;
 
   // Calculate binary statistics if required
   if (simparams->intparams["binary_stats"] == 1) nbodytree.OutputBinaryProperties(nbody);

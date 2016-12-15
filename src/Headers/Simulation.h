@@ -85,7 +85,6 @@ class SimulationBase
   virtual void OutputDiagnostics(void)=0;
   virtual void OutputTestDiagnostics(void)=0;
   virtual void RecordDiagnostics(void)=0;
-  virtual void UpdateDiagnostics(void)=0;
   virtual void GenerateIC(void)=0;
   virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info)=0;
   virtual bool ReadColumnSnapshotFile(string)=0;
@@ -99,6 +98,9 @@ class SimulationBase
   virtual bool WriteSerenLiteSnapshotFile(string)=0;
 
   std::list<string> keys;
+protected:
+  Diagnostics diag0;             ///< Initial diagnostic state
+  Diagnostics diag;              ///< Current diagnostic state
 
  public:
 
@@ -133,7 +135,16 @@ class SimulationBase
   virtual void PreSetupForPython(void)=0;
   virtual void ProcessParameters(void)=0;
   virtual void SetComFrame(void)=0;
-  virtual void FinaliseSimulation(void) {};
+
+  Diagnostics InitialiseDiagnostics() {
+	  CalculateDiagnostics();
+	  diag0=diag;
+  }
+
+  Diagnostics GetDiagnostics() {
+	  CalculateDiagnostics();
+	  return diag;
+  }
 
 
   // Input-output routines
@@ -264,7 +275,6 @@ class Simulation : public SimulationBase
   virtual void RegulariseParticleDistribution(const int) {};
   virtual void SetComFrame(void);
   virtual void SmoothParticleQuantity(const int, FLOAT *) {};
-  virtual void UpdateDiagnostics(void);
 
 
   // Input-output routines
@@ -288,8 +298,6 @@ class Simulation : public SimulationBase
   static const FLOAT invndim;          ///< Local copy of 1/ndim
 
   DomainBox<ndim> simbox;              ///< Simulation boundary data
-  Diagnostics<ndim> diag0;             ///< Initial diagnostic state
-  Diagnostics<ndim> diag;              ///< Current diagnostic state
   EnergyEquation<ndim> *uint;          ///< Energy equation pointer
   ExternalPotential<ndim> *extpot;     ///< Pointer to external potential object
   Ewald<ndim> *ewald;                  ///< Ewald periodic gravity object
@@ -655,7 +663,6 @@ class MeshlessFVSimulation : public Simulation<ndim>
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
-  virtual void FinaliseSimulation(void);
 
   MeshlessFV<ndim> *mfv;                       ///< Meshless FV hydrodynamics algorithm pointer
   MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< Meshless FV neighbour search object pointer

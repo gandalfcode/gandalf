@@ -186,9 +186,6 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
   // Set particle values for initial step (e.g. r0, v0, a0)
   nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
-  this->CalculateDiagnostics();
-  this->diag0 = this->diag;
-
   this->setup = true;
 
   return;

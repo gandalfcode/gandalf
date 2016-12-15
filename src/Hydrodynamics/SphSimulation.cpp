@@ -502,8 +502,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   sphint->EndTimestep(n, sph->Nhydro, t, timestep, sph->GetSphParticleArray());
   nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
-  this->CalculateDiagnostics();
-  this->diag0 = this->diag;
   this->setup = true;
 
 

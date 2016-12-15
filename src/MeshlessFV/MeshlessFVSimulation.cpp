@@ -638,8 +638,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
   nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
-  this->CalculateDiagnostics();
-  this->diag0 = this->diag;
   this->setup = true;
 
 
@@ -1213,28 +1211,3 @@ void MeshlessFVSimulation<ndim>::WriteExtraSinkOutput(void)
 }
 
 
-
-//=================================================================================================
-//  MeshlessFVSimulation::WriteExtraSinkOutput
-/// For any simulations loaded into memory via a snapshot file, all particle
-/// variables are converted into dimensionless code units here.
-//=================================================================================================
-template <int ndim>
-void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
-{
-    /*
-  MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
-
-  for (int i=0; i<mfv->Nhydro; i++) {
-    MeshlessFVParticle<ndim> &part = partdata[i];
-    if (part.flags.is_dead()) continue;
-    // TODO: Check this.
-    //   Qcons is now interpretted as the predicted value of Q at the current time, surely this
-    //   can be used instead without updating?
-    for (int var=0; var<ndim+2; var++) part.Qcons[var] = part.Qcons0[var] + part.dQ[var];
-    mfv->ConvertConservedToPrimitive(part.ndens, part.Qcons, part.Wprim);
-    mfv->UpdateArrayVariables(part);
-  }
-  */
-  return;
-}

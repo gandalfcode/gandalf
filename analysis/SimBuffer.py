@@ -213,6 +213,7 @@ this reason, all of its methods are static.
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
         
+        sim.InitialiseDiagnostics()
         SimBuffer.load_snapshots(sim,buffer_flag)
         
         
