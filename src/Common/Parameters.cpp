@@ -181,7 +181,7 @@ void Parameters::SetDefaultValues(void)
   intparams["Nstepsmax"] = 99999999;
   intparams["noutputstep"] = 128;
   intparams["ndiagstep"] = 1024;
-  intparams["nrestartstep"] = 512;
+  intparams["nrestartstep"] = 100000;
   intparams["litesnap"] = 0;
   floatparams["dt_litesnap"] = 0.2;
   floatparams["tlitesnapfirst"] = 0.0;

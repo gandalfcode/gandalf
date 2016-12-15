@@ -161,7 +161,9 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
   nresync = 0;
   //tsnapnext = dt_snap;
 
+#if defined MPI_PARALLEL
   mpicontrol->ShareStars(nbody,sinks,simparams);
+#endif
 
   // Compute all initial N-body terms
   //-----------------------------------------------------------------------------------------------
