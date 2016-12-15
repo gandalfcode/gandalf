@@ -57,7 +57,7 @@ GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 ICCOPT   += -O3 -fast -fPIC -fno-exceptions
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
-GCCOPT   += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
+GCCOPT   += -Og -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
 ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
 CLANGOPT += -O1 -g  -Wall -fPIC -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
 else ifeq ($(COMPILER_MODE),STANDARD)
