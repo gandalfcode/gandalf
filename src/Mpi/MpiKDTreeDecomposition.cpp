@@ -295,23 +295,10 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
   }
   //===============================================================================================
 
+  this->ShareStars(nbody,sinks,simparams);
 
   // Update all bounding boxes
   this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp);
-
-  // Share the stars with all other domains
-  MPI_Bcast(&(nbody->Nstar), 1, MPI_INT, 0, MPI_COMM_WORLD);
-  nbody->AllocateMemory(nbody->Nstar);
-
-  if (nbody->Nstar > 0) {
-    MPI_Bcast(nbody->stardata, sizeof(StarParticle<ndim>)*nbody->Nstar,
-              MPI_BYTE, 0, MPI_COMM_WORLD);
-    if (simparams->intparams["sink_particles"]==1) {
-    	sinks->AllocateMemory(nbody->Nstar);
-    	MPI_Bcast(sinks->sink, sizeof(SinkParticle<ndim>)*nbody->Nstar,
-    			MPI_BYTE, 0, MPI_COMM_WORLD);
-    }
-  }
 
   return;
 }

@@ -921,7 +921,10 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::nrestartstep;
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sinks;
-
+#ifdef MPI_PARALLEL
+  using Simulation<ndim>::mpicontrol;
+  using Simulation<ndim>::rank;
+#endif
 public:
 
   NbodySimulation (Parameters* parameters): Simulation<ndim>(parameters) {};

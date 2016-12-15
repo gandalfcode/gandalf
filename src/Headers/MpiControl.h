@@ -37,6 +37,7 @@
 #include "MpiTree.h"
 #include "NeighbourSearch.h"
 #include "Particle.h"
+#include "SinkParticle.h"
 #if defined MPI_PARALLEL
 #include "mpi.h"
 #endif
@@ -111,6 +112,22 @@ class MpiControl
   void CollateDiagnosticsData(Diagnostics&);
   void UpdateAllBoundingBoxes(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *);
   void ComputeTotalStarGasForces(Nbody<ndim> * nbody);
+
+  void ShareStars (Nbody<ndim>* nbody, Sinks<ndim>* sinks, Parameters* simparams) {
+	  // Share the stars with all other domains
+	  MPI_Bcast(&(nbody->Nstar), 1, MPI_INT, 0, MPI_COMM_WORLD);
+	  nbody->AllocateMemory(nbody->Nstar);
+
+	  if (nbody->Nstar > 0) {
+	    MPI_Bcast(nbody->stardata, sizeof(StarParticle<ndim>)*nbody->Nstar,
+		      MPI_BYTE, 0, MPI_COMM_WORLD);
+	    if (simparams->intparams["sink_particles"]==1) {
+	    	sinks->AllocateMemory(nbody->Nstar);
+	    	MPI_Bcast(sinks->sink, sizeof(SinkParticle<ndim>)*nbody->Nstar,
+	    			MPI_BYTE, 0, MPI_COMM_WORLD);
+	    }
+	  }
+  }
 
   //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *);
   virtual void ExportParticlesBeforeForceLoop(Hydrodynamics<ndim> *) = 0;

@@ -121,6 +121,20 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 
   sinks = new Sinks<ndim>(0);
 
+#if defined MPI_PARALLEL
+  if (stringparams["mpi_decomposition"] == "kdtree") {
+    mpicontrol = new MpiKDTreeDecomposition<ndim,GradhSphParticle>();
+  }
+  else {
+    string message = "Unrecognised parameter : mpi_decomposition = "
+      + simparams->stringparams["mpi_decomposition"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+  mpicontrol->timing = timing;
+  rank = mpicontrol->rank;
+  Nmpi = mpicontrol->Nmpi;
+#endif
+
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
@@ -146,6 +160,8 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
   Noutsnap = 0;
   nresync = 0;
   //tsnapnext = dt_snap;
+
+  mpicontrol->ShareStars(nbody,sinks,simparams);
 
   // Compute all initial N-body terms
   //-----------------------------------------------------------------------------------------------
