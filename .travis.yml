@@ -18,7 +18,7 @@ matrix:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y openmpi-bin libopenmpi-dev
-  - sudo apt-get install -y  swig 
+  - sudo apt-get install -y  swig libgsl0-dev
 # Now install anaconda to handle the python packages that GANDALF depends on. See http://conda.pydata.org/docs/travis.html
   - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
@@ -39,7 +39,7 @@ script:
  - export OMPI_MCA_mpi_yield_when_idle=1
  - python --version
  - which python
- - make  -j 2 OPENMP=$OPENMP MPICPP=$MPICPP
+ - make  -j 2 OPENMP=$OPENMP MPICPP=$MPICPP GSL=1
  - nose2
  - cd tests
  - ./run_tests.sh
