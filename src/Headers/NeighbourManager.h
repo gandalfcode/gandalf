@@ -22,6 +22,14 @@ struct ListLength {
   int Ngrav;
 };
 
+//=================================================================================================
+//  Class NeighbourManager
+/// \brief   Template class for neighbour searches.
+/// \details Handles issues related to positioning of ghosts, along with culling the neighbour list
+///          down to only those needed in a tree walk.
+/// \author  G. Rosotti, R. A. Booth
+/// \date    15/12/2016
+//=================================================================================================
 template <int ndim, class ParticleType>
 class NeighbourManager : public NeighbourManagerDim<ndim> {
 private:
@@ -74,30 +82,62 @@ public:
     directlist.clear();
   }
 
-
+  //===============================================================================================
+  // EndSearch
+  /// \brief Colelct particle data needed for the neighbours and cull distant particles that do
+  ///        not interact with the cell hydrodyanimcally
+  //===============================================================================================
   template<class InParticleType>
   void EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
     _EndSearch(cell, partdata, false) ;
   }
-
+  //===============================================================================================
+  // EndSearchGravity
+  /// \brief Collect particle data needed for the neighbours, and demote particles that do not
+  ///        interact hydrodynamically to the directlist.
+  //===============================================================================================
   template<class InParticleType>
   void EndSearchGravity(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
     _EndSearch(cell, partdata, true) ;
   }
 
+  //===============================================================================================
+  //  GetNumAllNeib
+  /// \brief Return the total number of all particles found in the walk.
+  //===============================================================================================
   int GetNumAllNeib() {
     return neib_idx.size();
   }
-
+  //===============================================================================================
+  //  GetNeibI
+  /// \brief Get the index of thew i-th neighbour in the original particle array, and a pointer to
+  ///        to the reduced neighbour data stored.
+  //===============================================================================================
   std::pair<int,ParticleType*> GetNeibI(int i) {
     return make_pair(neib_idx[i],&neibdata[i]);
   }
 
+  //===============================================================================================
+  //  GetParticleNeib
+  /// \brief    Get the list of particles that interact hydrodynamically with the Particle, p.
+  /// \details  Gets a trimmed list of particles that interact with hydrodynamically with Particle,
+  ///           p. This is determined by whether or not the particles smoothing spheres overlap,
+  ///           and hydromask, which specifies the types needed (hydromask[ptype] == true for the
+  ///           required particles). Also, if do_pair_once is included then the neighbour is only
+  ///           included if this interaction will not have been already calculated in the update
+  ///           for the neighbour itself.
+  /// \returns  Returns the number of neighbours found. Additionally, neibdata_p is set to the
+  ///           list of particles stored by the data manager, and neiblist_p is set to the indices
+  ///           within neibdata_p of the required neighbours.
+  //===============================================================================================
   template<class InParticleType>
-  int GetParticleNeib(const InParticleType& p,const Typemask& hydromask, int** neiblist_p,
-      ParticleType** neibdata_p, const bool do_pair_once) {
-
-
+  int GetParticleNeib
+  (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
+   const Typemask& hydromask,                          ///< [in] Boolean flags listing types we need
+   int** neiblist_p,                                   ///< [out] List of particles needed.
+   ParticleType** neibdata_p,                          ///< [out] List of particle data
+   const bool do_pair_once)                            ///< [in]
+  {
     if (do_pair_once)
       TrimNeighbourLists<InParticleType,_true_type>(p, hydromask, false) ;
     else
@@ -110,9 +150,26 @@ public:
 
   }
 
+  //===============================================================================================
+  //  GetParticleNeibGravity
+  /// \brief    Get the list of particles that interact with the Particle, p.
+  /// \details  As with GetParticleNeib, this function returns the list of neighbours that interact
+  ///           hydrodynamically with the Particle, p. Additionally this function also generates
+  ///           the list of particles needed for gravitational interactions, including the list of
+  ///           smoothed and unsmoothed contributions.
+  /// \returns  Returns the number of neighbours found. Additionally, neibdata_p is set to the
+  ///           list of particles stored by the data manager, and neiblist_p, directlist_p and
+  ///           smoothgravlist_p are set to the indices within neibdata_p of the required
+  ///           neighbours.
+  //===============================================================================================
   template<class InParticleType>
-  ListLength GetParticleNeibGravity(const InParticleType& p,const Typemask& hydromask, int** neiblist_p,
-      int** directlist_p, int** smoothgravlist_p, ParticleType** neibdata_p) {
+  ListLength GetParticleNeibGravity
+  (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
+   const Typemask& hydromask,                          ///< [in] Type flags for hydro interactions
+   int** neiblist_p,                                   ///< [out] List of hydro neigbour indices
+   int** directlist_p,                                 ///< [out] List of unsmoothed gravity neibs
+   int** smoothgravlist_p,                             ///< [out] List of smoothed gravity neibs
+   ParticleType** neibdata_p) {                        ///< [out] List of particle data.
 
     TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true) ;
 
@@ -132,6 +189,12 @@ public:
 
 private:
 
+  //===============================================================================================
+  //  _EndSearch
+  /// \details Gathers the particle data for the cell, and trims the list of hydrodynamic particles.
+  ///          If keep_direct is true, then these become direct-list gravitational neighbours,
+  ///          otherwise they are discarded. Periodic corrections are included.
+  //===============================================================================================
   template<class InParticleType>
    void _EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata, bool keep_direct=true) {
 
@@ -243,7 +306,11 @@ private:
    }
 
 
-
+  //===============================================================================================
+  //  TrimNeighbourLists
+  /// \detail This function trims the neighbour lists for a given particle, determining whether
+  ///         neighbours are needed for hydro or gravity. Periodic corrections are applied.
+  //===============================================================================================
   template<class InParticleType, class do_pair_once>
   void TrimNeighbourLists(const InParticleType& p, const Typemask& hydromask, bool keep_grav)
   {

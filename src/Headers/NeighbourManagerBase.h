@@ -11,6 +11,16 @@
 #include <vector>
 #include "TreeCell.h"
 
+
+//=================================================================================================
+//  Class NeighbourManagerBase
+/// \brief   Base class for neighbour search wrapper objects
+/// \details The base classes provide the interface for storing and clearing the indices of the
+///          particles found by neighbour searches. The indices should be the location of the
+///          particles in the main array.
+/// \author  G. Rosotti, R. A. Booth
+/// \date    15/12/2016
+//=================================================================================================
 class NeighbourManagerBase {
 protected:
 	vector<int> tempneib;
@@ -38,6 +48,12 @@ public:
 	}
 };
 
+//=================================================================================================
+//  Class NeighbourManagerDim
+/// \brief   Base class for neighbour search wrapper objects, which also holds multipole data.
+/// \author  G. Rosotti, R. A. Booth
+/// \date    15/12/2016
+//=================================================================================================
 template <int ndim>
 class NeighbourManagerDim : public NeighbourManagerBase {
 protected:
@@ -46,10 +62,15 @@ protected:
     using NeighbourManagerBase::tempperneib;
     using NeighbourManagerBase::tempdirectneib;
 public:
+    /* Add the multipole moments of a gravity cell */
 	void AddGravCell(const MultipoleMoment<ndim>& moment) {
 		gravcell.push_back(moment);
 	}
 
+	//===============================================================================================
+	//  GetGravCell
+	/// \brief Get the number of multipole moments stored, and return a pointer to them.
+	//===============================================================================================
 	int GetGravCell (MultipoleMoment<ndim>** gravcell_p) {
 	  *gravcell_p = &gravcell[0];
 	  return gravcell.size();
