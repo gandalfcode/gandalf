@@ -298,7 +298,6 @@ class Simulation : public SimulationBase
   Ewald<ndim> *ewald;                  ///< Ewald periodic gravity object
   Ghosts<ndim>* LocalGhosts;           ///< Periodic ghost particle object
   Hydrodynamics<ndim> *hydro;          ///< Hydrodynamics algorithm pointer
-  Ic<ndim> *icGenerator;               ///< Initial conditions pointer
   Nbody<ndim> *nbody;                  ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;              ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;     ///< N-body tree to create sub-systems
@@ -337,7 +336,6 @@ class SphSimulation : public Simulation<ndim>
  public:
   using Simulation<ndim>::ewaldGravity;
   using Simulation<ndim>::extra_sink_output;
-  using Simulation<ndim>::icGenerator;
   using Simulation<ndim>::periodicBoundaries;
   using Simulation<ndim>::Nmpi;
   using Simulation<ndim>::pruning_level_min;

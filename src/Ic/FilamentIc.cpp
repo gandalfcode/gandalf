@@ -94,9 +94,7 @@ void FilamentIc<ndim>::Generate(void)
   //-----------------------------------------------------------------------------------------------
   if (ndim == 3) {
 
-    FLOAT Rsqd;
     int Npart      = simparams->intparams["Nhydro"];
-    FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
 
     debug2("[FilamentIc::Generate]");
 
@@ -106,7 +104,13 @@ void FilamentIc<ndim>::Generate(void)
     mp = 1.0*mtot / (FLOAT) Npart;
 
     FLOAT *r = new FLOAT[ndim*Npart];
-    Ic<ndim>::AddMonteCarloDensityField(Npart, simbox, r, sim->randnumb);
+
+    Box<ndim> box;
+    for (int i=0; i < ndim; i++) {
+      box.min[i] = simbox.min[i];
+      box.max[i] = simbox.max[i];
+    }
+    Ic<ndim>::AddMonteCarloDensityField(Npart, box, r, sim->randnumb);
 
     // Copy positions to main array and initialise all other variables
     for (int i=0; i<hydro->Nhydro; i++) {

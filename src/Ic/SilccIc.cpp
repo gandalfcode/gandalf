@@ -103,7 +103,7 @@ SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOA
   m_uniform = rho_a*box_area*(simbox.max[ndim-1] - a_midplane);
   m_box     = 2.0*(m_exp + m_uniform);
 
-  FLOAT sigma_gas = m_box/box_area;
+ // FLOAT sigma_gas = m_box/box_area;
 
 
   // TESTING :
@@ -129,14 +129,10 @@ void SilccIc<ndim>::Generate(void)
   //-----------------------------------------------------------------------------------------------
   if (ndim == 3) {
 
-    int i;                               // Particle counter
-    int k;                               // Dimension counter
     FLOAT mp;                            // Mass of individual particle
-    FLOAT z;                             // z-position of newly inserted particle
 
     // Create local copies of initial conditions parameters
     int Npart      = simparams->intparams["Nhydro"];
-    FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
 
     debug2("[SilccIc::Generate]");
 
@@ -146,7 +142,13 @@ void SilccIc<ndim>::Generate(void)
     mp = m_box / (FLOAT) Npart;
 
     FLOAT *r = new FLOAT[ndim*Npart];
-    Ic<ndim>::AddMonteCarloDensityField(Npart, simbox, r, sim->randnumb);
+
+    Box<ndim> box;
+    for (int i=0; i < ndim; i++) {
+      box.min[i] = simbox.min[i];
+      box.max[i] = simbox.max[i];
+    }
+    Ic<ndim>::AddMonteCarloDensityField(Npart, box, r, sim->randnumb);
 
     // Copy positions to main array and initialise all other variables
     for (int i=0; i<hydro->Nhydro; i++) {
