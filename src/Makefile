@@ -269,7 +269,7 @@ unittests : $(OBJ) $(TEST_OBJ) Exception.o
 	cp testgandalf ../bin/testgandalf
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o
-	$(CPP) $(CFLAGS) $(INCLUDE) $(OPT) $(LIB) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
+	$(CPP) $(CFLAGS) $(INCLUDE) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so $(LIB)
 
 Exception.o : Exception.cpp
 	$(CPP) $(OPT) $(INCLUDE) $(CFLAGS) -fexceptions -c $<

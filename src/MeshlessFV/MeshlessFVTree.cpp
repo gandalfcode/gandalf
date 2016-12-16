@@ -810,8 +810,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 
             // Compute gravitational force due to distant cells
             if (multipole == "monopole") {
-            ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree,
-                                      activepart[j].r, Ngravcell, gravcell);
+              ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree,
+                                        activepart[j].r, Ngravcell, gravcell);
             }
             else if (multipole == "quadrupole") {
               ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].atree,
@@ -820,7 +820,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 
             // Add the periodic correction force for SPH and direct-sum neighbours
             if (simbox.PeriodicGravity){
-              for (int jj=0; jj<listlength.Nhydro; jj++) {
+              int Ntotneib = neibmanager.GetNumAllNeib() ;
+              for (int jj=0; jj<Ntotneib; jj++) {
+
+                if (!gravmask[neibpart[jj].ptype]) continue ;
+
                 for (int k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
                 ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
                 for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];

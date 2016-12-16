@@ -608,7 +608,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
           // Add the periodic correction force for SPH and direct-sum neighbours
           if (simbox.PeriodicGravity){
-            for (int jj=0; jj<listlength.Nhydro; jj++) {
+            int Ntotneib = neibmanager.GetNumAllNeib() ;
+            for (int jj=0; jj< Ntotneib; jj++) {
 
         	  if (!gravmask[neibpart[jj].ptype]) continue ;
 
