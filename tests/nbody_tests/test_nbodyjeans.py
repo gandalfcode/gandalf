@@ -5,9 +5,10 @@ import unittest
 class SoundWaveTest(unittest.TestCase):
     def setUp(self):
         self.sim=newsim("tests/nbody_tests/nbodyjeans.dat")
+        if self.sim.MPI:
+            raise unittest.SkipTest
         self.expected_l1error = 8e-5
     
-
     def test_error(self):
         p=run_async()
         p.wait()
