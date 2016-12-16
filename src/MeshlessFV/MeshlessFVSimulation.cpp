@@ -250,7 +250,6 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 
   // Set important variables for N-body objects
-  //nbody->Nstar          = intparams["Nstar"];
   nbody->Nstarmax       = intparams["Nstarmax"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
   nbodytree.gpehard     = floatparams["gpehard"];
