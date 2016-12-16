@@ -28,14 +28,16 @@
 #include "Parameters.h"
 #include "Precision.h"
 #include "Constants.h"
+#include "Exception.h"
 #ifdef MPI_PARALLEL
 #include <stddef.h>
 #include "mpi.h"
-#include "Exception.h"
 template<int ndim> class GradhSphCommunicationHandler;
 template<int ndim> class MeshlessCommunicationHandler;
 template<int ndim> class SM2012CommunicationHandler;
 #endif
+
+template<int ndim> class GradhSphBase;
 
 
 enum flags {
@@ -298,6 +300,8 @@ struct Particle
     vsig_max  = 0;
   }
 
+  static const int NDIM = ndim ;
+
 };
 
 
@@ -364,6 +368,59 @@ struct GradhSphParticle : public SphParticle<ndim>
 
   typedef GradhSphCommunicationHandler<ndim> HandlerType;
 #endif
+
+  class HydroForcesParticle {
+  public:
+	  HydroForcesParticle(): ptype(gas_type), level(0), levelneib(0), iorig(0), flags(none), r(), v(), a(),
+	  m(0), rho (0), h(0), hrangesqd(0), hfactor(0), pfactor(0), sound(0), u(0), alpha(0), zeta(0)
+	  {};
+
+	  HydroForcesParticle(const GradhSphParticle& p) {
+		  ptype=p.ptype;
+		  level=p.level;
+		  levelneib=0;
+		  iorig=p.iorig;
+		  flags=p.flags.get();
+		  for (int k=0; k<ndim; k++) {
+			  r[k]=p.r[k];
+			  v[k]=p.v[k];
+			  a[k]=p.a[k];
+		  }
+		  m=p.m;
+		  rho=p.rho;
+		  h=p.h;
+		  hrangesqd=p.hrangesqd;
+		  hfactor=p.hfactor;
+		  pfactor=p.pfactor;
+		  sound=p.sound;
+		  u=p.u;
+		  alpha=p.alpha;
+          zeta=p.zeta;
+	  }
+
+	  int ptype;
+	  int level;
+	  int levelneib;
+	  int iorig;
+	  type_flag flags;
+	  FLOAT r[ndim];
+	  FLOAT v[ndim];
+	  FLOAT a[ndim];
+	  FLOAT m;
+	  FLOAT rho;
+	  FLOAT h;
+	  FLOAT hrangesqd;
+	  FLOAT hfactor;
+	  FLOAT pfactor;
+	  FLOAT sound;
+	  FLOAT u;
+	  FLOAT alpha;
+      FLOAT zeta;
+	  static const int NDIM=ndim;
+
+  };
+
+  typedef GradhSphBase<ndim> HydroMethod;
 
 };
 
@@ -464,12 +521,146 @@ struct MeshlessFVParticle : public Particle<ndim>
   typedef MeshlessCommunicationHandler<ndim> HandlerType;
 #endif
 
+  class GradientParticle {
+  public:
+	  GradientParticle (): level(0), ptype(gas_type), iorig(0), levelneib(0), flags(none), r(), v(), Wprim(), sound(0),
+	  gpot(0), h(0), hrangesqd(0) {};
+	  GradientParticle (const MeshlessFVParticle<ndim>& p) {
+		  level=p.level;
+		  ptype=p.ptype;
+		  iorig=p.iorig;
+		  levelneib=0;
+		  flags=p.flags.get();
+		  for (int k=0; k<ndim; k++) {
+			  r[k]=p.r[k];
+			  v[k]=p.v[k];
+		  }
+		  for (int k=0; k<ndim+2; k++) {
+			  Wprim[k]=p.Wprim[k];
+		  }
+		  sound=p.sound;
+		  gpot=p.gpot;
+		  h=p.h;
+		  hrangesqd=p.hrangesqd;
+	  }
+
+	  int level;
+	  int ptype;
+	  int iorig;
+	  int levelneib;
+	  type_flag flags;
+	  FLOAT r[ndim];
+	  FLOAT v[ndim];
+	  FLOAT Wprim[ndim+2];
+	  FLOAT sound;
+	  FLOAT gpot;
+	  FLOAT h;
+	  FLOAT hrangesqd;
+
+	  static const int NDIM=ndim;
+
+  };
+
+  class FluxParticle {
+  public:
+	  FluxParticle (): ptype(gas_type), flags(none), level(0), iorig(0), r(), v(), a(), Wprim(), dQ(),
+	  dQdt(), rdmdt(), h(0), hrangesqd(0), ndens(0), hfactor(0) {
+		  for (int k=0; k<ndim; k++)
+			  for (int kk=0; kk<ndim; kk++)
+				  B[k][kk]=0;
+		  for (int k=0; k<ndim+2; k++) {
+			  for (int kk=0; kk<ndim; kk++)
+				  grad[k][kk]=0;
+		  }
+	  };
+	  FluxParticle (const MeshlessFVParticle& p) {
+		  ptype=p.ptype;
+		  flags=p.flags.get();
+		  level=p.level;
+		  iorig=p.iorig;
+		  for (int k=0; k<ndim+2; k++) {
+			  Wprim[k]=p.Wprim[k];
+			  for (int kk=0; kk<ndim; kk++) grad[k][kk]=p.grad[k][kk];
+			  dQ[k]=0;
+			  dQdt[k]=0;
+		  }
+		  for (int k=0; k<ndim; k++) {
+			  for (int kk=0; kk<ndim; kk++) B[k][kk]=p.B[k][kk];
+			  r[k]=p.r[k];
+			  v[k]=p.v[k];
+			  a[k]=p.a[k];
+			  rdmdt[k]=0;
+		  }
+		  h=p.h;
+		  hrangesqd=p.hrangesqd;
+		  ndens=p.ndens;
+		  hfactor=p.hfactor;
+	  }
+
+	  int ptype;
+	  type_flag flags;
+	  int level;
+	  int iorig;
+	  FLOAT r[ndim];
+	  FLOAT v[ndim];
+	  FLOAT a[ndim];
+	  FLOAT B[ndim][ndim];
+	  FLOAT Wprim[ndim+2];
+	  FLOAT grad[ndim+2][ndim];
+	  FLOAT dQ[ndim+2];
+	  FLOAT dQdt[ndim+2];
+	  FLOAT rdmdt[ndim];
+	  FLOAT h;
+	  FLOAT hrangesqd;
+	  FLOAT ndens;
+	  FLOAT hfactor;
+
+	  static const int NDIM=ndim;
+
+  };
+
+  class GravParticle {
+  public:
+	  GravParticle(): ptype(gas_type), flags(none), m(0), h(0), hrangesqd(0), hfactor(0),
+	  zeta(0), r() { }
+
+	  GravParticle(const MeshlessFVParticle<ndim>& p) {
+		  ptype=p.ptype;
+		  flags=p.flags.get();
+		  m=p.m;
+		  h=p.h;
+		  hrangesqd=p.hrangesqd;
+		  hfactor=p.hfactor;
+		  zeta=p.zeta;
+		  for (int k=0; k<ndim; k++) r[k]=p.r[k];
+	  }
+
+	  int ptype;
+	  type_flag flags;
+	  FLOAT m;
+	  FLOAT h;
+	  FLOAT hrangesqd;
+	  FLOAT hfactor;
+	  FLOAT zeta;
+	  FLOAT r[ndim];
+
+	  static const int NDIM=ndim;
+
+  };
+
 };
 
 
 /* reflect the particle in a given direction about a mirror */
 template<int ndim>
 inline void reflect(Particle<ndim>& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
+   part.v[k]*= -1 ;
+   part.a[k] *= -1 ;
+}
+
+template<int ndim>
+inline void reflect(typename GradhSphParticle<ndim>::HydroForcesParticle& part, int k, double x_mirror) {
    part.r[k] = 2*x_mirror - part.r[k] ;
    part.v[k]*= -1 ;
    part.a[k] *= -1 ;
@@ -495,9 +686,39 @@ inline void reflect(MeshlessFVParticle<ndim>& part, int k, double x_mirror) {
    }
 }
 
+template<int ndim>
+inline void reflect(typename MeshlessFVParticle<ndim>::FluxParticle& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
+   part.v[k]*= -1 ;
+   part.a[k] *= -1 ;
 
+   part.Wprim[k] *= -1 ;
+   part.dQ[k] *= -1 ;
+   part.dQdt[k] *= -1 ;
 
+   // Gradients
+   for (int j=0; j < ndim+2; j++)
+     part.grad[j][k] *= -1 ;
+   for (int j=0; j < ndim; j++) {
+     part.grad[k][j] *= -1 ;
+     part.B[j][k] *= -1 ;
+     part.B[k][j] *= -1 ;
+   }
+}
 
+template<int ndim>
+inline void reflect(typename MeshlessFVParticle<ndim>::GradientParticle& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
+   part.v[k]*= -1 ;
+
+   part.Wprim[k] *= -1 ;
+
+}
+
+template <int ndim>
+inline void reflect(typename MeshlessFVParticle<ndim>::GravParticle& part, int k, double x_mirror) {
+   ExceptionHandler::getIstance().raise("You should not use mirror boundaries with gravity!!!!");
+}
 
 
 

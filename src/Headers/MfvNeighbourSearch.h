@@ -45,6 +45,7 @@
 #include "Parameters.h"
 #include "KDTree.h"
 #include "OctTree.h"
+#include "NeighbourManager.h"
 #if defined MPI_PARALLEL
 #include "MpiExport.h"
 #include "MpiNode.h"
@@ -93,6 +94,15 @@ protected:
 template <int ndim, template<int> class ParticleType>
 class MeshlessFVTree: public MeshlessFVNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType>
 {
+	  typedef typename ParticleType<ndim>::FluxParticle FluxParticle;
+	  typedef NeighbourManager<ndim, FluxParticle > NeighbourManagerFlux;
+	  vector<NeighbourManagerFlux> neibmanagerbufflux;
+	  typedef typename ParticleType<ndim>::GradientParticle GradientParticle;
+	  typedef NeighbourManager<ndim, GradientParticle > NeighbourManagerGradient;
+	  vector<NeighbourManagerGradient> neibmanagerbufgradient;
+	  typedef typename ParticleType<ndim>::GravParticle GravParticle;
+	  typedef NeighbourManager<ndim, GravParticle> NeighbourManagerGrav;
+	  vector<NeighbourManagerGrav> neibmanagerbufgrav;
 #if defined MPI_PARALLEL
 protected:
 #endif
@@ -121,6 +131,7 @@ protected:
   using HydroTree<ndim,ParticleType>::timing;
   using HydroTree<ndim,ParticleType>::tree;
   using HydroTree<ndim,ParticleType>::ghosttree;
+  using HydroTree<ndim,ParticleType>::Nthreads;
 #ifdef MPI_PARALLEL
   using HydroTree<ndim,ParticleType>::mpighosttree;
   using HydroTree<ndim,ParticleType>::Nmpi;

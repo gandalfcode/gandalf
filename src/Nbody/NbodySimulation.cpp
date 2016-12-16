@@ -53,6 +53,7 @@ template class NbodySimulation<3>;
 //  NbodySimulation::ProcessParameters
 /// Process all the options chosen in the parameters file, setting various
 /// simulation variables and creating important simulation objects.
+/// Nbody specific version
 //=================================================================================================
 template <int ndim>
 void NbodySimulation<ndim>::ProcessParameters(void)
@@ -67,27 +68,9 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   debug2("[NbodySimulation::ProcessParameters]");
 
 
-  // Sanity check for valid dimensionality
-  if (ndim < 1 || ndim > 3) {
-    std::ostringstream message;
-    message << "Invalid dimensionality chosen : ndim = " << ndim;
-    ExceptionHandler::getIstance().raise(message.str());
-  }
+  // Common set-up
+  Simulation<ndim>::ProcessParameters();
 
-  // Set-up random number generator object
-  //-----------------------------------------------------------------------------------------------
-  if (stringparams["rand_algorithm"] == "xorshift")
-    randnumb = new XorshiftRand(intparams["randseed"]);
-  else if (stringparams["rand_algorithm"] == "none")
-    randnumb = new DefaultSystemRand(intparams["randseed"]);
-  else {
-    string message = "Unrecognised parameter : rand_algorithm= " +
-      stringparams["rand_algorithm"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-  // Set-up all output units for scaling parameters
-  simunits.SetupUnits(simparams);
 
 
   // Set-up dummy SPH object in order to have valid pointers in N-body object
@@ -100,22 +83,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   this->ProcessNbodyParameters();
 
 
-  // Set external potential field object and set pointers to object
-  if (stringparams["external_potential"] == "none") {
-    extpot = new NullPotential<ndim>();
-  }
-  else if (stringparams["external_potential"] == "vertical") {
-    extpot = new VerticalPotential<ndim>
-      (intparams["kgrav"], floatparams["avert"], simbox.min[intparams["kgrav"]]);
-  }
-  else if (stringparams["external_potential"] == "plummer") {
-    extpot = new PlummerPotential<ndim>(floatparams["mplummer"],floatparams["rplummer"]);
-  }
-  else {
-    string message = "Unrecognised parameter : external_potential = "
-      + simparams->stringparams["external_potential"];
-    ExceptionHandler::getIstance().raise(message);
-  }
+  // Set pointers to external potential field object
   nbody->extpot = extpot;
 
 
@@ -127,39 +95,6 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   nbodytree.gpesoft     = floatparams["gpesoft"];
   //nbody->perturbers     = intparams["perturbers"];
   //if (intparams["sub_systems"] == 1) subsystem->perturbers = intparams["perturbers"];
-
-
-  // Boundary condition variables
-  //-----------------------------------------------------------------------------------------------
-  simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
-  simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
-  simbox.min[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
-  simbox.max[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
-  //if (simbox.boundary_lhs[0] == "open") simbox.min[0] = -big_number;
-  //if (simbox.boundary_rhs[0] == "open") simbox.max[0] = big_number;
-
-  if (ndim > 1) {
-    simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
-    simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
-    simbox.min[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
-    simbox.max[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-    //if (simbox.boundary_lhs[1] == "open") simbox.min[1] = -big_number;
-    //if (simbox.boundary_rhs[1] == "open") simbox.max[1] = big_number;
-  }
-
-  if (ndim == 3) {
-    simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
-    simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
-    simbox.min[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
-    simbox.max[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
-    //if (simbox.boundary_lhs[2] == "open") simbox.min[2] = -big_number;
-    //if (simbox.boundary_rhs[2] == "open") simbox.max[2] = big_number;
-  }
-
-  for (int k=0; k<ndim; k++) {
-    simbox.size[k] = simbox.max[k] - simbox.min[k];
-    simbox.half[k] = 0.5*simbox.size[k];
-  }
 
 
   // Create Ewald periodic gravity object
@@ -180,21 +115,6 @@ void NbodySimulation<ndim>::ProcessParameters(void)
     }
   }
 
-
-  // Set other important simulation variables
-  dt_python        = floatparams["dt_python"];
-  dt_snap          = floatparams["dt_snap"]/simunits.t.outscale;
-  Nlevels          = intparams["Nlevels"];
-  ndiagstep        = intparams["ndiagstep"];
-  noutputstep      = intparams["noutputstep"];
-  nrestartstep     = intparams["nrestartstep"];
-  nsystembuildstep = intparams["nsystembuildstep"];
-  Nstepsmax        = intparams["Nstepsmax"];
-  out_file_form    = stringparams["out_file_form"];
-  run_id           = stringparams["run_id"];
-  tmax_wallclock   = floatparams["tmax_wallclock"];
-  tend             = floatparams["tend"]/simunits.t.outscale;
-  tsnapnext        = floatparams["tsnapfirst"]/simunits.t.outscale;
 
   // Set pointers to timing object
   nbody->timing   = timing;

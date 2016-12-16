@@ -29,6 +29,7 @@
 #include "Particle.h"
 #include "Precision.h"
 #include "Tree.h"
+#include "NeighbourManager.h"
 
 //=================================================================================================
 //  Class DustSphNgbFinder
@@ -58,10 +59,12 @@ class DustSphNgbFinder
 : public DustBase<ndim>
 {
 	using DustBase<ndim>::timing ;
+	vector<NeighbourManager<ndim,ParticleType<ndim> > > neibmanagerbuf;
 public:
 	DustSphNgbFinder(TreeBase<ndim> * t,TreeBase<ndim> * gt=NULL)
 	: _tree(t), _ghosttree(gt)
-	{ } ;
+	{
+	} ;
 	virtual ~DustSphNgbFinder() { } ;
 
 #ifdef MPI_PARALLEL
@@ -163,7 +166,6 @@ public:
   { } ;
 
   void ComputeDragForces(const int, const int, const std::vector<int>&,
-		                     const std::vector<FLOAT>&, const std::vector<FLOAT>&,
 		                     ParticleType<ndim>&, const std::vector<ParticleType<ndim> >&,
 		                     std::vector<FLOAT>&) ;
 
@@ -486,9 +488,21 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;    // List of active cells
 
+
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
+
+#ifdef _OPENMP
+  int Nthreads  = omp_get_max_threads() ;
+#else
+  int Nthreads  = 1 ;
+#endif
+  for (int t = neibmanagerbuf.size(); t < Nthreads; ++t)
+    neibmanagerbuf.push_back(NeighbourManager<ndim,
+                                              ParticleType<ndim> >(types,_tree->MaxKernelRange(),
+                                                                   _tree->GetDomain()));
+
 
   debug2("[DustSphNgbFinder::FindNeibForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("DUST_GAS_PAIRWISE_FORCES");
@@ -510,28 +524,21 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
 #pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag)
   {
+#if defined _OPENMP
+    const int ithread = omp_get_thread_num();
+#else
+    const int ithread = 0;
+#endif
     int cc;                                      // Aux. cell counter
     int i;                                       // Particle id
     int j;                                       // Aux. particle counter
     int jj;                                      // Aux. particle counter
     int k;                                       // Dimension counter
     int Nactive;                                 // ..
-    int Nneib;                                   // ..
-    int Nhydroaux;                               // ..
-    FLOAT draux[ndim];                           // Aux. relative position vector
-    FLOAT drsqd;                                 // Distance squared
-    FLOAT hrangesqdi;                            // Kernel gather extent
-    FLOAT rp[ndim];                              // Local copy of particle position
-    int Nneibmax    = 200 ;                      // ..
-    vector<int>       neiblist(Nneibmax);        // Local array of neighbour particle ids
-    vector<int>       sphlist(Nneibmax) ;        // ..
-    vector<FLOAT>     dr(ndim*Nneibmax);         // Local reduced array of neighbour potentials
-    vector<FLOAT>     drmag(Nneibmax);           // Local array of distances (squared)
-
     vector<int>                 activelist(_tree->MaxNumPartInLeafCell()); // Ids of Active parts
     vector<ParticleType<ndim> > activepart(_tree->MaxNumPartInLeafCell()); // Local array of parts
-    vector<ParticleType<ndim> > neibpart(Nneibmax);                        // Reduced arr. of parts
     vector<int>                 levelneib(Ntot,0);                         // Ngb t-step level
+    NeighbourManager<ndim,ParticleType<ndim> >& neibmanager = neibmanagerbuf[ithread];
 
 
     // Loop over all active cells
@@ -550,31 +557,15 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
 
       // Compute neighbour list for cell from real and periodic ghost particles
-      do {
-    	// TODO: These functions should accept vectors so that the functions can
-    	//       automatically manage their size.
-        Nneib = 0;
-        Nneib = _tree->ComputeNeighbourAndGhostList(cell, sphdata, Nneibmax, Nneib,
-        		 								   &(neiblist[0]), &(neibpart[0]));
+      neibmanager.clear();
+      _tree->ComputeNeighbourAndGhostList(cell, neibmanager);
 #ifdef MPI_PARALLEL
         // Ghosts are already in the mpi tree
-        Nneib = mpighosttree->ComputeNeighbourList(cell, sphdata, Nneibmax, Nneib,
-        		 								   &(neiblist[0]), &(neibpart[0]));
+        mpighosttree->ComputeNeighbourList(cell, neibmanager);
 #endif
-        // If there are too many neighbours, reallocate the arrays and
-        // recompute the neighbour list.
+      neibmanager.EndSearch(cell,sphdata);
 
-        if (Nneib == -1) {
-    	  Nneibmax *= 2 ;
-
-    	  neibpart.resize(Nneibmax);
-    	  drmag.resize(Nneibmax);
-    	  dr.resize(ndim*Nneibmax);
-    	  sphlist.resize(Nneibmax);
-    	  neiblist.resize(Nneibmax);
-        }
-      }
-      while (Nneib == -1) ;
+      const int Nneib_cell = neibmanager.GetNumAllNeib();
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
@@ -582,52 +573,25 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
         i = activelist[j];
 
         if (types[activepart[j].ptype].drag_forces) {
-          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
 
           Typemask dragmask ;
           for (k=0; k<Ntypes; k++)  dragmask[k] = types[activepart[j].ptype].dragmask[k];
 
-          hrangesqdi = activepart[j].hrangesqd;
-          Nhydroaux = 0;
+          const bool do_pair_once=false;
+          int* sphlist_temp;
+          ParticleType<ndim>* neibpart_temp;
 
-        // Validate that gather neighbour list is correct
-#if defined(VERIFY_ALL)
-          // if (neibcheck) this->CheckValidNeighbourList(i, sph->Nhydro + sph->NPeriodicGhost,
-      	  //	  	                                        Nneib, neiblist, sphdata, "all");
-#endif
+          const int Nneib=neibmanager.GetParticleNeib(activepart[j],dragmask,&sphlist_temp,&neibpart_temp,do_pair_once);
 
-          // Compute distances and the inverse between the current particle and all neighbours here,
-          // for both gather and inactive scatter neibs.  Only consider particles with j > i to
-          // compute pair forces once unless particle j is inactive.
-          //-----------------------------------------------------------------------------------------
-      	  for (jj=0; jj<Nneib; jj++) {
-      	    if (dragmask[neibpart[jj].ptype] == false) continue;
-      	    if (neibpart[jj].flags.is_dead()) continue ;
-
-      	    for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-      	    drsqd = DotProduct(draux, draux, ndim) + small_number;
-
-
-      	    if (drsqd <= small_number) continue ;
-
-      		// Compute relative position and distance quantities for pair
-      	    if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
-      	      drmag[Nhydroaux] = sqrt(drsqd);
-      		  for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k] ;
-      		  levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
-      		  sphlist[Nhydroaux] = jj;
-      		  Nhydroaux++;
-      	    }
-      	  }
-      	  //-----------------------------------------------------------------------------------------
-
+          vector<int> sphlist(sphlist_temp,sphlist_temp+Nneib);
+          vector<ParticleType<ndim> > neibpart (neibpart_temp,neibpart_temp+Nneib_cell);
       	  // Compute all neighbour contributions to hydro forces
       	  vector<FLOAT> acc(ndim) ;
-          Forces.ComputeDragForces(i,Nhydroaux,sphlist,drmag,dr,activepart[j],neibpart, acc);
+          Forces.ComputeDragForces(i,Nneib,sphlist,activepart[j],neibpart, acc);
           for (k=0; k<ndim; k++)
             a_drag[i*ndim + k] = acc[k] ;
 
-        }   // Skip current active particle or if neighbour type is not active for hydro forces
+        }
       }
 
       // Add all active particles contributions to main array
@@ -866,8 +830,6 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 (const int i,                                       ///< [in] id of particle
  const int Nneib,                                   ///< [in] No. of neibs in neibpart array
  const std::vector<int>& neiblist,                  ///< [in] id of gather neibs in neibpart
- const std::vector<FLOAT>& drmag,                   ///< [in] Distances of gather neighbours
- const std::vector<FLOAT>& dr,                      ///< [in] Position vector of gather neibs
  ParticleType<ndim>& parti,                         ///< [inout] Particle i data
  const std::vector<ParticleType<ndim> >& neibpart,  ///< [in] Neighbour particle data
  std::vector<FLOAT>& a_drag)                        ///< [out] drag acceleration
@@ -901,15 +863,19 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 
     FLOAT invh_j =  1/neibpart[j].h ;
 
+    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - parti.r[k];
+    const FLOAT drmag =  sqrt(DotProduct(draux,draux,ndim));
+
+
     if (parti.ptype == gas_type)
-      wkern = pow(invh_i, ndim)*kern.wdrag(drmag[jj]*invh_i);
+      wkern = pow(invh_i, ndim)*kern.wdrag(drmag*invh_i);
     else
-      wkern = pow(invh_j, ndim)*kern.wdrag(drmag[jj]*invh_j);
+      wkern = pow(invh_j, ndim)*kern.wdrag(drmag*invh_j);
 
     wkern *= neibpart[j].m / neibpart[j].rho ;
 
     for (k=0; k<ndim; k++) {
-    	draux[k] = dr[jj*ndim + k] / drmag[jj];
+    	if (drmag>0) draux[k] /= drmag;
     	dv[k] = neibpart[j].v[k] - parti.v[k] ;
     	da[k] = neibpart[j].a[k] - parti.a[k] ;
     }

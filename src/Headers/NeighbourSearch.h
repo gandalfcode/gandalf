@@ -97,6 +97,7 @@ protected:
 
   virtual void BuildPrunedTree(const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Hydrodynamics<ndim> *) = 0;
+  virtual void StockPrunedTree(const int rank,Hydrodynamics<ndim>* hydro) = 0;
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int,
                                  const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) = 0;
@@ -146,8 +147,8 @@ class HydroTree : public virtual NeighbourSearch<ndim>
   vector<int> N_imported_part_per_proc;
   vector<int> N_imported_cells_per_proc;
   int rank;
-protected:
 #endif
+protected:
  public:
 
 
@@ -180,6 +181,7 @@ protected:
 
   virtual void BuildPrunedTree(const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Hydrodynamics<ndim> *);
+  virtual void StockPrunedTree(const int rank,Hydrodynamics<ndim>* hydro);
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int,
                                  const FLOAT, Hydrodynamics<ndim> *);
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);
@@ -693,7 +695,8 @@ void ComputeFastMonopoleForces
   int Ngravcell,                       ///< [in] No. of tree cells in list
   MultipoleMoment<ndim> *gravcell,     ///< [in] List of tree cell ids
   TreeCellBase<ndim> &cell,            ///< [in] Current cell pointer
-  ParticleType<ndim> *activepart)      ///< [inout] Active Hydrodynamics particle array
+  ParticleType<ndim> *activepart,      ///< [inout] Active Hydrodynamics particle array
+  const ParticleTypeRegister& types)   ///< [in] Flags specifying which particles need grav forces
 {
 
   FastMultipoleForces<ndim> monopole(cell.r) ;
@@ -707,7 +710,8 @@ void ComputeFastMonopoleForces
   }
 
   for (int j=0; j<Nactive; j++)
-    monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
+    if (types[activepart[j].ptype].self_gravity)
+      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;
@@ -724,7 +728,8 @@ void ComputeFastQuadrupoleForces
   int Ngravcell,                       ///< [in] No. of tree cells in list
   MultipoleMoment<ndim> *gravcell,     ///< [in] List of tree cell ids
   TreeCellBase<ndim> &cell,            ///< [in] Current cell pointer
-  ParticleType<ndim> *activepart)      ///< [inout] Active Hydrodynamics particle array
+  ParticleType<ndim> *activepart,      ///< [inout] Active Hydrodynamics particle array
+  const ParticleTypeRegister& types)   ///< [in] Flags specifying which particles need grav forces
 {
 
   FastMultipoleForces<ndim> monopole(cell.r) ;
@@ -738,7 +743,8 @@ void ComputeFastQuadrupoleForces
   }
 
   for (int j=0; j<Nactive; j++)
-    monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
+    if (types[activepart[j].ptype].self_gravity)
+      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;

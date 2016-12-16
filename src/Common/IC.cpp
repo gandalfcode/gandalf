@@ -40,6 +40,7 @@ void Ic<ndim>::CheckInitialConditions(void)
   bool valid_ic = true;                      // Valid initial conditions flag
   int i,k;                                   // Particle and dimension counter
   DomainBox<ndim>& simbox = sim->simbox;
+  const bool cutbox       = simparams->intparams["cut_box"];
 
 
   // Loop through all particles performing various checks
@@ -59,10 +60,24 @@ void Ic<ndim>::CheckInitialConditions(void)
     // Check that all particles reside inside any defined boundaries
     for (k=0; k<ndim; k++) {
       if (part.r[k] < simbox.min[k]) {
-        if (simbox.boundary_lhs[k] == periodicBoundary) okflag = false;
+        if (simbox.boundary_lhs[k] == periodicBoundary || simbox.boundary_lhs[k] == mirrorBoundary) {
+        	if (cutbox) {
+            	part.flags.set_flag(dead);
+        	}
+        	else {
+            	okflag = false;
+        	}
+        }
       }
       if (part.r[k] > simbox.max[k]) {
-        if (simbox.boundary_rhs[k] == periodicBoundary) okflag = false;
+        if (simbox.boundary_rhs[k] == periodicBoundary || simbox.boundary_lhs[k] == mirrorBoundary) {
+        	if (cutbox) {
+            	part.flags.set_flag(dead);
+        	}
+        	else {
+            	okflag = false;
+        	}
+        }
       }
     }
 
@@ -74,7 +89,7 @@ void Ic<ndim>::CheckInitialConditions(void)
              << simbox.min[k] << "    " << simbox.max[k] << endl;
     }
 
-    valid_ic = okflag;
+    valid_ic = valid_ic && okflag;
 
   }
   //-----------------------------------------------------------------------------------------------

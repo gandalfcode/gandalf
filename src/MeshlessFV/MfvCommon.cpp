@@ -241,11 +241,8 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
  (const int i,                                 ///< [in] id of particle
   const int Nneib,                             ///< [in] No. of neins in neibpart array
   int *neiblist,                               ///< [in] id of gather neibs in neibpart
-  FLOAT *drmag,                                ///< [in] Distances of gather neighbours
-  FLOAT *invdrmag,                             ///< [in] Inverse distances of gather neibs
-  FLOAT *dr,                                   ///< [in] Position vector of gather neibs
   MeshlessFVParticle<ndim> &part,              ///< [inout] Particle i data
-  MeshlessFVParticle<ndim> *neibpart)          ///< [inout] Neighbour particle data
+  typename MeshlessFVParticle<ndim>::GradientParticle* neibpart)          ///< [inout] Neighbour particle data
 {
   int j;                                       // Neighbour list id
   int jj;                                      // Aux. neighbour loop counter
@@ -303,6 +300,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
     part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
         min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
     part.levelneib = max(part.levelneib, neibpart[j].level) ;
+    neibpart[j].levelneib = max(neibpart[j].levelneib, part.level);
 
     // Calculate the minimum neighbour potential (used later to identify new sinks)
     if (create_sinks == 1) {
@@ -334,101 +332,6 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
 }
 
 
-//=================================================================================================
-//  MfvCommon::CopyDataToGhosts
-/// Copy any newly calculated data from original SPH particles to ghosts.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass, class SlopeLimiter>
-void MfvCommon<ndim, kernelclass,SlopeLimiter>::CopyDataToGhosts
- (DomainBox<ndim> &simbox)
-{
-  int i;                                   // Particle id
-  int iorig;                               // Original (real) particle id
-  int itype;                               // Ghost particle type
-  int j;                                   // Ghost particle counter
-
-  debug2("[MfvCommon::CopyDataToGhosts]");
-
-  MeshlessFVParticle<ndim> *partdata = this->GetMeshlessFVParticleArray();
-
-  //-----------------------------------------------------------------------------------------------
-//#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,partdata)
-  for (j=0; j<this->NPeriodicGhost; j++) {
-    i = this->Nhydro + j;
-    iorig = partdata[i].iorig;
-    itype = partdata[i].flags.get();
-    assert(itype != none) ;
-
-    partdata[i]        = partdata[iorig];
-    partdata[i].iorig  = iorig;
-    partdata[i].flags  = type_flag(itype);
-    partdata[i].flags.unset_flag(active);
-
-
-    // Modify ghost position based on ghost type
-    // Ghosts of ghosts refer only to their previous ghosts not the base cell, so
-    // only update one direction.
-    if (ndim > 2) {
-      if (itype & z_periodic_lhs) {
-        partdata[i].r[2] += simbox.size[2];
-        continue ;
-      }
-      else if (itype & z_periodic_rhs) {
-    	partdata[i].r[2] -= simbox.size[2];
-        continue ;
-      }
-      else if (itype & z_mirror_lhs) {
-    	reflect(partdata[i], 2, simbox.min[2]) ;
-        continue ;
-      }
-      else if (itype & z_mirror_rhs) {
-      	reflect(partdata[i], 2, simbox.max[2]) ;
-        continue ;
-      }
-
-    }
-    if (ndim > 1) {
-      if (itype & y_periodic_lhs) {
-    	partdata[i].r[1] += simbox.size[1];
-    	continue ;
-      }
-      else if (itype & y_periodic_rhs) {
-    	partdata[i].r[1] -= simbox.size[1];
-    	continue ;
-      }
-      else if (itype & y_mirror_lhs) {
-        reflect(partdata[i], 1, simbox.min[1]) ;
-    	continue ;
-      }
-      else if (itype & y_mirror_rhs) {
-        reflect(partdata[i], 1, simbox.max[1]) ;
-        continue ;
-      }
-    }
-
-    if (itype & x_periodic_lhs) {
-      partdata[i].r[0] += simbox.size[0];
-      continue ;
-    }
-    else if (itype & x_periodic_rhs) {
-      partdata[i].r[0] -= simbox.size[0];
-      continue ;
-    }
-    else if (itype & x_mirror_lhs) {
-      reflect(partdata[i], 0, simbox.min[0]) ;
-      continue ;
-    }
-    else if (itype & x_mirror_rhs) {
-      reflect(partdata[i], 0, simbox.max[0]) ;
-      continue ;
-    }
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
-
-
 
 //=================================================================================================
 //  MfvCommon::ComputeSmoothedGravForces
@@ -444,9 +347,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
   MeshlessFVParticle<ndim> &parti,     ///< [inout] Particle i data
-  MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
-  //MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  //MeshlessFVParticle<ndim> *neib_gen)  ///< [inout] Neighbour particle data
+  typename MeshlessFVParticle<ndim>::GravParticle* neibpart)  ///< [inout] Neighbour particle data
 {
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
@@ -504,8 +405,8 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
  (const int i,                         ///< id of particle
   const int Ndirect,                   ///< No. of nearby 'gather' neighbours
   int *directlist,                     ///< id of gather neighbour in neibpart
-  MeshlessFVParticle<ndim> &part,      ///< Particle i data
-  MeshlessFVParticle<ndim> *neib_gen)  ///< Neighbour particle data
+  MeshlessFVParticle<ndim> &parti,      ///< Particle i data
+  typename MeshlessFVParticle<ndim>::GravParticle* neibdata)  ///< Neighbour particle data
 {
   int j;                               // Neighbour particle id
   int jj;                              // Aux. neighbour loop counter
@@ -514,9 +415,6 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
   FLOAT drsqd;                         // Distance squared
   FLOAT invdrmag;                      // 1 / distance
   FLOAT invdr3;                        // 1 / dist^3
-  MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
-  MeshlessFVParticle<ndim>* neibdata = static_cast<MeshlessFVParticle<ndim>* > (neib_gen);
-
 
   // Loop over all neighbouring particles in list
   //-----------------------------------------------------------------------------------------------
@@ -600,63 +498,64 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeStarGravForces
 
 
 
-template class MfvCommon<1, M4Kernel, NullLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, M4Kernel, NullLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, M4Kernel, NullLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, QuinticKernel, NullLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, QuinticKernel, NullLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, QuinticKernel, NullLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, TabulatedKernel, NullLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, TabulatedKernel, NullLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, TabulatedKernel, NullLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, M4Kernel, NullLimiter<1> >;
+template class MfvCommon<2, M4Kernel, NullLimiter<2> >;
+template class MfvCommon<3, M4Kernel, NullLimiter<3> >;
+template class MfvCommon<1, QuinticKernel, NullLimiter<1> >;
+template class MfvCommon<2, QuinticKernel, NullLimiter<2> >;
+template class MfvCommon<3, QuinticKernel, NullLimiter<3> >;
+template class MfvCommon<1, TabulatedKernel, NullLimiter<1> >;
+template class MfvCommon<2, TabulatedKernel, NullLimiter<2> >;
+template class MfvCommon<3, TabulatedKernel, NullLimiter<3> >;
 
 
-template class MfvCommon<1, M4Kernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, M4Kernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, M4Kernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, QuinticKernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, QuinticKernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, QuinticKernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, TabulatedKernel, ZeroSlopeLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, TabulatedKernel, ZeroSlopeLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, TabulatedKernel, ZeroSlopeLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, M4Kernel, ZeroSlopeLimiter<1> >;
+template class MfvCommon<2, M4Kernel, ZeroSlopeLimiter<2> >;
+template class MfvCommon<3, M4Kernel, ZeroSlopeLimiter<3> >;
+template class MfvCommon<1, QuinticKernel, ZeroSlopeLimiter<1> >;
+template class MfvCommon<2, QuinticKernel, ZeroSlopeLimiter<2> >;
+template class MfvCommon<3, QuinticKernel, ZeroSlopeLimiter<3> >;
+template class MfvCommon<1, TabulatedKernel, ZeroSlopeLimiter<1> >;
+template class MfvCommon<2, TabulatedKernel, ZeroSlopeLimiter<2> >;
+template class MfvCommon<3, TabulatedKernel, ZeroSlopeLimiter<3> >;
 
-template class MfvCommon<1, M4Kernel, TVDScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, M4Kernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, M4Kernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, QuinticKernel, TVDScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, QuinticKernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, QuinticKernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, TabulatedKernel,TVDScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, TabulatedKernel, TVDScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, TabulatedKernel, TVDScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, M4Kernel, TVDScalarLimiter<1> >;
+template class MfvCommon<2, M4Kernel, TVDScalarLimiter<2> >;
+template class MfvCommon<3, M4Kernel, TVDScalarLimiter<3> >;
+template class MfvCommon<1, QuinticKernel, TVDScalarLimiter<1> >;
+template class MfvCommon<2, QuinticKernel, TVDScalarLimiter<2> >;
+template class MfvCommon<3, QuinticKernel, TVDScalarLimiter<3> >;
+template class MfvCommon<1, TabulatedKernel,TVDScalarLimiter<1> >;
+template class MfvCommon<2, TabulatedKernel, TVDScalarLimiter<2> >;
+template class MfvCommon<3, TabulatedKernel, TVDScalarLimiter<3> >;
 
-template class MfvCommon<1, M4Kernel, ScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, M4Kernel, ScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, M4Kernel, ScalarLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, QuinticKernel, ScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, QuinticKernel, ScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, QuinticKernel, ScalarLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, TabulatedKernel, ScalarLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, TabulatedKernel, ScalarLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, TabulatedKernel, ScalarLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, M4Kernel, ScalarLimiter<1> >;
+template class MfvCommon<2, M4Kernel, ScalarLimiter<2> >;
+template class MfvCommon<3, M4Kernel, ScalarLimiter<3> >;
+template class MfvCommon<1, QuinticKernel, ScalarLimiter<1> >;
+template class MfvCommon<2, QuinticKernel, ScalarLimiter<2> >;
+template class MfvCommon<3, QuinticKernel, ScalarLimiter<3> >;
+template class MfvCommon<1, TabulatedKernel, ScalarLimiter<1> >;
+template class MfvCommon<2, TabulatedKernel, ScalarLimiter<2> >;
+template class MfvCommon<3, TabulatedKernel, ScalarLimiter<3> >;
 
-template class MfvCommon<1, M4Kernel, Springel2009Limiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, M4Kernel, Springel2009Limiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, M4Kernel, Springel2009Limiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, QuinticKernel, Springel2009Limiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, QuinticKernel, Springel2009Limiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, QuinticKernel, Springel2009Limiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, TabulatedKernel, Springel2009Limiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, TabulatedKernel, Springel2009Limiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, TabulatedKernel, Springel2009Limiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, M4Kernel, Springel2009Limiter<1> >;
+template class MfvCommon<2, M4Kernel, Springel2009Limiter<2> >;
+template class MfvCommon<3, M4Kernel, Springel2009Limiter<3> >;
+template class MfvCommon<1, QuinticKernel, Springel2009Limiter<1> >;
+template class MfvCommon<2, QuinticKernel, Springel2009Limiter<2> >;
+template class MfvCommon<3, QuinticKernel, Springel2009Limiter<3> >;
+template class MfvCommon<1, TabulatedKernel, Springel2009Limiter<1> >;
+template class MfvCommon<2, TabulatedKernel, Springel2009Limiter<2> >;
+template class MfvCommon<3, TabulatedKernel, Springel2009Limiter<3> >;
 
-template class MfvCommon<1, M4Kernel, GizmoLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, M4Kernel, GizmoLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, M4Kernel, GizmoLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, QuinticKernel, GizmoLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, QuinticKernel, GizmoLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, QuinticKernel, GizmoLimiter<3,MeshlessFVParticle> >;
-template class MfvCommon<1, TabulatedKernel, GizmoLimiter<1,MeshlessFVParticle> >;
-template class MfvCommon<2, TabulatedKernel, GizmoLimiter<2,MeshlessFVParticle> >;
-template class MfvCommon<3, TabulatedKernel, GizmoLimiter<3,MeshlessFVParticle> >;
+template class MfvCommon<1, M4Kernel, GizmoLimiter<1> >;
+template class MfvCommon<2, M4Kernel, GizmoLimiter<2> >;
+template class MfvCommon<3, M4Kernel, GizmoLimiter<3> >;
+template class MfvCommon<1, QuinticKernel, GizmoLimiter<1> >;
+template class MfvCommon<2, QuinticKernel, GizmoLimiter<2> >;
+template class MfvCommon<3, QuinticKernel, GizmoLimiter<3> >;
+template class MfvCommon<1, TabulatedKernel, GizmoLimiter<1> >;
+template class MfvCommon<2, TabulatedKernel, GizmoLimiter<2> >;
+template class MfvCommon<3, TabulatedKernel, GizmoLimiter<3> >;
+

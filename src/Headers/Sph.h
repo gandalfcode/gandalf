@@ -113,19 +113,6 @@ class Sph : public Hydrodynamics<ndim>
   virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                        SphParticle<ndim> &, Nbody<ndim> *) = 0;
   virtual void ComputeThermalProperties(SphParticle<ndim> &) = 0;
-  virtual void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *,
-                                     const FLOAT *, const FLOAT *, SphParticle<ndim> &,
-                                     SphParticle<ndim> *) = 0;
-  virtual void ComputeSphHydroGravForces(const int, const int, int *, SphParticle<ndim> &,
-                                         SphParticle<ndim> *) = 0;
-  virtual void ComputeSphGravForces(const int, const int, int *,
-                                    SphParticle<ndim> &, SphParticle<ndim> *) = 0;
-  virtual void ComputeDirectGravForces(const int, const int, int *, SphParticle<ndim> &,
-                                       SphParticle<ndim> *) = 0;
-  virtual void ComputeSphNeibDudt(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                  SphParticle<ndim> &, SphParticle<ndim> *) = 0;
-  virtual void ComputeSphDerivatives(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                     SphParticle<ndim> &, SphParticle<ndim> *) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) = 0;
 
 
@@ -164,7 +151,30 @@ class Sph : public Hydrodynamics<ndim>
 
 };
 
+#if !defined(SWIG)
 
+template <int ndim>
+class GradhSphBase: public Sph<ndim>
+{
+public:
+
+  GradhSphBase(int hydro_forces_aux, int self_gravity_aux,
+  FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
+  aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
+  string gas_eos_aux, string KernelName, SimUnits &units, Parameters *params): Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+            h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
+            gas_eos_aux, KernelName, sizeof(GradhSphParticle<ndim>), units, params) {};
+
+
+  virtual void ComputeSphGravForces(const int, const int, int *, GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle *)=0;
+  virtual void ComputeSphHydroGravForces(const int, const int, int *,
+                                 GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle *)=0;
+  virtual void ComputeSphHydroForces(const int, const int, const int *, GradhSphParticle<ndim>&, typename GradhSphParticle<ndim>::HydroForcesParticle*)=0;
+   void ComputeDirectGravForces(const int, const int, int *,
+                               GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle* );
+
+
+};
 
 //=================================================================================================
 //  Class GradhSph
@@ -174,9 +184,8 @@ class Sph : public Hydrodynamics<ndim>
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=================================================================================================
-#if !defined(SWIG)
 template <int ndim, template<int> class kernelclass>
-class GradhSph: public Sph<ndim>
+class GradhSph: public GradhSphBase<ndim>
 {
 public:
   using Sph<ndim>::allocated;
@@ -218,17 +227,10 @@ public:
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
-  void ComputeSphGravForces(const int, const int, int *, SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeSphGravForces(const int, const int, int *, GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle *);
   void ComputeSphHydroGravForces(const int, const int, int *,
-                                 SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *, const FLOAT *,
-                             const FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeSphNeibDudt(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                          SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeSphDerivatives(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                             SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeDirectGravForces(const int, const int, int *,
-                               SphParticle<ndim> &, SphParticle<ndim> *);
+                                 GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle *);
+  void ComputeSphHydroForces(const int, const int, const int *, GradhSphParticle<ndim>&, typename GradhSphParticle<ndim>::HydroForcesParticle*);
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 #if defined MPI_PARALLEL
   virtual void FinishReturnExport ();
@@ -289,15 +291,11 @@ class SM2012Sph: public Sph<ndim>
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
   void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *, const FLOAT *,
-                             const FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
+                             const FLOAT *, SphParticle<ndim> &, SphParticle<ndim>* );
   void ComputeSphHydroGravForces(const int, const int, int *,
                                  SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeSphGravForces(const int, const int, int *,
                             SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeSphNeibDudt(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                          SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeSphDerivatives(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                             SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeDirectGravForces(const int, const int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) {};
@@ -360,16 +358,10 @@ class NullSph: public Sph<ndim>
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *) {return -1;}
   void ComputeThermalProperties(SphParticle<ndim> &) {};
-  void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *, const FLOAT *,
-                             const FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeSphHydroGravForces(const int, const int, int *,
                                  SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeSphGravForces(const int, const int, int *,
                             SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeSphNeibDudt(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                          SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeSphDerivatives(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                             SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeDirectGravForces(const int, const int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &) {};

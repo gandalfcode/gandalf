@@ -777,6 +777,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
   }
 
   // Sends are probably finished by now, but we do need to wait so that they can be deallocated
+  MPI_Waitall(Nmpi-1,sendreq_header,MPI_STATUSES_IGNORE);
   MPI_Waitall(Nmpi-1,send_req,MPI_STATUSES_IGNORE);
 
   return;
@@ -919,7 +920,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   for (iaux=0; iaux<overlapping_nodes.size(); iaux++) {
     inode = overlapping_nodes[iaux];
     ghost_export_list.clear();
-    Nexport = neibsearch->SearchMpiGhostParticles(tghost, mpinode[inode].domain,
+    Nexport = neibsearch->SearchMpiGhostParticles(tghost, mpinode[inode].rbox,
                                                   hydro, ghost_export_list);
     for (unsigned int j=0; j<ghost_export_list.size(); j++) {
       i = ghost_export_list[j];

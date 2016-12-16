@@ -45,6 +45,7 @@
 #include "KDTree.h"
 #include "OctTree.h"
 #include "BruteForceTree.h"
+#include "NeighbourManager.h"
 #if defined MPI_PARALLEL
 #include "MpiExport.h"
 #include "MpiNode.h"
@@ -86,11 +87,6 @@ class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *) = 0;
-  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *,
-                                      DomainBox<ndim> &, Ewald<ndim> *) = 0;
-
-  //virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *,
-  //                                    Sph<ndim> *, Nbody<ndim> *) = 0;
 
 };
 
@@ -159,9 +155,6 @@ protected:
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *) = 0;
-  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *,
-                                      DomainBox<ndim> &, Ewald<ndim> *) = 0;
-  //void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) =0;
 
 };
 
@@ -177,6 +170,10 @@ protected:
 template <int ndim, template<int> class ParticleType>
 class GradhSphTree : public SphTree<ndim,ParticleType>
 {
+private:
+	  typedef typename ParticleType<ndim>::HydroForcesParticle HydroParticle;
+	  typedef NeighbourManager<ndim, HydroParticle > NeighbourManagerHydro;
+	  vector<NeighbourManagerHydro> neibmanagerbufhydro;
  public:
 
   using SphTree<ndim,ParticleType>::activelistbuf;
@@ -222,8 +219,6 @@ class GradhSphTree : public SphTree<ndim,ParticleType>
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *);
-  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *,
-                                      DomainBox<ndim> &, Ewald<ndim> *);
 
 };
 
@@ -281,8 +276,6 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *){};
-  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *,
-                                      DomainBox<ndim> &, Ewald<ndim> *){};
 
 };
 
