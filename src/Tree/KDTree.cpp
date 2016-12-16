@@ -53,9 +53,11 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
                                            string gravity_mac_aux, string multipole_aux,
                                            const DomainBox<ndim>& domain,
                                   		   const ParticleTypeRegister& reg,
-										   const bool IAmPruned):
+										   const bool IAmPruned,
+										   const bool rel_open_criterion, const FLOAT rel_acc_param):
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                   macerroraux, gravity_mac_aux, multipole_aux, domain, reg, IAmPruned)
+                                   macerroraux, gravity_mac_aux, multipole_aux, domain, reg,
+                                   IAmPruned, rel_open_criterion, rel_acc_param)
 {
   allocated_tree = false;
   gmax           = 0;
@@ -831,6 +833,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 	  cell.mac      = (FLOAT) 0.0;
 	  cell.cdistsqd = big_number;
 	  cell.maxsound = (FLOAT) 0.0;
+	  cell.amin     = big_number;
 	  for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
@@ -888,6 +891,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
          if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
          if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
         }
+        cell.amin = min(cell.amin,
+                        sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim))/gravaccfactor);
       }
       if (i == cell.ilast) break;
       i = inext[i];
@@ -949,6 +954,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child1.vbox.max[k],cell.vbox.max[k]);
       cell.hmax = max(cell.hmax,child1.hmax);
       cell.maxsound = max(cell.maxsound,child1.maxsound);
+      cell.amin = min(cell.amin, child1.amin);
     }
     if (child2.N > 0) {
       for (k=0; k<ndim; k++) cell.bb.min[k] = min(child2.bb.min[k],cell.bb.min[k]);
@@ -959,6 +965,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child2.vbox.max[k],cell.vbox.max[k]);
       cell.hmax = max(cell.hmax,child2.hmax);
       cell.maxsound = max(cell.maxsound,child2.maxsound);
+      cell.amin = min(cell.amin, child1.amin);
     }
 
     cell.N = child1.N + child2.N;

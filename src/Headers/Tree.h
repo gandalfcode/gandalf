@@ -92,6 +92,9 @@ protected:
 	virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 
+	virtual bool GetRelativeOpeningCriterion() const = 0;
+	virtual void SetRelativeOpeningCriterion(bool) = 0;
+
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
 	virtual int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist) = 0 ;
 	virtual int ComputeActiveCellList(vector<TreeCellBase<ndim> >& ) = 0 ;
@@ -224,12 +227,14 @@ protected:
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
-       const ParticleTypeRegister& pt_reg,const bool _IAmPruned) :
+       const ParticleTypeRegister& pt_reg, const bool _IAmPruned,
+       const bool rel_open_criterion, const FLOAT rel_acc_param) :
     	   TreeBase<ndim>(domain),
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd),
-    gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned)
+    gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned),
+    use_relative_criterion(rel_open_criterion), gravaccfactor(rel_acc_param)
     {};
 
   virtual ~Tree() { } ;
@@ -250,6 +255,13 @@ protected:
   {
     using ::BoxOverlap ;
     return BoxOverlap(ndim, box1min, box1max, box2min, box2max) ;
+  }
+
+  virtual bool GetRelativeOpeningCriterion() const {
+    return use_relative_criterion;
+  }
+  virtual void SetRelativeOpeningCriterion(bool value) {
+    use_relative_criterion = value;
   }
 
   int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
@@ -354,6 +366,9 @@ protected:
   const FLOAT macerror;                ///< Error tolerance for gravity tree-MAC
   const FLOAT theta;                   ///< Geometric opening angle
   const FLOAT thetamaxsqd;             ///< Geometric opening angle squared
+  const FLOAT gravaccfactor;           ///< Relative opening accuracy factor
+  bool use_relative_criterion;         ///< Whether to check the relative opening criterion
+
 
   // Additional variables for tree class
   //-----------------------------------------------------------------------------------------------
@@ -380,6 +395,11 @@ protected:
   int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
   Typemask gravmask ;                  ///< Particle types that contribute to gravity
+
+ private:
+  bool open_cell_for_gravity(const TreeCell<ndim>& cell,
+                             double drsqd, double macfactor, double amag) const ;
+
 };
 
 #endif

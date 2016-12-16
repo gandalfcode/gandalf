@@ -51,9 +51,11 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
                                              string gravity_mac_aux, string multipole_aux,
                                              const DomainBox<ndim>& domain,
                                     		 const ParticleTypeRegister& reg,
-											 const bool IAmPruned) :
+											 const bool IAmPruned,
+											 const bool rel_open_criterion, const FLOAT rel_acc_param):
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
-                                   macerroraux, gravity_mac_aux, multipole_aux, domain, reg,IAmPruned)
+                                   macerroraux, gravity_mac_aux, multipole_aux, domain, reg,
+                                   IAmPruned, rel_open_criterion, rel_acc_param)
 {
   allocated_tree = false;
   ifirst         = -1;
@@ -493,6 +495,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       cell.mac      = (FLOAT) 0.0;
       cell.cdistsqd = big_number;
       cell.maxsound = (FLOAT) 0.0;
+      cell.amin     = big_number;
       for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
@@ -549,6 +552,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
               if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
               if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
             }
+            cell.amin = min(cell.amin,
+                            sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim))/gravaccfactor);
           }
           if (i == cell.ilast) break;
           i = inext[i];
@@ -617,6 +622,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             for (k=0; k<ndim; k++) cell.v[k] += child.m*child.v[k];
             cell.hmax = max(child.hmax, cell.hmax);
             cell.maxsound = max(cell.maxsound,child.maxsound);
+            cell.amin = min(cell.amin, child.amin);
             cell.m += child.m;
             cell.N += child.N;
           }

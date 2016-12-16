@@ -660,6 +660,7 @@ void Ic<ndim>::UniformBox(void)
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
       part.a[k] = (FLOAT) 0.0;
+      part.atree[k] = 0;
     }
     part.m = volume/ (FLOAT) hydro->Nhydro;
     part.h = hydro->h_fac*pow(volume / (FLOAT) hydro->Nhydro,invndim);
@@ -748,6 +749,7 @@ void Ic<ndim>::UniformSphere(void)
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
       part.a[k] = (FLOAT) 0.0;
+      part.atree[k] = 0;
     }
     //part.m = rhofluid*volume / (FLOAT) Npart;
     part.m = mcloud / (FLOAT) Npart;
@@ -2962,6 +2964,7 @@ void Ic<ndim>::SpitzerExpansion(void)
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
       part.a[k] = (FLOAT) 0.0;
+      part.atree[k] = 0;
     }
     //part.m = rhofluid*volume / (FLOAT) Npart;
     part.m = mcloud / (FLOAT) Npart;
@@ -3033,6 +3036,7 @@ void Ic<ndim>::IsothermSphere(void)
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
       part.a[k] = (FLOAT) 0.0;
+      part.atree[k] = 0;
     }
     if (hydro->gas_eos == "isothermal") {
       part.u = temp0/gammaone/mu_bar;
@@ -3119,7 +3123,8 @@ void Ic<ndim>::RotIsothermSphere(void)
     for (k=0; k<ndim; k++) {
       part.r[k] = r[ndim*i + k];
       part.a[k] = (FLOAT) 0.0;
-    }
+      part.atree[k] = 0;
+  }
 
     if (hydro->gas_eos == "isothermal") {
       part.u = temp0/gammaone/mu_bar;

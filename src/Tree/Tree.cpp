@@ -50,6 +50,21 @@
 
 using namespace std;
 
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+bool Tree<ndim,ParticleType,TreeCell>::open_cell_for_gravity
+(const TreeCell<ndim>& cell,           ///< [in] Cell that we are interrogating
+ double drsqd,                         ///< [in] Distance squared to particle / cell
+ double macfactor,                     ///< [in] Multipole acceptance factor
+ double amag                           ///< [in] Magnitude of the previous acceleration.
+ ) const
+ {
+  if (drsqd < cell.cdistsqd || drsqd < cell.mac*macfactor)
+    return true;
+  else if (use_relative_criterion)
+    return drsqd*drsqd*amag < cell.rmax*cell.rmax;
+  else
+    return false ;
+}
 
 
 //=================================================================================================
@@ -643,6 +658,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   // Make local copies of important cell properties
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
   const FLOAT rmax = cell.rmax;
+  const FLOAT amin = cell.amin;
   for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
   for (int k=0; k<ndim; k++) dr_corr[k] = 0 ;
 
@@ -687,10 +703,16 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
     }
 
+    // If the cell is empty, move on
+    //---------------------------------------------------------------------------------------------
+    else if (celldata[cc].N == 0) {
+      cc = celldata[cc].cnext;
+    }
+
+
     // Check if cell is far enough away to use the COM approximation
     //---------------------------------------------------------------------------------------------
-    else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
-             celldata[cc].N > 0) {
+    else if (!open_cell_for_gravity(celldata[cc], drsqd, macfactor, amin)) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
@@ -708,8 +730,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
     //---------------------------------------------------------------------------------------------
-    else if (!(drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor)
-             && celldata[cc].N > 0) {
+    else {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -724,20 +745,12 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
           if (i == celldata[cc].ilast) break;
           i = inext[i];
-        };
+        }
         cc = celldata[cc].cnext;
       }
-
-
     }
 
-    // If not in range, then open next cell
-    //---------------------------------------------------------------------------------------------
-    else {
-      cc = celldata[cc].cnext;
-    }
-
-  };
+  }
   //===============================================================================================
 
 
@@ -1411,6 +1424,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
   hrangemax = cell.rmax + kernrange*cell.hmax;
   rmax = cell.rmax;
+  const FLOAT amin = cell.amin ;
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -1443,12 +1457,16 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
       }
 
     }
+    // Cell is empty, move on
+    //---------------------------------------------------------------------------------------------
+    else if (celldata[cc].N == 0) {
+      cc = celldata[cc].cnext;
+    }
 
     // Check if cell is far enough away to use the COM approximation.
     // If so, then make copy of cell and move to next cell.
     //---------------------------------------------------------------------------------------------
-    else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
-             celldata[cc].N > 0) {
+    else if (!open_cell_for_gravity(celldata[cc], drsqd, macfactor, amin)) {
 
       gravcelllist.push_back(MultipoleMoment<ndim>(celldata[cc]));
       cc = celldata[cc].cnext;
@@ -1458,8 +1476,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
     //---------------------------------------------------------------------------------------------
-    else if (!(drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor) &&
-             celldata[cc].N > 0) {
+    else {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1471,12 +1488,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
         return -1;
       }
 
-    }
-
-    // If not in range, then open next cell
-    //---------------------------------------------------------------------------------------------
-    else {
-      cc = celldata[cc].cnext;
     }
 
     assert(cc != -1);

@@ -217,7 +217,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle>
   (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
    floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-   stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
+   stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types,
+   intparams["relative_opening_criterion"], floatparams["grav_force_tol"]);
 
 
   // Depending on the dimensionality, calculate expected neighbour number

@@ -143,10 +143,11 @@ protected:
           FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
           string _gravity_mac, string _multipole,
           DomainBox<ndim> *_box, SmoothingKernel<ndim> *_kern, CodeTiming *_timing,
-          ParticleTypeRegister& types) :
+          ParticleTypeRegister& types, const bool rel_open_criterion, const FLOAT rel_acc_param) :
     HydroTree<ndim,ParticleType>(tree_t, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
                                           _thetamaxsqd, _kernrange, _macerror, _gravity_mac,
-                                          _multipole, _box, _kern, _timing, types) {};
+                                          _multipole, _box, _kern, _timing, types,
+                                          rel_open_criterion, rel_acc_param) {} ;
   virtual ~SphTree() {};
 
 
@@ -210,7 +211,8 @@ private:
 
   //-----------------------------------------------------------------------------------------------
   GradhSphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-               DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister& types);
+               DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister& types,
+               const bool, const FLOAT);
   virtual ~GradhSphTree();
 
 
@@ -268,7 +270,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
   //-----------------------------------------------------------------------------------------------
   SM2012SphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,
-                ParticleTypeRegister&);
+                ParticleTypeRegister&, const bool, const FLOAT);
 
 
   //-----------------------------------------------------------------------------------------------

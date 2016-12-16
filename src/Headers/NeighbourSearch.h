@@ -90,6 +90,8 @@ protected:
   virtual void SetTimingObject(CodeTiming*) = 0 ;
   virtual void ToggleNeighbourCheck(bool do_check) = 0 ;
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool) = 0 ;
+  virtual bool GetRelativeOpeningCriterion() const = 0;
+  virtual void SetRelativeOpeningCriterion(bool) = 0;
 
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const = 0;
@@ -154,7 +156,8 @@ protected:
 
   //-----------------------------------------------------------------------------------------------
   HydroTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-            DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *, ParticleTypeRegister&);
+            DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *, ParticleTypeRegister&,
+            const bool, const FLOAT) ;
   virtual ~HydroTree();
 
 
@@ -172,6 +175,9 @@ protected:
   virtual TreeBase<ndim>* GetGhhotTree() const { return ghosttree; }
   virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
   virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
+
+  virtual bool GetRelativeOpeningCriterion() const ;
+  virtual void SetRelativeOpeningCriterion(bool) ;
 
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool);
 
@@ -312,7 +318,9 @@ protected:
                              string gravity_mac, string multipole,
                              const DomainBox<ndim>& domain,
                              const ParticleTypeRegister& reg,
-							 const bool IAmPruned) ;
+							 const bool IAmPruned,
+							 const bool rel_open_criterion,
+							 const FLOAT rel_acc_param) ;
 };
 
 
@@ -332,7 +340,7 @@ protected:
 //=================================================================================================
 template<int ndim>
 void ComputeCellMonopoleForces(FLOAT &gpot, ///< [inout] Grav. potential
-FLOAT agrav[ndim],                   ///< [inout] Acceleration array
+FLOAT atree[ndim],                   ///< [inout] Acceleration array
 FLOAT rp[ndim],                      ///< [in] Position of point
 int Ngravcell,                       ///< [in] No. of tree cells in list
 MultipoleMoment<ndim> *gravcell)     ///< [in] List of tree cell ids
@@ -352,7 +360,7 @@ MultipoleMoment<ndim> *gravcell)     ///< [in] List of tree cell ids
     FLOAT invdr3   = invdrsqd*invdrmag;
 
     gpot += mc*invdrmag;
-    for (int k=0; k<ndim; k++) agrav[k] += mc*dr[k]*invdr3;
+    for (int k=0; k<ndim; k++) atree[k] += mc*dr[k]*invdr3;
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -366,7 +374,7 @@ MultipoleMoment<ndim> *gravcell)     ///< [in] List of tree cell ids
 /// Compute the quadropole part of the force, depending on dimension.
 //=================================================================================================
 inline void ComputeQuadropole(const MultipoleMoment<1>& cell, const FLOAT rp[1],
-                              FLOAT agrav[1], FLOAT& gpot) {
+                              FLOAT atree[1], FLOAT& gpot) {
 
   FLOAT dr[1] ;
   for (int k=0; k<1; k++) dr[k] = cell.r[k] - rp[k];
@@ -376,16 +384,16 @@ inline void ComputeQuadropole(const MultipoleMoment<1>& cell, const FLOAT rp[1],
   FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
 
   // First add monopole term for acceleration
-  for (int k=0; k<1; k++) agrav[k] += cell.m*dr[k]*invdrsqd*invdrmag;
+  for (int k=0; k<1; k++) atree[k] += cell.m*dr[k]*invdrsqd*invdrmag;
 
   FLOAT qscalar = cell.q[0]*dr[0]*dr[0];
   FLOAT qfactor = 2.5*qscalar*invdr5*invdrsqd;
 
-  agrav[0] += (cell.q[0]*dr[0])*invdr5 - qfactor*dr[0];
+  atree[0] += (cell.q[0]*dr[0])*invdr5 - qfactor*dr[0];
   gpot += cell.m*invdrmag + 0.5*qscalar*invdr5;
 }
 inline void ComputeQuadropole(const MultipoleMoment<2>& cell, const FLOAT rp[2],
-                              FLOAT agrav[2], FLOAT& gpot) {
+                              FLOAT atree[2], FLOAT& gpot) {
   FLOAT dr[2] ;
   for (int k=0; k<2; k++) dr[k] = cell.r[k] - rp[k];
   FLOAT drsqd    = DotProduct(dr,dr,2) + small_number;
@@ -394,18 +402,18 @@ inline void ComputeQuadropole(const MultipoleMoment<2>& cell, const FLOAT rp[2],
   FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
 
   // First add monopole term for acceleration
-  for (int k=0; k<2; k++) agrav[k] += cell.m*dr[k]*invdrsqd*invdrmag;
+  for (int k=0; k<2; k++) atree[k] += cell.m*dr[k]*invdrsqd*invdrmag;
 
   FLOAT qscalar = cell.q[0]*dr[0]*dr[0] + cell.q[2]*dr[1]*dr[1] +
     2.0*cell.q[1]*dr[0]*dr[1];
   FLOAT qfactor = 2.5*qscalar*invdr5*invdrsqd;
 
-  agrav[0] += (cell.q[0]*dr[0] + cell.q[1]*dr[1])*invdr5 - qfactor*dr[0];
-  agrav[1] += (cell.q[1]*dr[0] + cell.q[2]*dr[1])*invdr5 - qfactor*dr[1];
+  atree[0] += (cell.q[0]*dr[0] + cell.q[1]*dr[1])*invdr5 - qfactor*dr[0];
+  atree[1] += (cell.q[1]*dr[0] + cell.q[2]*dr[1])*invdr5 - qfactor*dr[1];
   gpot += cell.m*invdrmag + 0.5*qscalar*invdr5;
 }
 inline void ComputeQuadropole(const MultipoleMoment<3>& cell, const FLOAT rp[3],
-                              FLOAT agrav[3], FLOAT& gpot) {
+                              FLOAT atree[3], FLOAT& gpot) {
   FLOAT dr[3] ;
   for (int k=0; k<3; k++) dr[k] = cell.r[k] - rp[k];
   FLOAT drsqd    = DotProduct(dr,dr,3) + small_number;
@@ -414,7 +422,7 @@ inline void ComputeQuadropole(const MultipoleMoment<3>& cell, const FLOAT rp[3],
   FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
 
   // First add monopole term for acceleration
-  for (int k=0; k<3; k++) agrav[k] += cell.m*dr[k]*invdrsqd*invdrmag;
+  for (int k=0; k<3; k++) atree[k] += cell.m*dr[k]*invdrsqd*invdrmag;
 
   FLOAT qscalar = cell.q[0]*dr[0]*dr[0] + cell.q[2]*dr[1]*dr[1] -
           (cell.q[0] + cell.q[2])*dr[2]*dr[2] +
@@ -422,11 +430,11 @@ inline void ComputeQuadropole(const MultipoleMoment<3>& cell, const FLOAT rp[3],
 
   FLOAT qfactor = 2.5*qscalar*invdr5*invdrsqd;
 
-  agrav[0] +=
+  atree[0] +=
       (cell.q[0]*dr[0] + cell.q[1]*dr[1] + cell.q[3]*dr[2])*invdr5 - qfactor*dr[0];
-  agrav[1] +=
+  atree[1] +=
       (cell.q[1]*dr[0] + cell.q[2]*dr[1] + cell.q[4]*dr[2])*invdr5 - qfactor*dr[1];
-  agrav[2] +=
+  atree[2] +=
       (cell.q[3]*dr[0] + cell.q[4]*dr[1] - (cell.q[0] + cell.q[2])*dr[2])*invdr5 - qfactor*dr[2];
 
   gpot += cell.m*invdrmag + 0.5*qscalar*invdr5;
@@ -441,7 +449,7 @@ inline void ComputeQuadropole(const MultipoleMoment<3>& cell, const FLOAT rp[3],
 template <int ndim>
 void ComputeCellQuadrupoleForces
  (FLOAT &gpot,                         ///< [inout] Grav. potential
-  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
+  FLOAT atree[ndim],                   ///< [inout] Acceleration array
   FLOAT rp[ndim],                      ///< [in] Position of point
   int Ngravcell,                       ///< [in] No. of tree cells in list
   MultipoleMoment<ndim> *gravcell)     ///< [in] List of tree cell ids
@@ -450,7 +458,7 @@ void ComputeCellQuadrupoleForces
   // Loop over all neighbouring particles in list
   //-----------------------------------------------------------------------------------------------
   for (int cc=0; cc<Ngravcell; cc++) {
-    ComputeQuadropole(gravcell[cc], rp, agrav, gpot) ;
+    ComputeQuadropole(gravcell[cc], rp, atree, gpot) ;
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -478,7 +486,7 @@ public:
   inline void AddMonopoleContribution(const MultipoleMoment<ndim>& cell) ;
   inline void AddQuadrupoleContribution(const MultipoleMoment<ndim>& cell) ;
 
-  inline void ApplyForcesTaylor(const FLOAT r[ndim], FLOAT agrav[ndim], FLOAT& gpot) const ;
+  inline void ApplyForcesTaylor(const FLOAT r[ndim], FLOAT atree[ndim], FLOAT& gpot) const ;
 
 private:
   FLOAT rc[ndim] ;
@@ -656,30 +664,30 @@ inline void FastMultipoleForces<3>::AddQuadrupoleContribution(const MultipoleMom
 /// Apply the fast monopole forces at a given location.
 //=================================================================================================
 template<>
-inline void FastMultipoleForces<1>::ApplyForcesTaylor(const FLOAT r[1], FLOAT agrav[1], FLOAT& gpot) const {
+inline void FastMultipoleForces<1>::ApplyForcesTaylor(const FLOAT r[1], FLOAT atree[1], FLOAT& gpot) const {
   FLOAT dr[1];
   for (int k=0; k<1; k++) dr[k] = r[k] - rc[k];
 
-  agrav[0] += ac[0] + q[0]*dr[0];
+  atree[0] += ac[0] + q[0]*dr[0];
   gpot += pot + dphi[0]*dr[0];
 }
 template<>
-inline void FastMultipoleForces<2>::ApplyForcesTaylor(const FLOAT r[2], FLOAT agrav[2], FLOAT& gpot) const {
+inline void FastMultipoleForces<2>::ApplyForcesTaylor(const FLOAT r[2], FLOAT atree[2], FLOAT& gpot) const {
   FLOAT dr[2];
   for (int k=0; k<2; k++) dr[k] = r[k] - rc[k];
 
-  agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1];
-  agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1];
+  atree[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1];
+  atree[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1];
   gpot += pot + dphi[0]*dr[0] + dphi[1]*dr[1];
 }
 template<>
-inline void FastMultipoleForces<3>::ApplyForcesTaylor(const FLOAT r[3], FLOAT agrav[3], FLOAT& gpot) const {
+inline void FastMultipoleForces<3>::ApplyForcesTaylor(const FLOAT r[3], FLOAT atree[3], FLOAT& gpot) const {
   FLOAT dr[3];
   for (int k=0; k<3; k++) dr[k] = r[k] - rc[k];
 
-  agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
-  agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
-  agrav[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
+  atree[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
+  atree[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
+  atree[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
   gpot += pot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
 }
 
@@ -711,7 +719,7 @@ void ComputeFastMonopoleForces
 
   for (int j=0; j<Nactive; j++)
     if (types[activepart[j].ptype].self_gravity)
-      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
+      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].atree, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;
@@ -744,7 +752,7 @@ void ComputeFastQuadrupoleForces
 
   for (int j=0; j<Nactive; j++)
     if (types[activepart[j].ptype].self_gravity)
-      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
+      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].atree, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;

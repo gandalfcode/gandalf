@@ -247,7 +247,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
    sphneib = new GradhSphTree<ndim,GradhSphParticle>
       (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
        floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
+       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types,
+       intparams["relative_opening_criterion"], floatparams["grav_force_tol"]);
        
    // Here I do a horrible hack to get at the underlying tree, needed for the dust.
    TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
