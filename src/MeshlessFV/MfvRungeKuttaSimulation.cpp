@@ -199,7 +199,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateActiveParticleCounters(mfv);
 
   // Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody);
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
 

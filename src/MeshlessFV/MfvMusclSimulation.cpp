@@ -213,7 +213,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     mfv->ZeroAccelerations() ;
 
     // Update the density to get the correct softening & grad-h terms.
-    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+    mfvneib->UpdateAllProperties(mfv, nbody);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
