@@ -360,12 +360,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   int n_iter = 1 + (sph->self_gravity == 1 && sphneib->GetRelativeOpeningCriterion()) ;
   for (int iter=0; iter < n_iter; iter++) {
 
-    if (sphneib->GetRelativeOpeningCriterion()) {
-      if (iter==0)
-        sphneib->SetRelativeOpeningCriterion(false) ;
-      else
-        sphneib->SetRelativeOpeningCriterion(true) ;
+    if (iter==0) {
+      if (sphneib->GetRelativeOpeningCriterion())
+        sphneib->SetRelativeOpeningCriterion(false);
     }
+    else
+      sphneib->SetRelativeOpeningCriterion(true) ;
+
 
     // Zero accelerations (here for now)
     for (i=0; i<sph->Ntot; i++) {
