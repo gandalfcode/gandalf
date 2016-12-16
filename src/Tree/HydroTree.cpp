@@ -213,8 +213,10 @@ void HydroTree<ndim,ParticleType>::SetRelativeOpeningCriterion(bool value) {
   tree->SetRelativeOpeningCriterion(value) ;
   ghosttree->SetRelativeOpeningCriterion(value) ;
 #ifdef MPI_PARALLEL
-  for (int i=0; i<Nmpi; i++)
+  for (int i=0; i<Nmpi; i++) {
     prunedtree[i]->SetRelativeOpeningCriterion(value) ;
+    sendprunedtree[i]->SetRelativeOpeningCriterion(value) ;
+  }
 #endif
 }
 
