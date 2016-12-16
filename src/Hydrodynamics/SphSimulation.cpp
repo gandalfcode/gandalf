@@ -360,10 +360,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   int n_iter = 1 + (sph->self_gravity == 1 && sphneib->GetRelativeOpeningCriterion()) ;
   for (int iter=0; iter < n_iter; iter++) {
 
-    if (iter==0) {
-      if (sphneib->GetRelativeOpeningCriterion())
-        sphneib->SetRelativeOpeningCriterion(false);
-    }
+    if (iter==0)
+      sphneib->SetRelativeOpeningCriterion(false);
     else
       sphneib->SetRelativeOpeningCriterion(true) ;
 
