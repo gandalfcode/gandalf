@@ -63,7 +63,6 @@ void Simulation<ndim>::GenerateIC(void)
   // determine the name of the last snapshot file to be re-read
   //-----------------------------------------------------------------------------------------------
   if (restart) {
-    icGenerator = new NullIc<ndim>(this, hydro, invndim);
     filename = run_id + ".restart";
     f.open(filename.c_str());
 
@@ -82,6 +81,7 @@ void Simulation<ndim>::GenerateIC(void)
     }
   }
 
+  Ic<ndim> * icGenerator = NULL ;
 
   // Gnerate initial conditions either from external file
   //-----------------------------------------------------------------------------------------------
@@ -89,12 +89,10 @@ void Simulation<ndim>::GenerateIC(void)
     ReadSnapshotFile(simparams->stringparams["in_file"], simparams->stringparams["in_file_form"]);
     rescale_particle_data = true;
     this->initial_h_provided = false;
-    icGenerator = new NullIc<ndim>(this, hydro, invndim);
   }
   // Generate initial conditions via python scripts
   //-----------------------------------------------------------------------------------------------
   else if (ic == "python") {
-    icGenerator = new NullIc<ndim>(this, hydro, invndim);
     return;
   }
   // Generate initial conditions on-the-fly via various IC class functions
@@ -186,6 +184,7 @@ void Simulation<ndim>::GenerateIC(void)
   }
   //-----------------------------------------------------------------------------------------------
 
+  assert(icGenerator != NULL) ;
 
   // Finally, generate the initial conditions
   icGenerator->Generate();
@@ -210,6 +209,8 @@ void Simulation<ndim>::GenerateIC(void)
   icGenerator->CheckInitialConditions();
 
   cout << "Finished creating initial conditions" << endl;
+
+  delete icGenerator;
 
   return;
 }
