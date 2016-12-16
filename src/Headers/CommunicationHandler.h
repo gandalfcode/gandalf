@@ -36,6 +36,7 @@ class GradhSphCommunicationHandler {
     GradSphForcesParticle (const GradhSphParticle<ndim>& p) {
       for (int k=0; k<ndim; k++) {
         a[k] = p.a[k];
+        atree[k] = p.atree[k];
       }
       gpot = p.gpot;
       dudt = p.dudt;
@@ -45,6 +46,7 @@ class GradhSphCommunicationHandler {
     }
 
     FLOAT a[ndim];
+    FLOAT atree[ndim];
     FLOAT gpot;
     FLOAT dudt;
     FLOAT div_v;
@@ -105,6 +107,7 @@ public:
 
     for (int k=0; k<ndim; k++) {
       p2.a[k] += p.a[k];
+      p2.atree[k] += p.atree[k];
     }
 
     p2.gpot += p.gpot;
@@ -208,6 +211,7 @@ class MeshlessCommunicationHandler {
       for (int k=0; k<ndim; k++) {
     	  rdmdt[k]=p.rdmdt[k];
     	  a[k]=p.a[k];
+    	  atree[k]=p.atree[k];
       }
       for (int ivar=0; ivar<ndim+2; ivar++) {
     	  dQ[ivar]=p.dQ[ivar];
@@ -224,6 +228,7 @@ class MeshlessCommunicationHandler {
     FLOAT dQdt[ndim+2];
     FLOAT rdmdt[ndim];
     FLOAT a[ndim];
+    FLOAT atree[ndim];
     FLOAT gpot;
     FLOAT vsig_max;
   };
@@ -238,6 +243,7 @@ public:
 	    for (int k=0; k<ndim; k++) {
 	      p2.rdmdt[k] += p.rdmdt[k];
 	      p2.a[k] += p.a[k];
+	      p2.atree[k] += p.atree[k];
 	    }
 
 	    for (int ivar=0; ivar<ndim+2; ivar++) {
