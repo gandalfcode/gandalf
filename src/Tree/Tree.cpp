@@ -61,7 +61,7 @@ bool Tree<ndim,ParticleType,TreeCell>::open_cell_for_gravity
   if (drsqd < cell.cdistsqd || drsqd < cell.mac*macfactor)
     return true;
   else if (use_relative_criterion)
-    return drsqd*drsqd*amag < cell.rmax*cell.rmax;
+    return drsqd*drsqd*amag < cell.rmax*cell.rmax*cell.m;
   else
     return false ;
 }
