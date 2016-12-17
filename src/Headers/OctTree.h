@@ -120,7 +120,6 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::gravmask;
   using Tree<ndim,ParticleType,TreeCell>::gravaccfactor;
-
 #ifdef MPI_PARALLEL
   using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
 #endif
