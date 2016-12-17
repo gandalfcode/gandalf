@@ -65,6 +65,7 @@ class GradhSphCommunicationHandler {
       for (int k=0; k<ndim; k++) {
         r[k] = p.r[k];
         v[k] = p.v[k];
+        atree[k] = p.atree[k];
       }
       m = p.m;
       rho = p.rho;
@@ -84,6 +85,7 @@ class GradhSphCommunicationHandler {
     int level;
     FLOAT r[ndim];
     FLOAT v[ndim];
+    FLOAT atree[ndim];
     FLOAT m;
     FLOAT rho;
     FLOAT h_dust;
@@ -172,6 +174,7 @@ class MeshlessCommunicationHandler {
     	for (int k=0; k<ndim; k++) {
     		r[k] = p.r[k];
     		v[k] = p.v[k];
+            atree[k] = p.atree[k];
     		for (int kk=0; kk<ndim; kk++) {
     			B[k][kk]=p.B[k][kk];
     		}
@@ -196,6 +199,7 @@ class MeshlessCommunicationHandler {
 
     FLOAT r[ndim];
     FLOAT v[ndim];
+    FLOAT atree[ndim];
     FLOAT m;
     FLOAT ndens;
     FLOAT Wprim[ndim+2];
