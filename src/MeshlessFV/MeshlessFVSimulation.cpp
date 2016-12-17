@@ -595,6 +595,9 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
+
+      mfv->ZeroAccelerations();
+
 #ifdef MPI_PARALLEL
       if (mfv->self_gravity ==1 ) {
         MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
@@ -613,7 +616,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       }
 #endif
     }
-  }
+  } // End of force iteration.
 
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------

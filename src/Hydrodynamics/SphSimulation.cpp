@@ -365,24 +365,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     else
       sphneib->SetRelativeOpeningCriterion(true) ;
 
-
-    // Zero accelerations (here for now)
-    for (i=0; i<sph->Ntot; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      part.tlast     = t;
-      part.flags.unset_flag(active);
-      part.level     = 0;
-      part.levelneib = 0;
-      part.nstep     = 0;
-      part.nlast     = 0;
-      part.dalphadt  = (FLOAT) 0.0;
-      part.div_v     = (FLOAT) 0.0;
-      part.dudt      = (FLOAT) 0.0;
-      part.gpot      = (FLOAT) 0.0;
-      part.mu_bar    = (FLOAT) simparams->floatparams["mu_bar"];
-      for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
-    }
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).flags.set_flag(active);
+
 
     // Copy all other data from real SPH particles to ghosts
     LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
@@ -398,6 +382,23 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
     sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
+
+    // Zero accelerations (here for now)
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      part.tlast     = t;
+      part.level     = 0;
+      part.levelneib = 0;
+      part.nstep     = 0;
+      part.nlast     = 0;
+      part.dalphadt  = (FLOAT) 0.0;
+      part.div_v     = (FLOAT) 0.0;
+      part.dudt      = (FLOAT) 0.0;
+      part.gpot      = (FLOAT) 0.0;
+      part.mu_bar    = (FLOAT) simparams->floatparams["mu_bar"];
+      for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) part.atree[k] = (FLOAT) 0.0;
+    }
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph, nbody);
