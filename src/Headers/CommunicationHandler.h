@@ -357,15 +357,12 @@ class TreeCommunicationHandler {
         ifirst = exported_particles;
         ilast = exported_particles+Nactive-1;
         N = Nactive;
-
       }
 
 
     int ifirst;
     int ilast;
     int N;
-
-
 
     };
 
@@ -392,6 +389,7 @@ public:
     c.m = 0;
     c.hmax = 0;
     c.maxsound = 0;
+    c.amin = big_number;
     for (int k=0; k<ndim; k++) {
       c.bb.min[k] = big_number;
       c.bb.max[k] = -big_number;
@@ -419,6 +417,8 @@ public:
       c.m += p.m;
       c.hmax = max(c.hmax,p.h);
       c.maxsound = max(c.maxsound,p.sound);
+      c.amin = min(c.amin,
+                   sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
     }
 
     FLOAT dr[ndim];

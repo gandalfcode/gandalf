@@ -553,7 +553,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
               if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
             }
             cell.amin = min(cell.amin,
-                            sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim))/gravaccfactor);
+                            sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
           }
           if (i == cell.ilast) break;
           i = inext[i];
