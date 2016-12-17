@@ -639,6 +639,22 @@ void MeshlessFV<3>::InitialSmoothingLengthGuess(void)
   return;
 }
 
+//=================================================================================================
+//  MeshlessFV::ZeroAccelerations
+/// Initialise key variables before force calculations
+//=================================================================================================
+template <int ndim>
+void MeshlessFV<ndim>::ZeroAccelerations()
+{
+  for (int i=0; i<Nhydro; i++) {
+    MeshlessFVParticle<ndim>& part = GetMeshlessFVParticlePointer(i);
+    if (part.flags.check_flag(active)) {
+      for (int k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) part.atree[k] = (FLOAT) 0.0;
+    }
+  }
+}
+
 
 
 

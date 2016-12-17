@@ -110,6 +110,9 @@ public:
     for (int k=0; k<ndim; k++) mfvpart.dQ[k] -= dm*mfvpart.v[k];
   }
 
+  virtual void ZeroAccelerations();
+
+
 
   // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles
   // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)

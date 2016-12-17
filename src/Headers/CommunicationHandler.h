@@ -65,7 +65,6 @@ class GradhSphCommunicationHandler {
       for (int k=0; k<ndim; k++) {
         r[k] = p.r[k];
         v[k] = p.v[k];
-        atree[k] = p.atree[k];
       }
       m = p.m;
       rho = p.rho;
@@ -85,7 +84,6 @@ class GradhSphCommunicationHandler {
     int level;
     FLOAT r[ndim];
     FLOAT v[ndim];
-    FLOAT atree[ndim];
     FLOAT m;
     FLOAT rho;
     FLOAT h_dust;
@@ -174,7 +172,6 @@ class MeshlessCommunicationHandler {
     	for (int k=0; k<ndim; k++) {
     		r[k] = p.r[k];
     		v[k] = p.v[k];
-            atree[k] = p.atree[k];
     		for (int kk=0; kk<ndim; kk++) {
     			B[k][kk]=p.B[k][kk];
     		}
@@ -199,7 +196,6 @@ class MeshlessCommunicationHandler {
 
     FLOAT r[ndim];
     FLOAT v[ndim];
-    FLOAT atree[ndim];
     FLOAT m;
     FLOAT ndens;
     FLOAT Wprim[ndim+2];
@@ -356,14 +352,16 @@ class TreeCommunicationHandler {
 
   struct TreeCellStreamlined {
 
-    TreeCellStreamlined (int Nactive, int exported_particles) {
+    TreeCellStreamlined (const TreeCellBase<ndim>& c, int Nactive, int exported_particles) {
 
         ifirst = exported_particles;
         ilast = exported_particles+Nactive-1;
         N = Nactive;
+        amin = c.amin;
       }
 
 
+    FLOAT amin ;
     int ifirst;
     int ilast;
     int N;
@@ -384,7 +382,7 @@ public:
     c2.N = c.N;
     c2.worktot=0.;
 
-
+    c2.amin = c.amin ;
   }
 
   template <template <int> class ParticleType>

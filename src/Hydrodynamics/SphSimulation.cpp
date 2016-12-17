@@ -612,17 +612,7 @@ void SphSimulation<ndim>::MainLoop(void)
     if (activecount > 0) sphneib->UpdateActiveParticleCounters(sph);
 
       // Zero accelerations (here for now)
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        if (part.flags.check_flag(active)) {
-          part.levelneib = 0;
-          part.dalphadt  = (FLOAT) 0.0;
-          part.div_v     = (FLOAT) 0.0;
-          part.dudt      = (FLOAT) 0.0;
-          part.gpot      = (FLOAT) 0.0;
-          for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
-        }
-      }
+      sph->ZeroAccelerations() ;
 
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph, nbody);

@@ -717,14 +717,12 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (celldata[cc].copen == -1 && celldata[cc].N == 1) {
-        const int i = celldata[cc].ifirst;
-        neibmanager.AddDirectNeib(i);
+        neibmanager.AddDirectNeib(celldata[cc].ifirst);
       }
       else {
     	neibmanager.AddGravCell(MultipoleMoment<ndim>(celldata[cc]));
       }
       cc = celldata[cc].cnext;
-
     }
 
     // If cell is too close, open cell to interogate children cells.
@@ -738,7 +736,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
       }
 
       // If leaf-cell, add particles to list
-      else if (celldata[cc].copen == -1) {
+      else {
         int i = celldata[cc].ifirst;
         while (i != -1) {
           neibmanager.AddDirectNeib(i);
@@ -1834,7 +1832,7 @@ int Tree<ndim,ParticleType,TreeCell>::PackParticlesAndCellsForMPITransfer
     active_cells.push_back(celllist[cc]) ;
     TreeCell<ndim>& cell_orig = celldata[celllist[cc]];
     const int Nactive_cell = ComputeActiveParticleList(cell_orig, partdata, activelist);
-    StreamlinedCell c (Nactive_cell, exported_particles);
+    StreamlinedCell c (cell_orig, Nactive_cell, exported_particles);
     append_bytes(send_buffer, &c) ;
 
     // Copy active particles

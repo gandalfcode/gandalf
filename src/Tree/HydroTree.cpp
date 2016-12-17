@@ -856,7 +856,9 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
         activepart[j].gpot = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].atree[k] = (FLOAT) 0.0;
+
       }
 
 
@@ -890,11 +892,11 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       for (j=0; j<Nactive; j++) {
 
         if (multipole == "monopole") {
-          ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a, activepart[j].r,
+          ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree, activepart[j].r,
                                     gravcelllist.size(), &gravcelllist[0]);
         }
         else if (multipole == "quadrupole") {
-          ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a, activepart[j].r,
+          ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].atree, activepart[j].r,
                                       gravcelllist.size(), &gravcelllist[0]);
         }
 
@@ -915,7 +917,9 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].a[k];
+        for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].atree[k];
+        for (k=0; k<ndim; k++) partdata[i].atree[k] += activepart[j].atree[k];
+
         partdata[i].gpot += activepart[j].gpot;
       }
 

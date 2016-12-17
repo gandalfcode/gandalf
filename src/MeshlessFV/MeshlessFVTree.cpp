@@ -863,8 +863,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
       // Add all active particles contributions to main array
       for (int j=0; j<Nactive; j++) {
         const int i = activelist[j];
-        for (int k=0; k<ndim; k++) partdata[i].a[k]    += activepart[j].atree[k];
-        for (int k=0; k<ndim; k++) partdata[i].atree[k] = activepart[j].atree[k];
+        for (int k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].atree[k];
+        for (int k=0; k<ndim; k++) partdata[i].atree[k] += activepart[j].atree[k];
         partdata[i].gpot  += activepart[j].gpot;
       }
 

@@ -199,6 +199,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // Calculate terms due to self-gravity / stars
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
+
+    mfv->ZeroAccelerations() ;
+
     // Update the density to get the correct softening & grad-h terms.
     mfvneib->UpdateAllProperties(mfv, nbody, simbox);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
