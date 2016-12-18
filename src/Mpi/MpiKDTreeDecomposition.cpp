@@ -434,7 +434,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   vector<int> all_particles_to_export;
   // Send and receive particles from/to all other nodes
   vector<ParticleType<ndim> > sendbuffer, recvbuffer;
-  neibsearch->FindParticlesToTransfer(hydro, particles_to_transfer, all_particles_to_export,
+  neibsearch->FindMpiTransferParticles(hydro, particles_to_transfer, all_particles_to_export,
                                       potential_nodes, mpinode);
 
 

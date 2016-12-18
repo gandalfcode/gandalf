@@ -1460,6 +1460,20 @@ void HydroTree<ndim,ParticleType>::FindMpiTransferParticles
   }
   //-----------------------------------------------------------------------------------------------
 
+#ifndef NDEBUG
+  VerifyUniqueIds(all_particles_to_export.size(),hydro->Nhydro,&all_particles_to_export[0]);
+  vector<int> temp(all_particles_to_export); std::sort(temp.begin(),temp.end());
+  for (int i=0; i<hydro->Nhydro;i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (ParticleInBox(part,mpinodes[rank].domain)) {
+      assert(!std::binary_search(temp.begin(),temp.end(),i));
+    }
+    else {
+      assert(std::binary_search(temp.begin(),temp.end(),i));
+    }
+  }
+#endif
+
   return;
 }
 
