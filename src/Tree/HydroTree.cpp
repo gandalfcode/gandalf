@@ -1449,14 +1449,13 @@ void HydroTree<ndim,ParticleType>::FindMpiTransferParticles
     Box<ndim>& nodebox = mpinodes[inode].domain;
 
     // Start from root-cell
-    int NumPartFound = tree->FindBoxOverlapParticles(nodebox, all_particles_to_export,
+    tree->FindBoxOverlapParticles(nodebox, particles_to_export[inode],
                                                      hydro->GetParticleArray()) ;
 
     // Copy particles to per processor array
-    if (NumPartFound > 0)
-      particles_to_export[inode].insert(particles_to_export[inode].end(),
-                                        all_particles_to_export.end() - NumPartFound,
-                                        all_particles_to_export.end());
+    all_particles_to_export.insert(all_particles_to_export.end(),
+                                        particles_to_export[inode].begin(),
+                                        particles_to_export[inode].end());
   }
   //-----------------------------------------------------------------------------------------------
 

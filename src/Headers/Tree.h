@@ -151,7 +151,7 @@ protected:
 
 	virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) = 0;
 	virtual int GetTreeCellSize() const = 0 ;
-	virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) = 0;
+	virtual void FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) = 0;
 	virtual int FindBoxGhostParticles(const FLOAT, const FLOAT, const Box<ndim> &,
 	                                  vector<int> &export_list) = 0;
 	virtual int PackParticlesAndCellsForMPITransfer(const vector<int>& celllist,
@@ -309,7 +309,7 @@ protected:
   virtual int GetMaxCellNumber(const int) = 0;
   virtual int GetTreeCellSize() const { return sizeof(TreeCell<ndim>) ;}
   virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) ;
-  virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) ;
+  virtual void FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) ;
   virtual int FindBoxGhostParticles(const FLOAT, const FLOAT, const Box<ndim> &,
                                     vector<int> &export_list) ;
   virtual int PackParticlesAndCellsForMPITransfer(const vector<int>& celllist,
