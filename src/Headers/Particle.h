@@ -297,7 +297,7 @@ struct Particle
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
     m         = (FLOAT) 0.0;
-    h         = (FLOAT) 0.0;
+    h         = (FLOAT) 1.0;
     h_dust    = (FLOAT) 0.0;
     hrangesqd = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;

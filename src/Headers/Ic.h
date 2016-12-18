@@ -37,6 +37,7 @@
 #include "fftw3.h"
 #endif
 
+
 // Fwd Declarations
 template <int ndim> class NeighbourSearch ;
 template <int ndim> class Nbody ;
@@ -44,6 +45,9 @@ template <int ndim> struct Particle ;
 namespace Regularization {
   template <int ndim> class RegularizerFunction ;
 }
+
+
+
 //=================================================================================================
 //  Class Ic
 /// \brief   Class containing functions for generating initial conditions.
@@ -62,11 +66,6 @@ protected:
   const SimUnits& simunits;                 ///< Reference to main simunits object
   const DomainBox<ndim>& simbox;            ///< Reference to simulation bounding box object
 
-  int Ntable;                               ///< No. of table elements
-  FLOAT *xTable;                            ///< Tabulated position values
-  FLOAT *mTable;                            ///< Tabulated integrated mass values
-  FLOAT *mFracTable;                        ///< Tabulated fractional integrated mass values
-  std::string posQuantity;                  ///< Position quantity string (e.g. x, y, r)
   Parameters* simparams;                    ///< Pointer to parameters object
   RandomNumber *randnumb;                   ///< Random number object pointer
 
@@ -109,6 +108,7 @@ public:
     return NULL ;
   } ;
 
+
   // Other common functions
   //-----------------------------------------------------------------------------------------------
   void CheckInitialConditions(void);
@@ -126,16 +126,6 @@ public:
   static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
   static int CutSphere(const int, const int, const DomainBox<ndim> &, const bool, FLOAT *);
 
-
-
-  // Initial conditions routines
-  //-----------------------------------------------------------------------------------------------
-  void ContactDiscontinuity(void);
-  void GaussianRing(void);
-  void SedovBlastWave(void);
-  void BlobTest(void);
-  void UniformBox(void);
-  void UniformSphere(void);
 
 };
 
@@ -450,6 +440,7 @@ public:
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
 
 };
 
@@ -890,7 +881,7 @@ public:
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
-  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const ;
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
 
 
 };
