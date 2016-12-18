@@ -1465,8 +1465,20 @@ void HydroTree<ndim,ParticleType>::FindMpiTransferParticles
   vector<int> temp(all_particles_to_export); std::sort(temp.begin(),temp.end());
   for (int i=0; i<hydro->Nhydro;i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    if (ParticleInBox(part,mpinodes[rank].domain)) {
-      assert(!std::binary_search(temp.begin(),temp.end(),i));
+    Box<ndim>& domainbox = mpinodes[rank].domain;
+    if (ParticleInBox(part,domainbox)) {
+      const bool WillExport = std::binary_search(temp.begin(),temp.end(),i);
+      if (WillExport) {
+        // Deal with edge case when the particle is exactly on the boundary
+        // (in which case exporting it is not wrong)
+        bool edge=false;
+        for (int k=0; k<ndim; k++) {
+          if (part.r[k] == domainbox.min[k] || part.r[k] == domainbox.max[k]) {
+            edge =true;
+          }
+        }
+        if (!edge) assert(!std::binary_search(temp.begin(),temp.end(),i));
+      }
     }
     else {
       assert(std::binary_search(temp.begin(),temp.end(),i));
