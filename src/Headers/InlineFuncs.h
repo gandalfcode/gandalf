@@ -340,43 +340,6 @@ static inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
 
 
 
-
-//=================================================================================================
-//  BoxOverlap
-/// Check if two bounding boxes overlap.  If yes, then returns true.
-//=================================================================================================
-static inline bool BoxOverlap
- (const int ndim,
-  FLOAT *box1min,                      ///< Minimum extent of box 1
-  FLOAT *box1max,                      ///< Maximum extent of box 1
-  FLOAT *box2min,                      ///< Minimum extent of box 2
-  FLOAT *box2max)                      ///< Maximum extent of box 2
-{
-  if (ndim == 1) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    return true;
-  }
-  else if (ndim == 2) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    return true;
-  }
-  else {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    if (box1min[2] > box2max[2]) return false;
-    if (box2min[2] > box1max[2]) return false;
-    return true;
-  }
-}
-
-
-
 //=================================================================================================
 //  BoxOverlap
 /// Check if two bounding boxes overlap.  If yes, then returns true.
