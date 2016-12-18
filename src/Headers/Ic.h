@@ -881,7 +881,8 @@ public:
 
   virtual void Generate(void);
   virtual FLOAT GetValue(const std::string, const FLOAT *);
-  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const ;
+  FLOAT density(const Particle<ndim>& p) const ;
 
 
 };
@@ -1026,28 +1027,29 @@ public:
 };
 
 // Standard regularizer based upon density and particle disorder
-template<int ndim>
-class DefaultRegularizerFunctionBase : public RegularizerFunction<ndim> {
+template<int ndim, class DensityFunc>
+class DefaultRegularizerFunction : public RegularizerFunction<ndim> {
   FLOAT alphaReg, rhoReg ;
+  const DensityFunc* _rho_func ;
 public:
-  DefaultRegularizerFunctionBase(Parameters* simparams)
+  DefaultRegularizerFunction(Parameters* simparams, const DensityFunc* rho)
   : alphaReg(simparams->floatparams["alpha_reg"]),
-    rhoReg  (simparams->floatparams["rho_reg"])
+    rhoReg  (simparams->floatparams["rho_reg"]),
+    _rho_func(rho)
 { } ;
 
-  virtual ~DefaultRegularizerFunctionBase() { } ;
+  virtual ~DefaultRegularizerFunction() { } ;
 
   virtual FLOAT operator()(const Particle<ndim>& part,
                            const Particle<ndim>& neibpart) const
    {
-     FLOAT rhotrue = density(neibpart.r) ;
+     FLOAT rhotrue = _rho_func->density(neibpart) ;
      FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue + small_number);
      rhofrac = std::min(std::max(rhofrac, -0.1), 10.0) ;
 
      return rhoReg*rhofrac + alphaReg;
    }
 
-  virtual FLOAT density(const FLOAT*) const = 0 ;
 };
 
 //=================================================================================================
