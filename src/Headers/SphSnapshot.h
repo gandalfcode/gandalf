@@ -39,8 +39,8 @@ using namespace std;
 
 class Species {
 public:
-  typedef map<string,vector<float> > maptype;
-  map<string,vector<float> > values;
+  typedef map<string,vector<SNAPFLOAT> > maptype;
+  map<string,vector<SNAPFLOAT> > values;
   int N;
   string name;
 
@@ -72,7 +72,7 @@ public:
   }
 
   int CalculatePredictedMemoryUsage() {
-    return N*sizeof(float)*values.size();
+    return N*sizeof(SNAPFLOAT)*values.size();
   }
 };
 
@@ -121,8 +121,13 @@ class SphSnapshotBase
   int CalculateMemoryUsage(void);
   int CalculatePredictedMemoryUsage(void);
   virtual void CopyDataFromSimulation()=0;
+#if defined(GANDALF_SNAPSHOT_SINGLE_PRECISION)
   UnitInfo ExtractArray(string, string, float** out_array, int* size_array,
                         float& scaling_factor, string RequestedUnit);
+#else
+  UnitInfo ExtractArray(string, string, double** out_array, int* size_array,
+                        double& scaling_factor, string RequestedUnit);
+#endif
   virtual void ReadSnapshot(string)=0;
   int GetNTypes() {return _species.size(); };
   string GetSpecies(int ispecies) { return _species.at(ispecies); };
@@ -152,7 +157,7 @@ class SphSnapshotBase
   //int Nstar;                        ///< No. of star particles
   //int Nstarmax;                     ///< Max. no. of star particles
   //int Ntriple;                      ///< No. of triple systems
-  DOUBLE t;                         ///< Simulation time of snapshot
+  SNAPFLOAT t;                         ///< Simulation time of snapshot
 
   string filename;                  ///< Filename of snapshot
   string fileform;                  ///< File format of snapshot
@@ -161,41 +166,6 @@ class SphSnapshotBase
 
   SimUnits* units;                  ///< Pointer to units object
 
-
-  // Pointers for allocating memory required for storing all important snapshot data
-  //-----------------------------------------------------------------------------------------------
-//  float *x;                         ///< x-position for SPH particles
-//  float *y;                         ///< y-position for SPH particles
-//  float *z;                         ///< z-position for SPH particles
-//  float *vx;                        ///< x-velocity for SPH particles
-//  float *vy;                        ///< y-velocity for SPH particles
-//  float *vz;                        ///< z-velocity for SPH particles
-//  float *ax;                        ///< x-acceleration for SPH particles
-//  float *ay;                        ///< y-acceleration for SPH particles
-//  float *az;                        ///< z-acceleration for SPH particles
-//  float *m;                         ///< Masses for SPH particles
-//  float *h;                         ///< Smoothing lengths for SPH particles
-//  float *rho;                       ///< Density for SPH particles
-//  float *u;                         ///< Specific int. energy for SPH particles
-//  float *dudt;                      ///< Heating/cooling rate for SPH particles
-//
-//  float *xstar;                     /// x-position for star particles
-//  float *ystar;                     /// y-position for star particles
-//  float *zstar;                     /// z-position for star particles
-//  float *vxstar;                    /// x-velocity for star particles
-//  float *vystar;                    /// y-velocity for star particles
-//  float *vzstar;                    /// z-velocity for star particles
-//  float *axstar;                    /// x-acceleration for star particles
-//  float *aystar;                    /// y-acceleration for star particles
-//  float *azstar;                    /// z-acceleration for star particles
-//  float *mstar;                     /// Masses for star particles
-//  float *hstar;                     /// Smoothing length for star particles
-//
-//  float *ecc;                       /// Binary orbital eccentricity
-//  float *mbin;                      /// Binary total mass
-//  float *period;                    /// Binary orbital period
-//  float *qbin;                      /// Binary mass ratio
-//  float *sma;                       /// Binary orbital semi-major axis
 
 };
 
