@@ -42,6 +42,23 @@ BossBodenheimerIc<ndim>::BossBodenheimerIc(Simulation<ndim>* _sim, Hydrodynamics
   if (simparams->intparams["ndim"] != 3) {
     ExceptionHandler::getIstance().raise("Boss-Bodenheimer test only runs in 3D");
   }
+
+  const FLOAT mu_bar   = simparams->floatparams["mu_bar"];
+  const FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+
+  amp    = simparams->floatparams["amp"];
+  angvel = simparams->floatparams["angvel"];
+  mcloud = simparams->floatparams["mcloud"];
+  radius = simparams->floatparams["radius"];
+  temp0  = simparams->floatparams["temp0"];
+
+  angvel /= simunits.angvel.outscale;
+  mcloud /= simunits.m.outscale;
+  radius /= simunits.r.outscale;
+  temp0  /= simunits.temp.outscale;
+
+  u0   = temp0/gammaone/mu_bar;
+  rho0 = (FLOAT) 3.0*mcloud / ((FLOAT)4.0*pi*pow(radius,3));
 }
 
 
@@ -60,35 +77,18 @@ void BossBodenheimerIc<ndim>::Generate(void)
     int i;                               // Particle counter
     int k;                               // Dimension counter
     int Nsphere;                         // Actual number of particles in sphere
-    FLOAT mp;                            // Mass of one particle
     FLOAT rcentre[ndim];                 // Position of sphere centre
-    FLOAT rho;                           // Fluid density
-    FLOAT *r;                            // Positions of all particles
-    FLOAT *v;                            // Velocities of all particles
 
     // Create local copies of initial conditions parameters
-    int Npart      = simparams->intparams["Nhydro"];
-    FLOAT amp      = simparams->floatparams["amp"];
-    FLOAT angvel   = simparams->floatparams["angvel"];
-    FLOAT mcloud   = simparams->floatparams["mcloud"];
-    FLOAT mu_bar   = simparams->floatparams["mu_bar"];
-    FLOAT press    = simparams->floatparams["press1"];
-    FLOAT radius   = simparams->floatparams["radius"];
-    FLOAT temp0    = simparams->floatparams["temp0"];
-    FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+    bool dusty_collapse  = simparams->stringparams["dust_forces"] != "none" ;
+    int Npart            = simparams->intparams["Nhydro"];
     string particle_dist = simparams->stringparams["particle_distribution"];
 
     debug2("[BossBodenheimerIc::Generate]");
 
-    // Convert any parameters to code units
-    angvel /= simunits.angvel.outscale;
-    mcloud /= simunits.m.outscale;
-    press  /= simunits.press.outscale;
-    radius /= simunits.r.outscale;
-    temp0  /= simunits.temp.outscale;
-
-    r = new FLOAT[ndim*Npart];
-    v = new FLOAT[ndim*Npart];
+    FLOAT *r = new FLOAT[ndim*Npart];
+    FLOAT *v = new FLOAT[ndim*Npart];
+    FLOAT mp = mcloud / (FLOAT) Npart;
 
     // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
     for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
@@ -112,18 +112,8 @@ void BossBodenheimerIc<ndim>::Generate(void)
 
     // Allocate local and main particle memory
     hydro->Nhydro = Npart;
-
-    bool dusty_collapse =
-          simparams->stringparams["dust_forces"] != "none" ;
-
-    if (dusty_collapse)
-      hydro->Nhydro *= 2 ;
-
+    if (dusty_collapse) hydro->Nhydro *= 2;
     sim->AllocateParticleMemory();
-
-
-    mp = mcloud / (FLOAT) Npart;
-    rho = (FLOAT) 3.0*mcloud / ((FLOAT)4.0*pi*pow(radius,3));
 
     // Perturb positions of particles in cloud
     Ic<ndim>::AddAzimuthalDensityPerturbation(Npart, 2, amp, rcentre, r);
@@ -132,39 +122,27 @@ void BossBodenheimerIc<ndim>::Generate(void)
     Ic<ndim>::AddRotationalVelocityField(Npart, angvel, rcentre, r, v);
 
     // Record particle properties in main memory
-    //#pragma omp parallel for default(none) shared(gammaone,Npart,mp,mu_bar,r,rho,temp0,v) private(i,k)
     for (i=0; i<Npart; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
       for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
       part.m = mp;
-      part.h = hydro->h_fac*pow(part.m/rho,invndim);
-      part.u = temp0/gammaone/mu_bar;
-      //if (hydro->gas_eos == "isothermal" || hydro->gas_eos == "barotropic")
-      //  part.u = temp0/gammaone/mu_bar;
-      //else
-      //  part.u = press/rho/gammaone;
+      part.h = hydro->h_fac*pow(part.m/rho0,invndim);
+      part.u = u0;
     }
 
-
-    if (dusty_collapse){
-      FLOAT d2g = simparams->floatparams["dust_mass_factor"] ;
-      for (i = 0; i < Npart; ++i){
-        Particle<ndim>& Pg = hydro->GetParticlePointer(i) ;
-        Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart) ;
-        Pd = Pg ;
-        Pd.m *= d2g ;
-
-
-        for (k=0; k < ndim; k++)
-        Pd.r[k] += 0.01 * Pd.h ;
-
-
-        Pd.h_dust = Pd.h ;
-        Pd.u = 0 ;
-
-        Pg.ptype = gas_type ;
-        Pd.ptype = dust_type ;
+    if (dusty_collapse) {
+      FLOAT d2g = simparams->floatparams["dust_mass_factor"];
+      for (i = 0; i < Npart; ++i) {
+        Particle<ndim>& Pg = hydro->GetParticlePointer(i);
+        Particle<ndim>& Pd = hydro->GetParticlePointer(i+Npart);
+        Pd = Pg;
+        Pd.m *= d2g;
+        for (k=0; k < ndim; k++) Pd.r[k] += 0.01*Pd.h;
+        Pd.h_dust = Pd.h;
+        Pd.u = 0.0;
+        Pd.ptype = dust_type;
+        Pg.ptype = gas_type;
       }
     }
 
@@ -179,6 +157,50 @@ void BossBodenheimerIc<ndim>::Generate(void)
   //-----------------------------------------------------------------------------------------------
 
   return;
+}
+
+
+
+//=================================================================================================
+//  BossBodenheimer::GetValue
+/// Returns the value of the requested quantity at the given position.
+//=================================================================================================
+template <int ndim>
+FLOAT BossBodenheimerIc<ndim>::GetDensity(const FLOAT r[ndim]) const
+{
+  const FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+  const FLOAT phi = atan2(r[1], r[0]);
+  if (radsqd < radius) {
+    return rho0*(1.0 + amp*sin(2.0*phi));
+  }
+  else {
+    return (FLOAT) 0.0;
+  }
+}
+
+
+
+//=================================================================================================
+//  BossBodenheimer::SetParticleProperties
+/// Sets the properties of all particles once their positions have been allocated.
+//=================================================================================================
+template <int ndim>
+void BossBodenheimerIc<ndim>::SetParticleProperties()
+{
+  ExceptionHandler::getIstance().raise("BossBodenheimerIc::SetParticleProperties function not yet implemented");
+  return;
+}
+
+
+
+//=================================================================================================
+//  BossBodenheimer::GetParticleRegularizer
+/// Return the regularizer based upon the density.
+//=================================================================================================
+template <int ndim>
+Regularization::RegularizerFunction<ndim>* BossBodenheimerIc<ndim>::GetParticleRegularizer() const {
+  using Regularization::DefaultRegularizerFunction ;
+  return new DefaultRegularizerFunction<ndim,BossBodenheimerIc<ndim> >(simparams, this) ;
 }
 
 
