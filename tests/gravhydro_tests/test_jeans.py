@@ -6,7 +6,7 @@ class JeansTest(unittest.TestCase):
     sim = 'sph'
     run_id = 'JEANS_SPH'
     expected_l1error = 6e-3
-    params = {}
+    params = { 'gravity_mac' : 'geometric' }
     def setUp(self):
         self.sim=newsim("tests/gravhydro_tests/jeans.dat", sim=self.sim)
         self.sim.SetParam("run_id",self.run_id)
