@@ -304,8 +304,6 @@ void Parameters::SetDefaultValues(void)
   intparams["ntreestockstep"] = 1;
   floatparams["thetamaxsqd"] = 0.1;
   floatparams["macerror"] = 0.0001;
-  intparams["relative_opening_criterion"] = 0;
-  floatparams["grav_force_tol"] = 0.0001;
 
   // N-body parameters
   //-----------------------------------------------------------------------------------------------

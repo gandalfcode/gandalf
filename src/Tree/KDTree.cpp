@@ -53,11 +53,10 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
                                            string gravity_mac_aux, string multipole_aux,
                                            const DomainBox<ndim>& domain,
                                   		   const ParticleTypeRegister& reg,
-										   const bool IAmPruned,
-										   const bool rel_open_criterion, const FLOAT rel_acc_param):
+										   const bool IAmPruned):
   Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
                                    macerroraux, gravity_mac_aux, multipole_aux, domain, reg,
-                                   IAmPruned, rel_open_criterion, rel_acc_param)
+                                   IAmPruned)
 {
   allocated_tree = false;
   gmax           = 0;

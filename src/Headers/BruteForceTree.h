@@ -93,7 +93,6 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::theta;
   using Tree<ndim,ParticleType,TreeCell>::thetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::gravmask ;
-  using Tree<ndim,ParticleType,TreeCell>::gravaccfactor;
 #ifdef MPI_PARALLEL
   using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
 #endif
@@ -101,7 +100,7 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
   BruteForceTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
-		  	  	 const ParticleTypeRegister& reg,const bool, const bool, const FLOAT);
+		  	  	 const ParticleTypeRegister& reg, const bool);
   ~BruteForceTree() ;
 
 

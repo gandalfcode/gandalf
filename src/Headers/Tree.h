@@ -92,8 +92,12 @@ protected:
 	virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 
-	virtual bool GetRelativeOpeningCriterion() const = 0;
-	virtual void SetRelativeOpeningCriterion(bool) = 0;
+	bool GetRelativeOpeningCriterion() const {
+	  return use_relative_criterion;
+	}
+	void SetRelativeOpeningCriterion(bool value) {
+	  use_relative_criterion = value;
+	}
 
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
 	virtual int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist) = 0 ;
@@ -191,6 +195,7 @@ protected:
     int lmax;                              ///< Max. no. of levels
     int ltot;                              ///< Total number of levels in tree
     int ltot_old;                          ///< Prev. value of ltot
+    bool use_relative_criterion;         ///< Whether to check the relative opening criterion
 #if defined MPI_PARALLEL
 	int Nimportedcell;                     ///< No. of imported cells
 	int Ncelltot;                          ///< Total number of cells
@@ -214,6 +219,7 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 class Tree : public TreeBase<ndim>
 {
 private:
+    using TreeBase<ndim>::SetRelativeOpeningCriterion ;
 #ifdef MPI_PARALLEL
 	using TreeBase<ndim>::Nleaf_indices;
 	using TreeBase<ndim>::Nleaf_indices_inlocal;
@@ -227,15 +233,15 @@ protected:
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
-       const ParticleTypeRegister& pt_reg, const bool _IAmPruned,
-       const bool rel_open_criterion, const FLOAT rel_acc_param) :
+       const ParticleTypeRegister& pt_reg, const bool _IAmPruned) :
     	   TreeBase<ndim>(domain),
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd),
-    gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned),
-    use_relative_criterion(rel_open_criterion), gravaccfactor(rel_acc_param)
-    {};
+    gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned)
+    {
+      SetRelativeOpeningCriterion(gravity_mac == "gadget2") ;
+    };
 
   virtual ~Tree() { } ;
 
@@ -257,12 +263,6 @@ protected:
     return BoxOverlap(ndim, box1min, box1max, box2min, box2max) ;
   }
 
-  virtual bool GetRelativeOpeningCriterion() const {
-    return use_relative_criterion;
-  }
-  virtual void SetRelativeOpeningCriterion(bool value) {
-    use_relative_criterion = value;
-  }
 
   int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
   int ComputeActiveCellList(vector<TreeCellBase<ndim> >& );
@@ -366,8 +366,6 @@ protected:
   const FLOAT macerror;                ///< Error tolerance for gravity tree-MAC
   const FLOAT theta;                   ///< Geometric opening angle
   const FLOAT thetamaxsqd;             ///< Geometric opening angle squared
-  const FLOAT gravaccfactor;           ///< Relative opening accuracy factor
-  bool use_relative_criterion;         ///< Whether to check the relative opening criterion
 
 
   // Additional variables for tree class
@@ -380,6 +378,7 @@ protected:
   using TreeBase<ndim>::ltot;
   using TreeBase<ndim>::ltot_old;
   using TreeBase<ndim>::_domain;
+  using TreeBase<ndim>::use_relative_criterion;
 #if defined MPI_PARALLEL
   using TreeBase<ndim>::Nimportedcell;
   using TreeBase<ndim>::Ncelltot;
@@ -398,7 +397,15 @@ protected:
 
  private:
   bool open_cell_for_gravity(const TreeCell<ndim>& cell,
-                             double drsqd, double macfactor, double amag) const ;
+                             double drsqd, double macfactor, double amag) const
+  {
+    if (drsqd < cell.cdistsqd || drsqd < cell.mac*macfactor)
+      return true;
+    else if (use_relative_criterion)
+      return drsqd*drsqd*amag*macerror < cell.rmax*cell.rmax*cell.m;
+    else
+      return false ;
+  }
 
 };
 

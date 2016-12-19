@@ -8,7 +8,6 @@ class JeansTest(unittest.TestCase):
     expected_l1error = 6e-3
     params = {}
     def setUp(self):
-        print self.sim, self.run_id
         self.sim=newsim("tests/gravhydro_tests/jeans.dat", sim=self.sim)
         self.sim.SetParam("run_id",self.run_id)
         for param in self.params:
@@ -19,7 +18,6 @@ class JeansTest(unittest.TestCase):
         p.wait()
         snap(-1)
         errnorm=L1errornorm("jeans","x","vx",0.01,0.99)
-        print self.run_id, errnorm, self.expected_l1error
         self.assertLess(errnorm,self.expected_l1error)
 
 
@@ -27,7 +25,7 @@ class JeansTest(unittest.TestCase):
 class JeansTest_SPHRelative(JeansTest):
     run_id = "JEANS_SPH_RELATIVE"
     expected_l1error = 5.3e-3
-    params = { 'relative_opening_criterion' : 1 }
+    params = { 'gravity_mac' : 'gadget2' }
     
 
 class JeansTest_SPHEigen(JeansTest):
@@ -40,6 +38,6 @@ class JeansTest_Meshless(JeansTest):
     run_id = "JEANS_MFM"
     expected_l1error = 1.3e-3
     params = { 'riemann_solver' : 'hllc',
-               'relative_opening_criterion' : 1,
+               'gravity_mac' : 'gadget2',
                'zero_mass_flux' : 1,
                'h_fac' : 1.0 }

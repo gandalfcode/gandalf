@@ -235,8 +235,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   sphneib = new SM2012SphTree<ndim,SM2012SphParticle>
      (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types,
-      intparams["relative_opening_criterion"], floatparams["grav_force_tol"]);
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
 
 #if defined MPI_PARALLEL

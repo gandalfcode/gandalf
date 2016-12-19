@@ -50,22 +50,6 @@
 
 using namespace std;
 
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-bool Tree<ndim,ParticleType,TreeCell>::open_cell_for_gravity
-(const TreeCell<ndim>& cell,           ///< [in] Cell that we are interrogating
- double drsqd,                         ///< [in] Distance squared to particle / cell
- double macfactor,                     ///< [in] Multipole acceptance factor
- double amag                           ///< [in] Magnitude of the previous acceleration.
- ) const
- {
-  if (drsqd < cell.cdistsqd || drsqd < cell.mac*macfactor)
-    return true;
-  else if (use_relative_criterion)
-    return drsqd*drsqd*amag*gravaccfactor < cell.rmax*cell.rmax*cell.m;
-  else
-    return false ;
-}
-
 
 //=================================================================================================
 //  Tree::ComputeActiveParticleList

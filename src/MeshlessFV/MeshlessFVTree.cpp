@@ -54,11 +54,10 @@ MeshlessFVTree<ndim,ParticleType>::MeshlessFVTree
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
-  ParticleTypeRegister& types,  const bool rel_open_criterion, const FLOAT rel_acc_param):
+  ParticleTypeRegister& types):
  HydroTree<ndim,ParticleType>
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types,
-   rel_open_criterion, rel_acc_param)
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 {
 
 }

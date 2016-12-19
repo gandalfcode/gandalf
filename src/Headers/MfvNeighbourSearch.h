@@ -145,8 +145,7 @@ protected:
                  int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
                  FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
                  string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
-                 SmoothingKernel<ndim> *_kern, CodeTiming *_timing, ParticleTypeRegister&,
-                 const bool rel_open_criterion, const FLOAT rel_acc_param);
+                 SmoothingKernel<ndim> *_kern, CodeTiming *_timing, ParticleTypeRegister&);
   virtual ~MeshlessFVTree();
 
 

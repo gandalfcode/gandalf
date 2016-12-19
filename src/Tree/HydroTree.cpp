@@ -57,7 +57,7 @@ HydroTree<ndim,ParticleType>::HydroTree
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
-  ParticleTypeRegister& types, const bool rel_open_criterion, const FLOAT rel_acc_param):
+  ParticleTypeRegister& types):
   neibcheck(true),
   kernrange(_kernrange),
   kernrangesqd(_kernrange*_kernrange),
@@ -97,19 +97,16 @@ HydroTree<ndim,ParticleType>::HydroTree
 
   // Set-up main tree object
   tree = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-                    _macerror, _gravity_mac, _multipole, *_box, types,false,
-                    rel_open_criterion, rel_acc_param);
+                    _macerror, _gravity_mac, _multipole, *_box, types,false);
 
   // Set-up ghost-particle tree object
   ghosttree = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-      _macerror, _gravity_mac, _multipole, *_box, types,false,
-      rel_open_criterion, rel_acc_param);
+      _macerror, _gravity_mac, _multipole, *_box, types,false);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
   mpighosttree = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-                            _macerror, _gravity_mac, _multipole, *_box, types,false,
-                            rel_open_criterion, rel_acc_param);
+                            _macerror, _gravity_mac, _multipole, *_box, types,false);
 
   // Set-up multiple pruned trees, one for each MPI process
   prunedtree = new TreeBase<ndim>*[Nmpi] ;
@@ -117,11 +114,9 @@ HydroTree<ndim,ParticleType>::HydroTree
 
   for (int i=0; i<Nmpi; i++) {
     prunedtree[i] = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-                               _macerror, _gravity_mac, _multipole, *_box, types,true,
-                               rel_open_criterion, rel_acc_param);
+                               _macerror, _gravity_mac, _multipole, *_box, types,true);
     sendprunedtree[i] = CreateTree(tree_type, _Nleafmax, _thetamaxsqd, _kernrange,
-                                   _macerror, _gravity_mac, _multipole, *_box, types,true,
-                                   rel_open_criterion, rel_acc_param);
+                                   _macerror, _gravity_mac, _multipole, *_box, types,true);
   }
 #endif
 }
@@ -160,9 +155,7 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
  string gravity_mac, string multipole,
  const DomainBox<ndim>& domain,
  const ParticleTypeRegister& reg,
- const bool IAmPruned,
- const bool rel_open_criterion,
- const FLOAT rel_acc_param
+ const bool IAmPruned
 )
 {
   TreeBase<ndim> * t = NULL;
@@ -170,29 +163,25 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
     typedef BruteForceTree<ndim,ParticleType, BruteForceTreeCell> __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg,IAmPruned,
-                   rel_open_criterion, rel_acc_param) ;
+                   gravity_mac,  multipole,domain, reg, IAmPruned);
   }
   else if (tree_type == "kdtree") {
     typedef KDTree<ndim,ParticleType, KDTreeCell>  __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg,IAmPruned,
-                   rel_open_criterion, rel_acc_param) ;
+                   gravity_mac,  multipole,domain, reg, IAmPruned);
   }
   else if (tree_type == "octtree") {
     typedef OctTree<ndim,ParticleType, OctTreeCell>  __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg,IAmPruned,
-                   rel_open_criterion, rel_acc_param) ;
+                   gravity_mac,  multipole,domain, reg, IAmPruned);
   }
   else if (tree_type == "treeray") {
     typedef OctTree<ndim,ParticleType, TreeRayCell> __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg,IAmPruned,
-                   rel_open_criterion, rel_acc_param) ;
+                   gravity_mac,  multipole,domain, reg, IAmPruned);
   }
   else {
     string message = "Tree Type not recognised: " + tree_type ;

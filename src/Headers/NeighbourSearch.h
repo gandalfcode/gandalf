@@ -156,8 +156,7 @@ protected:
 
   //-----------------------------------------------------------------------------------------------
   HydroTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-            DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *, ParticleTypeRegister&,
-            const bool, const FLOAT) ;
+            DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *, ParticleTypeRegister&);
   virtual ~HydroTree();
 
 
@@ -318,9 +317,7 @@ protected:
                              string gravity_mac, string multipole,
                              const DomainBox<ndim>& domain,
                              const ParticleTypeRegister& reg,
-							 const bool IAmPruned,
-							 const bool rel_open_criterion,
-							 const FLOAT rel_acc_param) ;
+							 const bool IAmPruned) ;
 };
 
 

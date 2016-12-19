@@ -52,11 +52,10 @@ GradhSphTree<ndim,ParticleType>::GradhSphTree
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
-  ParticleTypeRegister& types, const bool rel_open_criterion, const FLOAT rel_acc_param):
+  ParticleTypeRegister& types):
  SphTree<ndim,ParticleType>
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
-   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types,
-   rel_open_criterion, rel_acc_param)
+   _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
 {
 }
 
@@ -584,6 +583,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         HydroParticle* neibpart;
         const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,&neiblist,&directlist,&gravlist,&neibpart);
 
+
         // Compute forces between SPH neighbours (hydro and gravity)
         typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
         if (listlength.Nhydro > 0)
@@ -609,6 +609,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
           // Add the periodic correction force for SPH and direct-sum neighbours
           if (simbox.PeriodicGravity){
             int Ntotneib = neibmanager.GetNumAllNeib() ;
+
             for (int jj=0; jj< Ntotneib; jj++) {
 
         	  if (!gravmask[neibpart[jj].ptype]) continue ;
@@ -619,6 +620,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
               for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
+
 
             // Now add the periodic correction force for all cell COMs
             for (int jj=0; jj<Ngravcell; jj++) {
