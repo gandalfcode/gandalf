@@ -521,7 +521,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     if (iter==0 && mac_type != geometric)
       mfvneib->SetOpeningCriterion(geometric);
     else
-      mfvneib->SetOpeningCriterion(gadget2) ;
+      mfvneib->SetOpeningCriterion(mac_type) ;
 
     for (i=0; i<mfv->Ntot; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
@@ -648,7 +648,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   this->setup = true;
 
   rebuild_tree=false;
-
 
   return;
 }

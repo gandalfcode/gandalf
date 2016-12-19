@@ -364,7 +364,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     if (iter==0 && mac_type != geometric)
       sphneib->SetOpeningCriterion(geometric);
     else
-      sphneib->SetOpeningCriterion(gadget2) ;
+      sphneib->SetOpeningCriterion(mac_type) ;
 
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).flags.set_flag(active);
 
@@ -517,7 +517,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   this->CalculateDiagnostics();
   this->diag0 = this->diag;
   this->setup = true;
-
 
   return;
 }
