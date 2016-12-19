@@ -30,6 +30,7 @@
 using namespace std;
 
 
+
 //=================================================================================================
 //  Silcc::Silcc
 /// Set-up SILCC-type simulation initial conditions.
@@ -77,17 +78,6 @@ SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOA
   m_uniform = rho_a*box_area*(simbox.max[ndim-1] - a_midplane);
   m_box     = 2.0*(m_exp + m_uniform);
 
- // FLOAT sigma_gas = m_box/box_area;
-
-
-  // TESTING :
-  //m_box = 1.2*0.5*box_area + 0.8*0.5*box_area;
-  /*cout << "m_box : " << m_box << "   m_exp : " << m_exp << "   m_uniform : " << m_uniform << endl;
-  cout << "rho_midplane : " << rho_midplane*simunits.rho.outscale << "   rho_star : " << rho_star*simunits.rho.outscale << endl;
-  cout << "rho_a : " << rho_a*simunits.rho.outscale << "   " << "    box_area : " <<  box_area << endl;
-  cout << "a_midplane : " << a_midplane << "   " << h_midplane << "   " << endl;
-  cout << "sigma_gas : " << sigma_gas*simunits.sigma.outscale << endl;*/
-
 }
 
 
@@ -103,10 +93,9 @@ void SilccIc<ndim>::Generate(void)
   //-----------------------------------------------------------------------------------------------
   if (ndim == 3) {
 
-    FLOAT mp;                            // Mass of individual particle
-
     // Create local copies of initial conditions parameters
-    int Npart      = simparams->intparams["Nhydro"];
+    int Npart = simparams->intparams["Nhydro"];
+    FLOAT mp = m_box / (FLOAT) Npart;
 
     debug2("[SilccIc::Generate]");
 
@@ -127,16 +116,12 @@ void SilccIc<ndim>::Generate(void)
     // Copy positions to main array and initialise all other variables
     for (int i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      for (int k=0; k<ndim; k++) {
-        part.r[k] = r[ndim*i + k];
-        part.v[k] = (FLOAT) 0.0;
-        part.a[k] = (FLOAT) 0.0;
-      }
+      for (int k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
       part.m = mp;
-      part.u = u0;
-      part.iorig = i;
-      part.ptype = gas;
     }
+
+    // Now set all other particle properties
+    SetParticleProperties();
 
     delete[] r;
 
@@ -147,10 +132,16 @@ void SilccIc<ndim>::Generate(void)
 }
 
 
+
+//=================================================================================================
+//  Silcc::GetDensity
+/// Returns the value of the density at the given position.
+//=================================================================================================
 template <int ndim>
-FLOAT SilccIc<ndim>::density(const Particle<ndim>& p) const {
-  if (fabs(p.r[ndim-1]) <= a_midplane) {
-    return rho_midplane*exp(-p.r[ndim-1]*p.r[ndim-1]/h_midplane/h_midplane);
+FLOAT SilccIc<ndim>::GetDensity(const FLOAT *r) const
+{
+  if (fabs(r[ndim-1]) <= a_midplane) {
+    return rho_midplane*exp(-r[ndim-1]*r[ndim-1]/h_midplane/h_midplane);
   }
   else {
     return rho_a;
@@ -158,37 +149,30 @@ FLOAT SilccIc<ndim>::density(const Particle<ndim>& p) const {
 }
 
 
+
 //=================================================================================================
-//  Silcc::GetValue
-/// Returns the value of the requested quantity at the given position.
+//  Silcc::SetParticleProperties
+/// Sets the properties of all particles once their positions have been allocated.
 //=================================================================================================
 template <int ndim>
-FLOAT SilccIc<ndim>::GetValue
- (const std::string var,
-  const FLOAT r[ndim])
+void SilccIc<ndim>::SetParticleProperties()
 {
-  if (var == "x") {
-    return r[0];
-  }
-  else if (ndim > 1 && var == "y") {
-    return r[1];
-  }
-  else if (ndim > 2 && var == "z") {
-    return r[2];
-  }
-  else if (var == "rho") {
-    if (fabs(r[ndim-1]) <= a_midplane) {
-      return rho_midplane*exp(-r[ndim-1]*r[ndim-1]/h_midplane/h_midplane);
+  // Copy positions to main array and initialise all other variables
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (int k=0; k<ndim; k++) {
+      part.v[k] = (FLOAT) 0.0;
+      part.a[k] = (FLOAT) 0.0;
     }
-    else {
-      return rho_a;
-    }
+    part.u     = u0;
+    part.iorig = i;
+    part.ptype = gas;
   }
-  else {
-    std::cout << "Invalid string variable for Silcc::GetValue" << std::endl;
-    return 0.0;
-  }
+
+  return;
 }
+
+
 
 //=================================================================================================
 //  Silcc::GetParticleRegularizer
@@ -199,6 +183,8 @@ Regularization::RegularizerFunction<ndim>* SilccIc<ndim>::GetParticleRegularizer
   using Regularization::DefaultRegularizerFunction ;
   return new DefaultRegularizerFunction<ndim,SilccIc<ndim> >(simparams, this) ;
 }
+
+
 
 template class SilccIc<1>;
 template class SilccIc<2>;

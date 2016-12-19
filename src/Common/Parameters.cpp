@@ -450,6 +450,7 @@ void Parameters::SetDefaultValues(void)
   // Regularising initial conditions parameters
   //-----------------------------------------------------------------------------------------------
   intparams["regularise_particle_ics"] = 0;
+  intparams["regularise_smooth_density"] = 1;
   floatparams["alpha_reg"] = 0.1;
   floatparams["rho_reg"] = 0.8;
 
