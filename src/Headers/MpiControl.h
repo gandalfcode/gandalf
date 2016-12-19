@@ -95,7 +95,6 @@ class MpiControl
   int Nmpi;                                ///< No. of MPI processes
   int Nloadbalance;                        ///< No. of steps between load-balancing
   Box<ndim> partbox;                       ///< Box containing all particles (from all nodes)
-  DomainBox<ndim> mpibox;                  ///< Full domain box known to all MPI processes
   MpiNode<ndim> *mpinode;                  ///< Data for all MPI nodes
   CodeTiming *timing;                      ///< Simulation timing object (pointer)
 
@@ -141,7 +140,6 @@ public:
   using MpiControl<ndim>::balance_level;
   using MpiControl<ndim>::Nmpi;
   using MpiControl<ndim>::mpinode;
-  using MpiControl<ndim>::mpibox;
   using MpiControl<ndim>::rank;
   using MpiControl<ndim>::Nloadbalance;
   using MpiControl<ndim>::timing;
@@ -217,7 +215,6 @@ public:
   using MpiControl<ndim>::balance_level;
   using MpiControl<ndim>::Nmpi;
   using MpiControl<ndim>::mpinode;
-  using MpiControl<ndim>::mpibox;
   using MpiControl<ndim>::rank;
   using MpiControl<ndim>::Nloadbalance;
   using MpiControl<ndim>::timing;

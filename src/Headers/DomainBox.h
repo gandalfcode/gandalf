@@ -32,6 +32,7 @@
 #include <algorithm>
 #include "Exception.h"
 #include "Precision.h"
+#include "Constants.h"
 using namespace std;
 
 
@@ -48,6 +49,13 @@ template <int ndim>
 struct Box {
   FLOAT min[ndim];                     ///< Minimum bounding box extent
   FLOAT max[ndim];                     ///< Maximum bounding box extent
+
+  Box () {
+    for (int k=0; k<ndim; k++) {
+      min[k]=-big_number;
+      max[k]=big_number;
+    }
+  }
 };
 
 
