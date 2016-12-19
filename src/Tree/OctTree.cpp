@@ -277,8 +277,10 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].ilast  = _ilast;
   celldata[0].level  = 0;
   celldata[0].copen  = -1;
+  celldata[0].hmax = 0;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
+  for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
     celldata[0].rcentre[k] = (FLOAT) 0.5*(celldata[0].bb.min[k] + celldata[0].bb.max[k]);
     cellSize = max(cellSize, celldata[0].bb.max[k] - celldata[0].rcentre[k]);

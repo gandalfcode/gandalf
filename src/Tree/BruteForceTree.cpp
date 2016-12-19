@@ -263,8 +263,10 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].copen  = Ntot > 0 ? 1 : -1;
   celldata[0].id     = 0;
   celldata[0].level  = 0;
+  celldata[0].hmax = 0;
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
+  for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
