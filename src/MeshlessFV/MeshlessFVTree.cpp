@@ -737,8 +737,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim>& cell = celllist[cc];
-      macfactor = (FLOAT) 0.0;
-
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell, partdata, activelist);
 
@@ -751,11 +749,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 
       // Do the self-gravity contribution, or just the stars
       if (self_gravity) {
-        // Compute average/maximum term for computing gravity MAC
-        if (gravity_mac == "eigenmac") {
-          for (int j=0; j<Nactive; j++)
-            macfactor = max(macfactor, pow((FLOAT) 1.0/activepart[j].gpot, twothirds));
-        }
 
         // Include self-term for potential
         // TODO:
@@ -764,10 +757,9 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
           activepart[j].gpot = (activepart[j].m/activepart[j].h)*mfv->kernp->wpot((FLOAT) 0.0);
 
 
-
         // Compute neighbour list for cell depending on physics options
         neibmanager.clear();
-        tree->ComputeGravityInteractionAndGhostList(cell, macfactor, neibmanager);
+        tree->ComputeGravityInteractionAndGhostList(cell, neibmanager);
         neibmanager.EndSearchGravity(cell,partdata);
 
         MultipoleMoment<ndim>* gravcell;

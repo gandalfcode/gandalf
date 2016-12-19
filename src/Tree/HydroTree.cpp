@@ -816,7 +816,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
     int k;                                     // Dimension counter
     int Nactive;                               // No. of active particles in current cell
     int Ngravcelltemp;                         // Aux. gravity cell counter
-    FLOAT macfactor;                           // Gravity MAC factor for cell
     int *activelist                = activelistbuf[ithread];
     ParticleType<ndim> *activepart = activepartbuf[ithread];
     vector<MultipoleMoment<ndim> > gravcelllist;
@@ -827,7 +826,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim>& cell = celllist[cc] ;
-      macfactor = (FLOAT) 0.0;
       gravcelllist.clear();
 
 
@@ -836,13 +834,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) activepart[j] = partdata[activelist[j]];
-
-      // Compute average/maximum term for computing gravity MAC
-      if (gravity_mac == "eigenmac") {
-        for (j=0; j<Nactive; j++) {
-          macfactor = max(macfactor, pow((FLOAT) 1.0/activepart[j].gpot, twothirds));
-        }
-      }
 
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
@@ -859,7 +850,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
         if (j == rank) continue;
         const int Ngravcellold = gravcelllist.size();
         Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
-          (cell, simbox, macfactor,gravcelllist);
+          (cell, simbox ,gravcelllist);
 
         // If pruned tree is too close to be used (flagged by -1), then record cell id
         // for exporting those particles to other MPI processes

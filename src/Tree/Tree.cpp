@@ -627,7 +627,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
  (const TreeCellBase<ndim> &cell,      ///< [in] Pointer to cell
-  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
   NeighbourManagerDim<ndim>& neibmanager)   ///< [inout] Neighbour manager object
 {
   int cc = 0;                          // Cell counter
@@ -643,6 +642,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
   const FLOAT rmax = cell.rmax;
   const FLOAT amin = cell.amin;
+  const FLOAT macfactor = cell.macfactor;
   for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
   for (int k=0; k<ndim; k++) dr_corr[k] = 0 ;
 
@@ -1390,7 +1390,6 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
  (const TreeCellBase<ndim>& cell,      ///< [in] Pointer to cell
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
-  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
   vector<MultipoleMoment<ndim> >& gravcelllist) ///< [out] Array of cells
 {
   int cc = 0;                          // Cell counter
@@ -1407,6 +1406,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   hrangemax = cell.rmax + kernrange*cell.hmax;
   rmax = cell.rmax;
   const FLOAT amin = cell.amin ;
+  const FLOAT macfactor = cell.macfactor;
+
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists

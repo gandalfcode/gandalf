@@ -519,7 +519,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
     int cc;                                      // Aux. cell counter
     int Nactive;                                 // ..
     FLOAT aperiodic[ndim];                       // ..
-    FLOAT macfactor;                             // Gravity MAC factor
     FLOAT potperiodic;                           // ..
     int *activelist  = activelistbuf[ithread];   // ..
     int *levelneib   = levelneibbuf[ithread];    // ..
@@ -536,20 +535,12 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim> &cell = celllist[cc];
-      macfactor = (FLOAT) 0.0;
-
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
 
       // Make local copies of active particles
       for (int j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
-
-      // Compute average/maximum term for computing gravity MAC
-      if (gravity_mac == "eigenmac") {
-        for (int j=0; j<Nactive; j++) macfactor =
-          max(macfactor,pow((FLOAT) 1.0/activepart[j].gpot,twothirds));
-      }
 
       // Zero/initialise all summation variables for active particles
       for (int j=0; j<Nactive; j++) {
@@ -563,7 +554,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
       // Compute neighbour list for cell depending on physics options
       neibmanager.clear();
-      tree->ComputeGravityInteractionAndGhostList(cell, macfactor,neibmanager);
+      tree->ComputeGravityInteractionAndGhostList(cell, neibmanager);
       neibmanager.EndSearchGravity(cell,sphdata);
 
       MultipoleMoment<ndim>* gravcell;

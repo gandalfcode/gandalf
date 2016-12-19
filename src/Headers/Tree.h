@@ -112,7 +112,8 @@ protected:
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
 	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
 	virtual void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&) = 0 ;
-	virtual void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const FLOAT, NeighbourManagerDim<ndim>& neibmanager)=0;
+	virtual void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &,
+	                                                   NeighbourManagerDim<ndim>& neibmanager)=0;
 	virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
 	                                              const int, const int, int &, int &, int &, int *, int *,
 	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
@@ -122,7 +123,7 @@ protected:
 	virtual int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
 	                                       const bool, const int, const int, const int, TreeBase<ndim> *) = 0;
 	virtual int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
-	                                                 const FLOAT, vector<MultipoleMoment<ndim> >&) = 0;
+	                                                 vector<MultipoleMoment<ndim> >&) = 0;
 	virtual  bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &) = 0;
 	virtual  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
 	virtual void UpdateLeafCells(TreeBase<ndim>*)=0;
@@ -288,7 +289,7 @@ protected:
                            const int, int &, int *, Particle<ndim> *);
   void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
   void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&);
-  void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const FLOAT, NeighbourManagerDim<ndim>& neibmanager);
+  void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerDim<ndim>& neibmanager);
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
                                         MultipoleMoment<ndim> *, Particle<ndim> *);
@@ -302,7 +303,7 @@ protected:
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeBase<ndim> *);
   int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
-                                           const FLOAT, vector<MultipoleMoment<ndim> >&);
+                                           vector<MultipoleMoment<ndim> >&);
   bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
   virtual void UpdateLeafCells(TreeBase<ndim>*);
