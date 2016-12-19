@@ -194,7 +194,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 #ifdef MPI_PARALLEL
   if (stringparams["mpi_decomposition"] == "kdtree") {
-    mpicontrol = new MpiKDTreeDecomposition<ndim,MeshlessFVParticle>();
+    mpicontrol = new MpiKDTreeDecomposition<ndim,MeshlessFVParticle>(simbox);
   }
   else {
     string message = "Unrecognised parameter : mpi_decomposition = "

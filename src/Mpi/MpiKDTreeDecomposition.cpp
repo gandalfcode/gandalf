@@ -43,19 +43,6 @@
 using namespace std;
 
 
-
-//=================================================================================================
-//  MpiKDTreeDecomposition::MpiKDTreeDecomposition
-/// MpiKDTreeDecomposition constructor (currently only calls base MpiControlType constructor)
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-MpiKDTreeDecomposition<ndim, ParticleType>::MpiKDTreeDecomposition() :
-  MpiControlType<ndim,ParticleType>()
-{
-}
-
-
-
 //=================================================================================================
 //  MpiKDTreeDecomposition::CreateInitialDomainDecomposition
 /// Creates a binary tree containing all particles in order to determine how to distribute the
@@ -70,7 +57,6 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
  (Hydrodynamics<ndim> *hydro,          ///< Pointer to main Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< Pointer to main N-body object
   Parameters *simparams,               ///< Simulation parameters
-  DomainBox<ndim> simbox,              ///< Simulation domain box
   bool &initial_h_provided)            ///< Receives from root whether or not initial h was provided
 {
   int i;                               // Particle counter

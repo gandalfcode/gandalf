@@ -83,6 +83,8 @@ class MpiControl
 
   void CreateLeagueCalendar();
 
+  DomainBox<ndim>& simbox;                  ///< Copy of the simbox object
+
 
  public:
 
@@ -101,7 +103,7 @@ class MpiControl
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  MpiControl();
+  MpiControl(DomainBox<ndim>& simboxaux);
   ~MpiControl();
 
   void AllocateMemory(int);
@@ -165,7 +167,7 @@ public:
 
 
   //-----------------------------------------------------------------------------------------------
-  MpiControlType();
+  MpiControlType(DomainBox<ndim>& simboxaux);
   ~MpiControlType() {};
 
   virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
@@ -228,6 +230,7 @@ public:
   using MpiControl<ndim>::ExportBackParticleType;
   using MpiControl<ndim>::neibsearch;
   using MpiControl<ndim>::partbox;
+  using MpiControl<ndim>::simbox;
   using MpiControlType<ndim,ParticleType>::particles_to_export_per_node;
   using MpiControlType<ndim,ParticleType>::particles_to_export;
   using MpiControlType<ndim,ParticleType>::particles_receive;
@@ -239,11 +242,11 @@ public:
 
 
   //-----------------------------------------------------------------------------------------------
-  MpiKDTreeDecomposition();
+  MpiKDTreeDecomposition(DomainBox<ndim>& simboxaux): MpiControlType<ndim,ParticleType>(simboxaux) {};
   //virtual ~MpiKDTreeDecomposition();
 
   virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
-                                                Parameters*, DomainBox<ndim>, bool&);
+                                                Parameters*, bool&);
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *);
 
 };

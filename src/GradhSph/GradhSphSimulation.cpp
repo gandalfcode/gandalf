@@ -215,7 +215,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //-----------------------------------------------------------------------------------------------
 #if defined MPI_PARALLEL
   if (stringparams["mpi_decomposition"] == "kdtree") {
-    mpicontrol = new MpiKDTreeDecomposition<ndim,GradhSphParticle>();
+    mpicontrol = new MpiKDTreeDecomposition<ndim,GradhSphParticle>(simbox);
   }
   else {
     string message = "Unrecognised parameter : mpi_decomposition = "
