@@ -49,4 +49,10 @@ typedef double FLOAT;
 typedef double DOUBLE;
 #endif
 
+#if defined(GANDALF_SNAPSHOT_SINGLE_PRECISION)
+typedef float SNAPFLOAT;
+#else
+typedef double SNAPFLOAT;
+#endif
+
 #endif

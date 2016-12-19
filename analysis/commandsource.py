@@ -657,7 +657,11 @@ class RenderPlotCommand (PlotCommand):
         rendering = RenderBase.RenderFactory(sim.ndims, sim)
 
         # Allocate the rendered array
-        rendered = np.zeros(xres*yres, dtype=np.float32)
+        if rendering.single:
+            type_rendered=np.float32
+        else:
+            type_rendered=np.float64
+        rendered = np.zeros(xres*yres, dtype=type_rendered)
 
         # Call column integrated or slice rendering routine, depending on
         # dimensionality and parameters.

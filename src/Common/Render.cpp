@@ -102,15 +102,23 @@ int Render<ndim>::CreateColumnRenderingGrid
   const string ystring,                ///< [in] y-axis quantity
   const string renderstring,           ///< [in] Rendered quantity
   const string renderunit,             ///< [in] Required unit of rendered quantity
-  const float xmin,                    ///< [in] Minimum x-extent
-  const float xmax,                    ///< [in] Maximum x-extent
-  const float ymin,                    ///< [in] Minimum y-extent
-  const float ymax,                    ///< [in] Maximum y-extent
+  const SNAPFLOAT xmin,                    ///< [in] Minimum x-extent
+  const SNAPFLOAT xmax,                    ///< [in] Maximum x-extent
+  const SNAPFLOAT ymin,                    ///< [in] Minimum y-extent
+  const SNAPFLOAT ymax,                    ///< [in] Maximum y-extent
+#ifdef GANDALF_SNAPSHOT_SINGLE_PRECISION
   float* values,                       ///< [out] Rendered values for plotting
   const int Ngrid,                     ///< [in] No. of grid points (ixgrid*iygrid)
   SphSnapshotBase &snap,               ///< [inout] Snapshot object reference,
   const string typepart,                         ///< [in] Type of particles to render
   float &scaling_factor)               ///< [in] Rendered quantity scaling factor
+#else
+  double* values,                       ///< [out] Rendered values for plotting
+  const int Ngrid,                     ///< [in] No. of grid points (ixgrid*iygrid)
+  SphSnapshotBase &snap,               ///< [inout] Snapshot object reference,
+  const string typepart,                         ///< [in] Type of particles to render
+  double &scaling_factor)               ///< [in] Rendered quantity scaling factor
+#endif
 {
   int arraycheck = 1;                  // Verification flag
   int c;                               // Rendering grid cell counter
@@ -120,22 +128,22 @@ int Render<ndim>::CreateColumnRenderingGrid
   int idummy;                          // Dummy integer to verify valid arrays
   int imin,imax,jmin,jmax;             // Grid limits for column density interpolation
   int Nhydro = snap.GetNparticlesType(typepart);                // No. of SPH particles in snap
-  float dx,dy,invdx,invdy;             // ..
-  float dr[2];                         // Rel. position vector on grid plane
-  float drsqd;                         // Distance squared on grid plane
-  float drmag;                         // Distance
-  float dummyfloat = 0.0f;             // Dummy variable for function argument
-  float invh;                          // 1/h
-  float wkern;                         // Kernel value
-  float wnorm;                         // Kernel normalisation value
-  float *xvalues;                      // Pointer to 'x' array
-  float *yvalues;                      // Pointer to 'y' array
-  float *rendervalues;                 // Pointer to rendered quantity array
-  float *mvalues;                      // Pointer to mass array
-  float *rhovalues;                    // Pointer to density array
-  float *hvalues;                      // Pointer to smoothing length array
-  float *rendernorm;                   // Normalisation array
-  float *rgrid;                        // Grid positions
+  SNAPFLOAT dx,dy,invdx,invdy;             // ..
+  SNAPFLOAT dr[2];                         // Rel. position vector on grid plane
+  SNAPFLOAT drsqd;                         // Distance squared on grid plane
+  SNAPFLOAT drmag;                         // Distance
+  SNAPFLOAT dummyfloat = 0.0f;             // Dummy variable for function argument
+  SNAPFLOAT invh;                          // 1/h
+  SNAPFLOAT wkern;                         // Kernel value
+  SNAPFLOAT wnorm;                         // Kernel normalisation value
+  SNAPFLOAT *xvalues;                      // Pointer to 'x' array
+  SNAPFLOAT *yvalues;                      // Pointer to 'y' array
+  SNAPFLOAT *rendervalues;                 // Pointer to rendered quantity array
+  SNAPFLOAT *mvalues;                      // Pointer to mass array
+  SNAPFLOAT *rhovalues;                    // Pointer to density array
+  SNAPFLOAT *hvalues;                      // Pointer to smoothing length array
+  SNAPFLOAT *rendernorm;                   // Normalisation array
+  SNAPFLOAT *rgrid;                        // Grid positions
   string dummystring = "";             // Dummy string for function argument
 
   // Check x and y strings are actual co-ordinate strings
@@ -162,19 +170,19 @@ int Render<ndim>::CreateColumnRenderingGrid
   if (arraycheck == 0) return -1;
 
   // Allocate temporary memory for creating render grid
-  rendernorm = new float[Ngrid];
-  rgrid = new float[2*Ngrid];
+  rendernorm = new SNAPFLOAT[Ngrid];
+  rgrid = new SNAPFLOAT[2*Ngrid];
 
   // Create grid positions here (need to improve in the future)
-  dx = (xmax - xmin) / (float) ixgrid;
-  dy = (ymax - ymin) / (float) iygrid;
+  dx = (xmax - xmin) /  ixgrid;
+  dy = (ymax - ymin) /  iygrid;
   invdx = 1.0f/dx;
   invdy = 1.0f/dy;
   c = 0;
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
-      rgrid[2*c] = xmin + ((float) i + 0.5f)*dx;
-      rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*dy;
+      rgrid[2*c] = xmin + ( i + 0.5)*dx;
+      rgrid[2*c + 1] = ymin + ( j + 0.5)*dy;
       c++;
     }
   }
@@ -191,8 +199,8 @@ int Render<ndim>::CreateColumnRenderingGrid
  private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,hvalues,mvalues)\
  shared(Nhydro,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues)
   for (i=0; i<Nhydro; i++) {
-    const float hrange = hydro->kerntab.kernrange*hvalues[i];
-    //const float hrangesqd = hydro->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
+    const SNAPFLOAT hrange = hydro->kerntab.kernrange*hvalues[i];
+    //const SNAPFLOAT hrangesqd = hydro->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
     if (xvalues[i] + hrange < xmin || xvalues[i] - hrange > xmax ||
         yvalues[i] + hrange < ymin || yvalues[i] - hrange > ymax) continue;
@@ -213,13 +221,13 @@ int Render<ndim>::CreateColumnRenderingGrid
     for (jj=jmin; jj<=jmax; jj++) {
       for (ii=imin; ii<=imax; ii++) {
         c = ii + (iygrid - jj - 1)*ixgrid;
-        dr[0] = xmin + dx*(float) ii - xvalues[i];
-        dr[1] = ymin + dy*(float) jj - yvalues[i];
+        dr[0] = xmin + dx*(SNAPFLOAT) ii - xvalues[i];
+        dr[1] = ymin + dy*(SNAPFLOAT) jj - yvalues[i];
         drsqd = dr[0]*dr[0] + dr[1]*dr[1];
         //if (drsqd > hrangesqd) continue;
         drmag = sqrt(drsqd);
-        if (ndim == 3) wkern = float(hydro->kerntab.wLOS((FLOAT) (drmag*invh)));
-        else if (ndim == 2) wkern = float(hydro->kerntab.w0((FLOAT) (drmag*invh)));
+        if (ndim == 3) wkern = hydro->kerntab.wLOS( drmag*invh);
+        else if (ndim == 2) wkern = hydro->kerntab.w0( drmag*invh);
         else if (ndim == 1) wkern = 0.0f;
 #pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
@@ -259,16 +267,24 @@ int Render<ndim>::CreateSliceRenderingGrid
   const string zstring,                ///< [in] z-axis quantity
   const string renderstring,           ///< [in] Rendered quantity
   const string renderunit,             ///< [in] Required unit of rendered quantity
-  const float xmin,                    ///< [in] Minimum x-extent
-  const float xmax,                    ///< [in] Maximum x-extent
-  const float ymin,                    ///< [in] Minimum y-extent
-  const float ymax,                    ///< [in] Maximum y-extent
-  const float zslice,                  ///< [in] z-position of slice
+  const SNAPFLOAT xmin,                    ///< [in] Minimum x-extent
+  const SNAPFLOAT xmax,                    ///< [in] Maximum x-extent
+  const SNAPFLOAT ymin,                    ///< [in] Minimum y-extent
+  const SNAPFLOAT ymax,                    ///< [in] Maximum y-extent
+  const SNAPFLOAT zslice,                  ///< [in] z-position of slice
+#ifdef GANDALF_SNAPSHOT_SINGLE_PRECISION
   float* values,                       ///< [out] Rendered values for plotting
   const int Ngrid,                     ///< [in] No. of grid points (ixgrid*iygrid)
   SphSnapshotBase &snap,               ///< [inout] Snapshot object reference,
   const string typepart,                          ///< [in] Type of particles to render
   float &scaling_factor)               ///< [in] Rendered quantity scaling factor
+#else
+  double* values,                       ///< [out] Rendered values for plotting
+  const int Ngrid,                     ///< [in] No. of grid points (ixgrid*iygrid)
+  SphSnapshotBase &snap,               ///< [inout] Snapshot object reference,
+  const string typepart,                          ///< [in] Type of particles to render
+  double &scaling_factor)               ///< [in] Rendered quantity scaling factor
+#endif
 {
   int arraycheck = 1;                  // Verification flag
   int c;                               // Rendering grid cell counter
@@ -278,23 +294,23 @@ int Render<ndim>::CreateSliceRenderingGrid
   int ii,jj;                           // ..
   int imin,imax,jmin,jmax;             // Grid limits for column density interpolation
   int Nhydro = snap.GetNparticlesType(typepart);                // No. of SPH particles in snap
-  float dx,dy,invdx,invdy;             // ..
-  float dr[3];                         // Rel. position vector on grid plane
-  float drsqd;                         // Distance squared on grid plane
-  float drmag;                         // Distance
-  float dummyfloat = 0.0f;             // Dummy float for function arguments
-  float invh;                          // 1/h
-  float wkern;                         // Kernel value
-  float wnorm;                         // Kernel normalisation value
-  float *xvalues;                      // Pointer to 'x' array
-  float *yvalues;                      // Pointer to 'y' array
-  float *zvalues;                      // Pointer to 'z' array
-  float *rendervalues;                 // Pointer to rendered quantity array
-  float *mvalues;                      // Pointer to mass array
-  float *rhovalues;                    // Pointer to density array
-  float *hvalues;                      // Pointer to smoothing length array
-  float *rendernorm;                   // Normalisation array
-  float *rgrid;                        // Grid positions
+  SNAPFLOAT dx,dy,invdx,invdy;             // ..
+  SNAPFLOAT dr[3];                         // Rel. position vector on grid plane
+  SNAPFLOAT drsqd;                         // Distance squared on grid plane
+  SNAPFLOAT drmag;                         // Distance
+  SNAPFLOAT dummyfloat = 0.0f;             // Dummy SNAPFLOAT for function arguments
+  SNAPFLOAT invh;                          // 1/h
+  SNAPFLOAT wkern;                         // Kernel value
+  SNAPFLOAT wnorm;                         // Kernel normalisation value
+  SNAPFLOAT *xvalues;                      // Pointer to 'x' array
+  SNAPFLOAT *yvalues;                      // Pointer to 'y' array
+  SNAPFLOAT *zvalues;                      // Pointer to 'z' array
+  SNAPFLOAT *rendervalues;                 // Pointer to rendered quantity array
+  SNAPFLOAT *mvalues;                      // Pointer to mass array
+  SNAPFLOAT *rhovalues;                    // Pointer to density array
+  SNAPFLOAT *hvalues;                      // Pointer to smoothing length array
+  SNAPFLOAT *rendernorm;                   // Normalisation array
+  SNAPFLOAT *rgrid;                        // Grid positions
   string dummystring = "";             // Dummy string for function arguments
 
 
@@ -321,19 +337,19 @@ int Render<ndim>::CreateSliceRenderingGrid
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
 
-  rendernorm = new float[Ngrid];
-  rgrid = new float[2*Ngrid];
+  rendernorm = new SNAPFLOAT[Ngrid];
+  rgrid = new SNAPFLOAT[2*Ngrid];
 
   // Create grid positions here (need to improve in the future)
-  dx = (xmax - xmin) / (float) ixgrid;
-  dy = (ymax - ymin) / (float) iygrid;
+  dx = (xmax - xmin) / ixgrid;
+  dy = (ymax - ymin) / iygrid;
   invdx = 1.0f/dx;
   invdy = 1.0f/dy;
   c = 0;
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
-      rgrid[2*c] = xmin + ((float) i + 0.5f)*dx;
-      rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*dy;
+      rgrid[2*c] = xmin + ( i + 0.5f)*dx;
+      rgrid[2*c + 1] = ymin + (j + 0.5f)*dy;
       c++;
     }
   }
@@ -350,8 +366,8 @@ int Render<ndim>::CreateSliceRenderingGrid
    private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,hvalues,mvalues)\
    shared(Nhydro,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues,zvalues)
   for (i=0; i<Nhydro; i++) {
-    const float hrange = hydro->kerntab.kernrange*hvalues[i];
-    //const float hrangesqd = hydro->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
+    const SNAPFLOAT hrange = hydro->kerntab.kernrange*hvalues[i];
+    //const SNAPFLOAT hrangesqd = hydro->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
     if (xvalues[i] + hrange < xmin || xvalues[i] - hrange > xmax ||
         yvalues[i] + hrange < ymin || yvalues[i] - hrange > ymax ||
@@ -373,13 +389,13 @@ int Render<ndim>::CreateSliceRenderingGrid
     for (jj=jmin; jj<=jmax; jj++) {
       for (ii=imin; ii<=imax; ii++) {
         c = ii + (iygrid - jj - 1)*ixgrid;
-        dr[0] = xmin + dx*(float) ii - xvalues[i];
-        dr[1] = ymin + dy*(float) jj - yvalues[i];
+        dr[0] = xmin + dx*(SNAPFLOAT) ii - xvalues[i];
+        dr[1] = ymin + dy*(SNAPFLOAT) jj - yvalues[i];
         dr[2] = zslice - zvalues[i];
         drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
         //if (drsqd > hrangesqd) continue;
         drmag = sqrt(drsqd);
-        wkern = float(hydro->kerntab.w0((FLOAT) (drmag*invh)));
+        wkern = hydro->kerntab.w0(drmag*invh);
 #pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
 #pragma omp atomic

@@ -374,7 +374,13 @@ class ShocktubeSolution
   ~ShocktubeSolution();
 
   //void ComputeShocktubeSolution(const std::string, int, float *);
+#ifdef GANDALF_SNAPSHOT_SINGLE_PRECISION
   void ComputeShocktubeSolution(const std::string, float* vals, int N);
+  static const bool single=true;
+#else
+  void ComputeShocktubeSolution(const std::string, double* vals, int N);
+  static const bool single=false;
+#endif
 
 };
 #endif

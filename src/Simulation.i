@@ -214,17 +214,29 @@ ExceptionHandler::makeExceptionHandler(python);
     /*%template(map_string_any) map<string, boost::any>;*/
 }
 
- /* Applies Numpy black magic */
- %apply (float** ARGOUTVIEW_ARRAY1, int *DIM1) {(float** out_array, int* size_array)}
- %apply (float* INPLACE_ARRAY1, int DIM1) {(float* values, int Ngrid)}
- %apply (float* ARGOUT_ARRAY1, int DIM1) {(float* vals, int N)}
- %apply (double* IN_ARRAY1, int DIM1) {(double* input, int size)}
+%include "Precision.h"
 
- %apply float& OUTPUT { float& scaling_factor };
+
+ /* Applies Numpy black magic */
+ %apply (float** ARGOUTVIEW_ARRAY1, int *DIM1) {(float** out_array, int* size_array)} 
+ %apply (double** ARGOUTVIEW_ARRAY1, int *DIM1) {(double** out_array, int* size_array)}
+ 
+ %apply (double* INPLACE_ARRAY1, int DIM1) {(double* values, const int Ngrid)}
+  %apply (float* INPLACE_ARRAY1, int DIM1) {(float* values, const int Ngrid)}
+ 
+ %apply (double* ARGOUT_ARRAY1, int DIM1) {(double* vals, int N)}
+  %apply (float* ARGOUT_ARRAY1, int DIM1) {(float* vals, int N)}
+ 
+ %apply (double* IN_ARRAY1, int DIM1) {(double* input, int size)}
+  %apply (float* IN_ARRAY1, int DIM1) {(float* input, int size)}
+ 
+
+ %apply double& OUTPUT { double& scaling_factor };
+  %apply float& OUTPUT { float& scaling_factor };
+ 
 
  %include "HeaderInfo.h"
 
-%include "Precision.h"
 %include "RiemannSolver.h"
 %include "Simulation.h"
 %include "Parameters.h"
