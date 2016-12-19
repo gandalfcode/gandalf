@@ -106,6 +106,12 @@ else ifeq ($(PRECISION),DOUBLE)
 CFLAGS += -DGANDALF_DOUBLE_PRECISION
 endif
 
+# Snapshot precision
+# -------------------------------------------------------------------------------------------------
+ifeq ($(SNAPPRECISION),SINGLE)
+CFLAGS += -DGANDALF_SNAPSHOT_SINGLE_PRECISION
+endif
+
 
 # FFTW linkage
 #--------------------------------------------------------------------------------------------------
