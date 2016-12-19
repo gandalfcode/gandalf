@@ -1484,7 +1484,7 @@ void HydroTree<ndim,ParticleType>::FindMpiTransferParticles
       bool edge = false;
       for (int k=0; k<ndim; k++) if (part.r[k]==domainbox.max[k]) edge=true;
       if (!edge) assert(std::binary_search(temp.begin(),temp.end(),i));
-      if (edge) assert(!std::binary_search(temp.begin(),temp.end(),i));
+      //if (edge) assert(!std::binary_search(temp.begin(),temp.end(),i));
       for (int jnode=0; jnode<potential_nodes.size(); jnode++) {
           inode=potential_nodes[jnode];
           vector<int>::iterator it = std::find(particles_to_export[inode].begin(),particles_to_export[inode].end(),i);
