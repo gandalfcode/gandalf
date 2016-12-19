@@ -129,6 +129,8 @@ public:
       p2.r[k]=p.r[k];
       p2.v[k]=p.v[k];
       p2.a[k]=0;
+      p2.atree[k]=0;
+
     }
     p2.m = p.m;
     p2.rho = p.rho;
@@ -267,6 +269,7 @@ public:
       p2.r[k]=p.r[k];
       p2.v[k]=p.v[k];
       p2.a[k]=0.0;
+      p2.atree[k]=0;
 	  for (int kk=0; kk<ndim; kk++) {
 			p2.B[k][kk]=p.B[k][kk];
 	  }
