@@ -8,12 +8,15 @@ import numpy as np
 
 
 class DustyBoxTest(unittest.TestCase):
+    params = {}
+    run_id="DUSTYBOX_SPH"
+    expected_l1error_gas = 8e-4
+    expected_l1error_dust = 8e-4
     def setUp(self):
         self.sim=newsim("tests/dust_tests/dustybox.dat")
-        self.run_id="DUSTYBOX_SPH"
         self.sim.SetParam("run_id",self.run_id)
-        self.expected_l1error_gas = 8e-4
-        self.expected_l1error_dust = 8e-4
+        for p in self.params:
+            self.sim.SetParam(p, self.params[p])
     
 
     def test_error(self):
@@ -33,5 +36,28 @@ class DustyBoxTest(unittest.TestCase):
             analytical_dust[i]=sol.vd(t)
         errnorm_gas= np.linalg.norm(analytical_gas-vx_gas, ord=1)/time.size
         errnorm_dust= np.linalg.norm(analytical_dust-vx_dust, ord=1)/time.size
+        print(errnorm_gas,self.expected_l1error_gas)
+        print(errnorm_dust,self.expected_l1error_dust)
         self.assertLess(errnorm_gas,self.expected_l1error_gas)
         self.assertLess(errnorm_dust,self.expected_l1error_dust)
+
+        
+class DustyBoxTestParticle(DustyBoxTest):
+    run_id = "DUSTYBOX_SPH2"
+    params = {"dust_forces" : "test_particle"}
+    expected_l1error_gas  = 1e-12
+    expected_l1error_dust = 9e-4
+
+
+class DustyBoxTestStrong(DustyBoxTest):
+    run_id = "DUSTYBOX_SPH_STRONG"
+    expected_l1error_gas  = 6e-4
+    expected_l1error_dust = 6e-4
+    params = {"drag_coeff" : 100 }
+
+class DustyBoxTestStrongTS(DustyBoxTest):
+    run_id = "DUSTYBOX_SPH_STRONG2"
+    expected_l1error_gas  = 1e-12
+    expected_l1error_dust = 1.4e-3
+    params = {"drag_coeff" : 100,
+              "dust_forces" : "test_particle" }
