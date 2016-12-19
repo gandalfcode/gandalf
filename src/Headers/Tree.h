@@ -49,7 +49,11 @@ using namespace std;
 
 
 
-
+enum MAC_Type {
+  geometric = 0,
+  eigenmac  = 1,
+  gadget2   = 2
+};
 
 //=================================================================================================
 //  Class TreeBase
@@ -93,8 +97,8 @@ protected:
 	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 
 
-    virtual string GetMacType() const  = 0;
-    virtual void SetMacType(const string& value) = 0;
+    virtual MAC_Type GetMacType() const  = 0;
+    virtual void SetMacType(MAC_Type) = 0;
 
 
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
@@ -231,12 +235,18 @@ protected:
        string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
        const ParticleTypeRegister& pt_reg, const bool _IAmPruned) :
     	   TreeBase<ndim>(domain),
-    gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
+    gravity_mac(geometric), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd),
     gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned)
     {
-      SetMacType(gravity_mac) ;
+      if (_gravity_mac == "eigenmac")
+        gravity_mac = eigenmac ;
+      else if(_gravity_mac == "gadget2")
+        gravity_mac = gadget2;
+      else if (_gravity_mac != "geometric")
+        ExceptionHandler::getIstance().raise
+        ("Error: gravity_mac type, " + _gravity_mac + ", not recognised");
     };
 
   virtual ~Tree() { } ;
@@ -259,12 +269,11 @@ protected:
     return BoxOverlap(ndim, box1min, box1max, box2min, box2max) ;
   }
 
-  string GetMacType() const {
+  MAC_Type GetMacType() const {
     return gravity_mac ;
   }
-  void SetMacType(const string& value) {
+  void SetMacType(MAC_Type value) {
     gravity_mac = value;
-    use_relative_criterion = gravity_mac == "gadget2" ;
   }
 
 
@@ -362,7 +371,7 @@ protected:
 
   // Const variables for tree class
   //-----------------------------------------------------------------------------------------------
-  string gravity_mac;                  ///< Multipole-acceptance criteria for tree
+  MAC_Type gravity_mac;                  ///< Multipole-acceptance criteria for tree
   const string multipole;              ///< Multipole-order for cell gravity
   const int Nleafmax;                  ///< Max. number of particles per leaf cell
   const FLOAT invthetamaxsqd;          ///< 1 / thetamaxsqd
@@ -370,7 +379,6 @@ protected:
   const FLOAT macerror;                ///< Error tolerance for gravity tree-MAC
   const FLOAT theta;                   ///< Geometric opening angle
   const FLOAT thetamaxsqd;             ///< Geometric opening angle squared
-  bool use_relative_criterion;         ///< Whether to check the relative opening criterion
 
 
 
@@ -404,12 +412,22 @@ protected:
   bool open_cell_for_gravity(const TreeCell<ndim>& cell,
                              double drsqd, double macfactor, double amag) const
   {
-    if (drsqd < cell.cdistsqd || drsqd < cell.mac*macfactor)
+    if (drsqd < cell.cdistsqd)
       return true;
-    else if (use_relative_criterion)
-      return drsqd*drsqd*amag*macerror < cell.rmax*cell.rmax*cell.m;
-    else
-      return false ;
+
+    bool open ;
+    switch (gravity_mac) {
+    case eigenmac:
+      open = drsqd < cell.mac*macfactor;
+      break  ;
+    case gadget2:
+      open = drsqd*drsqd*amag*macerror < cell.rmax*cell.rmax*cell.m;
+      break ;
+    default:
+      open = false ;
+      break ;
+    }
+    return open ;
   }
 
 };

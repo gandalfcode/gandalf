@@ -343,7 +343,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
 
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == "eigenmac" ;
+      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
 
   // Zero all summation variables for all cells
   cell.Nactive  = 0;
@@ -356,7 +356,10 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   cell.mac      = (FLOAT) 0.0;
   cell.cdistsqd = big_number;
   cell.maxsound = (FLOAT) 0.0;
-  cell.amin     = big_number ;
+  if (gravity_mac == gadget2)
+    cell.amin = big_number ;
+  else if (gravity_mac == eigenmac)
+    cell.macfactor = 0 ;
   for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
@@ -409,8 +412,11 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
 		if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
 		if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
 	  }
-	  cell.amin = min(cell.amin,
-	                  sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
+      if (gravity_mac == gadget2)
+        cell.amin = min(cell.amin,
+                        sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
+      else if (gravity_mac == eigenmac)
+        cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
 	}
 	if (i == cell.ilast) break;
 	i = inext[i];
@@ -455,7 +461,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   }
 
   // Calculate eigenvalue MAC criteria
-  if (gravity_mac == "eigenmac") {
+  if (gravity_mac == eigenmac) {
     if (ndim == 3)
       p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
         cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];

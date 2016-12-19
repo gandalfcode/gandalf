@@ -91,8 +91,8 @@ protected:
   virtual void ToggleNeighbourCheck(bool do_check) = 0 ;
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool) = 0 ;
 
-  virtual string GetOpeningCriterion() const = 0;
-  virtual void SetOpeningCriterion(const string&) = 0;
+  virtual MAC_Type GetOpeningCriterion() const = 0;
+  virtual void SetOpeningCriterion(MAC_Type) = 0;
 
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const = 0;
@@ -176,8 +176,8 @@ protected:
   virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
   virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
 
-  virtual string GetOpeningCriterion() const ;
-  virtual void SetOpeningCriterion(const string&) ;
+  virtual MAC_Type GetOpeningCriterion() const ;
+  virtual void SetOpeningCriterion(const MAC_Type) ;
 
 
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool);

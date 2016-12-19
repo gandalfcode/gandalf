@@ -758,6 +758,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
         }
 
         // Include self-term for potential
+        // TODO:
+        //   Check: Is this now accounted for in the neighbour list?
         for (int j=0; j<Nactive; j++)
           activepart[j].gpot = (activepart[j].m/activepart[j].h)*mfv->kernp->wpot((FLOAT) 0.0);
 

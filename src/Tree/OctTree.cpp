@@ -472,7 +472,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   debug2("[OctTree::StockTree]");
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == "eigenmac" ;
+      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
 
   // Loop over all levels in tree starting from lowest up to the top root cell level.
   //===============================================================================================
@@ -495,7 +495,10 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       cell.mac      = (FLOAT) 0.0;
       cell.cdistsqd = big_number;
       cell.maxsound = (FLOAT) 0.0;
-      cell.amin     = big_number;
+      if (gravity_mac == gadget2)
+        cell.amin = big_number ;
+      else if (gravity_mac == eigenmac)
+        cell.macfactor = 0 ;
       for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
@@ -552,8 +555,11 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
               if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
               if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
             }
-            cell.amin = min(cell.amin,
-                            sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
+            if (gravity_mac == gadget2)
+              cell.amin = min(cell.amin,
+                              sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
+            else if (gravity_mac == eigenmac)
+              cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
           }
           if (i == cell.ilast) break;
           i = inext[i];
@@ -622,7 +628,10 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             for (k=0; k<ndim; k++) cell.v[k] += child.m*child.v[k];
             cell.hmax = max(child.hmax, cell.hmax);
             cell.maxsound = max(cell.maxsound,child.maxsound);
-            cell.amin = min(cell.amin, child.amin);
+            if (gravity_mac == gadget2)
+              cell.amin = min(cell.amin, child.amin);
+            else if (gravity_mac == eigenmac)
+              cell.macfactor = max(cell.macfactor, child.macfactor) ;
             cell.m += child.m;
             cell.N += child.N;
           }
@@ -683,7 +692,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
 
       // Calculate eigenvalue MAC criteria
-      if (gravity_mac == "eigenmac") {
+      if (gravity_mac == eigenmac) {
         if (ndim == 3)
           p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2])
             - cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];

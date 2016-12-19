@@ -514,14 +514,14 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute all initial hydro terms
   // We will need to iterate if we are going to use a relative opening criterion
   //-----------------------------------------------------------------------------------------------
-  bool gadget_mac = mfvneib->GetOpeningCriterion() == "gadget2" ;
-  int n_iter = 1 + (mfv->self_gravity == 1 && gadget_mac) ;
+  MAC_Type mac_type = mfvneib->GetOpeningCriterion() ;
+  int n_iter = 1 + (mfv->self_gravity == 1 && mac_type != geometric) ;
   for (int iter=0; iter < n_iter; iter++) {
 
-    if (iter==0 && gadget_mac)
-      mfvneib->SetOpeningCriterion("eigenmac");
+    if (iter==0 && mac_type != geometric)
+      mfvneib->SetOpeningCriterion(geometric);
     else
-      mfvneib->SetOpeningCriterion("gadget2") ;
+      mfvneib->SetOpeningCriterion(gadget2) ;
 
     for (i=0; i<mfv->Ntot; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);

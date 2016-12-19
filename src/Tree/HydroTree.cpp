@@ -193,12 +193,12 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
 
 
 template <int ndim, template <int> class ParticleType>
-string HydroTree<ndim,ParticleType>::GetOpeningCriterion() const {
+MAC_Type HydroTree<ndim,ParticleType>::GetOpeningCriterion() const {
   return tree->GetMacType() ;
 }
 
 template <int ndim, template <int> class ParticleType>
-void HydroTree<ndim,ParticleType>::SetOpeningCriterion(const string& value) {
+void HydroTree<ndim,ParticleType>::SetOpeningCriterion(MAC_Type value) {
   tree->SetMacType(value) ;
   ghosttree->SetMacType(value) ;
 #ifdef MPI_PARALLEL

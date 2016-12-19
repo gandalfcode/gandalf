@@ -39,7 +39,10 @@ struct TreeCellBase {
   FLOAT drmaxdt;                       ///< Rate of change of bounding sphere
   FLOAT dhmaxdt;                       ///< Rate of change of maximum h
   FLOAT q[5];                          ///< Quadrupole moment tensor
-  FLOAT amin;                          ///< Minimum grav accel of particles in the cell
+  union {
+    FLOAT amin;                        ///< Minimum grav accel of particles in the cell
+    FLOAT macfactor;                   ///< Potential based accuracy factor.
+  } ;
 #ifdef MPI_PARALLEL
   double worktot;                      ///< Total work in cell
 #endif

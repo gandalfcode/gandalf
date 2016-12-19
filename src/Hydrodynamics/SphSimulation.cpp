@@ -357,14 +357,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute all initial SPH force terms
   // We will need to iterate if we are going to use a relative opening criterion
   //-----------------------------------------------------------------------------------------------
-  bool gadget_mac = sphneib->GetOpeningCriterion() == "gadget2" ;
-  int n_iter = 1 + (sph->self_gravity == 1 && gadget_mac) ;
+  MAC_Type mac_type = sphneib->GetOpeningCriterion() ;
+  int n_iter = 1 + (sph->self_gravity == 1 && mac_type != geometric) ;
   for (int iter=0; iter < n_iter; iter++) {
 
-    if (iter==0 && gadget_mac)
-      sphneib->SetOpeningCriterion("eigenmac");
+    if (iter==0 && mac_type != geometric)
+      sphneib->SetOpeningCriterion(geometric);
     else
-      sphneib->SetOpeningCriterion("gadget2") ;
+      sphneib->SetOpeningCriterion(gadget2) ;
 
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).flags.set_flag(active);
 

@@ -821,7 +821,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == "eigenmac" ;
+      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
 
   // Zero all summation variables for all cells
   if ((cell.level==ltot&&stock_leaf) || cell.copen != -1 ) {
@@ -835,8 +835,11 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 	  cell.mac      = (FLOAT) 0.0;
 	  cell.cdistsqd = big_number;
 	  cell.maxsound = (FLOAT) 0.0;
-	  cell.amin     = big_number;
-	  for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
+      if (gravity_mac == gadget2)
+        cell.amin = big_number ;
+      else if (gravity_mac == eigenmac)
+        cell.macfactor = 0 ;
+      for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
@@ -893,8 +896,11 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
          if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
          if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
         }
-        cell.amin = min(cell.amin,
-                        sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
+        if (gravity_mac == gadget2)
+          cell.amin = min(cell.amin,
+                          sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
+        else if (gravity_mac == eigenmac)
+          cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
       }
       if (i == cell.ilast) break;
       i = inext[i];
@@ -956,7 +962,10 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child1.vbox.max[k],cell.vbox.max[k]);
       cell.hmax = max(cell.hmax,child1.hmax);
       cell.maxsound = max(cell.maxsound,child1.maxsound);
-      cell.amin = min(cell.amin, child1.amin);
+      if (gravity_mac == gadget2)
+        cell.amin = min(cell.amin, child1.amin);
+      else if (gravity_mac == eigenmac)
+        cell.macfactor = max(cell.macfactor, child1.macfactor) ;
     }
     if (child2.N > 0) {
       for (k=0; k<ndim; k++) cell.bb.min[k] = min(child2.bb.min[k],cell.bb.min[k]);
@@ -967,7 +976,11 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child2.vbox.max[k],cell.vbox.max[k]);
       cell.hmax = max(cell.hmax,child2.hmax);
       cell.maxsound = max(cell.maxsound,child2.maxsound);
-      cell.amin = min(cell.amin, child1.amin);
+      cell.amin = min(cell.amin, child2.amin);
+      if (gravity_mac == gadget2)
+        cell.amin = min(cell.amin, child2.amin);
+      else if (gravity_mac == eigenmac)
+        cell.macfactor = max(cell.macfactor, child2.macfactor) ;
     }
 
     cell.N = child1.N + child2.N;
@@ -1039,7 +1052,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
 
   // Calculate eigenvalue MAC criteria
-  if (gravity_mac == "eigenmac") {
+  if (gravity_mac == eigenmac) {
     if (ndim == 3)
       p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
         cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];

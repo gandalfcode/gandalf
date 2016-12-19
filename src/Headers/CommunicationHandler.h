@@ -385,6 +385,7 @@ public:
     c2.N = c.N;
     c2.worktot=0.;
 
+    // Only need amin as amin / macfactor are in a union
     c2.amin = c.amin ;
   }
 
