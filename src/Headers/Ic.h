@@ -101,19 +101,27 @@ public:
 
   // Virtual functions
   //-----------------------------------------------------------------------------------------------
-  virtual void Generate(void) {};
-  virtual FLOAT GetValue(const std::string, const FLOAT *);
+  virtual void Generate(void) {
+    ExceptionHandler::getIstance().raise("Ic::Generate function not implemented");
+  };
+  virtual FLOAT GetDensity(const FLOAT *) const {
+    ExceptionHandler::getIstance().raise("Ic::GetDensity function not implemented");
+    return (FLOAT) 0.0;
+  };
+  virtual void SetParticleProperties() {
+    ExceptionHandler::getIstance().raise("Ic::SetParticleProperties function not implemented");
+  }
   virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const {
     ExceptionHandler::getIstance().raise("GetParticleRegularizer not implemented");
-    return NULL ;
-  } ;
+    return NULL;
+  };
 
 
   // Other common functions
   //-----------------------------------------------------------------------------------------------
   void CheckInitialConditions(void);
   FLOAT CalculateMassInBox(const Box<ndim>&);
-  FLOAT GetSmoothedValue(const std::string, const FLOAT *, const FLOAT, SmoothingKernel<ndim> *);
+  FLOAT GetSmoothedDensity(const FLOAT *, const FLOAT, SmoothingKernel<ndim> *);
 
 
   // Static functions which can be used outside of Ic class
@@ -438,9 +446,10 @@ public:
   FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   virtual ~FilamentIc() {};
 
-  virtual void Generate(void);
-  virtual FLOAT GetValue(const std::string, const FLOAT *);
-  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
+  virtual void Generate();
+  virtual FLOAT GetDensity(const FLOAT *) const;
+  virtual void SetParticleProperties();
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const ;
 
 };
 
@@ -879,15 +888,10 @@ public:
   SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   virtual ~SilccIc() {};
 
-  virtual void Generate(void);
-  virtual FLOAT GetValue(const std::string, const FLOAT *);
-<<<<<<< HEAD
+  virtual void Generate();
+  virtual FLOAT GetDensity(const FLOAT *) const;
+  virtual void SetParticleProperties();
   virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const ;
-  FLOAT density(const Particle<ndim>& p) const ;
-=======
-  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
-
->>>>>>> 9545e85... 1) Fixed small bug with regularisation scheme where having h = 0 (i.e. not initialised properly) leads to density-iteration problems.  Set h = 1 in the constructor as a fall-back (ideally a good guess of h should be provided in the initial conditions generator).  2) Cleaned up Ic.h (removed unused function prototypes).
 
 };
 
@@ -1046,13 +1050,13 @@ public:
 
   virtual FLOAT operator()(const Particle<ndim>& part,
                            const Particle<ndim>& neibpart) const
-   {
-     FLOAT rhotrue = _rho_func->density(neibpart) ;
-     FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue + small_number);
-     rhofrac = std::min(std::max(rhofrac, -0.1), 10.0) ;
+  {
+    FLOAT rhotrue = _rho_func->GetDensity(neibpart.r);
+    FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue + small_number);
+    rhofrac = std::min(std::max(rhofrac, -0.1), 10.0);
 
-     return rhoReg*rhofrac + alphaReg;
-   }
+    return rhoReg*rhofrac + alphaReg;
+  }
 
 };
 
