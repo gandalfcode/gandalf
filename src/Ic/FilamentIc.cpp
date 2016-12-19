@@ -115,16 +115,12 @@ void FilamentIc<ndim>::Generate(void)
     // Copy positions to main array and initialise all other variables
     for (int i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      for (int k=0; k<ndim; k++) {
-        part.r[k] = r[ndim*i + k];
-        part.v[k] = (FLOAT) 0.0;
-        part.a[k] = (FLOAT) 0.0;
-      }
+      for (int k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
       part.m = mp;
-      part.u = u0;
-      part.iorig = i;
-      part.ptype = gas;
     }
+
+    // Now set all other particle properties
+    SetParticleProperties();
 
     delete[] r;
 
@@ -141,34 +137,53 @@ void FilamentIc<ndim>::Generate(void)
 /// Returns the value of the requested quantity at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT FilamentIc<ndim>::GetValue
- (const std::string var,
-  const FLOAT r[ndim])
+FLOAT FilamentIc<ndim>::GetDensity(const FLOAT r[ndim]) const
 {
-  if (var == "x") {
-    return r[0];
-  }
-  else if (ndim > 1 && var == "y") {
-    return r[1];
-  }
-  else if (ndim > 2 && var == "z") {
-    return r[2];
-  }
-  else if (var == "rho") {
-    FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
-    FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
-    FLOAT z = r[2];
-    if (R < Rfilament && fabs(z) < Lfilament) {
-      return rho0 / ((FLOAT) 1.0 + radsqd/r0/r0 + z*z/r0/r0/aconst/aconst);
-    }
-    else {
-      return (FLOAT) 0.0;
-    }
+  FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
+  FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+  FLOAT z = r[2];
+  if (R < Rfilament && fabs(z) < Lfilament) {
+    return rho0 / ((FLOAT) 1.0 + radsqd/r0/r0 + z*z/r0/r0/aconst/aconst);
   }
   else {
-    std::cout << "Invalid string variable for Filament::GetValue" << std::endl;
-    return 0.0;
+    return (FLOAT) 0.0;
   }
+}
+
+
+
+//=================================================================================================
+//  Filament::SetParticleProperties
+/// Sets the properties of all particles once their positions have been allocated.
+//=================================================================================================
+template <int ndim>
+void FilamentIc<ndim>::SetParticleProperties()
+{
+  // Copy positions to main array and initialise all other variables
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (int k=0; k<ndim; k++) {
+      part.v[k] = (FLOAT) 0.0;
+      part.a[k] = (FLOAT) 0.0;
+    }
+    part.u     = u0;
+    part.iorig = i;
+    part.ptype = gas;
+  }
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Filament::GetParticleRegularizer
+/// Return the regularizer based upon the density.
+//=================================================================================================
+template <int ndim>
+Regularization::RegularizerFunction<ndim>* FilamentIc<ndim>::GetParticleRegularizer() const {
+  using Regularization::DefaultRegularizerFunction ;
+  return new DefaultRegularizerFunction<ndim,FilamentIc<ndim> >(simparams, this) ;
 }
 
 

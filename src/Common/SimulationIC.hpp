@@ -186,17 +186,20 @@ void Simulation<ndim>::GenerateIC(void)
 
   assert(icGenerator != NULL) ;
 
-  // Finally, generate the initial conditions
+  // Finally, generate the particles for the chosen initial conditions
   icGenerator->Generate();
 
-  // Smooth the particle distribution?
+  // If selected, call all functions for regularising the particle distribution
   if (simparams->intparams["regularise_particle_ics"] == 1) {
     using Regularization::RegularizerFunction;
     using Regularization::ParticleRegularizer;
 
-    RegularizerFunction<ndim> * reg_func = icGenerator->GetParticleRegularizer() ;
+    // Regularise the particle distribution using the density function providing in the IC class
+    RegularizerFunction<ndim> *reg_func = icGenerator->GetParticleRegularizer();
+    ParticleRegularizer<ndim>(simparams, simbox)(hydro, neib, nbody, *reg_func);
 
-    ParticleRegularizer<ndim>(simparams, simbox)(hydro, neib, nbody, *reg_func) ;
+    // Once regularisation step has finished, (re)set all particle properties
+    icGenerator->SetParticleProperties();
 
     delete reg_func ;
   }

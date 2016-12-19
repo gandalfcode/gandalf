@@ -60,7 +60,7 @@ FLOAT Ic<ndim>::CalculateMassInBox
   if (ndim == 1) {
     for (int i=0; i<grid[0]; i++) {
       r[0] = box.min[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
-      mtot += this->GetValue("rho", r);
+      mtot += this->GetDensity(r);
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ FLOAT Ic<ndim>::CalculateMassInBox
       r[0] = box.min[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
       for (int j=0; j<grid[1]; j++) {
         r[1] = box.min[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
-        mtot += this->GetValue("rho", r);
+        mtot += this->GetDensity(r);
       }
     }
   }
@@ -81,7 +81,7 @@ FLOAT Ic<ndim>::CalculateMassInBox
         r[1] = box.min[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
         for (int k=0; k<grid[2]; k++) {
           r[2] = box.min[2] + ((FLOAT) k + (FLOAT) 0.5)*dr[2];
-          mtot += this->GetValue("rho", r);
+          mtot += this->GetDensity(r);
         }
       }
     }
@@ -96,31 +96,15 @@ FLOAT Ic<ndim>::CalculateMassInBox
 
 
 //=================================================================================================
-//  Ic::GetValue
-/// Default GetValue function for undefined case to throw an exception if ever called.
-//=================================================================================================
-template <int ndim>
-FLOAT Ic<ndim>::GetValue
- (const std::string var,
-  const FLOAT r[ndim])
-{
-  ExceptionHandler::getIstance().raise("Error : GetValue function not defined");
-  return (FLOAT) 0.0;
-}
-
-
-
-//=================================================================================================
-//  Ic::GetSmoothedValue
+//  Ic::GetSmoothedDensity
 /// Calculates the smoothed value of the required quantity 'var' at the position 'rsmooth' for
 /// a smoothing kernel 'kern' and smoothing length 'h'.  Numerically calculates the smoothed
 /// integral by discretising over the smoothing kernel extent with a grid of size 'gridsize' in
 /// each dimension.  Returns the final smoothed quantity.
 //=================================================================================================
 template <int ndim>
-FLOAT Ic<ndim>::GetSmoothedValue
- (const std::string var,
-  const FLOAT rsmooth[ndim],
+FLOAT Ic<ndim>::GetSmoothedDensity
+ (const FLOAT rsmooth[ndim],
   const FLOAT h,
   SmoothingKernel<ndim> *kern)
 {
@@ -142,7 +126,7 @@ FLOAT Ic<ndim>::GetSmoothedValue
       dr[0] = ((FLOAT) i + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
       drsqd = dr[0]*dr[0];
       r[0]  = rsmooth[0] + dr[0];
-      sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetValue("rho", r);
+      sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r);
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -154,7 +138,7 @@ FLOAT Ic<ndim>::GetSmoothedValue
         r[0]  = rsmooth[0] + dr[0];
         r[1]  = rsmooth[1] + dr[1];
         drsqd = dr[0]*dr[0] + dr[1]*dr[1];
-        sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetValue("rho", r);
+        sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r);
       }
     }
   }
@@ -170,7 +154,7 @@ FLOAT Ic<ndim>::GetSmoothedValue
           r[1]  = rsmooth[1] + dr[1];
           r[2]  = rsmooth[2] + dr[2];
           drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-          sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetValue("rho", r);
+          sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r);
         }
       }
     }
@@ -392,7 +376,7 @@ FLOAT Ic<ndim>::GetMaximumDensity
     for (int k=0; k<ndim; k++) {
       rrand[k] = box.min[k] + (box.max[k] - box.min[k])*randnumb->floatrand();
     }
-    rhoMax = max(rhoMax, GetValue("rho", rrand));
+    rhoMax = max(rhoMax, GetDensity(rrand));
   }
 
   return rhoMax;
@@ -427,7 +411,7 @@ void Ic<ndim>::AddMonteCarloDensityField
         rrand[k] = box.min[k] + (box.max[k] - box.min[k])*randnumb->floatrand();
       }
       rho = rhoMax*randnumb->floatrand();
-    } while (GetValue("rho", rrand) < rho);
+    } while (GetDensity(rrand) < rho);
 
     // Copy "correct" particle position to array for IC generation
     for (int k=0; k<ndim; k++) r[ndim*i + k] = rrand[k];
@@ -915,10 +899,6 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
           break;
         }
       }
-
-      // Reposition particle with new angle
-      //r[ndim*i] = rcentre[0] + Rmag*cos(phiprime);
-      //r[ndim*i + 1] = rcentre[1] + Rmag*sin(phiprime);
 
     }
     //---------------------------------------------------------------------------------------------
