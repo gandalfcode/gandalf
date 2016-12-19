@@ -39,9 +39,9 @@ FFTW_LIBRARY       =
 
 # GNU Scientific library flags and paths.  If paths are empty, tries standard default linux paths.
 #--------------------------------------------------------------------------------------------------
-GSL                = 1
+GSL                =
 GSL_INCLUDE        =
-GSL_LIBRARY        = 
+GSL_LIBRARY        =
 
 
 # Select location of python and numpy libraries.  If blank, make will try to
