@@ -207,7 +207,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(sph, nbody, simparams, simbox,
+  mpicontrol->CreateInitialDomainDecomposition(sph, nbody, simparams,
                                                this->initial_h_provided);
   this->AllocateParticleMemory();
 #endif

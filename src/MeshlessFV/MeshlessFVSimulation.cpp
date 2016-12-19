@@ -367,7 +367,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams, simbox,
+  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams,
                                                this->initial_h_provided);
   this->AllocateParticleMemory();
 #endif

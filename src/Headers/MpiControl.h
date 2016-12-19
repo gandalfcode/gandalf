@@ -117,7 +117,7 @@ class MpiControl
   virtual void ExportParticlesBeforeForceLoop(Hydrodynamics<ndim> *) = 0;
   virtual void GetExportedParticlesAccelerations(Hydrodynamics<ndim> *) = 0;
   virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
-                                                Parameters*, DomainBox<ndim>, bool&) = 0;
+                                                Parameters*,  bool&) = 0;
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* hydro)=0;
   void UpdateSinksAfterAccretion(Sinks<ndim>* sink);
@@ -170,9 +170,7 @@ public:
   MpiControlType(DomainBox<ndim>& simboxaux);
   ~MpiControlType() {};
 
-  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
-                                                Parameters*, DomainBox<ndim>, bool&) = 0;
-  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+
   virtual void ExportParticlesBeforeForceLoop (Hydrodynamics<ndim> *);
   virtual void GetExportedParticlesAccelerations (Hydrodynamics<ndim> *);
   virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>*);
