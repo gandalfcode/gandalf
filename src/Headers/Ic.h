@@ -272,13 +272,24 @@ protected:
   using Ic<ndim>::simparams;
   using Ic<ndim>::simunits;
 
+  FLOAT amp;                               ///< Azimuthal density perturbation amplitude
+  FLOAT angvel;                            ///< Angular velocity of rotating cloud
+  FLOAT mcloud;                            ///< Mass of cloud
+  FLOAT radius;                            ///< Radius of cloud
+  FLOAT rho0;                              ///< Average density of cloud
+  FLOAT temp0;                             ///< Temperature of cloud
+  FLOAT u0;                                ///< Specific internal energy of gas
+
 
 public:
 
   BossBodenheimerIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
   virtual ~BossBodenheimerIc() {};
 
-  virtual void Generate(void);
+  virtual void Generate();
+  virtual FLOAT GetDensity(const FLOAT *) const;
+  virtual void SetParticleProperties();
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
 
 };
 
