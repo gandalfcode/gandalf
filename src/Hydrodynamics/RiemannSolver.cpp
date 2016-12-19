@@ -611,10 +611,10 @@ void ShocktubeSolution::ComputeShocktubeSolution
     riemann->SampleExactSolution(pstar, ustar, s, pl, pr, rhol, rhor, cl, cr, vl, vr, p, d, u);
 
     if (quantity == "x") vals[i] = x;
-    else if (quantity == "rho") vals[i] = (SNAPFLOAT) d;
-    else if (quantity == "vx") vals[i] = (SNAPFLOAT)u;
-    else if (quantity == "press") vals[i] = (SNAPFLOAT)p;
-    else if (quantity == "u") vals[i] = (SNAPFLOAT) (p/d/(gamma - 1.0));
+    else if (quantity == "rho") vals[i] = d;
+    else if (quantity == "vx") vals[i] = u;
+    else if (quantity == "press") vals[i] = p;
+    else if (quantity == "u") vals[i] = (p/d/(gamma - 1.0));
     else vals[i] = 0.0f;
   }
   //-----------------------------------------------------------------------------------------------

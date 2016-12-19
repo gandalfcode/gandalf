@@ -174,15 +174,15 @@ int Render<ndim>::CreateColumnRenderingGrid
   rgrid = new SNAPFLOAT[2*Ngrid];
 
   // Create grid positions here (need to improve in the future)
-  dx = (xmax - xmin) / (SNAPFLOAT) ixgrid;
-  dy = (ymax - ymin) / (SNAPFLOAT) iygrid;
+  dx = (xmax - xmin) /  ixgrid;
+  dy = (ymax - ymin) /  iygrid;
   invdx = 1.0f/dx;
   invdy = 1.0f/dy;
   c = 0;
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
-      rgrid[2*c] = xmin + ((SNAPFLOAT) i + 0.5f)*dx;
-      rgrid[2*c + 1] = ymin + ((SNAPFLOAT) j + 0.5f)*dy;
+      rgrid[2*c] = xmin + ( i + 0.5)*dx;
+      rgrid[2*c + 1] = ymin + ( j + 0.5)*dy;
       c++;
     }
   }
@@ -226,8 +226,8 @@ int Render<ndim>::CreateColumnRenderingGrid
         drsqd = dr[0]*dr[0] + dr[1]*dr[1];
         //if (drsqd > hrangesqd) continue;
         drmag = sqrt(drsqd);
-        if (ndim == 3) wkern = SNAPFLOAT(hydro->kerntab.wLOS((SNAPFLOAT) (drmag*invh)));
-        else if (ndim == 2) wkern = SNAPFLOAT(hydro->kerntab.w0((SNAPFLOAT) (drmag*invh)));
+        if (ndim == 3) wkern = hydro->kerntab.wLOS( drmag*invh);
+        else if (ndim == 2) wkern = hydro->kerntab.w0( drmag*invh);
         else if (ndim == 1) wkern = 0.0f;
 #pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
@@ -341,15 +341,15 @@ int Render<ndim>::CreateSliceRenderingGrid
   rgrid = new SNAPFLOAT[2*Ngrid];
 
   // Create grid positions here (need to improve in the future)
-  dx = (xmax - xmin) / (SNAPFLOAT) ixgrid;
-  dy = (ymax - ymin) / (SNAPFLOAT) iygrid;
+  dx = (xmax - xmin) / ixgrid;
+  dy = (ymax - ymin) / iygrid;
   invdx = 1.0f/dx;
   invdy = 1.0f/dy;
   c = 0;
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
-      rgrid[2*c] = xmin + ((SNAPFLOAT) i + 0.5f)*dx;
-      rgrid[2*c + 1] = ymin + ((SNAPFLOAT) j + 0.5f)*dy;
+      rgrid[2*c] = xmin + ( i + 0.5f)*dx;
+      rgrid[2*c + 1] = ymin + (j + 0.5f)*dy;
       c++;
     }
   }
@@ -395,7 +395,7 @@ int Render<ndim>::CreateSliceRenderingGrid
         drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
         //if (drsqd > hrangesqd) continue;
         drmag = sqrt(drsqd);
-        wkern = SNAPFLOAT(hydro->kerntab.w0((SNAPFLOAT) (drmag*invh)));
+        wkern = hydro->kerntab.w0(drmag*invh);
 #pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
 #pragma omp atomic

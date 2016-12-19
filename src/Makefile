@@ -108,7 +108,7 @@ endif
 
 # Snapshot precision
 # -------------------------------------------------------------------------------------------------
-ifeq ($(SNAPPRECISION),SINGLE)
+ifeq ($(PYSNAP_PRECISION),SINGLE)
 CFLAGS += -DGANDALF_SNAPSHOT_SINGLE_PRECISION
 endif
 
