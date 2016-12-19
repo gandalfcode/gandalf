@@ -820,6 +820,9 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   FLOAT lambda = (FLOAT) 0.0;          // ..
 
 
+  const bool need_quadrupole_moments =
+      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == "eigenmac" ;
+
   // Zero all summation variables for all cells
   if ((cell.level==ltot&&stock_leaf) || cell.copen != -1 ) {
 	  cell.Nactive  = 0;
@@ -908,7 +911,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     // Compute quadrupole moment terms if selected
-    if (multipole == "quadrupole" || multipole == "fast_quadrupole") {
+    if (need_quadrupole_moments) {
       i = cell.ifirst;
 
       while (i != -1) {
@@ -983,7 +986,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     // Now add individual quadrupole moment terms
-    if ((multipole == "quadrupole" || multipole == "fast_quadrupole") && child1.N > 0) {
+    if (need_quadrupole_moments && child1.N > 0) {
       mi = child1.m;
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -1007,7 +1010,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       }
     }
 
-    if ((multipole == "quadrupole" || multipole == "fast_quadrupole") && child2.N > 0) {
+    if (need_quadrupole_moments && child2.N > 0) {
       mi = child2.m;
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);

@@ -420,19 +420,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
         const int Nneib=neibmanager.GetParticleNeib(activepart[j],hmask,&mfvlist,&neibpart,do_pair_once);
 
-        // Compute distances and the inverse between the current particle and all neighbours here,
-        // for both gather and inactive scatter neibs.  Only consider particles with j > i to
-        // compute pair forces once unless particle j is inactive.
-        //-----------------------------------------------------------------------------------------
-
-          // Skip current active particle
-//          if (!neibpart[jj].flags.is_mirror() && neiblist[jj] == i) continue;
-
-//            levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
-
-        //-----------------------------------------------------------------------------------------
-
-        // Compute all neighbour contributions to hydro forces
+        // Compute all neighbour contributions to gradients
         mfv->ComputeGradients(i, Nneib, mfvlist, activepart[j], neibpart);
 
       }

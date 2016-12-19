@@ -471,6 +471,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
   debug2("[OctTree::StockTree]");
 
+  const bool need_quadrupole_moments =
+      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == "eigenmac" ;
 
   // Loop over all levels in tree starting from lowest up to the top root cell level.
   //===============================================================================================
@@ -568,7 +570,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         }
 
         // Compute quadrupole moment terms if selected
-        if (multipole == "quadrupole") {
+        if (need_quadrupole_moments) {
           i = cell.ifirst;
 
           while (i != -1) {
@@ -648,7 +650,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           TreeCell<ndim> &child = celldata[cc];
 
           // Now add individual quadrupole moment terms
-          if (multipole == "quadrupole" && child.N > 0) {
+          if (need_quadrupole_moments && child.N > 0) {
             mi = child.m;
             for (k=0; k<ndim; k++) dr[k] = child.r[k] - cell.r[k];
             drsqd = DotProduct(dr,dr,ndim);
