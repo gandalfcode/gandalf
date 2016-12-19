@@ -213,7 +213,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       else {
     		 mfvneib->StockPrunedTree(rank, mfv);
       }
-      mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox);
+      mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox, ewald);
       mpicontrol->ExportParticlesBeforeForceLoop(mfv);
     }
 #endif

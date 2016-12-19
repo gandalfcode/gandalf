@@ -514,13 +514,14 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute all initial hydro terms
   // We will need to iterate if we are going to use a relative opening criterion
   //-----------------------------------------------------------------------------------------------
-  int n_iter = 1 + (mfv->self_gravity == 1 && mfvneib->GetRelativeOpeningCriterion()) ;
+  bool gadget_mac = mfvneib->GetOpeningCriterion() == "gadget2" ;
+  int n_iter = 1 + (mfv->self_gravity == 1 && gadget_mac) ;
   for (int iter=0; iter < n_iter; iter++) {
 
-    if (iter==0)
-      mfvneib->SetRelativeOpeningCriterion(false);
+    if (iter==0 && gadget_mac)
+      mfvneib->SetOpeningCriterion("eigenmac");
     else
-      mfvneib->SetRelativeOpeningCriterion(true) ;
+      mfvneib->SetOpeningCriterion("gadget2") ;
 
     for (i=0; i<mfv->Ntot; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
@@ -529,6 +530,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
         part.rdmdt[k] = 0.0;
         part.rdmdt0[k] = 0.0;
       }
+      for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
       part.level  = 0;
       part.nstep  = 0;
       part.nlast  = 0;
@@ -569,14 +571,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
 
-    // Update the primitive vectors for all particles
-    for (i=0; i<mfv->Ntot; i++) {
-      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-      mfv->ComputeThermalProperties(part);
-      mfv->UpdatePrimitiveVector(part);
-      mfv->ConvertPrimitiveToConserved(part.ndens, part.Wprim, part.Qcons0);
-      for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
-    }
 
 #ifdef MPI_PARALLEL
     //mfvneib->UpdateHydroExportList(rank, mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
@@ -604,7 +598,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
           for (int k=0; k<ndim; k++) partdata[i].a[k] = 0.0;
           partdata[i].gpot=0.0;
         }
-        mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox);
+        mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox, ewald);
         mpicontrol->ExportParticlesBeforeForceLoop(mfv);
       }
 #endif

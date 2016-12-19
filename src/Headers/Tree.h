@@ -92,12 +92,10 @@ protected:
 	virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 
-	bool GetRelativeOpeningCriterion() const {
-	  return use_relative_criterion;
-	}
-	void SetRelativeOpeningCriterion(bool value) {
-	  use_relative_criterion = value;
-	}
+
+    virtual string GetMacType() const  = 0;
+    virtual void SetMacType(const string& value) = 0;
+
 
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
 	virtual int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist) = 0 ;
@@ -195,7 +193,6 @@ protected:
     int lmax;                              ///< Max. no. of levels
     int ltot;                              ///< Total number of levels in tree
     int ltot_old;                          ///< Prev. value of ltot
-    bool use_relative_criterion;         ///< Whether to check the relative opening criterion
 #if defined MPI_PARALLEL
 	int Nimportedcell;                     ///< No. of imported cells
 	int Ncelltot;                          ///< Total number of cells
@@ -219,7 +216,6 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 class Tree : public TreeBase<ndim>
 {
 private:
-    using TreeBase<ndim>::SetRelativeOpeningCriterion ;
 #ifdef MPI_PARALLEL
 	using TreeBase<ndim>::Nleaf_indices;
 	using TreeBase<ndim>::Nleaf_indices_inlocal;
@@ -240,7 +236,7 @@ protected:
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd),
     gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned)
     {
-      SetRelativeOpeningCriterion(gravity_mac == "gadget2") ;
+      SetMacType(gravity_mac) ;
     };
 
   virtual ~Tree() { } ;
@@ -261,6 +257,14 @@ protected:
   {
     using ::BoxOverlap ;
     return BoxOverlap(ndim, box1min, box1max, box2min, box2max) ;
+  }
+
+  string GetMacType() const {
+    return gravity_mac ;
+  }
+  void SetMacType(const string& value) {
+    gravity_mac = value;
+    use_relative_criterion = gravity_mac == "gadget2" ;
   }
 
 
@@ -358,7 +362,7 @@ protected:
 
   // Const variables for tree class
   //-----------------------------------------------------------------------------------------------
-  const string gravity_mac;            ///< Multipole-acceptance criteria for tree
+  string gravity_mac;                  ///< Multipole-acceptance criteria for tree
   const string multipole;              ///< Multipole-order for cell gravity
   const int Nleafmax;                  ///< Max. number of particles per leaf cell
   const FLOAT invthetamaxsqd;          ///< 1 / thetamaxsqd
@@ -366,6 +370,8 @@ protected:
   const FLOAT macerror;                ///< Error tolerance for gravity tree-MAC
   const FLOAT theta;                   ///< Geometric opening angle
   const FLOAT thetamaxsqd;             ///< Geometric opening angle squared
+  bool use_relative_criterion;         ///< Whether to check the relative opening criterion
+
 
 
   // Additional variables for tree class
@@ -378,7 +384,6 @@ protected:
   using TreeBase<ndim>::ltot;
   using TreeBase<ndim>::ltot_old;
   using TreeBase<ndim>::_domain;
-  using TreeBase<ndim>::use_relative_criterion;
 #if defined MPI_PARALLEL
   using TreeBase<ndim>::Nimportedcell;
   using TreeBase<ndim>::Ncelltot;

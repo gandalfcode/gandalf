@@ -90,8 +90,9 @@ protected:
   virtual void SetTimingObject(CodeTiming*) = 0 ;
   virtual void ToggleNeighbourCheck(bool do_check) = 0 ;
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool) = 0 ;
-  virtual bool GetRelativeOpeningCriterion() const = 0;
-  virtual void SetRelativeOpeningCriterion(bool) = 0;
+
+  virtual string GetOpeningCriterion() const = 0;
+  virtual void SetOpeningCriterion(const string&) = 0;
 
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const = 0;
@@ -117,7 +118,7 @@ protected:
   virtual void UnpackExported(vector<char >& arrays, Hydrodynamics<ndim> *, const int,vector< vector<char> >&,
                               const int, const bool) = 0;
   virtual void UpdateGravityExportList(int, Hydrodynamics<ndim> *,
-                                       Nbody<ndim> *, const DomainBox<ndim> &) = 0;
+                                       Nbody<ndim> *, const DomainBox<ndim> &,  Ewald<ndim> *) = 0;
   virtual void UpdateHydroExportList(int, Hydrodynamics<ndim> *,
                                      Nbody<ndim> *, const DomainBox<ndim> &) = 0;
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
@@ -175,8 +176,9 @@ protected:
   virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
   virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
 
-  virtual bool GetRelativeOpeningCriterion() const ;
-  virtual void SetRelativeOpeningCriterion(bool) ;
+  virtual string GetOpeningCriterion() const ;
+  virtual void SetOpeningCriterion(const string&) ;
+
 
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool);
 
@@ -222,7 +224,7 @@ protected:
   virtual void UnpackExported(vector<char> &, Hydrodynamics<ndim> *,
       const int, vector< vector<char> >&, const int, const bool);
   virtual void UpdateGravityExportList(int, Hydrodynamics<ndim> *,
-                                       Nbody<ndim> *, const DomainBox<ndim> &);
+                                       Nbody<ndim> *, const DomainBox<ndim> &,  Ewald<ndim> *);
   virtual void UpdateHydroExportList(int, Hydrodynamics<ndim> *,
                                      Nbody<ndim> *, const DomainBox<ndim> &);
   virtual void UnpackReturnedExportInfo(vector<char > &, Hydrodynamics<ndim> *, const int, const int);

@@ -357,13 +357,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute all initial SPH force terms
   // We will need to iterate if we are going to use a relative opening criterion
   //-----------------------------------------------------------------------------------------------
-  int n_iter = 1 + (sph->self_gravity == 1 && sphneib->GetRelativeOpeningCriterion()) ;
+  bool gadget_mac = sphneib->GetOpeningCriterion() == "gadget2" ;
+  int n_iter = 1 + (sph->self_gravity == 1 && gadget_mac) ;
   for (int iter=0; iter < n_iter; iter++) {
 
-    if (iter==0)
-      sphneib->SetRelativeOpeningCriterion(false);
+    if (iter==0 && gadget_mac)
+      sphneib->SetOpeningCriterion("eigenmac");
     else
-      sphneib->SetRelativeOpeningCriterion(true) ;
+      sphneib->SetOpeningCriterion("gadget2") ;
 
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).flags.set_flag(active);
 
@@ -406,7 +407,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 #ifdef MPI_PARALLEL
     if (sph->self_gravity == 1) {
-      sphneib->UpdateGravityExportList(rank, sph, nbody, simbox);
+      sphneib->UpdateGravityExportList(rank, sph, nbody, simbox, ewald);
     }
     else {
       sphneib->UpdateHydroExportList(rank, sph, nbody, simbox);
@@ -642,7 +643,7 @@ void SphSimulation<ndim>::MainLoop(void)
       }
 
       if (sph->self_gravity == 1) {
-        sphneib->UpdateGravityExportList(rank, sph, nbody, simbox);
+        sphneib->UpdateGravityExportList(rank, sph, nbody, simbox, ewald);
       }
       else {
         sphneib->UpdateHydroExportList(rank, sph, nbody, simbox);

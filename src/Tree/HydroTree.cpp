@@ -193,21 +193,22 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
 
 
 template <int ndim, template <int> class ParticleType>
-bool HydroTree<ndim,ParticleType>::GetRelativeOpeningCriterion() const {
-  return tree->GetRelativeOpeningCriterion() ;
+string HydroTree<ndim,ParticleType>::GetOpeningCriterion() const {
+  return tree->GetMacType() ;
 }
 
 template <int ndim, template <int> class ParticleType>
-void HydroTree<ndim,ParticleType>::SetRelativeOpeningCriterion(bool value) {
-  tree->SetRelativeOpeningCriterion(value) ;
-  ghosttree->SetRelativeOpeningCriterion(value) ;
+void HydroTree<ndim,ParticleType>::SetOpeningCriterion(const string& value) {
+  tree->SetMacType(value) ;
+  ghosttree->SetMacType(value) ;
 #ifdef MPI_PARALLEL
   for (int i=0; i<Nmpi; i++) {
-    prunedtree[i]->SetRelativeOpeningCriterion(value) ;
-    sendprunedtree[i]->SetRelativeOpeningCriterion(value) ;
+    prunedtree[i]->SetMacType(value) ;
+    sendprunedtree[i]->SetMacType(value) ;
   }
 #endif
 }
+
 
 
 //=================================================================================================
@@ -775,7 +776,8 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
  (int rank,                            ///< [in] MPI rank
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
-  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
+  const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald object
 {
   int cactive;                          // No. of active cells
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
@@ -801,7 +803,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(rank,simbox,celllist,cactive,cout,hydro,partdata)
+#pragma omp parallel default(none) shared(rank,simbox,celllist,cactive,cout,hydro,partdata,ewald)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -847,7 +849,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
         activepart[j].gpot = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) activepart[j].atree[k] = (FLOAT) 0.0;
-
       }
 
 
@@ -889,6 +890,23 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
                                       gravcelllist.size(), &gravcelllist[0]);
         }
 
+        // Add the periodic correction force the cells
+        if (simbox.PeriodicGravity){
+          int Ngravcell = gravcelllist.size() ;
+
+          for (int jj=0; jj<Ngravcell; jj++) {
+            MultipoleMoment<ndim> & gravcell = gravcelllist[jj] ;
+
+            FLOAT draux[ndim], aperiodic[ndim], potperiodic ;
+            for (int k=0; k<ndim; k++) draux[k] = gravcell.r[k] - activepart[j].r[k];
+
+            ewald->CalculatePeriodicCorrection(gravcell.m, draux, aperiodic, potperiodic);
+
+            for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];
+            activepart[j].gpot += potperiodic;
+          }
+        }
+
       }
       //-------------------------------------------------------------------------------------------
 
@@ -903,12 +921,12 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
                                     activepart, hydro->types);
       }
 
+
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
         for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].atree[k];
         for (k=0; k<ndim; k++) partdata[i].atree[k] += activepart[j].atree[k];
-
         partdata[i].gpot += activepart[j].gpot;
       }
 
