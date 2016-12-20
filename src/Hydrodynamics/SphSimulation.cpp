@@ -556,7 +556,9 @@ void SphSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
 	// Horrible hack in order NOT to trigger a full tree rebuild
-	sphneib->BuildTree(rebuild_tree,Nsteps+1,2, ntreestockstep,timestep,sph);
+	int Nstepsaux=Nsteps;
+	if (Nstepsaux%2==0) Nstepsaux++;
+	sphneib->BuildTree(rebuild_tree,Nstepsaux,2, ntreestockstep,timestep,sph);
 	if (rebuild_tree) {
 		  sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
 	}

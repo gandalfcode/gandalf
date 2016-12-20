@@ -63,8 +63,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   debug2("[MfvMusclSimulation:MainLoop]");
 
-  rebuild_tree=false;
-
   if (time_step_limiter_type == "conservative") {
     mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
 #ifdef MPI_PARALLEL
@@ -130,8 +128,8 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
 	// Horrible hack in order NOT to trigger a full tree rebuild
-        int Nstepsaux=Nsteps;
-        if (Nstepsaux%2==0) Nstepsaux++;
+	int Nstepsaux=Nsteps;
+	if (Nstepsaux%2==0) Nstepsaux++;
 	mfvneib->BuildTree(rebuild_tree,Nstepsaux,2, ntreestockstep,timestep,mfv);
 	if (rebuild_tree) {
 		  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);

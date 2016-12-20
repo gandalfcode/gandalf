@@ -641,6 +641,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   this->diag0 = this->diag;
   this->setup = true;
 
+  rebuild_tree=false;
+
 
   return;
 }
