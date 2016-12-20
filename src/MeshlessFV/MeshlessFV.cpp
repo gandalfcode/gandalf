@@ -222,7 +222,7 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 template <int ndim>
 FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
 {
-  const FLOAT dt_cfl = courant_mult*part.h/part.vsig_max;
+  const FLOAT dt_cfl = 2*courant_mult*part.h/part.vsig_max;
   const FLOAT dt_grav = accel_mult*
     sqrtf(part.h/sqrt(DotProduct(part.a0, part.a0, ndim) + small_number));
 
