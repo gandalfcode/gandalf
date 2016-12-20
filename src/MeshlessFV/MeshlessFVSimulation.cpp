@@ -59,8 +59,8 @@ template class MeshlessFVSimulation<3>;
 template<int ndim, class MeshlessType>
 MeshlessFV<ndim>* MeshlessFactoryFull
 (Parameters* simparams,
- SimUnits& simunits)
-{
+    SimUnits& simunits)
+    {
   // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;
   map<string, double> &floatparams = simparams->floatparams;
@@ -69,19 +69,19 @@ MeshlessFV<ndim>* MeshlessFactoryFull
   string KernelName = stringparams["kernel"];
 
   return new MeshlessType
-          (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
-           floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
-           floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
-           sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
-}
+      (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
+          floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
+          floatparams["gamma_eos"], stringparams["gas_eos"], KernelName,
+          sizeof(MeshlessFVParticle<ndim>), simunits, simparams);
+    }
 
 
 // Select the slope limiter
 template<int ndim, template<int> class Kernel, template<int, template<int> class, class> class MeshlessType>
 MeshlessFV<ndim>*  _MeshlessFactorySlopes
 (Parameters* simparams,
- SimUnits& simunits)
-{
+    SimUnits& simunits)
+    {
   string limiter = simparams->stringparams["slope_limiter"];
 
   if (limiter == "null") {
@@ -113,14 +113,14 @@ MeshlessFV<ndim>*  _MeshlessFactorySlopes
   ExceptionHandler::getIstance().raise(message);
 
   return NULL ;
-}
+    }
 
 // Select the Meshless time integration type.
 template<int ndim, template<int> class Kernel>
 MeshlessFV<ndim>* _MeshlessTimeIntegFactory
 (Parameters* simparams,
- SimUnits& simunits)
-{
+    SimUnits& simunits)
+    {
   string sim = simparams->stringparams["sim"];
 
   if (sim == "meshlessfv" || sim == "mfvmuscl") {
@@ -134,38 +134,38 @@ MeshlessFV<ndim>* _MeshlessTimeIntegFactory
   ExceptionHandler::getIstance().raise(message);
 
   return NULL ;
-}
+    }
 
 
 // Create the full Meshless forces object in a type by type way.
 template <int ndim>
 MeshlessFV<ndim>* MeshlessFactory
 (Parameters* simparams,
- SimUnits& simunits)
-{
+    SimUnits& simunits)
+    {
   // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;
   map<string, string> &stringparams = simparams->stringparams;
   string KernelName = stringparams["kernel"];
 
   if (intparams["tabulated_kernel"] == 1) {
-     return _MeshlessTimeIntegFactory<ndim, TabulatedKernel>(simparams, simunits) ;
-   }
-   else {
-     if (KernelName == "m4") {
-       return _MeshlessTimeIntegFactory<ndim, M4Kernel>(simparams, simunits) ;
-     }
-     else if (KernelName == "quintic") {
-       return _MeshlessTimeIntegFactory<ndim, QuinticKernel>(simparams, simunits) ;
-     }
-   }
+    return _MeshlessTimeIntegFactory<ndim, TabulatedKernel>(simparams, simunits) ;
+  }
+  else {
+    if (KernelName == "m4") {
+      return _MeshlessTimeIntegFactory<ndim, M4Kernel>(simparams, simunits) ;
+    }
+    else if (KernelName == "quintic") {
+      return _MeshlessTimeIntegFactory<ndim, QuinticKernel>(simparams, simunits) ;
+    }
+  }
 
   string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
   ExceptionHandler::getIstance().raise(message);
 
   return NULL ;
 
-}
+    }
 
 
 //=================================================================================================
@@ -198,7 +198,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   }
   else {
     string message = "Unrecognised parameter : mpi_decomposition = "
-      + simparams->stringparams["mpi_decomposition"];
+        + simparams->stringparams["mpi_decomposition"];
     ExceptionHandler::getIstance().raise(message);
   }
   mpicontrol->timing = timing;
@@ -216,8 +216,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   mfvneib = new MeshlessFVTree<ndim,MeshlessFVParticle>
   (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-   floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
-   stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
+      floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
 
 
   // Depending on the dimensionality, calculate expected neighbour number
@@ -283,7 +283,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   if (intparams["sink_particles"] == 1 &&
       (stringparams["nbody"] != "lfkdk" && stringparams["nbody"] != "lfdkd")) {
     string message = "Invalid parameter : nbody must use lfkdk or lfdkd when "
-      "using accreting sink particles";
+        "using accreting sink particles";
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -291,19 +291,19 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   // Set pointers to timing object
   nbody->timing   = timing;
   //if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || sim == "godunov_hydro") {
-    sinks->timing    = timing;
-    mfvneib->SetTimingObject(timing);
-    mfv->timing = timing;
+  sinks->timing    = timing;
+  mfvneib->SetTimingObject(timing);
+  mfv->timing = timing;
   //}*/
 
-    // Create ghost particle object
-    //-----------------------------------------------------------------------------------------------
-    if (IsAnyBoundarySpecial(simbox)) {
-      LocalGhosts = new PeriodicGhostsSpecific<ndim,MeshlessFVParticle >();
-    }
-    else {
-      LocalGhosts = new NullGhosts<ndim>();
-    }
+  // Create ghost particle object
+  //-----------------------------------------------------------------------------------------------
+  if (IsAnyBoundarySpecial(simbox)) {
+    LocalGhosts = new PeriodicGhostsSpecific<ndim,MeshlessFVParticle >();
+  }
+  else {
+    LocalGhosts = new NullGhosts<ndim>();
+  }
 
 
 #if defined MPI_PARALLEL
@@ -367,8 +367,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams,
-                                               this->initial_h_provided);
+  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams, this->initial_h_provided);
   this->AllocateParticleMemory();
 #endif
 
@@ -403,10 +402,10 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
     mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
-      for (i=0; i<mfv->Nhydro; i++) {
-        MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-        part.flags.set_flag(update_density) ;
-      }
+    for (i=0; i<mfv->Nhydro; i++) {
+      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+      part.flags.set_flag(update_density) ;
+    }
   }
   else {
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
@@ -512,98 +511,104 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Compute all initial hydro terms
+  // We will need to iterate if we are going to use a relative opening criterion
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<mfv->Ntot; i++) {
-    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    for (k=0; k<ndim; k++) {
-    	part.a[k] = (FLOAT) 0.0;
-    	part.rdmdt[k] = 0.0;
-    	part.rdmdt0[k] = 0.0;
-    }
-    part.level  = 0;
-    part.nstep  = 0;
-    part.nlast  = 0;
-    part.tlast  = t;
-    part.flags.unset_flag(active);
-  }
-  for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set_flag(active);
+  MAC_Type mac_type = mfvneib->GetOpeningCriterion() ;
+  int n_iter = 1 + (mfv->self_gravity == 1 && mac_type != geometric) ;
+  for (int iter=0; iter < n_iter; iter++) {
 
-  // Copy all other data from real hydro particles to ghosts
-  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+    if (iter==0 && mac_type != geometric)
+      mfvneib->SetOpeningCriterion(geometric);
+    else
+      mfvneib->SetOpeningCriterion(mac_type) ;
 
-  mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
-#ifdef MPI_PARALLEL
-  mfvneib->InitialiseCellWorkCounters();
-#endif
-  mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
-  mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
-#ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
-  MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
-  mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
-#endif
-
-  // ..
-  for (i=0; i<mfv->Nhydro; i++) {
-    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
-    for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
-    for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
-    part.flags.set_flag(active);
-  }
-
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
-
-
-  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
-#ifdef MPI_PARALLEL
-  MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
-#endif
-
-  // Update the primitive vectors for all particles
-  for (i=0; i<mfv->Ntot; i++) {
-    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    mfv->ComputeThermalProperties(part);
-    mfv->UpdatePrimitiveVector(part);
-    mfv->ConvertPrimitiveToConserved(part.ndens, part.Wprim, part.Qcons0);
-    for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
-  }
-
-#ifdef MPI_PARALLEL
-  //mfvneib->UpdateHydroExportList(rank, mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-
-  //mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-  // Update pointer in case there has been a reallocation
-  //partdata = mfv->GetMeshlessFVParticleArray();
-#endif
-
-
-  mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
-  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
-#ifdef MPI_PARALLEL
-  MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
-#endif
-
-  if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
-#ifdef MPI_PARALLEL
-    if (mfv->self_gravity ==1 ) {
-      MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
-      for (int i=0; i< mfv->Nhydro; i++) {
-        for (int k=0; k<ndim; k++) partdata[i].a[k] = 0.0;
-        partdata[i].gpot=0.0;
+    for (i=0; i<mfv->Ntot; i++) {
+      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+      for (k=0; k<ndim; k++) {
+        part.a[k] = (FLOAT) 0.0;
+        part.rdmdt[k] = 0.0;
+        part.rdmdt0[k] = 0.0;
       }
-      mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox);
-      mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+      for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
+      part.level  = 0;
+      part.nstep  = 0;
+      part.nlast  = 0;
+      part.tlast  = t;
+      part.flags.unset_flag(active);
     }
-#endif
-    mfvneib->UpdateAllGravForces(mfv, nbody, simbox, ewald);
-#ifdef MPI_PARALLEL
-    if (mfv->self_gravity ==1 ) {
-    mpicontrol->GetExportedParticlesAccelerations(mfv);
-    }
-#endif
-  }
+    for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set_flag(active);
 
+    // Copy all other data from real hydro particles to ghosts
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+
+    mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
+#ifdef MPI_PARALLEL
+    mfvneib->InitialiseCellWorkCounters();
+#endif
+    mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
+    mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
+#ifdef MPI_PARALLEL
+    mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
+    MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
+    mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
+#endif
+
+    // ..
+    for (i=0; i<mfv->Nhydro; i++) {
+      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+      for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+      part.flags.set_flag(active);
+    }
+
+    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+
+
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#endif
+
+
+#ifdef MPI_PARALLEL
+    //mfvneib->UpdateHydroExportList(rank, mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
+
+    //mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+    // Update pointer in case there has been a reallocation
+    //partdata = mfv->GetMeshlessFVParticleArray();
+#endif
+
+
+    mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#endif
+
+    if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
+
+      mfv->ZeroAccelerations();
+
+#ifdef MPI_PARALLEL
+      if (mfv->self_gravity ==1 ) {
+        MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
+        for (int i=0; i< mfv->Nhydro; i++) {
+          for (int k=0; k<ndim; k++) partdata[i].a[k] = 0.0;
+          partdata[i].gpot=0.0;
+        }
+        mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox, ewald);
+        mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+      }
+#endif
+      mfvneib->UpdateAllGravForces(mfv, nbody, simbox, ewald);
+#ifdef MPI_PARALLEL
+      if (mfv->self_gravity ==1 ) {
+        mpicontrol->GetExportedParticlesAccelerations(mfv);
+      }
+#endif
+    }
+  } // End of force iteration.
 
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
@@ -627,8 +632,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<nbody->Nnbody; i++) {
     if (nbody->nbodydata[i]->active) {
       nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
-                                          nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
-                                          nbody->nbodydata[i]->gpot);
+          nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
+          nbody->nbodydata[i]->gpot);
     }
   }
 
@@ -642,7 +647,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   this->setup = true;
 
   rebuild_tree=false;
-
 
   return;
 }
@@ -908,7 +912,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 
 
 #pragma omp parallel default(shared) private(dt, level) \
-  shared(dt_min, istep, level_max_hydro, level_max_nbody, level_max_old, nfactor)
+    shared(dt_min, istep, level_max_hydro, level_max_nbody, level_max_old, nfactor)
     {
       int last_level;
       int nstep;
@@ -1022,19 +1026,19 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
       }
       //-------------------------------------------------------------------------------------------
 
-      #pragma omp critical
+#pragma omp critical
       {
         dt_min          = min(dt_min, dt_nbody);
         dt_min_nbody    = min(dt_min_nbody, dt_nbody);
         level_max       = max(level_max, level_max_aux);
         level_max_nbody = max(level_max_nbody, level_nbody);
       }
-      #pragma omp barrier
+#pragma omp barrier
 
 
       // Correct timestep levels for any particles that have entered a sink
       //-------------------------------------------------------------------------------------------
-  /*#pragma omp for
+      /*#pragma omp for
       for (i=0; i<mfv->Nhydro; i++) {
         SphParticle<ndim>& part = mfv->GetSphParticlePointer(i);
         if (part.flags.is_dead() || part.nlast != n) continue;
@@ -1223,7 +1227,7 @@ void MeshlessFVSimulation<ndim>::WriteExtraSinkOutput(void)
 template <int ndim>
 void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
 {
-    /*
+  /*
   MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
 
   for (int i=0; i<mfv->Nhydro; i++) {
@@ -1236,6 +1240,6 @@ void MeshlessFVSimulation<ndim>::FinaliseSimulation(void)
     mfv->ConvertConservedToPrimitive(part.ndens, part.Qcons, part.Wprim);
     mfv->UpdateArrayVariables(part);
   }
-  */
+   */
   return;
 }

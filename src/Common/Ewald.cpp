@@ -518,14 +518,18 @@ void Ewald<ndim>::CalculatePeriodicCorrection
     static double dr1=0.0, dr2=0.0, dr3=0.0;
     static int basemax;
 
+    acorr[0] = acorr[1] = acorr[2] = 0 ;
+    gpotcorr = 0 ;
+
     // Correct the distance and pre-computed force if position used wasn't the nearest periodic
     // distance
     if (fabs(dr[0]) > 0.5*lx_per || fabs(dr[1]) > 0.5*ly_per || fabs(dr[2]) > 0.5*lz_per) {
       // Subract off the old force:
-      double inv_dr3 = 1 / sqrt(DotProduct(dr, dr, ndim) + small_number);
-      inv_dr3 = inv_dr3*inv_dr3*inv_dr3;
+      double inv_dr = 1 / sqrt(DotProduct(dr, dr, ndim) + small_number);
+      double inv_dr3 = inv_dr*inv_dr*inv_dr;
       for (k=0; k<ndim;k++)
         acorr[k] -= m*dr[k]*inv_dr3;
+      gpotcorr -= m*inv_dr ;
 
       // Correct the distance
       double size[3] = { 0.5*lx_per, 0.5*ly_per, 0.5*lz_per } ;
@@ -537,10 +541,11 @@ void Ewald<ndim>::CalculatePeriodicCorrection
         }
 
       // Add on the new force
-      inv_dr3 = 1 / sqrt(DotProduct(dr, dr, ndim) + small_number);
-      inv_dr3 = inv_dr3*inv_dr3*inv_dr3;
+      inv_dr = 1 / sqrt(DotProduct(dr, dr, ndim) + small_number);
+      inv_dr3 = inv_dr*inv_dr*inv_dr;
       for (k=0; k<ndim;k++)
         acorr[k] += m*dr[k]*inv_dr3;
+      gpotcorr += m*inv_dr;
     }
 
     // find edges of the ewald_field cuboid around dr
@@ -572,44 +577,44 @@ void Ewald<ndim>::CalculatePeriodicCorrection
           case 1:
             c = pow(dr[1],2)+pow(dr[2],2);
             d = 2.0/(lx_per*c);
-            gpotcorr = -m*(log(c)/lx_per + potC1p2i + drAbsInv);
-            acorr[0] = -m*dr[0]*pow(drAbsInv,3);
-            acorr[1] = m*(dr[1]*d - dr[1]*pow(drAbsInv,3));
-            acorr[2] = m*(dr[2]*d - dr[2]*pow(drAbsInv,3));
+            gpotcorr += -m*(log(c)/lx_per + potC1p2i + drAbsInv);
+            acorr[0] += -m*dr[0]*pow(drAbsInv,3);
+            acorr[1] += m*(dr[1]*d - dr[1]*pow(drAbsInv,3));
+            acorr[2] += m*(dr[2]*d - dr[2]*pow(drAbsInv,3));
             break;
           case 2:
             c = pow(dr[0],2)+pow(dr[2],2);
             d = 2.0/(ly_per*c);
-            gpotcorr = -m*(log(c)/ly_per + potC1p2i + drAbsInv);
-            acorr[0] = m*(dr[0]*d - dr[0]*pow(drAbsInv,3));
-            acorr[1] = -m*dr[1]*pow(drAbsInv,3);
-            acorr[2] = m*(dr[2]*d - dr[2]*pow(drAbsInv,3));
+            gpotcorr += -m*(log(c)/ly_per + potC1p2i + drAbsInv);
+            acorr[0] += m*(dr[0]*d - dr[0]*pow(drAbsInv,3));
+            acorr[1] += -m*dr[1]*pow(drAbsInv,3);
+            acorr[2] += m*(dr[2]*d - dr[2]*pow(drAbsInv,3));
             break;
           case 4:
             c = pow(dr[0],2)+pow(dr[1],2);
             d = 2.0/(lz_per*c);
-            gpotcorr = -m*(log(c)/lz_per + potC1p2i + drAbsInv);
-            acorr[0] = m*(dr[0]*d - dr[0]*pow(drAbsInv,3));
-            acorr[1] = m*(dr[1]*d - dr[1]*pow(drAbsInv,3));
-            acorr[2] = -m*dr[2]*pow(drAbsInv,3);
+            gpotcorr += -m*(log(c)/lz_per + potC1p2i + drAbsInv);
+            acorr[0] += m*(dr[0]*d - dr[0]*pow(drAbsInv,3));
+            acorr[1] += m*(dr[1]*d - dr[1]*pow(drAbsInv,3));
+            acorr[2] += -m*dr[2]*pow(drAbsInv,3);
             break;
           case 3:
-            gpotcorr = -m*(abs(dr[2])*accPlane + drAbsInv);
-            acorr[0] = -m*dr[0]*pow(drAbsInv,3);
-            acorr[1] = -m*dr[1]*pow(drAbsInv,3);
-            acorr[2] = m*(accPlane*sgn(dr[2]) - pow(drAbsInv,3)*dr[2]);
+            gpotcorr += -m*(abs(dr[2])*accPlane + drAbsInv);
+            acorr[0] += -m*dr[0]*pow(drAbsInv,3);
+            acorr[1] += -m*dr[1]*pow(drAbsInv,3);
+            acorr[2] += m*(accPlane*sgn(dr[2]) - pow(drAbsInv,3)*dr[2]);
             break;
           case 5:
-            gpotcorr = -m*(abs(dr[1])*accPlane + drAbsInv);
-            acorr[0] = -m*dr[0]*pow(drAbsInv,3);
-            acorr[1] = m*(accPlane*sgn(dr[1]) - pow(drAbsInv,3)*dr[1]);
-            acorr[2] = -m*dr[2]*pow(drAbsInv,3);
+            gpotcorr += -m*(abs(dr[1])*accPlane + drAbsInv);
+            acorr[0] += -m*dr[0]*pow(drAbsInv,3);
+            acorr[1] += m*(accPlane*sgn(dr[1]) - pow(drAbsInv,3)*dr[1]);
+            acorr[2] += -m*dr[2]*pow(drAbsInv,3);
             break;
           case 6:
-            gpotcorr = -m*(abs(dr[0])*accPlane + drAbsInv);
-            acorr[0] = m*(accPlane*sgn(dr[0]) - pow(drAbsInv,3)*dr[0]);
-            acorr[1] = -m*dr[1]*pow(drAbsInv,3);
-            acorr[2] = -m*dr[2]*pow(drAbsInv,3);
+            gpotcorr += -m*(abs(dr[0])*accPlane + drAbsInv);
+            acorr[0] += m*(accPlane*sgn(dr[0]) - pow(drAbsInv,3)*dr[0]);
+            acorr[1] += -m*dr[1]*pow(drAbsInv,3);
+            acorr[2] += -m*dr[2]*pow(drAbsInv,3);
             break;
 
         }
@@ -646,9 +651,9 @@ void Ewald<ndim>::CalculatePeriodicCorrection
         wf[6]*ewald_field[indexBase3 + Ngrid[0]] + wf[7] * ewald_field[indexBase3 + Ngrid[0] + 1];
     }
 
-    gpotcorr = m*ewald_field[indexBase0];
+    gpotcorr += m*ewald_field[indexBase0];
     for (k=0; k<ndim; k++) {
-      acorr[k] = m*grEwald[k+1]*sgn(dr[k]);
+      acorr[k] += m*grEwald[k+1]*sgn(dr[k]);
     }
 
   }

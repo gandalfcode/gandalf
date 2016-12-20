@@ -238,6 +238,7 @@ struct Particle
   FLOAT r[ndim];                    ///< Position
   FLOAT v[ndim];                    ///< Velocity
   FLOAT a[ndim];                    ///< Total acceleration
+  FLOAT atree[ndim];                ///< Gravitational acceleration from the tree
   FLOAT r0[ndim];                   ///< Position at beginning of step
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
@@ -277,6 +278,7 @@ struct Particle
     for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) atree[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) r0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;

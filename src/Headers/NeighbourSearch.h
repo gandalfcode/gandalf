@@ -91,6 +91,9 @@ protected:
   virtual void ToggleNeighbourCheck(bool do_check) = 0 ;
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool) = 0 ;
 
+  virtual MAC_Type GetOpeningCriterion() const = 0;
+  virtual void SetOpeningCriterion(MAC_Type) = 0;
+
 #ifdef MPI_PARALLEL
   virtual TreeBase<ndim>** GetPrunedTrees() const = 0;
   virtual TreeBase<ndim>*  GetPrunedTree(int i) const = 0;
@@ -115,7 +118,7 @@ protected:
   virtual void UnpackExported(vector<char >& arrays, Hydrodynamics<ndim> *, const int,vector< vector<char> >&,
                               const int, const bool) = 0;
   virtual void UpdateGravityExportList(int, Hydrodynamics<ndim> *,
-                                       Nbody<ndim> *, const DomainBox<ndim> &) = 0;
+                                       Nbody<ndim> *, const DomainBox<ndim> &,  Ewald<ndim> *) = 0;
   virtual void UpdateHydroExportList(int, Hydrodynamics<ndim> *,
                                      Nbody<ndim> *, const DomainBox<ndim> &) = 0;
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
@@ -173,6 +176,10 @@ protected:
   virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
   virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
 
+  virtual MAC_Type GetOpeningCriterion() const ;
+  virtual void SetOpeningCriterion(const MAC_Type) ;
+
+
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool);
 
 #ifdef MPI_PARALLEL
@@ -217,7 +224,7 @@ protected:
   virtual void UnpackExported(vector<char> &, Hydrodynamics<ndim> *,
       const int, vector< vector<char> >&, const int, const bool);
   virtual void UpdateGravityExportList(int, Hydrodynamics<ndim> *,
-                                       Nbody<ndim> *, const DomainBox<ndim> &);
+                                       Nbody<ndim> *, const DomainBox<ndim> &,  Ewald<ndim> *);
   virtual void UpdateHydroExportList(int, Hydrodynamics<ndim> *,
                                      Nbody<ndim> *, const DomainBox<ndim> &);
   virtual void UnpackReturnedExportInfo(vector<char > &, Hydrodynamics<ndim> *, const int, const int);
@@ -711,7 +718,7 @@ void ComputeFastMonopoleForces
 
   for (int j=0; j<Nactive; j++)
     if (types[activepart[j].ptype].self_gravity)
-      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
+      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].atree, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;
@@ -744,7 +751,7 @@ void ComputeFastQuadrupoleForces
 
   for (int j=0; j<Nactive; j++)
     if (types[activepart[j].ptype].self_gravity)
-      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].a, activepart[j].gpot) ;
+      monopole.ApplyForcesTaylor(activepart[j].r, activepart[j].atree, activepart[j].gpot) ;
   //-----------------------------------------------------------------------------------------------
 
   return;

@@ -106,6 +106,9 @@ class Sph : public Hydrodynamics<ndim>
   virtual void DeleteDeadParticles(void) = 0;
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {part.m -= dm;}
 
+  virtual void ZeroAccelerations() ;
+
+
 
   // SPH functions for computing SPH sums with neighbouring particles
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)

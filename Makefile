@@ -39,7 +39,7 @@ FFTW_LIBRARY       =
 
 # GNU Scientific library flags and paths.  If paths are empty, tries standard default linux paths.
 #--------------------------------------------------------------------------------------------------
-GSL                = 0
+GSL                =
 GSL_INCLUDE        =
 GSL_LIBRARY        =
 

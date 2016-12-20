@@ -773,10 +773,13 @@ kdtree     & = Balanced kd-binary tree \\
 octtree    & = Barnes-Hut octal tree
 \end{tabular}
 
-\item \var{gravity\_mac} : Gravity-tree cell-opening criteria (N.B. always defulats to geometric for now) \vspace{0.1cm} \\
+\item \var{gravity\_mac} : Gravity-tree cell-opening criteria (N.B. always defualts to geometric for now). The eigenmac and gadget2 criteria are more accurate for a given computational cost. \vspace{0.1cm} \\
 \begin{tabular} {ll}
-geometric & = Standard Barnes-Hut geomtric opening angle criterion \\
-eigenmac  & = Compute eigenvalues of quadrupole moment tensor for MAC (Hubber et al. 2011)
+geometric & = Standard Barnes-Hut geomtric opening angle criterion. This can fail in pathalogical cases,\\
+	      & \quad such as when the forces nearly balance. \\
+eigenmac  & = Compute eigenvalues of quadrupole moment tensor for MAC (Hubber et al. 2011) \\
+gadget2   & = Relative opening criterion based on comparing estimate of force error to the previous \\
+		  & \quad accleleration (Springel 2005).
 \end{tabular}
 
 \item \var{multipole} : Multipole expansion for tree-gravity \vspace{0.1cm} \\

@@ -51,7 +51,8 @@ GradhSphTree<ndim,ParticleType>::GradhSphTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
-  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing, ParticleTypeRegister& types):
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
+  ParticleTypeRegister& types):
  SphTree<ndim,ParticleType>
   (tree_type, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max, _thetamaxsqd,
    _kernrange, _macerror, _gravity_mac, _multipole, _box, _kern, _timing, types)
@@ -518,7 +519,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
     int cc;                                      // Aux. cell counter
     int Nactive;                                 // ..
     FLOAT aperiodic[ndim];                       // ..
-    FLOAT macfactor;                             // Gravity MAC factor
     FLOAT potperiodic;                           // ..
     int *activelist  = activelistbuf[ithread];   // ..
     int *levelneib   = levelneibbuf[ithread];    // ..
@@ -535,20 +535,12 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim> &cell = celllist[cc];
-      macfactor = (FLOAT) 0.0;
-
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
 
       // Make local copies of active particles
       for (int j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
-
-      // Compute average/maximum term for computing gravity MAC
-      if (gravity_mac == "eigenmac") {
-        for (int j=0; j<Nactive; j++) macfactor =
-          max(macfactor,pow((FLOAT) 1.0/activepart[j].gpot,twothirds));
-      }
 
       // Zero/initialise all summation variables for active particles
       for (int j=0; j<Nactive; j++) {
@@ -557,11 +549,12 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         activepart[j].levelneib = 0;
         activepart[j].gpot      = (activepart[j].m/activepart[j].h)*sph->kernp->wpot(0.0);
         for (int k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) activepart[j].atree[k] = (FLOAT) 0.0;
       }
 
       // Compute neighbour list for cell depending on physics options
       neibmanager.clear();
-      tree->ComputeGravityInteractionAndGhostList(cell, macfactor,neibmanager);
+      tree->ComputeGravityInteractionAndGhostList(cell, neibmanager);
       neibmanager.EndSearchGravity(cell,sphdata);
 
       MultipoleMoment<ndim>* gravcell;
@@ -581,6 +574,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         HydroParticle* neibpart;
         const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,&neiblist,&directlist,&gravlist,&neibpart);
 
+
         // Compute forces between SPH neighbours (hydro and gravity)
         typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
         if (listlength.Nhydro > 0)
@@ -595,33 +589,36 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
           // Compute gravitational force due to distant cells
           if (multipole == "monopole") {
-            ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a,
+            ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree,
                                       activepart[j].r, Ngravcell, gravcell);
           }
           else if (multipole == "quadrupole") {
-            ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a,
+            ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].atree,
                                         activepart[j].r, Ngravcell, gravcell);
          }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
           if (simbox.PeriodicGravity){
-            for (int jj=0; jj<listlength.Nhydro; jj++) {
+            int Ntotneib = neibmanager.GetNumAllNeib() ;
+
+            for (int jj=0; jj< Ntotneib; jj++) {
 
         	  if (!gravmask[neibpart[jj].ptype]) continue ;
 
               FLOAT draux[ndim];
               for (int k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
-              for (int k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
+              for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
+
 
             // Now add the periodic correction force for all cell COMs
             for (int jj=0; jj<Ngravcell; jj++) {
               FLOAT draux[ndim];
               for (int k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(gravcell[jj].m, draux, aperiodic, potperiodic);
-              for (int k=0; k<ndim; k++) activepart[j].a[k] += aperiodic[k];
+              for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }
           }
@@ -653,7 +650,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       // Add all active particles contributions to main array
       for (int j=0; j<Nactive; j++) {
         int i = activelist[j];
-        for (int k=0; k<ndim; k++) sphdata[i].a[k] += activepart[j].a[k];
+        for (int k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].a[k];
+        for (int k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].atree[k];
+        for (int k=0; k<ndim; k++) sphdata[i].atree[k] += activepart[j].atree[k];
         sphdata[i].gpot  += activepart[j].gpot;
         sphdata[i].dudt  += activepart[j].dudt;
         sphdata[i].div_v += activepart[j].div_v;

@@ -178,7 +178,9 @@ public:
     listlength.Ndirect=directlist.size();
     listlength.Ngrav=smoothgravlist.size();
 
-    *neiblist_p = &neiblist[0];
+    assert((listlength.Nhydro + listlength.Ndirect + listlength.Ngrav) == GetNumAllNeib()) ;
+
+    *neiblist_p = &culled_neiblist[0];
     *directlist_p = &directlist[0];
     *smoothgravlist_p = &smoothgravlist[0];
     *neibdata_p = &neibdata[0];
