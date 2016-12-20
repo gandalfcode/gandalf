@@ -1562,7 +1562,7 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 /// \brief Compute the particles that are inside the specified box.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int Tree<ndim,ParticleType,TreeCell>::FindBoxOverlapParticles
+void Tree<ndim,ParticleType,TreeCell>::FindBoxOverlapParticles
 (const Box<ndim>& nodebox,                     ///< [in] Box to check overlap of
 vector<int>& part_ids,                         ///< [out] ID's of particles found.
 const Particle<ndim> *part_gen)                ///< [in] List of particle data
@@ -1572,7 +1572,6 @@ const Particle<ndim> *part_gen)                ///< [in] List of particle data
   // Start from root-cell
   int c = 0;
   int i ;
-  int Npart = 0;
 
   //---------------------------------------------------------------------------------------------
   while (c < Ncell) {
@@ -1598,7 +1597,6 @@ const Particle<ndim> *part_gen)                ///< [in] List of particle data
         while (i != -1) {
           if (ParticleInBox(partdata[i], nodebox)) {
             part_ids.push_back(i);
-            Npart++ ;
           }
           if (i == cellptr->ilast) break;
           i = inext[i];
@@ -1615,7 +1613,7 @@ const Particle<ndim> *part_gen)                ///< [in] List of particle data
 
   }
   //---------------------------------------------------------------------------------------------
-  return Npart;
+  return;
 }
 
 //=================================================================================================

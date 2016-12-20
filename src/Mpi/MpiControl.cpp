@@ -51,7 +51,7 @@ using namespace std;
 /// plus calls MPI routines to find out rank and number of processors.
 //=================================================================================================
 template <int ndim>
-MpiControl<ndim>::MpiControl()
+MpiControl<ndim>::MpiControl(DomainBox<ndim>& simboxaux) : simbox(simboxaux)
 {
   int len;                          // Length of host processor name string
   Box<ndim> dummy;                  // Dummy box variable
@@ -148,7 +148,7 @@ MpiControl<ndim>::~MpiControl()
 /// MpiControlType constructor.  Does additional work for specific particle types.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-MpiControlType<ndim, ParticleType>::MpiControlType() : MpiControl<ndim>()
+MpiControlType<ndim, ParticleType>::MpiControlType(DomainBox<ndim>& simboxaux) : MpiControl<ndim>(simboxaux)
 {
   // Allocate buffers
   particles_to_export_per_node.resize(Nmpi);
@@ -343,8 +343,8 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
 
   // Now update the global bounding box for the entire domain
   // (needed for adjusting mpitree in load balancing step)
-  for (int k=0; k<ndim; k++) partbox.min[k] = big_number;
-  for (int k=0; k<ndim; k++) partbox.max[k] = -big_number;
+  for (int k=0; k<ndim; k++) partbox.min[k] = simbox.min[k];
+  for (int k=0; k<ndim; k++) partbox.max[k] = simbox.max[k];
   for (int inode=0; inode<Nmpi; inode++) {
     for (int k=0; k<ndim; k++) {
       partbox.min[k] = min(partbox.min[k], mpinode[inode].rbox.min[k]);

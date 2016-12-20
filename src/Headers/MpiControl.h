@@ -83,6 +83,8 @@ class MpiControl
 
   void CreateLeagueCalendar();
 
+  DomainBox<ndim>& simbox;                  ///< Copy of the simbox object
+
 
  public:
 
@@ -95,14 +97,13 @@ class MpiControl
   int Nmpi;                                ///< No. of MPI processes
   int Nloadbalance;                        ///< No. of steps between load-balancing
   Box<ndim> partbox;                       ///< Box containing all particles (from all nodes)
-  DomainBox<ndim> mpibox;                  ///< Full domain box known to all MPI processes
   MpiNode<ndim> *mpinode;                  ///< Data for all MPI nodes
   CodeTiming *timing;                      ///< Simulation timing object (pointer)
 
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  MpiControl();
+  MpiControl(DomainBox<ndim>& simboxaux);
   ~MpiControl();
 
   void AllocateMemory(int);
@@ -116,7 +117,7 @@ class MpiControl
   virtual void ExportParticlesBeforeForceLoop(Hydrodynamics<ndim> *) = 0;
   virtual void GetExportedParticlesAccelerations(Hydrodynamics<ndim> *) = 0;
   virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
-                                                Parameters*, DomainBox<ndim>, bool&) = 0;
+                                                Parameters*,  bool&) = 0;
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* hydro)=0;
   void UpdateSinksAfterAccretion(Sinks<ndim>* sink);
@@ -141,7 +142,6 @@ public:
   using MpiControl<ndim>::balance_level;
   using MpiControl<ndim>::Nmpi;
   using MpiControl<ndim>::mpinode;
-  using MpiControl<ndim>::mpibox;
   using MpiControl<ndim>::rank;
   using MpiControl<ndim>::Nloadbalance;
   using MpiControl<ndim>::timing;
@@ -167,12 +167,10 @@ public:
 
 
   //-----------------------------------------------------------------------------------------------
-  MpiControlType();
+  MpiControlType(DomainBox<ndim>& simboxaux);
   ~MpiControlType() {};
 
-  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
-                                                Parameters*, DomainBox<ndim>, bool&) = 0;
-  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+
   virtual void ExportParticlesBeforeForceLoop (Hydrodynamics<ndim> *);
   virtual void GetExportedParticlesAccelerations (Hydrodynamics<ndim> *);
   virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>*);
@@ -217,7 +215,6 @@ public:
   using MpiControl<ndim>::balance_level;
   using MpiControl<ndim>::Nmpi;
   using MpiControl<ndim>::mpinode;
-  using MpiControl<ndim>::mpibox;
   using MpiControl<ndim>::rank;
   using MpiControl<ndim>::Nloadbalance;
   using MpiControl<ndim>::timing;
@@ -231,6 +228,7 @@ public:
   using MpiControl<ndim>::ExportBackParticleType;
   using MpiControl<ndim>::neibsearch;
   using MpiControl<ndim>::partbox;
+  using MpiControl<ndim>::simbox;
   using MpiControlType<ndim,ParticleType>::particles_to_export_per_node;
   using MpiControlType<ndim,ParticleType>::particles_to_export;
   using MpiControlType<ndim,ParticleType>::particles_receive;
@@ -242,11 +240,11 @@ public:
 
 
   //-----------------------------------------------------------------------------------------------
-  MpiKDTreeDecomposition();
+  MpiKDTreeDecomposition(DomainBox<ndim>& simboxaux): MpiControlType<ndim,ParticleType>(simboxaux) {};
   //virtual ~MpiKDTreeDecomposition();
 
   virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
-                                                Parameters*, DomainBox<ndim>, bool&);
+                                                Parameters*, bool&);
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *);
 
 };

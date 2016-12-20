@@ -1449,16 +1449,62 @@ void HydroTree<ndim,ParticleType>::FindMpiTransferParticles
     Box<ndim>& nodebox = mpinodes[inode].domain;
 
     // Start from root-cell
-    int NumPartFound = tree->FindBoxOverlapParticles(nodebox, all_particles_to_export,
+    tree->FindBoxOverlapParticles(nodebox, particles_to_export[inode],
                                                      hydro->GetParticleArray()) ;
 
     // Copy particles to per processor array
-    if (NumPartFound > 0)
-      particles_to_export[inode].insert(particles_to_export[inode].end(),
-                                        all_particles_to_export.end() - NumPartFound,
-                                        all_particles_to_export.end());
+    all_particles_to_export.insert(all_particles_to_export.end(),
+                                        particles_to_export[inode].begin(),
+                                        particles_to_export[inode].end());
   }
   //-----------------------------------------------------------------------------------------------
+
+#ifndef NDEBUG
+  VerifyUniqueIds(all_particles_to_export.size(),hydro->Nhydro,&all_particles_to_export[0]);
+  vector<int> temp(all_particles_to_export); std::sort(temp.begin(),temp.end());
+  for (int i=0; i<hydro->Nhydro;i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    Box<ndim>& domainbox = mpinodes[rank].domain;
+    if (ParticleInBox(part,domainbox)) {
+      const bool WillExport = std::binary_search(temp.begin(),temp.end(),i);
+      if (WillExport) {
+        // Deal with edge case when the particle is exactly on the boundary
+        // (in which case exporting it is not wrong)
+        bool edge=false;
+        for (int k=0; k<ndim; k++) {
+          if (part.r[k] == domainbox.min[k] || part.r[k] == domainbox.max[k]) {
+            edge =true;
+          }
+        }
+        if (!edge) assert(!std::binary_search(temp.begin(),temp.end(),i));
+      }
+    }
+    else {
+      //Edge case when the particle is at the right edge of the domain
+      bool edge = false;
+      for (int k=0; k<ndim; k++) if (part.r[k]==domainbox.max[k]) edge=true;
+      if (!edge) assert(std::binary_search(temp.begin(),temp.end(),i));
+      //if (edge) assert(!std::binary_search(temp.begin(),temp.end(),i));
+      for (int jnode=0; jnode<potential_nodes.size(); jnode++) {
+          inode=potential_nodes[jnode];
+          vector<int>::iterator it = std::find(particles_to_export[inode].begin(),particles_to_export[inode].end(),i);
+          const bool InDomain = ParticleInBox(part,mpinodes[inode].domain);
+          if (InDomain) {
+              assert(it != particles_to_export[inode].end());
+          }
+          else {
+              assert( it == particles_to_export[inode].end());
+          }
+	  if (it != particles_to_export[inode].end()) {
+              assert(InDomain);
+          }
+          else {
+              assert(!InDomain);
+          }
+      }
+    }
+  }
+#endif
 
   return;
 }

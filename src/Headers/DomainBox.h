@@ -32,6 +32,7 @@
 #include <algorithm>
 #include "Exception.h"
 #include "Precision.h"
+#include "Constants.h"
 using namespace std;
 
 
@@ -48,6 +49,13 @@ template <int ndim>
 struct Box {
   FLOAT min[ndim];                     ///< Minimum bounding box extent
   FLOAT max[ndim];                     ///< Maximum bounding box extent
+
+  Box () {
+    for (int k=0; k<ndim; k++) {
+      min[k]=-big_number;
+      max[k]=big_number;
+    }
+  }
 };
 
 
@@ -170,7 +178,7 @@ inline boundaryEnum setBoundaryType(string boundaryString)
 //=================================================================================================
 /// \brief  Helper function to say if a value is contained inside an interval
 //=================================================================================================
-static inline bool valueInRange(const FLOAT value, const FLOAT min, const FLOAT max)
+inline bool valueInRange(const FLOAT value, const FLOAT min, const FLOAT max)
 {
   return (value >= min) && (value <= max);
 }
@@ -184,7 +192,7 @@ static inline bool valueInRange(const FLOAT value, const FLOAT min, const FLOAT 
 /// \return A boolean saying whether the boxes overlap
 //=================================================================================================
 template <int ndim>
-static inline bool BoxesOverlap (const Box<ndim>& A, const Box<ndim>& B)
+inline bool BoxesOverlap (const Box<ndim>& A, const Box<ndim>& B)
 {
   bool coord_overlap[ndim];
 
@@ -211,7 +219,7 @@ static inline bool BoxesOverlap (const Box<ndim>& A, const Box<ndim>& B)
 /// \return A boolean saying whether the boxes overlap
 //=================================================================================================
 template <int ndim>
-static inline void NearestPeriodicVector
+inline void NearestPeriodicVector
  (const DomainBox<ndim> &box,
   FLOAT dr[ndim],
   FLOAT dr_corr[ndim])

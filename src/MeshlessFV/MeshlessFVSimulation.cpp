@@ -194,7 +194,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 #ifdef MPI_PARALLEL
   if (stringparams["mpi_decomposition"] == "kdtree") {
-    mpicontrol = new MpiKDTreeDecomposition<ndim,MeshlessFVParticle>();
+    mpicontrol = new MpiKDTreeDecomposition<ndim,MeshlessFVParticle>(simbox);
   }
   else {
     string message = "Unrecognised parameter : mpi_decomposition = "
@@ -367,7 +367,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams, simbox,
+  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams,
                                                this->initial_h_provided);
   this->AllocateParticleMemory();
 #endif
@@ -640,6 +640,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   this->CalculateDiagnostics();
   this->diag0 = this->diag;
   this->setup = true;
+
+  rebuild_tree=false;
 
 
   return;

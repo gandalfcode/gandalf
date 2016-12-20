@@ -207,7 +207,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(sph, nbody, simparams, simbox,
+  mpicontrol->CreateInitialDomainDecomposition(sph, nbody, simparams,
                                                this->initial_h_provided);
   this->AllocateParticleMemory();
 #endif
@@ -556,7 +556,9 @@ void SphSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
 	// Horrible hack in order NOT to trigger a full tree rebuild
-	sphneib->BuildTree(rebuild_tree,Nsteps+1,2, ntreestockstep,timestep,sph);
+	int Nstepsaux=Nsteps;
+	if (Nstepsaux%2==0) Nstepsaux++;
+	sphneib->BuildTree(rebuild_tree,Nstepsaux,2, ntreestockstep,timestep,sph);
 	if (rebuild_tree) {
 		  sphneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, sph);
 	}
