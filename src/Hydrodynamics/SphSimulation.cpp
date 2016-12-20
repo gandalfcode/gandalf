@@ -612,11 +612,11 @@ void SphSimulation<ndim>::MainLoop(void)
     // Update cells containing active particles
     if (activecount > 0) sphneib->UpdateActiveParticleCounters(sph);
 
-      // Zero accelerations (here for now)
-      sph->ZeroAccelerations() ;
-
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph, nbody);
+
+      // Zero accelerations (here for now)
+      sph->ZeroAccelerations() ;
 
       // Update the radiation field
       if (Nsteps%nradstep == 0 || recomputeRadiation) {

@@ -649,8 +649,9 @@ void MeshlessFV<ndim>::ZeroAccelerations()
   for (int i=0; i<Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = GetMeshlessFVParticlePointer(i);
     if (part.flags.check_flag(active)) {
-      for (int k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
-      for (int k=0; k<ndim; k++) part.atree[k] = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) part.a[k] = 0;
+      for (int k=0; k<ndim; k++) part.atree[k] = 0;
+      part.gpot = 0 ;
     }
   }
 }
