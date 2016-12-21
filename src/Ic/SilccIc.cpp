@@ -138,7 +138,7 @@ void SilccIc<ndim>::Generate(void)
 /// Returns the value of the density at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT SilccIc<ndim>::GetDensity(const FLOAT *r) const
+FLOAT SilccIc<ndim>::GetDensity(const FLOAT *r, const Typemask typemask) const
 {
   if (fabs(r[ndim-1]) <= a_midplane) {
     return rho_midplane*exp(-r[ndim-1]*r[ndim-1]/h_midplane/h_midplane);
@@ -180,8 +180,8 @@ void SilccIc<ndim>::SetParticleProperties()
 //=================================================================================================
 template <int ndim>
 Regularization::RegularizerFunction<ndim>* SilccIc<ndim>::GetParticleRegularizer() const {
-  using Regularization::DefaultRegularizerFunction ;
-  return new DefaultRegularizerFunction<ndim,SilccIc<ndim> >(simparams, this) ;
+  using Regularization::DefaultRegularizerFunction;
+  return new DefaultRegularizerFunction<ndim,SilccIc<ndim> >(hydro->kernp, simparams, this);
 }
 
 
