@@ -166,7 +166,7 @@ void BossBodenheimerIc<ndim>::Generate(void)
 /// Returns the value of the requested quantity at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT BossBodenheimerIc<ndim>::GetDensity(const FLOAT r[ndim]) const
+FLOAT BossBodenheimerIc<ndim>::GetDensity(const FLOAT r[ndim], const Typemask typemask) const
 {
   const FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
   const FLOAT phi = atan2(r[1], r[0]);
@@ -200,7 +200,7 @@ void BossBodenheimerIc<ndim>::SetParticleProperties()
 template <int ndim>
 Regularization::RegularizerFunction<ndim>* BossBodenheimerIc<ndim>::GetParticleRegularizer() const {
   using Regularization::DefaultRegularizerFunction ;
-  return new DefaultRegularizerFunction<ndim,BossBodenheimerIc<ndim> >(simparams, this) ;
+  return new DefaultRegularizerFunction<ndim,BossBodenheimerIc<ndim> >(hydro->kernp, simparams, this);
 }
 
 

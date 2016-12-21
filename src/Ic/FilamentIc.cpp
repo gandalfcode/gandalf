@@ -137,7 +137,7 @@ void FilamentIc<ndim>::Generate(void)
 /// Returns the value of the requested quantity at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT FilamentIc<ndim>::GetDensity(const FLOAT r[ndim]) const
+FLOAT FilamentIc<ndim>::GetDensity(const FLOAT r[ndim], const Typemask typemask) const
 {
   FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
   FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
@@ -182,8 +182,8 @@ void FilamentIc<ndim>::SetParticleProperties()
 //=================================================================================================
 template <int ndim>
 Regularization::RegularizerFunction<ndim>* FilamentIc<ndim>::GetParticleRegularizer() const {
-  using Regularization::DefaultRegularizerFunction ;
-  return new DefaultRegularizerFunction<ndim,FilamentIc<ndim> >(simparams, this) ;
+  using Regularization::DefaultRegularizerFunction;
+  return new DefaultRegularizerFunction<ndim,FilamentIc<ndim> >(hydro->kernp, simparams, this);
 }
 
 
