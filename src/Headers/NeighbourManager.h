@@ -41,7 +41,7 @@ public:
   typedef typename iterator_type::reference reference ;
   typedef typename iterator_type::pointer   pointer ;
 
-  NeighbourIterator(int p_idx, ParticleType* p_part) :
+  NeighbourIterator(int* p_idx, ParticleType* p_part) :
     _p_idx(p_idx), _p_part(p_part) { };
 
   // Dereference
@@ -111,7 +111,7 @@ public:
   }
 
 private:
-  int * _p_idx;
+  int* _p_idx;
   ParticleType* _p_part;
 };
 
