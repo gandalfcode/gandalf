@@ -164,8 +164,8 @@ private:
   bool _data[Ntypes];
 
 public:
-  Typemask() {
-    for (int k=0; k<Ntypes; k++) _data[k] = false;
+  Typemask(bool defaultFlag = false) {
+    for (int k=0; k<Ntypes; k++) _data[k] = defaultFlag;
   }
 
   const bool& operator[](int i) const {
@@ -193,7 +193,7 @@ struct ParticleTypeInfo
   int N;                               ///< Current no. of particles
   bool hydro_forces;                   ///< Does particle experience hydro forces?
   bool self_gravity;                   ///< Does particle experience gravitational forces?
-  bool drag_forces ;                   ///< Does particle experience drag forces?
+  bool drag_forces;                    ///< Does particle experience drag forces?
   Typemask hmask;                      ///< Neighbour mask for computing smoothing lengths
   Typemask hydromask;                  ///< Neighbour mask for computing hydro forces
   Typemask dragmask;                   ///< Neighbour mask for computing drag forces
@@ -202,7 +202,7 @@ struct ParticleTypeInfo
     N = 0;
     hydro_forces = false;
     self_gravity = false;
-    drag_forces  = false ;
+    drag_forces  = false;
   }
 };
 
