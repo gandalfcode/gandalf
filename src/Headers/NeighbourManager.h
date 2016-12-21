@@ -80,12 +80,6 @@ public:
     _p_idx -= n;
     return *this;
   }
-  NeighbourIterator<ParticleType> operator+(std::size_t n) {
-    return NeighbourIterator<ParticleType>(_p_idx+n, _p_part);
-  }
-  NeighbourIterator<ParticleType> operator-(std::size_t n) {
-    return NeighbourIterator<ParticleType>(_p_idx-n, _p_part);
-  }
 
   // Comparison
   bool operator==(const NeighbourIterator<ParticleType>& other) const {
@@ -110,10 +104,37 @@ public:
     return (*this < other);
   }
 
+
 private:
   int* _p_idx;
   ParticleType* _p_part;
 };
+
+// Arithmetic operators should be free functions:
+template<class ParticleType>
+NeighbourIterator<ParticleType> operator+(NeighbourIterator<ParticleType>& p,
+                                          std::size_t n) {
+  return NeighbourIterator<ParticleType>(p) += n ;
+}
+template<class ParticleType>
+NeighbourIterator<ParticleType> operator+(std::size_t n,
+                                          NeighbourIterator<ParticleType>& p) {
+  return NeighbourIterator<ParticleType>(p) += n ;
+}
+template<class ParticleType>
+NeighbourIterator<ParticleType> operator-(NeighbourIterator<ParticleType>& p,
+                                          std::size_t n) {
+  return NeighbourIterator<ParticleType>(p) -= n ;
+}
+template<class ParticleType>
+NeighbourIterator<ParticleType> operator-(std::size_t n,
+                                          NeighbourIterator<ParticleType>& p) {
+  return NeighbourIterator<ParticleType>(p) -= n ;
+}
+
+
+
+
 
 //=================================================================================================
 //  Class NeighbourList
