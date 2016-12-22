@@ -36,6 +36,7 @@
 #include "Hydrodynamics.h"
 #include "NbodyParticle.h"
 #include "Nbody.h"
+#include "NeighbourManager.h"
 #include "Parameters.h"
 #include "Particle.h"
 #include "Precision.h"
@@ -91,6 +92,11 @@ public:
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
+  typedef MeshlessFVParticle<ndim> ParticleType ;
+  typedef typename ParticleType::FluxParticle     FluxNeib ;
+  typedef typename ParticleType::GradientParticle GradNeib ;
+  typedef typename ParticleType::GravParticle     GravNeib ;
+  typedef typename GravityNeighbourLists<GravNeib>::DirectType DirectNeib ;
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
@@ -119,14 +125,10 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                        MeshlessFVParticle<ndim> &, Nbody<ndim> *) = 0;
-  virtual void ComputeGradients(const int, const int, int *, MeshlessFVParticle<ndim> &,
-		  typename MeshlessFVParticle<ndim>::GradientParticle* ) = 0;
-  virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *,
-                                  MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::FluxParticle*) = 0;
-  virtual void ComputeSmoothedGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
-                                         typename MeshlessFVParticle<ndim>::GravParticle *) = 0;
-  virtual void ComputeDirectGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
-                                       typename MeshlessFVParticle<ndim>::GravParticle *) = 0;
+  virtual void ComputeGradients(MeshlessFVParticle<ndim>&, NeighbourList<GradNeib>&) = 0;
+  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&, FLOAT) = 0;
+  virtual void ComputeSmoothedGravForces(MeshlessFVParticle<ndim>&, NeighbourList<GravNeib>&) = 0;
+  virtual void ComputeDirectGravForces(MeshlessFVParticle<ndim>&, NeighbourList<DirectNeib>&) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &) = 0;
 
 
@@ -226,6 +228,11 @@ class MfvCommon : public MeshlessFV<ndim>
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
+  typedef MeshlessFVParticle<ndim> ParticleType ;
+  typedef typename MeshlessFV<ndim>::FluxNeib     FluxNeib ;
+  typedef typename MeshlessFV<ndim>::GradNeib     GradNeib ;
+  typedef typename MeshlessFV<ndim>::GravNeib     GravNeib ;
+  typedef typename MeshlessFV<ndim>::DirectNeib   DirectNeib ;
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
@@ -239,12 +246,9 @@ class MfvCommon : public MeshlessFV<ndim>
   //-----------------------------------------------------------------------------------------------
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                MeshlessFVParticle<ndim> &, Nbody<ndim> *);
-  void ComputeGradients(const int, const int, int *,
-                                    MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::GradientParticle*);
-  void ComputeSmoothedGravForces(const int, const int, int *,
-                                 MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::GravParticle*);
-  void ComputeDirectGravForces(const int, const int, int *,
-                               MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::GravParticle*);
+  virtual void ComputeGradients(MeshlessFVParticle<ndim>&, NeighbourList<GradNeib>&);
+  virtual void ComputeSmoothedGravForces(MeshlessFVParticle<ndim>&, NeighbourList<GravNeib>&);
+  virtual void ComputeDirectGravForces(MeshlessFVParticle<ndim>&, NeighbourList<DirectNeib>&);
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
@@ -309,6 +313,12 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
+  typedef MeshlessFVParticle<ndim> ParticleType ;
+  typedef typename MeshlessFV<ndim>::FluxNeib     FluxNeib ;
+  typedef typename MeshlessFV<ndim>::GradNeib     GradNeib ;
+  typedef typename MeshlessFV<ndim>::GravNeib     GravNeib ;
+  typedef typename MeshlessFV<ndim>::DirectNeib   DirectNeib ;
+
 
 
   // Constructor
@@ -320,8 +330,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 
 
   //-----------------------------------------------------------------------------------------------
-  void ComputeGodunovFlux(const int, const int, const FLOAT, int *,
-		  	  	  	  	  MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::FluxParticle*);
+  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&, FLOAT);
+
 
 };
 
@@ -377,6 +387,11 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
+  typedef MeshlessFVParticle<ndim> ParticleType ;
+  typedef typename MeshlessFV<ndim>::FluxNeib     FluxNeib ;
+  typedef typename MeshlessFV<ndim>::GradNeib     GradNeib ;
+  typedef typename MeshlessFV<ndim>::GravNeib     GravNeib ;
+  typedef typename MeshlessFV<ndim>::DirectNeib   DirectNeib ;
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
@@ -388,8 +403,8 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 
   // ..
   //-----------------------------------------------------------------------------------------------
-  void ComputeGodunovFlux(const int, const int, const FLOAT, int *,
-                          MeshlessFVParticle<ndim> &, typename MeshlessFVParticle<ndim>::FluxParticle*);
+  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&,FLOAT);
+
 
 };
 

@@ -390,20 +390,16 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
         bool do_hydro = sph->types[activepart[j].ptype].hydro_forces ;
         if (do_hydro){
-
-          // Ask to the neighbour manager for the list of neighbours
-          int* sphlist;
-          HydroParticle* neibpart;
-
           Typemask hydromask  = sph->types[activepart[j].ptype].hydromask;
 
           const bool do_pair_once=false;
 
-          const int Nneib=neibmanager.GetParticleNeib(activepart[j],hydromask,&sphlist,&neibpart,do_pair_once);
+          NeighbourList<HydroParticle> neiblist =
+              neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
 
           // Compute all neighbour contributions to hydro forces
           typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
-          method->ComputeSphHydroForces(i,Nneib,sphlist,activepart[j],neibpart);
+          method->ComputeSphHydroForces(activepart[j],neiblist);
         }
       }
       //-------------------------------------------------------------------------------------------
@@ -568,24 +564,22 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         const bool do_grav  = sph->types[activepart[j].ptype].self_gravity ;
         Typemask hydromask = sph->types[activepart[j].ptype].hydromask ;
 
-        int* neiblist;
-        int* directlist;
-        int* gravlist;
-        HydroParticle* neibpart;
-        const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,&neiblist,&directlist,&gravlist,&neibpart);
+        GravityNeighbourLists<HydroParticle> neiblists =
+            neibmanager.GetParticleNeibGravity(activepart[j],hydromask);
 
 
         // Compute forces between SPH neighbours (hydro and gravity)
         typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
-        if (listlength.Nhydro > 0)
-          method->ComputeSphHydroGravForces(i, listlength.Nhydro, neiblist, activepart[j], neibpart);
+
+        if (neiblists.neiblist.size() > 0)
+          method->ComputeSphHydroGravForces(activepart[j], neiblists.neiblist);
 
         if (do_grav){
           // Compute soften grav forces between non-SPH neighbours (hydro and gravity)
-          method->ComputeSphGravForces(i, listlength.Ngrav, gravlist, activepart[j], neibpart);
+          method->ComputeSphGravForces(activepart[j], neiblists.smooth_gravlist);
 
           // Compute direct gravity forces between distant particles
-          method->ComputeDirectGravForces(i, listlength.Ndirect, directlist, activepart[j], neibpart);
+          method->ComputeDirectGravForces(activepart[j], neiblists.directlist);
 
           // Compute gravitational force due to distant cells
           if (multipole == "monopole") {
@@ -603,11 +597,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
             for (int jj=0; jj< Ntotneib; jj++) {
 
-        	  if (!gravmask[neibpart[jj].ptype]) continue ;
+        	  if (!gravmask[neibmanager[jj].ptype]) continue ;
 
               FLOAT draux[ndim];
-              for (int k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
-              ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
+              for (int k=0; k<ndim; k++) draux[k] = neibmanager[jj].r[k] - activepart[j].r[k];
+              ewald->CalculatePeriodicCorrection(neibmanager[jj].m, draux, aperiodic, potperiodic);
               for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];
               activepart[j].gpot += potperiodic;
             }

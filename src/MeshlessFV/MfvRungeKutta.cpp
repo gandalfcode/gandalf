@@ -63,15 +63,10 @@ MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::MfvRungeKutta
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  const FLOAT timestep,                ///< ..
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  typename MeshlessFVParticle<ndim>::FluxParticle *neibpart)  ///< [inout] Neighbour particle data
+(MeshlessFVParticle<ndim>& part,                                ///< [inout] Particle data
+ NeighbourList<typename MeshlessFV<ndim>::FluxNeib>& neibpart,  ///< [inout] Neighbour data
+ FLOAT timestep)                                                ///< [in]    Current timstep size
 {
-  int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   int var;                             // Particle state vector variable counter
   FLOAT Aij[ndim];                     // Pseudo 'Area' vector
@@ -96,8 +91,8 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
+  int Nneib = neibpart.size() ;
+  for (int j=0; j<Nneib; j++) {
 
     FLOAT invh_j   = 1/neibpart[j].h;
     FLOAT volume_j = 1/neibpart[j].ndens;

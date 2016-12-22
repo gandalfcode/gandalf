@@ -238,14 +238,9 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
- (const int i,                                 ///< [in] id of particle
-  const int Nneib,                             ///< [in] No. of neins in neibpart array
-  int *neiblist,                               ///< [in] id of gather neibs in neibpart
-  MeshlessFVParticle<ndim> &part,              ///< [inout] Particle i data
-  typename MeshlessFVParticle<ndim>::GradientParticle* neibpart)          ///< [inout] Neighbour particle data
+(MeshlessFVParticle<ndim>& part,                                ///< [inout] Particle data
+ NeighbourList<typename MeshlessFV<ndim>::GradNeib>& neibpart)  ///< [inout] Neighbour data
 {
-  int j;                                       // Neighbour list id
-  int jj;                                      // Aux. neighbour loop counter
   int k;                                       // Dimension counter
   int var;                                     // Primitive variable counter
   FLOAT draux[ndim], dv[ndim];                 // Relative position / velocity vector
@@ -273,8 +268,8 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
+  int Nneib = neibpart.size();
+  for (int j=0; j<Nneib; j++) {
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - part.v[k];
@@ -324,7 +319,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
 
   // Finally apply the slope limiter
   //-----------------------------------------------------------------------------------------------
-  limiter.CellLimiter(part, neibpart, neiblist, Nneib) ;
+  limiter.CellLimiter(part, neibpart) ;
 
   assert(part.vsig_max >= part.sound);
 
@@ -343,14 +338,9 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  MeshlessFVParticle<ndim> &parti,     ///< [inout] Particle i data
-  typename MeshlessFVParticle<ndim>::GravParticle* neibpart)  ///< [inout] Neighbour particle data
+(MeshlessFVParticle<ndim>& parti,                               ///< [inout] Particle data
+ NeighbourList<typename MeshlessFV<ndim>::GravNeib>& neibpart)  ///< [inout] Neighbour data
 {
-  int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drmag;                         // Distance
@@ -363,8 +353,8 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
+  int Nneib = neibpart.size();
+  for (int j=0; j<Nneib; j++) {
     assert(!neibpart[j].flags.is_dead());
 
     const FLOAT mj = neibpart[j].m;
@@ -402,14 +392,9 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
- (const int i,                         ///< id of particle
-  const int Ndirect,                   ///< No. of nearby 'gather' neighbours
-  int *directlist,                     ///< id of gather neighbour in neibpart
-  MeshlessFVParticle<ndim> &parti,      ///< Particle i data
-  typename MeshlessFVParticle<ndim>::GravParticle* neibdata)  ///< Neighbour particle data
+(MeshlessFVParticle<ndim>& parti,                                 ///< [inout] Particle data
+ NeighbourList<typename MeshlessFV<ndim>::DirectNeib>& neibdata)  ///< [inout] Neighbour data
 {
-  int j;                               // Neighbour particle id
-  int jj;                              // Aux. neighbour loop counter
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
@@ -418,8 +403,8 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
 
   // Loop over all neighbouring particles in list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Ndirect; jj++) {
-    j = directlist[jj];
+  int Nneib = neibdata.size();
+  for (int j=0; j<Nneib; j++) {
     assert(!neibdata[j].flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - parti.r[k];

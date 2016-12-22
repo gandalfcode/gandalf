@@ -17,13 +17,6 @@ using namespace std;
 #include "NeighbourManagerBase.h"
 #include "Particle.h"
 
-struct ListLength {
-  int Nhydro;
-  int Ndirect;
-  int Ngrav;
-};
-
-
 
 //=================================================================================================
 //  Class NeighbourIterator
@@ -133,9 +126,6 @@ NeighbourIterator<ParticleType> operator-(std::size_t n,
 }
 
 
-
-
-
 //=================================================================================================
 //  Class NeighbourList
 /// \brief   Template container class which holds a list of neighbour lists.
@@ -172,6 +162,22 @@ private:
   std::vector<ParticleType>& _neibpart;
 };
 
+struct ListLength {
+  int Nhydro;
+  int Ndirect;
+  int Ngrav;
+};
+
+
+template <class ParticleType>
+struct GravityNeighbourLists {
+  typedef ParticleType DirectType ;
+
+  NeighbourList<ParticleType> neiblist;
+  NeighbourList<ParticleType> smooth_gravlist;
+  NeighbourList<DirectType>   directlist;
+};
+
 //=================================================================================================
 //  Class NeighbourManager
 /// \brief   Template class for neighbour searches.
@@ -188,7 +194,7 @@ private:
   vector<int> neiblist;
   vector<int> directlist;
   vector<int> neib_idx;
-  vector<ParticleType > neibdata;
+  vector<ParticleType> neibdata;
 
   vector<int> culled_neiblist;
   vector<int> smoothgravlist;
@@ -259,6 +265,16 @@ public:
     return neib_idx.size();
   }
   //===============================================================================================
+  //  operator[]
+  /// \brief Provide access to individual neighbours found in the tree walk.
+  //===============================================================================================
+  ParticleType& operator[](std::size_t i) {
+    return neibdata[i] ;
+  }
+  const ParticleType& operator[](std::size_t i) const {
+    return neibdata[i] ;
+  }
+  //===============================================================================================
   //  GetNeibI
   /// \brief Get the index of thew i-th neighbour in the original particle array, and a pointer to
   ///        to the reduced neighbour data stored.
@@ -276,30 +292,8 @@ public:
   ///           required particles). Also, if do_pair_once is included then the neighbour is only
   ///           included if this interaction will not have been already calculated in the update
   ///           for the neighbour itself.
-  /// \returns  Returns the number of neighbours found. Additionally, neibdata_p is set to the
-  ///           list of particles stored by the data manager, and neiblist_p is set to the indices
-  ///           within neibdata_p of the required neighbours.
+  /// \returns  NeighbourList object, the list of neighbours found.
   //===============================================================================================
-  template<class InParticleType>
-  int GetParticleNeib
-  (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
-   const Typemask& hydromask,                          ///< [in] Boolean flags listing types we need
-   int** neiblist_p,                                   ///< [out] List of particles needed.
-   ParticleType** neibdata_p,                          ///< [out] List of particle data
-   const bool do_pair_once)                            ///< [in]
-  {
-    if (do_pair_once)
-      TrimNeighbourLists<InParticleType,_true_type>(p, hydromask, false);
-    else
-      TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, false);
-
-
-    *neiblist_p=&culled_neiblist[0];
-    *neibdata_p=&neibdata[0];
-    return culled_neiblist.size();
-
-  }
-
   template<class InParticleType>
   NeighbourList<ParticleType> GetParticleNeib
   (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
@@ -318,40 +312,30 @@ public:
   //  GetParticleNeibGravity
   /// \brief    Get the list of particles that interact with the Particle, p.
   /// \details  As with GetParticleNeib, this function returns the list of neighbours that interact
-  ///           hydrodynamically with the Particle, p. Additionally this function also generates
-  ///           the list of particles needed for gravitational interactions, including the list of
-  ///           smoothed and unsmoothed contributions.
-  /// \returns  Returns the number of neighbours found. Additionally, neibdata_p is set to the
-  ///           list of particles stored by the data manager, and neiblist_p, directlist_p and
-  ///           smoothgravlist_p are set to the indices within neibdata_p of the required
-  ///           neighbours.
+  ///           hydrodynamically with the Particle, p (neiblist). Additionally this function also
+  ///           generatesthe list of particles needed for gravitational interactions, including the
+  ///            list of smoothed (smooth_gravlist) and unsmoothed (directlist) contributions.
+  /// \returns  GravityNeighbourLists object. This struct contains the three wraps the three lists
+  ///           of particles found.
   //===============================================================================================
   template<class InParticleType>
-  ListLength GetParticleNeibGravity
+  GravityNeighbourLists<ParticleType> GetParticleNeibGravity
   (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
-   const Typemask& hydromask,                          ///< [in] Type flags for hydro interactions
-   int** neiblist_p,                                   ///< [out] List of hydro neigbour indices
-   int** directlist_p,                                 ///< [out] List of unsmoothed gravity neibs
-   int** smoothgravlist_p,                             ///< [out] List of smoothed gravity neibs
-   ParticleType** neibdata_p) {                        ///< [out] List of particle data.
-
+   const Typemask& hydromask)                          ///< [in] Type flags for hydro interactions
+   {
     TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true);
 
-    ListLength listlength;
-    listlength.Nhydro=culled_neiblist.size();
-    listlength.Ndirect=directlist.size();
-    listlength.Ngrav=smoothgravlist.size();
+    assert((culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
 
-    assert((listlength.Nhydro + listlength.Ndirect + listlength.Ngrav) == GetNumAllNeib());
 
-    *neiblist_p = &culled_neiblist[0];
-    *directlist_p = &directlist[0];
-    *smoothgravlist_p = &smoothgravlist[0];
-    *neibdata_p = &neibdata[0];
+    typedef typename GravityNeighbourLists<ParticleType>::DirectType DirectType ;
+    GravityNeighbourLists<ParticleType> neiblists =
+      { NeighbourList<ParticleType>(culled_neiblist, neibdata),
+        NeighbourList<ParticleType>(smoothgravlist,  neibdata),
+        NeighbourList<DirectType>  (directlist,      neibdata) } ;
 
-    return listlength;
-
-  }
+    return neiblists ;
+   }
 
 private:
 
