@@ -238,7 +238,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
     else if (2.0*fabs(pstar - pold)/(pstar + pold) < tolerance) break;
 
     // Check the star variables have not become NaNs
-    if (pstar != pstar || ustar != ustar) {
+    if (pstar != pstar) {
       std::cout << "Checking Riemann values : " << pstar << "   "
                 << ustar << "   iteration : " << iteration << std::endl;
       std::cout << "rho : " << dl << "   " << dr << "     vel : " << ul << "    "
