@@ -120,53 +120,6 @@ void SM2012Sph<ndim, kernelclass>::DeallocateMemory(void)
 }
 
 
-
-//=================================================================================================
-//  SM2012Sph::DeleteDeadParticles
-/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
-{
-  int i;                               // Particle counter
-  int itype;                           // Type of current particle
-  int Ndead = 0;                       // No. of 'dead' particles
-  int ilast = Nhydro;                    // Aux. counter of last free slot
-
-  debug2("[SM2012Sph::DeleteDeadParticles]");
-
-
-  // Determine new order of particles in arrays.
-  // First all live particles and then all dead particles
-  for (i=0; i<Nhydro; i++) {
-    itype = sphdata[i].flags.get();
-    while (itype & dead) {
-      Ndead++;
-      ilast--;
-      if (i < ilast) {
-        sphdata[i] = sphdata[ilast];
-        sphdata[ilast].flags.set_flag(dead);
-        sphdata[ilast].m = (FLOAT) 0.0;
-      }
-      else break;
-      itype = sphdata[i].flags.get();
-    };
-    if (i >= ilast - 1) break;
-  }
-
-  // Reorder all arrays following with new order, with dead particles at end
-  if (Ndead == 0) return;
-
-  // Reduce particle counters once dead particles have been removed
-  Nhydro -= Ndead;
-  Ntot -= Ndead;
-
-
-  return;
-}
-
-
-
 //=================================================================================================
 //  SM2012Sph::ComputeH
 /// Compute the value of the smoothing length of particle 'i' by iterating
