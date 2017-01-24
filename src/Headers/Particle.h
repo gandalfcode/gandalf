@@ -142,7 +142,7 @@ public:
 };
 
 
-enum parttype {gas_type, icm_type, boundary_type, cdm_type, dust_type, Ntypes};
+enum parttype {gas_type, icm_type, cdm_type, dust_type, boundary_type, Ntypes};
 
 
 
