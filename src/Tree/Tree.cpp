@@ -631,20 +631,16 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 {
   int cc = 0;                          // Cell counter
   FLOAT dr[ndim];                      // Relative position vector
-  FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT rc[ndim];                      // Position of cell
-
-  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell) ;
-
+  const GhostNeighbourFinder<ndim> GhostFinder(_domain, cell);
   assert(GhostFinder.MaxNumGhosts() == 1) ;
 
   // Make local copies of important cell properties
-  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*cell.hmax,2);
-  const FLOAT rmax = cell.rmax;
-  const FLOAT amin = cell.amin;
+  const FLOAT hrangemax = kernrange*cell.hmax;
+  const FLOAT rmax      = cell.rmax;
+  const FLOAT amin      = cell.amin;
   const FLOAT macfactor = cell.macfactor;
   for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
-  for (int k=0; k<ndim; k++) dr_corr[k] = 0 ;
 
   // Start with root cell and walk through entire tree
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -658,8 +654,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
     // Check if bounding spheres overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (drsqd <= pow(celldata[cc].rmax + cell.rmax + kernrange*cell.hmax,2) ||
-        drsqd <= pow(cell.rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
+    if (drsqd <= pow(celldata[cc].rmax + rmax + hrangemax, 2) ||
+        drsqd <= pow(rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -2009,4 +2005,3 @@ template class Tree<3,SM2012SphParticle,BruteForceTreeCell>;
 template class Tree<1,MeshlessFVParticle,BruteForceTreeCell>;
 template class Tree<2,MeshlessFVParticle,BruteForceTreeCell>;
 template class Tree<3,MeshlessFVParticle,BruteForceTreeCell>;
-

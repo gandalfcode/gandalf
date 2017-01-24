@@ -84,8 +84,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
   int cactive;                             // No. of active tree cells
-  vector<TreeCellBase<ndim> > celllist;		   // List of active tree cells
-
+  //int Ntot = sph->Ntot;
+  vector<TreeCellBase<ndim> > celllist;		 // List of active tree cells
+  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -93,23 +94,17 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   debug2("[GradhSphTree::UpdateAllSphProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_PROPERTIES");
 
-  int Ntot = sph->Ntot;
-  ParticleType<ndim>* sphdata =
-      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
-
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
 
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata,Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -701,4 +696,3 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 template class GradhSphTree<1,GradhSphParticle>;
 template class GradhSphTree<2,GradhSphParticle>;
 template class GradhSphTree<3,GradhSphParticle>;
-

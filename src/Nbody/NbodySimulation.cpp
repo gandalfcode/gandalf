@@ -505,12 +505,15 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 
           // Move up one level (if levels are correctly synchronised) or
           // down several levels if required
-          if (level < last_level && last_level > 1 && n%(2*nstep) == 0)
+          if (level < last_level && last_level > 1 && n%(2*nstep) == 0) {
             nbody->nbodydata[i]->level = last_level - 1;
-          else if (level > last_level)
+          }
+          else if (level > last_level) {
             nbody->nbodydata[i]->level = level;
-          else
+          }
+          else {
             nbody->nbodydata[i]->level = last_level;
+          }
 
           nbody->nbodydata[i]->tlast = t;
           nbody->nbodydata[i]->nlast = n;
@@ -552,42 +555,31 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
     }
 
 
+    istep = pow(2, level_step - level_max_old + 1);
+
     // Update all timestep variables if we have removed or added any levels
     //---------------------------------------------------------------------------------------------
-    if (level_max != level_max_old) {
-
-      // Increase maximum timestep level if correctly synchronised
-      istep = pow(2,level_step - level_max_old + 1);
-      if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0)
-        level_max = level_max_old - 1;
-      else if (level_max == level_max_old)
-        level_max = level_max_old;
-
-      // Adjust integer time if levels added or removed
-      if (level_max > level_max_old) {
-        nfactor = pow(2,level_max - level_max_old);
-        n *= nfactor;
-        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
-        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
-      }
-      else if (level_max < level_max_old) {
-        nfactor = pow(2,level_max_old - level_max);
-        n /= nfactor;
-        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
-        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
-      }
-
-      // Update values of nstep for both SPH and star particles
-      for (i=0; i<nbody->Nnbody; i++) {
-        if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep =
-          pow(2,level_step - nbody->nbodydata[i]->level);
-      }
-
-      nresync = pow(2, level_step);
-      timestep = dt_max / (DOUBLE) nresync;
-
+    if (level_max > level_max_old) {
+      nfactor = pow(2, level_max - level_max_old);
+      n *= nfactor;
+      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
+      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
     }
-    //---------------------------------------------------------------------------------------------
+    else if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0) {
+      nfactor = pow(2, level_max_old - level_max);
+      n /= nfactor;
+      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
+      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
+    }
+
+    nresync = pow(2, level_step);
+    timestep = dt_max / (DOUBLE) nresync;
+
+    // Update values of nstep for both SPH and star particles
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep =
+        pow(2,level_step - nbody->nbodydata[i]->level);
+    }
 
   }
   //===============================================================================================

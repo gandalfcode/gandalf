@@ -751,22 +751,14 @@ template <int ndim>
 void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int istep;                                 // Aux. variable for changing steps
-  int last_level;                            // Previous timestep level
   int level;                                 // Particle timestep level
-  int level_max_aux;                         // Aux. maximum level variable
   int level_max_nbody = 0;                   // level_max for star particles only
   int level_max_old = level_max;             // Old level_max
   int level_max_hydro = 0;                   // level_max for hydro particles only
   int level_min_hydro = 9999999;             // level_min for hydro particles
-  int level_nbody;                           // local thread var. for N-body level
-  int level_hydro;                           // local thread var. for hydro level
   int nfactor;                               // Increase/decrease factor of n
-  //int nstep;                                 // Particle integer step-size
   DOUBLE dt;                                 // Aux. timestep variable
   DOUBLE dt_min = big_number_dp;             // Minimum timestep
-  //DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
-  //DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
-  //DOUBLE dt_hydro;                           // Aux. minimum hydro timestep
 
   debug2("[MeshlessFVSimulation::ComputeBlockTimesteps]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
@@ -783,7 +775,7 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     n = 0;
     timestep = big_number_dp;
 
-#pragma omp parallel default(none) shared(dt_min) private(dt, level) //private(dt,dt_min_aux,dt_nbody,dt_hydro,i)
+#pragma omp parallel default(none) shared(dt_min) private(dt, level)
     {
       // Initialise all timestep and min/max variables
       DOUBLE dt_min_aux = big_number_dp;
@@ -911,15 +903,14 @@ void MeshlessFVSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max_hydro = 0;
 
 
-#pragma omp parallel default(shared) private(dt, level) \
-    shared(dt_min, istep, level_max_hydro, level_max_nbody, level_max_old, nfactor)
+#pragma omp parallel default(shared) private (dt, istep, level, nfactor) \
+shared(dt_min, level_max_hydro, level_max_nbody, level_max_old)
     {
       int last_level;
       int nstep;
       int level_max_aux = 0;
       int level_nbody   = 0;
       int level_hydro   = 0;
-      DOUBLE dt;
       DOUBLE dt_hydro   = big_number_dp;
       DOUBLE dt_nbody   = big_number_dp;
 
