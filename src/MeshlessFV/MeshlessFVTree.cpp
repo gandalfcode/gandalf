@@ -365,10 +365,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
     int cc;                                        // Aux. cell counter
     int i;                                         // Particle id
     int j;                                         // Aux. particle counter
-    int jj;                                        // Aux. particle counter
     int k;                                         // Dimension counter
     int Nactive;                                   // ..
-    int Nneibmax    = Nneibmaxbuf[ithread];        // ..
     int* activelist = activelistbuf[ithread];      // ..
     int* levelneib  = levelneibbuf[ithread];       // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
@@ -527,16 +525,14 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     const int ithread = 0;
 #endif
     int i;                                         // Particle id
-    int j;                                         // Aux. particle counter
     int k;                                         // Dimension counter
     int Nactive;                                   // ..
-    int Nneibmax      = Nneibmaxbuf[ithread];      // ..
     int* activelist   = activelistbuf[ithread];    // ..
     FLOAT (*dQBuffer)[ndim+2]      = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*fluxBuffer)[ndim+2]    = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*rdmdtBuffer)[ndim]     = new FLOAT[Ntot][ndim];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
-    ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
+    //ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     NeighbourManager<ndim,FluxParticle>& neibmanager = neibmanagerbufflux[ithread];
 
     for (int i=0; i<Ntot; i++) {
@@ -708,14 +704,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
     int Nactive;                                 // ..
     FLOAT aperiodic[ndim];                       // ..
     FLOAT draux[ndim];                           // Aux. relative position vector
-    FLOAT drsqd;                                 // Distance squared
-    FLOAT hrangesqdi;                            // Kernel gather extent
-    FLOAT macfactor;                             // Gravity MAC factor
     FLOAT potperiodic;                           // ..
-    FLOAT rp[ndim];                              // ..
     int *activelist  = activelistbuf[ithread];   // ..
     ParticleType<ndim>* activepart  = activepartbuf[ithread];   // ..
-    ParticleType<ndim>* neibpart    = neibpartbuf[ithread];     // ..
+    //ParticleType<ndim>* neibpart    = neibpartbuf[ithread];     // ..
     Typemask gravmask = mfv->types.gravmask;
     NeighbourManagerGrav neibmanager = neibmanagerbufgrav[ithread];
     Typemask hydromask ;
@@ -772,7 +764,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 		    int* directlist;
 		    int* gravlist;
 		    GravParticle* neibpart;
-		    const bool do_grav=true;
 		    const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,&neiblist,&directlist,&gravlist,&neibpart);
 
 
