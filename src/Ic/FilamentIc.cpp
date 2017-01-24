@@ -38,10 +38,21 @@ template <int ndim>
 FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
   Ic<ndim>(_sim, _hydro, _invndim)
 {
-  FLOAT mu_bar = simparams->floatparams["mu_bar"];
-  FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+  // Some sanity checking to ensure correct units are used for these ICs
+  /*if (simparams->intparams["ndim"] != 3) {
+    ExceptionHandler::getIstance().raise("Filament test only runs in 3D");
+  }*/
+  if (simparams->stringparams["routunit"] != "pc") {
+    ExceptionHandler::getIstance().raise("r unit not set to pc");
+  }
+  if (simparams->stringparams["rhooutunit"] != "g_cm3") {
+    ExceptionHandler::getIstance().raise("sigma unit not set to g_cm3");
+  }
 
-  // Hard-wired (for now) constants + other parameters
+  const FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  const FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+
+  // Constants + other parameters describing filament structure
   n0        = simparams->floatparams["n0"];
   r0        = simparams->floatparams["r0"];
   Rfilament = simparams->floatparams["Rfilament"];
@@ -51,14 +62,6 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
   // Constant and derived quantities
   aconst    = (FLOAT) 10.9;
   rho0      = (FLOAT) 1000.0*m_hydrogen*mu_bar*n0;
-
-  // Some sanity checking to ensure correct units are used for these ICs
-  if (simparams->stringparams["routunit"] != "pc") {
-    ExceptionHandler::getIstance().raise("r unit not set to pc");
-  }
-  if (simparams->stringparams["rhooutunit"] != "g_cm3") {
-    ExceptionHandler::getIstance().raise("sigma unit not set to g_cm3");
-  }
 
   // Convert any parameters to code units
   Rfilament /= simunits.r.outscale;
@@ -74,7 +77,7 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
   Box<ndim> box;
   for (int k=0; k<ndim; k++) box.min[k] = simbox.min[k];
   for (int k=0; k<ndim; k++) box.max[k] = simbox.max[k];
-  mtot = this->CalculateMassInBox(box);
+  mtot = this->CalculateMassInBox(box, gas_type);
 
   std::cout << "rho0 : " << rho0*simunits.rho.outscale << " " << simunits.rho.outunit << std::endl;
   std::cout << "mtot : " << mtot*simunits.m.outscale << " " << simunits.m.outunit << std::endl;
@@ -92,7 +95,7 @@ void FilamentIc<ndim>::Generate(void)
 {
   // Only compile for 3-dimensional case
   //-----------------------------------------------------------------------------------------------
-  if (ndim == 3) {
+  //if (ndim == 3) {
 
     int Npart      = simparams->intparams["Nhydro"];
 
@@ -106,11 +109,11 @@ void FilamentIc<ndim>::Generate(void)
     FLOAT *r = new FLOAT[ndim*Npart];
 
     Box<ndim> box;
-    for (int i=0; i < ndim; i++) {
-      box.min[i] = simbox.min[i];
-      box.max[i] = simbox.max[i];
+    for (int k=0; k<ndim; k++) {
+      box.min[k] = simbox.min[k];
+      box.max[k] = simbox.max[k];
     }
-    Ic<ndim>::AddMonteCarloDensityField(Npart, box, r, sim->randnumb);
+    Ic<ndim>::AddMonteCarloDensityField(Npart, gas_type, box, r, sim->randnumb);
 
     // Copy positions to main array and initialise all other variables
     for (int i=0; i<hydro->Nhydro; i++) {
@@ -124,7 +127,7 @@ void FilamentIc<ndim>::Generate(void)
 
     delete[] r;
 
-  }
+  //}
   //-----------------------------------------------------------------------------------------------
 
   return;
@@ -133,13 +136,17 @@ void FilamentIc<ndim>::Generate(void)
 
 
 //=================================================================================================
-//  Filament::GetValue
+//  Filament::GetDensity
 /// Returns the value of the requested quantity at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT FilamentIc<ndim>::GetDensity(const FLOAT r[ndim], const Typemask typemask) const
+FLOAT FilamentIc<ndim>::GetDensity
+ (const FLOAT r[ndim],
+  const int ptype) const
 {
-  FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
+  if (fabs(r[0]) > 0.25) return 0.5;
+  else return 1.0;
+  /*FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
   FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
   FLOAT z = r[2];
   if (R < Rfilament && fabs(z) < Lfilament) {
@@ -147,7 +154,7 @@ FLOAT FilamentIc<ndim>::GetDensity(const FLOAT r[ndim], const Typemask typemask)
   }
   else {
     return (FLOAT) 0.0;
-  }
+  }*/
 }
 
 
@@ -168,7 +175,7 @@ void FilamentIc<ndim>::SetParticleProperties()
     }
     part.u     = u0;
     part.iorig = i;
-    part.ptype = gas;
+    part.ptype = gas_type;
   }
 
   return;
