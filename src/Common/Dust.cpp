@@ -531,7 +531,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     int cc;                                      // Aux. cell counter
     int i;                                       // Particle id
     int j;                                       // Aux. particle counter
-    int jj;                                      // Aux. particle counter
     int k;                                       // Dimension counter
     int Nactive;                                 // ..
     vector<int>                 activelist(_tree->MaxNumPartInLeafCell()); // Ids of Active parts

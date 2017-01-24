@@ -413,8 +413,8 @@ private:
 	  const int old_size = ngbs.size()-1;
 	  const ParticleType& real_particle = ngbs.back();
 	  FLOAT h2 = real_particle.hrangesqd ;
-	  FLOAT r[ndim];
-	  for (int k=0; k<ndim; k++) r[k]=real_particle.r[k];
+	  //FLOAT r[ndim];
+	  //for (int k=0; k<ndim; k++) r[k]=real_particle.r[k];
 
 	  // Loop over the possible directions for reflections
 	  for (int k = 0; k < ndim; k++){
