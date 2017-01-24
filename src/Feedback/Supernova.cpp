@@ -156,7 +156,7 @@ void Supernova<ndim>::SupernovaInjection
 
     // Get new particle i
     Particle<ndim> &part = hydro->CreateNewParticle
-      (gas, gas_type, hydro->mmean, uinj, rpart, vpart, sim);
+      (gas_type, hydro->mmean, uinj, rpart, vpart, sim);
 
   }
   //-----------------------------------------------------------------------------------------------

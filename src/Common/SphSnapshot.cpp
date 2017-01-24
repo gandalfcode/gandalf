@@ -241,9 +241,8 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     // Compute Ndust - note that here Nhydro is Ngas+Ndust
     Nhydro = simulation->hydro->Nhydro;
     for (int n=0; n < Nhydro; n++){
-        int itype = simulation->hydro->GetParticlePointer(n).ptype ;
-        itype = parttype_converter[itype];
-        if (itype==dust) Ndust++;
+      int ptype = simulation->hydro->GetParticlePointer(n).ptype;
+      if (ptype == dust_type) Ndust++;
     }
     // And now Nhydro becomes Ngas
     Nhydro -= Ndust;
@@ -337,10 +336,9 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   int igas=0; int idust=0;
   for (int i=0; i<simulation->hydro->Nhydro; i++) {
     Particle<ndims>& part = simulation->hydro->GetParticlePointer(i);
-    int itype=part.ptype;
-    itype = parttype_converter[itype];
+    int ptype = part.ptype;
 
-    if (itype==gas) {
+    if (ptype == gas_type) {
       Species::maptype& sph_values = data["sph"].values;
       sph_values["iorig"][igas] = reinterpret_cast<SNAPFLOAT&>( part.iorig);
       sph_values["x"][igas] = (SNAPFLOAT) part.r[0];
@@ -363,7 +361,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       sph_values["dudt"][igas] = (SNAPFLOAT) part.dudt;
       igas++;
     }
-    else if (itype==dust) {
+    else if (ptype == dust_type) {
       Species::maptype& dust_values = data["dust"].values;
       dust_values["iorig"][idust] = reinterpret_cast<SNAPFLOAT&>( part.iorig);
       dust_values["x"][idust] = (SNAPFLOAT) part.r[0];

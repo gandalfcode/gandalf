@@ -36,7 +36,8 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 FLOAT Ic<ndim>::CalculateMassInBox
- (const Box<ndim> &box)
+ (const Box<ndim> &box,
+  const int ptype)
 {
   int maxGridSize = 512;
   int grid[ndim];
@@ -60,7 +61,7 @@ FLOAT Ic<ndim>::CalculateMassInBox
   if (ndim == 1) {
     for (int i=0; i<grid[0]; i++) {
       r[0] = box.min[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
-      mtot += this->GetDensity(r);
+      mtot += this->GetDensity(r, ptype);
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -69,7 +70,7 @@ FLOAT Ic<ndim>::CalculateMassInBox
       r[0] = box.min[0] + ((FLOAT) i + (FLOAT) 0.5)*dr[0];
       for (int j=0; j<grid[1]; j++) {
         r[1] = box.min[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
-        mtot += this->GetDensity(r);
+        mtot += this->GetDensity(r, ptype);
       }
     }
   }
@@ -81,7 +82,7 @@ FLOAT Ic<ndim>::CalculateMassInBox
         r[1] = box.min[1] + ((FLOAT) j + (FLOAT) 0.5)*dr[1];
         for (int k=0; k<grid[2]; k++) {
           r[2] = box.min[2] + ((FLOAT) k + (FLOAT) 0.5)*dr[2];
-          mtot += this->GetDensity(r);
+          mtot += this->GetDensity(r, ptype);
         }
       }
     }
@@ -105,6 +106,7 @@ FLOAT Ic<ndim>::CalculateMassInBox
 template <int ndim>
 FLOAT Ic<ndim>::GetSmoothedDensity
  (const FLOAT rsmooth[ndim],
+  const int ptype,
   const FLOAT h,
   SmoothingKernel<ndim> *kern)
 {
@@ -126,7 +128,7 @@ FLOAT Ic<ndim>::GetSmoothedDensity
       dr[0] = ((FLOAT) i + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
       drsqd = dr[0]*dr[0];
       r[0]  = rsmooth[0] + dr[0];
-      sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r);
+      sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r, ptype);
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -138,7 +140,7 @@ FLOAT Ic<ndim>::GetSmoothedDensity
         r[0]  = rsmooth[0] + dr[0];
         r[1]  = rsmooth[1] + dr[1];
         drsqd = dr[0]*dr[0] + dr[1]*dr[1];
-        sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r);
+        sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r, ptype);
       }
     }
   }
@@ -154,7 +156,7 @@ FLOAT Ic<ndim>::GetSmoothedDensity
           r[1]  = rsmooth[1] + dr[1];
           r[2]  = rsmooth[2] + dr[2];
           drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-          sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r);
+          sumValue += hfactor*kern->w0_s2(drsqd*invhsqd)*this->GetDensity(r, ptype);
         }
       }
     }
@@ -182,6 +184,7 @@ void Ic<ndim>::CheckInitialConditions(void)
   DomainBox<ndim>& simbox = sim->simbox;
   const bool cutbox       = simparams->intparams["cut_box"];
 
+  debug2("[Ic::CheckInitialConditions]");
 
   // Loop through all particles performing various checks
   //-----------------------------------------------------------------------------------------------
@@ -234,14 +237,14 @@ void Ic<ndim>::CheckInitialConditions(void)
   }
   //-----------------------------------------------------------------------------------------------
 
-  //Check particles are sorted in type order
+  // Check particles are sorted in type order
   int ptype =  hydro->GetParticlePointer(0).ptype;
   for (i=1; i<hydro->Nhydro; i++) {
-	  Particle<ndim>& part = hydro->GetParticlePointer(i);
-	  if (part.ptype < ptype){
-	    ExceptionHandler::getIstance().raise("Error Particles must be ordered by ptype");
-	  }
-	  ptype = part.ptype ;
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (part.ptype < ptype) {
+      ExceptionHandler::getIstance().raise("Error Particles must be ordered by ptype");
+    }
+    ptype = part.ptype;
   }
 
   if (!valid_ic) {
@@ -365,7 +368,8 @@ void Ic<ndim>::AddBinaryStar
 //=================================================================================================
 template <int ndim>
 FLOAT Ic<ndim>::GetMaximumDensity
- (const Box<ndim> &box,                ///< [in] Bounding box containing particles
+ (const int ptype,                     ///< [in] Particle type for max. density field
+  const Box<ndim> &box,                ///< [in] Bounding box containing particles
   RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
 {
   int numSamples = 1000000;
@@ -376,7 +380,7 @@ FLOAT Ic<ndim>::GetMaximumDensity
     for (int k=0; k<ndim; k++) {
       rrand[k] = box.min[k] + (box.max[k] - box.min[k])*randnumb->floatrand();
     }
-    rhoMax = max(rhoMax, GetDensity(rrand));
+    rhoMax = max(rhoMax, GetDensity(rrand, ptype));
   }
 
   return rhoMax;
@@ -391,12 +395,13 @@ FLOAT Ic<ndim>::GetMaximumDensity
 template <int ndim>
 void Ic<ndim>::AddMonteCarloDensityField
  (const int Npart,                     ///< [in] No. of particles
+  const int ptype,                     ///< [in] Type of particle
   const Box<ndim> &box,                ///< [in] Bounding box containing particles
   FLOAT *r,                            ///< [out] Positions of particles
   RandomNumber *randnumb)              ///< [inout] Pointer to random number generator
 {
   FLOAT rho;
-  FLOAT rhoMax = GetMaximumDensity(box, randnumb);
+  FLOAT rhoMax = GetMaximumDensity(ptype, box, randnumb);
   FLOAT rrand[ndim];
 
   debug2("[Ic::AddMonteCarloDensityField]");
@@ -411,7 +416,7 @@ void Ic<ndim>::AddMonteCarloDensityField
         rrand[k] = box.min[k] + (box.max[k] - box.min[k])*randnumb->floatrand();
       }
       rho = rhoMax*randnumb->floatrand();
-    } while (GetDensity(rrand) < rho);
+    } while (GetDensity(rrand, ptype) < rho);
 
     // Copy "correct" particle position to array for IC generation
     for (int k=0; k<ndim; k++) r[ndim*i + k] = rrand[k];

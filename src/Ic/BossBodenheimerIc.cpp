@@ -166,7 +166,9 @@ void BossBodenheimerIc<ndim>::Generate(void)
 /// Returns the value of the requested quantity at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT BossBodenheimerIc<ndim>::GetDensity(const FLOAT r[ndim], const Typemask typemask) const
+FLOAT BossBodenheimerIc<ndim>::GetDensity
+ (const FLOAT r[ndim],
+  const int ptype) const
 {
   const FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
   const FLOAT phi = atan2(r[1], r[0]);

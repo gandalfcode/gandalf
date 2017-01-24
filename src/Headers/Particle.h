@@ -123,11 +123,9 @@ public:
     _flag = none;
   }
 
-
   bool check_flag(unsigned int flag) const {
     return (_flag & flag) ;
   }
-
   bool is_dead() const {
     return _flag & dead;
   }
@@ -144,12 +142,7 @@ public:
 };
 
 
-enum ptype {gas, icm, boundary, cdm, dust} ;
-enum parttype{gas_type, icm_type, cdm_type, dust_type, Ntypes} ;
-
-static const int parttype_converter[] = { gas, icm, cdm, dust } ;
-static const int parttype_reverse_converter[] =
-{ gas_type, icm_type, gas_type, cdm_type, dust_type} ;
+enum parttype {gas_type, icm_type, boundary_type, cdm_type, dust_type, Ntypes};
 
 
 
@@ -243,9 +236,9 @@ public:
 template <int ndim>
 struct Particle
 {
+  type_flag flags;                  ///< Particle flags (eg boundary/dead)
+  int ptype;                        ///< Particle type (gas/cdm/dust)
   int iorig;                        ///< Original particle i.d.
-  type_flag flags;                  ///< SPH particle flags (eg boundary/dead)
-  int ptype;                        ///< SPH particle type (gas/cdm/dust)
   int sinkid;                       ///< i.d. of sink particle
   int levelneib;                    ///< Min. timestep level of neighbours
   int nstep;                        ///< Integer step-size of particle
@@ -283,14 +276,14 @@ struct Particle
                                     ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
   Particle() {
-    iorig = -1;
-    flags = none;
-    ptype = gas_type;
+    flags     = none;
+    ptype     = gas_type;
+    iorig     = -1;
     levelneib = 0;
-    level = 0;
-    nstep = 0;
-    nlast = 0;
-    sinkid = -1;
+    level     = 0;
+    nstep     = 0;
+    nlast     = 0;
+    sinkid    = -1;
     for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a[k] = (FLOAT) 0.0;
@@ -315,7 +308,7 @@ struct Particle
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
     mu_bar    = (FLOAT) 1.0;
-    vsig_max  = 0;
+    vsig_max  = (FLOAT) 0.0;
   }
 
   static const int NDIM = ndim ;
