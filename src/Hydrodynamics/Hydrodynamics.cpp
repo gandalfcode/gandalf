@@ -136,8 +136,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
 //=================================================================================================
 template <int ndim>
 Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
- (const enum ptype _ptype,             ///< [in] ptype of new particle
-  const enum parttype _parttype,       ///< [in] parttype of new particle
+ (const int ptype,                     ///< [in] ptype of new particle
   const FLOAT m,                       ///< [in] Mass of new particle
   const FLOAT u,                       ///< [in] Specific internal energy of new particle
   const FLOAT r[ndim],                 ///< [in] Position of new particle
@@ -159,7 +158,7 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
 
   // Set all particle properties from given arguments
   part.iorig     = inew;
-  part.ptype     = _parttype;
+  part.ptype     = ptype;
   part.level     = sim->level_max;
   part.levelneib = sim->level_max;
   part.nstep     = pow(2,sim->level_step - part.level);

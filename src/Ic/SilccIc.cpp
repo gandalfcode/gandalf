@@ -111,7 +111,7 @@ void SilccIc<ndim>::Generate(void)
       box.min[i] = simbox.min[i];
       box.max[i] = simbox.max[i];
     }
-    Ic<ndim>::AddMonteCarloDensityField(Npart, box, r, sim->randnumb);
+    Ic<ndim>::AddMonteCarloDensityField(Npart, gas_type, box, r, sim->randnumb);
 
     // Copy positions to main array and initialise all other variables
     for (int i=0; i<hydro->Nhydro; i++) {
@@ -138,7 +138,9 @@ void SilccIc<ndim>::Generate(void)
 /// Returns the value of the density at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT SilccIc<ndim>::GetDensity(const FLOAT *r, const Typemask typemask) const
+FLOAT SilccIc<ndim>::GetDensity
+ (const FLOAT r[ndim],
+  const int ptype) const
 {
   if (fabs(r[ndim-1]) <= a_midplane) {
     return rho_midplane*exp(-r[ndim-1]*r[ndim-1]/h_midplane/h_midplane);
@@ -166,7 +168,7 @@ void SilccIc<ndim>::SetParticleProperties()
     }
     part.u     = u0;
     part.iorig = i;
-    part.ptype = gas;
+    part.ptype = gas_type;
   }
 
   return;

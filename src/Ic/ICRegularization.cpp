@@ -41,6 +41,8 @@ ParticleRegularizer<ndim>::ParticleRegularizer(Parameters* simparams, const Doma
   for (int k=0; k<ndim; k++) localBox.boundary_rhs[k] = periodicBoundary;
 }
 
+
+
 template <int ndim>
 void ParticleRegularizer<ndim>::operator()
  (Hydrodynamics<ndim>* hydro,
@@ -61,7 +63,7 @@ void ParticleRegularizer<ndim>::operator()
 
     // Buid/re-build tree, create ghosts and update particle properties
     for (int i=0; i<hydro->Nhydro; i++) {
-       hydro->GetParticlePointer(i).flags.set_flag(active);
+      hydro->GetParticlePointer(i).flags.set_flag(active);
     }
     neib->BuildTree(true, 0, 1, 1, 1., hydro);
     neib->SearchBoundaryGhostParticles(0, localBox, hydro);
@@ -80,20 +82,20 @@ void ParticleRegularizer<ndim>::operator()
 #pragma omp for
       for (int i=0; i<hydro->Nhydro; i++) {
         Particle<ndim> &part = hydro->GetParticlePointer(i);
-        FLOAT invhsqd = (FLOAT) 1.0/(part.h*part.h);
+        const FLOAT invhsqd = (FLOAT) 1.0/(part.h*part.h);
         for (int k=0; k<ndim; k++) rreg[ndim*i + k] = (FLOAT) 0.0;
 
         // Find list of gather neighbours
         int Nneib = neib->GetGatherNeighbourList(part.r, hydro->kernrange*part.h,
-                                                 hydro->GetParticleArray(),
-                                                 hydro->Ntot, hydro->Nhydromax, &(neiblist[0]));
+                                                 hydro->GetParticleArray(), hydro->Ntot,
+                                                 hydro->Nhydromax, &(neiblist[0]));
 
 
         // Loop over all neighbours and calculate position correction for regularisation
         //-----------------------------------------------------------------------------------------
         for (int jj=0; jj<Nneib; jj++) {
-          int j = neiblist[jj];
-          Particle<ndim> &neibpart = hydro->GetParticlePointer(j);
+          const int j = neiblist[jj];
+          const Particle<ndim> &neibpart = hydro->GetParticlePointer(j);
 
           for (int k=0; k<ndim; k++) dr[k] = neibpart.r[k] - part.r[k];
           drsqd = DotProduct(dr, dr, ndim);
@@ -101,7 +103,7 @@ void ParticleRegularizer<ndim>::operator()
 
           for (int k=0; k<ndim; k++) {
             rreg[ndim*i + k] -=
-              dr[k]*hydro->kernp->w0_s2(drsqd*invhsqd)*regularizer(part, neibpart) ;
+              dr[k]*hydro->kernp->w0_s2(drsqd*invhsqd)*regularizer(part, neibpart);
           }
 
         }
@@ -125,8 +127,8 @@ void ParticleRegularizer<ndim>::operator()
           part.r[k] += rreg[ndim*i + k];
 
           // Wrap the particle positions
-          while (part.r[k] > localBox.max[k]) part.r[k] -= localBox.size[k] ;
-          while (part.r[k] < localBox.min[k]) part.r[k] += localBox.size[k] ;
+          while (part.r[k] > localBox.max[k]) part.r[k] -= localBox.size[k];
+          while (part.r[k] < localBox.min[k]) part.r[k] += localBox.size[k];
         }
       }
     }
@@ -144,5 +146,3 @@ template class ParticleRegularizer<2>;
 template class ParticleRegularizer<3>;
 
 } // namespace Regularization
-
-

@@ -83,8 +83,8 @@ protected:
   void InterpolateVelocityField(const int, const int, const FLOAT, const FLOAT,
                                 const FLOAT *, const DOUBLE *, FLOAT *);
 
-  void AddMonteCarloDensityField(const int, const Box<ndim> &, FLOAT *, RandomNumber *);
-  virtual FLOAT GetMaximumDensity(const Box<ndim> &, RandomNumber *);
+  void AddMonteCarloDensityField(const int, const int, const Box<ndim> &, FLOAT *, RandomNumber *);
+  virtual FLOAT GetMaximumDensity(const int, const Box<ndim> &, RandomNumber *);
 
 
 public:
@@ -104,25 +104,25 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual void Generate(void) {
     ExceptionHandler::getIstance().raise("Ic::Generate function not implemented");
-  };
-  virtual FLOAT GetDensity(const FLOAT *, const Typemask typemask=Typemask(true)) const {
+  }
+  virtual FLOAT GetDensity(const FLOAT *, const int) const {
     ExceptionHandler::getIstance().raise("Ic::GetDensity function not implemented");
     return (FLOAT) 0.0;
-  };
+  }
   virtual void SetParticleProperties() {
     ExceptionHandler::getIstance().raise("Ic::SetParticleProperties function not implemented");
   }
   virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const {
     ExceptionHandler::getIstance().raise("GetParticleRegularizer not implemented");
     return NULL;
-  };
+  }
 
 
   // Other common functions
   //-----------------------------------------------------------------------------------------------
   void CheckInitialConditions(void);
-  FLOAT CalculateMassInBox(const Box<ndim>&);
-  FLOAT GetSmoothedDensity(const FLOAT *, const FLOAT, SmoothingKernel<ndim> *);
+  FLOAT CalculateMassInBox(const Box<ndim>&, const int);
+  FLOAT GetSmoothedDensity(const FLOAT *, const int, const FLOAT, SmoothingKernel<ndim> *);
 
 
   // Static functions which can be used outside of Ic class
@@ -288,7 +288,7 @@ public:
   virtual ~BossBodenheimerIc() {};
 
   virtual void Generate();
-  virtual FLOAT GetDensity(const FLOAT *, const Typemask typemask=Typemask(true)) const;
+  virtual FLOAT GetDensity(const FLOAT *, const int) const;
   virtual void SetParticleProperties();
   virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
 
@@ -459,7 +459,7 @@ public:
   virtual ~FilamentIc() {};
 
   virtual void Generate();
-  virtual FLOAT GetDensity(const FLOAT *, const Typemask typemask=Typemask(true)) const;
+  virtual FLOAT GetDensity(const FLOAT *, const int) const;
   virtual void SetParticleProperties();
   virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const ;
 
@@ -901,7 +901,7 @@ public:
   virtual ~SilccIc() {};
 
   virtual void Generate();
-  virtual FLOAT GetDensity(const FLOAT *, const Typemask typemask=Typemask(true)) const;
+  virtual FLOAT GetDensity(const FLOAT *, const int) const;
   virtual void SetParticleProperties();
   virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const ;
 
@@ -1066,9 +1066,9 @@ public:
     rhoReg(simparams->floatparams["rho_reg"]),
     _rho_func(rho),
     _kern(kern)
-{ } ;
+  {} ;
 
-  virtual ~DefaultRegularizerFunction() { } ;
+  virtual ~DefaultRegularizerFunction() {};
 
 
   virtual FLOAT operator()(const Particle<ndim>& part,
@@ -1077,7 +1077,8 @@ public:
     FLOAT rhotrue;
 
     if (regularise_smooth_density) {
-      const FLOAT h = neibpart.h;
+      const FLOAT h       = neibpart.h;
+      const int ptype     = neibpart.ptype;
       const int gridSize  = 5;
       const FLOAT hrange  = _kern->kernrange*h;
       const FLOAT invh    = (FLOAT) 1.0/h;
@@ -1096,7 +1097,7 @@ public:
           dr[0] = ((FLOAT) i + (FLOAT) 0.5)*2.0*hrange/(FLOAT) gridSize - hrange;
           drsqd = dr[0]*dr[0];
           r[0]  = neibpart.r[0] + dr[0];
-          sumValue += hfactor*_kern->w0_s2(drsqd*invhsqd)*_rho_func->GetDensity(r);
+          sumValue += hfactor*_kern->w0_s2(drsqd*invhsqd)*_rho_func->GetDensity(r, ptype);
         }
       }
       //-------------------------------------------------------------------------------------------
@@ -1108,7 +1109,7 @@ public:
             r[0]  = neibpart.r[0] + dr[0];
             r[1]  = neibpart.r[1] + dr[1];
             drsqd = dr[0]*dr[0] + dr[1]*dr[1];
-            sumValue += hfactor*_kern->w0_s2(drsqd*invhsqd)*_rho_func->GetDensity(r);
+            sumValue += hfactor*_kern->w0_s2(drsqd*invhsqd)*_rho_func->GetDensity(r, ptype);
           }
         }
       }
@@ -1124,7 +1125,7 @@ public:
               r[1]  = neibpart.r[1] + dr[1];
               r[2]  = neibpart.r[2] + dr[2];
               drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-              sumValue += hfactor*_kern->w0_s2(drsqd*invhsqd)*_rho_func->GetDensity(r);
+              sumValue += hfactor*_kern->w0_s2(drsqd*invhsqd)*_rho_func->GetDensity(r, ptype);
             }
           }
         }
@@ -1136,7 +1137,7 @@ public:
       rhotrue = sumValue;
     }
     else {
-      rhotrue = _rho_func->GetDensity(neibpart.r);
+      rhotrue = _rho_func->GetDensity(neibpart.r, neibpart.ptype);
     }
 
     FLOAT rhofrac = (neibpart.rho - rhotrue)/(rhotrue + small_number);
@@ -1159,11 +1160,12 @@ class ParticleRegularizer
   DomainBox<ndim> localBox;
   int Nreg;
 
+
 public:
-  ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& simbox) ;
+  ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& simbox);
 
   void operator()(Hydrodynamics<ndim>* hydro, NeighbourSearch<ndim> *neib, Nbody<ndim>* nbody,
-                  const RegularizerFunction<ndim>& regularizer) const ;
+                  const RegularizerFunction<ndim>& regularizer) const;
 };
 
 } // namespace Regularization

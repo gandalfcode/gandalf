@@ -880,7 +880,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
         case 3:
         case 4:
           ptype = gas_type;
-          break ;
+          break;
         case 5:
           ptype = cdm_type;
           break;
@@ -894,9 +894,9 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
       }
 
       for (int k=0; k < ntype; k++) {
-        Particle<ndim>& p = hydro->GetParticlePointer(n) ;
-        p.ptype = ptype ;
-        p.flags = none ;
+        Particle<ndim>& p = hydro->GetParticlePointer(n);
+        p.ptype = ptype;
+        p.flags = none;
         n++;
       }
     }
@@ -1031,21 +1031,20 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
   idata[1]    = nbody->Nstar;
 
   for (int n=0; n < hydro->Nhydro; n++){
-	  int itype = hydro->GetParticlePointer(n).ptype ;
-	  itype = parttype_converter[itype] ;
-	  switch (itype){
-	    case icm:
-		  idata[3]++ ; break ;
-	    case gas:
-		  idata[4]++ ; break ;
-	    case cdm:
-	      idata[5]++ ; break ;
-	    case dust:
-	      idata[6]++ ; break ;
-	   default:
-    	  ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
-		  idata[7]++ ; break ;
-	  }
+    int ptype = hydro->GetParticlePointer(n).ptype;
+    switch (ptype) {
+      case icm_type:
+        idata[3]++; break;
+      case gas_type:
+        idata[4]++; break;
+      case cdm_type:
+        idata[5]++; break;
+      case dust_type:
+        idata[6]++; break;
+      default:
+        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
+        idata[7]++ ; break ;
+    }
   }
 
   idata[19]   = nunit;
@@ -1509,32 +1508,32 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   // Finally set the ptype based on the number of types in the snapshot
   int n=0 ;
   for (int type=2; type < 8; type++) {
-	int ntype = idata[type] ;
-	if (ntype){
-	  int ptype ;
-	  switch (type){
-         case 3:
-         case 4:
-	       ptype = gas_type ;
-	       break ;
-         case 5:
-    	   ptype = cdm_type ;
-    	   break;
-         case 6:
-    	   ptype = dust_type ;
-    	   break ;
-         default:
-         ptype = Ntypes;
-    	   ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
-    	   break ;
-		  }
+    int ntype = idata[type];
+    if (ntype) {
+      int ptype;
+      switch (type) {
+        case 3:
+        case 4:
+          ptype = gas_type;
+          break ;
+        case 5:
+          ptype = cdm_type;
+          break;
+        case 6:
+          ptype = dust_type;
+          break;
+        default:
+          ptype = Ntypes;
+          ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
+          break;
+      }
 
-	  for (int k=0; k < ntype; k++) {
-		Particle<ndim>& p = hydro->GetParticlePointer(n) ;
-		p.ptype = ptype ;
-		p.flags = none ;
-		n++;
-	  }
+      for (int k=0; k < ntype; k++) {
+        Particle<ndim>& p = hydro->GetParticlePointer(n);
+        p.ptype = ptype;
+        p.flags = none;
+        n++;
+      }
     }
   }
 
@@ -1741,20 +1740,19 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   types[3].ptype = dust_type;
 
   for (int n=0; n < hydro->Nhydro; n++){
-    int itype = hydro->GetParticlePointer(n).ptype ;
- 	itype = parttype_converter[itype] ;
- 	switch (itype) {
- 	  case icm:
- 		types[0].Ntot_type++ ; break ;
- 	  case gas:
- 	    types[1].Ntot_type++ ; break ;
- 	  case cdm:
- 	    types[2].Ntot_type++ ; break ;
- 	  case dust:
- 	    types[3].Ntot_type++ ; break ;
- 	  default:
-       ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
- 	}
+    int ptype = hydro->GetParticlePointer(n).ptype ;
+    switch (ptype) {
+      case icm_type:
+        types[0].Ntot_type++; break;
+      case gas_type:
+        types[1].Ntot_type++; break;
+      case cdm_type:
+        types[2].Ntot_type++; break;
+      case dust_type:
+        types[3].Ntot_type++; break;
+      default:
+        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
+    }
   }
 
   int Nsum = 0 ;
@@ -2054,20 +2052,19 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   idata[0]    = hydro->Nhydro;
   idata[1]    = nbody->Nstar;
   for (int n=0; n < hydro->Nhydro; n++){
-    int itype = hydro->GetParticlePointer(n).ptype ;
-    itype = parttype_converter[itype] ;
-    switch (itype){
-      case icm:
-	    idata[3]++ ; break ;
-      case gas:
-	    idata[4]++ ; break ;
-      case cdm:
-        idata[5]++ ; break ;
-      case dust:
-        idata[6]++ ; break ;
-     default:
-	    ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
-	    idata[7]++ ; break ;
+    int ptype = hydro->GetParticlePointer(n).ptype;
+    switch (ptype) {
+      case icm_type:
+        idata[3]++; break;
+      case gas_type:
+        idata[4]++; break;
+      case cdm_type:
+        idata[5]++; break;
+      case dust_type:
+        idata[6]++; break;
+      default:
+        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
+        idata[7]++; break;
     }
   }
   idata[19]   = nunit;
@@ -2316,16 +2313,15 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   idata[0]   = hydro->Nhydro;
   idata[1]   = nbody->Nstar;
   for (int n=0; n < hydro->Nhydro; n++){
-    int itype = hydro->GetParticlePointer(n).ptype ;
-    itype = parttype_converter[itype] ;
-    switch (itype){
-      case icm:
-  	    idata[3]++ ; break ;
-      case gas:
-  	    idata[4]++ ; break ;
-      case cdm:
+    int ptype = hydro->GetParticlePointer(n).ptype;
+    switch (ptype) {
+      case icm_type:
+        idata[3]++ ; break ;
+      case gas_type:
+        idata[4]++ ; break ;
+      case cdm_type:
         idata[5]++ ; break ;
-      case dust:
+      case dust_type:
         idata[6]++ ; break ;
       default:
   	    ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
