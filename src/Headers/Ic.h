@@ -447,6 +447,8 @@ protected:
   FLOAT Rfilament;
   FLOAT Lfilament;
   FLOAT temp0;
+  FLOAT v_cyl_infall;
+  FLOAT v_rad_infall;
 
   FLOAT mtot;
   FLOAT u0;

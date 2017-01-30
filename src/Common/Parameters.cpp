@@ -469,6 +469,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["r0"] = 0.027;
   floatparams["Rfilament"] = 0.075;
   floatparams["Lfilament"] = 1.6;
+  floatparams["v_cyl_infall"] = 0.0;
+  floatparams["v_rad_infall"] = 0.0;
 
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------

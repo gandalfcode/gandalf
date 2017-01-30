@@ -38,26 +38,32 @@ template <int ndim>
 FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
   Ic<ndim>(_sim, _hydro, _invndim)
 {
-  // Some sanity checking to ensure correct units are used for these ICs
-  /*if (simparams->intparams["ndim"] != 3) {
+  // Some sanity checking to ensure correct parameters are valid and sensible
+  if (simparams->intparams["ndim"] != 3) {
     ExceptionHandler::getIstance().raise("Filament test only runs in 3D");
-  }*/
+  }
   if (simparams->stringparams["routunit"] != "pc") {
     ExceptionHandler::getIstance().raise("r unit not set to pc");
   }
   if (simparams->stringparams["rhooutunit"] != "g_cm3") {
     ExceptionHandler::getIstance().raise("sigma unit not set to g_cm3");
   }
+  if (simparams->floatparams["v_cyl_infall"] > 0.0 &&
+      simparams->floatparams["v_rad_infall"] > 0.0) {
+    ExceptionHandler::getIstance().raise("Both cylindrical and radial infall velocities > 0");
+  }
 
   const FLOAT mu_bar = simparams->floatparams["mu_bar"];
   const FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
 
   // Constants + other parameters describing filament structure
-  n0        = simparams->floatparams["n0"];
-  r0        = simparams->floatparams["r0"];
-  Rfilament = simparams->floatparams["Rfilament"];
-  Lfilament = simparams->floatparams["Lfilament"];
-  temp0     = simparams->floatparams["temp0"];
+  n0           = simparams->floatparams["n0"];
+  r0           = simparams->floatparams["r0"];
+  Rfilament    = simparams->floatparams["Rfilament"];
+  Lfilament    = simparams->floatparams["Lfilament"];
+  temp0        = simparams->floatparams["temp0"];
+  v_cyl_infall = simparams->floatparams["v_cyl_infall"];
+  v_rad_infall = simparams->floatparams["v_rad_infall"];
 
   // Constant and derived quantities
   aconst    = (FLOAT) 10.9;
@@ -72,6 +78,11 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
 
   // Compute initial internal energy of all particles
   u0 = temp0/gammaone/mu_bar;
+
+  // Scale infall velocities as mutiples of the (isothermal) sound speed
+  FLOAT csound = sqrt(gammaone*u0);
+  v_cyl_infall *= csound;
+  v_rad_infall *= csound;
 
   // Compute total mass inside simulation box
   Box<ndim> box;
@@ -95,16 +106,15 @@ void FilamentIc<ndim>::Generate(void)
 {
   // Only compile for 3-dimensional case
   //-----------------------------------------------------------------------------------------------
-  //if (ndim == 3) {
-
-    int Npart      = simparams->intparams["Nhydro"];
+  if (ndim == 3) {
 
     debug2("[FilamentIc::Generate]");
 
     // Allocate local and main particle memory
+    int Npart = simparams->intparams["Nhydro"];
     hydro->Nhydro = Npart;
     sim->AllocateParticleMemory();
-    mp = 1.0*mtot / (FLOAT) Npart;
+    mp = mtot / (FLOAT) Npart;
 
     FLOAT *r = new FLOAT[ndim*Npart];
 
@@ -127,7 +137,7 @@ void FilamentIc<ndim>::Generate(void)
 
     delete[] r;
 
-  //}
+  }
   //-----------------------------------------------------------------------------------------------
 
   return;
@@ -144,17 +154,15 @@ FLOAT FilamentIc<ndim>::GetDensity
  (const FLOAT r[ndim],
   const int ptype) const
 {
-  if (fabs(r[0]) > 0.25) return 0.5;
-  else return 1.0;
-  /*FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
+  FLOAT R = sqrt(r[0]*r[0] + r[1]*r[1]);
   FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
   FLOAT z = r[2];
   if (R < Rfilament && fabs(z) < Lfilament) {
-    return rho0 / ((FLOAT) 1.0 + radsqd/r0/r0 + z*z/r0/r0/aconst/aconst);
+    return rho0; //  / ((FLOAT) 1.0 + radsqd/r0/r0 + z*z/r0/r0/aconst/aconst);
   }
   else {
     return (FLOAT) 0.0;
-  }*/
+  }
 }
 
 
@@ -166,16 +174,32 @@ FLOAT FilamentIc<ndim>::GetDensity
 template <int ndim>
 void FilamentIc<ndim>::SetParticleProperties()
 {
-  // Copy positions to main array and initialise all other variables
+  // Initialise all other variables for particles
   for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    for (int k=0; k<ndim; k++) {
-      part.v[k] = (FLOAT) 0.0;
-      part.a[k] = (FLOAT) 0.0;
-    }
+    for (int k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
     part.u     = u0;
     part.iorig = i;
     part.ptype = gas_type;
+
+    // Add cylindrical infall velocity
+    if (v_cyl_infall > (FLOAT) 0.0 && ndim == 3) {
+      FLOAT Rmag = sqrt(part.r[0]*part.r[0] + part.r[1]*part.r[1]);
+      if (Rmag > small_number) {
+        for (int k=0; k<2; k++) part.v[k] =  -v_cyl_infall*part.r[k]/Rmag;
+      }
+    }
+
+    // Add radial infall velocity
+    if (v_rad_infall > (FLOAT) 0.0 && ndim == 3) {
+      FLOAT rmag = sqrt(part.r[0]*part.r[0] + part.r[1]*part.r[1] + part.r[2]*part.r[2]);
+      if (rmag > small_number) {
+        for (int k=0; k<ndim; k++) part.v[k] =  -v_rad_infall*part.r[k]/rmag;
+      }
+    }
+
+
   }
 
   return;
