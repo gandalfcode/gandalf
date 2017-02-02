@@ -111,12 +111,17 @@ void FilamentIc<ndim>::Generate(void)
     debug2("[FilamentIc::Generate]");
 
     // Allocate local and main particle memory
-    int Npart = simparams->intparams["Nhydro"];
+    int Npart     = simparams->intparams["Nhydro"];
+    mp            = mtot / (FLOAT) Npart;
+    FLOAT volume  = Lfilament*pi*pow(Rfilament, 2);
+    FLOAT Ngather = (int) (4.0*pi*pow(2.0*1.2,3)/3.0);
+    FLOAT h_guess = 2.0*powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Npart),onethird);
+    FLOAT *r      = new FLOAT[ndim*Npart];
+
+    std::cout << "Ngather : " << Ngather << "   " << h_guess << "   " << Rfilament << std::endl;
+
     hydro->Nhydro = Npart;
     sim->AllocateParticleMemory();
-    mp = mtot / (FLOAT) Npart;
-
-    FLOAT *r = new FLOAT[ndim*Npart];
 
     Box<ndim> box;
     for (int k=0; k<ndim; k++) {
@@ -130,10 +135,13 @@ void FilamentIc<ndim>::Generate(void)
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (int k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
       part.m = mp;
+      part.h = h_guess;
     }
 
     // Now set all other particle properties
     SetParticleProperties();
+
+    sim->initial_h_provided = true;
 
     delete[] r;
 
@@ -158,7 +166,7 @@ FLOAT FilamentIc<ndim>::GetDensity
   FLOAT radsqd = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
   FLOAT z = r[2];
   if (R < Rfilament && fabs(z) < Lfilament) {
-    return rho0; //  / ((FLOAT) 1.0 + radsqd/r0/r0 + z*z/r0/r0/aconst/aconst);
+    return rho0 / ((FLOAT) 1.0 + radsqd/r0/r0 + z*z/r0/r0/aconst/aconst);
   }
   else {
     return (FLOAT) 0.0;
