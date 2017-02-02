@@ -62,16 +62,14 @@ void ParticleRegularizer<ndim>::operator()
   for (int ireg=0; ireg<Nreg; ireg++) {
 
     // Buid/re-build tree, create ghosts and update particle properties
-    for (int i=0; i<hydro->Nhydro; i++) {
-      hydro->GetParticlePointer(i).flags.set_flag(active);
-    }
-    neib->BuildTree(true, 0, 1, 1, 1., hydro);
+    for (int i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
+    neib->BuildTree(true, 0, 1, 1, 0.0, hydro);
     neib->SearchBoundaryGhostParticles(0, localBox, hydro);
-    neib->BuildGhostTree(true, 0, 1, 1, 1., hydro);
+    neib->BuildGhostTree(true, 0, 1, 1, 0.0, hydro);
     neib->UpdateAllProperties(hydro, nbody);
 
     //=============================================================================================
-#pragma omp parallel default(none) shared(rreg, hydro, neib, cout,regularizer)
+#pragma omp parallel default(none) shared(rreg, hydro, neib, regularizer, cout)
     {
       FLOAT dr[ndim];
       FLOAT drsqd;
@@ -123,6 +121,19 @@ void ParticleRegularizer<ndim>::operator()
 #pragma omp for
       for (int i=0; i<hydro->Nhydro; i++) {
         Particle<ndim> &part = hydro->GetParticlePointer(i);
+
+        // Safety condition to enforce that a particle cannot move more than a single smoothing
+        // length (i.e. roughly the interparticle separation) in one regularisation step.
+        FLOAT rdiff = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) rdiff += rreg[ndim*i + k]*rreg[ndim*i + k];
+        rdiff = sqrt(rdiff);
+        if (rdiff > 0.5*part.h) {
+          FLOAT runit[ndim];
+          for (int k=0; k<ndim; k++) runit[k] = rreg[ndim*i + k]/rdiff;
+          for (int k=0; k<ndim; k++) rreg[ndim*i + k] = 0.5*part.h*runit[k];
+        }
+
+        // Apply regularisation step and safely wrap particles around periodic boundaries
         for (int k=0; k<ndim; k++) {
           part.r[k] += rreg[ndim*i + k];
 
