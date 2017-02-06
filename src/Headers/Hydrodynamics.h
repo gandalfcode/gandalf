@@ -87,6 +87,8 @@ public:
   void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
   Particle<ndim>& CreateNewParticle(const int, const FLOAT, const FLOAT,
                                     const FLOAT*, const FLOAT*, SimulationBase*);
+  virtual void ZeroAccelerations() = 0;
+
 
   // Functions needed to hide some implementation details
   //-----------------------------------------------------------------------------------------------
@@ -161,6 +163,7 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
   virtual void DeallocateMemory(void) {};
   virtual void DeleteDeadParticles(void) {};
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {};
+  virtual void ZeroAccelerations() {} ;
 
 };
 #endif

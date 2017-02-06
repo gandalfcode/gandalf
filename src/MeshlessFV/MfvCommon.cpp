@@ -384,7 +384,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeSmoothedGravForces
     gaux = (FLOAT) 0.5*(invh_i*kern.wpot(drmag*invh_i) + invh_j*kern.wpot(drmag*invh_j));
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.a[k] += dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.atree[k] += dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
   }
@@ -428,7 +428,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeDirectGravForces
     invdr3   = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.a[k] += neibdata[j].m*dr[k]*invdr3;
+    for (k=0; k<ndim; k++) parti.atree[k] += neibdata[j].m*dr[k]*invdr3;
     parti.gpot += neibdata[j].m*invdrmag;
 
     assert(drsqd >= parti.hrangesqd && drsqd >= neibdata[j].hrangesqd);
@@ -468,23 +468,17 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeStarGravForces
   //-----------------------------------------------------------------------------------------------
   for (j=0; j<N; j++) {
 
-    //if (fixed_sink_mass) ms = msink_fixed;
-    //else
     ms = nbodydata[j]->m;
 
     for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
-    //for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
     drsqd    = DotProduct(dr,dr,ndim) + small_number;
     drmag    = sqrt(drsqd);
     invdrmag = (FLOAT) 1.0/drmag;
     invhmean = (FLOAT) 2.0/(parti.h + nbodydata[j]->h);
-    //drdt     = DotProduct(dv, dr, ndim)*invdrmag;
     paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.a[k] += paux*dr[k];
-    //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
-    //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
+    for (k=0; k<ndim; k++) parti.atree[k] += paux*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
 
     assert(drmag > (FLOAT) 0.0);

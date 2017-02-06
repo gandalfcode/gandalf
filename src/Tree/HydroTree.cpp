@@ -155,32 +155,33 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
  string gravity_mac, string multipole,
  const DomainBox<ndim>& domain,
  const ParticleTypeRegister& reg,
- const bool IAmPruned)
+ const bool IAmPruned
+)
 {
   TreeBase<ndim> * t = NULL;
   if (tree_type == "bruteforce") {
     typedef BruteForceTree<ndim,ParticleType, BruteForceTreeCell> __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg,IAmPruned) ;
+                   gravity_mac,  multipole,domain, reg, IAmPruned);
   }
   else if (tree_type == "kdtree") {
     typedef KDTree<ndim,ParticleType, KDTreeCell>  __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg,IAmPruned) ;
+                   gravity_mac,  multipole,domain, reg, IAmPruned);
   }
   else if (tree_type == "octtree") {
     typedef OctTree<ndim,ParticleType, OctTreeCell>  __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg,IAmPruned) ;
+                   gravity_mac,  multipole,domain, reg, IAmPruned);
   }
   else if (tree_type == "treeray") {
     typedef OctTree<ndim,ParticleType, TreeRayCell> __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
-                   gravity_mac,  multipole,domain, reg,IAmPruned) ;
+                   gravity_mac,  multipole,domain, reg, IAmPruned);
   }
   else {
     string message = "Tree Type not recognised: " + tree_type ;
@@ -188,6 +189,24 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
   }
 
   return t ;
+}
+
+
+template <int ndim, template <int> class ParticleType>
+MAC_Type HydroTree<ndim,ParticleType>::GetOpeningCriterion() const {
+  return tree->GetMacType() ;
+}
+
+template <int ndim, template <int> class ParticleType>
+void HydroTree<ndim,ParticleType>::SetOpeningCriterion(MAC_Type value) {
+  tree->SetMacType(value) ;
+  ghosttree->SetMacType(value) ;
+#ifdef MPI_PARALLEL
+  for (int i=0; i<Nmpi; i++) {
+    prunedtree[i]->SetMacType(value) ;
+    sendprunedtree[i]->SetMacType(value) ;
+  }
+#endif
 }
 
 
@@ -759,7 +778,8 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
  (int rank,                            ///< [in] MPI rank
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< [in] Pointer to N-body object
-  const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box
+  const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald object
 {
   int cactive;                          // No. of active cells
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
@@ -785,7 +805,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(rank,simbox,celllist,cactive,cout,hydro,partdata)
+#pragma omp parallel default(none) shared(rank,simbox,celllist,cactive,cout,hydro,partdata,ewald)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -798,7 +818,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
     int k;                                     // Dimension counter
     int Nactive;                               // No. of active particles in current cell
     int Ngravcelltemp;                         // Aux. gravity cell counter
-    FLOAT macfactor;                           // Gravity MAC factor for cell
     int *activelist                = activelistbuf[ithread];
     ParticleType<ndim> *activepart = activepartbuf[ithread];
     vector<MultipoleMoment<ndim> > gravcelllist;
@@ -809,7 +828,6 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim>& cell = celllist[cc] ;
-      macfactor = (FLOAT) 0.0;
       gravcelllist.clear();
 
 
@@ -819,17 +837,11 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) activepart[j] = partdata[activelist[j]];
 
-      // Compute average/maximum term for computing gravity MAC
-      if (gravity_mac == "eigenmac") {
-        for (j=0; j<Nactive; j++) {
-          macfactor = max(macfactor, pow((FLOAT) 1.0/activepart[j].gpot, twothirds));
-        }
-      }
-
       // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
         activepart[j].gpot = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].a[k]     = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].atree[k] = (FLOAT) 0.0;
       }
 
 
@@ -840,7 +852,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
         if (j == rank) continue;
         const int Ngravcellold = gravcelllist.size();
         Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
-          (cell, simbox, macfactor,gravcelllist);
+          (cell, simbox ,gravcelllist);
 
         // If pruned tree is too close to be used (flagged by -1), then record cell id
         // for exporting those particles to other MPI processes
@@ -863,12 +875,29 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       for (j=0; j<Nactive; j++) {
 
         if (multipole == "monopole") {
-          ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].a, activepart[j].r,
+          ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree, activepart[j].r,
                                     gravcelllist.size(), &gravcelllist[0]);
         }
         else if (multipole == "quadrupole") {
-          ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].a, activepart[j].r,
+          ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].atree, activepart[j].r,
                                       gravcelllist.size(), &gravcelllist[0]);
+        }
+
+        // Add the periodic correction force the cells
+        if (simbox.PeriodicGravity){
+          int Ngravcell = gravcelllist.size() ;
+
+          for (int jj=0; jj<Ngravcell; jj++) {
+            MultipoleMoment<ndim> & gravcell = gravcelllist[jj] ;
+
+            FLOAT draux[ndim], aperiodic[ndim], potperiodic ;
+            for (int k=0; k<ndim; k++) draux[k] = gravcell.r[k] - activepart[j].r[k];
+
+            ewald->CalculatePeriodicCorrection(gravcell.m, draux, aperiodic, potperiodic);
+
+            for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];
+            activepart[j].gpot += potperiodic;
+          }
         }
 
       }
@@ -885,10 +914,12 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
                                     activepart, hydro->types);
       }
 
+
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].a[k];
+        for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].atree[k];
+        for (k=0; k<ndim; k++) partdata[i].atree[k] += activepart[j].atree[k];
         partdata[i].gpot += activepart[j].gpot;
       }
 
@@ -1451,16 +1482,62 @@ void HydroTree<ndim,ParticleType>::FindMpiTransferParticles
     Box<ndim>& nodebox = mpinodes[inode].domain;
 
     // Start from root-cell
-    int NumPartFound = tree->FindBoxOverlapParticles(nodebox, all_particles_to_export,
+    tree->FindBoxOverlapParticles(nodebox, particles_to_export[inode],
                                                      hydro->GetParticleArray()) ;
 
     // Copy particles to per processor array
-    if (NumPartFound > 0)
-      particles_to_export[inode].insert(particles_to_export[inode].end(),
-                                        all_particles_to_export.end() - NumPartFound,
-                                        all_particles_to_export.end());
+    all_particles_to_export.insert(all_particles_to_export.end(),
+                                        particles_to_export[inode].begin(),
+                                        particles_to_export[inode].end());
   }
   //-----------------------------------------------------------------------------------------------
+
+#ifndef NDEBUG
+  VerifyUniqueIds(all_particles_to_export.size(),hydro->Nhydro,&all_particles_to_export[0]);
+  vector<int> temp(all_particles_to_export); std::sort(temp.begin(),temp.end());
+  for (int i=0; i<hydro->Nhydro;i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    Box<ndim>& domainbox = mpinodes[rank].domain;
+    if (ParticleInBox(part,domainbox)) {
+      const bool WillExport = std::binary_search(temp.begin(),temp.end(),i);
+      if (WillExport) {
+        // Deal with edge case when the particle is exactly on the boundary
+        // (in which case exporting it is not wrong)
+        bool edge=false;
+        for (int k=0; k<ndim; k++) {
+          if (part.r[k] == domainbox.min[k] || part.r[k] == domainbox.max[k]) {
+            edge =true;
+          }
+        }
+        if (!edge) assert(!std::binary_search(temp.begin(),temp.end(),i));
+      }
+    }
+    else {
+      //Edge case when the particle is at the right edge of the domain
+      bool edge = false;
+      for (int k=0; k<ndim; k++) if (part.r[k]==domainbox.max[k]) edge=true;
+      if (!edge) assert(std::binary_search(temp.begin(),temp.end(),i));
+      //if (edge) assert(!std::binary_search(temp.begin(),temp.end(),i));
+      for (int jnode=0; jnode<potential_nodes.size(); jnode++) {
+          inode=potential_nodes[jnode];
+          vector<int>::iterator it = std::find(particles_to_export[inode].begin(),particles_to_export[inode].end(),i);
+          const bool InDomain = ParticleInBox(part,mpinodes[inode].domain);
+          if (InDomain) {
+              assert(it != particles_to_export[inode].end());
+          }
+          else {
+              assert( it == particles_to_export[inode].end());
+          }
+	  if (it != particles_to_export[inode].end()) {
+              assert(InDomain);
+          }
+          else {
+              assert(!InDomain);
+          }
+      }
+    }
+  }
+#endif
 
   return;
 }

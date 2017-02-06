@@ -36,6 +36,7 @@ class GradhSphCommunicationHandler {
     GradSphForcesParticle (const GradhSphParticle<ndim>& p) {
       for (int k=0; k<ndim; k++) {
         a[k] = p.a[k];
+        atree[k] = p.atree[k];
       }
       gpot = p.gpot;
       dudt = p.dudt;
@@ -45,6 +46,7 @@ class GradhSphCommunicationHandler {
     }
 
     FLOAT a[ndim];
+    FLOAT atree[ndim];
     FLOAT gpot;
     FLOAT dudt;
     FLOAT div_v;
@@ -105,6 +107,7 @@ public:
 
     for (int k=0; k<ndim; k++) {
       p2.a[k] += p.a[k];
+      p2.atree[k] += p.atree[k];
     }
 
     p2.gpot += p.gpot;
@@ -126,6 +129,8 @@ public:
       p2.r[k]=p.r[k];
       p2.v[k]=p.v[k];
       p2.a[k]=0;
+      p2.atree[k]=0;
+
     }
     p2.m = p.m;
     p2.rho = p.rho;
@@ -208,6 +213,7 @@ class MeshlessCommunicationHandler {
       for (int k=0; k<ndim; k++) {
     	  rdmdt[k]=p.rdmdt[k];
     	  a[k]=p.a[k];
+    	  atree[k]=p.atree[k];
       }
       for (int ivar=0; ivar<ndim+2; ivar++) {
     	  dQ[ivar]=p.dQ[ivar];
@@ -224,6 +230,7 @@ class MeshlessCommunicationHandler {
     FLOAT dQdt[ndim+2];
     FLOAT rdmdt[ndim];
     FLOAT a[ndim];
+    FLOAT atree[ndim];
     FLOAT gpot;
     FLOAT vsig_max;
   };
@@ -238,6 +245,7 @@ public:
 	    for (int k=0; k<ndim; k++) {
 	      p2.rdmdt[k] += p.rdmdt[k];
 	      p2.a[k] += p.a[k];
+	      p2.atree[k] += p.atree[k];
 	    }
 
 	    for (int ivar=0; ivar<ndim+2; ivar++) {
@@ -261,6 +269,7 @@ public:
       p2.r[k]=p.r[k];
       p2.v[k]=p.v[k];
       p2.a[k]=0.0;
+      p2.atree[k]=0;
 	  for (int kk=0; kk<ndim; kk++) {
 			p2.B[k][kk]=p.B[k][kk];
 	  }
@@ -346,20 +355,19 @@ class TreeCommunicationHandler {
 
   struct TreeCellStreamlined {
 
-    TreeCellStreamlined (int Nactive, int exported_particles) {
+    TreeCellStreamlined (const TreeCellBase<ndim>& c, int Nactive, int exported_particles) {
 
         ifirst = exported_particles;
         ilast = exported_particles+Nactive-1;
         N = Nactive;
-
+        amin = c.amin;
       }
 
 
+    FLOAT amin ;
     int ifirst;
     int ilast;
     int N;
-
-
 
     };
 
@@ -377,7 +385,8 @@ public:
     c2.N = c.N;
     c2.worktot=0.;
 
-
+    // Only need amin as amin / macfactor are in a union
+    c2.amin = c.amin ;
   }
 
   template <template <int> class ParticleType>
@@ -386,6 +395,7 @@ public:
     c.m = 0;
     c.hmax = 0;
     c.maxsound = 0;
+    c.amin = big_number;
     for (int k=0; k<ndim; k++) {
       c.bb.min[k] = big_number;
       c.bb.max[k] = -big_number;
@@ -413,6 +423,8 @@ public:
       c.m += p.m;
       c.hmax = max(c.hmax,p.h);
       c.maxsound = max(c.maxsound,p.sound);
+      c.amin = min(c.amin,
+                   sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
     }
 
     FLOAT dr[ndim];

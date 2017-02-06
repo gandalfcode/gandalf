@@ -43,7 +43,7 @@ using namespace std;
 //  of given length 'ndim'
 //=================================================================================================
 template <typename T>
-static inline T DotProduct(T *v1, T *v2, int ndim)
+inline T DotProduct(T *v1, T *v2, int ndim)
 {
   if (ndim == 1)
     return v1[0]*v2[0];
@@ -60,7 +60,7 @@ static inline T DotProduct(T *v1, T *v2, int ndim)
 //  Print values of a given array to standard output
 //=================================================================================================
 template <typename T>
-static inline void PrintArray(string message, int Tsize, T *array)
+void PrintArray(string message, int Tsize, T *array)
 {
   cout << message;
   for (int i=0; i<Tsize; i++) cout << array[i] << "  ";
@@ -75,7 +75,7 @@ static inline void PrintArray(string message, int Tsize, T *array)
 //  Return minimum of 3 given values.
 //=================================================================================================
 template <typename T>
-static inline T min3(T v1, T v2, T v3)
+inline T min3(T v1, T v2, T v3)
 {
    T vmin = v1;
    if (v2 < vmin) vmin = v2;
@@ -90,7 +90,7 @@ static inline T min3(T v1, T v2, T v3)
 //  Return maximum of 3 given values.
 //=================================================================================================
 template <typename T>
-static inline T max3(T v1, T v2, T v3)
+inline T max3(T v1, T v2, T v3)
 {
    T vmax = v1;
    if (v2 > vmax) vmax = v2;
@@ -105,7 +105,7 @@ static inline T max3(T v1, T v2, T v3)
 //  Sign function.  Returns (a) -1 if T < 0, (b) 0 if T = 0, (c) +1 if T > 0.
 //=================================================================================================
 template <typename T>
-static inline int sgn(T val)
+inline int sgn(T val)
 {
   return (T(0) < val) - (val < T(0));
 }
@@ -118,7 +118,7 @@ static inline int sgn(T val)
 //  (Courtesy of Anthony Whitworth - 18/04/2013)
 //=================================================================================================
 template <typename T>
-static inline void Heapsort
+inline void Heapsort
 (int q_TOT,                         ///< No. of values to be sorted
  int *qV,                           ///< Sorted ids of q-values
  T *V)                              ///< (Templated) array of values to sort
@@ -183,7 +183,7 @@ static inline void Heapsort
 //  Sort list of quantities into ascending order.
 //=================================================================================================
 template <typename T>
-static inline void InsertionSort
+inline void InsertionSort
 (int Nsort,                         ///< No. of values to be sorted
  T *r)                              ///< List of values to be sorted
 {
@@ -209,7 +209,7 @@ static inline void InsertionSort
 //  Sort ...
 //=================================================================================================
 template <typename T>
-static inline void InsertionSortIds
+inline void InsertionSortIds
  (int Nsort,                           ///< No. of values to be sorted
   int *ids,                            ///< List of particle ids
   T *r)                                ///< ...
@@ -239,7 +239,7 @@ static inline void InsertionSortIds
 //  Rotate given vector around specified Euler angles
 //=================================================================================================
 template <typename T>
-static inline void EulerAngleMatrix
+inline void EulerAngleMatrix
  (T phi,
   T theta,
   T psi,
@@ -265,7 +265,7 @@ static inline void EulerAngleMatrix
 //  Rotate given vector around specified Euler angles
 //=================================================================================================
 template <typename T>
-static inline void EulerAngleRotation
+inline void EulerAngleRotation
  (T phi,
   T theta,
   T psi,
@@ -297,7 +297,7 @@ static inline void EulerAngleRotation
 //  Rotate given array of vectors around specified Euler angles
 //=================================================================================================
 template <typename T>
-static inline void EulerAngleArrayRotation
+inline void EulerAngleArrayRotation
  (int N,
   T phi,
   T theta,
@@ -329,7 +329,7 @@ static inline void EulerAngleArrayRotation
 //  clamp
 //  ...
 //=================================================================================================
-static inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
+inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
 {
   bool smaller = value < min;
   if (smaller) return min;
@@ -340,48 +340,11 @@ static inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
 
 
 
-
 //=================================================================================================
 //  BoxOverlap
-/// Check if two bounding boxes overlap.  If yes, then returns true.
+/// Check if two bounding boxes overlap.  If yes, then return true.
 //=================================================================================================
-static inline bool BoxOverlap
- (const int ndim,
-  FLOAT *box1min,                      ///< Minimum extent of box 1
-  FLOAT *box1max,                      ///< Maximum extent of box 1
-  FLOAT *box2min,                      ///< Minimum extent of box 2
-  FLOAT *box2max)                      ///< Maximum extent of box 2
-{
-  if (ndim == 1) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    return true;
-  }
-  else if (ndim == 2) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    return true;
-  }
-  else {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    if (box1min[2] > box2max[2]) return false;
-    if (box2min[2] > box1max[2]) return false;
-    return true;
-  }
-}
-
-
-
-//=================================================================================================
-//  BoxOverlap
-/// Check if two bounding boxes overlap.  If yes, then returns true.
-//=================================================================================================
-static inline bool BoxOverlap
+inline bool BoxOverlap
  (const int ndim,
   const FLOAT *box1min,                ///< Minimum extent of box 1
   const FLOAT *box1max,                ///< Maximum extent of box 1
@@ -417,7 +380,7 @@ static inline bool BoxOverlap
 //  FractionalBoxOverlap
 /// Returns what fraction of box 1 overlaps box 2
 //=================================================================================================
-static inline FLOAT FractionalBoxOverlap
+inline FLOAT FractionalBoxOverlap
  (const int ndim,                      ///< Dimensionality
   const FLOAT *box2min,                ///< Minimum extent of box 1
   const FLOAT *box2max,                ///< Maximum extent of box 1
@@ -467,7 +430,7 @@ static inline FLOAT FractionalBoxOverlap
 //  ...
 //=================================================================================================
 template <int ndim>
-static inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
+inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
 {
   // Find the closest point to the circle within the rectangle
   FLOAT closest_coord[ndim];
@@ -493,10 +456,10 @@ static inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box)
 //  ..
 //=================================================================================================
 template <int ndim, template<int> class Particle >
-static inline bool ParticleInBox (const Particle<ndim>& part,const Box<ndim>& box)
+inline bool ParticleInBox (const Particle<ndim>& part,const Box<ndim>& box)
 {
   for (int k=0; k<ndim; k++) {
-    if (part.r[k] < box.min[k] || part.r[k] > box.max[k]) return false;
+    if (part.r[k] < box.min[k] || part.r[k] >= box.max[k]) return false;
   }
   return true;
 }
@@ -508,7 +471,7 @@ static inline bool ParticleInBox (const Particle<ndim>& part,const Box<ndim>& bo
 /// Given a vector of counts, compute the displacement of the elements and save it
 /// in displs
 //=================================================================================================
-static inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) {
+inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) {
 
   const int size = displs.size();
 
@@ -532,7 +495,7 @@ static inline void compute_displs (std::vector<int>& displs, std::vector<int>& c
 //  VerifyUniqueIds
 /// ...
 //=================================================================================================
-static inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
+inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
 {
   int i,j;
   int *counter = new int[Nrange];
@@ -549,6 +512,7 @@ static inline bool VerifyUniqueIds(const int N, const int Nrange, const int *val
   }
 
   for (j=0; j<N; j++) {
+    assert(counter[i] == 0 || counter[i] == 1);
     if (!(counter[i] == 0 || counter[i] == 1)) {
       cout << "Invalid counter : " << i << "    count : " << counter[i] << endl;
       delete[] counter;
@@ -568,7 +532,7 @@ static inline bool VerifyUniqueIds(const int N, const int Nrange, const int *val
 /// Also ensure the timestep level is never negative (since all timesteps greater than the
 /// maximum timestep are automatically anchored to the bottom timestep level).
 //=================================================================================================
-static inline int ComputeTimestepLevel
+inline int ComputeTimestepLevel
  (const DOUBLE dt,                     ///< [in] Timestep to compute level for
   const DOUBLE dt_max)                 ///< [in] Maximum timestep, corresponding to minimum level
 {
@@ -579,7 +543,8 @@ static inline int ComputeTimestepLevel
 }
 
 
-static inline bool isPowerOfTwo (int x)
+
+inline bool isPowerOfTwo (int x)
 {
  while (((x % 2) == 0) && x > 1) /* While x is even and > 1 */
    x /= 2;

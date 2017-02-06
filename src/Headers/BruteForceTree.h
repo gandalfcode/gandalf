@@ -100,7 +100,7 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
   BruteForceTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
-		  	  	 const ParticleTypeRegister& reg,const bool);
+		  	  	 const ParticleTypeRegister& reg, const bool);
   ~BruteForceTree() ;
 
 

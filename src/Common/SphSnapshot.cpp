@@ -33,6 +33,7 @@
 #include "InlineFuncs.h"
 #include "UnitInfo.h"
 #include "HeaderInfo.h"
+#include "Precision.h"
 using namespace std;
 
 
@@ -101,253 +102,70 @@ SphSnapshot<ndims>::SphSnapshot
     if (Nhydro>0) {
       this->data["sph"]=Species(Nhydro,"sph");
       Species::maptype& sph_values=data["sph"].values;
-      sph_values["iorig"]=vector<float>();
-      sph_values["x"]=vector<float>();
-      sph_values["vx"]=vector<float>();
-      sph_values["ax"]=vector<float>();
-      sph_values["m"]=vector<float>();
-      sph_values["h"]=vector<float>();
-      sph_values["rho"]=vector<float>();
-      sph_values["u"]=vector<float>();
-      sph_values["dudt"]=vector<float>();
+      sph_values["iorig"]=vector<SNAPFLOAT>();
+      sph_values["x"]=vector<SNAPFLOAT>();
+      sph_values["vx"]=vector<SNAPFLOAT>();
+      sph_values["ax"]=vector<SNAPFLOAT>();
+      sph_values["m"]=vector<SNAPFLOAT>();
+      sph_values["h"]=vector<SNAPFLOAT>();
+      sph_values["rho"]=vector<SNAPFLOAT>();
+      sph_values["u"]=vector<SNAPFLOAT>();
+      sph_values["dudt"]=vector<SNAPFLOAT>();
       if (ndim>1) {
-        sph_values["y"]=vector<float>();
-        sph_values["vy"]=vector<float>();
-        sph_values["ay"]=vector<float>();
+        sph_values["y"]=vector<SNAPFLOAT>();
+        sph_values["vy"]=vector<SNAPFLOAT>();
+        sph_values["ay"]=vector<SNAPFLOAT>();
       }
       if (ndim>2) {
-        sph_values["z"]=vector<float>();
-        sph_values["vz"]=vector<float>();
-        sph_values["az"]=vector<float>();
+        sph_values["z"]=vector<SNAPFLOAT>();
+        sph_values["vz"]=vector<SNAPFLOAT>();
+        sph_values["az"]=vector<SNAPFLOAT>();
       }
     }
     int Ndust = info.Ndust;
     if (Ndust>0) {
       this->data["dust"]=Species(Ndust,"dust");
       Species::maptype& dust_values=data["dust"].values;
-      dust_values["iorig"]=vector<float>();
-      dust_values["x"]=vector<float>();
-      dust_values["vx"]=vector<float>();
-      dust_values["ax"]=vector<float>();
-      dust_values["m"]=vector<float>();
-      dust_values["h"]=vector<float>();
-      dust_values["rho"]=vector<float>();
+      dust_values["iorig"]=vector<SNAPFLOAT>();
+      dust_values["x"]=vector<SNAPFLOAT>();
+      dust_values["vx"]=vector<SNAPFLOAT>();
+      dust_values["ax"]=vector<SNAPFLOAT>();
+      dust_values["m"]=vector<SNAPFLOAT>();
+      dust_values["h"]=vector<SNAPFLOAT>();
+      dust_values["rho"]=vector<SNAPFLOAT>();
       if (ndim>1) {
-        dust_values["y"]=vector<float>();
-        dust_values["vy"]=vector<float>();
-        dust_values["ay"]=vector<float>();
+        dust_values["y"]=vector<SNAPFLOAT>();
+        dust_values["vy"]=vector<SNAPFLOAT>();
+        dust_values["ay"]=vector<SNAPFLOAT>();
       }
       if (ndim>2) {
-        dust_values["z"]=vector<float>();
-        dust_values["vz"]=vector<float>();
-        dust_values["az"]=vector<float>();
+        dust_values["z"]=vector<SNAPFLOAT>();
+        dust_values["vz"]=vector<SNAPFLOAT>();
+        dust_values["az"]=vector<SNAPFLOAT>();
       }
     }
     int Nstar = info.Nstar;
     if (Nstar>0) {
       this->data["star"]=Species(Nstar,"star");
       Species::maptype& star_values = data["star"].values;
-      star_values["x"]=vector<float>(Nstar);
-      star_values["vx"]=vector<float>(Nstar);
-      star_values["ax"]=vector<float>(Nstar);
-      star_values["m"]=vector<float>(Nstar);
-      star_values["h"]=vector<float>(Nstar);
+      star_values["x"]=vector<SNAPFLOAT>(Nstar);
+      star_values["vx"]=vector<SNAPFLOAT>(Nstar);
+      star_values["ax"]=vector<SNAPFLOAT>(Nstar);
+      star_values["m"]=vector<SNAPFLOAT>(Nstar);
+      star_values["h"]=vector<SNAPFLOAT>(Nstar);
       if (ndim>1) {
-        star_values["y"]=vector<float>(Nstar);
-        star_values["vy"]=vector<float>(Nstar);
-        star_values["ay"]=vector<float>(Nstar);
+        star_values["y"]=vector<SNAPFLOAT>(Nstar);
+        star_values["vy"]=vector<SNAPFLOAT>(Nstar);
+        star_values["ay"]=vector<SNAPFLOAT>(Nstar);
       }
       if (ndim>2) {
-        star_values["z"]=vector<float>(Nstar);
-        star_values["vz"]=vector<float>(Nstar);
-        star_values["az"]=vector<float>(Nstar);
+        star_values["z"]=vector<SNAPFLOAT>(Nstar);
+        star_values["vz"]=vector<SNAPFLOAT>(Nstar);
+        star_values["az"]=vector<SNAPFLOAT>(Nstar);
       }
     }
   }
 }
-
-
-
-//=================================================================================================
-//  SphSnapshotBase::~SphSnapshotBase
-/// Deallocate any heap arrays to avoid leaking memory.
-//=================================================================================================
-//SphSnapshotBase::~SphSnapshotBase()
-//{
-//  DeallocateBufferMemory();
-//}
-
-
-
-//=================================================================================================
-//  SphSnapshotBase::AllocateBufferMemory
-/// Allocate memory for current snapshot.  Only allocates single precision
-/// to minimise memory use, even if compiled with double precision.
-/// Wrapper around AllocateBufferMemoryStar and AllocateBufferMemorySph.
-//=================================================================================================
-//void SphSnapshotBase::AllocateBufferMemory(void)
-//{
-//  debug2("[SphSnapshotBase::AllocateBufferMemory]");
-//
-//  AllocateBufferMemoryStar();
-//  AllocateBufferMemorySph();
-//  AllocateBufferMemoryBinary();
-//
-//  allocated = true;
-//
-//  return;
-//}
-
-
-
-//=================================================================================================
-//  SphSnapshotBase::AllocateBufferMemoryStar
-/// Allocate memory for stars in current snapshot.
-//=================================================================================================
-//void SphSnapshotBase::AllocateBufferMemoryStar(void)
-//{
-//  // If memory is already allocated and more memory is needed for more
-//  // particles, deallocate now before reallocating.
-//  if (allocatedstar) {
-//    if (Nstar > Nstarmax) {
-//      DeallocateBufferMemoryStar();
-//    }
-//    else {
-//      return;
-//    }
-//  }
-//
-//  // Allocate memory for all vector quantities depending on dimensionality
-//  if (ndim == 1) {
-//    xstar = new float[Nstar];
-//    vxstar = new float[Nstar];
-//    axstar = new float[Nstar];
-//  }
-//  else if (ndim == 2) {
-//    xstar = new float[Nstar];
-//    ystar = new float[Nstar];
-//    vxstar = new float[Nstar];
-//    vystar = new float[Nstar];
-//    axstar = new float[Nstar];
-//    aystar = new float[Nstar];
-//  }
-//  else if (ndim == 3) {
-//    xstar = new float[Nstar];
-//    ystar = new float[Nstar];
-//    zstar = new float[Nstar];
-//    vxstar = new float[Nstar];
-//    vystar = new float[Nstar];
-//    vzstar = new float[Nstar];
-//    axstar = new float[Nstar];
-//    aystar = new float[Nstar];
-//    azstar = new float[Nstar];
-//  }
-//
-//  // Stars scalar quantities
-//  mstar = new float[Nstar];
-//  hstar = new float[Nstar];
-//
-//  // Record 3 vectors of size ndim (r,v,a) and 2 scalars (m,h)
-//  nallocatedstar = 3*ndim + 2;
-//  allocatedstar  = true;
-//  Nstarmax       = Nstar;
-//
-//  return;
-//}
-
-
-
-//=================================================================================================
-//  SphSnapshotBase::AllocateBufferMemorySph
-/// Allocate memory for sph particles in current snapshot.
-//=================================================================================================
-//void SphSnapshotBase::AllocateBufferMemorySph(void)
-//{
-//  // If memory already allocated and more memory is needed for more particles,
-//  // deallocate now before reallocating.
-//  if (allocatedsph) {
-//    if (Nhydro > Nhydromax) {
-//      DeallocateBufferMemorySph();
-//    }
-//    else {
-//      return;
-//    }
-//  }
-//
-//  // Allocate memory for all vector quantities depending on dimensionality
-//  if (ndim == 1) {
-//    x = new float[Nhydro];
-//    vx = new float[Nhydro];
-//    ax = new float[Nhydro];
-//  }
-//  else if (ndim == 2) {
-//    x = new float[Nhydro];
-//    y = new float[Nhydro];
-//    vx = new float[Nhydro];
-//    vy = new float[Nhydro];
-//    ax = new float[Nhydro];
-//    ay = new float[Nhydro];
-//  }
-//  else if (ndim == 3) {
-//    x = new float[Nhydro];
-//    y = new float[Nhydro];
-//    z = new float[Nhydro];
-//    vx = new float[Nhydro];
-//    vy = new float[Nhydro];
-//    vz = new float[Nhydro];
-//    ax = new float[Nhydro];
-//    ay = new float[Nhydro];
-//    az = new float[Nhydro];
-//  }
-//
-//  // Allocate memory for other scalar quantities
-//  m    = new float[Nhydro];
-//  h    = new float[Nhydro];
-//  rho  = new float[Nhydro];
-//  u    = new float[Nhydro];
-//  dudt = new float[Nhydro];
-//
-//  // Record 3 vectors of size ndim (r,v,a) and 5 scalars (m,h,rho,u,dudt)
-//  nallocatedsph = 3*ndim + 5;
-//  allocatedsph  = true;
-//  Nhydromax       = Nhydro;
-//
-//  return;
-//}
-
-
-
-//=============================================================================
-//  SphSnapshotBase::AllocateBufferMemoryBinary
-/// Allocate memory for binary orbits in current snapshot.
-//=============================================================================
-//void SphSnapshotBase::AllocateBufferMemoryBinary(void)
-//{
-//  // If memory already allocated and more memory is needed for more particles,
-//  // deallocate now before reallocating.
-//  if (allocatedbinary) {
-//    if (Norbit > Norbitmax) {
-//      DeallocateBufferMemoryBinary();
-//    }
-//    else {
-//      return;
-//    }
-//  }
-//
-//  // Allocate arrays for orbital quantities
-//  ecc    = new float[Norbit];
-//  mbin   = new float[Norbit];
-//  period = new float[Norbit];
-//  qbin   = new float[Norbit];
-//  sma    = new float[Norbit];
-//
-//  // Record 5 floats
-//  nallocatedbinary = 5;
-//  allocatedbinary  = true;
-//  Norbitmax        = Norbit;
-//
-//  return;
-//}
 
 
 
@@ -434,24 +252,24 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
       Species& sph = data["sph"];
       Species::maptype& sph_values = data["sph"].values;
-      sph_values["iorig"]=vector<float>(sph.N);
-      sph_values["x"]=vector<float>(sph.N);
-      sph_values["vx"]=vector<float>(sph.N);
-      sph_values["ax"]=vector<float>(sph.N);
-      sph_values["m"]=vector<float>(sph.N);
-      sph_values["h"]=vector<float>(sph.N);
-      sph_values["rho"]=vector<float>(sph.N);
-      sph_values["u"]=vector<float>(sph.N);
-      sph_values["dudt"]=vector<float>(sph.N);
+      sph_values["iorig"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["x"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["vx"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["ax"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["m"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["h"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["rho"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["u"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["dudt"]=vector<SNAPFLOAT>(sph.N);
       if (ndim>1) {
-        sph_values["y"]=vector<float>(sph.N);
-        sph_values["vy"]=vector<float>(sph.N);
-        sph_values["ay"]=vector<float>(sph.N);
+        sph_values["y"]=vector<SNAPFLOAT>(sph.N);
+        sph_values["vy"]=vector<SNAPFLOAT>(sph.N);
+        sph_values["ay"]=vector<SNAPFLOAT>(sph.N);
       }
       if (ndim>2) {
-        sph_values["z"]=vector<float>(sph.N);
-        sph_values["vz"]=vector<float>(sph.N);
-        sph_values["az"]=vector<float>(sph.N);
+        sph_values["z"]=vector<SNAPFLOAT>(sph.N);
+        sph_values["vz"]=vector<SNAPFLOAT>(sph.N);
+        sph_values["az"]=vector<SNAPFLOAT>(sph.N);
       }
     }
     if (Ndust != 0) {
@@ -459,22 +277,22 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       data["dust"]=Species(Ndust,"dust");
 
       Species::maptype& dust_values = data["dust"].values;
-      dust_values["iorig"]=vector<float>(Ndust);
-      dust_values["x"]=vector<float>(Ndust);
-      dust_values["vx"]=vector<float>(Ndust);
-      dust_values["ax"]=vector<float>(Ndust);
-      dust_values["m"]=vector<float>(Ndust);
-      dust_values["h"]=vector<float>(Ndust);
-      dust_values["rho"]=vector<float>(Ndust);
+      dust_values["iorig"]=vector<SNAPFLOAT>(Ndust);
+      dust_values["x"]=vector<SNAPFLOAT>(Ndust);
+      dust_values["vx"]=vector<SNAPFLOAT>(Ndust);
+      dust_values["ax"]=vector<SNAPFLOAT>(Ndust);
+      dust_values["m"]=vector<SNAPFLOAT>(Ndust);
+      dust_values["h"]=vector<SNAPFLOAT>(Ndust);
+      dust_values["rho"]=vector<SNAPFLOAT>(Ndust);
       if (ndim>1) {
-        dust_values["y"]=vector<float>(Ndust);
-        dust_values["vy"]=vector<float>(Ndust);
-        dust_values["ay"]=vector<float>(Ndust);
+        dust_values["y"]=vector<SNAPFLOAT>(Ndust);
+        dust_values["vy"]=vector<SNAPFLOAT>(Ndust);
+        dust_values["ay"]=vector<SNAPFLOAT>(Ndust);
       }
       if (ndim>2) {
-        dust_values["z"]=vector<float>(Ndust);
-        dust_values["vz"]=vector<float>(Ndust);
-        dust_values["az"]=vector<float>(Ndust);
+        dust_values["z"]=vector<SNAPFLOAT>(Ndust);
+        dust_values["vz"]=vector<SNAPFLOAT>(Ndust);
+        dust_values["az"]=vector<SNAPFLOAT>(Ndust);
       }
     }
   }
@@ -488,20 +306,20 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       data["star"]=Species(Nstar,"star");
 
       Species::maptype& star_values = data["star"].values;
-      star_values["x"]=vector<float>(Nstar);
-      star_values["vx"]=vector<float>(Nstar);
-      star_values["ax"]=vector<float>(Nstar);
-      star_values["m"]=vector<float>(Nstar);
-      star_values["h"]=vector<float>(Nstar);
+      star_values["x"]=vector<SNAPFLOAT>(Nstar);
+      star_values["vx"]=vector<SNAPFLOAT>(Nstar);
+      star_values["ax"]=vector<SNAPFLOAT>(Nstar);
+      star_values["m"]=vector<SNAPFLOAT>(Nstar);
+      star_values["h"]=vector<SNAPFLOAT>(Nstar);
       if (ndim>1) {
-        star_values["y"]=vector<float>(Nstar);
-        star_values["vy"]=vector<float>(Nstar);
-        star_values["ay"]=vector<float>(Nstar);
+        star_values["y"]=vector<SNAPFLOAT>(Nstar);
+        star_values["vy"]=vector<SNAPFLOAT>(Nstar);
+        star_values["ay"]=vector<SNAPFLOAT>(Nstar);
       }
       if (ndim>2) {
-        star_values["z"]=vector<float>(Nstar);
-        star_values["vz"]=vector<float>(Nstar);
-        star_values["az"]=vector<float>(Nstar);
+        star_values["z"]=vector<SNAPFLOAT>(Nstar);
+        star_values["vz"]=vector<SNAPFLOAT>(Nstar);
+        star_values["az"]=vector<SNAPFLOAT>(Nstar);
       }
 
     }
@@ -522,46 +340,46 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
     if (ptype == gas_type) {
       Species::maptype& sph_values = data["sph"].values;
-      sph_values["iorig"][igas] = reinterpret_cast<float&>( part.iorig);
-      sph_values["x"][igas] = (float) part.r[0];
-      sph_values["vx"][igas] = (float) part.v[0];
-      sph_values["ax"][igas] = (float) part.a[0];
+      sph_values["iorig"][igas] = reinterpret_cast<SNAPFLOAT&>( part.iorig);
+      sph_values["x"][igas] = (SNAPFLOAT) part.r[0];
+      sph_values["vx"][igas] = (SNAPFLOAT) part.v[0];
+      sph_values["ax"][igas] = (SNAPFLOAT) part.a[0];
       if (ndims > 1) {
-        sph_values["y"][igas] = (float) part.r[1];
-        sph_values["vy"][igas] = (float) part.v[1];
-        sph_values["ay"][igas] = (float) part.a[1];
+        sph_values["y"][igas] = (SNAPFLOAT) part.r[1];
+        sph_values["vy"][igas] = (SNAPFLOAT) part.v[1];
+        sph_values["ay"][igas] = (SNAPFLOAT) part.a[1];
       }
       if (ndims > 2) {
-        sph_values["z"][igas] = (float) part.r[2];
-        sph_values["vz"][igas] = (float) part.v[2];
-        sph_values["az"][igas] = (float) part.a[2];
+        sph_values["z"][igas] = (SNAPFLOAT) part.r[2];
+        sph_values["vz"][igas] = (SNAPFLOAT) part.v[2];
+        sph_values["az"][igas] = (SNAPFLOAT) part.a[2];
       }
-      sph_values["m"][igas]    = (float) part.m;
-      sph_values["h"][igas]    = (float) part.h;
-      sph_values["rho"][igas]  = (float) part.rho;
-      sph_values["u"][igas]    = (float) part.u;
-      sph_values["dudt"][igas] = (float) part.dudt;
+      sph_values["m"][igas]    = (SNAPFLOAT) part.m;
+      sph_values["h"][igas]    = (SNAPFLOAT) part.h;
+      sph_values["rho"][igas]  = (SNAPFLOAT) part.rho;
+      sph_values["u"][igas]    = (SNAPFLOAT) part.u;
+      sph_values["dudt"][igas] = (SNAPFLOAT) part.dudt;
       igas++;
     }
     else if (ptype == dust_type) {
       Species::maptype& dust_values = data["dust"].values;
-      dust_values["iorig"][idust] = reinterpret_cast<float&>( part.iorig);
-      dust_values["x"][idust] = (float) part.r[0];
-      dust_values["vx"][idust] = (float) part.v[0];
-      dust_values["ax"][idust] = (float) part.a[0];
+      dust_values["iorig"][idust] = reinterpret_cast<SNAPFLOAT&>( part.iorig);
+      dust_values["x"][idust] = (SNAPFLOAT) part.r[0];
+      dust_values["vx"][idust] = (SNAPFLOAT) part.v[0];
+      dust_values["ax"][idust] = (SNAPFLOAT) part.a[0];
       if (ndims > 1) {
-        dust_values["y"][idust] = (float) part.r[1];
-        dust_values["vy"][idust] = (float) part.v[1];
-        dust_values["ay"][idust] = (float) part.a[1];
+        dust_values["y"][idust] = (SNAPFLOAT) part.r[1];
+        dust_values["vy"][idust] = (SNAPFLOAT) part.v[1];
+        dust_values["ay"][idust] = (SNAPFLOAT) part.a[1];
       }
       if (ndims > 2) {
-        dust_values["z"][idust] = (float) part.r[2];
-        dust_values["vz"][idust] = (float) part.v[2];
-        dust_values["az"][idust] = (float) part.a[2];
+        dust_values["z"][idust] = (SNAPFLOAT) part.r[2];
+        dust_values["vz"][idust] = (SNAPFLOAT) part.v[2];
+        dust_values["az"][idust] = (SNAPFLOAT) part.a[2];
       }
-      dust_values["m"][idust]    = (float) part.m;
-      dust_values["h"][idust]    = (float) part.h;
-      dust_values["rho"][idust]  = (float) part.rho;
+      dust_values["m"][idust]    = (SNAPFLOAT) part.m;
+      dust_values["h"][idust]    = (SNAPFLOAT) part.h;
+      dust_values["rho"][idust]  = (SNAPFLOAT) part.rho;
       idust++;
     }
 
@@ -570,22 +388,22 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   // Loop over star particles and record particle data
   for (int i=0; i<Nstar; i++) {
     Species::maptype& star_values = data["star"].values;
-    star_values["x"][i] = (float) staraux[i].r[0];
-    star_values["vx"][i] = (float) staraux[i].v[0];
-    star_values["ax"][i] = (float) staraux[i].a[0];
+    star_values["x"][i] = (SNAPFLOAT) staraux[i].r[0];
+    star_values["vx"][i] = (SNAPFLOAT) staraux[i].v[0];
+    star_values["ax"][i] = (SNAPFLOAT) staraux[i].a[0];
     if (ndims > 1) {
-      star_values["y"][i] = (float) staraux[i].r[1];
-      star_values["vy"][i] = (float) staraux[i].v[1];
-      star_values["ay"][i] = (float) staraux[i].a[1];
+      star_values["y"][i] = (SNAPFLOAT) staraux[i].r[1];
+      star_values["vy"][i] = (SNAPFLOAT) staraux[i].v[1];
+      star_values["ay"][i] = (SNAPFLOAT) staraux[i].a[1];
     }
     if (ndims > 2) {
-      star_values["z"][i] = (float) staraux[i].r[2];
-      star_values["vz"][i] = (float) staraux[i].v[2];
-      star_values["az"][i] = (float) staraux[i].a[2];
+      star_values["z"][i] = (SNAPFLOAT) staraux[i].r[2];
+      star_values["vz"][i] = (SNAPFLOAT) staraux[i].v[2];
+      star_values["az"][i] = (SNAPFLOAT) staraux[i].a[2];
     }
 
-    star_values["m"][i] = (float) staraux[i].m;
-    star_values["h"][i] = (float) staraux[i].h;
+    star_values["m"][i] = (SNAPFLOAT) staraux[i].m;
+    star_values["h"][i] = (SNAPFLOAT) staraux[i].h;
   }
 
   // Loop over all binary orbits and record data
@@ -648,6 +466,7 @@ int SphSnapshotBase::GetNparticlesType(string type)
 /// Returns pointer to required array stored in snapshot buffer memory.
 /// Currently also returns scaling factors for that array.
 //=================================================================================================
+#ifdef GANDALF_SNAPSHOT_SINGLE_PRECISION
 UnitInfo SphSnapshotBase::ExtractArray
  (string name,                         ///< Name of variable to extract
   string type,                         ///< Particle type
@@ -655,6 +474,15 @@ UnitInfo SphSnapshotBase::ExtractArray
   int* size_array,                     ///< No. of elements in outputted array
   float& scaling_factor,               ///< Scaling factor for outputted variable
   string RequestedUnit)                ///< Requested unit for outputted variable
+#else
+UnitInfo SphSnapshotBase::ExtractArray
+ (string name,                         ///< Name of variable to extract
+  string type,                         ///< Particle type
+  double** out_array,                   ///< Outputted array
+  int* size_array,                     ///< No. of elements in outputted array
+  double& scaling_factor,               ///< Scaling factor for outputted variable
+  string RequestedUnit)                ///< Requested unit for outputted variable
+#endif
 {
   string unitname;                     // Name of unit
   UnitInfo unitinfo;                   // All data for units and scaling

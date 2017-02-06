@@ -592,8 +592,13 @@ ShocktubeSolution::~ShocktubeSolution()
 void ShocktubeSolution::ComputeShocktubeSolution
   (const std::string quantity,                  ///< [in] ..
 //  (char *quantity,                              ///< [in]
+#ifdef GANDALF_SNAPSHOT_SINGLE_PRECISION
    float* vals,                                ///< [out] ..
    int N)                                      ///< [in] ..
+#else
+   double* vals,
+   int N)
+#endif
 {
   const FLOAT cl = sqrt(gamma*pl/rhol);        // LHS sound speed
   const FLOAT cr = sqrt(gamma*pr/rhor);        // RHS sound speed
@@ -606,10 +611,10 @@ void ShocktubeSolution::ComputeShocktubeSolution
     riemann->SampleExactSolution(pstar, ustar, s, pl, pr, rhol, rhor, cl, cr, vl, vr, p, d, u);
 
     if (quantity == "x") vals[i] = x;
-    else if (quantity == "rho") vals[i] = (float) d;
-    else if (quantity == "vx") vals[i] = (float)u;
-    else if (quantity == "press") vals[i] = (float)p;
-    else if (quantity == "u") vals[i] = (float) (p/d/(gamma - 1.0));
+    else if (quantity == "rho") vals[i] = d;
+    else if (quantity == "vx") vals[i] = u;
+    else if (quantity == "press") vals[i] = p;
+    else if (quantity == "u") vals[i] = (p/d/(gamma - 1.0));
     else vals[i] = 0.0f;
   }
   //-----------------------------------------------------------------------------------------------

@@ -113,7 +113,8 @@ def density_pdf(snap, type="default", nbin=32, rhomin="auto", rhomax="auto"):
     #for i in range(n):
     #    rhopdf[binpos[i]] += 1
 
-    rhopdf = np.float32(rhopdf)
+    prectype = rho.dtype
+    rhopdf = rhopdf.astype(prectype)
 
     # Normalise logarithmic bins
     for j in range(nbin):

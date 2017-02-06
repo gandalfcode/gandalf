@@ -149,7 +149,7 @@ protected:
           ParticleTypeRegister& types) :
     HydroTree<ndim,ParticleType>(tree_t, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
                                           _thetamaxsqd, _kernrange, _macerror, _gravity_mac,
-                                          _multipole, _box, _kern, _timing, types) {};
+                                          _multipole, _box, _kern, _timing, types) {} ;
   virtual ~SphTree() {};
 
 
@@ -213,7 +213,8 @@ private:
 
   //-----------------------------------------------------------------------------------------------
   GradhSphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
-               DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,ParticleTypeRegister& types);
+               DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,
+               ParticleTypeRegister& types);
   virtual ~GradhSphTree();
 
 

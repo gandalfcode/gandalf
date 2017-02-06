@@ -25,6 +25,7 @@ PYTHON             = python
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 1
+PYSNAP_PRECISION   = DOUBLE
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 1
 BUILD_DEPENDENCIES = 1
@@ -38,7 +39,7 @@ FFTW_LIBRARY       =
 
 # GNU Scientific library flags and paths.  If paths are empty, tries standard default linux paths.
 #--------------------------------------------------------------------------------------------------
-GSL                = 0
+GSL                =
 GSL_INCLUDE        =
 GSL_LIBRARY        =
 

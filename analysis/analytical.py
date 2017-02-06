@@ -271,8 +271,12 @@ class shocktube (AnalyticalSolution):
                                       self.PinL, self.PinR, self.xL, self.x0, self.xR,
                                       self.time, self.iMAX, self.gamma)
 
-        xdata = np.zeros(self.iMAX, dtype=np.float32)
-        ydata = np.zeros(self.iMAX, dtype=np.float32)
+        if shocktube.single:
+            prec_type=np.float32
+        else:
+            prec_type=np.float64
+        xdata = np.zeros(self.iMAX, dtype=prec_type)
+        ydata = np.zeros(self.iMAX, dtype=prec_type)
 
         xdata = shocktube.ComputeShocktubeSolution(x, self.iMAX)
         ydata = shocktube.ComputeShocktubeSolution(y, self.iMAX)

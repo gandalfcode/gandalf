@@ -159,7 +159,7 @@ Also, \var{make} requires the location of the python and numpy libraries.  In mo
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Makefile options} \label{S:MAKEFILE}
-The GANDALF Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean} and then \var{make}.  For users of SEREN, the GANDALF Makefile has been simplified with many options either not present (since various specialist algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
+The GANDALF Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean} and then \var{make}.  For users of SEREN, the GANDALF Makefile has been simplified with many options either not present (since various specialist algorithms have not been implemented) or have been transferred to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
 
 Note that the Makefile in the root folder is just a convenience to set the variables you need - the actual Makefile is contained in the \var{src} folder.
 
@@ -197,6 +197,12 @@ FAST & : -O3 + fast flag options.  Uses 'potentially unsafe' fast maths optimisa
 \begin{tabular}{ll}
 SINGLE & : 32-bit precision floating point variables \\
 DOUBLE & : 64-bit precision floating point variables
+\end{tabular}
+
+\item PYSNAP\_PRECISION: Precision when using the python library (see section \ref{S:PYTHONSCRIPT}). The values returned by python will be in either single or double precision, depending on the value selected here. Note that this has nothing to do with the precision of the snapshots written to the disc! Most of the times one wants to match the precision used in the calculation. But to reduce the memory footprint required in the analysis, one might want to read the data in single precision even if it is stored in double precision on the disc.\\
+\begin{tabular}{ll}
+SINGLE & : 32-bit precision floating point \\
+DOUBLE & : 64-bit precision floating point
 \end{tabular}
 
 \item OPENMP : Activate OpenMP directives during compilation (0 or 1)
@@ -767,10 +773,13 @@ kdtree     & = Balanced kd-binary tree \\
 octtree    & = Barnes-Hut octal tree
 \end{tabular}
 
-\item \var{gravity\_mac} : Gravity-tree cell-opening criteria (N.B. always defulats to geometric for now) \vspace{0.1cm} \\
+\item \var{gravity\_mac} : Gravity-tree cell-opening criteria (N.B. always defualts to geometric for now). The eigenmac and gadget2 criteria are more accurate for a given computational cost. \vspace{0.1cm} \\
 \begin{tabular} {ll}
-geometric & = Standard Barnes-Hut geomtric opening angle criterion \\
-eigenmac  & = Compute eigenvalues of quadrupole moment tensor for MAC (Hubber et al. 2011)
+geometric & = Standard Barnes-Hut geomtric opening angle criterion. This can fail in pathalogical cases,\\
+	      & \quad such as when the forces nearly balance. \\
+eigenmac  & = Compute eigenvalues of quadrupole moment tensor for MAC (Hubber et al. 2011) \\
+gadget2   & = Relative opening criterion based on comparing estimate of force error to the previous \\
+		  & \quad accleleration (Springel 2005).
 \end{tabular}
 
 \item \var{multipole} : Multipole expansion for tree-gravity \vspace{0.1cm} \\

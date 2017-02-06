@@ -59,15 +59,34 @@ public:
 
   static RenderBase* RenderFactory(int ndim, SimulationBase* sim);
 
-  virtual int CreateColumnRenderingGrid(const int, const int, const string, const string,
-                                        const string, const string, const float, const float,
-                                        const float, const float, float* values, const int Ngrid,
-                                        SphSnapshotBase &, const string , float& scaling_factor)=0;
+#ifdef GANDALF_SNAPSHOT_SINGLE_PRECISION
+  virtual int CreateColumnRenderingGrid(const int, const int, const string, const string, const string,
+                                const string, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT,
+                                float* values, const int Ngrid, SphSnapshotBase &,
+                                const string, float& scaling_factor)=0;
   virtual int CreateSliceRenderingGrid(const int, const int, const string, const string,
-                                       const string, const string, const string, const float,
-                                       const float, const float, const float, const float,
+                                       const string, const string, const string, const SNAPFLOAT,
+                                       const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT,
                                        float* values, const int Ngrid, SphSnapshotBase &,
                                        const string , float& scaling_factor)=0;
+#else
+  virtual int CreateColumnRenderingGrid(const int, const int, const string, const string, const string,
+                                const string, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT,
+                                double* values, const int Ngrid, SphSnapshotBase &,
+                                const string, double& scaling_factor)=0;
+  virtual int CreateSliceRenderingGrid(const int, const int, const string, const string,
+                                       const string, const string, const string, const SNAPFLOAT,
+                                       const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT,
+                                       double* values, const int Ngrid, SphSnapshotBase &,
+                                       const string , double& scaling_factor)=0;
+#endif
+
+#ifdef GANDALF_SNAPSHOT_SINGLE_PRECISION
+  static const bool single=true;
+#else
+  static const bool single=false;
+#endif
+
 };
 
 
@@ -91,14 +110,28 @@ class Render : public RenderBase
 
   // Subroutine prototypes
   //-----------------------------------------------------------------------------------------------
-  int CreateColumnRenderingGrid(const int, const int, const string, const string, const string,
-                                const string, const float, const float, const float, const float,
+#ifdef GANDALF_SNAPSHOT_SINGLE_PRECISION
+  virtual int CreateColumnRenderingGrid(const int, const int, const string, const string, const string,
+                                const string, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT,
                                 float* values, const int Ngrid, SphSnapshotBase &,
                                 const string, float& scaling_factor);
-  int CreateSliceRenderingGrid(const int, const int, const string, const string, const string,
-                               const string, const string, const float, const float, const float,
-                               const float, const float, float* values, const int Ngrid,
+  virtual int CreateSliceRenderingGrid(const int, const int, const string, const string, const string,
+                               const string, const string, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT,
+                               const SNAPFLOAT, const SNAPFLOAT,
+                               float* values, const int Ngrid,
                                SphSnapshotBase &, const string, float& scaling_factor);
+#else
+  virtual int CreateColumnRenderingGrid(const int, const int, const string, const string, const string,
+                                const string, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT,
+                                double* values, const int Ngrid, SphSnapshotBase &,
+                                const string, double& scaling_factor);
+  virtual int CreateSliceRenderingGrid(const int, const int, const string, const string, const string,
+                               const string, const string, const SNAPFLOAT, const SNAPFLOAT, const SNAPFLOAT,
+                               const SNAPFLOAT, const SNAPFLOAT,
+                               double* values, const int Ngrid,
+                               SphSnapshotBase &, const string, double& scaling_factor);
+#endif
+
 
   Hydrodynamics<ndim>* hydro;          ///< Pointer to Hydrodynamics object to be rendered
 

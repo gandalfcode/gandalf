@@ -138,7 +138,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
 	// Horrible hack in order NOT to trigger a full tree rebuild
-	mfvneib->BuildTree(rebuild_tree,Nsteps+1,2, ntreestockstep,timestep,mfv);
+	int Nstepsaux=Nsteps;
+	if (Nstepsaux%2==0) Nstepsaux++;
+	mfvneib->BuildTree(rebuild_tree,Nstepsaux,2, ntreestockstep,timestep,mfv);
 	if (rebuild_tree) {
 		  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
 	}
@@ -207,6 +209,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   // Calculate terms due to self-gravity / stars
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
+
+    mfv->ZeroAccelerations() ;
+
     // Update the density to get the correct softening & grad-h terms.
     mfvneib->UpdateAllProperties(mfv, nbody);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
@@ -218,7 +223,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       else {
     		 mfvneib->StockPrunedTree(rank, mfv);
       }
-      mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox);
+      mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox, ewald);
       mpicontrol->ExportParticlesBeforeForceLoop(mfv);
     }
 #endif

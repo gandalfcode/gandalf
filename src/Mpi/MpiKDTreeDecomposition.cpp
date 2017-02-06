@@ -43,19 +43,6 @@
 using namespace std;
 
 
-
-//=================================================================================================
-//  MpiKDTreeDecomposition::MpiKDTreeDecomposition
-/// MpiKDTreeDecomposition constructor (currently only calls base MpiControlType constructor)
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-MpiKDTreeDecomposition<ndim, ParticleType>::MpiKDTreeDecomposition() :
-  MpiControlType<ndim,ParticleType>()
-{
-}
-
-
-
 //=================================================================================================
 //  MpiKDTreeDecomposition::CreateInitialDomainDecomposition
 /// Creates a binary tree containing all particles in order to determine how to distribute the
@@ -70,7 +57,6 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
  (Hydrodynamics<ndim> *hydro,          ///< Pointer to main Hydrodynamics object
   Nbody<ndim> *nbody,                  ///< Pointer to main N-body object
   Parameters *simparams,               ///< Simulation parameters
-  DomainBox<ndim> simbox,              ///< Simulation domain box
   bool &initial_h_provided)            ///< Receives from root whether or not initial h was provided
 {
   int i;                               // Particle counter
@@ -88,26 +74,6 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
   MPI_Bcast(&initial_h, 1, MPI_INT, 0, MPI_COMM_WORLD);
   initial_h_provided = initial_h;
 
-
-  // For periodic simulations, set bounding box of root node to be the periodic box size.
-  // Otherwise, set to extend to infinity.
-  if (simbox.boundary_lhs[0] == openBoundary) mpibox.min[0] = -big_number;
-  else mpibox.min[0] = simbox.min[0];
-  if (simbox.boundary_rhs[0] == openBoundary) mpibox.max[0] = big_number;
-  else mpibox.max[0] = simbox.max[0];
-  if (ndim > 1) {
-    if (simbox.boundary_lhs[1] == openBoundary) mpibox.min[1] = -big_number;
-    else mpibox.min[1] = simbox.min[1];
-    if (simbox.boundary_rhs[1] == openBoundary) mpibox.max[1] = big_number;
-    else mpibox.max[1] = simbox.max[1];
-  }
-  if (ndim == 3) {
-    if (simbox.boundary_lhs[2] == openBoundary) mpibox.min[2] = -big_number;
-    else mpibox.min[2] = simbox.min[2];
-    if (simbox.boundary_rhs[2] == openBoundary) mpibox.max[2] = big_number;
-    else mpibox.max[2] = simbox.max[2];
-  }
-  //mpitree->box = &mpibox;
 
 #ifdef OUTPUT_ALL
   cout << "Simulation bounding box" << endl;
@@ -147,8 +113,8 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     mpitree->tree[0].N      = hydro->Nhydro;
     mpitree->tree[0].ifirst = 0;
     mpitree->tree[0].ilast  = hydro->Nhydro - 1;
-    for (k=0; k<ndim; k++) mpitree->tree[0].box.min[k] = mpibox.min[k];
-    for (k=0; k<ndim; k++) mpitree->tree[0].box.max[k] = mpibox.max[k];
+    for (k=0; k<ndim; k++) mpitree->tree[0].box.min[k] = simbox.min[k];
+    for (k=0; k<ndim; k++) mpitree->tree[0].box.max[k] = simbox.max[k];
     for (i=0; i<hydro->Nhydro; i++) mpitree->inext[i] = -1;
     for (i=0; i<hydro->Nhydro-1; i++) mpitree->inext[i] = i + 1;
     for (i=0; i<hydro->Nhydro; i++) mpitree->ids[i] = i;
@@ -434,7 +400,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   vector<int> all_particles_to_export;
   // Send and receive particles from/to all other nodes
   vector<ParticleType<ndim> > sendbuffer, recvbuffer;
-  neibsearch->FindParticlesToTransfer(hydro, particles_to_transfer, all_particles_to_export,
+  neibsearch->FindMpiTransferParticles(hydro, particles_to_transfer, all_particles_to_export,
                                       potential_nodes, mpinode);
 
 

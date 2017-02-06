@@ -107,6 +107,12 @@ else ifeq ($(PRECISION),DOUBLE)
 CFLAGS += -DGANDALF_DOUBLE_PRECISION
 endif
 
+# Snapshot precision
+# -------------------------------------------------------------------------------------------------
+ifeq ($(PYSNAP_PRECISION),SINGLE)
+CFLAGS += -DGANDALF_SNAPSHOT_SINGLE_PRECISION
+endif
+
 
 # FFTW linkage
 #--------------------------------------------------------------------------------------------------
@@ -266,7 +272,7 @@ unittests : $(OBJ) $(TEST_OBJ) Exception.o
 	cp testgandalf ../bin/testgandalf
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o
-	$(CPP) $(SHARED_OPTIONS) $(CFLAGS) $(OPT) $(OBJ) Exception.o Render.o -o _SphSim.so $(WRAP_OBJ) $(LIB)
+	$(CPP) $(CFLAGS) $(INCLUDE) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so $(LIB)
 
 Exception.o : Exception.cpp
 	$(CPP) $(OPT) $(INCLUDE) $(CFLAGS) -fexceptions -c $<

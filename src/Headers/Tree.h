@@ -49,7 +49,11 @@ using namespace std;
 
 
 
-
+enum MAC_Type {
+  geometric = 0,
+  eigenmac  = 1,
+  gadget2   = 2
+};
 
 //=================================================================================================
 //  Class TreeBase
@@ -92,6 +96,11 @@ protected:
 	virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 
+
+    virtual MAC_Type GetMacType() const  = 0;
+    virtual void SetMacType(MAC_Type) = 0;
+
+
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
 	virtual int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist) = 0 ;
 	virtual int ComputeActiveCellList(vector<TreeCellBase<ndim> >& ) = 0 ;
@@ -103,7 +112,8 @@ protected:
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
 	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
 	virtual void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&) = 0 ;
-	virtual void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const FLOAT, NeighbourManagerDim<ndim>& neibmanager)=0;
+	virtual void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &,
+	                                                   NeighbourManagerDim<ndim>& neibmanager)=0;
 	virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
 	                                              const int, const int, int &, int &, int &, int *, int *,
 	                                              MultipoleMoment<ndim> *, Particle<ndim> *) = 0;
@@ -113,7 +123,7 @@ protected:
 	virtual int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
 	                                       const bool, const int, const int, const int, TreeBase<ndim> *) = 0;
 	virtual int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
-	                                                 const FLOAT, vector<MultipoleMoment<ndim> >&) = 0;
+	                                                 vector<MultipoleMoment<ndim> >&) = 0;
 	virtual  bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &) = 0;
 	virtual  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
 	virtual void UpdateLeafCells(TreeBase<ndim>*)=0;
@@ -151,7 +161,7 @@ protected:
 
 	virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) = 0;
 	virtual int GetTreeCellSize() const = 0 ;
-	virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) = 0;
+	virtual void FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) = 0;
 	virtual int FindBoxGhostParticles(const FLOAT, const FLOAT, const Box<ndim> &,
 	                                  vector<int> &export_list) = 0;
 	virtual int PackParticlesAndCellsForMPITransfer(const vector<int>& celllist,
@@ -224,13 +234,21 @@ protected:
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
-       const ParticleTypeRegister& pt_reg,const bool _IAmPruned) :
+       const ParticleTypeRegister& pt_reg, const bool _IAmPruned) :
     	   TreeBase<ndim>(domain),
-    gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
+    gravity_mac(geometric), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd),
     gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned)
-    {};
+    {
+      if (_gravity_mac == "eigenmac")
+        gravity_mac = eigenmac ;
+      else if(_gravity_mac == "gadget2")
+        gravity_mac = gadget2;
+      else if (_gravity_mac != "geometric")
+        ExceptionHandler::getIstance().raise
+        ("Error: gravity_mac type, " + _gravity_mac + ", not recognised");
+    };
 
   virtual ~Tree() { } ;
 
@@ -252,6 +270,14 @@ protected:
     return BoxOverlap(ndim, box1min, box1max, box2min, box2max) ;
   }
 
+  MAC_Type GetMacType() const {
+    return gravity_mac ;
+  }
+  void SetMacType(MAC_Type value) {
+    gravity_mac = value;
+  }
+
+
   int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
   int ComputeActiveCellList(vector<TreeCellBase<ndim> >& );
   int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
@@ -263,7 +289,7 @@ protected:
                            const int, int &, int *, Particle<ndim> *);
   void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
   void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&);
-  void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, const FLOAT, NeighbourManagerDim<ndim>& neibmanager);
+  void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerDim<ndim>& neibmanager);
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
                                         MultipoleMoment<ndim> *, Particle<ndim> *);
@@ -277,7 +303,7 @@ protected:
   int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
                                  const bool, const int, const int, const int, TreeBase<ndim> *);
   int ComputeDistantGravityInteractionList(const TreeCellBase<ndim>&, const DomainBox<ndim> &,
-                                           const FLOAT, vector<MultipoleMoment<ndim> >&);
+                                           vector<MultipoleMoment<ndim> >&);
   bool ComputeHydroTreeCellOverlap(const TreeCellBase<ndim> *, const DomainBox<ndim> &);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
   virtual void UpdateLeafCells(TreeBase<ndim>*);
@@ -309,7 +335,7 @@ protected:
   virtual int GetMaxCellNumber(const int) = 0;
   virtual int GetTreeCellSize() const { return sizeof(TreeCell<ndim>) ;}
   virtual void AddWorkCost(vector<TreeCellBase<ndim> >&, double twork, int& Nactivetot) ;
-  virtual int FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) ;
+  virtual void FindBoxOverlapParticles(const Box<ndim>&, vector<int>&, const Particle<ndim>*) ;
   virtual int FindBoxGhostParticles(const FLOAT, const FLOAT, const Box<ndim> &,
                                     vector<int> &export_list) ;
   virtual int PackParticlesAndCellsForMPITransfer(const vector<int>& celllist,
@@ -346,7 +372,7 @@ protected:
 
   // Const variables for tree class
   //-----------------------------------------------------------------------------------------------
-  const string gravity_mac;            ///< Multipole-acceptance criteria for tree
+  MAC_Type gravity_mac;                  ///< Multipole-acceptance criteria for tree
   const string multipole;              ///< Multipole-order for cell gravity
   const int Nleafmax;                  ///< Max. number of particles per leaf cell
   const FLOAT invthetamaxsqd;          ///< 1 / thetamaxsqd
@@ -354,6 +380,8 @@ protected:
   const FLOAT macerror;                ///< Error tolerance for gravity tree-MAC
   const FLOAT theta;                   ///< Geometric opening angle
   const FLOAT thetamaxsqd;             ///< Geometric opening angle squared
+
+
 
   // Additional variables for tree class
   //-----------------------------------------------------------------------------------------------
@@ -380,6 +408,29 @@ protected:
   int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
   Typemask gravmask ;                  ///< Particle types that contribute to gravity
+
+ private:
+  bool open_cell_for_gravity(const TreeCell<ndim>& cell,
+                             double drsqd, double macfactor, double amag) const
+  {
+    if (drsqd < cell.cdistsqd)
+      return true;
+
+    bool open ;
+    switch (gravity_mac) {
+    case eigenmac:
+      open = drsqd < cell.mac*macfactor;
+      break  ;
+    case gadget2:
+      open = drsqd*drsqd*amag*macerror < cell.rmax*cell.rmax*cell.m;
+      break ;
+    default:
+      open = false ;
+      break ;
+    }
+    return open ;
+  }
+
 };
 
 #endif
