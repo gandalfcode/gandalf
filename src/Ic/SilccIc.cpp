@@ -36,8 +36,8 @@ using namespace std;
 /// Set-up SILCC-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   FLOAT mu_bar = simparams->floatparams["mu_bar"];
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;

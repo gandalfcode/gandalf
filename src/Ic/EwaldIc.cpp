@@ -35,8 +35,8 @@ using namespace std;
 /// Set-up SILCC-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-EwaldIc<ndim>::EwaldIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+EwaldIc<ndim>::EwaldIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   if (simparams->intparams["ndim"] != 3) {
     ExceptionHandler::getIstance().raise("Ewald tests can only be generated in 3d");

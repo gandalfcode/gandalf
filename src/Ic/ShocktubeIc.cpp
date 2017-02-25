@@ -35,8 +35,8 @@ using namespace std;
 /// Set-up Shocktube tests from Riemann-problem ICs.
 //=================================================================================================
 template <int ndim>
-ShocktubeIc<ndim>::ShocktubeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+ShocktubeIc<ndim>::ShocktubeIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   // Some sanity checking to ensure correct dimensionality is used
   if (simparams->intparams["ndim"] != 1) {

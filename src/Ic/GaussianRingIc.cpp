@@ -35,8 +35,8 @@ using namespace std;
 /// ...
 //=================================================================================================
 template <int ndim>
-GaussianRingIc<ndim>::GaussianRingIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+GaussianRingIc<ndim>::GaussianRingIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   // Some sanity checking to ensure correct dimensionality and (dimensionless) units are used
   if (simparams->intparams["ndim"] != 2) {

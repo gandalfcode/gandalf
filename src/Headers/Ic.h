@@ -30,6 +30,7 @@
 #include "Hydrodynamics.h"
 #include "InlineFuncs.h"
 #include "Simulation.h"
+#include "SimUnits.h"
 #include "SmoothingKernel.h"
 #include "RandomNumber.h"
 #include "Parameters.h"
@@ -61,14 +62,17 @@ class Ic
 {
 protected:
 
-  Simulation<ndim>* const sim;              ///< Simulation class pointer
-  Hydrodynamics<ndim>* const hydro;         ///< Hydrodynamics algorithm pointer
-  const FLOAT invndim;                      ///< 1/ndim
-  const SimUnits& simunits;                 ///< Reference to main simunits object
-  const DomainBox<ndim>& simbox;            ///< Reference to simulation bounding box object
+  Simulation<ndim>* const sim;               ///< Simulation class pointer
+  Hydrodynamics<ndim>* const hydro;          ///< Hydrodynamics algorithm pointer
+  Nbody<ndim>* const nbody;                  ///< Nbody algorithm pointer
+  NeighbourSearch<ndim>* const neib;         ///< Neighbour search algorithm pointer
+  const FLOAT invndim;                       ///< 1/ndim
+  const SimUnits& simunits;                  ///< Reference to main simunits object
+  const DomainBox<ndim>& icBox;              ///< Reference to IC box
+  const DomainBox<ndim>& simbox;             ///< Reference to simulation bounding box object
 
-  Parameters* simparams;                    ///< Pointer to parameters object
-  RandomNumber *randnumb;                   ///< Random number object pointer
+  Parameters* simparams;                     ///< Pointer to parameters object
+  RandomNumber *randnumb;                    ///< Random number object pointer
 
 
   // Helper routines
@@ -91,9 +95,9 @@ public:
 
   // Constructor for setting important variables and pointers
   //-----------------------------------------------------------------------------------------------
-  Ic(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-    sim(_sim), hydro(_hydro), invndim(_invndim),
-    simunits(_sim->simunits), simbox(_sim->simbox),
+  Ic(Simulation<ndim>* _sim, FLOAT _invndim) :
+    sim(_sim), hydro(_sim->hydro), nbody(_sim->nbody), neib(_sim->neib), icBox(_sim->icBox),
+    invndim(_invndim), simunits(_sim->simunits), simbox(_sim->simbox),
     simparams(_sim->simparams), randnumb(_sim->randnumb)
   {
   };
@@ -152,8 +156,8 @@ class NullIc : public Ic<ndim>
 {
 public:
 
-  NullIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-    Ic<ndim>(_sim, _hydro, _invndim) {};
+  NullIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+    Ic<ndim>(_sim, _invndim) {};
 
 };
 
@@ -181,7 +185,7 @@ protected:
 
 public:
 
-  BinaryAccretionIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  BinaryAccretionIc(Simulation<ndim>* _sim, FLOAT _invndim);
   ~BinaryAccretionIc() {};
 
   virtual void Generate(void);
@@ -213,7 +217,7 @@ protected:
 
 public:
 
-  BlobIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  BlobIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~BlobIc() {};
 
   virtual void Generate(void);
@@ -244,7 +248,7 @@ protected:
 
 public:
 
-  BondiAccretionIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  BondiAccretionIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~BondiAccretionIc() {};
 
   virtual void Generate(void);
@@ -284,7 +288,7 @@ protected:
 
 public:
 
-  BossBodenheimerIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  BossBodenheimerIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~BossBodenheimerIc() {};
 
   virtual void Generate();
@@ -318,7 +322,7 @@ protected:
 
 public:
 
-  ContactDiscontinuityIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ContactDiscontinuityIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~ContactDiscontinuityIc() {};
 
   virtual void Generate(void);
@@ -349,7 +353,7 @@ protected:
 
 public:
 
-  DustyBoxIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  DustyBoxIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~DustyBoxIc() {};
 
   virtual void Generate(void);
@@ -380,7 +384,7 @@ protected:
 
 public:
 
-  EvrardCollapseIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  EvrardCollapseIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~EvrardCollapseIc() {};
 
   virtual void Generate(void);
@@ -411,7 +415,7 @@ protected:
 
 public:
 
-  EwaldIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  EwaldIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~EwaldIc() {};
 
   virtual void Generate(void);
@@ -433,6 +437,7 @@ class FilamentIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -457,7 +462,7 @@ protected:
 
 public:
 
-  FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  FilamentIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~FilamentIc() {};
 
   virtual void Generate();
@@ -492,7 +497,7 @@ protected:
 
 public:
 
-  GaussianRingIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  GaussianRingIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~GaussianRingIc() {};
 
   virtual void Generate(void);
@@ -523,7 +528,7 @@ protected:
 
 public:
 
-  GreshoVortexIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  GreshoVortexIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~GreshoVortexIc() {};
 
   virtual void Generate(void);
@@ -555,7 +560,7 @@ protected:
 
 public:
 
-  HierarchicalSystemIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  HierarchicalSystemIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~HierarchicalSystemIc() {};
 
   virtual void Generate(void);
@@ -586,7 +591,7 @@ protected:
 
 public:
 
-  IsothermalSphereIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  IsothermalSphereIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~IsothermalSphereIc() {};
 
   virtual void Generate(void);
@@ -617,7 +622,7 @@ protected:
 
 public:
 
-  KelvinHelmholtzIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  KelvinHelmholtzIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~KelvinHelmholtzIc() {};
 
   virtual void Generate(void);
@@ -648,7 +653,7 @@ protected:
 
 public:
 
-  NohIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  NohIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~NohIc() {};
 
   virtual void Generate(void);
@@ -679,7 +684,7 @@ protected:
 
 public:
 
-  PlummerSphereIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  PlummerSphereIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~PlummerSphereIc() {};
 
   virtual void Generate(void);
@@ -721,7 +726,7 @@ protected:
 
 public:
 
-  PolytropeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  PolytropeIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~PolytropeIc();
 
   virtual void Generate(void);
@@ -757,7 +762,7 @@ protected:
 
 public:
 
-  RayleighTaylorIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  RayleighTaylorIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~RayleighTaylorIc() {};
 
   virtual void Generate(void);
@@ -789,7 +794,7 @@ protected:
 
 public:
 
-  SedovBlastwaveIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  SedovBlastwaveIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~SedovBlastwaveIc() {};
 
   virtual void Generate(void);
@@ -821,7 +826,7 @@ protected:
 
 public:
 
-  ShearflowIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ShearflowIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~ShearflowIc() {};
 
   virtual void Generate(void);
@@ -853,7 +858,7 @@ protected:
 
 public:
 
-  ShocktubeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  ShocktubeIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~ShocktubeIc() {};
 
   virtual void Generate(void);
@@ -899,7 +904,7 @@ protected:
 
 public:
 
-  SilccIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  SilccIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~SilccIc() {};
 
   virtual void Generate();
@@ -934,7 +939,7 @@ protected:
 
 public:
 
-  SoundwaveIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  SoundwaveIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~SoundwaveIc() {};
 
   virtual void Generate(void);
@@ -966,7 +971,7 @@ protected:
 
 public:
 
-  SpitzerExpansionIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  SpitzerExpansionIc(Simulation<ndim>* _sim, FLOAT _invndim);
   ~SpitzerExpansionIc() {};
 
   virtual void Generate(void);
@@ -998,7 +1003,7 @@ protected:
 
 public:
 
-  TurbulentCoreIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  TurbulentCoreIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~TurbulentCoreIc() {};
 
   virtual void Generate(void);
@@ -1030,7 +1035,7 @@ protected:
 
 public:
 
-  UniformIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim);
+  UniformIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~UniformIc() {};
 
   virtual void Generate(void);
@@ -1164,7 +1169,7 @@ class ParticleRegularizer
 
 
 public:
-  ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& simbox);
+  ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& icbox);
 
   void operator()(Hydrodynamics<ndim>* hydro, NeighbourSearch<ndim> *neib, Nbody<ndim>* nbody,
                   const RegularizerFunction<ndim>& regularizer) const;
