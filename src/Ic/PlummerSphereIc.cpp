@@ -35,8 +35,8 @@ using namespace std;
 /// Set-up SILCC-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-PlummerSphereIc<ndim>::PlummerSphereIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+PlummerSphereIc<ndim>::PlummerSphereIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   if (simparams->intparams["ndim"] != 3) {
     ExceptionHandler::getIstance().raise("Plummer sphere can only be generated in 3d");

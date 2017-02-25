@@ -35,8 +35,8 @@ using namespace std;
 /// Set-up SILCC-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-HierarchicalSystemIc<ndim>::HierarchicalSystemIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+HierarchicalSystemIc<ndim>::HierarchicalSystemIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   // Some sanity checking to ensure correct dimensionality is used
   if (simparams->intparams["ndim"] == 1) {

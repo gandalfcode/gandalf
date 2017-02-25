@@ -35,8 +35,8 @@ using namespace std;
 /// Set-up SILCC-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-SoundwaveIc<ndim>::SoundwaveIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+SoundwaveIc<ndim>::SoundwaveIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   // Some sanity checking to ensure dimensionless units are used
   if (simparams->intparams["ndim"] != 1) {

@@ -290,6 +290,7 @@ class Simulation : public SimulationBase
   static const int vdim=ndim;          ///< Velocity vector dimensionality (same as ndim)
   static const FLOAT invndim;          ///< Local copy of 1/ndim
 
+  DomainBox<ndim> icBox;               ///< Boundary data used to create ICs
   DomainBox<ndim> simbox;              ///< Simulation boundary data
   Diagnostics<ndim> diag0;             ///< Initial diagnostic state
   Diagnostics<ndim> diag;              ///< Current diagnostic state
@@ -306,7 +307,7 @@ class Simulation : public SimulationBase
   Sinks<ndim> *sinks;                  ///< Sink particle object
   SphIntegration<ndim> *sphint;        ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;   ///< SPH Neighbour scheme pointer
-  NeighbourSearch<ndim> *neib;        ///< Generic pointer to neighbour search
+  NeighbourSearch<ndim> *neib;         ///< Generic pointer to neighbour search
   SupernovaDriver<ndim> *snDriver;     ///< Supernova feedback driver
 #ifdef MPI_PARALLEL
   MpiControl<ndim>* mpicontrol;        ///< MPI control object

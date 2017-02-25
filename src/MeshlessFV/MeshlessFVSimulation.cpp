@@ -580,7 +580,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       part.flags.set_flag(active);
     }
 
-    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+    mfvneib->UpdateAllProperties(mfv, nbody); // simbox);
 
 
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);

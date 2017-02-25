@@ -35,8 +35,8 @@ using namespace std;
 /// Set-up Khi-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-KelvinHelmholtzIc<ndim>::KelvinHelmholtzIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+KelvinHelmholtzIc<ndim>::KelvinHelmholtzIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   // Some sanity checking to ensure correct dimensionality and (dimensionless) units are used
   if (simparams->intparams["ndim"] != 2) {

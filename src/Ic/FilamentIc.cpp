@@ -35,8 +35,8 @@ using namespace std;
 /// Set-up Filament-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   // Some sanity checking to ensure correct parameters are valid and sensible
   if (simparams->intparams["ndim"] != 3) {
@@ -86,8 +86,8 @@ FilamentIc<ndim>::FilamentIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro
 
   // Compute total mass inside simulation box
   Box<ndim> box;
-  for (int k=0; k<ndim; k++) box.min[k] = simbox.min[k];
-  for (int k=0; k<ndim; k++) box.max[k] = simbox.max[k];
+  for (int k=0; k<ndim; k++) box.min[k] = icBox.min[k];
+  for (int k=0; k<ndim; k++) box.max[k] = icBox.max[k];
   mtot = this->CalculateMassInBox(box, gas_type);
 
   std::cout << "rho0 : " << rho0*simunits.rho.outscale << " " << simunits.rho.outunit << std::endl;
@@ -115,7 +115,7 @@ void FilamentIc<ndim>::Generate(void)
     mp            = mtot / (FLOAT) Npart;
     FLOAT volume  = Lfilament*pi*pow(Rfilament, 2);
     FLOAT Ngather = (int) (4.0*pi*pow(2.0*1.2,3)/3.0);
-    FLOAT h_guess = 2.0*powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Npart),onethird);
+    FLOAT h_guess = 2.0*powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Npart), onethird);
     FLOAT *r      = new FLOAT[ndim*Npart];
 
     std::cout << "Ngather : " << Ngather << "   " << h_guess << "   " << Rfilament << std::endl;
@@ -125,8 +125,8 @@ void FilamentIc<ndim>::Generate(void)
 
     Box<ndim> box;
     for (int k=0; k<ndim; k++) {
-      box.min[k] = simbox.min[k];
-      box.max[k] = simbox.max[k];
+      box.min[k] = icBox.min[k];
+      box.max[k] = icBox.max[k];
     }
     Ic<ndim>::AddMonteCarloDensityField(Npart, gas_type, box, r, sim->randnumb);
 

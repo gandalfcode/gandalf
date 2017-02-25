@@ -178,7 +178,6 @@ FLOAT Ic<ndim>::GetSmoothedDensity
 template <int ndim>
 void Ic<ndim>::CheckInitialConditions(void)
 {
-  bool okflag;                               // Flag problem with current particle
   bool valid_ic = true;                      // Valid initial conditions flag
   int i,k;                                   // Particle and dimension counter
   DomainBox<ndim>& simbox = sim->simbox;
@@ -190,7 +189,8 @@ void Ic<ndim>::CheckInitialConditions(void)
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    okflag = true;
+    bool boxflag = true;
+    bool okflag  = true;
 
     // Check that main particle properties are valid floating point numbers
     if (!isnormal(part.m)) okflag = false;
@@ -204,28 +204,31 @@ void Ic<ndim>::CheckInitialConditions(void)
     for (k=0; k<ndim; k++) {
       if (part.r[k] < simbox.min[k]) {
         if (simbox.boundary_lhs[k] == periodicBoundary || simbox.boundary_lhs[k] == mirrorBoundary) {
-        	if (cutbox) {
-            	part.flags.set_flag(dead);
-        	}
-        	else {
-            	okflag = false;
-        	}
+          if (cutbox) {
+            part.flags.set_flag(dead);
+          }
+          else {
+            boxflag = false;
+          }
         }
       }
       if (part.r[k] > simbox.max[k]) {
         if (simbox.boundary_rhs[k] == periodicBoundary || simbox.boundary_lhs[k] == mirrorBoundary) {
-        	if (cutbox) {
-            	part.flags.set_flag(dead);
-        	}
-        	else {
-            	okflag = false;
-        	}
+          if (cutbox) {
+            part.flags.set_flag(dead);
+          }
+          else {
+            boxflag = false;
+          }
         }
       }
     }
 
     // If flag indicates a problem, print error and quit
     if (!okflag) {
+      ExceptionHandler::getIstance().raise("Error : Invalid floating point values for particles");
+    }
+    if (!boxflag) {
       cout << "Particle " << i << " not inside periodic box" << endl;
       for (k=0; k<ndim; k++)
         cout << "r[" << k << "] : " << part.r[k] << "    "
