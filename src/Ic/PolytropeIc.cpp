@@ -36,8 +36,8 @@ using namespace std;
 /// Constructor for PolytropicIc class
 //=================================================================================================
 template <int ndim>
-PolytropeIc<ndim>::PolytropeIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+PolytropeIc<ndim>::PolytropeIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   int Ntablemax = 1000;
   xiArray    = new FLOAT[Ntablemax];

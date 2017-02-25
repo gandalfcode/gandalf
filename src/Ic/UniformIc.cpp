@@ -35,8 +35,8 @@ using namespace std;
 /// Set-up SILCC-type simulation initial conditions.
 //=================================================================================================
 template <int ndim>
-UniformIc<ndim>::UniformIc(Simulation<ndim>* _sim, Hydrodynamics<ndim>* _hydro, FLOAT _invndim) :
-  Ic<ndim>(_sim, _hydro, _invndim)
+UniformIc<ndim>::UniformIc(Simulation<ndim>* _sim, FLOAT _invndim) :
+  Ic<ndim>(_sim, _invndim)
 {
   if (simparams->intparams["dimensionless"] == 0) {
     ExceptionHandler::getIstance().raise("dimensionless units required");

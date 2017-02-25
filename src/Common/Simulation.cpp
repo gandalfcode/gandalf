@@ -1108,6 +1108,23 @@ void Simulation<ndim>::ProcessParameters(void)
   }
 
 
+  // Initial conditions box variables
+  //-----------------------------------------------------------------------------------------------
+  for (int k=0; k<ndim; k++) icBox.boundary_lhs[k] = periodicBoundary;
+  for (int k=0; k<ndim; k++) icBox.boundary_rhs[k] = periodicBoundary;
+  icBox.min[0] = simparams->floatparams["boxmin[0]"]/simunits.r.outscale;
+  icBox.max[0] = simparams->floatparams["boxmax[0]"]/simunits.r.outscale;
+  icBox.min[1] = simparams->floatparams["boxmin[1]"]/simunits.r.outscale;
+  icBox.max[1] = simparams->floatparams["boxmax[1]"]/simunits.r.outscale;
+  icBox.min[2] = simparams->floatparams["boxmin[2]"]/simunits.r.outscale;
+  icBox.max[2] = simparams->floatparams["boxmax[2]"]/simunits.r.outscale;
+  for (int k=0; k<ndim; k++) {
+    icBox.size[k] = icBox.max[k] - icBox.min[k];
+    icBox.half[k] = (FLOAT) 0.5*icBox.size[k];
+  }
+
+
+
   // Set external potential field object
   if (stringparams["external_potential"] == "none") {
     extpot = new NullPotential<ndim>();
@@ -1162,7 +1179,7 @@ void Simulation<ndim>::ProcessParameters(void)
   nrestartstep        = intparams["nrestartstep"];
   ntreebuildstep      = intparams["ntreebuildstep"];
   ntreestockstep      = intparams["ntreestockstep"];
-  nsystembuildstep = intparams["nsystembuildstep"];
+  nsystembuildstep    = intparams["nsystembuildstep"];
   Nstepsmax           = intparams["Nstepsmax"];
   out_file_form       = stringparams["out_file_form"];
   pruning_level_min   = intparams["pruning_level_min"];

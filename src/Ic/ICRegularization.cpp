@@ -33,12 +33,10 @@ namespace Regularization {
 
 
 template<int ndim>
-ParticleRegularizer<ndim>::ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& simbox)
+ParticleRegularizer<ndim>::ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& icbox)
 : Nreg(simparams->intparams["Nreg"]),
-  localBox(simbox)
+  localBox(icbox)
 {
-  for (int k=0; k<ndim; k++) localBox.boundary_lhs[k] = periodicBoundary;
-  for (int k=0; k<ndim; k++) localBox.boundary_rhs[k] = periodicBoundary;
 }
 
 

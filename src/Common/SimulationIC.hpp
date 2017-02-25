@@ -98,84 +98,84 @@ void Simulation<ndim>::GenerateIC(void)
   // Generate initial conditions on-the-fly via various IC class functions
   //-----------------------------------------------------------------------------------------------
   else if (ic == "binaryacc") {
-    icGenerator = new BinaryAccretionIc<ndim>(this, hydro, invndim);
+    icGenerator = new BinaryAccretionIc<ndim>(this, invndim);
   }
   else if (ic == "blob") {
-    icGenerator = new BlobIc<ndim>(this, hydro, invndim);
+    icGenerator = new BlobIc<ndim>(this, invndim);
   }
   else if (ic == "bondi") {
-    icGenerator = new BondiAccretionIc<ndim>(this, hydro, invndim);
+    icGenerator = new BondiAccretionIc<ndim>(this, invndim);
   }
   else if (ic == "bb" || ic == "bossbodenheimer") {
-    icGenerator = new BossBodenheimerIc<ndim>(this, hydro, invndim);
+    icGenerator = new BossBodenheimerIc<ndim>(this, invndim);
   }
   else if (ic == "cdiscontinuity") {
-    icGenerator = new ContactDiscontinuityIc<ndim>(this, hydro, invndim);
+    icGenerator = new ContactDiscontinuityIc<ndim>(this, invndim);
   }
   else if (ic == "dustybox") {
-    icGenerator = new DustyBoxIc<ndim>(this, hydro, invndim);
+    icGenerator = new DustyBoxIc<ndim>(this, invndim);
   }
   else if (ic == "evrard") {
-    icGenerator = new EvrardCollapseIc<ndim>(this, hydro, invndim);
+    icGenerator = new EvrardCollapseIc<ndim>(this, invndim);
   }
   else if (ic == "ewaldsine" || ic == "ewaldsine2" ||
            ic == "ewaldslab" ||  ic == "ewaldcylinder" ||
            ic == "jeans") {
-    icGenerator = new EwaldIc<ndim>(this, hydro, invndim);
+    icGenerator = new EwaldIc<ndim>(this, invndim);
   }
   else if (ic == "filament") {
-    icGenerator = new FilamentIc<ndim>(this, hydro, invndim);
+    icGenerator = new FilamentIc<ndim>(this, invndim);
   }
   else if (ic == "gaussianring") {
-    icGenerator = new GaussianRingIc<ndim>(this, hydro, invndim);
+    icGenerator = new GaussianRingIc<ndim>(this, invndim);
   }
   else if (ic == "gresho") {
-    icGenerator = new GreshoVortexIc<ndim>(this, hydro, invndim);
+    icGenerator = new GreshoVortexIc<ndim>(this, invndim);
   }
   else if (ic == "binary" || ic == "triple" || ic == "quadruple") {
-    icGenerator = new HierarchicalSystemIc<ndim>(this, hydro, invndim);
+    icGenerator = new HierarchicalSystemIc<ndim>(this, invndim);
   }
   else if (ic == "isothermsphere" || ic == "rotisothermsphere" || ic == "turbisothermsphere") {
-    icGenerator = new IsothermalSphereIc<ndim>(this, hydro, invndim);
+    icGenerator = new IsothermalSphereIc<ndim>(this, invndim);
   }
   else if (ic == "khi") {
-    icGenerator = new KelvinHelmholtzIc<ndim>(this, hydro, invndim);
+    icGenerator = new KelvinHelmholtzIc<ndim>(this, invndim);
   }
   else if (ic == "noh") {
-    icGenerator = new NohIc<ndim>(this, hydro, invndim);
+    icGenerator = new NohIc<ndim>(this, invndim);
   }
   else if (ic == "plummer") {
-    icGenerator = new PlummerSphereIc<ndim>(this, hydro, invndim);
+    icGenerator = new PlummerSphereIc<ndim>(this, invndim);
   }
   else if (ic == "polytrope") {
-    icGenerator = new PolytropeIc<ndim>(this, hydro, invndim);
+    icGenerator = new PolytropeIc<ndim>(this, invndim);
   }
   else if (ic == "rti") {
-    icGenerator = new RayleighTaylorIc<ndim>(this, hydro, invndim);
+    icGenerator = new RayleighTaylorIc<ndim>(this, invndim);
   }
   else if (ic == "sedov") {
-    icGenerator = new SedovBlastwaveIc<ndim>(this, hydro, invndim);
+    icGenerator = new SedovBlastwaveIc<ndim>(this, invndim);
   }
   else if (ic == "shocktube") {
-    icGenerator = new ShocktubeIc<ndim>(this, hydro, invndim);
+    icGenerator = new ShocktubeIc<ndim>(this, invndim);
   }
   else if (ic == "shearflow") {
-    icGenerator = new ShearflowIc<ndim>(this, hydro, invndim);
+    icGenerator = new ShearflowIc<ndim>(this, invndim);
   }
   else if (ic == "silcc") {
-    icGenerator = new SilccIc<ndim>(this, hydro, invndim);
+    icGenerator = new SilccIc<ndim>(this, invndim);
   }
   else if (ic == "soundwave") {
-    icGenerator = new SoundwaveIc<ndim>(this, hydro, invndim);
+    icGenerator = new SoundwaveIc<ndim>(this, invndim);
   }
   else if (ic == "spitzer") {
-    icGenerator = new SpitzerExpansionIc<ndim>(this, hydro, invndim);
+    icGenerator = new SpitzerExpansionIc<ndim>(this, invndim);
   }
   else if (ic == "turbcore") {
-    icGenerator = new TurbulentCoreIc<ndim>(this, hydro, invndim);
+    icGenerator = new TurbulentCoreIc<ndim>(this, invndim);
   }
   else if (ic == "box" || ic == "sphere") {
-    icGenerator = new UniformIc<ndim>(this, hydro, invndim);
+    icGenerator = new UniformIc<ndim>(this, invndim);
   }
   //-----------------------------------------------------------------------------------------------
   else {
@@ -196,7 +196,7 @@ void Simulation<ndim>::GenerateIC(void)
 
     // Regularise the particle distribution using the density function providing in the IC class
     RegularizerFunction<ndim> *reg_func = icGenerator->GetParticleRegularizer();
-    ParticleRegularizer<ndim>(simparams, simbox)(hydro, neib, nbody, *reg_func);
+    ParticleRegularizer<ndim>(simparams, icBox)(hydro, neib, nbody, *reg_func);
 
     // Once regularisation step has finished, (re)set all particle properties
     icGenerator->SetParticleProperties();
