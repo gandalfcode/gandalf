@@ -414,8 +414,8 @@ void MeshlessFV<ndim>::EndTimestep
       for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
       for (k=0; k<ndim; k++) part.rdmdt[k] = 0.0;
       for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
-      for (k=0; k<ndim; k++) part.a[k] = 0.0;
-      part.gpot=0.0;
+      //for (k=0; k<ndim; k++) part.a[k] = 0.0;
+      //part.gpot=0.0;
 
       for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
 

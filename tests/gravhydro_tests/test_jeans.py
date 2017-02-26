@@ -25,23 +25,22 @@ class JeansTest(unittest.TestCase):
         self.assertLess(errnorm,self.expected_l1error)
 
 
-
 class JeansTest_SPHRelative(JeansTest):
     run_id = "JEANS_SPH_RELATIVE"
     expected_l1error = 7e-4
     params = { 'gravity_mac' : 'gadget2' }
-    
+
 
 class JeansTest_SPHEigen(JeansTest):
     run_id = "JEANS_SPH_EIGEN"
     expected_l1error = 4e-3
     params = { 'gravity_mac' : 'eigenmac' }
 
+
 class JeansTest_Meshless(JeansTest):
     sim = 'mfvmuscl'
     run_id = "JEANS_MFM"
     expected_l1error = 1.3e-3
     params = { 'riemann_solver' : 'hllc',
-               'gravity_mac' : 'gadget2',
                'zero_mass_flux' : 1,
                'h_fac' : 1.0 }
