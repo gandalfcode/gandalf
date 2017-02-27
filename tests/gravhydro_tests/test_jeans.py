@@ -40,7 +40,7 @@ class JeansTest_SPHEigen(JeansTest):
 class JeansTest_Meshless(JeansTest):
     sim = 'mfvmuscl'
     run_id = "JEANS_MFM"
-    expected_l1error = 1.3e-3
+    expected_l1error = 7e-3
     params = { 'riemann_solver' : 'hllc',
                'zero_mass_flux' : 1,
                'h_fac' : 1.0 }
