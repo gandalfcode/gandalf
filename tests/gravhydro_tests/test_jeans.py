@@ -31,6 +31,7 @@ class JeansTest_SPHRelative(JeansTest):
     params = { 'gravity_mac' : 'gadget2' }
 
 
+
 #class JeansTest_SPHEigen(JeansTest):
 #    run_id = "JEANS_SPH_EIGEN"
 #    expected_l1error = 4e-3
