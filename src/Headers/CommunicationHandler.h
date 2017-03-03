@@ -144,7 +144,7 @@ public:
     p2.zeta = p.zeta;
 
     //Recompute things we store only for optimization
-    p2.h = hydro->h_fac*powf(p2.m/p2.rho, Sph<ndim>::invndim);
+    p2.h = hydro->h_fac*pow(p2.m/p2.rho, Sph<ndim>::invndim);
     p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
     p2.hfactor = pow(1/p2.h,ndim+1);
     p2.sound = hydro->eos->SoundSpeed(p2);
@@ -293,7 +293,7 @@ public:
 
   //Recompute h dependent stuff
   p2.rho = p2.ndens*p2.m;
-  p2.h = hydro->h_fac*powf(1/p2.ndens, (FLOAT)(1.)/ndim);
+  p2.h = hydro->h_fac*pow(1/p2.ndens, (FLOAT)(1.)/ndim);
   p2.hfactor = pow(1/p2.h, ndim+1);
   p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
   }

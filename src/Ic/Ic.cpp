@@ -950,7 +950,7 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
       xold = xnew;
       xnew = r[ndim*i] - amp*((FLOAT) 1.0 - cos(kwave*xnew))/kwave;
       diff = fabs((xnew - xold)/lambda);
-    } while (diff > (FLOAT) 1.0e-6);
+    } while (diff > (FLOAT) 1.0e-12);
 
     if (xnew > simbox.max[0]) xnew -= simbox.size[0];
     if (xnew < simbox.min[0]) xnew += simbox.size[0];

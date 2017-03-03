@@ -210,8 +210,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   // Compute other terms once number density and smoothing length are known
   part.ndens     = ndens ;
   part.rho       = rho ;
-  //part.h         = max(h_fac*powf(volume, MeshlessFV<ndim>::invndim), h_lower_bound);
-  part.h = h_fac*powf(volume, MeshlessFV<ndim>::invndim);
+  part.h         = h_fac*pow(volume, MeshlessFV<ndim>::invndim);
   part.hfactor   = pow(1/part.h, ndim+1);
   part.hrangesqd = kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;

@@ -281,7 +281,6 @@ void MeshlessFV<ndim>::IntegrateParticles
     this->ComputeThermalProperties(part);
     this->UpdatePrimitiveVector(part);
 
-
     //---------------------------------------------------------------------------------------------
     if (!staticParticles) {
       part.flags.set_flag(update_density);
@@ -322,7 +321,7 @@ void MeshlessFV<ndim>::IntegrateParticles
             part.r0[k] -= simbox.size[k];
           }
 
-          // Check if wall or mirror boundaryq
+          // Check if wall or mirror boundary
           if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
             part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
             part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
