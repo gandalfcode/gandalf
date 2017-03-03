@@ -418,6 +418,9 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
         NeighbourList<GradientParticle> neiblist =
             neibmanager.GetParticleNeib(activepart[j],hmask,do_pair_once);
 
+#if defined(VERIFY_ALL)
+        neibmanager.VerifyNeighbourList(i, mfv->Nhydro, mfvdata, "all");
+#endif
         // Compute all neighbour contributions to gradients
         mfv->ComputeGradients(activepart[j], neiblist);
 
@@ -586,6 +589,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
         bool do_pair_once=true;
         NeighbourList<FluxParticle> neiblist =
             neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
+
+#if defined(VERIFY_ALL)
+        neibmanager.VerifyNeighbourList(i, Nhydro, mfvdata, "all");
+#endif
 
         // Compute all neighbour contributions to hydro fluxes
         mfv->ComputeGodunovFlux(activepart[j], neiblist, timestep);

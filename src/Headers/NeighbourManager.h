@@ -390,7 +390,7 @@ private:
     }
 
     assert(directlist.size() == neibdata.size() &&
-        neib_idx.size()   == neibdata.size());
+          neib_idx.size()   == neibdata.size());
 
     // Now look at the hydro candidate neighbours
     // First the ones that need ghosts to be created on the fly
@@ -531,8 +531,81 @@ private:
     return true;
   }
 
+public:
+
+  //===============================================================================================
+  //  VerifyNeighbourList
+  /// \brief    Verify the list of neighbours is complete.
+  /// \details  Check that the complete list of neighbours contains all the neighbours needed for
+  ///           the particle (i). This check can be for either the "gather" or "all"
+  ///           (scatter-gather) of the neighbours.
+  //===============================================================================================
+  template <class InParticleType>
+  void VerifyNeighbourList(int i, int Ntot, const InParticleType& partdata,
+                           const string& searchmode) {
+    std::vector<int> truengb ;
+    FLOAT drsqd ;
+    FLOAT dr[ndim];
+
+    const GhostNeighbourFinder<ndim> GhostFinder(*_domain);
+
+    if (searchmode == "gather") {
+       for (int j=0; j<Ntot; j++) {
+         for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
+         GhostFinder.NearestPeriodicVector(dr);
+         drsqd = DotProduct(dr,dr,ndim);
+         if (drsqd <= partdata[i].hrangesqd) truengb.push_back(j);
+       }
+     }
+     else if (searchmode == "all") {
+       for (int j=0; j<Ntot; j++) {
+         for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
+         GhostFinder.NearestPeriodicVector(dr);
+         drsqd = DotProduct(dr,dr,ndim);
+         if (drsqd < partdata[i].hrangesqd ||
+             drsqd < partdata[j].hrangesqd) truengb.push_back(j);
+       }
+     }
+
+    // Now compare each given neighbour with true neighbour list for validation
+    int invalid_flag = 0, j ;
+    for (j=0; j<truengb.size(); j++) {
+      int count = 0;
+      for (int k=0; k<neib_idx.size(); k++)
+        if (neib_idx[k] == truengb[j])
+          count++;
+
+      // If the true neighbour is not in the list, or included multiple times,
+      // then output to screen and terminate program
+      if (count != 1) {
+        for (int k=0; k<ndim; k++) dr[k] = partdata[truengb[j]].r[k] - partdata[i].r[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        cout << "Could not find neighbour " << j << "   " << truengb[j] << "     " << i
+            << "      " << sqrt(drsqd)/sqrt(partdata[i].hrangesqd) << "     "
+            << sqrt(drsqd)/sqrt(partdata[j].hrangesqd) << "    "
+            << partdata[truengb[j]].r[0] << "   type : "
+            << partdata[truengb[j]].ptype << endl;
+        invalid_flag++;
+      }
+
+    }
+    // If the true neighbour is not in the list, or included multiple times,
+    // then output to screen and terminate program
+    if (invalid_flag) {
+      cout << "Problem with neighbour lists : " << i << "  " << j << "   "
+          <<  invalid_flag << "    " << partdata[i].r[0] << "   " << partdata[i].h << endl
+          << "Nneib : " << neib_idx.size() << "   Ntrueneib : " << truengb.size()
+          << "    searchmode : " << searchmode << endl;
+      InsertionSort(neib_idx.size(), &neib_idx[0]);
+      PrintArray("neiblist     : ",neib_idx.size(), &neib_idx[0]);
+      PrintArray("trueneiblist : ",truengb.size() , &truengb[0]);
+      string message = "Problem with neighbour lists in tree search";
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
 
 };
+
 
 
 #endif /* NEIGHBOURMANAGER_H_ */
