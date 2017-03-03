@@ -1041,6 +1041,59 @@ def get_analytical_data (x=None, y=None, ic="default", snap="current", sim="curr
 
 
 #------------------------------------------------------------------------------
+def get_time_data(x, y, sim="current", overplot=False, autoscale=False,
+                  xunit="default", yunit="default", xaxis="linear",
+                  yaxis="linear", idx=None, idy=None, id=None,
+                  typex="default", typey="default", type="default", **kwargs):
+    '''Returns the data of two quantities as evolved in time one versus the another.
+
+    Args:
+        x (str): Quantity on x-axis. The quantity is looked
+                     up in the quantities defined as a function of time. If it is
+                     not found there, then we try to interpret it as a quantity
+                     defined for a particle. In this case, the user needs to pass
+                     either idx either id to specify which particle he wishes
+                     to look-up.
+        y (str): Quantity on y-axis. The interpretation is
+                     like for the previous argument.
+
+    Keyword Args:
+        sim: Number of the simulation to plot. Defaults to 'current'.
+        autoscale: If True, the limits of the plot are set
+                     automatically.  Can also be set to 'x' or 'y' to specify
+                     that only one of the axis has to use autoscaling.
+                     If False (default), autoscaling is not used. On an axis that
+                     does not have autoscaling turned on, global limits are used
+                     if defined for the plotted quantity.
+        xunit (str): Specify the unit to use for the plotting for the quantity
+                     on the x-axis.
+        yunit (str): Specify the unit to use for the plotting for the quantity
+                     on the y-axis.
+        idx (int): id of the particle to plot on the x-axis. Ignored if the
+                     quantity given (e.g., com_x) does not depend on the id.
+        idy (int): same as previous, on the y-axis.
+        id (int) : same as the two previous ones. To be used when the id is the
+                     same on both axes. If set, overwrites the passed idx and idy.
+        typex (str): type of particles on the x-axis. Ignored if the quantity
+                     given does not depend on it
+        typey (str): as the previous one, on the y-axis.
+        type (str): as the previous ones, for both axis at the same time. If set,
+                     overwrites typex and typey.
+
+    Return:
+        Data plotted. The member x_data contains data on the x-axis and the member y_data
+            contains data on the y-axis
+    '''
+    simno = get_sim_no(sim)
+    overplot = to_bool(overplot)
+    command = Commands.TimePlot(x, y, simno, True, autoscale,
+                                xunit, yunit, xaxis, yaxis, idx, idy, id,
+                                typex, typey, type, **kwargs)
+    data = command.prepareData(Singletons.globallimits)
+    return data
+
+
+#------------------------------------------------------------------------------
 def to_list(str_variable,type):
     '''Convert the input string to a list of the specified type'''
     parenthesis_open = ('[', '(')

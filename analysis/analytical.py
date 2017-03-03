@@ -61,27 +61,28 @@ class freefall (AnalyticalSolution):
         self.time   = time
         self.ndim   = sim.ndims
         self.iMAX   = 1000
+        self.tff    = np.sqrt(3.0*3.1415/32.0/self.rho)
+        self.mtot   = 4.0*3.14157*self.rho*math.pow(self.radius,3)/3
 
     # TODO : This is not the freefall solution.  Need to update!!
     def compute(self, x, y):
         '''Computes exact solution for freefall collapse problem'''
-        r = np.arange(0.0,self.radius,1.0/self.iMAX)
-        rho = self.rho*np.ones(self.iMAX)
-        if self.time > 0:
-            bound = 0.3333333333333*self.time
-            i = 0
-            while i < self.iMAX:
-                if self.ndim == 1:
-                    if x[i] < bound: rho[i] = 4.0*self.rho
-                    else: rho[i] = self.rho
-                elif self.ndim == 2:
-                    if x[i] < bound: rho[i] = 16.0*self.rho
-                    else: rho[i] = self.rho*(1.0 + self.time/x[i])
-                elif self.ndim == 1:
-                    if x[i] < bound: rho[i] = 64.0*self.rho
-                    else: rho[i] = self.rho*pow(1.0 + self.time/x[i],2.0)
-                i = i + 1
-        return x,rho
+        r = np.zeros(self.iMAX)
+        a = np.zeros(self.iMAX)
+        gpot = np.zeros(self.iMAX)
+
+        i = 0
+        while i < self.iMAX:
+            r[i] = self.radius*i/(self.iMAX - 1)
+            a[i] = r[i]
+            gpot[i] = 0.0;
+            i = i + 1
+
+        if ix == "t" and iy == "r":
+            return t,r
+        else:
+            raise KeyError("There were errors in the quantity you requested")
+
 
 
 #------------------------------------------------------------------------------
