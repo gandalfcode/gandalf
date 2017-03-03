@@ -155,8 +155,8 @@ class HllcRiemannSolver
 
 
     // Compute speed of the 3 waves
-    HLLC_State Sl(Wl, n, _gamma) ;
-    HLLC_State Sr(Wr, n, _gamma) ;
+    HLLC_State Sl(Wl, n, _gamma, _isothermal) ;
+    HLLC_State Sr(Wr, n, _gamma, _isothermal) ;
 
     double Smin, Smax, vm ;
     HLL_Speeds(Sl, Sr, Smin, Smax) ;
@@ -184,13 +184,31 @@ class HllcRiemannSolver
       Hydro_Flux(Sl, n, flux) ;
     else {
       // Compute the flux on the correct side of the contact wave
-      if (vm > 0) {
-        Hydro_Flux(Sl, n, flux) ;
-        add_RH_flux(Sl, n, Smin, vm, flux) ;
+      if (not _isothermal) {
+        if (vm > 0) {
+          Hydro_Flux(Sl, n, flux) ;
+          add_RH_flux(Sl, n, Smin, vm, flux) ;
+        }
+        else {
+          Hydro_Flux(Sr, n, flux) ;
+          add_RH_flux(Sr, n, Smax, vm, flux) ;
+        }
       }
       else {
-        Hydro_Flux(Sr, n, flux) ;
-        add_RH_flux(Sr, n, Smax, vm, flux) ;
+        // No contact discontinuity for isothermal: use HLL flux
+        FLOAT fl[ndim+2], fr[ndim+2], Ur[ndim+2], Ul[ndim+2];
+        for (int i=0; i < ndim; ++i) {
+          Ul[i] = Sl.v[i] * Sl.rho;
+          Ur[i] = Sr.v[i] * Sr.rho;
+        }
+        Ul[irho] = Sl.rho ; Ur[irho] = Sr.rho ;
+        Ul[iE]   = Sl.e   ; Ur[iE]   = Sl.e   ;
+
+        Hydro_Flux(Sl, n, fl) ;
+        Hydro_Flux(Sr, n, fr) ;
+
+        for (int i=0; i < ndim+2; ++i)
+          flux[i] = (Smax*fl[i] - Smin*fr[i] + Smax*Smin*(Ur[i] - Ul[i])) / (Smax - Smin) ;
       }
     }
 
@@ -211,18 +229,26 @@ class HllcRiemannSolver
 
   class HLLC_State {
   public:
-    HLLC_State(const FLOAT W[ndim+2], const FLOAT n[ndim], double gamma)
+    HLLC_State(const FLOAT W[ndim+2], const FLOAT n[ndim], double gamma,
+               bool isothermal)
       : rho(W[irho]),
         press(W[ipress]),
-        cs(sqrt(gamma * press / rho)),
         vline(DotProduct(W, n, ndim))
      {
+      if (not isothermal)
+        cs = sqrt(gamma * press / rho) ;
+      else
+        cs = sqrt(        press / rho) ;
+
       e = 0 ;
       for (int i(0); i < ndim; ++i) {
         v[i] = W[i] ;
         e += v[i]*v[i] ;
       }
-      e = 0.5 * rho * e + press / (gamma - 1) ;
+      if (not isothermal)
+        e = 0.5 * rho * e + press / (gamma - 1) ;
+      else
+        e = 0.5 * rho * e + press ;
      }
     FLOAT v[ndim] ;
     FLOAT rho, press, e, cs ;
