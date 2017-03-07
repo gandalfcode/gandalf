@@ -146,7 +146,11 @@ def check_requested_quantity(quantity, snap):
         raise Exception("Error: you requested the quantity " + quantity + ", but the simulation is only in " + str(snap.ndim) + " dims")
     
     #if it's not a live snapshot, check that we are not requesting quantities defined only for live snapshots
-    if not snap.live:
+    try:
+        livesnap = snap.sim.live
+    except AttributeError:
+        livesnap = False
+    if not livesnap:
         if quantity in ('ax', 'ay', 'az'):
             raise Exception ("Error: accelerations are available only for live snapshots")
         elif quantity in ('dudt',):
