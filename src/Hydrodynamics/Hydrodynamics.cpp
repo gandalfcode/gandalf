@@ -96,8 +96,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
        floatparams["mu_ion"], floatparams["gamma_eos"], floatparams["rho_bary"], &units);
   }
   else if (_gas_eos == "energy_eqn" || _gas_eos == "constant_temp") {
-    eos = new Adiabatic<ndim>
-      (floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
+    eos = new Adiabatic<ndim>(floatparams["mu_bar"], floatparams["gamma_eos"]);
   }
   else if (_gas_eos == "isothermal") {
     eos = new Isothermal<ndim>
@@ -113,7 +112,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   }
   else if (_gas_eos == "barotropic2") {
     eos = new Barotropic2<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                                     floatparams["gamma_eos"], floatparams["rho_bary"], &units);
+                                floatparams["gamma_eos"], floatparams["rho_bary"], &units);
   }
   else if (_gas_eos == "rad_ws" || _gas_eos == "radws") {
     eos = new Radws<ndim>(floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);

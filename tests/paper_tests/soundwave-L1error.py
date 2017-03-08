@@ -15,7 +15,7 @@ xmin = 8.0
 xmax = 8192.0
 ymin = 3.3e-12
 ymax = 3.3e-6
-numSimMax = 6
+numSimMax = 9
 
 
 # Make simple N^-2 line
@@ -53,6 +53,8 @@ for i in range(numSimMax):
                           xmin=0.0, xmax=1.0, normalise=1.0)
     gradh_Nres.append(Nhydro)
     gradh_L1values.append(L1error)
+    plot("x","rho")
+    plotanalytical("x","rho")
 
 
 # MFV

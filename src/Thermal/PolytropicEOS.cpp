@@ -32,8 +32,7 @@
 //=================================================================================================
 template <int ndim>
 Polytropic<ndim>::Polytropic(FLOAT _Kpoly, FLOAT _eta, FLOAT _gamma, SimUnits *units):
-  EOS<ndim>(_gamma),
-  eta(_eta),
+  EOS<ndim>(_eta, _gamma),
   Kpoly(_Kpoly)
 {
   //temp0 = temp0aux/units->temp.outscale;

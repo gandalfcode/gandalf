@@ -33,7 +33,7 @@
 //=================================================================================================
 template <int ndim>
 Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux, SimUnits *units):
-  EOS<ndim>(gamma_aux),
+  EOS<ndim>((FLOAT) 1.0, gamma_aux),
   temp0(temp0aux/units->temp.outscale),
   mu_bar(mu_bar_aux)
 {

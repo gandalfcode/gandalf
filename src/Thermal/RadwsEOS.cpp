@@ -33,7 +33,8 @@
 /// thermal physics variables.
 //=================================================================================================
 template <int ndim>
-Radws<ndim>::Radws(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux) : EOS<ndim> (gamma_aux)
+Radws<ndim>::Radws(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux) :
+  EOS<ndim> (gamma_aux, gamma_aux)
 {
   mu_bar = mu_bar_aux;
   temp0 = temp0aux;

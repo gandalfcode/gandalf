@@ -34,11 +34,11 @@
 template <int ndim>
 IonisingRadiation<ndim>::IonisingRadiation
  (string gas_eos, FLOAT _temp0, FLOAT _mu_bar, FLOAT _gamma, FLOAT _rho_bary, SimUnits *units) :
-  EOS<ndim>(_gamma)
+  EOS<ndim>(_gamma, _gamma)
 {
   // Set 'internal' EOS for non-ionised gas
   if (gas_eos == "energy_eqn" || gas_eos == "constant_temp") {
-    eos = new Adiabatic<ndim>(_temp0, _mu_bar, _gamma);
+    eos = new Adiabatic<ndim>(_mu_bar, _gamma);
   }
   else if (gas_eos == "isothermal") {
     eos = new Isothermal<ndim>(_temp0, _mu_bar, _gamma, units);
@@ -64,6 +64,8 @@ template <int ndim>
 IonisingRadiation<ndim>::~IonisingRadiation()
 {
 }
+
+
 
 //=================================================================================================
 //  IonisingRadiation::EntropicFunction
