@@ -20,18 +20,23 @@ def FreefallSolution(rho, mfrac):
     tff = np.sqrt(3.0*3.1415/32.0/rho)
     r0 = math.pow(mfrac, 0.33333333333)
 
-    r = np.zeros(iMAX)
-    t = np.zeros(iMAX)
-
-    i = 0
-    while i < iMAX:
-        r[i] = r0*i/(iMAX - 1)
-        t[i] = 2.0*tff*(math.acos(np.sqrt(r[i]/r0)) + np.sqrt(r[i]/r0)*np.sqrt(1.0 - r[i]/r0))/3.14157
-        i = i + 1
-
+    r = np.range(0.0, r0, 0.001*r0)
+    t = 2.0*tff*(math.acos(np.sqrt(r/r0)) + np.sqrt(r/r0)*np.sqrt(1.0 - r/r0))/math.pi
     t /= tff
-
     return t,r
+
+    #r = np.zeros(iMAX)
+    #t = np.zeros(iMAX)
+
+    #i = 0
+    #while i < iMAX:
+    #    r[i] = r0*i/(iMAX - 1)
+    #    t[i] = 2.0*tff*(math.acos(np.sqrt(r[i]/r0)) + np.sqrt(r[i]/r0)*np.sqrt(1.0 - r[i]/r0))/3.14157
+    #    i = i + 1
+
+    #t /= tff
+
+    #return t,r
 
 
 
@@ -83,12 +88,12 @@ fig.subplots_adjust(bottom=0.11, top=0.97, left=0.11, right=0.98)
 
 #axarr[0,0].set_xscale("log")
 #axarr[0,0].set_yscale("log")
-axarr[0].set_ylabel(r"$R_{_{\rm LAG}}$")
-axarr[0].set_xlabel(r"$t/t_{_{\rm FF}}$")
-axarr[0].set_xlim([tmin, tmax])
-axarr[0].set_ylim([rmin, rmax])
+axarr[0].set_ylabel(r"$a_{_{\rm r}}$")
+axarr[0].set_xlabel(r"$r$")
+#axarr[0].set_xlim([tmin, tmax])
+#axarr[0].set_ylim([rmin, rmax])
 #axarr[0].plot(t10, r10, color="red", linestyle='-', lw=0.5)
-axarr[0].scatter(data10.x_data, data10.y_data, color='black', marker=',', s=24.0, label='10\%')
+axarr[0].scatter(r_data, a_data, color='black', marker=',', s=24.0, label='10\%')
 axarr[0].legend(fontsize=12)
 
 axarr[1].set_ylabel(r"$R_{_{\rm LAG}}$")
