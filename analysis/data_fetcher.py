@@ -24,7 +24,7 @@ from facade import SimBuffer
 
 direct = ['iorig', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'ax', 'ay', 'az',
           'm', 'h', 'rho', 'u', 'dudt','sma','ecc', 'mbin','period',
-          'qbin']
+          'qbin', 'gpot']
 
 time_fetchers={}
 
@@ -176,7 +176,8 @@ class DirectDataFetcher:
                       'm': 'm', 'h': 'h', 'u': 'u', 't': 't',
                       'sma': 'Semi-major axis', 'ecc': 'Orbital eccentricity',
                       'mbin': 'Binary mass',
-                      'period': 'Orbital period', 'qbin': 'Mass ratio'
+                      'period': 'Orbital period', 'qbin': 'Mass ratio',
+                      'gpot': 'Gravitational potential'
                       }
     
     def __init__(self, quantity):

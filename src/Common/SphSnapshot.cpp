@@ -106,6 +106,7 @@ SphSnapshot<ndims>::SphSnapshot
       sph_values["x"]=vector<SNAPFLOAT>();
       sph_values["vx"]=vector<SNAPFLOAT>();
       sph_values["ax"]=vector<SNAPFLOAT>();
+      sph_values["gpot"]=vector<SNAPFLOAT>();
       sph_values["m"]=vector<SNAPFLOAT>();
       sph_values["h"]=vector<SNAPFLOAT>();
       sph_values["rho"]=vector<SNAPFLOAT>();
@@ -130,6 +131,7 @@ SphSnapshot<ndims>::SphSnapshot
       dust_values["x"]=vector<SNAPFLOAT>();
       dust_values["vx"]=vector<SNAPFLOAT>();
       dust_values["ax"]=vector<SNAPFLOAT>();
+      dust_values["gpot"]=vector<SNAPFLOAT>();
       dust_values["m"]=vector<SNAPFLOAT>();
       dust_values["h"]=vector<SNAPFLOAT>();
       dust_values["rho"]=vector<SNAPFLOAT>();
@@ -151,6 +153,7 @@ SphSnapshot<ndims>::SphSnapshot
       star_values["x"]=vector<SNAPFLOAT>(Nstar);
       star_values["vx"]=vector<SNAPFLOAT>(Nstar);
       star_values["ax"]=vector<SNAPFLOAT>(Nstar);
+      star_values["gpot"]=vector<SNAPFLOAT>(Nstar);
       star_values["m"]=vector<SNAPFLOAT>(Nstar);
       star_values["h"]=vector<SNAPFLOAT>(Nstar);
       if (ndim>1) {
@@ -256,6 +259,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       sph_values["x"]=vector<SNAPFLOAT>(sph.N);
       sph_values["vx"]=vector<SNAPFLOAT>(sph.N);
       sph_values["ax"]=vector<SNAPFLOAT>(sph.N);
+      sph_values["gpot"]=vector<SNAPFLOAT>(sph.N);
       sph_values["m"]=vector<SNAPFLOAT>(sph.N);
       sph_values["h"]=vector<SNAPFLOAT>(sph.N);
       sph_values["rho"]=vector<SNAPFLOAT>(sph.N);
@@ -281,6 +285,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       dust_values["x"]=vector<SNAPFLOAT>(Ndust);
       dust_values["vx"]=vector<SNAPFLOAT>(Ndust);
       dust_values["ax"]=vector<SNAPFLOAT>(Ndust);
+      dust_values["gpot"]=vector<SNAPFLOAT>(Ndust);
       dust_values["m"]=vector<SNAPFLOAT>(Ndust);
       dust_values["h"]=vector<SNAPFLOAT>(Ndust);
       dust_values["rho"]=vector<SNAPFLOAT>(Ndust);
@@ -309,6 +314,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       star_values["x"]=vector<SNAPFLOAT>(Nstar);
       star_values["vx"]=vector<SNAPFLOAT>(Nstar);
       star_values["ax"]=vector<SNAPFLOAT>(Nstar);
+      star_values["gpot"]=vector<SNAPFLOAT>(Nstar);
       star_values["m"]=vector<SNAPFLOAT>(Nstar);
       star_values["h"]=vector<SNAPFLOAT>(Nstar);
       if (ndim>1) {
@@ -344,6 +350,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       sph_values["x"][igas] = (SNAPFLOAT) part.r[0];
       sph_values["vx"][igas] = (SNAPFLOAT) part.v[0];
       sph_values["ax"][igas] = (SNAPFLOAT) part.a[0];
+      sph_values["gpot"][igas] = (SNAPFLOAT) part.gpot;
       if (ndims > 1) {
         sph_values["y"][igas] = (SNAPFLOAT) part.r[1];
         sph_values["vy"][igas] = (SNAPFLOAT) part.v[1];
@@ -367,6 +374,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       dust_values["x"][idust] = (SNAPFLOAT) part.r[0];
       dust_values["vx"][idust] = (SNAPFLOAT) part.v[0];
       dust_values["ax"][idust] = (SNAPFLOAT) part.a[0];
+      dust_values["gpot"][idust] = (SNAPFLOAT) part.gpot;
       if (ndims > 1) {
         dust_values["y"][idust] = (SNAPFLOAT) part.r[1];
         dust_values["vy"][idust] = (SNAPFLOAT) part.v[1];
@@ -391,6 +399,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     star_values["x"][i] = (SNAPFLOAT) staraux[i].r[0];
     star_values["vx"][i] = (SNAPFLOAT) staraux[i].v[0];
     star_values["ax"][i] = (SNAPFLOAT) staraux[i].a[0];
+    star_values["gpot"][i] = (SNAPFLOAT) staraux[i].gpot;
     if (ndims > 1) {
       star_values["y"][i] = (SNAPFLOAT) staraux[i].r[1];
       star_values["vy"][i] = (SNAPFLOAT) staraux[i].v[1];
@@ -575,6 +584,9 @@ UnitInfo SphSnapshotBase::ExtractArray
   }
   else if (name == "sma") {
     unit = &(units->r);
+  }
+  else if (name == "gpot") {
+    unit = &(units->E);
   }
   else {
     string message = "Warning: the selected array: " + name + " has not been recognized";
