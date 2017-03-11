@@ -67,7 +67,7 @@ for i in range(numSimMax):
     kdtree_time.append(end - start)
 
 
-fig, ax = plt.subplots(figsize=(6.5,5.5))
+fig, ax = plt.subplots(figsize=(7,5))
 #fig.subplots_adjust(hspace=0.02, wspace=0.0001)
 #fig.subplots_adjust(bottom=0.14, top=0.98, left=0.16, right=0.98)
 
