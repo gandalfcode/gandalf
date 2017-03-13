@@ -588,7 +588,7 @@ UnitInfo SphSnapshotBase::ExtractArray
     unit = &(units->r);
   }
   else if (name == "gpot") {
-    unit = &(units->E);
+    unit = &(units->u);
   }
   else {
     string message = "Warning: the selected array: " + name + " has not been recognized";
