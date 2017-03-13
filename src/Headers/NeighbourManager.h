@@ -9,6 +9,7 @@
 #define NEIGHBOURMANAGER_H_
 
 
+#include <iterator>
 #include <vector>
 using namespace std;
 #include "TreeCell.h"
@@ -16,10 +17,165 @@ using namespace std;
 #include "NeighbourManagerBase.h"
 #include "Particle.h"
 
+
+//=================================================================================================
+//  Class NeighbourIterator
+/// \brief   Template class for iterating of neighbour lists.
+/// \details Random Access Iterator. Iterates over members of a neighbour list.
+/// \author  R. A. Booth
+/// \date    20/12/2016
+//=================================================================================================
+template <class ParticleType>
+class NeighbourIterator :
+    public std::iterator<std::random_access_iterator_tag, ParticleType>
+{
+  typedef std::iterator<std::random_access_iterator_tag, ParticleType> iterator_type ;
+public:
+  typedef typename iterator_type::reference reference ;
+  typedef typename iterator_type::pointer   pointer ;
+
+  NeighbourIterator(int* p_idx, ParticleType* p_part) :
+    _p_idx(p_idx), _p_part(p_part) { };
+
+  // Dereference
+  reference operator*() const {
+    return _p_part[*_p_idx];
+  }
+  reference operator[](std::size_t n) const {
+    return _p_part[_p_idx[n]];
+  }
+  pointer operator->() const {
+    return &(_p_part[*_p_idx]);
+  }
+
+  // Increment / Decrement
+  NeighbourIterator<ParticleType>& operator++(int) {
+    ++_p_idx;
+    return *this;
+  }
+  NeighbourIterator<ParticleType>& operator--(int) {
+    --_p_idx;
+    return *this;
+  }
+  NeighbourIterator<ParticleType> operator++() {
+    return NeighbourIterator<ParticleType>(_p_idx++, _p_part);
+  }
+  NeighbourIterator<ParticleType> operator--() {
+    return NeighbourIterator<ParticleType>(_p_idx--, _p_part);
+  }
+
+  // Add / subtract
+  NeighbourIterator<ParticleType>& operator+=(std::size_t n) {
+    _p_idx += n;
+    return *this;
+  }
+  NeighbourIterator<ParticleType>& operator-=(std::size_t n) {
+    _p_idx -= n;
+    return *this;
+  }
+
+  // Comparison
+  bool operator==(const NeighbourIterator<ParticleType>& other) const {
+    assert(_p_part == other._p_part);
+    return _p_idx == other._p_idx;
+  }
+  bool operator!=(const NeighbourIterator<ParticleType>& other) const {
+    return !(*this == other);
+  }
+  bool operator<(const NeighbourIterator<ParticleType>& other) const {
+    assert(_p_part == other._p_part);
+    return _p_idx < other._p_idx;
+  }
+  bool operator>(const NeighbourIterator<ParticleType>& other) const {
+    assert(_p_part == other._p_part);
+    return _p_idx < other._p_idx;
+  }
+  bool operator<=(const NeighbourIterator<ParticleType>& other) const {
+    return !(*this > other);
+  }
+  bool operator>=(const NeighbourIterator<ParticleType>& other) const {
+    return (*this < other);
+  }
+
+
+private:
+  int* _p_idx;
+  ParticleType* _p_part;
+};
+
+// Arithmetic operators should be free functions:
+template<class ParticleType>
+NeighbourIterator<ParticleType> operator+(NeighbourIterator<ParticleType>& p,
+                                          std::size_t n) {
+  return NeighbourIterator<ParticleType>(p) += n ;
+}
+template<class ParticleType>
+NeighbourIterator<ParticleType> operator+(std::size_t n,
+                                          NeighbourIterator<ParticleType>& p) {
+  return NeighbourIterator<ParticleType>(p) += n ;
+}
+template<class ParticleType>
+NeighbourIterator<ParticleType> operator-(NeighbourIterator<ParticleType>& p,
+                                          std::size_t n) {
+  return NeighbourIterator<ParticleType>(p) -= n ;
+}
+template<class ParticleType>
+NeighbourIterator<ParticleType> operator-(std::size_t n,
+                                          NeighbourIterator<ParticleType>& p) {
+  return NeighbourIterator<ParticleType>(p) -= n ;
+}
+
+
+//=================================================================================================
+//  Class NeighbourList
+/// \brief   Template container class which holds a list of neighbour lists.
+/// \details Allows the neighbour lists to be fully abstracted.
+/// \author  R. A. Booth
+/// \date    20/12/2016
+//=================================================================================================
+template<class ParticleType>
+class NeighbourList {
+public:
+  NeighbourList(std::vector<int>& idx,
+      std::vector<ParticleType>& neib) :
+        _idx(idx), _neibpart(neib) { };
+
+  NeighbourIterator<ParticleType> begin() {
+    return NeighbourIterator<ParticleType>(&_idx.front(), &_neibpart.front());
+  }
+  NeighbourIterator<ParticleType> end() {
+    return NeighbourIterator<ParticleType>(&_idx.back(), &_neibpart.front());
+  }
+
+  std::size_t size() const {
+    return _idx.size();
+  }
+  const ParticleType& operator[](std::size_t i) const {
+    return _neibpart[_idx[i]];
+  }
+  ParticleType& operator[](std::size_t i) {
+    return _neibpart[_idx[i]];
+  }
+
+private:
+  std::vector<int>& _idx;
+  std::vector<ParticleType>& _neibpart;
+};
+
 struct ListLength {
   int Nhydro;
   int Ndirect;
   int Ngrav;
+};
+
+
+template <class ParticleType>
+struct GravityNeighbourLists {
+  typedef ParticleType DirectType ;
+
+  NeighbourList<ParticleType> neiblist;
+  NeighbourList<ParticleType> smooth_gravlist;
+  NeighbourList<DirectType>   directlist;
 };
 
 //=================================================================================================
@@ -37,8 +193,8 @@ private:
   int _NCellDirectNeib;
   vector<int> neiblist;
   vector<int> directlist;
-  vector<int> neib_idx ;
-  vector<ParticleType > neibdata;
+  vector<int> neib_idx;
+  vector<ParticleType> neibdata;
 
   vector<int> culled_neiblist;
   vector<int> smoothgravlist;
@@ -47,11 +203,11 @@ private:
   vector<FLOAT> drmag;
 
   const DomainBox<ndim>* _domain;
-  const ParticleTypeRegister* _types ;
-  double _kernrange ;
+  const ParticleTypeRegister* _types;
+  double _kernrange;
 
-  typedef struct {}        _true_type ;
-  typedef struct {char c;} _false_type ;
+  typedef struct {}        _true_type;
+  typedef struct {char c;} _false_type;
 
 public:
   using NeighbourManagerDim<ndim>::tempneib;
@@ -64,7 +220,7 @@ public:
     _domain(&domain),
     _types(&(hydro->types)),
     _kernrange(hydro->kernp->kernrange)
-  { } ;
+  { };
 
   NeighbourManager(const ParticleTypeRegister& types, double kernrange,
       const DomainBox<ndim>& domain)
@@ -72,10 +228,10 @@ public:
     _domain(&domain),
     _types(&types),
     _kernrange(kernrange)
-  { } ;
+  { };
 
   void clear() {
-    NeighbourManagerDim<ndim>::clear() ;
+    NeighbourManagerDim<ndim>::clear();
     neiblist.clear();
     neibdata.clear();
     neib_idx.clear();
@@ -89,7 +245,7 @@ public:
   //===============================================================================================
   template<class InParticleType>
   void EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
-    _EndSearch(cell, partdata, false) ;
+    _EndSearch(cell, partdata, false);
   }
   //===============================================================================================
   // EndSearchGravity
@@ -98,7 +254,7 @@ public:
   //===============================================================================================
   template<class InParticleType>
   void EndSearchGravity(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
-    _EndSearch(cell, partdata, true) ;
+    _EndSearch(cell, partdata, true);
   }
 
   //===============================================================================================
@@ -107,6 +263,16 @@ public:
   //===============================================================================================
   int GetNumAllNeib() {
     return neib_idx.size();
+  }
+  //===============================================================================================
+  //  operator[]
+  /// \brief Provide access to individual neighbours found in the tree walk.
+  //===============================================================================================
+  ParticleType& operator[](std::size_t i) {
+    return neibdata[i] ;
+  }
+  const ParticleType& operator[](std::size_t i) const {
+    return neibdata[i] ;
   }
   //===============================================================================================
   //  GetNeibI
@@ -126,68 +292,50 @@ public:
   ///           required particles). Also, if do_pair_once is included then the neighbour is only
   ///           included if this interaction will not have been already calculated in the update
   ///           for the neighbour itself.
-  /// \returns  Returns the number of neighbours found. Additionally, neibdata_p is set to the
-  ///           list of particles stored by the data manager, and neiblist_p is set to the indices
-  ///           within neibdata_p of the required neighbours.
+  /// \returns  NeighbourList object, the list of neighbours found.
   //===============================================================================================
   template<class InParticleType>
-  int GetParticleNeib
+  NeighbourList<ParticleType> GetParticleNeib
   (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
    const Typemask& hydromask,                          ///< [in] Boolean flags listing types we need
-   int** neiblist_p,                                   ///< [out] List of particles needed.
-   ParticleType** neibdata_p,                          ///< [out] List of particle data
    const bool do_pair_once)                            ///< [in]
   {
     if (do_pair_once)
-      TrimNeighbourLists<InParticleType,_true_type>(p, hydromask, false) ;
+      TrimNeighbourLists<InParticleType,_true_type>(p, hydromask, false);
     else
-      TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, false) ;
+      TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, false);
 
-
-    *neiblist_p=&culled_neiblist[0];
-    *neibdata_p=&neibdata[0];
-    return culled_neiblist.size();
-
+    return NeighbourList<ParticleType>(culled_neiblist, neibdata) ;
   }
 
   //===============================================================================================
   //  GetParticleNeibGravity
   /// \brief    Get the list of particles that interact with the Particle, p.
   /// \details  As with GetParticleNeib, this function returns the list of neighbours that interact
-  ///           hydrodynamically with the Particle, p. Additionally this function also generates
-  ///           the list of particles needed for gravitational interactions, including the list of
-  ///           smoothed and unsmoothed contributions.
-  /// \returns  Returns the number of neighbours found. Additionally, neibdata_p is set to the
-  ///           list of particles stored by the data manager, and neiblist_p, directlist_p and
-  ///           smoothgravlist_p are set to the indices within neibdata_p of the required
-  ///           neighbours.
+  ///           hydrodynamically with the Particle, p (neiblist). Additionally this function also
+  ///           generatesthe list of particles needed for gravitational interactions, including the
+  ///            list of smoothed (smooth_gravlist) and unsmoothed (directlist) contributions.
+  /// \returns  GravityNeighbourLists object. This struct contains the three wraps the three lists
+  ///           of particles found.
   //===============================================================================================
   template<class InParticleType>
-  ListLength GetParticleNeibGravity
+  GravityNeighbourLists<ParticleType> GetParticleNeibGravity
   (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
-   const Typemask& hydromask,                          ///< [in] Type flags for hydro interactions
-   int** neiblist_p,                                   ///< [out] List of hydro neigbour indices
-   int** directlist_p,                                 ///< [out] List of unsmoothed gravity neibs
-   int** smoothgravlist_p,                             ///< [out] List of smoothed gravity neibs
-   ParticleType** neibdata_p) {                        ///< [out] List of particle data.
+   const Typemask& hydromask)                          ///< [in] Type flags for hydro interactions
+   {
+    TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true);
 
-    TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true) ;
+    assert((culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
 
-    ListLength listlength;
-    listlength.Nhydro=culled_neiblist.size();
-    listlength.Ndirect=directlist.size();
-    listlength.Ngrav=smoothgravlist.size();
 
-    assert((listlength.Nhydro + listlength.Ndirect + listlength.Ngrav) == GetNumAllNeib()) ;
+    typedef typename GravityNeighbourLists<ParticleType>::DirectType DirectType ;
+    GravityNeighbourLists<ParticleType> neiblists =
+      { NeighbourList<ParticleType>(culled_neiblist, neibdata),
+        NeighbourList<ParticleType>(smoothgravlist,  neibdata),
+        NeighbourList<DirectType>  (directlist,      neibdata) } ;
 
-    *neiblist_p = &culled_neiblist[0];
-    *directlist_p = &directlist[0];
-    *smoothgravlist_p = &smoothgravlist[0];
-    *neibdata_p = &neibdata[0];
-
-    return listlength;
-
-  }
+    return neiblists ;
+   }
 
 private:
 
@@ -198,114 +346,114 @@ private:
   ///          otherwise they are discarded. Periodic corrections are included.
   //===============================================================================================
   template<class InParticleType>
-   void _EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata, bool keep_direct=true) {
+  void _EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata, bool keep_direct=true) {
 
-     assert(partdata != NULL);
-
-
-     FLOAT dr[ndim];                      // Relative position vector
-     FLOAT drsqd;                         // Distance squared
-     FLOAT rc[ndim];                      // Position of cell
-     const FLOAT hrangemaxsqd = pow(cell.rmax + _kernrange*cell.hmax,2);
-     const FLOAT rmax = cell.rmax;
-     for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+    assert(partdata != NULL);
 
 
-     const GhostNeighbourFinder<ndim> GhostFinder(*_domain, cell) ;
-     int MaxGhosts = GhostFinder.MaxNumGhosts() ;
-
-     Typemask gravmask = _types->gravmask ;
-
-     assert(!keep_direct || MaxGhosts==1 ||
-         (gravcell.size() == 0 && tempdirectneib.size() == 0)) ;
-
-     assert(neibdata.size()==0);
-     assert(directlist.size()==0);
+    FLOAT dr[ndim];                      // Relative position vector
+    FLOAT drsqd;                         // Distance squared
+    FLOAT rc[ndim];                      // Position of cell
+    const FLOAT hrangemaxsqd = pow(cell.rmax + _kernrange*cell.hmax,2);
+    const FLOAT rmax = cell.rmax;
+    for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
 
-     // Now load the particles
+    const GhostNeighbourFinder<ndim> GhostFinder(*_domain, cell);
+    int MaxGhosts = GhostFinder.MaxNumGhosts();
 
-     // Start from direct neighbours
-     if (keep_direct) {
-       for (int ii=0; ii< tempdirectneib.size(); ii++) {
-         const int i = tempdirectneib[ii] ;
-         const InParticleType& part = partdata[i];
-         // Forget immediately: direct particles and particles that do not interact gravitationally
-         if (part.flags.is_dead()) continue;
-         if (!gravmask[part.ptype]) continue;
+    Typemask gravmask = _types->gravmask;
 
-         // Now create the particle
-         GhostFinder.ConstructGhostsScatterGather(part, neibdata);
-         directlist.push_back(neibdata.size()-1);
-         neib_idx.push_back(i) ;
-       }
-     }
+    assert(!keep_direct || MaxGhosts==1 ||
+        (gravcell.size() == 0 && tempdirectneib.size() == 0));
 
-     assert(directlist.size() == neibdata.size() &&
-         neib_idx.size()   == neibdata.size()) ;
-
-     // Now look at the hydro candidate neighbours
-     // First the ones that need ghosts to be created on the fly
-     int Nneib = directlist.size();
-     for (int ii=0; ii < tempperneib.size(); ii++) {
-       const int i = tempperneib[ii] ;
-       if (partdata[i].flags.is_dead()) continue;
-
-       GhostFinder.ConstructGhostsScatterGather(partdata[i], neibdata);
-
-       while (Nneib < neibdata.size()) {
-         int Nmax = neibdata.size() ;
-         for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
-         drsqd = DotProduct(dr, dr, ndim);
-         FLOAT h2 = rmax + _kernrange*neibdata[Nneib].h;
-         if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
-           neiblist.push_back(Nneib);
-           neib_idx.push_back(i) ;
-           Nneib++ ;
-         }
-         else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
-           directlist.push_back(Nneib);
-           neib_idx.push_back(i) ;
-           Nneib++ ;
-         }
-         else if (Nmax > Nneib) {
-           Nmax-- ;
-           if (Nmax > Nneib)
-             neibdata[Nneib] = neibdata[Nmax];
-           neibdata.resize(neibdata.size()-1);
-         }
-       }// Loop over Ghosts
-     }
-
-     // Store the number of periodic particles in the neiblist
-     _NPeriodicGhosts = neiblist.size() ;
-
-     // Find those particles that do not need ghosts on the fly
-     for (int ii=0; ii<tempneib.size(); ii++) {
-       const int i = tempneib[ii];
-       if (partdata[i].flags.is_dead()) continue;
+    assert(neibdata.size()==0);
+    assert(directlist.size()==0);
 
 
-       for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-       drsqd = DotProduct(dr,dr,ndim);
-       FLOAT h = rmax + _kernrange*partdata[i].h;
-       if (drsqd < hrangemaxsqd || drsqd < h*h) {
-         neibdata.push_back(partdata[i]);
-         neiblist.push_back(Nneib);
-         neib_idx.push_back(i) ;
-         Nneib++;
-       } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
-         // Hydro candidates that fail the test get demoted to direct neighbours
-         neibdata.push_back(partdata[i]);
-         directlist.push_back(Nneib);
-         neib_idx.push_back(i) ;
-         Nneib++;
-       }
-     }
+    // Now load the particles
 
-     _NCellDirectNeib = directlist.size();
-     assert(neibdata.size() == (neiblist.size() + directlist.size()));
-   }
+    // Start from direct neighbours
+    if (keep_direct) {
+      for (int ii=0; ii< tempdirectneib.size(); ii++) {
+        const int i = tempdirectneib[ii];
+        const InParticleType& part = partdata[i];
+        // Forget immediately: direct particles and particles that do not interact gravitationally
+        if (part.flags.is_dead()) continue;
+        if (!gravmask[part.ptype]) continue;
+
+        // Now create the particle
+        GhostFinder.ConstructGhostsScatterGather(part, neibdata);
+        directlist.push_back(neibdata.size()-1);
+        neib_idx.push_back(i);
+      }
+    }
+
+    assert(directlist.size() == neibdata.size() &&
+          neib_idx.size()   == neibdata.size());
+
+    // Now look at the hydro candidate neighbours
+    // First the ones that need ghosts to be created on the fly
+    int Nneib = directlist.size();
+    for (int ii=0; ii < tempperneib.size(); ii++) {
+      const int i = tempperneib[ii];
+      if (partdata[i].flags.is_dead()) continue;
+
+      GhostFinder.ConstructGhostsScatterGather(partdata[i], neibdata);
+
+      while (Nneib < neibdata.size()) {
+        int Nmax = neibdata.size();
+        for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
+        drsqd = DotProduct(dr, dr, ndim);
+        FLOAT h2 = rmax + _kernrange*neibdata[Nneib].h;
+        if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
+          neiblist.push_back(Nneib);
+          neib_idx.push_back(i);
+          Nneib++;
+        }
+        else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
+          directlist.push_back(Nneib);
+          neib_idx.push_back(i);
+          Nneib++;
+        }
+        else if (Nmax > Nneib) {
+          Nmax--;
+          if (Nmax > Nneib)
+            neibdata[Nneib] = neibdata[Nmax];
+          neibdata.resize(neibdata.size()-1);
+        }
+      }// Loop over Ghosts
+    }
+
+    // Store the number of periodic particles in the neiblist
+    _NPeriodicGhosts = neiblist.size();
+
+    // Find those particles that do not need ghosts on the fly
+    for (int ii=0; ii<tempneib.size(); ii++) {
+      const int i = tempneib[ii];
+      if (partdata[i].flags.is_dead()) continue;
+
+
+      for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      FLOAT h = rmax + _kernrange*partdata[i].h;
+      if (drsqd < hrangemaxsqd || drsqd < h*h) {
+        neibdata.push_back(partdata[i]);
+        neiblist.push_back(Nneib);
+        neib_idx.push_back(i);
+        Nneib++;
+      } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
+        // Hydro candidates that fail the test get demoted to direct neighbours
+        neibdata.push_back(partdata[i]);
+        directlist.push_back(Nneib);
+        neib_idx.push_back(i);
+        Nneib++;
+      }
+    }
+
+    _NCellDirectNeib = directlist.size();
+    assert(neibdata.size() == (neiblist.size() + directlist.size()));
+  }
 
 
   //===============================================================================================
@@ -324,7 +472,7 @@ private:
 
     const GhostNeighbourFinder<ndim> GhostFinder(*_domain);
 
-    Typemask gravmask = _types->gravmask ;
+    Typemask gravmask = _types->gravmask;
 
     culled_neiblist.clear();
     smoothgravlist.clear();
@@ -337,7 +485,7 @@ private:
       int ii = neiblist[jj];
 
       // If do_pair_once is true then only get the neighbour for the first of the two times the
-      if (not _first_appearance(p, neibdata[ii], do_pair_once())) continue ;
+      if (not _first_appearance(p, neibdata[ii], do_pair_once())) continue;
 
       // Compute relative position and distance quantities for pair
       for (int k=0; k<ndim; k++) draux[k] = neibdata[ii].r[k] - rp[k];
@@ -346,7 +494,7 @@ private:
 
       const FLOAT drsqd = DotProduct(draux,draux,ndim) + small_number;
 
-      //if (drsqd <= small_number) continue ;
+      //if (drsqd <= small_number) continue;
 
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
@@ -375,16 +523,89 @@ private:
     return
         (neibpart.flags.is_mirror()) ||
         (p.level > neibpart.level) ||
-        (p.level == neibpart.level &&  p.iorig < neibpart.iorig) ;
+        (p.level == neibpart.level &&  p.iorig < neibpart.iorig);
   }
 
   template<class InParticleType>
   bool _first_appearance(const InParticleType& p, const ParticleType& neibpart, _false_type) {
-    return true ;
+    return true;
   }
 
+public:
+
+  //===============================================================================================
+  //  VerifyNeighbourList
+  /// \brief    Verify the list of neighbours is complete.
+  /// \details  Check that the complete list of neighbours contains all the neighbours needed for
+  ///           the particle (i). This check can be for either the "gather" or "all"
+  ///           (scatter-gather) of the neighbours.
+  //===============================================================================================
+  template <class InParticleType>
+  void VerifyNeighbourList(int i, int Ntot, const InParticleType& partdata,
+                           const string& searchmode) {
+    std::vector<int> truengb ;
+    FLOAT drsqd ;
+    FLOAT dr[ndim];
+
+    const GhostNeighbourFinder<ndim> GhostFinder(*_domain);
+
+    if (searchmode == "gather") {
+       for (int j=0; j<Ntot; j++) {
+         for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
+         GhostFinder.NearestPeriodicVector(dr);
+         drsqd = DotProduct(dr,dr,ndim);
+         if (drsqd <= partdata[i].hrangesqd) truengb.push_back(j);
+       }
+     }
+     else if (searchmode == "all") {
+       for (int j=0; j<Ntot; j++) {
+         for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
+         GhostFinder.NearestPeriodicVector(dr);
+         drsqd = DotProduct(dr,dr,ndim);
+         if (drsqd < partdata[i].hrangesqd ||
+             drsqd < partdata[j].hrangesqd) truengb.push_back(j);
+       }
+     }
+
+    // Now compare each given neighbour with true neighbour list for validation
+    int invalid_flag = 0, j ;
+    for (j=0; j<truengb.size(); j++) {
+      int count = 0;
+      for (int k=0; k<neib_idx.size(); k++)
+        if (neib_idx[k] == truengb[j])
+          count++;
+
+      // If the true neighbour is not in the list, or included multiple times,
+      // then output to screen and terminate program
+      if (count != 1) {
+        for (int k=0; k<ndim; k++) dr[k] = partdata[truengb[j]].r[k] - partdata[i].r[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        cout << "Could not find neighbour " << j << "   " << truengb[j] << "     " << i
+            << "      " << sqrt(drsqd)/sqrt(partdata[i].hrangesqd) << "     "
+            << sqrt(drsqd)/sqrt(partdata[j].hrangesqd) << "    "
+            << partdata[truengb[j]].r[0] << "   type : "
+            << partdata[truengb[j]].ptype << endl;
+        invalid_flag++;
+      }
+
+    }
+    // If the true neighbour is not in the list, or included multiple times,
+    // then output to screen and terminate program
+    if (invalid_flag) {
+      cout << "Problem with neighbour lists : " << i << "  " << j << "   "
+          <<  invalid_flag << "    " << partdata[i].r[0] << "   " << partdata[i].h << endl
+          << "Nneib : " << neib_idx.size() << "   Ntrueneib : " << truengb.size()
+          << "    searchmode : " << searchmode << endl;
+      InsertionSort(neib_idx.size(), &neib_idx[0]);
+      PrintArray("neiblist     : ",neib_idx.size(), &neib_idx[0]);
+      PrintArray("trueneiblist : ",truengb.size() , &truengb[0]);
+      string message = "Problem with neighbour lists in tree search";
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
 
 };
+
 
 
 #endif /* NEIGHBOURMANAGER_H_ */

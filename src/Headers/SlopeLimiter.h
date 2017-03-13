@@ -50,9 +50,8 @@ class SlopeLimiter
   SlopeLimiter() {};
   virtual ~SlopeLimiter() {};
 
-  template <class Part1Type, class Part2Type>
-  void CellLimiter(Part1Type& parti,
-                           const Part2Type* neibpart, const int* neiblist, int Nneib) {};
+  template <class Part1Type, class NeibList>
+  void CellLimiter(Part1Type& parti, NeibList& neibpart) {} ;
 
   template <class Part1Type, class Part2Type>
   void ComputeLimitedSlopes(Part1Type& parti, Part2Type& partj,
@@ -136,17 +135,16 @@ class TVDScalarLimiter : public SlopeLimiter<ndim>
   {};
 
   //===============================================================================================
-  template <class Part1Type, class Part2Type>
-  void CellLimiter(Part1Type& parti,
-                   const Part2Type* neibpart, const int* neiblist, int Nneib) {
+  template <class Part1Type, class NeibList>
+  void CellLimiter(Part1Type& parti, NeibList& neibpart) {
     double dr[ndim] ;
     double alpha[ndim+2] ;
-    int j, jj, k, var ;
+    int j, k, var ;
 
     for (var=0; var<ndim+2; var++) alpha[var] = 1.0 ;
 
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
+    int Nneib = neibpart.size() ;
+    for (j=0; j<Nneib; j++) {
 
       for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
 
@@ -195,12 +193,11 @@ class ScalarLimiter: public SlopeLimiter<ndim>
   {};
 
   //===============================================================================================
-  template <class Part1Type, class Part2Type>
-  void CellLimiter(Part1Type& parti,
-                   const Part2Type* neibpart, const int* neiblist, int Nneib) {
+  template <class Part1Type, class NeibList>
+  void CellLimiter(Part1Type& parti, NeibList& neibpart) {
     double dr[ndim], drmax ;
     double Wmax[ndim+2], Wmin[ndim+2] ;
-    int j, jj, k, var ;
+    int j, k, var ;
 
     // Get the max / min values over the neighbours
     for (var=0; var<ndim+2; var++) {
@@ -210,8 +207,8 @@ class ScalarLimiter: public SlopeLimiter<ndim>
     // Compute the maximum particle volume and max/min values in
     // that volume.
     drmax = 0 ;
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
+    int Nneib = neibpart.size() ;
+    for (j=0; j<Nneib; j++) {
 
       for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
 
@@ -266,13 +263,12 @@ class Springel2009Limiter: public SlopeLimiter<ndim>
   {};
 
   //===============================================================================================
-  template <class Part1Type, class Part2Type>
-  void CellLimiter(Part1Type& parti,
-                   const Part2Type* neibpart, const int* neiblist, int Nneib) {
+  template <class Part1Type, class NeibList>
+  void CellLimiter(Part1Type& parti, NeibList& neibpart) {
     double dr[ndim] ;
     double dWmax[ndim+2], dWmin[ndim+2] ;
     double alpha[ndim+2] ;
-    int j, jj, k, var ;
+    int j, k, var ;
 
     // Get the max / min values over the neighbours
     for (var=0; var<ndim+2; var++) {
@@ -282,8 +278,8 @@ class Springel2009Limiter: public SlopeLimiter<ndim>
 
     // Compute the maximum particle volume and max/min values in
     // that volume.
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
+    int Nneib = neibpart.size() ;
+    for (j=0; j<Nneib; j++) {
       for (var=0; var<ndim+2; var++) {
         dWmax[var] = max(dWmax[var], neibpart[j].Wprim[var]) ;
         dWmin[var] = min(dWmin[var], neibpart[j].Wprim[var]) ;
@@ -295,8 +291,7 @@ class Springel2009Limiter: public SlopeLimiter<ndim>
     }
 
 
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
+    for (j=0; j<Nneib; j++) {
 
       for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
 

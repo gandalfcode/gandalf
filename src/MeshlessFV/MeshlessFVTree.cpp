@@ -412,16 +412,17 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
         // Make local copy of hmask for active particle
         Typemask hmask = mfv->types[activepart[j].ptype].hmask;
 
-        const bool do_pair_once=false;
         activepart[j].levelneib = 0;
 
-        int* mfvlist;
-        GradientParticle* neibpart;
+        const bool do_pair_once=false;
+        NeighbourList<GradientParticle> neiblist =
+            neibmanager.GetParticleNeib(activepart[j],hmask,do_pair_once);
 
-        const int Nneib=neibmanager.GetParticleNeib(activepart[j],hmask,&mfvlist,&neibpart,do_pair_once);
-
+#if defined(VERIFY_ALL)
+        neibmanager.VerifyNeighbourList(i, mfv->Nhydro, mfvdata, "all");
+#endif
         // Compute all neighbour contributions to gradients
-        mfv->ComputeGradients(i, Nneib, mfvlist, activepart[j], neibpart);
+        mfv->ComputeGradients(activepart[j], neiblist);
 
       }
       //-------------------------------------------------------------------------------------------
@@ -585,15 +586,16 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
         // Make a local copy of the hydro neighbour mask
         Typemask hydromask = mfv->types[activepart[j].ptype].hydromask;
 
-        int* mfvlist;
-        FluxParticle* neibpart;
-
         bool do_pair_once=true;
+        NeighbourList<FluxParticle> neiblist =
+            neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
 
-        const int Nneib = neibmanager.GetParticleNeib(activepart[j],hydromask,&mfvlist,&neibpart,do_pair_once);
+#if defined(VERIFY_ALL)
+        neibmanager.VerifyNeighbourList(i, Nhydro, mfvdata, "all");
+#endif
 
         // Compute all neighbour contributions to hydro fluxes
-        mfv->ComputeGodunovFlux(i, Nneib, timestep, mfvlist, activepart[j], neibpart);
+        mfv->ComputeGodunovFlux(activepart[j], neiblist, timestep);
 
       }
       //-------------------------------------------------------------------------------------------
@@ -773,21 +775,17 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
           // Only calculate gravity for active particle types that have self-gravity activated
           if (mfv->types[activepart[j].ptype].self_gravity){
 
-		    int* neiblist;
-		    int* directlist;
-		    int* gravlist;
-		    GravParticle* neibpart;
-		    const bool do_grav=true;
-		    const ListLength listlength = neibmanager.GetParticleNeibGravity(activepart[j],hydromask,&neiblist,&directlist,&gravlist,&neibpart);
+		    GravityNeighbourLists<GravParticle> neiblists =
+		        neibmanager.GetParticleNeibGravity(activepart[j],hydromask);
 
 
             // Compute forces with hydro neighbours
-            mfv->ComputeSmoothedGravForces(i, listlength.Nhydro, neiblist, activepart[j], neibpart);
+            mfv->ComputeSmoothedGravForces(activepart[j], neiblists.neiblist);
             // Compute forces with non-hydro neighbours
-            mfv->ComputeSmoothedGravForces(i, listlength.Ngrav, gravlist, activepart[j], neibpart);
+            mfv->ComputeSmoothedGravForces(activepart[j], neiblists.smooth_gravlist);
 
             // Compute direct gravity forces between distant particles
-            mfv->ComputeDirectGravForces(i, listlength.Ndirect, directlist, activepart[j], neibpart);
+            mfv->ComputeDirectGravForces(activepart[j], neiblists.directlist);
 
             // Compute gravitational force due to distant cells
             if (multipole == "monopole") {
@@ -804,10 +802,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
               int Ntotneib = neibmanager.GetNumAllNeib() ;
               for (int jj=0; jj<Ntotneib; jj++) {
 
-                if (!gravmask[neibpart[jj].ptype]) continue ;
+                if (!gravmask[neibmanager[jj].ptype]) continue ;
 
-                for (int k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
-                ewald->CalculatePeriodicCorrection(neibpart[jj].m, draux, aperiodic, potperiodic);
+                for (int k=0; k<ndim; k++) draux[k] = neibmanager[jj].r[k] - activepart[j].r[k];
+                ewald->CalculatePeriodicCorrection(neibmanager[jj].m, draux, aperiodic, potperiodic);
                 for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];
                 activepart[j].gpot += potperiodic;
               }

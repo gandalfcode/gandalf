@@ -36,6 +36,7 @@
 #include "Particle.h"
 #include "NbodyParticle.h"
 #include "Nbody.h"
+#include "NeighbourManager.h"
 #include "Parameters.h"
 #include "Precision.h"
 #include "RiemannSolver.h"
@@ -160,21 +161,23 @@ template <int ndim>
 class GradhSphBase: public Sph<ndim>
 {
 public:
+  typedef GradhSphParticle<ndim> ParticleType ;
+  typedef typename ParticleType::HydroForcesParticle HydroNeib ;
+  typedef typename GravityNeighbourLists<HydroNeib>::DirectType DirectNeib ;
 
   GradhSphBase(int hydro_forces_aux, int self_gravity_aux,
   FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
   aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
-  string gas_eos_aux, string KernelName, SimUnits &units, Parameters *params): Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
-            h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
-            gas_eos_aux, KernelName, sizeof(GradhSphParticle<ndim>), units, params) {};
+  string gas_eos_aux, string KernelName, SimUnits &units, Parameters *params):
+    Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+              h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
+              gas_eos_aux, KernelName, sizeof(GradhSphParticle<ndim>), units, params) {};
 
 
-  virtual void ComputeSphGravForces(const int, const int, int *, GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle *)=0;
-  virtual void ComputeSphHydroGravForces(const int, const int, int *,
-                                 GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle *)=0;
-  virtual void ComputeSphHydroForces(const int, const int, const int *, GradhSphParticle<ndim>&, typename GradhSphParticle<ndim>::HydroForcesParticle*)=0;
-   void ComputeDirectGravForces(const int, const int, int *,
-                               GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle* );
+  virtual void ComputeSphGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&) = 0;
+  virtual void ComputeSphHydroGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&) = 0;
+  virtual void ComputeSphHydroForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&) = 0;
+  void ComputeDirectGravForces(GradhSphParticle<ndim>&, NeighbourList<DirectNeib>&) ;
 
 
 };
@@ -214,6 +217,9 @@ public:
   using Sph<ndim>::Nhydromax;
   using Sph<ndim>::sphdata_unsafe;
 
+  typedef typename GradhSphBase<ndim>::HydroNeib HydroNeib;
+  typedef typename GradhSphBase<ndim>::DirectNeib  DirectNeib;
+
  //public:
 
   GradhSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
@@ -230,10 +236,9 @@ public:
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
-  void ComputeSphGravForces(const int, const int, int *, GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle *);
-  void ComputeSphHydroGravForces(const int, const int, int *,
-                                 GradhSphParticle<ndim> &, typename GradhSphParticle<ndim>::HydroForcesParticle *);
-  void ComputeSphHydroForces(const int, const int, const int *, GradhSphParticle<ndim>&, typename GradhSphParticle<ndim>::HydroForcesParticle*);
+  virtual void ComputeSphGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
+  virtual void ComputeSphHydroGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
+  virtual void ComputeSphHydroForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
   void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 #if defined MPI_PARALLEL
   virtual void FinishReturnExport ();
@@ -308,71 +313,6 @@ class SM2012Sph: public Sph<ndim>
 
 };
 
-
-
-//=================================================================================================
-//  Class NullSph
-/// \brief   Class definition for empty SPH class (needed in NbodySimulation).
-/// \details Class definition for empty SPH class (needed in NbodySimulation).
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
-//=================================================================================================
-template <int ndim>
-class NullSph: public Sph<ndim>
-{
-  using Sph<ndim>::allocated;
-  using Sph<ndim>::Nhydro;
-  using Sph<ndim>::Ntot;
-  using Sph<ndim>::eos;
-  using Sph<ndim>::h_fac;
-  using Sph<ndim>::invndim;
-  using Sph<ndim>::h_converge;
-  using Sph<ndim>::hydro_forces;
-  using Sph<ndim>::avisc;
-  using Sph<ndim>::beta_visc;
-  using Sph<ndim>::alpha_visc;
-  using Sph<ndim>::acond;
-  using Sph<ndim>::create_sinks;
-  using Sph<ndim>::hmin_sink;
-  using Sph<ndim>::Nhydromax;
-  using Sph<ndim>::kernp;
-  using Sph<ndim>::sphdata_unsafe;
-
- public:
-
-  NullSph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux,
-          FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
-          aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
-          string gas_eos_aux, string KernelName, int size_sph_part, SimUnits &units, Parameters *):
-    Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux,
-              beta_visc_aux, h_fac_aux, h_converge_aux, avisc_aux, acond_aux,
-              tdavisc_aux, gas_eos_aux, KernelName, size_sph_part, units),
-   sphdata(NULL) {};
-
-  virtual ~NullSph() ;
-
-  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
-  virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
-
-  virtual void AllocateMemory(int) {};
-  virtual void DeallocateMemory(void) {};
-  virtual void DeleteDeadParticles(void) {};
-
-  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               SphParticle<ndim> &, Nbody<ndim> *) {return -1;}
-  void ComputeThermalProperties(SphParticle<ndim> &) {};
-  void ComputeSphHydroGravForces(const int, const int, int *,
-                                 SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeSphGravForces(const int, const int, int *,
-                            SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeDirectGravForces(const int, const int, int *,
-                               SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &) {};
-
-  //kernelclass<ndim> kern;               ///< SPH kernel
-  SphParticle<ndim> *sphdata;           ///< Pointer to particle data
-
-};
 #endif
 
 

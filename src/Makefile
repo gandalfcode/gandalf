@@ -74,12 +74,12 @@ endif
 
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
-ifeq ($(findstring g++,$(CPP)),g++)
-OPT += $(GCCOPT)
-else ifeq ($(CPP),icpc)
+ifeq ($(CPP),icpc)
 OPT += $(ICCOPT)
-else ifeq ($(CPP),clang)
+else ifeq ($(findstring clang,$(CPP)),clang)
 OPT += $(CLANGOPT)
+else ifeq ($(findstring g++,$(CPP)),g++)
+OPT += $(GCCOPT)
 else ifeq ($(CPP),mpic++)
 MPI = 1
 OPT += $(GCCOPT)

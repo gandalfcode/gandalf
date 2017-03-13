@@ -398,14 +398,9 @@ void GradhSph<ndim, kernelclass>::ComputeThermalProperties
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  const int *neiblist,                 ///< [in] id of gather neibs in neibpart
-  GradhSphParticle<ndim> &parti,             ///< [inout] Particle i data
-  typename GradhSphParticle<ndim>::HydroForcesParticle* neibpart)     ///< [inout] Neighbour particle data
+ (GradhSphParticle<ndim> &parti,                                   ///< [inout] Particle i data
+  NeighbourList<typename GradhSphBase<ndim>::HydroNeib>& neibpart) ///< [in] List of neighbours
 {
-  int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   FLOAT alpha_mean;                    // Mean articial viscosity alpha value
   FLOAT draux[ndim];                   // Relative position vector
@@ -424,8 +419,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
+  int Nneib = neibpart.size() ;
+  for (int j=0; j<Nneib; j++) {
     assert(!neibpart[j].flags.is_dead());
 
     const FLOAT invh_j   = 1/neibpart[j].h;
@@ -514,14 +509,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  GradhSphParticle<ndim> &parti,             ///< [inout] Particle i data
-  typename GradhSphParticle<ndim>::HydroForcesParticle *neibpart)     ///< [inout] Neighbour particle data
+(GradhSphParticle<ndim> &parti,                                   ///< [inout] Particle i data
+ NeighbourList<typename GradhSphBase<ndim>::HydroNeib>& neibpart) ///< [in] List of neighbours
 {
-  int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   FLOAT alpha_mean;                    // Mean articial viscosity alpha value
   FLOAT dr[ndim];                      // Relative position vector
@@ -541,9 +531,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
-
+  int Nneib = neibpart.size() ;
+  for (int j=0; j<Nneib; j++) {
     assert(!neibpart[j].flags.is_dead());
     assert(neibpart[j].h > (FLOAT) 0.0);
     assert(neibpart[j].rho > (FLOAT) 0.0);
@@ -642,14 +631,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeSphGravForces
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  GradhSphParticle<ndim> &parti,             ///< [inout] Particle i data
-  typename GradhSphParticle<ndim>::HydroForcesParticle* neibpart)     ///< [inout] Neighbour particle data
+(GradhSphParticle<ndim> &parti,                                   ///< [inout] Particle i data
+ NeighbourList<typename GradhSphBase<ndim>::HydroNeib>& neibpart) ///< [in] List of neighbours
 {
-  int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drmag;                         // Distance
@@ -663,8 +647,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
+  int Nneib = neibpart.size();
+  for (int j=0; j<Nneib; j++) {
     assert(!neibpart[j].flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
@@ -706,14 +690,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
 //=================================================================================================
 template <int ndim>
 void GradhSphBase<ndim>::ComputeDirectGravForces
- (const int i,                         ///< id of particle
-  const int Ndirect,                   ///< No. of nearby 'gather' neighbours
-  int *directlist,                     ///< id of gather neighbour in neibpart
-  GradhSphParticle<ndim> &parti,             ///< Particle i data
-  typename GradhSphParticle<ndim>::HydroForcesParticle* sphdata)          ///< Neighbour particle data
+ (GradhSphParticle<ndim>& parti,                                      ///< Particle i data
+  NeighbourList<typename GradhSphBase<ndim>::DirectNeib>& gravdata)  ///< Neighbour particle data
 {
-  int j;                               // Neighbour particle id
-  int jj;                              // Aux. neighbour loop counter
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
@@ -723,21 +702,21 @@ void GradhSphBase<ndim>::ComputeDirectGravForces
 
   // Loop over all neighbouring particles in list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Ndirect; jj++) {
-    j = directlist[jj];
-    assert(!sphdata[j].flags.is_dead());
+  int Ndirect = gravdata.size();
+  for (int j=0; j<Ndirect; j++) {
+    assert(!gravdata[j].flags.is_dead());
 
-    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - parti.r[k];
+    for (k=0; k<ndim; k++) dr[k] = gravdata[j].r[k] - parti.r[k];
     drsqd    = DotProduct(dr,dr,ndim) + small_number;
     invdrmag = (FLOAT) 1.0/sqrt(drsqd);
     invdr3   = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.atree[k] += sphdata[j].m*dr[k]*invdr3;
-    parti.gpot += sphdata[j].m*invdrmag;
+    for (k=0; k<ndim; k++) parti.atree[k] += gravdata[j].m*dr[k]*invdr3;
+    parti.gpot += gravdata[j].m*invdrmag;
 
     // Sanity-checkt to ensure particles are really un-softened direct-sum neighbours
-    assert(drsqd >= parti.hrangesqd && drsqd >= sphdata[j].hrangesqd);
+    assert(drsqd >= parti.hrangesqd && drsqd >= gravdata[j].hrangesqd);
 
   }
   //-----------------------------------------------------------------------------------------------

@@ -165,9 +165,8 @@ public:
    : kern(k), t_stop(ts), _use_energy_term(UseEnergyTerm)
   { } ;
 
-  void ComputeDragForces(const int, const int, const std::vector<int>&,
-		                     ParticleType<ndim>&, const std::vector<ParticleType<ndim> >&,
-		                     std::vector<FLOAT>&) ;
+  void ComputeDragForces(ParticleType<ndim>&, NeighbourList<ParticleType<ndim> >&,
+		                 FLOAT *) ;
 
 
 private:
@@ -574,23 +573,13 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
         if (types[activepart[j].ptype].drag_forces) {
 
-          Typemask dragmask ;
-          for (k=0; k<Ntypes; k++)  dragmask[k] = types[activepart[j].ptype].dragmask[k];
+          Typemask dragmask = types[activepart[j].ptype].dragmask;
 
           const bool do_pair_once=false;
-          int* sphlist_temp;
-          ParticleType<ndim>* neibpart_temp;
+          NeighbourList<ParticleType<ndim> > neiblist =
+              neibmanager.GetParticleNeib(activepart[j],dragmask,do_pair_once);
 
-          const int Nneib=neibmanager.GetParticleNeib(activepart[j],dragmask,&sphlist_temp,&neibpart_temp,do_pair_once);
-
-          vector<int> sphlist(sphlist_temp,sphlist_temp+Nneib);
-          vector<ParticleType<ndim> > neibpart (neibpart_temp,neibpart_temp+Nneib_cell);
-      	  // Compute all neighbour contributions to hydro forces
-      	  vector<FLOAT> acc(ndim) ;
-          Forces.ComputeDragForces(i,Nneib,sphlist,activepart[j],neibpart, acc);
-          for (k=0; k<ndim; k++)
-            a_drag[i*ndim + k] = acc[k] ;
-
+          Forces.ComputeDragForces(activepart[j],neiblist, &(a_drag[i*ndim]));
         }
       }
 
@@ -827,15 +816,11 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 //=================================================================================================
 template<int ndim, template <int> class ParticleType, class StoppingTime, class Kernel>
 void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDragForces
-(const int i,                                       ///< [in] id of particle
- const int Nneib,                                   ///< [in] No. of neibs in neibpart array
- const std::vector<int>& neiblist,                  ///< [in] id of gather neibs in neibpart
- ParticleType<ndim>& parti,                         ///< [inout] Particle i data
- const std::vector<ParticleType<ndim> >& neibpart,  ///< [in] Neighbour particle data
- std::vector<FLOAT>& a_drag)                        ///< [out] drag acceleration
+(ParticleType<ndim>& parti,                         ///< [inout] Particle i data
+ NeighbourList<ParticleType<ndim> >& neiblist,      ///< [in] List of neighbours
+ FLOAT* a_drag)                                     ///< [out] drag acceleration
 {
   int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   FLOAT draux[ndim];                   // Relative position vector
   FLOAT dv[ndim];                      // Relative velocity vector
@@ -853,17 +838,19 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 	  parti.div_v = 0;
   }
 
+  for(k=0; k < ndim; k++) a_drag[k] = 0;
+
   FLOAT invh_i =  1/parti.h ;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
-    assert(!neibpart[j].flags.is_dead());
+  int Nneib = neiblist.size();
+  for (j=0; j < Nneib; j++) {
+    assert(!neiblist[j].flags.is_dead());
 
-    FLOAT invh_j =  1/neibpart[j].h ;
+    FLOAT invh_j =  1/neiblist[j].h ;
 
-    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - parti.r[k];
+    for (k=0; k<ndim; k++) draux[k] = neiblist[j].r[k] - parti.r[k];
     const FLOAT drmag =  sqrt(DotProduct(draux,draux,ndim));
 
 
@@ -872,12 +859,12 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     else
       wkern = pow(invh_j, ndim)*kern.wdrag(drmag*invh_j);
 
-    wkern *= neibpart[j].m / neibpart[j].rho ;
+    wkern *= neiblist[j].m / neiblist[j].rho ;
 
     for (k=0; k<ndim; k++) {
     	if (drmag>0) draux[k] /= drmag;
-    	dv[k] = neibpart[j].v[k] - parti.v[k] ;
-    	da[k] = neibpart[j].a[k] - parti.a[k] ;
+    	dv[k] = neiblist[j].v[k] - parti.v[k] ;
+    	da[k] = neiblist[j].a[k] - parti.a[k] ;
     }
     dvdr = DotProduct(draux, dv, ndim);
     dadr = DotProduct(draux, da, ndim);
@@ -888,10 +875,10 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     if (parti.ptype == gas_type){
       gsound = parti.sound ;
       grho = parti.rho ;
-      drho = neibpart[j].rho ;
+      drho = neiblist[j].rho ;
     } else {
-      gsound = neibpart[j].sound ;
-      grho = neibpart[j].rho ;
+      gsound = neiblist[j].sound ;
+      grho = neiblist[j].rho ;
       drho = parti.rho ;
       parti.sound = max(parti.sound, gsound) ;
       parti.div_v = max(parti.div_v, sqrt(DotProduct(dv,dv,ndim))/parti.h);
@@ -921,11 +908,11 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     S = (dvdr * Xi - dadr * Lambda) ;
 
     for (k=0; k<ndim; k++)
-    	a_drag[k] += ndim * neibpart[j].rho * S * draux[k] * wkern ;
+    	a_drag[k] += ndim * neiblist[j].rho * S * draux[k] * wkern ;
 
     // Add Change in K.E to thermal energy generation
     if (_use_energy_term && parti.ptype == gas_type)
-    	parti.dudt += ndim * neibpart[j].rho * S *(dvdr - 0.5*rho*S*parti.dt)* wkern ;
+    	parti.dudt += ndim * neiblist[j].rho * S *(dvdr - 0.5*rho*S*parti.dt)* wkern ;
   }
   //-----------------------------------------------------------------------------------------------
 
