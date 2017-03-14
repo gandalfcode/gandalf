@@ -31,10 +31,10 @@
 /// thermal physics variables, as well as scaling to dimensionless units.
 //=================================================================================================
 template <int ndim>
-Polytropic<ndim>::Polytropic(FLOAT _Kpoly, FLOAT _eta, FLOAT _gamma, SimUnits *units):
-  EOS<ndim>(_gamma),
-  eta(_eta),
-  Kpoly(_Kpoly)
+Polytropic<ndim>::Polytropic(Parameters* simparams, SimUnits *units):
+  EOS<ndim>(simparams->floatparams["gamma_eos"]),
+  eta(simparams->floatparams["eta_eos"]),
+  Kpoly(simparams->floatparams["Kpoly"])
 {
   //temp0 = temp0aux/units->temp.outscale;
 }

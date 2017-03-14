@@ -161,7 +161,7 @@ void FV<1>::CalculatePrimitiveTimeDerivative
 {
   Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[irho]*gradW[ivx][0];
   Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - gradW[ipress][0]/Wprim[irho];
-  Wdot[ipress] = -gamma_eos*Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
+  Wdot[ipress] = -Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
 
   return;
 }
