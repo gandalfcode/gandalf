@@ -242,6 +242,9 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   mfv->extpot = extpot;
   nbody->extpot = extpot;
 
+  // Set eos pointer to nbody
+  mfv->eos->set_nbody_data(nbody);
+
 
   // Set all other hydro parameter variables
   mfv->Nhydromax       = intparams["Nhydromax"];

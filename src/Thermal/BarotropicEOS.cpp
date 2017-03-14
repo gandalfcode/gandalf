@@ -34,13 +34,12 @@
 /// Default constructor for barotropic EOS.  Passes and sets important thermal physics variables.
 //=================================================================================================
 template <int ndim>
-Barotropic<ndim>::Barotropic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux,
-                             FLOAT rho_bary_aux, SimUnits *units):
-  EOS<ndim>(gamma_aux, gamma_aux)
+Barotropic<ndim>::Barotropic(Parameters* simparams, SimUnits *units):
+  EOS<ndim>(simparams->floatparams["gamma_eos"], simparams->floatparams["gamma_eos"])
 {
-  temp0 = temp0aux/units->temp.outscale;
-  mu_bar = mu_bar_aux;
-  rho_bary = rho_bary_aux/units->rho.outscale/units->rho.outcgs;
+  temp0    = simparams->floatparams["temp0"]/units->temp.outscale;
+  mu_bar   = simparams->floatparams["mu_bar"];
+  rho_bary = simparams->floatparams["rho_bary"]/units->rho.outscale/units->rho.outcgs;
   invrho_bary = 1.0/rho_bary;
 }
 
