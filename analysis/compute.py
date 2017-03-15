@@ -152,11 +152,29 @@ def lagrangian_radii(snap, mfrac=0.5, type="default", unit="default"):
     m = UserQuantity('m').fetch(type, snap, unit)[1]
 
     # Find particle ids in order of increasing radial distance
-    porder = np.argsort(r)
-    m_ordered = m[porder]
+    porder      = np.argsort(r)
+    m_ordered   = m[porder]
     mcumulative = np.cumsum(m_ordered)
-    mtotal = mcumulative[-1]
-    mlag = mfrac*mtotal
-    index = np.searchsorted(mcumulative,mlag)
-    lag_radius = 0.5*(r[porder[index-1]] + r[porder[index]])
+    mtotal      = mcumulative[-1]
+    mlag        = mfrac*mtotal
+    index       = np.searchsorted(mcumulative,mlag)
+    lag_radius  = 0.5*(r[porder[index-1]] + r[porder[index]])
     return runitinfo, lag_radius, rscaling_factor, 'lag_radius_' + str(mfrac)
+
+
+#------------------------------------------------------------------------------
+def energy_error(snap, etot0, type="default", unit="default"):
+    '''Computes the energy error of all particles in the simulation'''
+    vx   = UserQuantity('vx').fetch(type, snap, unit)[1]
+    vy   = UserQuantity('vy').fetch(type, snap, unit)[1]
+    vz   = UserQuantity('vz').fetch(type, snap, unit)[1]
+    m    = UserQuantity('m').fetch(type, snap, unit)[1]
+    gpot = UserQuantity('gpot').fetch(type, snap, unit)[1]
+    N    = m.size
+
+    # Loop over all particles and compute
+    energy = 0.5*m*(vx*vx + vy*vy + vz*vz) - 0.5*m*gpot
+    etot   = np.sum(energy)
+    error  = abs((etot - etot0)/etot0)
+
+    return error

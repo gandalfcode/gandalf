@@ -19,7 +19,6 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 def FreefallSolution(rho, mfrac):
     tff = np.sqrt(3.0*3.1415/32.0/rho)
     r0 = math.pow(mfrac, 0.33333333333)
-
     r = np.arange(0.0, 0.99999, 0.0001)
     t = np.arccos(np.sqrt(r/r0)) + np.sqrt(r/r0)*np.sqrt(1.0 - r/r0)
     t *= 2.0/3.14157
@@ -28,82 +27,75 @@ def FreefallSolution(rho, mfrac):
 
 
 #--------------------------------------------------------------------------------------------------
-#rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('font', **{'family': 'normal', 'weight' : 'bold', 'size' : 16})
 rc('text', usetex=True)
 
 # Set all plot limits
-tmin      = 0.001
-tmax      = 1.0
-rmin      = 0.0
-rmax      = 1.0
-rho       = 3.0/4.0/3.114157
-stride    = 8
-numSimMax = 6
-thetamin  = 0.1
-sim_no    = 0
-theta_values               = []
-monopole_error_values      = []
-monopole_runtimes          = []
-fast_monopole_error_values = []
-fast_monopole_runtimes     = []
-quadrupole_error_values    = []
-quadrupole_runtimes        = []
+tmin   = 0.00
+tmax   = 1.0
+rmin   = 0.005
+rmax   = 1.05
+rho    = 3.0/4.0/3.114157
+stride = 8
+sim_no = 0
 
+# Analytical solutions for grav. acceleration and potential
 r_acc = np.arange(rmin, 0.99999*rmax, 0.001)
 a_acc = -r_acc
-
-CreateTimeData('lr1',lagrangian_radii,mfrac=0.1)
-CreateTimeData('lr2',lagrangian_radii,mfrac=0.5)
-CreateTimeData('lr3',lagrangian_radii,mfrac=0.9)
-
+gpot_acc = -r_acc
 
 # Run the simulation
 mainsim = newsim('freefall.dat')
 setupsim()
 run()
 
+# Get grav. data for simulaton for plotting
+r_data    = get_data("r", sim=sim_no, snap=0)
+a_data    = get_data("ar", sim=sim_no, snap=0)
+gpot_data = get_data("gpot", sim=sim_no, snap=0)
 
-# Load in simulation and create Lagrangian radii data for 10%, 50% and 90% mass radii.
-r_data = get_data("r", sim=sim_no, snap=0)
-a_data = get_data("ar", sim=sim_no, snap=0)
-data10 = get_time_data("t","lr1",linestyle='-')
-data50 = get_time_data("t","lr2",linestyle='-')
-data90 = get_time_data("t","lr3",linestyle='-')
+# Prepare 10%, 50% and 90% Lagrangian radii
+CreateTimeData('lr1',lagrangian_radii,mfrac=0.05)
+CreateTimeData('lr2',lagrangian_radii,mfrac=0.2)
+CreateTimeData('lr3',lagrangian_radii,mfrac=0.5)
+CreateTimeData('lr4',lagrangian_radii,mfrac=1.0)
+data05  = get_time_data("t","lr1")
+data20  = get_time_data("t","lr2")
+data50  = get_time_data("t","lr3")
+data100 = get_time_data("t","lr4")
 
 # Get analytical solutions for each mass fraction
-t10, r10 = FreefallSolution(rho, 0.1)
-t50, r50 = FreefallSolution(rho, 0.5)
-t90, r90 = FreefallSolution(rho, 0.9)
+t05, r05   = FreefallSolution(rho, 0.05)
+t20, r20   = FreefallSolution(rho, 0.2)
+t50, r50   = FreefallSolution(rho, 0.5)
+t100, r100 = FreefallSolution(rho, 1.0)
 
-# Normalise data to freefall time
-data10.x_data /= 1.1107
-data50.x_data /= 1.1107
-data90.x_data /= 1.1107
-
+# Normalise freefall data to units of freefall time
+data05.x_data  /= 1.1107
+data20.x_data  /= 1.1107
+data50.x_data  /= 1.1107
+data100.x_data /= 1.1107
 
 
 # Create matplotlib figure object with shared x-axis
 #--------------------------------------------------------------------------------------------------
 #fig, axarr = plt.subplots(2, 1, sharex='col', sharey='row', figsize=(10,4))
-fig, axarr = plt.subplots(2, 1, figsize=(7,10))
-#fig.subplots_adjust(hspace=0.001, wspace=0.001)
-#fig.subplots_adjust(bottom=0.11, top=0.97, left=0.11, right=0.98)
+fig, axarr = plt.subplots(2, 1, figsize=(7,10), sharex='row')
+fig.subplots_adjust(hspace=0.001, wspace=0.001)
+fig.subplots_adjust(bottom=0.08, top=0.97, left=0.13, right=0.98)
 
 axarr[0].set_ylabel(r"$a_{_{\rm r}}$")
-axarr[0].set_xlabel(r"$r$")
+#axarr[0].set_xlabel(r"$r$")
 axarr[0].set_xlim([rmin, rmax])
 axarr[0].plot(r_acc, a_acc, color="red", linestyle='-', lw=0.5)
-axarr[0].scatter(r_data[::stride], a_data[::stride], color='black', marker='.', s=4.0, label='10\%')
+axarr[0].scatter(r_data[::stride], a_data[::stride], color='black', marker='.', s=4.0)
 #axarr[0].legend(fontsize=12)
-
-axarr[1].set_ylabel(r"$a_{_{\rm r}}$")
+axarr[1].set_ylabel(r"$\phi$")
 axarr[1].set_xlabel(r"$r$")
 axarr[1].set_xlim([rmin, rmax])
-axarr[1].plot(r_acc, a_acc, color="red", linestyle='-', lw=0.5)
-axarr[1].scatter(r_data[::stride], a_data[::stride], color='black', marker='.', s=4.0, label='10\%')
+axarr[1].plot(r_acc, gpot_acc, color="red", linestyle='-', lw=0.5)
+axarr[1].scatter(r_data[::stride], -gpot_data[::stride], color='black', marker='.', s=4.0)
 #axarr[1].legend(fontsize=12)
-
 
 plt.show()
 fig.savefig('sphereaccel.eps', dpi=50)
@@ -118,12 +110,14 @@ axarr2.set_ylabel(r"$R_{_{\rm LAG}}$")
 axarr2.set_xlabel(r"$t/t_{_{\rm FF}}$")
 axarr2.set_xlim([tmin, tmax])
 axarr2.set_ylim([rmin, rmax])
-axarr2.plot(t10, r10, color="red", linestyle='-', lw=0.5)
+axarr2.plot(t05, r05, color="red", linestyle='-', lw=0.5)
+axarr2.plot(t20, r20, color="red", linestyle='-', lw=0.5)
 axarr2.plot(t50, r50, color="red", linestyle='-', lw=0.5)
-axarr2.plot(t90, r90, color="red", linestyle='-', lw=0.5)
-axarr2.scatter(data10.x_data, data10.y_data, color='black', marker=',', s=24.0, label='10\%')
-axarr2.scatter(data50.x_data, data50.y_data, color='black', marker='D', s=24.0, label='50\%')
-axarr2.scatter(data90.x_data, data90.y_data, color='black', marker='^', s=24.0, label='90\%')
+axarr2.plot(t100, r100, color="red", linestyle='-', lw=0.5)
+axarr2.scatter(data05.x_data, data05.y_data, color='black', marker='.', s=24.0, label='$5\%$')
+axarr2.scatter(data20.x_data, data20.y_data, color='black', marker=',', s=24.0, label='$20\%$')
+axarr2.scatter(data50.x_data, data50.y_data, color='black', marker='D', s=24.0, label='$50\%$')
+axarr2.scatter(data100.x_data, data100.y_data, color='black', marker='^', s=24.0, label='$100\%$')
 axarr2.legend(fontsize=12)
 
 plt.show()
