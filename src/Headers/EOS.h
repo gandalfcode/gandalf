@@ -52,7 +52,7 @@ class EOS;
 class Paramters;
 
 
-enum eosenum{noeos, isothermal, polytropic, barotropic, barotropic2,
+enum eosenum{noeos, isothermal, locally_isothermal, polytropic, barotropic, barotropic2,
              energy_eqn, constant_temp, radws, Nhydroeos};
 
 
