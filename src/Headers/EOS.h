@@ -286,6 +286,8 @@ class LocallyIsothermal: public Isothermal<ndim>
   virtual ~LocallyIsothermal();
 
   FLOAT SpecificInternalEnergy(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+
 
   virtual void set_nbody_data(Nbody<ndim>* nbody_aux) {
     nbody = nbody_aux;
