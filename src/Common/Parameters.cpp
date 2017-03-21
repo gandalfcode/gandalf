@@ -262,6 +262,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["gamma_eos"] = 1.66666666666666;
   floatparams["temp0"] = 1.0;
   floatparams["mu_bar"] = 1.0;
+  floatparams["tempmin"] = 0.01;
+  floatparams["templaw"] = 0.75;
   floatparams["rho_bary"] = 1.0e-14;
   floatparams["eta_eos"] = 1.4;
   stringparams["radws_table"] = "eos.bell.cc.dat";

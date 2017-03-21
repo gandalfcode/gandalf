@@ -80,37 +80,36 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
 
   // Select and construct equation of state object from given parameters
   //-----------------------------------------------------------------------------------------------
-  if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" ||
-       _gas_eos == "isothermal" || _gas_eos == "barotropic" ||
-       _gas_eos == "barotropic2") && gas_radiation == "ionisation") {
-    eos = new IonisingRadiation<ndim>
-      (_gas_eos, floatparams["temp0"], floatparams["mu_bar"],
-       floatparams["gamma_eos"], floatparams["rho_bary"], &units);
+  if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" || _gas_eos == "isothermal" ||
+       _gas_eos == "polytropic" || _gas_eos == "barotropic" || _gas_eos == "barotropic2") &&
+      gas_radiation == "ionisation") {
+    eos = new IonisingRadiation<ndim>(params, &units);
   }
-  else if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" ||
-            _gas_eos == "isothermal" || _gas_eos == "barotropic" ||
-            _gas_eos == "barotropic2") && gas_radiation == "monoionisation") {
-    eos = new MCRadiationEOS<ndim>
-      (_gas_eos, floatparams["temp0"], floatparams["temp_ion"], floatparams["mu_bar"],
-       floatparams["mu_ion"], floatparams["gamma_eos"], floatparams["rho_bary"], &units);
+  else if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" || _gas_eos == "isothermal" ||
+            _gas_eos == "polytropic" || _gas_eos == "barotropic" || _gas_eos == "barotropic2") &&
+           gas_radiation == "monoionisation") {
+    eos = new MCRadiationEOS<ndim>(params, &units);
   }
   else if (_gas_eos == "energy_eqn" || _gas_eos == "constant_temp") {
-    eos = new Adiabatic<ndim>(floatparams["mu_bar"], floatparams["gamma_eos"]);
+    eos = new Adiabatic<ndim>(params, &units);
   }
   else if (_gas_eos == "isothermal") {
-    eos = new Isothermal<ndim>
-      (floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"], &units);
+    eos = new Isothermal<ndim>(params, &units);
+  }
+  else if(_gas_eos == "locally_isothermal") {
+    eos = new LocallyIsothermal<ndim>(params, &units);
+  }
+  else if (_gas_eos == "polytropic") {
+    eos = new Polytropic<ndim>(params, &units);
   }
   else if (_gas_eos == "barotropic") {
-    eos = new Barotropic<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                               floatparams["gamma_eos"], floatparams["rho_bary"], &units);
+    eos = new Barotropic<ndim>(params, &units);
   }
   else if (_gas_eos == "barotropic2") {
-    eos = new Barotropic2<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                                floatparams["gamma_eos"], floatparams["rho_bary"], &units);
+    eos = new Barotropic2<ndim>(params, &units);
   }
   else if (_gas_eos == "rad_ws" || _gas_eos == "radws") {
-    eos = new Radws<ndim>(floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
+    eos = new Radws<ndim>(params, &units);
   }
   else {
     string message = "Unrecognised parameter : gas_eos = " + _gas_eos;

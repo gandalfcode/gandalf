@@ -27,6 +27,7 @@
 
 
 #include "Constants.h"
+#include "CodeTiming.h"
 #include "EOS.h"
 #include "Hydrodynamics.h"
 #include "Particle.h"
