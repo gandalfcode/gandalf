@@ -33,7 +33,6 @@
 template <int ndim>
 Polytropic<ndim>::Polytropic(Parameters* simparams, SimUnits *units):
   EOS<ndim>(simparams->floatparams["eta_eos"], simparams->floatparams["gamma_eos"]),
-  eta(simparams->floatparams["eta_eos"]),
   Kpoly(simparams->floatparams["Kpoly"])
 {
 }

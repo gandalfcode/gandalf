@@ -15,12 +15,12 @@ xmin = 8.0
 xmax = 8192.0
 ymin = 3.3e-12
 ymax = 3.3e-6
-numSimMax = 10
+numSimMax = 9
 
 
 # Make simple N^-2 line
 Nmax = 1000
-x_ideal = np.range(xmin, xmax, 2.0)
+x_ideal = np.arange(xmin, xmax, 2.0)
 y_ideal = ymax*ymin*ymin/x_ideal/x_ideal
 
 #x_ideal = np.zeros(Nmax)

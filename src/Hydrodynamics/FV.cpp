@@ -162,6 +162,7 @@ void FV<1>::CalculatePrimitiveTimeDerivative
 {
   Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[irho]*gradW[ivx][0];
   Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - gradW[ipress][0]/Wprim[irho];
+  //Wdot[ipress] = -Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
   Wdot[ipress] = -eta_eos*Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
 
   return;
@@ -178,6 +179,7 @@ void FV<2>::CalculatePrimitiveTimeDerivative
   Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] - gradW[ipress][0]/Wprim[irho];
   Wdot[ivy]    = -Wprim[ivx]*gradW[ivy][0] - Wprim[ivy]*gradW[ivy][1] - gradW[ipress][1]/Wprim[irho];
   Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
+    //Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
     eta_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
   return;
 }
@@ -198,6 +200,7 @@ void FV<3>::CalculatePrimitiveTimeDerivative
     Wprim[ivz]*gradW[ivz][2] - gradW[ipress][2]/Wprim[irho];
   Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
     Wprim[ivz]*gradW[ipress][2] -
+    //Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
     eta_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
   return;
 }
