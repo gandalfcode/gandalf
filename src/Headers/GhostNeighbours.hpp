@@ -151,12 +151,12 @@ public:
 	   	  for (int k=0; k<ndim; k++)
 	   	    if (_periodic_bound[k]) {
 	   	      if (dr[k] > _domain.half[k]) {
-	   	        dr[k]  = - _domain.size[k];
+	   	        dr[k] += - _domain.size[k];
 	   	        r[k]  += - _domain.size[k];
 	   	        bound.set_flag(periodic_bound_flags[k][1]) ;
 	   	      }
 	   	      else if (dr[k] < -_domain.half[k]) {
-	   	        dr[k]  = _domain.size[k];
+	   	        dr[k] += _domain.size[k];
 	   	        r[k]  += _domain.size[k] ;
 	   	        bound.set_flag(periodic_bound_flags[k][0]) ;
 	   	      }
