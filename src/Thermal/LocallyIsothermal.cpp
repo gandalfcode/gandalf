@@ -59,11 +59,11 @@ LocallyIsothermal<ndim>::~LocallyIsothermal()
 }
 
 //=================================================================================================
-//  LocalIsotherm::SpecificInternalEnergy
+//  LocalIsotherm::Temperature
 /// Set the temperature given distance to nearest star
 //=================================================================================================
 template <int ndim>
-FLOAT LocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
+FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
 {
   FLOAT stardistmin=1e30;
   NbodyParticle<ndim>** star = nbody->nbodydata;
@@ -80,6 +80,17 @@ FLOAT LocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
 
   // Compute temperature
   FLOAT temp = max(temp0*pow(stardistmin,-templaw), tempmin);
+  return temp/gammam1/mu_bar;
+}
+
+//=================================================================================================
+//  LocalIsotherm::SpecificInternalEnergy
+/// Set the internal energt given distance to nearest star
+//=================================================================================================
+template <int ndim>
+FLOAT LocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
+{
+  FLOAT temp = LocallyIsothermal<ndim>::Temperature(part);
   return temp/gammam1/mu_bar;
 }
  
