@@ -397,6 +397,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
           NeighbourList<HydroParticle> neiblist =
               neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
 
+#if defined(VERIFY_ALL)
+          neibmanager.VerifyNeighbourList(i, sph->Nhydro, sphdata, "all");
+          neibmanager.VerifyReducedNeighbourList(i, neiblist, sph->Nhydro, sphdata, "all");
+#endif
+
           // Compute all neighbour contributions to hydro forces
           typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
           method->ComputeSphHydroForces(activepart[j],neiblist);

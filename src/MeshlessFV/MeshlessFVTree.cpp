@@ -420,6 +420,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
 #if defined(VERIFY_ALL)
         neibmanager.VerifyNeighbourList(i, mfv->Nhydro, mfvdata, "all");
+        neibmanager.VerifyReducedNeighbourList(i, neiblist, mfv->Nhydro, mfvdata, "all");
 #endif
         // Compute all neighbour contributions to gradients
         mfv->ComputeGradients(activepart[j], neiblist);
