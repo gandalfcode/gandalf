@@ -35,19 +35,19 @@
 /// Default constructor for MCRadiation EOS.  Passes and sets important thermal physics variables.
 //=================================================================================================
 template <int ndim>
-MCRadiationEOS<ndim>::MCRadiationEOS(string gas_eos, FLOAT temp0aux, FLOAT tempionaux,
-                                     FLOAT mu_bar_aux, FLOAT mu_ion_aux, FLOAT gamma_aux,
-                                     FLOAT rho_bary_aux, SimUnits *units) : EOS<ndim>(gamma_aux)
+MCRadiationEOS<ndim>::MCRadiationEOS
+ (string gas_eos, FLOAT temp0aux, FLOAT tempionaux, FLOAT mu_bar_aux, FLOAT mu_ion_aux,
+  FLOAT _gamma, FLOAT rho_bary_aux, SimUnits *units) : EOS<ndim>(_gamma, _gamma)
 {
   // Set 'internal' EOS for non-ionised gas
   if (gas_eos == "energy_eqn" || gas_eos == "constant_temp") {
-    eos = new Adiabatic<ndim>(temp0aux, mu_bar_aux, gamma_aux);
+    eos = new Adiabatic<ndim>(mu_bar_aux, _gamma);
   }
   else if (gas_eos == "isothermal") {
-    eos = new Isothermal<ndim>(temp0aux, mu_bar_aux, gamma_aux, units);
+    eos = new Isothermal<ndim>(temp0aux, mu_bar_aux, _gamma, units);
   }
   else if (gas_eos == "barotropic") {
-    eos = new Barotropic<ndim>(temp0aux, mu_bar_aux, gamma_aux, rho_bary_aux, units);
+    eos = new Barotropic<ndim>(temp0aux, mu_bar_aux, _gamma, rho_bary_aux, units);
   }
   else {
     string message = "Unrecognised parameter : gas_eos = " + gas_eos;

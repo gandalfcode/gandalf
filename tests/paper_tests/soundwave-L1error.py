@@ -10,10 +10,11 @@ import time
 import math
 
 
-xmin = 2.0
-xmax = 2048.0
-ymin = 3.3e-9
-ymax = 3.3e-3
+xmin = 8.0
+xmax = 8192.0
+ymin = 3.3e-12
+ymax = 3.3e-6
+numSimMax = 9
 
 
 # Set empty lists to store results from each resolution
@@ -36,6 +37,8 @@ for i in range(8):
                           xmin=0.0, xmax=1.0, normalise=1.0)
     gradh_Nres.append(Nhydro)
     gradh_L1values.append(L1error)
+    plot("x","rho")
+    plotanalytical("x","rho")
 
 
 # Lowest resolution simulation (16 particles)

@@ -1,6 +1,6 @@
 //=================================================================================================
-//  RadwsEOS.cpp
-//  Contains all function definitions for the Radws Equation of state.
+//  PolytropicEOS.cpp
+//  Contains all function definitions for the Polytropic Equation of state.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -23,83 +23,94 @@
 
 #include <math.h>
 #include "EOS.h"
-#include "Particle.h"
-
 
 
 //=================================================================================================
-//  Radws::Radws()
-/// Default constructor for perfect gas EOS.  Passes and sets important
-/// thermal physics variables.
+//  Polytropic::Polytropic()
+/// Default constructor for Polytropic EOS.  Passes and sets important
+/// thermal physics variables, as well as scaling to dimensionless units.
 //=================================================================================================
 template <int ndim>
-Radws<ndim>::Radws(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux) :
-  EOS<ndim> (gamma_aux, gamma_aux)
+Polytropic<ndim>::Polytropic(FLOAT _Kpoly, FLOAT _eta, FLOAT _gamma, SimUnits *units):
+  EOS<ndim>(_eta, _gamma),
+  Kpoly(_Kpoly)
 {
-  mu_bar = mu_bar_aux;
-  temp0 = temp0aux;
+  //temp0 = temp0aux/units->temp.outscale;
 }
 
 
 
 //=================================================================================================
-//  Radws::Radws()
+//  Polytropic::Polytropic()
+/// Polytropic EOS destructor
 //=================================================================================================
 template <int ndim>
-Radws<ndim>::~Radws()
+Polytropic<ndim>::~Polytropic()
 {
 }
 
 
+
 //=================================================================================================
-//  Radws::EntropicFunction
-/// Calculates and returns value of Entropic function (= P/rho^gamma) for
-/// referenced particle
+//  Polytropic::Pressure
+/// Calculates and returns thermal pressure of referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Radws<ndim>::EntropicFunction(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::Pressure(Particle<ndim> &part)
 {
-  return gammam1*part.u*pow(part.rho, (FLOAT) 1.0 - gamma);
-}
-
-
-
-//=================================================================================================
-//  Radws::SoundSpeed
-/// Returns adiabatic sound speed of particle
-//=================================================================================================
-template <int ndim>
-FLOAT Radws<ndim>::SoundSpeed(Particle<ndim> &part)
-{
-  return sqrt(gamma*gammam1*part.u);
+  return Kpoly*pow(part.rho, eta);
 }
 
 
 
 //=================================================================================================
-//  Radws::SpecificInternalEnergy
-/// Returns specific internal energy of particle
+//  Polytropic::EntropicFunction
+/// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Radws<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::EntropicFunction(Particle<ndim> &part)
 {
-  return part.u;
+  return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
 
 
 
 //=================================================================================================
-//  Radws::Temperature
-/// Returns temperature of particle
+//  Polytropic::SoundSpeed
+/// Returns Polytropic sound speed of referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Radws<ndim>::Temperature(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::SoundSpeed(Particle<ndim> &part)
 {
-  return gammam1*part.u*part.mu_bar;
+  return sqrt(gammam1*part.u);
 }
 
 
 
-template class Radws<1>;
-template class Radws<2>;
-template class Radws<3>;
+//=================================================================================================
+//  Polytropic::SpecificInternalEnergy
+/// Returns specific internal energy of referenced SPH particle
+//=================================================================================================
+template <int ndim>
+FLOAT Polytropic<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
+{
+  return Kpoly*pow(part.rho, gammam1)/gammam1;
+}
+
+
+
+//=================================================================================================
+//  Polytropic::Temperature
+/// Return Polytropic temperature, temp0, for referenced SPH particle
+//=================================================================================================
+template <int ndim>
+FLOAT Polytropic<ndim>::Temperature(Particle<ndim> &part)
+{
+  return gammam1*part.u;
+}
+
+
+
+template class Polytropic<1>;
+template class Polytropic<2>;
+template class Polytropic<3>;

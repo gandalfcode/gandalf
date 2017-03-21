@@ -1,9 +1,9 @@
-//=============================================================================
+//=================================================================================================
 //  Barotropic2EOS.cpp
-//  Contains all function definitions for a barotropic Equation of state of 
+//  Contains all function definitions for a barotropic Equation of state of
 //  the form T = temp0,                               (rho < rho_bary),
 //             = temp0*(rho/rho_bary)^{gamma - 1}),   (rho > rho_bary).
-//  Used for star formation simulations to approximate the combined isothermal 
+//  Used for star formation simulations to approximate the combined isothermal
 //  and optically-thich adiabatic regimes of the gas collapse phase.
 //
 //  This file is part of GANDALF :
@@ -22,7 +22,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <math.h>
@@ -31,16 +31,15 @@
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Barotropic2::Barotropic2()
-/// Default constructor for barotropic EOS.  Passes and sets important 
-/// thermal physics variables.
-//=============================================================================
+/// Default constructor for barotropic EOS.  Passes and sets important thermal physics variables.
+//=================================================================================================
 template <int ndim>
-Barotropic2<ndim>::Barotropic2(FLOAT temp0aux, FLOAT mu_bar_aux, 
-                               FLOAT gamma_aux, FLOAT rho_bary_aux, 
+Barotropic2<ndim>::Barotropic2(FLOAT temp0aux, FLOAT mu_bar_aux,
+                               FLOAT gamma_aux, FLOAT rho_bary_aux,
                                SimUnits *units):
-  EOS<ndim>(gamma_aux)
+  EOS<ndim>(gamma_aux, gamma_aux)
 {
   temp0 = temp0aux/units->temp.outscale;
   mu_bar = mu_bar_aux;
@@ -50,21 +49,20 @@ Barotropic2<ndim>::Barotropic2(FLOAT temp0aux, FLOAT mu_bar_aux,
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Barotropic2::~Barotropic2()
 /// Barotropic2 EOS destructor
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 Barotropic2<ndim>::~Barotropic2()
 {
 }
 
 
-//=============================================================================
+//=================================================================================================
 //  Barotropic2::EntropicFunction
-/// Calculates and returns value of Entropic function (= P/rho^gamma) for 
-/// referenced particle
-//=============================================================================
+/// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle.
+//=================================================================================================
 template <int ndim>
 FLOAT Barotropic2<ndim>::EntropicFunction(Particle<ndim> &part)
 {
@@ -73,10 +71,10 @@ FLOAT Barotropic2<ndim>::EntropicFunction(Particle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Barotropic2::SoundSpeed
 /// Returns isothermal sound speed of SPH particle
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 FLOAT Barotropic2<ndim>::SoundSpeed(Particle<ndim> &part)
 {
@@ -85,10 +83,10 @@ FLOAT Barotropic2<ndim>::SoundSpeed(Particle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Barotropic2::SpecificInternalEnergy
 /// Returns specific internal energy
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 FLOAT Barotropic2<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
@@ -98,12 +96,12 @@ FLOAT Barotropic2<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Barotropic2::Temperature
-/// Returns temperature of particle.  Approximates gas in the isothermal 
+/// Returns temperature of particle.  Approximates gas in the isothermal
 /// regime (T = temp0 for rho < rho_bary) and in the optically thick
 /// adiabatic phase (T = const*rho^{gamma - 1} for rho > rho_bary).
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 FLOAT Barotropic2<ndim>::Temperature(Particle<ndim> &part)
 {
@@ -116,4 +114,3 @@ FLOAT Barotropic2<ndim>::Temperature(Particle<ndim> &part)
 template class Barotropic2<1>;
 template class Barotropic2<2>;
 template class Barotropic2<3>;
-

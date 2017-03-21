@@ -32,7 +32,6 @@
 #include "Nbody.h"
 #include "Parameters.h"
 #include "Particle.h"
-//#include "SphNeighbourSearch.h"
 #include "SimUnits.h"
 
 
@@ -65,7 +64,8 @@ class EOS
 {
  public:
 
-  EOS(FLOAT _gamma):
+  EOS(FLOAT _eta, FLOAT _gamma):
+    eta(_eta),
     gamma(_gamma),
     gammam1(_gamma - (FLOAT) 1.0),
     gammaMinusOne(_gamma - (FLOAT) 1.0),
@@ -77,10 +77,11 @@ class EOS
   virtual FLOAT Temperature(Particle<ndim> &) = 0;
   virtual FLOAT SpecificInternalEnergy(Particle<ndim> &) = 0;
 
-  const FLOAT gamma;
-  const FLOAT gammam1;
-  const FLOAT gammaMinusOne;
-  const FLOAT oneMinusGamma;
+  const FLOAT eta;                               ///< Polytropic index
+  const FLOAT gamma;                             ///< Ratio of specific heats
+  const FLOAT gammam1;                           ///< gamma - 1
+  const FLOAT gammaMinusOne;                     ///< gamma - 1
+  const FLOAT oneMinusGamma;                     ///< 1 - gamma
 
 };
 
@@ -113,6 +114,39 @@ class Isothermal: public EOS<ndim>
 
   const FLOAT temp0;
   const FLOAT mu_bar;
+
+};
+
+
+
+//=================================================================================================
+//  Class Polytropic
+/// \brief   Polytropic equation of state
+/// \details Polytropic equation of state
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    12/07/2016
+//=================================================================================================
+template <int ndim>
+class Polytropic: public EOS<ndim>
+{
+  using EOS<ndim>::eta;
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+  using EOS<ndim>::gammaMinusOne;
+  using EOS<ndim>::oneMinusGamma;
+
+ public:
+
+  Polytropic(FLOAT, FLOAT, FLOAT, SimUnits *);
+  ~Polytropic();
+
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+
+  const FLOAT Kpoly;
 
 };
 
@@ -198,7 +232,7 @@ class Adiabatic: public EOS<ndim>
 
  public:
 
-  Adiabatic(FLOAT, FLOAT, FLOAT);
+  Adiabatic(FLOAT, FLOAT);
   ~Adiabatic();
 
   FLOAT EntropicFunction(Particle<ndim> &);
@@ -206,7 +240,6 @@ class Adiabatic: public EOS<ndim>
   FLOAT Temperature(Particle<ndim> &);
   FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
-  FLOAT temp0;
   const FLOAT mu_bar;
 
 };
