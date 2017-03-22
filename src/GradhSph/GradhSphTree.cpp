@@ -428,6 +428,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
       for (int j=0; j<Nactive; j++) {
         const int i = activelist[j];
         for (int k=0; k<ndim; k++) sphdata[i].a[k] += activepart[j].a[k];
+        for (int k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].atree[k];
+        for (int k=0; k<ndim; k++) sphdata[i].atree[k] += activepart[j].atree[k];
         sphdata[i].gpot     += activepart[j].gpot;
         sphdata[i].dudt     += activepart[j].dudt;
         sphdata[i].dalphadt += activepart[j].dalphadt;
