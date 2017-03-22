@@ -1,6 +1,6 @@
 //=================================================================================================
-//  IsothermalEOS.cpp
-//  Contains all function definitions for the Isothermal Equation of state.
+//  PolytropicEOS.cpp
+//  Contains all function definitions for the Polytropic Equation of state.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -23,41 +23,51 @@
 
 #include <math.h>
 #include "EOS.h"
-#include "Sph.h"
 
 
 //=================================================================================================
-//  Isothermal::Isothermal()
-/// Default constructor for isothermal EOS.  Passes and sets important
+//  Polytropic::Polytropic()
+/// Default constructor for Polytropic EOS.  Passes and sets important
 /// thermal physics variables, as well as scaling to dimensionless units.
 //=================================================================================================
 template <int ndim>
-Isothermal<ndim>::Isothermal(Parameters* simparams, SimUnits *units):
-  EOS<ndim>(1, simparams->floatparams["gamma_eos"]),
-  temp0(simparams->floatparams["temp0"]/units->temp.outscale),
-  mu_bar(simparams->floatparams["mu_bar"])
+Polytropic<ndim>::Polytropic(Parameters* simparams, SimUnits *units):
+  EOS<ndim>(simparams->floatparams["eta_eos"], simparams->floatparams["gamma_eos"]),
+  Kpoly(simparams->floatparams["Kpoly"])
 {
 }
 
 
 
 //=================================================================================================
-//  Isothermal::Isothermal()
-/// Isothermal EOS destructor
+//  Polytropic::Polytropic()
+/// Polytropic EOS destructor
 //=================================================================================================
 template <int ndim>
-Isothermal<ndim>::~Isothermal()
+Polytropic<ndim>::~Polytropic()
 {
 }
 
 
 
 //=================================================================================================
-//  Isothermal::EntropicFunction
+//  Polytropic::Pressure
+/// Calculates and returns thermal pressure of referenced particle
+//=================================================================================================
+template <int ndim>
+FLOAT Polytropic<ndim>::Pressure(Particle<ndim> &part)
+{
+  return Kpoly*pow(part.rho, eta);
+}
+
+
+
+//=================================================================================================
+//  Polytropic::EntropicFunction
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::EntropicFunction(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::EntropicFunction(Particle<ndim> &part)
 {
   return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
@@ -65,11 +75,11 @@ FLOAT Isothermal<ndim>::EntropicFunction(Particle<ndim> &part)
 
 
 //=================================================================================================
-//  Isothermal::SoundSpeed
-/// Returns isothermal sound speed of referenced SPH particle
+//  Polytropic::SoundSpeed
+/// Returns Polytropic sound speed of referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::SoundSpeed(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   return sqrt(gammam1*part.u);
 }
@@ -77,29 +87,29 @@ FLOAT Isothermal<ndim>::SoundSpeed(Particle<ndim> &part)
 
 
 //=================================================================================================
-//  Isothermal::SpecificInternalEnergy
+//  Polytropic::SpecificInternalEnergy
 /// Returns specific internal energy of referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
-  return temp0/gammam1/mu_bar;
+  return Kpoly*pow(part.rho, gammam1)/gammam1;
 }
 
 
 
 //=================================================================================================
-//  Isothermal::Temperature
-/// Return isothermal temperature, temp0, for referenced SPH particle
+//  Polytropic::Temperature
+/// Return Polytropic temperature, temp0, for referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::Temperature(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::Temperature(Particle<ndim> &part)
 {
-  return temp0;
+  return gammam1*part.u;
 }
 
 
 
-template class Isothermal<1>;
-template class Isothermal<2>;
-template class Isothermal<3>;
+template class Polytropic<1>;
+template class Polytropic<2>;
+template class Polytropic<3>;

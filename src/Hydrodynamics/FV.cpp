@@ -57,7 +57,8 @@ FV<ndim>::FV(int _hydro_forces, int _self_gravity, FLOAT _accel_mult, FLOAT _cou
   Hydrodynamics<ndim>(_hydro_forces, _self_gravity, _h_fac,
                       _gas_eos, KernelName, size_part, units, params),
   gamma_eos(_gamma),
-  gammam1(_gamma - 1.0)
+  gammam1(_gamma - 1.0),
+  eta_eos(eos->eta)
 {
 }
 
@@ -161,10 +162,11 @@ void FV<1>::CalculatePrimitiveTimeDerivative
 {
   Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[irho]*gradW[ivx][0];
   Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - gradW[ipress][0]/Wprim[irho];
-  Wdot[ipress] = -gamma_eos*Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
+  Wdot[ipress] = -eta_eos*Wprim[ipress]*gradW[ivx][0] - Wprim[ivx]*gradW[ipress][0];
 
   return;
 }
+
 template <>
 void FV<2>::CalculatePrimitiveTimeDerivative
  (const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
@@ -176,17 +178,16 @@ void FV<2>::CalculatePrimitiveTimeDerivative
   Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] - gradW[ipress][0]/Wprim[irho];
   Wdot[ivy]    = -Wprim[ivx]*gradW[ivy][0] - Wprim[ivy]*gradW[ivy][1] - gradW[ipress][1]/Wprim[irho];
   Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
-    gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
-
+    eta_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
   return;
 }
+
 template <>
 void FV<3>::CalculatePrimitiveTimeDerivative
  (const FLOAT Wprim[nvar],             ///< [in] Primitive vector, Wprim, of particle
   const FLOAT gradW[nvar][3],          ///< [in] Gradients of primitive quantities
   FLOAT Wdot[nvar])                    ///< [out] Time derivatives of primitive quantities
 {
-
   Wdot[irho]   = -Wprim[ivx]*gradW[irho][0] - Wprim[ivy]*gradW[irho][1] -
    Wprim[ivz]*gradW[irho][2] - Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
   Wdot[ivx]    = -Wprim[ivx]*gradW[ivx][0] - Wprim[ivy]*gradW[ivx][1] -
@@ -197,8 +198,7 @@ void FV<3>::CalculatePrimitiveTimeDerivative
     Wprim[ivz]*gradW[ivz][2] - gradW[ipress][2]/Wprim[irho];
   Wdot[ipress] = -Wprim[ivx]*gradW[ipress][0] - Wprim[ivy]*gradW[ipress][1] -
     Wprim[ivz]*gradW[ipress][2] -
-    gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]) ;
-
+    eta_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
   return;
 }
 
