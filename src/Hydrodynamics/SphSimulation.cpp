@@ -91,6 +91,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sph->extpot = extpot;
   nbody->extpot = extpot;
 
+  // Set eos pointer to nbody
+  sph->eos->set_nbody_data(nbody);
 
 
   // Set all other SPH parameter variables

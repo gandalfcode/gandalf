@@ -111,6 +111,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["gas_eos"] == "isothermal") {
     eos_type = isothermal;
   }
+  else if (stringparams["gas_eos"] == "locally_isothermal") {
+    eos_type = locally_isothermal;
+  }
+  else if (stringparams["gas_eos"] == "polytropic") {
+    eos_type = polytropic;
+  }
   else if (stringparams["gas_eos"] == "barotropic") {
     eos_type = barotropic;
   }

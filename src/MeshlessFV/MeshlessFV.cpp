@@ -226,8 +226,7 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
   const FLOAT dt_grav = accel_mult*
     sqrtf(part.h/sqrt(DotProduct(part.a0, part.a0, ndim) + small_number));
 
-  if (hydro_forces && self_gravity) return min(dt_cfl, dt_grav);
-  else if (hydro_forces) return dt_cfl;
+  if (hydro_forces) return min(dt_cfl, dt_grav);
   else if (self_gravity) return dt_grav;
   else return big_number;
 }
