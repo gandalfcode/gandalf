@@ -79,7 +79,7 @@ void BlobIc<ndim>::Generate(void)
 
   FLOAT volume_box=1;
   for (int k=0; k<ndim; k++) {
-    volume_box *= (simbox.max[k]-simbox.min[k]);
+    volume_box *= (icBox.max[k]-icBox.min[k]);
   }
   // Add an uniform background
   int Nlattice[3];
@@ -92,13 +92,13 @@ void BlobIc<ndim>::Generate(void)
   }
   vector<FLOAT> r_background(ndim*Nbox);
   if (particle_dist == "random") {
-    Ic<ndim>::AddRandomBox(Nbox, simbox, &r_background[0], sim->randnumb);
+    Ic<ndim>::AddRandomBox(Nbox, icBox, &r_background[0], sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
-    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, simbox, true, &r_background[0]);
+    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, icBox, true, &r_background[0]);
   }
   else if (particle_dist == "hexagonal_lattice") {
-    Ic<ndim>::AddHexagonalLattice(Nbox, Nlattice, simbox, true, &r_background[0]);
+    Ic<ndim>::AddHexagonalLattice(Nbox, Nlattice, icBox, true, &r_background[0]);
   }
   else {
     string message = "Invalid particle distribution option";

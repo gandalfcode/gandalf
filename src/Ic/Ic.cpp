@@ -180,7 +180,7 @@ void Ic<ndim>::CheckInitialConditions(void)
 {
   bool valid_ic = true;                      // Valid initial conditions flag
   int i,k;                                   // Particle and dimension counter
-  DomainBox<ndim>& simbox = sim->simbox;
+  DomainBox<ndim>& icBox = sim->icBox;
   const bool cutbox       = simparams->intparams["cut_box"];
 
   debug2("[Ic::CheckInitialConditions]");
@@ -202,8 +202,8 @@ void Ic<ndim>::CheckInitialConditions(void)
 
     // Check that all particles reside inside any defined boundaries
     for (k=0; k<ndim; k++) {
-      if (part.r[k] < simbox.min[k]) {
-        if (simbox.boundary_lhs[k] == periodicBoundary || simbox.boundary_lhs[k] == mirrorBoundary) {
+      if (part.r[k] < icBox.min[k]) {
+        if (icBox.boundary_lhs[k] == periodicBoundary || icBox.boundary_lhs[k] == mirrorBoundary) {
           if (cutbox) {
             part.flags.set_flag(dead);
           }
@@ -212,8 +212,8 @@ void Ic<ndim>::CheckInitialConditions(void)
           }
         }
       }
-      if (part.r[k] > simbox.max[k]) {
-        if (simbox.boundary_rhs[k] == periodicBoundary || simbox.boundary_lhs[k] == mirrorBoundary) {
+      if (part.r[k] > icBox.max[k]) {
+        if (icBox.boundary_rhs[k] == periodicBoundary || icBox.boundary_lhs[k] == mirrorBoundary) {
           if (cutbox) {
             part.flags.set_flag(dead);
           }
@@ -232,7 +232,7 @@ void Ic<ndim>::CheckInitialConditions(void)
       cout << "Particle " << i << " not inside periodic box" << endl;
       for (k=0; k<ndim; k++)
         cout << "r[" << k << "] : " << part.r[k] << "    "
-             << simbox.min[k] << "    " << simbox.max[k] << endl;
+             << icBox.min[k] << "    " << icBox.max[k] << endl;
     }
 
     valid_ic = valid_ic && okflag;
@@ -952,8 +952,8 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
       diff = fabs((xnew - xold)/lambda);
     } while (diff > (FLOAT) 1.0e-12);
 
-    if (xnew > simbox.max[0]) xnew -= simbox.size[0];
-    if (xnew < simbox.min[0]) xnew += simbox.size[0];
+    if (xnew > icBox.max[0]) xnew -= icBox.size[0];
+    if (xnew < icBox.min[0]) xnew += icBox.size[0];
 
     r[ndim*i] = xnew;
   }

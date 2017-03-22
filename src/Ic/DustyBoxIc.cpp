@@ -76,7 +76,7 @@ void DustyBoxIc<ndim>::Generate(void)
   volume = 1 ;
   Nbox = 1 ;
   for (i=0; i < ndim; ++i){
-	volume *= simbox.max[i] - simbox.min[i];
+	volume *= icBox.max[i] - icBox.min[i];
 	Nbox *= Nlattice[i] ;
   }
   mbox  = volume*rhofluid;
@@ -99,13 +99,13 @@ void DustyBoxIc<ndim>::Generate(void)
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
-    Ic<ndim>::AddRandomBox(Nbox, simbox, r, sim->randnumb);
+    Ic<ndim>::AddRandomBox(Nbox, icBox, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
-    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, simbox, true, r);
+    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, icBox, true, r);
   }
   else if (particle_dist == "hexagonal_lattice") {
-    Ic<ndim>::AddHexagonalLattice(Nbox, Nlattice, simbox, true, r);
+    Ic<ndim>::AddHexagonalLattice(Nbox, Nlattice, icBox, true, r);
   }
   else {
     string message = "Invalid particle distribution option";

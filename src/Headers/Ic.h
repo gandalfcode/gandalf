@@ -176,6 +176,7 @@ class BinaryAccretionIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -207,6 +208,7 @@ class BlobIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -239,6 +241,7 @@ class BondiAccretionIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -271,6 +274,7 @@ class BossBodenheimerIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -313,6 +317,7 @@ class ContactDiscontinuityIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -344,6 +349,7 @@ class DustyBoxIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -375,6 +381,7 @@ class EvrardCollapseIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -406,6 +413,7 @@ class EwaldIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -487,6 +495,7 @@ class GaussianRingIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -519,6 +528,7 @@ class GreshoVortexIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -551,6 +561,7 @@ class HierarchicalSystemIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -582,6 +593,7 @@ class IsothermalSphereIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -613,6 +625,7 @@ class KelvinHelmholtzIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -644,6 +657,7 @@ class NohIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -675,6 +689,7 @@ class PlummerSphereIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::sim;
   using Ic<ndim>::simbox;
@@ -706,6 +721,7 @@ class PolytropeIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -752,6 +768,7 @@ class RayleighTaylorIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -784,6 +801,7 @@ class SedovBlastwaveIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -816,6 +834,7 @@ class ShearflowIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -848,6 +867,7 @@ class ShocktubeIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -880,6 +900,7 @@ class SilccIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -929,6 +950,7 @@ class SoundwaveIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -961,6 +983,7 @@ class SpitzerExpansionIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -993,6 +1016,7 @@ class TurbulentCoreIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;
@@ -1025,6 +1049,7 @@ class UniformIc : public Ic<ndim>
 protected:
 
   using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
   using Ic<ndim>::invndim;
   using Ic<ndim>::randnumb;
   using Ic<ndim>::sim;

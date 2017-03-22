@@ -94,14 +94,14 @@ void KhiIc<ndim>::Generate(void)
 
     // Compute size and range of fluid bounding boxes
     //---------------------------------------------------------------------------------------------
-    box1.min[0] = simbox.min[0];
-    box1.max[0] = simbox.max[0];
-    box1.min[1] = simbox.min[1];
-    box1.max[1] = simbox.min[1] + simbox.half[1];
-    box2.min[0] = simbox.min[0];
-    box2.max[0] = simbox.max[0];
-    box2.min[1] = simbox.min[1] + simbox.half[1];
-    box2.max[1] = simbox.max[1];
+    box1.min[0] = icBox.min[0];
+    box1.max[0] = icBox.max[0];
+    box1.min[1] = icBox.min[1];
+    box1.max[1] = icBox.min[1] + icBox.half[1];
+    box2.min[0] = icBox.min[0];
+    box2.max[0] = icBox.max[0];
+    box2.min[1] = icBox.min[1] + icBox.half[1];
+    box2.max[1] = icBox.max[1];
     volume = (box1.max[0] - box1.min[0])*(box1.max[1] - box1.min[1]);
     Nbox1 = Nlattice1[0]*Nlattice1[1];
     Nbox2 = Nlattice2[0]*Nlattice2[1];
@@ -121,8 +121,8 @@ void KhiIc<ndim>::Generate(void)
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
-        part.r[1] -= (FLOAT) 0.25*simbox.size[1];
-        if (part.r[1] < simbox.min[1]) part.r[1] += simbox.size[1];
+        part.r[1] -= (FLOAT) 0.25*icBox.size[1];
+        if (part.r[1] < icBox.min[1]) part.r[1] += icBox.size[1];
         part.v[0] = vfluid1[0];
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
@@ -140,8 +140,8 @@ void KhiIc<ndim>::Generate(void)
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
-        part.r[1] -= (FLOAT) 0.25*simbox.size[1];
-        if (part.r[1] < simbox.min[1]) part.r[1] += simbox.size[1];
+        part.r[1] -= (FLOAT) 0.25*icBox.size[1];
+        if (part.r[1] < icBox.min[1]) part.r[1] += icBox.size[1];
         part.v[0] = vfluid2[0];
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);

@@ -90,7 +90,7 @@ void SoundwaveIc<ndim>::Generate(void)
       csound = sqrt(gamma*press1/rhofluid1);
     }
 
-    lambda = simbox.max[0] - simbox.min[0];
+    lambda = icBox.max[0] - icBox.min[0];
     kwave = twopi/lambda;
     //omegawave = twopi*csound/lambda;
 
@@ -106,7 +106,7 @@ void SoundwaveIc<ndim>::Generate(void)
     r = new FLOAT[ndim*Npart];
 
     // Add regular distribution of SPH particles
-    Ic<ndim>::AddCubicLattice(Npart, Nlattice1, simbox, false, r);
+    Ic<ndim>::AddCubicLattice(Npart, Nlattice1, icBox, false, r);
 
     // Add sinusoidal density perturbation to particle distribution
     Ic<ndim>::AddSinusoidalDensityPerturbation(Npart, amp, lambda, r);

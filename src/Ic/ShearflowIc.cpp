@@ -81,9 +81,9 @@ void ShearflowIc<ndim>::Generate(void)
     debug2("[ShearflowIc::Generate]");
 
     // Compute size and range of fluid bounding boxes
-    volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
+    volume = (icBox.max[0] - icBox.min[0])*(icBox.max[1] - icBox.min[1]);
     Nbox   = Nlattice1[0]*Nlattice1[1];
-    lambda = simbox.max[1] - simbox.min[1];
+    lambda = icBox.max[1] - icBox.min[1];
     kwave  = twopi/lambda;
 
     // Allocate local and main particle memory
@@ -93,8 +93,8 @@ void ShearflowIc<ndim>::Generate(void)
 
     // Add particles from cubic lattice
     if (Nbox > 0) {
-      Ic<ndim>::AddCubicLattice(Nbox, Nlattice1, simbox, false, r);
-      //Ic<ndim>::AddHexagonalLattice(Nbox,Nlattice1,r,simbox,false);
+      Ic<ndim>::AddCubicLattice(Nbox, Nlattice1, icBox, false, r);
+      //Ic<ndim>::AddHexagonalLattice(Nbox,Nlattice1,r,icBox,false);
 
       for (i=0; i<Nbox; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);

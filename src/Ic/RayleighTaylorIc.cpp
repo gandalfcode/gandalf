@@ -90,14 +90,14 @@ void RayleighTaylorIc<ndim>::Generate(void)
 
     // Compute size and range of fluid bounding boxes
     //---------------------------------------------------------------------------------------------
-    box1.min[0] = simbox.min[0];
-    box1.max[0] = simbox.max[0];
-    box1.min[1] = simbox.min[1];
-    box1.max[1] = simbox.min[1] + simbox.half[1];
-    box2.min[0] = simbox.min[0];
-    box2.max[0] = simbox.max[0];
-    box2.min[1] = simbox.min[1] + simbox.half[1];
-    box2.max[1] = simbox.max[1];
+    box1.min[0] = icBox.min[0];
+    box1.max[0] = icBox.max[0];
+    box1.min[1] = icBox.min[1];
+    box1.max[1] = icBox.min[1] + icBox.half[1];
+    box2.min[0] = icBox.min[0];
+    box2.max[0] = icBox.max[0];
+    box2.min[1] = icBox.min[1] + icBox.half[1];
+    box2.max[1] = icBox.max[1];
     volume = (box1.max[0] - box1.min[0])*(box1.max[1] - box1.min[1]);
     Nbox1 = Nlattice1[0]*Nlattice1[1];
     Nbox2 = Nlattice2[0]*Nlattice2[1];

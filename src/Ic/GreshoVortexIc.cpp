@@ -83,14 +83,14 @@ void GreshoVortexIc<ndim>::Generate(void)
 
     // Compute size and range of fluid bounding boxes
     //---------------------------------------------------------------------------------------------
-    volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
+    volume = (icBox.max[0] - icBox.min[0])*(icBox.max[1] - icBox.min[1]);
     Nbox = Nlattice[0]*Nlattice[1];
 
     // Allocate local and main particle memory and calculate positions for cubic lattice
     hydro->Nhydro = Nbox;
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
-    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, simbox, false, r);
+    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, icBox, false, r);
 
     for (i=0; i<Nbox; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);

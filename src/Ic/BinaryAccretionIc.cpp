@@ -122,15 +122,15 @@ void BinaryAccretionIc<ndim>::Generate(void)
 
     // Set box limits for both fluids, depending on the selected number
     if (Nbox1 > 0 && Nbox2 == 0) {
-      box1 = simbox;
+      box1 = icBox;
     }
     else if (Nbox1 > 0 && Nbox2 > 0) {
-      box1 = simbox;
-      box2 = simbox;
-      box1.min[0] = simbox.min[0];
-      box1.max[0] = simbox.min[0] + simbox.half[0];
-      box2.min[0] = simbox.min[0] + simbox.half[0];
-      box2.max[0] = simbox.max[0];
+      box1 = icBox;
+      box2 = icBox;
+      box1.min[0] = icBox.min[0];
+      box1.max[0] = icBox.min[0] + icBox.half[0];
+      box2.min[0] = icBox.min[0] + icBox.half[0];
+      box2.max[0] = icBox.max[0];
     }
     else {
       string message = "Invalid number of particles chosen";
@@ -185,8 +185,8 @@ void BinaryAccretionIc<ndim>::Generate(void)
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r1[ndim*i + k];
-        part.r[0] += (FLOAT) 0.25*simbox.size[0];
-        if (part.r[0] > simbox.max[0]) part.r[0] -= simbox.size[0];
+        part.r[0] += (FLOAT) 0.25*icBox.size[0];
+        if (part.r[0] > icBox.max[0]) part.r[0] -= icBox.size[0];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.m = rhofluid1*volume1/(FLOAT) Nbox1;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
@@ -220,8 +220,8 @@ void BinaryAccretionIc<ndim>::Generate(void)
         i = Nbox1 + j;
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r2[ndim*j + k];
-        part.r[0] += (FLOAT) 0.25*simbox.size[0];
-        if (part.r[0] > simbox.max[0]) part.r[0] -= simbox.size[0];
+        part.r[0] += (FLOAT) 0.25*icBox.size[0];
+        if (part.r[0] > icBox.max[0]) part.r[0] -= icBox.size[0];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
         part.m = rhofluid2*volume2/(FLOAT) Nbox1;
@@ -260,10 +260,10 @@ void BinaryAccretionIc<ndim>::Generate(void)
       for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = (FLOAT) 0.0;
       if (vmachbin < small_number) {
-        nbody->stardata[0].r[0] = simbox.min[0] + (FLOAT) 0.5*simbox.size[0];
+        nbody->stardata[0].r[0] = icBox.min[0] + (FLOAT) 0.5*icBox.size[0];
       }
       else {
-        nbody->stardata[0].r[0] = simbox.min[0] + (FLOAT) 0.0625*simbox.size[0];
+        nbody->stardata[0].r[0] = icBox.min[0] + (FLOAT) 0.0625*icBox.size[0];
       }
       nbody->stardata[0].v[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
       nbody->stardata[0].m = m1 + m2;
@@ -278,10 +278,10 @@ void BinaryAccretionIc<ndim>::Generate(void)
       for (k=0; k<ndim; k++) rbinary[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) vbinary[k] = (FLOAT) 0.0;
       if (vmachbin < small_number) {
-        rbinary[0] = simbox.min[0] + (FLOAT) 0.5*simbox.size[0];
+        rbinary[0] = icBox.min[0] + (FLOAT) 0.5*icBox.size[0];
       }
       else {
-        rbinary[0] = simbox.min[0] + (FLOAT) 0.0625*simbox.size[0];
+        rbinary[0] = icBox.min[0] + (FLOAT) 0.0625*icBox.size[0];
       }
       vbinary[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
       Ic<ndim>::AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,phirot,thetarot,psirot,0.0,

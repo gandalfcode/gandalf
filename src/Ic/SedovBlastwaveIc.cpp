@@ -85,23 +85,23 @@ void SedovBlastwaveIc<ndim>::Generate(void)
   // Compute size and range of fluid bounding boxes
   //-----------------------------------------------------------------------------------------------
   if (ndim == 1) {
-    volume = simbox.max[0] - simbox.min[0];
+    volume = icBox.max[0] - icBox.min[0];
     Nbox = Nlattice[0];
   }
   else if (ndim == 2) {
-    volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
+    volume = (icBox.max[0] - icBox.min[0])*(icBox.max[1] - icBox.min[1]);
     Nbox = Nlattice[0]*Nlattice[1];
   }
   else if (ndim == 3) {
-    volume = (simbox.max[0] - simbox.min[0])*
-      (simbox.max[1] - simbox.min[1])*(simbox.max[2] - simbox.min[2]);
+    volume = (icBox.max[0] - icBox.min[0])*
+      (icBox.max[1] - icBox.min[1])*(icBox.max[2] - icBox.min[2]);
     Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
   }
   mbox  = volume*rhofluid;
   ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);
   Ncold = 0;
   Nhot  = 0;
-  r_hot = hydro->h_fac*hydro->kernrange*simbox.size[0]/Nlattice[0];
+  r_hot = hydro->h_fac*hydro->kernrange*icBox.size[0]/Nlattice[0];
 
 
   // Allocate local and main particle memory
@@ -118,13 +118,13 @@ void SedovBlastwaveIc<ndim>::Generate(void)
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
-    Ic<ndim>::AddRandomBox(Nbox, simbox, r, sim->randnumb);
+    Ic<ndim>::AddRandomBox(Nbox, icBox, r, sim->randnumb);
   }
   else if (particle_dist == "cubic_lattice") {
-    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, simbox, true, r);
+    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, icBox, true, r);
   }
   else if (particle_dist == "hexagonal_lattice") {
-    Ic<ndim>::AddHexagonalLattice(Nbox, Nlattice, simbox, true, r);
+    Ic<ndim>::AddHexagonalLattice(Nbox, Nlattice, icBox, true, r);
   }
   else {
     string message = "Invalid particle distribution option";

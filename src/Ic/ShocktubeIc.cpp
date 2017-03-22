@@ -74,7 +74,6 @@ void ShocktubeIc<ndim>::Generate(void)
     DomainBox<ndim> box1;                  // LHS box
     DomainBox<ndim> box2;                  // RHS box
     Parameters* simparams = sim->simparams;
-    DomainBox<ndim>& simbox = sim->simbox;
 
     // Set local copies of various input parameters for setting-up test
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -92,13 +91,12 @@ void ShocktubeIc<ndim>::Generate(void)
     debug2("[ShocktubeIc::Generate]");
 
     // Compute size and range of fluid bounding boxes
-    box1.min[0] = simbox.min[0];
-    box1.max[0] = (FLOAT) 0.0;
-    box2.min[0] = (FLOAT) 0.0;
-    box2.max[0] = simbox.max[0];
-    volume = box1.max[0] - box1.min[0];
-    Nbox1 = Nlattice1[0];
-    Nbox2 = Nlattice2[0];
+    box1.min[0]   = icBox.min[0];
+    box1.max[0]   = (FLOAT) 0.0;
+    box2.min[0]   = (FLOAT) 0.0;
+    box2.max[0]   = icBox.max[0];
+    Nbox1         = Nlattice1[0];
+    Nbox2         = Nlattice2[0];
     hydro->Nhydro = Nbox1 + Nbox2;
 
     bool dusty_shock = simparams->stringparams["dust_forces"] != "none" ;
@@ -113,6 +111,7 @@ void ShocktubeIc<ndim>::Generate(void)
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
       Ic<ndim>::AddCubicLattice(Nbox1, Nlattice1, box1, false, r);
+      volume = box1.max[0] - box1.min[0];
 
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -131,6 +130,7 @@ void ShocktubeIc<ndim>::Generate(void)
     //---------------------------------------------------------------------------------------------
     if (Nbox2 > 0) {
       Ic<ndim>::AddCubicLattice(Nbox2, Nlattice2, box2, false, r);
+      volume = box2.max[0] - box2.min[0];
 
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;

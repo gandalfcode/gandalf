@@ -103,8 +103,8 @@ void EwaldIc<ndim>::Generate(void)
       csound = sqrt(gamma*press1/rhofluid1);
     }
 
-    lambda = simbox.size[0];
-    volume = simbox.size[0]*simbox.size[1]*simbox.size[2];
+    lambda = icBox.size[0];
+    volume = icBox.size[0]*icBox.size[1]*icBox.size[2];
     kwave  = twopi/lambda;
     //omegawave = twopi*csound/lambda;
 
@@ -138,11 +138,11 @@ void EwaldIc<ndim>::Generate(void)
     //=============================================================================================
     if (ic == "ewaldsine" || ic == "jeans") {
 
-      lambda = simbox.max[0] - simbox.min[0];
+      lambda = icBox.max[0] - icBox.min[0];
       kwave  = twopi/lambda;
 
       // Add regular distribution of SPH particles
-      Ic<ndim>::AddCubicLattice(Npart, Nlattice1, simbox, false, r);
+      Ic<ndim>::AddCubicLattice(Npart, Nlattice1, icBox, false, r);
 
       // Add sinusoidal density perturbation to particle distribution
       Ic<ndim>::AddSinusoidalDensityPerturbation(Npart, amp, lambda, r);
@@ -186,13 +186,13 @@ void EwaldIc<ndim>::Generate(void)
     //=============================================================================================
     else if (ic == "ewaldsine2") {
 
-      lambda = simbox.max[0] - simbox.min[0];
+      lambda = icBox.max[0] - icBox.min[0];
       kwave = twopi/lambda;
 
       // Add regular distribution of SPH particles
-      Ic<ndim>::AddCubicLattice(Npart, Nlattice1, simbox, false, r);
+      Ic<ndim>::AddCubicLattice(Npart, Nlattice1, icBox, false, r);
 
-      volume = simbox.size[0]*simbox.size[1]*simbox.size[2];
+      volume = icBox.size[0]*icBox.size[1]*icBox.size[2];
       FLOAT volp = volume/(FLOAT) Npart;
 
       // Set all other particle quantities
@@ -227,9 +227,9 @@ void EwaldIc<ndim>::Generate(void)
       h0 = csound/sqrtf(twopi*rhofluid1);
 
       // Add regular distribution of SPH particles
-      Ic<ndim>::AddCubicLattice(Npart, Nlattice1, simbox, false, r);
+      Ic<ndim>::AddCubicLattice(Npart, Nlattice1, icBox, false, r);
 
-      volume = simbox.size[0]*simbox.size[1]*simbox.size[2];
+      volume = icBox.size[0]*icBox.size[1]*icBox.size[2];
       FLOAT volp = volume/(FLOAT) Npart;
 
       // Set all other particle quantities
@@ -278,9 +278,9 @@ void EwaldIc<ndim>::Generate(void)
       a2inv = pi*rhofluid1*0.5/pow(csound,2);
 
       // Add regular distribution of SPH particles
-      Ic<ndim>::AddCubicLattice(Npart, Nlattice1, simbox, false, r);
+      Ic<ndim>::AddCubicLattice(Npart, Nlattice1, icBox, false, r);
 
-      volume = simbox.size[0]*simbox.size[1]*simbox.size[2];
+      volume = icBox.size[0]*icBox.size[1]*icBox.size[2];
       FLOAT volp = volume/(FLOAT) Npart;
 
       // Set all other particle quantities

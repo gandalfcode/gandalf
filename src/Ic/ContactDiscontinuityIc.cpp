@@ -85,10 +85,10 @@ void ContactDiscontinuityIc<ndim>::Generate(void)
   // 1D simulation
   //===============================================================================================
   if (ndim == 1) {
-    box1.min[0] = simbox.min[0];
-    box1.max[0] = (FLOAT) 0.8*simbox.max[0];
-    box2.min[0] = (FLOAT) 0.8*simbox.max[0];
-    box2.max[0] = simbox.max[0];
+    box1.min[0] = icBox.min[0];
+    box1.max[0] = (FLOAT) 0.8*icBox.max[0];
+    box2.min[0] = (FLOAT) 0.8*icBox.max[0];
+    box2.max[0] = icBox.max[0];
     volume = box1.max[0] - box1.min[0];
     Nbox1 = Nlattice1[0];
     Nbox2 = Nlattice2[0];
@@ -104,8 +104,8 @@ void ContactDiscontinuityIc<ndim>::Generate(void)
       volume = box1.max[0] - box1.min[0];
       for (i=0; i<Nbox1; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        part.r[0] = r[i] - (FLOAT) 0.4*simbox.size[0];
-        if (part.r[0] < simbox.min[0]) part.r[0] += simbox.size[0];
+        part.r[0] = r[i] - (FLOAT) 0.4*icBox.size[0];
+        if (part.r[0] < icBox.min[0]) part.r[0] += icBox.size[0];
         part.v[0] = (FLOAT) 0.0;
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
@@ -125,8 +125,8 @@ void ContactDiscontinuityIc<ndim>::Generate(void)
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        part.r[0] = r[j] - (FLOAT) 0.4*simbox.size[0];
-        if (part.r[0] < simbox.min[0]) part.r[0] += simbox.size[0];
+        part.r[0] = r[j] - (FLOAT) 0.4*icBox.size[0];
+        if (part.r[0] < icBox.min[0]) part.r[0] += icBox.size[0];
         part.v[0] = (FLOAT) 0.0;
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);

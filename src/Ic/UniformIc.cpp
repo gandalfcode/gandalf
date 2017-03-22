@@ -64,7 +64,7 @@ void UniformIc<ndim>::Generate(void)
     FLOAT volume;                     // Volume of box
     FLOAT *r = 0;                     // Position vectors of all particles
 
-    DomainBox<ndim>& simbox = sim->simbox;
+    DomainBox<ndim>& icBox = sim->icBox;
 
     // Local copy of important parameters
     string particle_dist = simparams->stringparams["particle_distribution"];
@@ -76,16 +76,16 @@ void UniformIc<ndim>::Generate(void)
 
     // Compute volume and number of particles inside box
     if (ndim == 1) {
-      volume = simbox.max[0] - simbox.min[0];
+      volume = icBox.max[0] - icBox.min[0];
       Nbox = Nlattice[0];
     }
     else if (ndim == 2) {
-      volume = (simbox.max[0] - simbox.min[0])*(simbox.max[1] - simbox.min[1]);
+      volume = (icBox.max[0] - icBox.min[0])*(icBox.max[1] - icBox.min[1]);
       Nbox = Nlattice[0]*Nlattice[1];
     }
     else if (ndim == 3) {
-      volume = (simbox.max[0] - simbox.min[0])*
-        (simbox.max[1] - simbox.min[1])*(simbox.max[2] - simbox.min[2]);
+      volume = (icBox.max[0] - icBox.min[0])*
+        (icBox.max[1] - icBox.min[1])*(icBox.max[2] - icBox.min[2]);
       Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
     }
 
@@ -93,17 +93,17 @@ void UniformIc<ndim>::Generate(void)
     // depending on the chosen particle distribution
     if (particle_dist == "random") {
       r = new FLOAT[ndim*Npart];
-      Ic<ndim>::AddRandomBox(Npart, simbox, r, sim->randnumb);
+      Ic<ndim>::AddRandomBox(Npart, icBox, r, sim->randnumb);
     }
     else if (particle_dist == "cubic_lattice") {
       Npart = Nbox;
       r = new FLOAT[ndim*Npart];
-      Ic<ndim>::AddCubicLattice(Npart, Nlattice, simbox, true, r);
+      Ic<ndim>::AddCubicLattice(Npart, Nlattice, icBox, true, r);
     }
     else if (particle_dist == "hexagonal_lattice") {
       Npart = Nbox;
       r = new FLOAT[ndim*Npart];
-      Ic<ndim>::AddHexagonalLattice(Npart, Nlattice, simbox, true, r);
+      Ic<ndim>::AddHexagonalLattice(Npart, Nlattice, icBox, true, r);
     }
     else {
       string message = "Invalid particle distribution option";

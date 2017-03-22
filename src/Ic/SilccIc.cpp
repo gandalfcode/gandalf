@@ -71,11 +71,11 @@ SilccIc<ndim>::SilccIc(Simulation<ndim>* _sim, FLOAT _invndim) :
 
   // Compute total mass of particles in simulation box by integrating in the z-direction
   box_area = (FLOAT) 1.0;
-  for (int k=0; k<ndim-1; k++) box_area *= simbox.size[k];
+  for (int k=0; k<ndim-1; k++) box_area *= icBox.size[k];
   rho_star  = (FLOAT) 0.25*sigma_star/z_d;
   rho_a     = rho_midplane*exp(-a_midplane*a_midplane/h_midplane/h_midplane);
   m_exp     = (FLOAT) 0.5*sqrt(pi)*rho_midplane*h_midplane*erf(a_midplane/h_midplane)*box_area;
-  m_uniform = rho_a*box_area*(simbox.max[ndim-1] - a_midplane);
+  m_uniform = rho_a*box_area*(icBox.max[ndim-1] - a_midplane);
   m_box     = 2.0*(m_exp + m_uniform);
 
 }
@@ -108,8 +108,8 @@ void SilccIc<ndim>::Generate(void)
 
     Box<ndim> box;
     for (int i=0; i < ndim; i++) {
-      box.min[i] = simbox.min[i];
-      box.max[i] = simbox.max[i];
+      box.min[i] = icBox.min[i];
+      box.max[i] = icBox.max[i];
     }
     Ic<ndim>::AddMonteCarloDensityField(Npart, gas_type, box, r, sim->randnumb);
 
