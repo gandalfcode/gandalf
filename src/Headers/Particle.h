@@ -41,6 +41,7 @@ template<int ndim> class GradhSphBase;
 
 
 enum flags {
+
 	none = 0,
 	dead = 1 << 0,
 	active = 1 << 1,
@@ -57,9 +58,10 @@ enum flags {
 	y_periodic_rhs = 1 << 11,
 	z_periodic_rhs = 1 << 12,
 
-	x_periodic = x_periodic_lhs | x_periodic_rhs,
-	y_periodic = y_periodic_lhs | y_periodic_rhs,
-	z_periodic = z_periodic_lhs | z_periodic_rhs,
+  x_periodic = x_periodic_lhs | x_periodic_rhs,
+  y_periodic = y_periodic_lhs | y_periodic_rhs,
+  z_periodic = z_periodic_lhs | z_periodic_rhs,
+
 
 	x_mirror_lhs = 1 << 13,
 	y_mirror_lhs = 1 << 14,
@@ -69,76 +71,78 @@ enum flags {
 	y_mirror_rhs = 1 << 17,
 	z_mirror_rhs = 1 << 18,
 
-	x_mirror = x_mirror_lhs | x_mirror_rhs,
-	y_mirror = y_mirror_lhs | y_mirror_rhs,
-	z_mirror = z_mirror_lhs | z_mirror_rhs,
+  x_mirror = x_mirror_lhs | x_mirror_rhs,
+  y_mirror = y_mirror_lhs | y_mirror_rhs,
+  z_mirror = z_mirror_lhs | z_mirror_rhs,
 
-	periodic_boundary = x_periodic | y_periodic | z_periodic,
-	mirror_boundary   = x_mirror   | y_mirror   | z_mirror,
+  periodic_boundary = x_periodic | y_periodic | z_periodic,
+  mirror_boundary   = x_mirror   | y_mirror   | z_mirror,
 
-	any_boundary = periodic_boundary | mirror_boundary,
+  any_boundary = periodic_boundary | mirror_boundary,
 };
+
 
 const int periodic_bound_flags[3][2] = {
-	 { x_periodic_lhs, x_periodic_rhs},
-	 { y_periodic_lhs, y_periodic_rhs},
-	 { z_periodic_lhs, z_periodic_rhs},
+   {x_periodic_lhs, x_periodic_rhs},
+   {y_periodic_lhs, y_periodic_rhs},
+   {z_periodic_lhs, z_periodic_rhs},
 };
+
 
 const int mirror_bound_flags[3][2] = {
-	 { x_mirror_lhs, x_mirror_rhs},
-	 { y_mirror_lhs, y_mirror_rhs},
-	 { z_mirror_lhs, z_mirror_rhs},
+   {x_mirror_lhs, x_mirror_rhs},
+   {y_mirror_lhs, y_mirror_rhs},
+   {z_mirror_lhs, z_mirror_rhs},
 };
 
-class type_flag{
+
+//=================================================================================================
+//  Class type_flag
+/// \brief  ...
+/// \author R. A. Booth
+/// \date   31/3/2016
+//=================================================================================================
+class type_flag {
+private:
+  unsigned int _flag;
+
+
 public:
-  type_flag(unsigned int flag = none)
-    : _flag(flag)
-  { }
+  type_flag(unsigned int flag = none) : _flag(flag) {}
 
   unsigned int& set_flag(unsigned int flag) {
-    return _flag |= flag ;
+    return _flag |= flag;
   }
   unsigned int& unset_flag(unsigned int flag) {
-	return _flag &= ~flag ;
+    return _flag &= ~flag;
   }
   unsigned int get() const {
-	return _flag ;
+    return _flag;
   }
   void reset() {
-	_flag = none ;
+    _flag = none;
   }
-
 
   bool check_flag(unsigned int flag) const {
     return (_flag & flag) ;
   }
-
   bool is_dead() const {
-    return _flag & dead ;
+    return _flag & dead;
   }
-
   bool is_boundary() const {
-    return _flag & any_boundary ;
+    return _flag & any_boundary;
   }
   bool is_periodic() const {
-	return _flag & periodic_boundary ;
+    return _flag & periodic_boundary;
   }
   bool is_mirror() const {
-	return _flag & mirror_boundary ;
+    return _flag & mirror_boundary;
   }
 
-private:
-	unsigned int _flag ;
 };
 
-enum ptype {gas, icm, boundary, cdm, dust} ;
-enum parttype{gas_type, icm_type, cdm_type, dust_type, Ntypes} ;
 
-static const int parttype_converter[] = { gas, icm, cdm, dust } ;
-static const int parttype_reverse_converter[] =
-{ gas_type, icm_type, gas_type, cdm_type, dust_type} ;
+enum parttype {gas_type, icm_type, cdm_type, dust_type, boundary_type, Ntypes};
 
 
 
@@ -149,25 +153,26 @@ static const int parttype_reverse_converter[] =
 /// \date   31/3/2016
 //=================================================================================================
 class Typemask {
+private:
+  bool _data[Ntypes];
+
 public:
-  Typemask() {
-    for (int k=0; k<Ntypes; k++) _data[k] = false;
+  Typemask(bool defaultFlag = false) {
+    for (int k=0; k<Ntypes; k++) _data[k] = defaultFlag;
   }
 
   const bool& operator[](int i) const {
-	return _data[i] ;
+    return _data[i];
   }
   bool& operator[](int i) {
-	return _data[i] ;
+    return _data[i];
   }
-
   int size() const {
-	return Ntypes ;
+    return Ntypes;
   }
 
-private:
-  bool _data[Ntypes] ;
 };
+
 
 
 //=================================================================================================
@@ -181,7 +186,7 @@ struct ParticleTypeInfo
   int N;                               ///< Current no. of particles
   bool hydro_forces;                   ///< Does particle experience hydro forces?
   bool self_gravity;                   ///< Does particle experience gravitational forces?
-  bool drag_forces ;                   ///< Does particle experience drag forces?
+  bool drag_forces;                    ///< Does particle experience drag forces?
   Typemask hmask;                      ///< Neighbour mask for computing smoothing lengths
   Typemask hydromask;                  ///< Neighbour mask for computing hydro forces
   Typemask dragmask;                   ///< Neighbour mask for computing drag forces
@@ -190,9 +195,10 @@ struct ParticleTypeInfo
     N = 0;
     hydro_forces = false;
     self_gravity = false;
-    drag_forces  = false ;
+    drag_forces  = false;
   }
 };
+
 
 
 //=================================================================================================
@@ -202,21 +208,24 @@ struct ParticleTypeInfo
 /// \date   31/3/2016
 //=================================================================================================
 class ParticleTypeRegister {
+private:
+  ParticleTypeInfo _types[Ntypes];
+
 public:
-  ParticleTypeRegister(Parameters *params) ;
+  Typemask gravmask;                   ///< Does the particle type contribute to grav. forces?
+
+  ParticleTypeRegister(Parameters *params);
 
   ParticleTypeInfo& operator[](int i) {
-	return _types[i] ;
+    return _types[i];
   }
   const ParticleTypeInfo& operator[](int i) const {
-	return _types[i] ;
+    return _types[i];
   }
 
-  Typemask gravmask ;       ///< Does the particle type contribute to gravitational forces?
-
-private:
-  ParticleTypeInfo _types[Ntypes] ;
 };
+
+
 
 //=================================================================================================
 //  Structure Particle
@@ -227,9 +236,9 @@ private:
 template <int ndim>
 struct Particle
 {
+  type_flag flags;                  ///< Particle flags (eg boundary/dead)
+  int ptype;                        ///< Particle type (gas/cdm/dust)
   int iorig;                        ///< Original particle i.d.
-  type_flag flags;                  ///< SPH particle flags (eg boundary/dead)
-  int ptype;                        ///< SPH particle type (gas/cdm/dust)
   int sinkid;                       ///< i.d. of sink particle
   int levelneib;                    ///< Min. timestep level of neighbours
   int nstep;                        ///< Integer step-size of particle
@@ -267,14 +276,14 @@ struct Particle
                                     ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
   Particle() {
-    iorig = -1;
-    flags = none;
-    ptype = gas_type;
+    flags     = none;
+    ptype     = gas_type;
+    iorig     = -1;
     levelneib = 0;
-    level = 0;
-    nstep = 0;
-    nlast = 0;
-    sinkid = -1;
+    level     = 0;
+    nstep     = 0;
+    nlast     = 0;
+    sinkid    = -1;
     for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a[k] = (FLOAT) 0.0;
@@ -283,7 +292,7 @@ struct Particle
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
     m         = (FLOAT) 0.0;
-    h         = (FLOAT) 0.0;
+    h         = (FLOAT) 1.0;
     h_dust    = (FLOAT) 0.0;
     hrangesqd = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;
@@ -299,7 +308,7 @@ struct Particle
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
     mu_bar    = (FLOAT) 1.0;
-    vsig_max  = 0;
+    vsig_max  = (FLOAT) 0.0;
   }
 
   static const int NDIM = ndim ;
@@ -473,9 +482,9 @@ struct SM2012SphParticle : public SphParticle<ndim>
 template <int ndim>
 struct MeshlessFVParticle : public Particle<ndim>
 {
-  using Particle<ndim>::r ;
-  using Particle<ndim>::v ;
-  using Particle<ndim>::a ;
+  using Particle<ndim>::r;
+  using Particle<ndim>::v;
+  using Particle<ndim>::a;
 
   FLOAT press;                         ///< Pressure
   FLOAT invomega;                      ///< ..
@@ -721,6 +730,7 @@ template <int ndim>
 inline void reflect(typename MeshlessFVParticle<ndim>::GravParticle& part, int k, double x_mirror) {
    ExceptionHandler::getIstance().raise("You should not use mirror boundaries with gravity!!!!");
 }
+
 
 
 

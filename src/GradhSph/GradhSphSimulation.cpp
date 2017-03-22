@@ -111,6 +111,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["gas_eos"] == "isothermal") {
     eos_type = isothermal;
   }
+  else if (stringparams["gas_eos"] == "polytropic") {
+    eos_type = polytropic;
+  }
   else if (stringparams["gas_eos"] == "barotropic") {
     eos_type = barotropic;
   }
@@ -231,31 +234,30 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
+  string tree_type = stringparams["neib_search"] ;
+  if (gas_radiation == "tree_ray") {
+    if (tree_type == "octtree" && ndim == 3) {
+      tree_type = "treeray" ;
+    }
+    else {
+      string message = "Error: Tree Ray needs an Oct Tree and ndim=3";
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
 
+  sphneib = new GradhSphTree<ndim,GradhSphParticle>
+    (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+     floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+     stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
 
-   string tree_type = stringparams["neib_search"] ;
-   if (gas_radiation == "tree_ray") {
-     if (tree_type == "octtree" && ndim == 3) {
-       tree_type = "treeray" ;
-     }
-     else {
-       string message = "Error: Tree Ray needs an Oct Tree and ndim=3";
-       ExceptionHandler::getIstance().raise(message);
-     }
-   }
+  // Here I do a horrible hack to get at the underlying tree, needed for the dust.
+  TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
+  typedef GradhSphTree<ndim,GradhSphParticle> TreeType ;
+  TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
+  t = pTree->tree ; gt = pTree->ghosttree ;
 
-   sphneib = new GradhSphTree<ndim,GradhSphParticle>
-      (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
-       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-       stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
-       
-   // Here I do a horrible hack to get at the underlying tree, needed for the dust.
-   TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
-   typedef GradhSphTree<ndim,GradhSphParticle> TreeType ;
-   TreeType *pTree = reinterpret_cast<TreeType*>(sphneib) ;
-   t = pTree->tree ; gt = pTree->ghosttree ;
 #ifdef MPI_PARALLEL
-    mpit = pTree->mpighosttree ;
+  mpit = pTree->mpighosttree ;
 #endif
 
 

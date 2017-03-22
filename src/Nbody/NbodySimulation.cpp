@@ -73,6 +73,33 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 
 
 
+  // Boundary condition variables
+  //-----------------------------------------------------------------------------------------------
+  simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
+  simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
+  simbox.min[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.max[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+
+  if (ndim > 1) {
+    simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
+    simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
+    simbox.min[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+    simbox.max[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+  }
+
+  if (ndim == 3) {
+    simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
+    simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
+    simbox.min[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+    simbox.max[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+  }
+
+  for (int k=0; k<ndim; k++) {
+    simbox.size[k] = simbox.max[k] - simbox.min[k];
+    simbox.half[k] = 0.5*simbox.size[k];
+  }
+
+
   // Set-up dummy SPH object in order to have valid pointers in N-body object
   hydro = new NullHydrodynamics<ndim>
     (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
@@ -85,16 +112,6 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 
   // Set pointers to external potential field object
   nbody->extpot = extpot;
-
-
-  // Set important variables for N-body objects
-  nbody->Nstar          = intparams["Nstar"];
-  nbody->Nstarmax       = intparams["Nstarmax"];
-  nbody_single_timestep = intparams["nbody_single_timestep"];
-  nbodytree.gpehard     = floatparams["gpehard"];
-  nbodytree.gpesoft     = floatparams["gpesoft"];
-  //nbody->perturbers     = intparams["perturbers"];
-  //if (intparams["sub_systems"] == 1) subsystem->perturbers = intparams["perturbers"];
 
 
   // Create Ewald periodic gravity object
@@ -112,6 +129,34 @@ void NbodySimulation<ndim>::ProcessParameters(void)
     if (IsAnyBoundaryReflecting(simbox) && intparams["self_gravity"]){
       ExceptionHandler::getIstance().raise("Error: Reflecting boundaries and self-gravity is not "
                                        "supported") ;
+    }
+  }
+
+
+  // Set important variables for N-body objects
+  nbody->Nstar          = intparams["Nstar"];
+  nbody->Nstarmax       = intparams["Nstarmax"];
+  nbody_single_timestep = intparams["nbody_single_timestep"];
+  nbodytree.gpehard     = floatparams["gpehard"];
+  nbodytree.gpesoft     = floatparams["gpesoft"];
+  //nbody->perturbers     = intparams["perturbers"];
+  //if (intparams["sub_systems"] == 1) subsystem->perturbers = intparams["perturbers"];
+
+
+  // Create Ewald periodic gravity object
+  periodicBoundaries = IsAnyBoundaryPeriodic(simbox);
+  if (periodicBoundaries) {
+    ewaldGravity = true;
+    ewald = new Ewald<ndim>
+      (simbox, intparams["gr_bhewaldseriesn"], intparams["in"], intparams["nEwaldGrid"],
+       floatparams["ewald_mult"], floatparams["ixmin"], floatparams["ixmax"],
+       floatparams["EFratio"], timing);
+    simbox.PeriodicGravity = true;
+  }
+  else{
+    simbox.PeriodicGravity = false ;
+    if (IsAnyBoundaryReflecting(simbox)) {
+      ExceptionHandler::getIstance().raise("Error: Reflecting boundaries not supported");
     }
   }
 
@@ -171,8 +216,14 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     nbody->Nnbody = nbody->Nstar;
-    nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-    nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
+    if (nbody->nbody_softening == 1) {
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+    }
+    else {
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+    }
+    //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+    nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->active) {
         nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r,nbody->nbodydata[i]->v,
@@ -232,8 +283,14 @@ void NbodySimulation<ndim>::MainLoop(void)
       nbody->Nnbody = nbody->Nstar;
 
       // Calculate forces for all star by direct-sum
-      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-      nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
+      if (nbody->nbody_softening == 1) {
+        nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+      }
+      else {
+        nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+      }
+      //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
 
       // Now create nearest neighbour tree and build any sub-systems from tree
       nbodytree.CreateNbodySystemTree(nbody);
@@ -283,7 +340,13 @@ void NbodySimulation<ndim>::MainLoop(void)
       }
 
       // Calculate forces, force derivatives etc.., for active stars/systems
-      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      if (nbody->nbody_softening == 1) {
+        nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+      }
+      else {
+        nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+      }
+      //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
 
       for (i=0; i<nbody->Nnbody; i++) {
         if (nbody->nbodydata[i]->active) {
@@ -294,7 +357,7 @@ void NbodySimulation<ndim>::MainLoop(void)
       }
 
       // Calculate correction step for all stars at end of step
-      nbody->CorrectionTerms(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
+      nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
     }
     //---------------------------------------------------------------------------------------------
@@ -309,8 +372,8 @@ void NbodySimulation<ndim>::MainLoop(void)
       if (nbody->nbodydata[i]->Ncomp > 1) {
         // The cast is needed because the function is defined only in SystemParticle, not in
         // NbodyParticle.  The safety of the cast relies on the correctness of the Ncomp value.
-        subsystem->IntegrateInternalMotion(static_cast<SystemParticle<ndim>* >
-                                           (nbody->nbodydata[i]), n, t - timestep, t);
+        subsystem->IntegrateInternalMotion
+         (static_cast<SystemParticle<ndim>* > (nbody->nbodydata[i]), n, t - timestep, t, simbox, ewald);
       }
     }
   }
@@ -333,7 +396,7 @@ void NbodySimulation<ndim>::MainLoop(void)
 
 
   // Set all end-of-step variables
-  nbody->EndTimestep(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
+  nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   return;
 }

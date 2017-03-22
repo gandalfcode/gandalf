@@ -219,6 +219,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
       floatparams["thetamaxsqd"], hydro->kernp->kernrange, floatparams["macerror"],
       stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing, mfv->types);
 
+  neib = mfvneib ;
 
   // Depending on the dimensionality, calculate expected neighbour number
   //-----------------------------------------------------------------------------------------------
@@ -284,6 +285,23 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
       (stringparams["nbody"] != "lfkdk" && stringparams["nbody"] != "lfdkd")) {
     string message = "Invalid parameter : nbody must use lfkdk or lfdkd when "
         "using accreting sink particles";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Supernova feedback
+  //-----------------------------------------------------------------------------------------------
+  if (stringparams["supernova_feedback"] == "none") {
+    snDriver = new NullSupernovaDriver<ndim>(this);
+  }
+  else if (stringparams["supernova_feedback"] == "single") {
+    snDriver = new SedovTestDriver<ndim>(this,simparams, simunits);
+  }
+  else if (stringparams["supernova_feedback"] == "random") {
+    snDriver = new RandomSedovTestDriver<ndim>(this,simparams, simunits, simbox);
+  }
+  else {
+    string message = "Unrecognised parameter : external_potential = "
+      + simparams->stringparams["supernova_feedback"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -400,7 +418,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   if (!this->initial_h_provided) {
     mfv->InitialSmoothingLengthGuess();
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
-    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+    mfvneib->UpdateAllProperties(mfv, nbody);
 
     for (i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
@@ -449,7 +467,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 
   // Calculate all hydro properties
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody);
 
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
@@ -562,7 +580,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       part.flags.set_flag(active);
     }
 
-    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+    mfvneib->UpdateAllProperties(mfv, nbody); // simbox);
 
 
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
@@ -613,7 +631,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
-    mfvneib->UpdateAllStarGasForces(mfv, nbody);  //, simbox, ewald);
+    mfvneib->UpdateAllStarGasForces(mfv, nbody, simbox, ewald);  //, simbox, ewald);
 
     // We need to sum up the contributions from the different domains
 #if defined MPI_PARALLEL
@@ -622,12 +640,13 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
   if (nbody->nbody_softening == 1) {
-    nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
+    nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
   }
   else {
-    nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+    nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
   }
-  nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata);
+  nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+
 
   for (i=0; i<nbody->Nnbody; i++) {
     if (nbody->nbodydata[i]->active) {

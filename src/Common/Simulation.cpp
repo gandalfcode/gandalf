@@ -1108,6 +1108,23 @@ void Simulation<ndim>::ProcessParameters(void)
   }
 
 
+  // Initial conditions box variables
+  //-----------------------------------------------------------------------------------------------
+  for (int k=0; k<ndim; k++) icBox.boundary_lhs[k] = periodicBoundary;
+  for (int k=0; k<ndim; k++) icBox.boundary_rhs[k] = periodicBoundary;
+  icBox.min[0] = simparams->floatparams["boxmin[0]"]/simunits.r.outscale;
+  icBox.max[0] = simparams->floatparams["boxmax[0]"]/simunits.r.outscale;
+  icBox.min[1] = simparams->floatparams["boxmin[1]"]/simunits.r.outscale;
+  icBox.max[1] = simparams->floatparams["boxmax[1]"]/simunits.r.outscale;
+  icBox.min[2] = simparams->floatparams["boxmin[2]"]/simunits.r.outscale;
+  icBox.max[2] = simparams->floatparams["boxmax[2]"]/simunits.r.outscale;
+  for (int k=0; k<ndim; k++) {
+    icBox.size[k] = icBox.max[k] - icBox.min[k];
+    icBox.half[k] = (FLOAT) 0.5*icBox.size[k];
+  }
+
+
+
   // Set external potential field object
   if (stringparams["external_potential"] == "none") {
     extpot = new NullPotential<ndim>();
@@ -1119,6 +1136,9 @@ void Simulation<ndim>::ProcessParameters(void)
   else if (stringparams["external_potential"] == "plummer") {
     extpot = new PlummerPotential<ndim>(floatparams["mplummer"], floatparams["rplummer"]);
   }
+  else if (stringparams["external_potential"] == "silcc") {
+    extpot = new SilccPotential<ndim>(floatparams["sigma_star"], floatparams["z_d"], simunits);
+  }
   else {
     string message = "Unrecognised parameter : external_potential = "
       + simparams->stringparams["external_potential"];
@@ -1127,7 +1147,14 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Create Ewald periodic gravity object
   periodicBoundaries = IsAnyBoundaryPeriodic(simbox);
-  if (periodicBoundaries && intparams["self_gravity"] == 1) {
+  if (IsAnyBoundaryReflecting(simbox) && intparams["self_gravity"]) {
+    ExceptionHandler::getIstance().raise("Error: Reflecting boundaries and self-gravity is not "
+                                         "supported") ;
+  }
+  else if (periodicBoundaries && intparams["self_gravity"] == 1) {
+    if (ndim != 3) {
+      ExceptionHandler::getIstance().raise("Error: Periodic/Ewald gravity only supported in 3D");
+    }
     ewaldGravity = true;
     ewald = new Ewald<ndim>
       (simbox, intparams["gr_bhewaldseriesn"], intparams["in"], intparams["nEwaldGrid"],
@@ -1135,12 +1162,8 @@ void Simulation<ndim>::ProcessParameters(void)
        floatparams["EFratio"], timing);
     simbox.PeriodicGravity = true ;
   }
-  else{
+  else {
     simbox.PeriodicGravity = false ;
-    if (IsAnyBoundaryReflecting(simbox) && intparams["self_gravity"]){
-      ExceptionHandler::getIstance().raise("Error: Reflecting boundaries and self-gravity is not "
-                                           "supported") ;
-    }
   }
 
   // Set other important simulation variables
@@ -1156,7 +1179,7 @@ void Simulation<ndim>::ProcessParameters(void)
   nrestartstep        = intparams["nrestartstep"];
   ntreebuildstep      = intparams["ntreebuildstep"];
   ntreestockstep      = intparams["ntreestockstep"];
-  nsystembuildstep = intparams["nsystembuildstep"];
+  nsystembuildstep    = intparams["nsystembuildstep"];
   Nstepsmax           = intparams["Nstepsmax"];
   out_file_form       = stringparams["out_file_form"];
   pruning_level_min   = intparams["pruning_level_min"];
