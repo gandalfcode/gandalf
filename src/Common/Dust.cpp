@@ -569,7 +569,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   vector<FLOAT> a_drag(ndim*Ntot) ;            // temporary to hold the drag accelerations
   vector<FLOAT> dudt(Ntot) ;                   // temporary to hold the drag heating
 
-#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag)
+#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag, dudt)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -644,7 +644,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     {
       for (i=0; i<Nhydro; i++) {
         sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
-        update_particle(sphdata[i], &a_drag[i*ndim], dudt[i], timestep);
+        update_particle(sphdata[i], &a_drag[i*ndim], dudt[i], sphdata[i].dt);
       }
     }
   }
@@ -737,7 +737,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
       gsound += m[j]*w*d[j].cs ;
       for (k=0; k < ndim; k++) {
         // Get the velocity at the start of the kick and the acceleration
-        dv[k] += m[j]*w*(d[j].v[k] - 0.5 *  d[j].a0[k]*dt) ;
+        dv[k] += m[j]*w*(d[j].v[k] - 0.5 *  d[j].a0[k]*parti.dt) ;
         da[k] += m[j]*w*d[j].a[k] ;
       }
     }
@@ -750,7 +750,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 
     gsound *= invrho * hfactor ;
     for (k=0; k < ndim; k++) {
-      dv[k] = (parti.v[k] - 0.5*get_old_accel(parti,k)*dt) - dv[k]*invrho*hfactor ;
+      dv[k] = (parti.v[k] - 0.5*get_old_accel(parti,k)*parti.dt) - dv[k]*invrho*hfactor ;
       da[k] = get_total_accel(parti, k) - da[k]*invrho*hfactor ;
      }
 

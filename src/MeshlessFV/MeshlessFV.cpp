@@ -461,19 +461,6 @@ int MeshlessFV<ndim>::CheckTimesteps
  }
 
 //=================================================================================================
-//  MeshlessFV::UpdatePrimitiveVector
-/// Updates all particle quantities based on the primitive variables.
-//=================================================================================================
-void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
-{
-  for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
-  part.Wprim[irho] = part.rho;
-  if (types[part.ptype].hydro_forces)
-    part.Wprim[ipress] = part.press;
-}
-
-
-//=================================================================================================
 //  MeshlessFV::UpdateArrayVariables
 /// Updates all particle quantities based on the primitive/conserved variables.
 //=================================================================================================

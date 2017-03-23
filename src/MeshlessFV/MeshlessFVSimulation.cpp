@@ -554,7 +554,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     else
       mfvneib->SetOpeningCriterion(mac_type) ;
 
-<<<<<<< HEAD
     for (i=0; i<mfv->Ntot; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
       for (k=0; k<ndim; k++) {

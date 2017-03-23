@@ -111,11 +111,11 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Compute the dust forces if present.
   if (mfvdust != NULL){
     // Copy properties from original particles to ghost particles
-    mfv->CopyDataToGhosts(simbox, partdata);
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
 #endif
-    mfvdust->UpdateAllDragForces(mfv->Nhydro, mfv->Ntot, partdata, timestep) ;
+    mfvdust->UpdateAllDragForces(mfv->Nhydro, mfv->Ntot, mfv->GetMeshlessFVParticleArray()) ;
   }
 
   // Advance all global time variables
