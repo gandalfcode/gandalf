@@ -578,6 +578,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->InitialiseCellWorkCounters();
 #endif
     mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
+    mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);

@@ -481,8 +481,8 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOA
     part.u = eos->SpecificInternalEnergy(part);
     part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
-    assert(isnormal(part.u));
-    assert(isnormal(part.press));
+    assert(part.u > 0);
+    assert(part.press > 0);
   }
 
   return;
