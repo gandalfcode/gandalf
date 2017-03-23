@@ -226,8 +226,7 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
   const FLOAT dt_grav = accel_mult*
     sqrtf(part.h/sqrt(DotProduct(part.a0, part.a0, ndim) + small_number));
 
-  if (hydro_forces && self_gravity) return min(dt_cfl, dt_grav);
-  else if (hydro_forces) return dt_cfl;
+  if (hydro_forces) return min(dt_cfl, dt_grav);
   else if (self_gravity) return dt_grav;
   else return big_number;
 }
@@ -281,7 +280,6 @@ void MeshlessFV<ndim>::IntegrateParticles
     this->ComputeThermalProperties(part);
     this->UpdatePrimitiveVector(part);
 
-
     //---------------------------------------------------------------------------------------------
     if (!staticParticles) {
       part.flags.set_flag(update_density);
@@ -322,7 +320,7 @@ void MeshlessFV<ndim>::IntegrateParticles
             part.r0[k] -= simbox.size[k];
           }
 
-          // Check if wall or mirror boundaryq
+          // Check if wall or mirror boundary
           if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
             part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
             part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
@@ -414,8 +412,8 @@ void MeshlessFV<ndim>::EndTimestep
       for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
       for (k=0; k<ndim; k++) part.rdmdt[k] = 0.0;
       for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
-      for (k=0; k<ndim; k++) part.a[k] = 0.0;
-      part.gpot=0.0;
+      //for (k=0; k<ndim; k++) part.a[k] = 0.0;
+      //part.gpot=0.0;
 
       for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
 

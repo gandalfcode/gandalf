@@ -29,10 +29,9 @@
 
 #include "Precision.h"
 #include "Constants.h"
-#include "Nbody.h"
-#include "Parameters.h"
+//#include "Nbody.h"
+//#include "Parameters.h"
 #include "Particle.h"
-//#include "SphNeighbourSearch.h"
 #include "SimUnits.h"
 
 
@@ -44,11 +43,16 @@ template <int ndim>
 class SphNeighbourSearch;
 
 template <int ndim>
+class Nbody;
+
+template <int ndim>
 class EOS;
 
+class Paramters;
 
-enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
-             constant_temp, radws, Nhydroeos};
+
+enum eosenum{noeos, isothermal, locally_isothermal, polytropic, barotropic, barotropic2,
+             energy_eqn, constant_temp, radws, Nhydroeos};
 
 
 
@@ -65,22 +69,34 @@ class EOS
 {
  public:
 
-  EOS(FLOAT _gamma):
+  EOS(FLOAT _eta, FLOAT _gamma):
+    eta(_eta),
     gamma(_gamma),
     gammam1(_gamma - (FLOAT) 1.0),
     gammaMinusOne(_gamma - (FLOAT) 1.0),
     oneMinusGamma((FLOAT) 1.0 - _gamma) {};
+
+  EOS(FLOAT _gamma):
+    eta(_gamma),
+    gamma(_gamma),
+    gammam1(_gamma - (FLOAT) 1.0),
+    gammaMinusOne(_gamma - (FLOAT) 1.0),
+    oneMinusGamma((FLOAT) 1.0 - _gamma) {};
+
+  virtual ~EOS() {};
 
   template <class ParticleType> FLOAT Pressure(const ParticleType& part) {return gammam1*part.rho*part.u;} ;
   virtual FLOAT EntropicFunction(Particle<ndim> &) = 0;
   virtual FLOAT SoundSpeed(Particle<ndim> &) = 0;
   virtual FLOAT Temperature(Particle<ndim> &) = 0;
   virtual FLOAT SpecificInternalEnergy(Particle<ndim> &) = 0;
+  virtual void set_nbody_data(Nbody<ndim> *) { } ;
 
-  const FLOAT gamma;
-  const FLOAT gammam1;
-  const FLOAT gammaMinusOne;
-  const FLOAT oneMinusGamma;
+  const FLOAT eta;                               ///< Polytropic index
+  const FLOAT gamma;                             ///< Ratio of specific heats
+  const FLOAT gammam1;                           ///< gamma - 1
+  const FLOAT gammaMinusOne;                     ///< gamma - 1
+  const FLOAT oneMinusGamma;                     ///< 1 - gamma
 
 };
 
@@ -96,6 +112,7 @@ class EOS
 template <int ndim>
 class Isothermal: public EOS<ndim>
 {
+protected:
   using EOS<ndim>::gamma;
   using EOS<ndim>::gammam1;
   using EOS<ndim>::gammaMinusOne;
@@ -103,8 +120,8 @@ class Isothermal: public EOS<ndim>
 
  public:
 
-  Isothermal(FLOAT, FLOAT, FLOAT, SimUnits *);
-  ~Isothermal();
+  Isothermal(Parameters*, SimUnits *);
+  virtual ~Isothermal();
 
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
@@ -113,6 +130,39 @@ class Isothermal: public EOS<ndim>
 
   const FLOAT temp0;
   const FLOAT mu_bar;
+
+};
+
+
+
+//=================================================================================================
+//  Class Polytropic
+/// \brief   Polytropic equation of state
+/// \details Polytropic equation of state
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    12/07/2016
+//=================================================================================================
+template <int ndim>
+class Polytropic: public EOS<ndim>
+{
+  using EOS<ndim>::eta;
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+  using EOS<ndim>::gammaMinusOne;
+  using EOS<ndim>::oneMinusGamma;
+
+ public:
+
+  Polytropic(Parameters*, SimUnits *);
+  virtual ~Polytropic();
+
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+
+  const FLOAT Kpoly;
 
 };
 
@@ -133,8 +183,8 @@ class Barotropic: public EOS<ndim>
 
  public:
 
-  Barotropic(FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
-  ~Barotropic();
+  Barotropic(Parameters*, SimUnits *);
+  virtual ~Barotropic();
 
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
@@ -165,8 +215,8 @@ class Barotropic2: public EOS<ndim>
 
  public:
 
-  Barotropic2(FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
-  ~Barotropic2();
+  Barotropic2(Parameters*, SimUnits *);
+  virtual ~Barotropic2();
 
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
@@ -198,17 +248,56 @@ class Adiabatic: public EOS<ndim>
 
  public:
 
-  Adiabatic(FLOAT, FLOAT, FLOAT);
-  ~Adiabatic();
+
+  Adiabatic(Parameters*, SimUnits *);
+  virtual ~Adiabatic();
 
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
   FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
-  FLOAT temp0;
   const FLOAT mu_bar;
 
+};
+
+
+
+//=================================================================================================
+//  Class Isothermal
+/// \brief   Isothermal equation of state
+/// \details Isothermal equation of state
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=================================================================================================
+template <int ndim>
+class LocallyIsothermal: public Isothermal<ndim>
+{
+  using Isothermal<ndim>::gamma;
+  using Isothermal<ndim>::gammam1;
+  using Isothermal<ndim>::gammaMinusOne;
+  using Isothermal<ndim>::oneMinusGamma;
+  using Isothermal<ndim>::temp0;
+  using Isothermal<ndim>::mu_bar;
+
+ public:
+
+  LocallyIsothermal(Parameters*, SimUnits *);
+  virtual ~LocallyIsothermal();
+
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+
+
+  virtual void set_nbody_data(Nbody<ndim>* nbody_aux) {
+    nbody = nbody_aux;
+  } ;
+
+private:
+  FLOAT templaw;
+  FLOAT tempmin;
+
+  Nbody<ndim>* nbody;
 };
 
 
@@ -228,13 +317,17 @@ class IonisingRadiation: public EOS<ndim>
 
  public:
 
-  IonisingRadiation(string, FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
+  IonisingRadiation(Parameters*, SimUnits *);
   ~IonisingRadiation();
 
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
   FLOAT SpecificInternalEnergy(Particle<ndim> &);
+
+  void set_nbody_data(Nbody<ndim>* nbody) {
+    eos->set_nbody_data(nbody);
+  }
 
   FLOAT temp0;
   FLOAT mu_bar;
@@ -261,13 +354,17 @@ class MCRadiationEOS: public EOS<ndim>
 
  public:
 
-  MCRadiationEOS(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
+  MCRadiationEOS(Parameters*, SimUnits *);
   ~MCRadiationEOS();
 
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);
   FLOAT SpecificInternalEnergy(Particle<ndim> &);
+
+  void set_nbody_data(Nbody<ndim>* nbody) {
+    eos->set_nbody_data(nbody);
+  }
 
   FLOAT mu_bar;
   FLOAT mu_ion;
@@ -294,7 +391,7 @@ class Radws : public EOS<ndim>
 
  public:
 
-  Radws(FLOAT, FLOAT, FLOAT);
+  Radws(Parameters*, SimUnits *);
   ~Radws();
 
   FLOAT EntropicFunction(Particle<ndim> &);

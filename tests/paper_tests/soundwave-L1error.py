@@ -6,15 +6,30 @@
 from gandalf.analysis.facade import *
 from gandalf.analysis.compute import L1errornorm
 import matplotlib.pyplot as plt
+import numpy as np
 import time
 import math
 
 
-xmin = 2.0
-xmax = 2048.0
-ymin = 3.3e-9
-ymax = 3.3e-3
+xmin = 8.0
+xmax = 8192.0
+ymin = 3.3e-12
+ymax = 3.3e-6
+numSimMax = 9
 
+
+# Make simple N^-2 line
+Nmax = 1000
+x_ideal = np.arange(xmin, xmax, 2.0)
+y_ideal = ymax*ymin*ymin/x_ideal/x_ideal
+
+#x_ideal = np.zeros(Nmax)
+#y_ideal = np.zeros(Nmax)
+#i = 0
+#while i < Nmax:
+#    x_ideal[i] = xmin + (xmax - xmin)*i/(Nmax - 1)
+#    y_ideal[i] = ymax*xmin*xmin/x_ideal[i]/x_ideal[i]
+#    i = i + 1
 
 # Set empty lists to store results from each resolution
 gradh_Nres = []
@@ -23,34 +38,69 @@ gradh_L1values = []
 mfv_Nres = []
 mfv_L1values = []
 
+mfm_Nres = []
+mfm_L1values = []
+
+mfv_static_Nres = []
+mfv_static_L1values = []
 
 
-# Lowest resolution simulation (16 particles)
-for i in range(8):
-    Nhydro = int(8*math.pow(2,i))
+# Grad-h SPH
+for i in range(numSimMax):
+    Nhydro = int(16*math.pow(2,i))
     sim = newsim("soundwave-gradhsph.dat")
     sim.SetParam('Nhydro',Nhydro)
     setupsim()
     run()
-    L1error = L1errornorm("soundwave", x="x", y="rho",
-                          xmin=0.0, xmax=1.0, normalise=1.0)
+    L1error = L1errornorm("soundwave", x="x", y="rho", xmin=0.0, xmax=1.0, normalise=1.0)
     gradh_Nres.append(Nhydro)
     gradh_L1values.append(L1error)
+    plot("x","rho")
+    plotanalytical("x","rho")
 
 
-# Lowest resolution simulation (16 particles)
-for i in range(8):
-    Nhydro = int(8*math.pow(2,i))
+# MFV
+for i in range(numSimMax):
+    Nhydro = int(16*math.pow(2,i))
     sim = newsim("soundwave-mfv-moving.dat")
     sim.SetParam('Nhydro',Nhydro)
     setupsim()
     run()
-    L1error = L1errornorm("soundwave", x="x", y="rho",
-                          xmin=0.0, xmax=1.0, normalise=1.0)
+    L1error = L1errornorm("soundwave", x="x", y="rho", xmin=0.0, xmax=1.0, normalise=1.0)
     mfv_Nres.append(Nhydro)
     mfv_L1values.append(L1error)
     plot("x","rho")
     plotanalytical("x","rho")
+
+# MFV static
+#for i in range(numSimMax):
+#    Nhydro = int(16*math.pow(2,i))
+#    sim = newsim("soundwave-mfv-moving.dat")
+#    sim.SetParam('static_particles',1)
+#    sim.SetParam('Nhydro',Nhydro)
+#    setupsim()
+#    run()
+#    L1error = L1errornorm("soundwave", x="x", y="rho",
+#                          xmin=0.0, xmax=1.0, normalise=1.0)
+#    mfv_static_Nres.append(Nhydro)
+#    mfv_static_L1values.append(L1error)
+#    plot("x","rho")
+#    plotanalytical("x","rho")
+
+# MFM
+#for i in range(numSimMax):
+#    Nhydro = int(16*math.pow(2,i))
+#    sim = newsim("soundwave-mfv-moving.dat")
+#    sim.SetParam('zero_mass_flux',1)
+#    sim.SetParam('Nhydro',Nhydro)
+#    setupsim()
+#    run()
+#    L1error = L1errornorm("soundwave", x="x", y="rho",
+#                          xmin=0.0, xmax=1.0, normalise=1.0)
+#    mfm_Nres.append(Nhydro)
+#    mfm_L1values.append(L1error)
+#    plot("x","rho")
+#    plotanalytical("x","rho")
 
 
 fig, ax = plt.subplots(figsize=(6.5,5.5))
@@ -63,9 +113,11 @@ ax.set_xlim([xmin, xmax])
 ax.set_ylim([ymin, ymax])
 ax.set_xlabel(r"$N$", fontsize=12)
 ax.set_ylabel(r"$L1$", fontsize=12)
-ax.scatter(gradh_Nres, gradh_L1values, color='black', marker='+', s=8.0, label='Gradh-SPH')
-ax.scatter(mfv_Nres, mfv_L1values, color='blue', marker='x', s=8.0, label='MFV')
-ax.plot([xmin, xmax], [2.0e-4, 2.0e-4/(xmax-xmin)/(xmax-xmin)], linestyle=':', color='red')
+ax.scatter(gradh_Nres, gradh_L1values, color='black', marker='+', s=16.0, label='Gradh-SPH')
+ax.scatter(mfv_Nres, mfv_L1values, color='blue', marker='x', s=16.0, label='MFV')
+#ax.scatter(mfv_static_Nres, mfv_static_L1values, color='green', marker='*', s=16.0, label='MFV-static')
+#ax.scatter(mfm_Nres, mfm_L1values, color='red', marker='^', s=16.0, label='MFM')
+ax.plot(x_ideal, y_ideal, linestyle=':', color='red')
 ax.legend(fontsize=12)
 
 

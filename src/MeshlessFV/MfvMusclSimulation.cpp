@@ -125,6 +125,16 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Apply Saitoh & Makino type time-step limiter
   mfv->CheckTimesteps(level_diff_max, level_step, n, timestep, 1);
 
+  // Reset rebuild tree flag in preparation for next timestep
+  //rebuild_tree = false;
+
+  // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..).
+  //-----------------------------------------------------------------------------------------------
+  if (n%(int) pow(2,level_step - level_max) == 0) {
+    snDriver->Update(n, level_step, level_max, t, hydro, mfvneib, randnumb);
+  }
+
+
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
 	// Horrible hack in order NOT to trigger a full tree rebuild
@@ -203,7 +213,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     mfv->ZeroAccelerations() ;
 
     // Update the density to get the correct softening & grad-h terms.
-    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+    mfvneib->UpdateAllProperties(mfv, nbody);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
@@ -242,8 +252,10 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       }
     }
 
-    if (mfv->self_gravity == 1) {
-      if (mfv->Nhydro > 0) mfvneib->UpdateAllStarGasForces(mfv, nbody);
+
+    if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
+      mfvneib->UpdateAllStarGasForces(mfv, nbody, simbox, ewald);
+
 #if defined MPI_PARALLEL
       // We need to sum up the contributions from the different domains
       mpicontrol->ComputeTotalStarGasForces(nbody);
@@ -252,10 +264,10 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
     // Calculate forces, force derivatives etc.., for active stars/systems
     if (nbody->nbody_softening == 1) {
-      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     }
     else {
-      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     }
 
     for (i=0; i<nbody->Nnbody; i++) {
@@ -281,7 +293,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateActiveParticleCounters(mfv);
 
   //Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody);
 
 #ifdef MPI_PARALLEL
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);

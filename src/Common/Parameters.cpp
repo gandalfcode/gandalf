@@ -262,8 +262,11 @@ void Parameters::SetDefaultValues(void)
   floatparams["gamma_eos"] = 1.66666666666666;
   floatparams["temp0"] = 1.0;
   floatparams["mu_bar"] = 1.0;
+  floatparams["tempmin"] = 0.01;
+  floatparams["templaw"] = 0.75;
   floatparams["rho_bary"] = 1.0e-14;
   floatparams["eta_eos"] = 1.4;
+  floatparams["Kpoly"] = 1.0;
   stringparams["radws_table"] = "eos.bell.cc.dat";
   floatparams["temp_ambient"] = 5.0;
 
@@ -391,7 +394,6 @@ void Parameters::SetDefaultValues(void)
   stringparams["particle_distribution"] = "cubic_lattice";
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
-  intparams["regularise_particle_ics"] = 0;
   intparams["Nreg"] = 1;
   intparams["field_type"] = 1;
   intparams["gridsize"] = 64;
@@ -445,7 +447,32 @@ void Parameters::SetDefaultValues(void)
   floatparams["asound"] = 1.0;
   floatparams["zmax"] = 1.0;
   floatparams["thermal_energy"] = 1.0;
-  floatparams["mach"]=2.7;
+  floatparams["mach"] = 2.7;
+
+  // Regularising initial conditions parameters
+  //-----------------------------------------------------------------------------------------------
+  intparams["regularise_particle_ics"] = 0;
+  intparams["regularise_smooth_density"] = 1;
+  floatparams["alpha_reg"] = 0.1;
+  floatparams["rho_reg"] = 0.8;
+
+  // SILCC initial conditions parameters
+  //-----------------------------------------------------------------------------------------------
+  floatparams["a_midplane"] = 1.0;
+  floatparams["h_midplane"] = 1.0;
+  floatparams["rho_midplane"] = 1.0;
+  floatparams["rho_star"] = 1.0;
+  floatparams["sigma_star"] = 30.0;
+  floatparams["z_d"] = 100.0;
+
+  // Filament ICs
+  //-----------------------------------------------------------------------------------------------
+  floatparams["n0"] = 7.1e4;
+  floatparams["r0"] = 0.027;
+  floatparams["Rfilament"] = 0.075;
+  floatparams["Lfilament"] = 1.6;
+  floatparams["v_cyl_infall"] = 0.0;
+  floatparams["v_rad_infall"] = 0.0;
 
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------
@@ -462,13 +489,16 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   floatparams["dt_python"] = 8.0;
 
-  // Dust Parameters
+  // Dust parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["dust_forces"] = "none" ;
   stringparams["drag_law"] = "none" ;
   floatparams["drag_coeff"] = 0 ;
   floatparams["dust_mass_factor"] = 1 ;
 
+  // Supernova feedback parameters
+  //-----------------------------------------------------------------------------------------------
+  stringparams["supernova_feedback"] = "none";
 
   return;
 }

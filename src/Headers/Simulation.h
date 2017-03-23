@@ -39,28 +39,30 @@
 #include "Diagnostics.h"
 #include "DomainBox.h"
 #include "Dust.h"
+#include "EnergyEquation.h"
 #include "Ewald.h"
 #include "ExternalPotential.h"
+#include "Ghosts.h"
+#include "HeaderInfo.h"
 #include "Hydrodynamics.h"
+//#include "Ic.h"
 #include "MeshlessFV.h"
 #include "MfvNeighbourSearch.h"
+#include "Nbody.h"
+#include "NbodySystemTree.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "Radiation.h"
 #include "RandomNumber.h"
 #include "SimUnits.h"
+#include "Sinks.h"
 #include "SmoothingKernel.h"
 #include "Sph.h"
 #include "SphNeighbourSearch.h"
 #include "SphIntegration.h"
-#include "TreeRay.h"
-#include "EnergyEquation.h"
-#include "Nbody.h"
-#include "NbodySystemTree.h"
-#include "Ghosts.h"
-#include "Sinks.h"
-#include "HeaderInfo.h"
+#include "Supernova.h"
 #include "TimeStepControl.h"
+#include "TreeRay.h"
 using namespace std;
 #ifdef MPI_PARALLEL
 #include "mpi.h"
@@ -68,8 +70,11 @@ using namespace std;
 #endif
 
 
-// Forward declaration of SphSnapshotBase to prevent circular dependency
+// Forward declaration of various classes to prevent circular dependency
 class SphSnapshotBase;
+
+template <int ndim>
+class Ic;
 
 
 //=================================================================================================
@@ -261,9 +266,7 @@ class Simulation : public SimulationBase
   virtual void ProcessNbodyParameters(void);
   virtual void ProcessParameters(void)=0;
   virtual void RecordDiagnostics(void);
-  virtual void RegulariseParticleDistribution(const int) {};
   virtual void SetComFrame(void);
-  virtual void SmoothParticleQuantity(const int, FLOAT *) {};
   virtual void UpdateDiagnostics(void);
 
 
@@ -287,6 +290,7 @@ class Simulation : public SimulationBase
   static const int vdim=ndim;          ///< Velocity vector dimensionality (same as ndim)
   static const FLOAT invndim;          ///< Local copy of 1/ndim
 
+  DomainBox<ndim> icBox;               ///< Boundary data used to create ICs
   DomainBox<ndim> simbox;              ///< Simulation boundary data
   Diagnostics<ndim> diag0;             ///< Initial diagnostic state
   Diagnostics<ndim> diag;              ///< Current diagnostic state
@@ -303,6 +307,8 @@ class Simulation : public SimulationBase
   Sinks<ndim> *sinks;                  ///< Sink particle object
   SphIntegration<ndim> *sphint;        ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;   ///< SPH Neighbour scheme pointer
+  NeighbourSearch<ndim> *neib;         ///< Generic pointer to neighbour search
+  SupernovaDriver<ndim> *snDriver;     ///< Supernova feedback driver
 #ifdef MPI_PARALLEL
   MpiControl<ndim>* mpicontrol;        ///< MPI control object
   Ghosts<ndim>* MpiGhosts;             ///< MPI ghost particle object
@@ -392,7 +398,9 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
+  using Simulation<ndim>::snDriver;
   using Simulation<ndim>::sphneib;
+  using Simulation<ndim>::neib;
   using Simulation<ndim>::radiation;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
@@ -411,8 +419,6 @@ class SphSimulation : public Simulation<ndim>
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
-  virtual void RegulariseParticleDistribution(const int);
-  virtual void SmoothParticleQuantity(const int, FLOAT *);
 
   Sph<ndim> *sph;                      ///< SPH algorithm pointer
   DustBase<ndim>* sphdust ;               ///< Dust algorithm pointer
@@ -481,6 +487,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::sinks;
   using SphSimulation<ndim>::sph;
   using SphSimulation<ndim>::sphneib;
+  using SphSimulation<ndim>::neib;
   using SphSimulation<ndim>::tmax_wallclock;
   using SphSimulation<ndim>::sphdust ;
 #ifdef MPI_PARALLEL
@@ -556,6 +563,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::sinks;
   using SphSimulation<ndim>::sph;
   using SphSimulation<ndim>::sphneib;
+  using SphSimulation<ndim>::neib;
   using SphSimulation<ndim>::tmax_wallclock;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
@@ -642,7 +650,9 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
+  using Simulation<ndim>::neib;
   using Simulation<ndim>::radiation;
+  using Simulation<ndim>::snDriver;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
@@ -738,6 +748,7 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::radiation;
+  using Simulation<ndim>::snDriver;
   using MeshlessFVSimulation<ndim>::mfv;
   using MeshlessFVSimulation<ndim>::mfvneib;
   using MeshlessFVSimulation<ndim>::time_step_limiter_type;

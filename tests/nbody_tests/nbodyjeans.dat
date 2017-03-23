@@ -1,0 +1,76 @@
+#------------------------------------------------------------------
+# Jeans test
+# ..
+#------------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = NBODYJEANS1
+Select simulation                           : sim = nbody
+N-body algorithm choice                     : nbody = hermite4
+Select shocktube initial conditions         : ic = jeans
+1D shocktube test                           : ndim = 3
+Pressure of LHS fluid                       : press1 = 1.0
+Density of LHS fluid                        : rhofluid1 = 1.0
+Sound wave amplitude                        : amp = 0.025
+No. of particles in LHS fluid               : Nlattice1[0] = 16
+No. of particles in LHS fluid               : Nlattice1[1] = 8
+No. of particles in LHS fluid               : Nlattice1[2] = 8
+Use dimensionless units                     : dimensionless = 1
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = 0.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
+LHS position of boundary in y-dimension     : boxmin[1] = 0.0
+RHS position of boundary in y-dimension     : boxmax[1] = 0.5
+LHS position of boundary in z-dimension     : boxmin[2] = 0.0
+RHS position of boundary in z-dimension     : boxmax[2] = 0.5
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+LHS boundary type in z-dimension            : boundary_lhs[2] = periodic
+RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 0.2
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.2
+Screen output frequency (in no. of steps)   : noutputstep = 1
+
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+N-body timestep condition multiplier        : nbody_mult = 0.3
+No. of block timestep levels                : Nlevels = 1
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 0
+
+
+#--------------
+# Misc. options
+#--------------
+Number of points on the Ewald grid          : nEwaldGrid = 9  #17
+                                            : EFratio = 1.4
