@@ -231,7 +231,9 @@ public:
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void);
+  virtual void DeleteDeadParticles(void) {
+    this->template DoDeleteDeadParticles<GradhSphParticle>() ;
+  }
 
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
@@ -293,8 +295,9 @@ class SM2012Sph: public Sph<ndim>
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void);
-
+  virtual void DeleteDeadParticles(void) {
+    this->template DoDeleteDeadParticles<SM2012SphParticle>() ;
+  }
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);

@@ -140,60 +140,6 @@ void MeshlessFV<ndim>::DeallocateMemory(void)
 }
 
 
-
-//=================================================================================================
-//  MeshlessFV::DeleteDeadParticles
-/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
-//=================================================================================================
-template <int ndim>
-void MeshlessFV<ndim>::DeleteDeadParticles(void)
-{
-  int i;                               // Particle counter
-  int itype;                           // Current particle type
-  int Ndead = 0;                       // No. of 'dead' particles
-  int ilast = Nhydro;                  // Aux. counter of last free slot
-
-  debug2("[MeshlessFV::DeleteDeadParticles]");
-
-
-  // Determine new order of particles in arrays.
-  // First all live particles and then all dead particles.
-  for (i=0; i<Nhydro; i++) {
-    itype = hydrodata[i].flags.get();
-    while (itype & dead) {
-      Ndead++;
-      ilast--;
-      if (i < ilast) {
-        hydrodata[i] = hydrodata[ilast];
-        hydrodata[ilast].flags.set_flag(dead);
-        hydrodata[ilast].m = (FLOAT) 0.0;
-      }
-      else break;
-      itype = hydrodata[i].flags.get();
-    };
-    if (i >= ilast - 1) break;
-  }
-
-  // Reorder all arrays following with new order, with dead particles at end
-  if (Ndead == 0) return;
-
-  // Reduce hydro particle counters once dead particles have been removed and reset all
-  // other particle counters since a ghost and tree rebuild is required.
-  this->NPeriodicGhost = 0;
-  this->Nmpighost      = 0;
-  Nhydro               -= Ndead;
-  Ntot                 = Nhydro;
-
-  // Some sanity checking to ensure there are no dead particles remaining
-  for (i=0; i<Nhydro; i++) {
-    assert(!hydrodata[i].flags.is_dead());
-  }
-
-  return;
-}
-
-
-
 //=================================================================================================
 //  MeshlessFV::ComputeThermalProperties
 /// Compute all thermal properties for grad-h SPH method for given particle.

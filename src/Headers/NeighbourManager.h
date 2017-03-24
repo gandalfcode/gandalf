@@ -216,8 +216,15 @@ private:
   const ParticleTypeRegister* _types;
   double _kernrange;
 
-  typedef struct {}        _true_type;
-  typedef struct {char c;} _false_type;
+  template<bool __v>
+  struct __boolean_constant {
+    static const bool value = __v ;
+    typedef bool value_type ;
+    typedef __boolean_constant<__v> type ;
+  };
+
+  typedef __boolean_constant<true>  _true_type ;
+  typedef __boolean_constant<false> _false_type ;
 
 public:
   using NeighbourManagerDim<ndim>::tempneib;
@@ -250,8 +257,8 @@ public:
 
   //===============================================================================================
   // EndSearch
-  /// \brief Colelct particle data needed for the neighbours and cull distant particles that do
-  ///        not interact with the cell hydrodyanimcally
+  /// \brief Collect particle data needed for the neighbours and cull distant particles that do
+  ///        not interact with the cell hydrodynamically
   //===============================================================================================
   template<class InParticleType>
   void EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
