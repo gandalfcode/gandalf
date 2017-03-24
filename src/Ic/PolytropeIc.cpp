@@ -77,12 +77,12 @@ void PolytropeIc<ndim>::Generate(void)
     int i;                               // Particle counter
     int k;                               // Dimension counter
     FLOAT mp;                            // Mass of individual particle
-    FLOAT z;                             // z-position of newly inserted particle
+    //FLOAT z;                             // z-position of newly inserted particle
 
     // Create local copies of initial conditions parameters
     int Npart      = simparams->intparams["Nhydro"];
     FLOAT eta_eos  = simparams->floatparams["eta_eos"];
-    FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+    //FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
     string eos     = simparams->stringparams["gas_eos"];
 
     debug2("[PolytropeIc::Generate]");
@@ -95,6 +95,7 @@ void PolytropeIc<ndim>::Generate(void)
     // Allocate local and main particle memory
     hydro->Nhydro = Npart;
     sim->AllocateParticleMemory();
+    mp = (FLOAT) 0.0;
     //mp = m_box / (FLOAT) Npart;
 
     // Calculate cloud parameters depending on the chosen equation of state

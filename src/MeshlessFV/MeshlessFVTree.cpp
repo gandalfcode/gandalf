@@ -87,8 +87,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
   int cactive;                             // No. of active tree cells
-  vector<TreeCellBase<ndim> > celllist;            // List of active cells
-  //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
+  vector<TreeCellBase<ndim> > celllist;    // List of active cells
+  MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -96,18 +96,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   debug2("[MeshlessFVTree::UpdateAllProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_PROPERTIES");
 
-  int Ntot = mfv->Ntot;
-  MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
-
-
-
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
 
 
   // Set-up all OMP threads
@@ -762,7 +755,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
         // Loop over all active particles in the cell
         //-------------------------------------------------------------------------------------------
         for (int j=0; j<Nactive; j++) {
-          const int i = activelist[j];
 
           // Only calculate gravity for active particle types that have self-gravity activated
           if (mfv->types[activepart[j].ptype].self_gravity) {
@@ -772,7 +764,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 
             // Compute forces with hydro neighbours
             mfv->ComputeSmoothedGravForces(activepart[j], neiblists.neiblist);
-            
+
             // Compute forces with non-hydro neighbours
             mfv->ComputeSmoothedGravForces(activepart[j], neiblists.smooth_gravlist);
 
@@ -790,12 +782,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
             }
 
             // Add the periodic correction force for SPH and direct-sum neighbours
-            if (simbox.PeriodicGravity){
-              int Ntotneib = neibmanager.GetNumAllNeib() ;
+            if (simbox.PeriodicGravity) {
+              int Ntotneib = neibmanager.GetNumAllNeib();
+
               for (int jj=0; jj<Ntotneib; jj++) {
-
-                if (!gravmask[neibmanager[jj].ptype]) continue ;
-
+                if (!gravmask[neibmanager[jj].ptype]) continue;
                 for (int k=0; k<ndim; k++) draux[k] = neibmanager[jj].r[k] - activepart[j].r[k];
                 ewald->CalculatePeriodicCorrection(neibmanager[jj].m, draux, aperiodic, potperiodic);
                 for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];

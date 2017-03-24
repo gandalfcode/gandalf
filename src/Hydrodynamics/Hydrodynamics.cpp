@@ -62,12 +62,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   types(params),
   kerntab(TabulatedKernel<ndim>(KernelName))
 {
-  // Local references to parameter variables for brevity
-  map<string, int> &intparams = params->intparams;
-  map<string, double> &floatparams = params->floatparams;
-  map<string, string> &stringparams = params->stringparams;
-  string gas_radiation = stringparams["radiation"];
-
+  const std::string gas_radiation = params->stringparams["radiation"];
 
   // Zero or initialise all common Hydrodynamics variables
   //-----------------------------------------------------------------------------------------------
@@ -77,7 +72,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   NImportedParticles = 0;
   Nmpighost          = 0;
   NPeriodicGhost     = 0;
-  create_sinks       = intparams["create_sinks"];
+  create_sinks       = params->intparams["create_sinks"];
 
   // Select and construct equation of state object from given parameters
   //-----------------------------------------------------------------------------------------------

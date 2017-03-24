@@ -342,7 +342,7 @@ public:
    {
     TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true);
 
-    assert((culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
+    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
 
 
     typedef typename GravityNeighbourLists<ParticleType>::DirectType DirectType ;

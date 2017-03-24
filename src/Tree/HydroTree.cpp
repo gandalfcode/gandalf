@@ -675,7 +675,7 @@ void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
 (Hydrodynamics<ndim>* hydro,                     ///<[inout] Pointer to Hydrodynamics object
  const bool only_imported_particles)								///<[in] Wheter we need to loop only over imported particles (relevant only for MPI)
  {
-  int cactive;                          // No. of active cells
+  int cactive = 0;                      // No. of active cells
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 

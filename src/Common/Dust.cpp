@@ -563,7 +563,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 #endif
       neibmanager.EndSearch(cell,sphdata);
 
-      const int Nneib_cell = neibmanager.GetNumAllNeib();
+      //const int Nneib_cell = neibmanager.GetNumAllNeib();
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
