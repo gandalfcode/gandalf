@@ -502,7 +502,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   for (int t = neibmanagerbufflux.size(); t < Nthreads; ++t)
     neibmanagerbufflux.push_back(NeighbourManagerFlux(mfv, simbox));
 
-  //int Nhydro = mfv->Nhydro;
   int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 
@@ -531,7 +530,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     FLOAT (*fluxBuffer)[ndim+2]    = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*rdmdtBuffer)[ndim]     = new FLOAT[Ntot][ndim];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
-    //ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     NeighbourManager<ndim,FluxParticle>& neibmanager = neibmanagerbufflux[ithread];
 
     for (int i=0; i<Ntot; i++) {
@@ -707,7 +705,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
     FLOAT potperiodic;                           // ..
     int *activelist  = activelistbuf[ithread];   // ..
     ParticleType<ndim>* activepart  = activepartbuf[ithread];   // ..
-    //ParticleType<ndim>* neibpart    = neibpartbuf[ithread];     // ..
     Typemask gravmask = mfv->types.gravmask;
     NeighbourManagerGrav neibmanager = neibmanagerbufgrav[ithread];
     Typemask hydromask ;

@@ -1118,7 +1118,6 @@ public:
       const FLOAT hfactor = pow(invh, ndim);
       const FLOAT dV      = pow(2.0*hrange/(FLOAT) gridSize, ndim);
       FLOAT sumValue      = (FLOAT) 0.0;
-      //FLOAT lengthmax     = (FLOAT) 0.0;
       FLOAT dr[ndim];
       FLOAT drsqd;
       FLOAT r[ndim];

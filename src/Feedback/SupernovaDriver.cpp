@@ -160,7 +160,6 @@ SilccSupernovaDriver<ndim>::SilccSupernovaDriver
  (SimulationBase* sim, Parameters *params, SimUnits &units) : SupernovaDriver<ndim>(sim)
 {
   // Local references to parameter variables for brevity
-  //map<string, int> &intparams = params->intparams;
   map<string, double> &floatparams = params->floatparams;
   map<string, string> &stringparams = params->stringparams;
 

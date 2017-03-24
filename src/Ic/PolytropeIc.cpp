@@ -82,7 +82,6 @@ void PolytropeIc<ndim>::Generate(void)
     // Create local copies of initial conditions parameters
     int Npart      = simparams->intparams["Nhydro"];
     FLOAT eta_eos  = simparams->floatparams["eta_eos"];
-    //FLOAT gammaone = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
     string eos     = simparams->stringparams["gas_eos"];
 
     debug2("[PolytropeIc::Generate]");
