@@ -132,6 +132,31 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
 
   return;
 }
+//=================================================================================================
+//  SphLeapfrogDKD::SetActiveParticles
+/// Set or unset the active flag for all particles based upon whther the particles need a force
+/// calculation this timestep.
+//=================================================================================================
+template <int ndim, template <int> class ParticleType>
+void SphLeapfrogDKD<ndim, ParticleType>::SetActiveParticles
+(const int n,                         ///< [in] Current timestep number
+ const int Npart,                     ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
+{
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
+#pragma omp parallel for default(none) shared(sphdata)
+  for (int i=0; i<Npart; i++) {
+    SphParticle<ndim>& part = sphdata[i];
+    int dn = n - part.nlast;
+
+    // Force calculation is at mid-point of step
+    if (dn == (part.nstep/2))
+      part.flags.set_flag(active);
+    else
+      part.flags.unset_flag(active);
+  }
+}
 
 
 
@@ -163,19 +188,21 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
-    dn = n - part.nlast;
-    nstep = part.nstep;
-
-    if (dn == nstep) {
+    if (part.flags.check_flag(end_timestep)) {
       for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
-      part.nlast = n;
-      part.tlast = t;
-      part.flags.unset_flag(active);
+
       if (gas_eos == energy_eqn) {
         part.u0 = part.u;
       }
+
+      part.nlast   = n;
+      part.tlast   = t;
+      part.dt      = part.dt_next;
+      part.dt_next = 0;
+      part.flags.unset_flag(active);
+      part.flags.unset_flag(end_timestep);
     }
   }
   //-----------------------------------------------------------------------------------------------

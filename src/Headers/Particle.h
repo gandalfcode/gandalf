@@ -45,10 +45,12 @@ enum flags {
 	none = 0,
 	dead = 1 << 0,
 	active = 1 << 1,
-	potmin = 1 << 2,
+	end_timestep = 1 << 2, // Particle has reached the end of this timestep
+	potmin = 1 << 3,
 
 	update_density = 1 << 3, // For meshless
-	bad_gradients = 1 << 5,  // For meshless
+    update_density = 1 << 4, // For meshless
+	bad_gradients  = 1 << 5,  // For meshless
 
 	x_periodic_lhs = 1 << 7,
 	y_periodic_lhs = 1 << 8,
@@ -264,6 +266,7 @@ struct Particle
   FLOAT dudt;                       ///< Compressional heating rate
   FLOAT gpot;                       ///< Gravitational potential
   DOUBLE dt;                        ///< Particle timestep
+  DOUBLE dt_next;                   ///< Next time-step timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
   FLOAT ionfrac;                    ///< Ionisation fraction
   FLOAT Xion;                       ///< Ionisation fraciton (from tree)

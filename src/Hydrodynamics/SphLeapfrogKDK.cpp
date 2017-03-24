@@ -181,6 +181,32 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
 }
 
 
+//=================================================================================================
+//  SphLeapfrogKDK::SetActiveParticles
+/// Set or unset the active flag for all particles based upon whther the particles need a force
+/// calculation this timestep.
+//=================================================================================================
+template <int ndim, template <int> class ParticleType>
+void SphLeapfrogKDK<ndim, ParticleType>::SetActiveParticles
+(const int n,                         ///< [in] Current timestep number
+ const int Npart,                     ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
+{
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
+#pragma omp parallel for default(none) shared(sphdata)
+  for (int i=0; i<Npart; i++) {
+    SphParticle<ndim>& part = sphdata[i];
+
+    int dn = n - part.nlast;
+
+    // Force calculation is at end of step
+    if (part.flags.check_flag(end_timestep) || dn == part.nstep)
+      part.flags.set_flag(active);
+    else
+      part.flags.unset_flag(active);
+  }
+}
 
 //=================================================================================================
 //  SphLeapfrogKDK::EndTimestep
@@ -211,12 +237,9 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
-    dn    = n - part.nlast;
-    nstep = part.nstep;
 
-    if (dn == nstep) {
-      for (k=0; k<ndim; k++) part.v[k] += (t - part.tlast)*  //timestep*(FLOAT) nstep*
-        (FLOAT) 0.5*(part.a[k] - part.a0[k]);
+    if (part.flags.check_flag(end_timestep)) {
+      for (k=0; k<ndim; k++) part.v[k] += 0.5 * (t - part.tlast) * (part.a[k] - part.a0[k]);
       for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
@@ -233,9 +256,12 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
         part.dudt0 = part.dudt;
       }
 
-      part.nlast  = n;
-      part.tlast  = t;
+      part.nlast   = n;
+      part.tlast   = t;
+      part.dt      = part.dt_next;
+      part.dt_next = 0;
       part.flags.unset_flag(active);
+      part.flags.unset_flag(end_timestep);
     }
 
   }
