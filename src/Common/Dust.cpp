@@ -531,7 +531,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     int cc;                                      // Aux. cell counter
     int i;                                       // Particle id
     int j;                                       // Aux. particle counter
-    int jj;                                      // Aux. particle counter
     int k;                                       // Dimension counter
     int Nactive;                                 // ..
     vector<int>                 activelist(_tree->MaxNumPartInLeafCell()); // Ids of Active parts
@@ -563,8 +562,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
         mpighosttree->ComputeNeighbourList(cell, neibmanager);
 #endif
       neibmanager.EndSearch(cell,sphdata);
-
-      const int Nneib_cell = neibmanager.GetNumAllNeib();
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------

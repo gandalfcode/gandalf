@@ -342,7 +342,7 @@ public:
    {
     TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true);
 
-    assert((culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
+    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
 
 
     typedef typename GravityNeighbourLists<ParticleType>::DirectType DirectType ;
@@ -392,7 +392,7 @@ private:
 
     // Start from direct neighbours
     if (keep_direct) {
-      for (int ii=0; ii< tempdirectneib.size(); ii++) {
+      for (int ii=0; ii<(int) tempdirectneib.size(); ii++) {
         const int i = tempdirectneib[ii];
         const InParticleType& part = partdata[i];
         // Forget immediately: direct particles and particles that do not interact gravitationally
@@ -412,13 +412,13 @@ private:
     // Now look at the hydro candidate neighbours
     // First the ones that need ghosts to be created on the fly
     int Nneib = directlist.size();
-    for (int ii=0; ii < tempperneib.size(); ii++) {
+    for (int ii=0; ii<(int) tempperneib.size(); ii++) {
       const int i = tempperneib[ii];
       if (partdata[i].flags.is_dead()) continue;
 
       GhostFinder.ConstructGhostsScatterGather(partdata[i], neibdata);
 
-      while (Nneib < neibdata.size()) {
+      while (Nneib < (int) neibdata.size()) {
         int Nmax = neibdata.size();
         for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
         drsqd = DotProduct(dr, dr, ndim);
@@ -435,8 +435,7 @@ private:
         }
         else if (Nmax > Nneib) {
           Nmax--;
-          if (Nmax > Nneib)
-            neibdata[Nneib] = neibdata[Nmax];
+          if (Nmax > Nneib) neibdata[Nneib] = neibdata[Nmax];
           neibdata.resize(neibdata.size()-1);
         }
       }// Loop over Ghosts
@@ -446,7 +445,7 @@ private:
     _NPeriodicGhosts = neiblist.size();
 
     // Find those particles that do not need ghosts on the fly
-    for (int ii=0; ii<tempneib.size(); ii++) {
+    for (int ii=0; ii<(int) tempneib.size(); ii++) {
       const int i = tempneib[ii];
       if (partdata[i].flags.is_dead()) continue;
 
@@ -498,7 +497,7 @@ private:
 
     // Go through the hydro neighbour candidates and check the distance. The ones that are not real neighbours
     // are demoted to the direct list
-    for (int j=0; j < neiblist.size(); j++) {
+    for (int j=0; j<(int) neiblist.size(); j++) {
       int i = neiblist[j];
       ParticleType& neibpart = neibdata[i] ;
 

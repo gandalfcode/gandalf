@@ -49,11 +49,6 @@ template <int ndim>
 SedovTestDriver<ndim>::SedovTestDriver
  (SimulationBase* sim, Parameters *params, SimUnits &units) : SupernovaDriver<ndim>(sim)
 {
-  // Local references to parameter variables for brevity
-  map<string, int> &intparams = params->intparams;
-  map<string, double> &floatparams = params->floatparams;
-  map<string, string> &stringparams = params->stringparams;
-
   tsupernova = 1.0;
 }
 
@@ -105,16 +100,12 @@ void SedovTestDriver<ndim>::Update
 //=================================================================================================
 template <int ndim>
 RandomSedovTestDriver<ndim>::RandomSedovTestDriver
- (SimulationBase* sim, Parameters *params, SimUnits &units, DomainBox<ndim> &_simbox) : SupernovaDriver<ndim>(sim)
+ (SimulationBase* sim, Parameters *params, SimUnits &units, DomainBox<ndim> &_simbox) :
+  SupernovaDriver<ndim>(sim)
 {
-  // Local references to parameter variables for brevity
-  map<string, int> &intparams = params->intparams;
-  map<string, double> &floatparams = params->floatparams;
-  map<string, string> &stringparams = params->stringparams;
-
   tsupernova = 0.5;
-  tnext = 0.5*tsupernova;
-  simbox = &(_simbox);
+  tnext      = 0.5*tsupernova;
+  simbox     = &(_simbox);
 }
 
 
@@ -169,7 +160,6 @@ SilccSupernovaDriver<ndim>::SilccSupernovaDriver
  (SimulationBase* sim, Parameters *params, SimUnits &units) : SupernovaDriver<ndim>(sim)
 {
   // Local references to parameter variables for brevity
-  map<string, int> &intparams = params->intparams;
   map<string, double> &floatparams = params->floatparams;
   map<string, string> &stringparams = params->stringparams;
 

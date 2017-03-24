@@ -85,7 +85,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 {
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;		   // List of active tree cells
-
+  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -93,23 +93,17 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   debug2("[GradhSphTree::UpdateAllSphProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_PROPERTIES");
 
-  int Ntot = sph->Ntot;
-  ParticleType<ndim>* sphdata =
-      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
-
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
 
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata,Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -288,7 +282,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 #ifdef MPI_PARALLEL
   twork = timing->RunningTime() - twork;
   int Nactivetot=0;
-  tree->AddWorkCost(celllist, twork, Nactivetot) ;
+  tree->AddWorkCost(celllist, twork, Nactivetot);
 #ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
@@ -314,8 +308,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  vector<TreeCellBase<ndim> > celllist;                // List of active tree cells
-
+  vector<TreeCellBase<ndim> > celllist;    // List of active tree cells
+  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -324,20 +318,16 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_HYDRO_FORCES");
 
   // Make sure we have enough neibmanagers
-  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t)
+  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t) {
     neibmanagerbufhydro.push_back(NeighbourManagerHydro(sph, simbox));
-
-  ParticleType<ndim>* sphdata =
-      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
-
+  }
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
+
 
   // Set-up all OMP threads
   //===============================================================================================
@@ -386,14 +376,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
       for (int j=0; j<Nactive; j++) {
-        const int i = activelist[j];
+        bool do_hydro = sph->types[activepart[j].ptype].hydro_forces;
 
-        bool do_hydro = sph->types[activepart[j].ptype].hydro_forces ;
-        if (do_hydro){
+        if (do_hydro) {
           Typemask hydromask  = sph->types[activepart[j].ptype].hydromask;
-
-          const bool do_pair_once=false;
-
+          const bool do_pair_once = false;
           NeighbourList<HydroParticle> neiblist =
               neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
 
@@ -412,11 +399,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
       // Update levelneib for neighbours
       const int Nneib_cell = neibmanager.GetNumAllNeib();
       for (int jj=0; jj<Nneib_cell; jj++) {
-    	std::pair<int,HydroParticle*> neighbour=neibmanager.GetNeibI(jj);
-    	const int i=neighbour.first;
-    	HydroParticle& neibpart=*(neighbour.second);
-    	levelneib[i]=max(levelneib[i],neibpart.levelneib);
-       }
+        std::pair<int,HydroParticle*> neighbour=neibmanager.GetNeibI(jj);
+        const int i=neighbour.first;
+        HydroParticle& neibpart=*(neighbour.second);
+        levelneib[i]=max(levelneib[i],neibpart.levelneib);
+      }
 
 
       // Compute all star forces for active particles
@@ -486,7 +473,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 {
   int cactive;                         // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
-
+  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -495,19 +482,15 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_ALL_FORCES");
 
   // Make sure we have enough neibmanagers
-  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t)
+  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t) {
     neibmanagerbufhydro.push_back(NeighbourManagerHydro(sph, simbox));
-
-  ParticleType<ndim>* sphdata =
-      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
+  }
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
 
 
   // Set-up all OMP threads
@@ -566,22 +549,20 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
       for (int j=0; j<Nactive; j++) {
-        const int i = activelist[j];
-
         const bool do_grav  = sph->types[activepart[j].ptype].self_gravity ;
         Typemask hydromask = sph->types[activepart[j].ptype].hydromask ;
-
         GravityNeighbourLists<HydroParticle> neiblists =
             neibmanager.GetParticleNeibGravity(activepart[j],hydromask);
-
 
         // Compute forces between SPH neighbours (hydro and gravity)
         typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
 
-        if (neiblists.neiblist.size() > 0)
+        if (neiblists.neiblist.size() > 0) {
           method->ComputeSphHydroGravForces(activepart[j], neiblists.neiblist);
+        }
 
-        if (do_grav){
+        if (do_grav) {
+
           // Compute soften grav forces between non-SPH neighbours (hydro and gravity)
           method->ComputeSphGravForces(activepart[j], neiblists.smooth_gravlist);
 
@@ -599,12 +580,12 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
          }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
-          if (simbox.PeriodicGravity){
-            int Ntotneib = neibmanager.GetNumAllNeib() ;
+          if (simbox.PeriodicGravity) {
+            int Ntotneib = neibmanager.GetNumAllNeib();
 
             for (int jj=0; jj< Ntotneib; jj++) {
 
-        	  if (!gravmask[neibmanager[jj].ptype]) continue ;
+            if (!gravmask[neibmanager[jj].ptype]) continue;
 
               FLOAT draux[ndim];
               for (int k=0; k<ndim; k++) draux[k] = neibmanager[jj].r[k] - activepart[j].r[k];
@@ -702,4 +683,3 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 template class GradhSphTree<1,GradhSphParticle>;
 template class GradhSphTree<2,GradhSphParticle>;
 template class GradhSphTree<3,GradhSphParticle>;
-

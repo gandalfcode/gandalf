@@ -87,8 +87,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
   int cactive;                             // No. of active tree cells
-  vector<TreeCellBase<ndim> > celllist;            // List of active cells
-  //ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (sph_gen);
+  vector<TreeCellBase<ndim> > celllist;    // List of active cells
+  MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -96,23 +96,16 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   debug2("[MeshlessFVTree::UpdateAllProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_PROPERTIES");
 
-  int Ntot = mfv->Ntot;
-  MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
-
-
-
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
 
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,mfv,mfvdata,Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,mfv,mfvdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -369,10 +362,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
     int cc;                                        // Aux. cell counter
     int i;                                         // Particle id
     int j;                                         // Aux. particle counter
-    int jj;                                        // Aux. particle counter
     int k;                                         // Dimension counter
     int Nactive;                                   // ..
-    int Nneibmax    = Nneibmaxbuf[ithread];        // ..
     int* activelist = activelistbuf[ithread];      // ..
     int* levelneib  = levelneibbuf[ithread];       // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
@@ -511,7 +502,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   for (int t = neibmanagerbufflux.size(); t < Nthreads; ++t)
     neibmanagerbufflux.push_back(NeighbourManagerFlux(mfv, simbox));
 
-  int Nhydro = mfv->Nhydro ;
   int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
 
@@ -525,7 +515,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata, Nhydro, Ntot, simbox)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -533,16 +523,13 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     const int ithread = 0;
 #endif
     int i;                                         // Particle id
-    int j;                                         // Aux. particle counter
     int k;                                         // Dimension counter
     int Nactive;                                   // ..
-    int Nneibmax      = Nneibmaxbuf[ithread];      // ..
     int* activelist   = activelistbuf[ithread];    // ..
     FLOAT (*dQBuffer)[ndim+2]      = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*fluxBuffer)[ndim+2]    = new FLOAT[Ntot][ndim+2];  // ..
     FLOAT (*rdmdtBuffer)[ndim]     = new FLOAT[Ntot][ndim];    // ..
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
-    ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
     NeighbourManager<ndim,FluxParticle>& neibmanager = neibmanagerbufflux[ithread];
 
     for (int i=0; i<Ntot; i++) {
@@ -715,14 +702,9 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
     int Nactive;                                 // ..
     FLOAT aperiodic[ndim];                       // ..
     FLOAT draux[ndim];                           // Aux. relative position vector
-    FLOAT drsqd;                                 // Distance squared
-    FLOAT hrangesqdi;                            // Kernel gather extent
-    FLOAT macfactor;                             // Gravity MAC factor
     FLOAT potperiodic;                           // ..
-    FLOAT rp[ndim];                              // ..
     int *activelist  = activelistbuf[ithread];   // ..
     ParticleType<ndim>* activepart  = activepartbuf[ithread];   // ..
-    ParticleType<ndim>* neibpart    = neibpartbuf[ithread];     // ..
     Typemask gravmask = mfv->types.gravmask;
     NeighbourManagerGrav neibmanager = neibmanagerbufgrav[ithread];
     Typemask hydromask ;
@@ -770,17 +752,16 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
         // Loop over all active particles in the cell
         //-------------------------------------------------------------------------------------------
         for (int j=0; j<Nactive; j++) {
-          const int i = activelist[j];
 
           // Only calculate gravity for active particle types that have self-gravity activated
-          if (mfv->types[activepart[j].ptype].self_gravity){
+          if (mfv->types[activepart[j].ptype].self_gravity) {
 
-		    GravityNeighbourLists<GravParticle> neiblists =
-		        neibmanager.GetParticleNeibGravity(activepart[j],hydromask);
-
+            GravityNeighbourLists<GravParticle> neiblists =
+              neibmanager.GetParticleNeibGravity(activepart[j],hydromask);
 
             // Compute forces with hydro neighbours
             mfv->ComputeSmoothedGravForces(activepart[j], neiblists.neiblist);
+
             // Compute forces with non-hydro neighbours
             mfv->ComputeSmoothedGravForces(activepart[j], neiblists.smooth_gravlist);
 
@@ -798,12 +779,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
             }
 
             // Add the periodic correction force for SPH and direct-sum neighbours
-            if (simbox.PeriodicGravity){
-              int Ntotneib = neibmanager.GetNumAllNeib() ;
+            if (simbox.PeriodicGravity) {
+              int Ntotneib = neibmanager.GetNumAllNeib();
+
               for (int jj=0; jj<Ntotneib; jj++) {
-
-                if (!gravmask[neibmanager[jj].ptype]) continue ;
-
+                if (!gravmask[neibmanager[jj].ptype]) continue;
                 for (int k=0; k<ndim; k++) draux[k] = neibmanager[jj].r[k] - activepart[j].r[k];
                 ewald->CalculatePeriodicCorrection(neibmanager[jj].m, draux, aperiodic, potperiodic);
                 for (int k=0; k<ndim; k++) activepart[j].atree[k] += aperiodic[k];
