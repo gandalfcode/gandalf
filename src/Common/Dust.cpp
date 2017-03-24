@@ -152,7 +152,6 @@ protected:
 	DOUBLE drag_timestep(ParticleType<ndim>& part) {
 	  return w_tstep*part.dt + (1 - w_tstep)*part.dt_next ;
 	}
-
 };
 
 
@@ -183,8 +182,8 @@ class DustInterpolant
 	DustTestPartInterp(const ParticleType<ndim>& p){
 	  cs = p.sound ;
 	  for (int k=0; k < ndim; ++k){
-		  v[k] = p.v[k] ;
-		  a[k] = get_total_accel(p, k) ;
+		  v[k]  = p.v[k] ;
+		  a[k]  = get_total_accel(p, k) ;
 		  a0[k] = get_old_accel(p, k) ;
 	  }
 	}
@@ -762,8 +761,8 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
       gsound += m[j]*w*d[j].cs ;
       for (k=0; k < ndim; k++) {
         // Get the velocity at the start of the kick and the acceleration
-        dv[k] += m[j]*w*(d[j].v[k] - 0.5 *  d[j].a0[k]*dt) ;
-        da[k] += m[j]*w*d[j].a[k] ;
+        dv[k] += m[j]*w*(d[j].v[k] - 0.5 * d[j].a0[k]*parti.dt) ;
+        da[k] += m[j]*w* d[j].a[k] ;
       }
     }
     //---------------------------------------------------------------------------------------------
@@ -775,7 +774,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 
     gsound *= invrho * hfactor ;
     for (k=0; k < ndim; k++) {
-      dv[k] = (parti.v[k] - 0.5*get_old_accel(parti,k)*dt) - dv[k]*invrho*hfactor ;
+      dv[k] = (parti.v[k] - 0.5*get_old_accel(parti,k)*parti.dt) - dv[k]*invrho*hfactor ;
       da[k] = get_total_accel(parti, k) - da[k]*invrho*hfactor ;
      }
 
@@ -944,7 +943,9 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 
     for (k=0; k<ndim; k++) {
       if (drmag>0) draux[k] /= drmag;
-      dv[k] = neiblist[j].v[k] - parti.v[k] ;
+      dv[k] =
+          ((neiblist[j].v[k] - 0.5*get_old_accel(neiblist[j],k)*parti.dt) -
+           (parti.v[k]       - 0.5*get_old_accel(parti,      k)*parti.dt)) ;
       da[k] = get_total_accel(neiblist[j], k) - get_total_accel(parti, k) ;
     }
     dvdr = DotProduct(draux, dv, ndim);

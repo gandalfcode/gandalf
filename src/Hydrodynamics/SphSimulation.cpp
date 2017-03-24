@@ -485,36 +485,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
 
-  // Compute the dust forces if present.
-  if (sphdust != NULL){
-    // Set active
-    for (i=0; i<sph->Nhydro; i++)
-      sph->GetSphParticlePointer(i).flags.set_flag(active);
-
-    // Copy properties from original particles to ghost particles
-    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
-#ifdef MPI_PARALLEL
-    MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
-#endif
-    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
-
-    // Compute timesteps for all particles and use it to compute the time-averaged initial
-    // drag force.
-    if (Nlevels == 1) this->ComputeGlobalTimestep();
-    else this->ComputeBlockTimesteps();
-
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      for (k=0; k<ndim; k++) part.a[k] = part.a0[k];
-      part.flags.unset_flag(active);
-    }
-
-    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
-  }
-
-
-
-
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (sph->self_gravity == 1 && sph->Nhydro > 0) {
@@ -541,14 +511,36 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
   }
 
-  // Compute timesteps for all particles
+  // Need to call this before setting the timesteps since nbody does not yet use the end_timestep flag
+  nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
+
+
+  // Compute timesteps for all particles and use it to compute the time-averaged initial
+  // drag force.
   if (Nlevels == 1) this->ComputeGlobalTimestep();
   else this->ComputeBlockTimesteps();
+
+  // Compute the dust forces if present.
+  if (sphdust != NULL){
+
+    // Set active.
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      part.flags.set_flag(active);
+    }
+
+    // Copy properties from original particles to ghost particles
+    LocalGhosts->CopyHydroDataToGhosts(simbox, sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
+#endif
+
+    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
+  }
 
   // Set particle values for initial step (e.g. r0, v0, a0, u0)
   uint->EndTimestep(n, sph->Nhydro, t, timestep, sph->GetSphParticleArray());
   sphint->EndTimestep(n, sph->Nhydro, t, timestep, sph->GetSphParticleArray());
-  nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
   this->CalculateDiagnostics();
   this->diag0 = this->diag;

@@ -278,7 +278,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
     if (part.flags.is_dead()) continue;
     dn = n - part.nlast;
 
-    if (dn == part.nstep) {
+    if (part.flags.check_flag(end_timestep)) {
       temp = eos->Temperature(part);
 
       // Get new ueq and dt_therm
