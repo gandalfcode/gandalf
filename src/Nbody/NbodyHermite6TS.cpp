@@ -80,7 +80,6 @@ void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                           // Star and dimension counters
   FLOAT a[ndim];                       // Acceleration
   FLOAT adot[ndim];                    // 1st time derivative of accel (jerk)
   FLOAT afac,bfac;                     // Aux. summation variables
@@ -100,30 +99,32 @@ void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd, invdrmag, invdrsqd, potperiodic)
+  for (int i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
       invdrmag = 1.0/sqrt(drsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
       star[i]->gpot += star[j]->m*invdrmag;
-      for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
-      for (k=0; k<ndim; k++) star[i]->adot[k] +=
+      for (int k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
+      for (int k=0; k<ndim; k++) star[i]->adot[k] +=
         star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
       // Add periodic gravity contribution (if activated)
       if (simbox.PeriodicGravity) {
         ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
-        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        for (int k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
         star[i]->gpot += potperiodic;
       }
 
@@ -136,32 +137,34 @@ void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
 
   // Loop over all stars a second time to compute 2nd time derivative
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd, invdrmag, invdrsqd, potperiodic)
+  for (int i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
-    for (k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
+    for (int k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-      for (k=0; k<ndim; k++) da[k] = star[j]->a[k] - star[i]->a[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) da[k] = star[j]->a[k] - star[i]->a[k];
       drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
       dvsqd = DotProduct(dv,dv,ndim);
       invdrsqd = 1.0/drsqd;
       invdrmag = sqrt(invdrsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
-      for (k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
-      for (k=0; k<ndim; k++) adot[k] =
+      for (int k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
+      for (int k=0; k<ndim; k++) adot[k] =
         star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
       // Now compute 2nd and 3rd order derivatives
       afac = DotProduct(dv,dr,ndim)*invdrsqd;
       bfac = dvsqd*invdrsqd + afac*afac + DotProduct(da,dr,ndim)*invdrsqd;
 
-      for (k=0; k<ndim; k++) star[i]->a2dot[k] =
+      for (int k=0; k<ndim; k++) star[i]->a2dot[k] =
         star[j]->m*da[k]*invdrsqd*invdrmag - 6.0*afac*adot[k] - 3.0*bfac*a[k];
 
     }
@@ -187,7 +190,6 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                           // Star and dimension counters
   FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT dr_corr[ndim];                 // Periodic corrected position vector
@@ -205,16 +207,18 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
+  for (int i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd = DotProduct(dr,dr,ndim);
       drmag = sqrt(drsqd);
@@ -226,14 +230,14 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
       // Add contribution to main star array
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
-      for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
-      for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
+      for (int k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
+      for (int k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
         3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
 
       // Add periodic gravity contribution (if activated)
       if (simbox.PeriodicGravity) {
         ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
-        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        for (int k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
         star[i]->gpot += potperiodic;
       }
 
