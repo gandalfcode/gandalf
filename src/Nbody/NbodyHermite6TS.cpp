@@ -102,7 +102,7 @@ void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
 #pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd, invdrmag, invdrsqd, potperiodic)
   for (int i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -137,11 +137,17 @@ private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd,
 
   // Loop over all stars a second time to compute 2nd time derivative
   //-----------------------------------------------------------------------------------------------
+<<<<<<< HEAD
 #pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd, invdrmag, invdrsqd, potperiodic)
   for (int i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
     for (int k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
+=======
+  for (i=0; i<N; i++) {
+    if (not star[i]->flags.check(active)) continue;
+    for (k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
+>>>>>>> Got sph working again
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -207,10 +213,15 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
+<<<<<<< HEAD
 #pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
   for (int i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
+=======
+  for (i=0; i<N; i++) {
+    if (not star[i]->flags.check(active)) continue;
+>>>>>>> Got sph working again
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -482,8 +493,8 @@ void NbodyHermite6TS<ndim, kernelclass>::AdvanceParticles
       (FLOAT) 0.5*star[i]->adot0[k]*dt2 + onesixth_dp*star[i]->a2dot0[k]*dt2*dt;
 
     // If at end of step, set system particle as active
-    if (dn == nstep) star[i]->active = true;
-    else star[i]->active = false;
+    if (dn == nstep) star[i]->flags.set(active);
+    else star[i]->flags.unset(active);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -582,21 +593,17 @@ void NbodyHermite6TS<ndim, kernelclass>::EndTimestep
  FLOAT timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
 
   debug2("[NbodyHermite6TS::EndTimestep]");
 
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
 
     // If at end of the current step, set quantites for start of new step
-    if (dn == nstep) {
+    if (star[i]->flags.check(end_timestep)) {
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
@@ -604,9 +611,12 @@ void NbodyHermite6TS<ndim, kernelclass>::EndTimestep
       for (k=0; k<ndim; k++) star[i]->a2dot0[k] = star[i]->a2dot[k];
       for (k=0; k<ndim; k++) star[i]->apert[k] = 0.0;
       for (k=0; k<ndim; k++) star[i]->adotpert[k] = 0.0;
-      star[i]->active = false;
       star[i]->nlast = n;
       star[i]->tlast = t;
+      star[i]->dt = star[i]->dt_next ;
+      star[i]->dt_next = 0 ;
+      star[i]->flags.unset(active);
+      star[i]->flags.unset(end_timestep);
     }
 
   }

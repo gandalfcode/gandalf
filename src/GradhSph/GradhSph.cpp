@@ -260,16 +260,16 @@ int GradhSph<ndim, kernelclass>::ComputeH
   invh            = 1/parti.h;
   parti.hfactor   = pow(invh, ndim+1);
   parti.hrangesqd = kern.kernrangesqd*parti.h*parti.h;
-  parti.div_v     = (FLOAT) 0.0;
+  //parti.div_v     = (FLOAT) 0.0;
   assert(!(isinf(parti.h)) && !(isnan(parti.h)));
   assert(part.h >= h_lower_bound);
 
   // Calculate the minimum neighbour potential (used later to identify new sinks)
   if (create_sinks == 1) {
-    parti.flags.set_flag(potmin);
+    parti.flags.set(potmin);
     for (j=0; j<Nneib; j++) {
       if (gpot[j] > (FLOAT) 1.000000001*parti.gpot &&
-          drsqd[j]*invhsqd < kern.kernrangesqd) parti.flags.unset_flag(potmin);
+          drsqd[j]*invhsqd < kern.kernrangesqd) parti.flags.unset(potmin);
     }
   }
 
@@ -323,11 +323,12 @@ void GradhSph<ndim, kernelclass>::ComputeThermalProperties
 {
   GradhSphParticle<ndim>& part = static_cast<GradhSphParticle<ndim> &> (part_gen);
 
-  part.u       = eos->SpecificInternalEnergy(part);
-  part.sound   = eos->SoundSpeed(part);
-  //part.press   = eos->Pressure(part);
-  part.pfactor = eos->Pressure(part)*part.invomega/(part.rho*part.rho);
-
+  if (part.ptype != dust_type) {
+    part.u       = eos->SpecificInternalEnergy(part);
+    part.sound   = eos->SoundSpeed(part);
+    //part.press   = eos->Pressure(part);
+    part.pfactor = eos->Pressure(part)*part.invomega/(part.rho*part.rho);
+  }
   return;
 }
 

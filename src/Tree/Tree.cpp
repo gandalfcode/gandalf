@@ -69,7 +69,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
-    if (i < Ntot && partdata[i].flags.check_flag(active) && !partdata[i].flags.is_dead())
+    if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
       activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
@@ -1847,7 +1847,7 @@ void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsFromMPITransfer
   typename TreeCell<ndim>::HandlerType handler_cell;
   typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
 
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->GetParticleArray<ParticleType>();
 
 
   //---------------------------------------------------------------------------------------------

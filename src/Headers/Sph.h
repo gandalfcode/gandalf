@@ -226,7 +226,6 @@ public:
            aviscenum, acondenum, tdaviscenum, string, string, SimUnits &, Parameters *);
   virtual ~GradhSph();
 
-  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
   virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
 
   virtual void AllocateMemory(int);
@@ -290,7 +289,6 @@ class SM2012Sph: public Sph<ndim>
             aviscenum, acondenum, tdaviscenum, string, string, SimUnits &, Parameters *);
   virtual ~SM2012Sph();
 
-  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
   virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
 
   virtual void AllocateMemory(int);

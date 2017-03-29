@@ -95,13 +95,13 @@ void Supernova<ndim>::SupernovaInjection
 
   // Do a neighbour search to find existing particles inside sphere.  If memory is not large
   // enough, then increase the size.
-  Nneib = neibsearch->GetGatherNeighbourList(SNpos, Rinj, hydro->GetParticleArray(),
+  Nneib = neibsearch->GetGatherNeighbourList(SNpos, Rinj, hydro->GetParticleArrayUnsafe(),
                                              hydro->Nhydro, Nneibmax, neiblist);
   while (Nneib == -1) {
     delete[] neiblist;
     Nneibmax *= 2;
     neiblist = new int[Nneibmax];
-    Nneib = neibsearch->GetGatherNeighbourList(SNpos, Rinj, hydro->GetParticleArray(),
+    Nneib = neibsearch->GetGatherNeighbourList(SNpos, Rinj, hydro->GetParticleArrayUnsafe(),
                                                hydro->Nhydro, Nneibmax, neiblist);
   };
 

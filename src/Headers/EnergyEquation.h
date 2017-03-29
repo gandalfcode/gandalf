@@ -48,12 +48,9 @@ class EnergyEquation
   EnergyEquation(DOUBLE);
   virtual ~EnergyEquation();
 
-  virtual void EnergyIntegration(const int, const int, const FLOAT,
-                                 const FLOAT, Particle<ndim> *) = 0;
-  virtual void EnergyCorrectionTerms(const int, const int, const FLOAT,
-                                     const FLOAT, Particle<ndim> *) = 0;
-  virtual void EndTimestep(const int, const int, const FLOAT,
-                           const FLOAT, Particle<ndim> *) = 0;
+  virtual void EnergyIntegration(const int,  const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
+  virtual void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
+  virtual void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual DOUBLE Timestep(Particle<ndim> &) = 0;
 
 
@@ -79,9 +76,9 @@ class EnergyRadws : public EnergyEquation<ndim>
   ~EnergyRadws();
 
   //  void ReadTable();
-  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
-  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
+  void EnergyIntegration(const int,  const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
+  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                       const FLOAT, FLOAT &, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
@@ -126,9 +123,9 @@ class NullEnergy : public EnergyEquation<ndim>
   NullEnergy(DOUBLE dt_mult) : EnergyEquation<ndim>(dt_mult) {};
   ~NullEnergy() {};
 
-  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
-  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  void EnergyIntegration(const int,  const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
+  void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
+  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
 };

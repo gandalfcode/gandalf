@@ -126,7 +126,7 @@ void Sph<ndim>::ZeroAccelerations()
 {
   for (int i=0; i< Nhydro; i++) {
     SphParticle<ndim>& part = GetSphParticlePointer(i);
-    if (part.flags.check_flag(active)) {
+    if (part.flags.check(active)) {
       part.levelneib = 0;
       part.dalphadt  = (FLOAT) 0.0;
       part.div_v     = (FLOAT) 0.0;

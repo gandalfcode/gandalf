@@ -111,7 +111,7 @@ class DustSphNgbFinder
 	vector<NeighbourManager<ndim,ParticleType<ndim> > > neibmanagerbuf;
 public:
 	DustSphNgbFinder(Parameters* params, TreeBase<ndim> * t,TreeBase<ndim> * gt=NULL)
-	: _tree(t), _ghosttree(gt), w_tstep(std::numeric_limits<float>::quiet_NaN())
+	: _tree(t), _ghosttree(gt), w_tstep(std::numeric_limits<DOUBLE>::quiet_NaN())
 	{
 	  if (params->stringparams["sim"].find("sph") != std::string::npos) {
 	    if (params->stringparams["sph_integration"] == "lfkdk")
@@ -588,7 +588,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   vector<FLOAT> a_drag(ndim*Ntot) ;            // temporary to hold the drag accelerations
   vector<FLOAT> dudt(Ntot) ;                   // temporary to hold the drag heating
 
-#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag, dudt)
+#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag, dudt, cout)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -838,7 +838,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   assert(parti.sound > 0)  ;
   assert(parti.div_v >= 0) ;
 
-  // Scale these so h rather than h dust can be used in the time-step calculation
+  // Scale the sound speed so h rather than h dust can be used in the time-step calculation
   parti.div_v *= parti.h / parti.h_dust ;
   parti.sound *= parti.h / parti.h_dust ;
 
@@ -910,7 +910,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
   // Some basic sanity-checking in case of invalid input into routine
   assert(!parti.flags.is_dead());
 
-  if (parti.ptype == dust_type){
+  if (parti.ptype != gas_type){
 	  parti.sound = 0;
 	  parti.div_v = 0;
   }

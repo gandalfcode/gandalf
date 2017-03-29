@@ -262,7 +262,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
       part.B[k][kk] = (FLOAT) 0.0;
     }
   }
-  if (create_sinks==1) part.flags.set_flag(potmin);
+  if (create_sinks==1) part.flags.set(potmin);
 
 
   // Loop over all potential neighbours in the list
@@ -299,7 +299,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
     // Calculate the minimum neighbour potential (used later to identify new sinks)
     if (create_sinks == 1) {
         if (neibpart[j].gpot > (FLOAT) 1.000000001*part.gpot &&
-            drsqd*invhsqd < kern.kernrangesqd) part.flags.unset_flag(potmin);
+            drsqd*invhsqd < kern.kernrangesqd) part.flags.unset(potmin);
     }
 
   }

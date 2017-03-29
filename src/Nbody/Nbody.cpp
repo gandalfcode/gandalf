@@ -240,7 +240,7 @@ void Nbody<ndim>::CalculateDirectGravForces
 #pragma omp parallel for if (N > maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drsqd, dv, invdrmag, potperiodic)
   for (int i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -422,7 +422,7 @@ void Nbody<ndim>::CalculatePerturberForces
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all perturbing stars.
     //---------------------------------------------------------------------------------------------
@@ -561,7 +561,7 @@ void Nbody<ndim>::IntegrateInternalMotion
     children[i]->gpe          = (FLOAT) 0.0;
     children[i]->gpe_pert     = (FLOAT) 0.0;
     children[i]->gpe_internal = (FLOAT) 0.0;
-    children[i]->active       = true;
+    children[i]->flags.set(active);
   }
 
   if (perturbers == 1 && Npert > 0) {
@@ -631,7 +631,7 @@ void Nbody<ndim>::IntegrateInternalMotion
 
       // Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
-        children[i]->active   = true;
+        children[i]->flags.set(active);
         children[i]->gpot     = gpotext;
         children[i]->gpe_pert = children[i]->m*gpotext;
         for (k=0; k<ndim; k++) children[i]->a[k]        = aext[k];

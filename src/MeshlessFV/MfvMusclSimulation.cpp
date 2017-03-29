@@ -127,13 +127,15 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // Integrate positions of particles
-  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, mfv->GetMeshlessFVParticleArray());
-
-  // Advance N-body particle positions
+  hydroint->AdvanceParticles(n, t, timestep, mfv);
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
+  // Check all boundary conditions
+  // (DAVID : create an analagous of this function for N-body)
+  hydroint->CheckBoundaries(simbox,mfv);
+
   // Apply Saitoh & Makino type time-step limiter
-  mfv->CheckTimesteps(level_diff_max, level_step, n, timestep, 1);
+  hydroint->CheckTimesteps(level_diff_max, level_step, n, timestep, mfv);
 
   // Reset rebuild tree flag in preparation for next timestep
   //rebuild_tree = false;
@@ -257,7 +259,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
     // Zero all acceleration terms
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = (FLOAT) 0.0;
@@ -286,7 +288,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     }
 
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
         nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
                                             nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
                                             nbody->nbodydata[i]->gpot);
@@ -301,7 +303,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // End-step terms for all hydro particles
-  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+  hydroint->EndTimestep(n, t, timestep, mfv);
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Update all active cell counters in the tree

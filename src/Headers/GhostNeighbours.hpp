@@ -125,11 +125,11 @@ public:
    		    if (_periodic_bound[k]) {
    		      if (dr[k] > _domain.half[k]) {
    		        dr[k] -=_domain.size[k];
-   		        bound.set_flag(periodic_bound_flags[k][1]) ;
+   		        bound.set(periodic_bound_flags[k][1]) ;
    		      }
    		      else if (dr[k] < -_domain.half[k]) {
    		        dr[k] += _domain.size[k];
-   		        bound.set_flag(periodic_bound_flags[k][0]) ;
+   		        bound.set(periodic_bound_flags[k][0]) ;
    		      }
    		    }
    		  }
@@ -153,12 +153,12 @@ public:
 	   	      if (dr[k] > _domain.half[k]) {
 	   	        dr[k] += - _domain.size[k];
 	   	        r[k]  += - _domain.size[k];
-	   	        bound.set_flag(periodic_bound_flags[k][1]) ;
+	   	        bound.set(periodic_bound_flags[k][1]) ;
 	   	      }
 	   	      else if (dr[k] < -_domain.half[k]) {
 	   	        dr[k] += _domain.size[k];
 	   	        r[k]  += _domain.size[k] ;
-	   	        bound.set_flag(periodic_bound_flags[k][0]) ;
+	   	        bound.set(periodic_bound_flags[k][0]) ;
 	   	      }
 	   	    }
 		}
@@ -180,11 +180,11 @@ public:
             if (_periodic_bound[k]) {
               if (dr[k] > _domain.half[k]) {
                 dr_corr[k] =- _domain.size[k];
-                bound.set_flag(periodic_bound_flags[k][1]) ;
+                bound.set(periodic_bound_flags[k][1]) ;
               }
               else if (dr[k] < -_domain.half[k]) {
                 dr_corr[k] = _domain.size[k];
-                bound.set_flag(periodic_bound_flags[k][0]) ;
+                bound.set(periodic_bound_flags[k][0]) ;
               }
               else
                 dr_corr[k] = 0 ;
@@ -352,7 +352,7 @@ private:
 	    for (int k=0; k <ndim; k++)
 	      p.r[k] = _centre[k] + dr[k];
 
-	  p.flags.set_flag(bound_flag.get()) ;
+	  p.flags.set(bound_flag.get()) ;
 
 	}
 
@@ -378,7 +378,7 @@ private:
 			if (rk > _hbox.min[k]) {
 			  ngbs[nc] = ngbs[n] ;
 			  reflect<ParticleType::NDIM>(ngbs[nc], k, _domain.min[k]) ;
-			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][0]) ;
+			  ngbs[nc].flags.set(mirror_bound_flags[k][0]) ;
 			  nc++ ;
 			}
 		  }
@@ -390,7 +390,7 @@ private:
 			if (rk < _hbox.max[k]) {
 			  ngbs[nc] = ngbs[n] ;
 			  reflect<ParticleType::NDIM>(ngbs[nc], k, _domain.max[k]) ;
-			  ngbs[nc].flags.set_flag(mirror_bound_flags[k][1]) ;
+			  ngbs[nc].flags.set(mirror_bound_flags[k][1]) ;
 			  nc++ ;
 			}
 		  }
@@ -427,7 +427,7 @@ private:
 			for (int n=0; n < Nghost; n++){
 			  ngbs.push_back(ngbs[n+old_size]);
 			  reflect<ParticleType::NDIM>(ngbs.back(), k, _domain.min[k]) ;
-			  ngbs.back().flags.set_flag(mirror_bound_flags[k][0]) ;
+			  ngbs.back().flags.set(mirror_bound_flags[k][0]) ;
 			  nc++;
 			}
 		  }
@@ -440,7 +440,7 @@ private:
 			for (int n=0; n < Nghost; n++){
 			 ngbs.push_back(ngbs[n+old_size]);
 			 reflect<ParticleType::NDIM>(ngbs.back(), k, _domain.max[k]) ;
-			 ngbs.back().flags.set_flag(mirror_bound_flags[k][1]) ;
+			 ngbs.back().flags.set(mirror_bound_flags[k][1]) ;
 			 nc++ ;
 			}
 		  }
@@ -471,7 +471,7 @@ private:
           for (int n=0; n < Nghost; n++){
             ngbs[nc] = ngbs[n] ;
             reflect(ngbs[nc], k, _domain.min[k]) ;
-            ngbs[nc].flags.set_flag(mirror_bound_flags[k][0]) ;
+            ngbs[nc].flags.set(mirror_bound_flags[k][0]) ;
             nc++;
           }
         }
@@ -481,7 +481,7 @@ private:
           for (int n=0; n < Nghost; n++){
             ngbs[nc] = ngbs[n] ;
             reflect(ngbs[nc], k, _domain.max[k]) ;
-            ngbs[nc].flags.set_flag(mirror_bound_flags[k][1]) ;
+            ngbs[nc].flags.set(mirror_bound_flags[k][1]) ;
             nc++ ;
           }
         }

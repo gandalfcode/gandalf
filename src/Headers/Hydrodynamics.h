@@ -101,7 +101,15 @@ public:
     long int numBytes = (long int) i * (long int) size_hydro_part;
     return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + numBytes));
   };
-  virtual Particle<ndim>* GetParticleArray() = 0;
+
+  Particle<ndim>* GetParticleArrayUnsafe() {
+    return reinterpret_cast<Particle<ndim>*>(hydrodata_unsafe);
+  }
+
+  template<template <int> class ParticleType> ParticleType<ndim>* GetParticleArray() {
+    assert(sizeof(ParticleType<ndim>) == size_hydro_part) ;
+    return reinterpret_cast<ParticleType<ndim>*>(hydrodata_unsafe) ;
+  }
 
 #if defined MPI_PARALLEL
   virtual void FinishReturnExport() {};
@@ -153,7 +161,7 @@ void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
 
   debug2("[Hydrodynamics::DeleteDeadParticles]");
 
-  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(GetParticleArray());
+  ParticleType<ndim>* partdata = GetParticleArray<ParticleType>();
 
 
   // Determine new order of particles in arrays.
@@ -165,7 +173,7 @@ void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
       ilast--;
       if (i < ilast) {
         partdata[i] = partdata[ilast];
-        partdata[ilast].flags.set_flag(dead);
+        partdata[ilast].flags.set(dead);
         partdata[ilast].m = (FLOAT) 0.0;
       }
       else break;
@@ -209,8 +217,6 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
                     string KernelName, int size_hydro_part, SimUnits &units, Parameters *params):
     Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux, gas_eos_aux, KernelName,
                         size_hydro_part, units, params) {};
-
-  virtual Particle<ndim>* GetParticleArray() {return NULL;};
 
   virtual void AllocateMemory(int) {};
   virtual void DeallocateMemory(void) {};

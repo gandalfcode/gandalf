@@ -162,8 +162,8 @@ TEST_F(OctTreeTest, StructureTest)
         pcount[i]++;
         leafcount++;
         Ncount++;
-        if (partdata[i].flags.check_flag(active)) activecount++;
-        if (partdata[i].flags.check_flag(active)) Nactivecount++;
+        if (partdata[i].flags.check(active)) activecount++;
+        if (partdata[i].flags.check(active)) Nactivecount++;
         ASSERT_LE(partdata[i].h,cell.hmax);
         if (i == cell.ilast) break;
         i = octtree->inext[i];

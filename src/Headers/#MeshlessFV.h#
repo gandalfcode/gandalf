@@ -108,9 +108,9 @@ public:
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void) {
-    this->template DoDeleteDeadParticles<MeshlessFVParticle>() ;
-  }
+  /* virtual void DeleteDeadParticles(void) { */
+  /*   this->template DoDeleteDeadParticles<MeshlessFVParticle>() ; */
+  /* } */
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {
     MeshlessFVParticle<ndim>& mfvpart = static_cast<MeshlessFVParticle<ndim>& > (part);
     mfvpart.m -= dm;
@@ -138,7 +138,13 @@ public:
   // Other functions.
   //-----------------------------------------------------------------------------------------------
   void ComputeThermalProperties(MeshlessFVParticle<ndim> &);
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
   void InitialSmoothingLengthGuess(void);
+  void IntegrateParticles(const int, const int, const FLOAT, const FLOAT,
+                          const DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
+  int CheckTimesteps(const int, const int, const int, double, int);
+
+  FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &, FLOAT [nvar]);
 
@@ -150,6 +156,7 @@ public:
     return *((MeshlessFVParticle<ndim>*)((unsigned char*) hydrodata_unsafe + numBytes));
   }
   MeshlessFVParticle<ndim>* GetMeshlessFVParticleArray() {return hydrodata;}
+  virtual Particle<ndim>* GetParticleArray() {return hydrodata;};
 
 
   // Const variables (read in from parameters file)

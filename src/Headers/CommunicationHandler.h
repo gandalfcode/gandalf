@@ -148,7 +148,7 @@ public:
     p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
     p2.hfactor = pow(1/p2.h,ndim+1);
     p2.sound = hydro->eos->SoundSpeed(p2);
-    p2.flags.set_flag(active);
+    p2.flags.set(active);
 
     p2.gpot=0;
     p2.div_v=0;

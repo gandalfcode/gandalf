@@ -536,7 +536,7 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
 {
   vector<vector<FLOAT> > buffer_proc(Nmpi);
   vector<vector<int> > buffer_proc_iorig(Nmpi);
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->GetParticleArray<ParticleType>();
 
   // Work out how many ghosts we need to update per each processor
   vector<int> N_updates_per_proc(Nmpi);
@@ -609,8 +609,8 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
     const FLOAT received_mass = buffer_receive[i];
     partdata[iorig_ghost].m = received_mass ;
     if (received_mass == 0.0) {
-      partdata[iorig_ghost].flags.unset_flag(active);
-      partdata[iorig_ghost].flags.set_flag(dead);
+      partdata[iorig_ghost].flags.unset(active);
+      partdata[iorig_ghost].flags.set(dead);
     }
   }
 
@@ -896,7 +896,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   unsigned int inode;                  // MPI node index
   vector<int> overlapping_nodes;       // List of nodes that overlap this domain
   vector<int> ghost_export_list;       // List of particles ids to be exported
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->GetParticleArray<ParticleType>();
 
   if (rank == 0) debug2("[MpiControl::SendReceiveGhosts]");
 

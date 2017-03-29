@@ -235,10 +235,10 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   // Calculate the minimum neighbour potential
   // (used later to identify new sinks)
   if (create_sinks == 1) {
-    parti.flags.set_flag(potmin);
+    parti.flags.set(potmin);
     for (j=0; j<Nneib; j++)
       if (gpot[j] > 1.000000001*parti.gpot &&
-          drsqd[j]*invhsqd < kern.kernrangesqd) parti.flags.unset_flag(potmin);
+          drsqd[j]*invhsqd < kern.kernrangesqd) parti.flags.unset(potmin);
   }
 
   // If there are star particles, compute N-body chi correction term
