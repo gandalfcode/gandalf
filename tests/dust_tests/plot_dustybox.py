@@ -71,9 +71,10 @@ def DriftVelocitySolutionFactory():
     
 if __name__=="__main__":
     # Load the sim
-    loadsim('DUSTYBOX')
     if len(sys.argv) > 1:
         loadsim(sys.argv[1])
+    else:
+        loadsim('DUSTYBOX')
 
     # Set up the analytical solution
     sol=DriftVelocitySolutionFactory()   

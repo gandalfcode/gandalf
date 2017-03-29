@@ -381,7 +381,7 @@ void MpiControl<ndim>::ComputeTotalStarGasForces
   MPI_Allreduce(MPI_IN_PLACE,buffer,number_doubles,GANDALF_MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
   for (int i=0; i<nbody->Nnbody; i++) {
-    if (!star[i]->active) continue;
+    if (!star[i]->flags.check(active)) continue;
     star[i]->gpot = buffer[i*(2*ndim+1) + 0];
     for (int k=0; k<ndim; k++) star[i]->a[k] = buffer[i*(2*ndim+1) +1 +k];
     for (int k=0; k<ndim; k++) star[i]->adot[k] = buffer[i*(2*ndim+1) +1 +ndim +k];
@@ -536,7 +536,7 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
 {
   vector<vector<FLOAT> > buffer_proc(Nmpi);
   vector<vector<int> > buffer_proc_iorig(Nmpi);
-  ParticleType<ndim>* partdata = hydro->GetParticleArray<ParticleType>();
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   // Work out how many ghosts we need to update per each processor
   vector<int> N_updates_per_proc(Nmpi);
@@ -896,7 +896,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   unsigned int inode;                  // MPI node index
   vector<int> overlapping_nodes;       // List of nodes that overlap this domain
   vector<int> ghost_export_list;       // List of particles ids to be exported
-  ParticleType<ndim>* partdata = hydro->GetParticleArray<ParticleType>();
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   if (rank == 0) debug2("[MpiControl::SendReceiveGhosts]");
 
