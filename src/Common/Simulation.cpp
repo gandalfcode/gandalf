@@ -2023,7 +2023,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
           // Find maximum level of all N-body particles
           level_nbody   = max(level_nbody, nbody->nbodydata[i]->level);
           level_max_aux = max(level_max_aux, nbody->nbodydata[i]->level);
-          dt_nbody      = min(dt_nbody, nbody->nbodydata[i]->dt);
+          dt_nbody      = min(dt_nbody, nbody->nbodydata[i]->dt_next);
         }
         //-------------------------------------------------------------------------------------------
 

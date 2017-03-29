@@ -101,7 +101,6 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
     // Compute time since beginning of current step
     nstep = part.nstep;
     dn = n - part.nlast;
-    //dt = timestep*(FLOAT) dn;
     dt = t - part.tlast;
 
     // Advance particle positions and velocities
@@ -164,17 +163,19 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
     nstep = part.nstep;
 
     if (dn == nstep) {
-      for (k=0; k<ndim; k++) part.v[k] += (t - part.tlast)* //timestep*(FLOAT) nstep*
-        (FLOAT) 0.5*(part.a[k] - part.a0[k]);
-    }
-    if (dn == nstep && gas_eos == energy_eqn) {
-      part.u += 0.5*(part.dudt - part.dudt0)*(t - part.tlast); //timestep*(FLOAT) nstep;
+      for (k=0; k<ndim; k++) part.v[k] += 0.5 * part.dt * (part.a[k] - part.a0[k]);
 
-      // In spurious cases where correction term can lead to negative energies, simply use
-      // 1st-order integration (which should guarantee positive energy due to the CFL condition)
-      if (part.u <= (FLOAT) 0.0) part.u = part.u0 + part.dudt0*(t - part.tlast);
-    }
+      if (gas_eos == energy_eqn) {
+        part.u     += 0.5*(part.dudt - part.dudt0) * part.dt; //timestep*(FLOAT) nstep;
 
+        // In spurious cases where correction term can lead to negative energies, simply use
+        // 1st-order integration (which should guarantee positive energy due to the CFL condition)
+        if (part.u <= (FLOAT) 0.0) part.u = part.u0 + part.dudt0 * part.dt;
+
+        part.u0    = part.u;
+        part.dudt0 = part.dudt;
+      }
+    }
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -221,8 +222,6 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
   const FLOAT timestep,                ///< [in] Base timestep value
   Hydrodynamics<ndim>* hydro)
 {
-  int dn;                              // Integer time since beginning of step
-  int nstep;                           // Particle (integer) step size
   int i;                               // Particle counter
   int k;                               // Dimension counter
 
@@ -233,25 +232,25 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(sphdata, sph)
+#pragma omp parallel for default(none) private(i,k) shared(sphdata, sph)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
 
     if (part.flags.check(end_timestep)) {
-      for (k=0; k<ndim; k++) part.v[k] += 0.5 * (t - part.tlast) * (part.a[k] - part.a0[k]);
+      for (k=0; k<ndim; k++) part.v[k] += 0.5 * part.dt * (part.a[k] - part.a0[k]);
       for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
 
       // If using an adiabatic energy equation, then explictly integrate the internal energy
       if (gas_eos == energy_eqn) {
-        part.u     += 0.5*(part.dudt - part.dudt0)*(t - part.tlast); //timestep*(FLOAT) nstep;
+        part.u     += 0.5*(part.dudt - part.dudt0) * part.dt; //timestep*(FLOAT) nstep;
 
         // In spurious cases where correction term can lead to negative energies, simply use
         // 1st-order integration (which should guarantee positive energy due to the CFL condition)
-        if (part.u <= (FLOAT) 0.0) part.u = part.u0 + part.dudt0*(t - part.tlast);
+        if (part.u <= (FLOAT) 0.0) part.u = part.u0 + part.dudt0 * part.dt;
 
         part.u0    = part.u;
         part.dudt0 = part.dudt;

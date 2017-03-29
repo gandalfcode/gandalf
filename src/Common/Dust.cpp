@@ -585,8 +585,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
   // Set-up all OMP threads
   //===============================================================================================
-  vector<FLOAT> a_drag(ndim*Ntot) ;            // temporary to hold the drag accelerations
-  vector<FLOAT> dudt(Ntot) ;                   // temporary to hold the drag heating
+  vector<FLOAT> a_drag(ndim*Ntot, 0) ;            // temporary to hold the drag accelerations
+  vector<FLOAT> dudt(Ntot, 0) ;                   // temporary to hold the drag heating
 
 #pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag, dudt, cout)
   {
@@ -602,7 +602,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     int Nactive;                                 // ..
     vector<int>                 activelist(_tree->MaxNumPartInLeafCell()); // Ids of Active parts
     vector<ParticleType<ndim> > activepart(_tree->MaxNumPartInLeafCell()); // Local array of parts
-    vector<int>                 levelneib(Ntot,0);                         // Ngb t-step level
     NeighbourManager<ndim,ParticleType<ndim> >& neibmanager = neibmanagerbuf[ithread];
 
 
@@ -653,7 +652,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
     	i = activelist[j];
-    	sphdata[i].dudt = activepart[j].dudt ;
     	sphdata[i].div_v = activepart[j].div_v ;
     	sphdata[i].sound = activepart[j].sound ;
       }
@@ -661,14 +659,9 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     //===============================================================================================
 
 
-#pragma omp critical
-    {
-      for (i=0; i<Nhydro; i++) {
-        sphdata[i].levelneib = max(sphdata[i].levelneib, levelneib[i]);
-
-        DOUBLE dt_drag = drag_timestep(sphdata[i]);
-        update_particle(sphdata[i], &a_drag[i*ndim], dudt[i], sphdata[i].dt);
-      }
+#pragma omp for
+    for (i=0; i<Nhydro; i++) {
+      update_particle(sphdata[i], &a_drag[i*ndim], dudt[i], drag_timestep(sphdata[i]));
     }
   }
 
@@ -921,6 +914,8 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 
   // Local copy of heating rate
   double _dudt = 0 ;
+  double _adrag[ndim] ;
+  for(k=0; k < ndim; k++) _adrag[k] = 0;
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
@@ -990,7 +985,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     S = (dvdr * Xi - dadr * Lambda) ;
 
     for (k=0; k<ndim; k++)
-    	a_drag[k] += ndim * neiblist[j].rho * S * draux[k] * wkern ;
+      _adrag[k] += ndim * neiblist[j].rho * S * draux[k] * wkern ;
 
     // Add Change in K.E to thermal energy generation
     if (_use_energy_term && parti.ptype == gas_type)
@@ -998,6 +993,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
   }
   //-----------------------------------------------------------------------------------------------
    dudt = _dudt ;
+   for(k=0; k < ndim; k++) a_drag[k] = _adrag[k];
 
 
   return;

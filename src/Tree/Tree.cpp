@@ -1847,7 +1847,7 @@ void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsFromMPITransfer
   typename TreeCell<ndim>::HandlerType handler_cell;
   typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
 
-  ParticleType<ndim>* partdata = hydro->GetParticleArray<ParticleType>();
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
 
   //---------------------------------------------------------------------------------------------
@@ -1924,7 +1924,7 @@ void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsForMPIReturn
  vector<char>& recv_buffer,
  Hydrodynamics<ndim>* hydro)
  {
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   typename ParticleType<ndim>::HandlerType handler;
   typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;
