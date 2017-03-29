@@ -187,36 +187,35 @@ void Simulation<ndim>::GenerateIC(void)
   }
   //-----------------------------------------------------------------------------------------------
 
-  assert(icGenerator != NULL) ;
+  if (icGenerator != NULL) { // We are not reading an IC file
 
-  // Finally, generate the particles for the chosen initial conditions
-  icGenerator->Generate();
+    // Finally, generate the particles for the chosen initial conditions
+    icGenerator->Generate();
 
-  // If selected, call all functions for regularising the particle distribution
-  if (simparams->intparams["regularise_particle_ics"] == 1) {
-    using Regularization::RegularizerFunction;
-    using Regularization::ParticleRegularizer;
+    // If selected, call all functions for regularising the particle distribution
+    if (simparams->intparams["regularise_particle_ics"] == 1) {
+      using Regularization::RegularizerFunction;
+      using Regularization::ParticleRegularizer;
 
-    // Regularise the particle distribution using the density function providing in the IC class
-    RegularizerFunction<ndim> *reg_func = icGenerator->GetParticleRegularizer();
-    ParticleRegularizer<ndim>(simparams, icBox)(hydro, neib, nbody, *reg_func);
+      // Regularise the particle distribution using the density function providing in the IC class
+      RegularizerFunction<ndim> *reg_func = icGenerator->GetParticleRegularizer();
+      ParticleRegularizer<ndim>(simparams, icBox)(hydro, neib, nbody, *reg_func);
 
-    // Once regularisation step has finished, (re)set all particle properties
-    icGenerator->SetParticleProperties();
+      // Once regularisation step has finished, (re)set all particle properties
+      icGenerator->SetParticleProperties();
 
-    delete reg_func ;
+      delete reg_func ;
+    }
   }
-
-
   // Scale particle data to dimensionless code units if required
   if (rescale_particle_data) ConvertToCodeUnits();
 
   // Check that the initial conditions are valid
-  icGenerator->CheckInitialConditions();
-
+  if (icGenerator != NULL) {
+    icGenerator->CheckInitialConditions();
+    delete icGenerator ;
+  }
   cout << "Finished creating initial conditions" << endl;
-
-  delete icGenerator;
 
   return;
 }

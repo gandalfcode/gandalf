@@ -685,6 +685,24 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
   }
 
+  if (time_step_limiter_type == "conservative") {
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
+#ifdef MPI_PARALLEL
+    mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
+    mpicontrol->GetExportedParticlesAccelerations(mfv);
+#endif
+  }
+
+  // Compute timesteps for all particles
+  if (Nlevels == 1) {
+    this->ComputeGlobalTimestep();
+  }
+  else {
+    this->ComputeBlockTimesteps();
+  }
+
+
   // Call EndTimestep to set all 'beginning-of-step' variables
   hydroint->EndTimestep(n, t, timestep, mfv);
   nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);

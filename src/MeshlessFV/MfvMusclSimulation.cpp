@@ -63,22 +63,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   debug2("[MfvMusclSimulation:MainLoop]");
 
-  if (time_step_limiter_type == "conservative") {
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
-#ifdef MPI_PARALLEL
-    mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
-    mpicontrol->GetExportedParticlesAccelerations(mfv);
-#endif
-  }
-
-  // Compute timesteps for all particles
-  if (Nlevels == 1) {
-    this->ComputeGlobalTimestep();
-  }
-  else {
-    this->ComputeBlockTimesteps();
-  }
 
 #ifdef MPI_PARALLEL
 
@@ -300,6 +284,24 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   }
   //-----------------------------------------------------------------------------------------------
+
+  if (time_step_limiter_type == "conservative") {
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
+#ifdef MPI_PARALLEL
+    mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
+    mpicontrol->GetExportedParticlesAccelerations(mfv);
+#endif
+  }
+
+  // Compute timesteps for all particles
+  if (Nlevels == 1) {
+    this->ComputeGlobalTimestep();
+  }
+  else {
+    this->ComputeBlockTimesteps();
+  }
+
 
 
   // End-step terms for all hydro particles
