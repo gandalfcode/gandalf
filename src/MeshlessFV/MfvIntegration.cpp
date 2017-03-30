@@ -139,14 +139,13 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
 
       // Further update conserved quantities if computing gravitational/nbody  contributions
       for (k=0; k<ndim; k++) {
-        Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-                (part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
+        Qcons[k] += 0.5 * part.dt * (part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
         part.v[k] = Qcons[k] / Qcons[irho] ;
       }
-      Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
+      Qcons[ietot] += 0.5 * part.dt *
         (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-           Qcons[irho]*DotProduct(part.v, part.a, ndim) +
-         DotProduct(part.a0, part.rdmdt0, ndim) +
+         Qcons[irho]*DotProduct(part.v, part.a, ndim) +
+         DotProduct(part.a0, part.rdmdt, ndim) +
          DotProduct(part.a, part.rdmdt, ndim));
 
       // Compute primitive values and update all main array quantities
