@@ -143,10 +143,8 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
         part.v[k] = Qcons[k] / Qcons[irho] ;
       }
       Qcons[ietot] += 0.5 * part.dt *
-        (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-         Qcons[irho]*DotProduct(part.v, part.a, ndim) +
-         DotProduct(part.a0, part.rdmdt, ndim) +
-         DotProduct(part.a, part.rdmdt, ndim));
+        (DotProduct(part.Qcons0, part.a0, ndim) + DotProduct(Qcons, part.a, ndim) +
+         DotProduct(part.a0, part.rdmdt, ndim) + DotProduct(part.a, part.rdmdt, ndim));
 
       // Compute primitive values and update all main array quantities
       mfv->UpdateArrayVariables(part, Qcons);
@@ -164,16 +162,11 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
       part.flags.unset(end_timestep);
       for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
-      // for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
+      for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
       for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
       for (k=0; k<ndim; k++) part.rdmdt[k] = 0.0;
       for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
-      //for (k=0; k<ndim; k++) part.a[k] = 0.0;
-      //part.gpot=0.0;
 
-      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
-
-      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
 
     }
     //---------------------------------------------------------------------------------------------
@@ -235,11 +228,11 @@ int MfvIntegration<ndim,ParticleType>::CheckTimesteps
       if(dn%nnewstep == 0 && dn != part.nstep) {
         part.nstep = dn;
         part.level = level_new;
-        double dt = part.nstep * tstep ;
+        part.dt = part.nstep * tstep ;
 
         // Use current predicted value for dQ
         for (int var=0; var<nvar; var++)
-          part.dQ[var] = dt * part.dQdt[var];
+          part.dQ[var] = part.dt * part.dQdt[var];
 
         part.flags.set(active);
       }

@@ -812,6 +812,32 @@ void SphSimulation<ndim>::MainLoop(void)
   }
   //-----------------------------------------------------------------------------------------------
 
+  // Search for new sink particles (if activated) and accrete to existing sinks
+  if (sink_particles == 1) {
+    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
+      sinks->SearchForNewSinkParticles(n, t ,sph, nbody);
+    }
+    if (sinks->Nsink > 0) {
+      sph->mmean = (FLOAT) 0.0;
+      for (i=0; i<sph->Nhydro; i++) sph->mmean += sph->GetSphParticlePointer(i).m;
+      sph->mmean /= (FLOAT) sph->Nhydro;
+      sph->hmin_sink = big_number;
+      for (i=0; i<sinks->Nsink; i++) {
+        sph->hmin_sink = min(sph->hmin_sink, (FLOAT) sinks->sink[i].star->h);
+      }
+
+      sinks->AccreteMassToSinks(n, timestep, sph, nbody);
+      nbody->UpdateStellarProperties();
+      if (extra_sink_output) WriteExtraSinkOutput();
+    }
+    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
+    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
+         timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock) {
+      sph->DeleteDeadParticles();
+      rebuild_tree = true;
+    }
+  }
+
   // Compute timesteps for all particles (for next step, needed for dust accelerations.)
   if (Nlevels == 1) this->ComputeGlobalTimestep();
   else this->ComputeBlockTimesteps();
@@ -849,32 +875,6 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // End-step terms for all star particles
   if (nbody->Nstar > 0) nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
-
-  // Search for new sink particles (if activated) and accrete to existing sinks
-  if (sink_particles == 1) {
-    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
-      sinks->SearchForNewSinkParticles(n, t ,sph, nbody);
-    }
-    if (sinks->Nsink > 0) {
-      sph->mmean = (FLOAT) 0.0;
-      for (i=0; i<sph->Nhydro; i++) sph->mmean += sph->GetSphParticlePointer(i).m;
-      sph->mmean /= (FLOAT) sph->Nhydro;
-      sph->hmin_sink = big_number;
-      for (i=0; i<sinks->Nsink; i++) {
-        sph->hmin_sink = min(sph->hmin_sink, (FLOAT) sinks->sink[i].star->h);
-      }
-
-      sinks->AccreteMassToSinks(n, timestep, sph, nbody);
-      nbody->UpdateStellarProperties();
-      if (extra_sink_output) WriteExtraSinkOutput();
-    }
-    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock) {
-      sph->DeleteDeadParticles();
-      rebuild_tree = true;
-    }
-  }
 
 
   return;

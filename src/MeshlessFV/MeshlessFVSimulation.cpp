@@ -565,6 +565,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
       for (k=0; k<ndim; k++) {
         part.a[k] = (FLOAT) 0.0;
+        part.atree[k] = (FLOAT) 0.0;
         part.rdmdt[k] = 0.0;
         part.rdmdt0[k] = 0.0;
       }
@@ -573,7 +574,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       part.nstep  = 0;
       part.nlast  = 0;
       part.tlast  = t;
-      part.flags.unset(active);
+      part.flags.set(active);
     }
     for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set(active);
 
@@ -593,31 +594,12 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #endif
 
-    // ..
-    for (i=0; i<mfv->Nhydro; i++) {
-      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-      for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
-      for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
-      for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
-      part.flags.set(active);
-    }
-
     mfvneib->UpdateAllProperties(mfv, nbody);
 
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
-
-
-#ifdef MPI_PARALLEL
-    //mfvneib->UpdateHydroExportList(rank, mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody, simbox);
-
-    //mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-    // Update pointer in case there has been a reallocation
-    //partdata = mfv->GetMeshlessFVParticleArray();
-#endif
-
 
     mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
@@ -631,11 +613,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 #ifdef MPI_PARALLEL
       if (mfv->self_gravity ==1 ) {
-        MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
-        for (int i=0; i< mfv->Nhydro; i++) {
-          for (int k=0; k<ndim; k++) partdata[i].a[k] = 0.0;
-          partdata[i].gpot=0.0;
-        }
         mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox, ewald);
         mpicontrol->ExportParticlesBeforeForceLoop(mfv);
       }

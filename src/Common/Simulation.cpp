@@ -1923,7 +1923,6 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
             level          = max(ComputeTimestepLevel(dt, dt_max), part.levelneib - level_diff_max);
             part.level     = max(part.level, level);
             part.levelneib = part.level;
-            part.dt_next   = dt;
             part.nlast     = n;
             part.nstep     = pow(2, level_step - part.level);
             part.dt_next   = part.nstep * timestep;
@@ -1951,7 +1950,6 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
             }
 
             part.levelneib = level;
-            part.dt_next   = dt;
             part.nlast     = n;
             part.nstep     = pow(2, level_step - part.level);
             part.dt_next   = part.nstep * timestep;
