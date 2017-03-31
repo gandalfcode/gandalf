@@ -48,7 +48,7 @@ enum flags {
 	potmin = 1 << 2,
 
 	update_density = 1 << 3, // For meshless
-
+	bad_gradients = 1 << 5,  // For meshless
 
 	x_periodic_lhs = 1 << 7,
 	y_periodic_lhs = 1 << 8,
