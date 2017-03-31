@@ -120,8 +120,8 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     }
     else {
       double dr = sqrt(drsqd) + small_number ;
-      double w = part.hfactor*volume_i * kern.w1(dr/invh_i);
-      for (k=0; k<ndim; k++)  psitildaj[k] = (draux[k]/dr) * w;
+      double w = part.hfactor*volume_i * kern.w1(dr*invh_i);
+      for (k=0; k<ndim; k++)  psitildaj[k] = - (draux[k]/dr) * w;
     }
 
     if (not neibpart[j].flags.check_flag(bad_gradients)) {
@@ -134,9 +134,8 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     }
     else {
       double dr = sqrt(drsqd) + small_number ;
-      double w = neibpart[j].hfactor*volume_j * kern.w1(dr/invh_j);
-      for (int kk=0; kk<ndim; kk++)
-        psitildai[k] = - (draux[k]/dr) * w;
+      double w = neibpart[j].hfactor*volume_j * kern.w1(dr*invh_j);
+      for (k=0; k<ndim; k++) psitildai[k] = + (draux[k]/dr) * w;
     }
 
     // Compute the face area

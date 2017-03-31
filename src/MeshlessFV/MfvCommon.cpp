@@ -332,7 +332,8 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
     // Compute SPH (corrected) gradients instead
     part.flags.set_flag(bad_gradients);
 
-    cout << "Bad gradients:\n"
+
+    cout << "Bad integral gradient, using SPH gradients:\n"
          << "\tiorig: " << part.iorig << ", ||E||, ||E^{-1}||: " << modE << " " << modB
          << ", N_cond^2: " << sqd_condition_number << "\n";
 
@@ -351,7 +352,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
 
       for (var=0; var<nvar; var++)
         for (k=0; k<ndim; k++) {
-          part.grad[var][k] += (draux[k]/dr)*(neibpart[j].Wprim[var] - part.Wprim[var])*w ;
+          part.grad[var][k] -= (neibpart[j].Wprim[var] - part.Wprim[var])*(draux[k]/dr) * w ;
         }
     }
   }
