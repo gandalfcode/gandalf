@@ -309,10 +309,51 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   // Invert the matrix (depending on dimensionality)
   InvertMatrix<ndim>(E,part.B) ;
 
-  // Complete the calculation of the gradients:
-  for (var=0; var<nvar; var++) {
-    for (k=0; k<ndim; k++) {
-      part.grad[var][k] = DotProduct(part.B[k], grad_tmp[var], ndim) ;
+  // Check the accuracy of the integral gradients (using the square of the condition number)
+  double modE(0), modB(0) ;
+  for (int i=0; i<ndim; i++)
+    for (int j=0; j<ndim; j++){
+      modE +=      E[i][j]*     E[i][j];
+      modB += part.B[i][j]*part.B[i][j];
+    }
+  double sqd_condition_number = modE*modB / (ndim*ndim) ;
+
+  if (sqd_condition_number < 1e4) {
+    part.flags.unset_flag(bad_gradients);
+
+    // Complete the calculation of the gradients:
+    for (var=0; var<nvar; var++) {
+      for (k=0; k<ndim; k++) {
+        part.grad[var][k] = DotProduct(part.B[k], grad_tmp[var], ndim) ;
+      }
+    }
+  }
+  else {
+    // Compute SPH (corrected) gradients instead
+    part.flags.set_flag(bad_gradients);
+
+
+    cout << "Bad integral gradient, using SPH gradients:\n"
+         << "\tiorig: " << part.iorig << ", ||E||, ||E^{-1}||: " << modE << " " << modB
+         << ", N_cond^2: " << sqd_condition_number << "\n";
+
+    for (var=0; var<nvar; var++)
+      for (k=0; k<ndim; k++)
+        part.grad[var][k] = 0;
+
+    for (int j=0; j<Nneib; j++) {
+      for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
+      drsqd = DotProduct(draux, draux, ndim);
+      double dr = sqrt(drsqd);
+
+      if (dr == 0) continue ;
+
+      double w = (part.hfactor/part.ndens)*kern.w1(dr/part.h);
+
+      for (var=0; var<nvar; var++)
+        for (k=0; k<ndim; k++) {
+          part.grad[var][k] -= (neibpart[j].Wprim[var] - part.Wprim[var])*(draux[k]/dr) * w ;
+        }
     }
   }
 

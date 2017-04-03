@@ -109,19 +109,38 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     drsqd = DotProduct(draux, draux, ndim);
 
+    // Compute psi-tilda values using integral / sph gradients.
+    if (not part.flags.check_flag(bad_gradients)) {
+      for (k=0; k<ndim; k++) {
+        psitildaj[k] = 0;
+        for (int kk=0; kk<ndim; kk++)
+          psitildaj[k] += part.B[k][kk]*draux[kk]*part.hfactor*
+              kern.w0_s2(drsqd*invh_i*invh_i)*volume_i;
+      }
+    }
+    else {
+      double dr = sqrt(drsqd) + small_number ;
+      double w = part.hfactor*volume_i * kern.w1(dr*invh_i);
+      for (k=0; k<ndim; k++)  psitildaj[k] = - (draux[k]/dr) * w;
+    }
 
-    // Calculate psitilda values
-    for (k=0; k<ndim; k++) {
+    if (not neibpart[j].flags.check_flag(bad_gradients)) {
+      for (k=0; k<ndim; k++) {
       psitildai[k] = 0;
-      psitildaj[k] = 0;
-      for (int kk=0; kk<ndim; kk++) {
+      for (int kk=0; kk<ndim; kk++)
         psitildai[k] -= neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*
           kern.w0_s2(drsqd*invh_j*invh_j)*volume_j;
-        psitildaj[k] += part.B[k][kk]*draux[kk]*part.hfactor*
-          kern.w0_s2(drsqd*invh_i*invh_i)*volume_i;
       }
-      Aij[k] = volume_i*psitildaj[k] - volume_j*psitildai[k];
     }
+    else {
+      double dr = sqrt(drsqd) + small_number ;
+      double w = neibpart[j].hfactor*volume_j * kern.w1(dr*invh_j);
+      for (k=0; k<ndim; k++) psitildai[k] = + (draux[k]/dr) * w;
+    }
+
+    // Compute the face area
+    for (k=0; k<ndim; k++)
+      Aij[k] = volume_i*psitildaj[k] - volume_j*psitildai[k];
 
     FLOAT Amag = sqrt(DotProduct(Aij, Aij, ndim) + small_number);
     for (k=0; k<ndim; k++) Aunit[k] = Aij[k] / Amag;

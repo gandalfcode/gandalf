@@ -576,8 +576,8 @@ inline void __matrixInverter<2>::invert(const FLOAT A[2][2], FLOAT B[2][2]) {
 template<>
 inline void __matrixInverter<3>::invert(const FLOAT A[3][3], FLOAT B[3][3]) {
   const FLOAT invdet = (FLOAT) 1.0/(A[0][0]*(A[1][1]*A[2][2] - A[2][1]*A[1][2]) -
-                                        A[0][1]*(A[1][0]*A[2][2] - A[1][2]*A[2][0]) +
-                                        A[0][2]*(A[1][0]*A[2][1] - A[1][1]*A[2][0]));
+                                    A[0][1]*(A[1][0]*A[2][2] - A[1][2]*A[2][0]) +
+                                    A[0][2]*(A[1][0]*A[2][1] - A[1][1]*A[2][0]));
 
       B[0][0] = (A[1][1]*A[2][2] - A[2][1]*A[1][2])*invdet;
       B[0][1] = (A[0][2]*A[2][1] - A[0][1]*A[2][2])*invdet;
