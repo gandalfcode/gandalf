@@ -421,7 +421,7 @@ private:
 
 		// Do reflections on the left edge
 		if (_mirror_bound[k][0]){
-		  FLOAT x  = 2*_domain.min[k] - ngbs[0].r[k];
+		  FLOAT x  = 2*_domain.min[k] - real_particle.r[k];
 		  FLOAT dx = x - _cell.min[k] ;
 		  if (dx*dx < h2 || x > _hbox.min[k]){
 			for (int n=0; n < Nghost; n++){
@@ -434,7 +434,7 @@ private:
 		}
 		// Do reflections on the right edge
 		if (_mirror_bound[k][1]){
-		  FLOAT x  = 2*_domain.max[k] - ngbs[0].r[k];
+		  FLOAT x  = 2*_domain.max[k] - real_particle.r[k];
 		  FLOAT dx = x - _cell.max[k];
 		  if (dx*dx < h2 || x < _hbox.max[k]){
 			for (int n=0; n < Nghost; n++){
