@@ -98,7 +98,6 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-<<<<<<< HEAD
 #pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
   for (int i=0; i<N; i++) {

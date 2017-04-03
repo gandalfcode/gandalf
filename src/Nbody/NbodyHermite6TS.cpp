@@ -137,17 +137,11 @@ private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd,
 
   // Loop over all stars a second time to compute 2nd time derivative
   //-----------------------------------------------------------------------------------------------
-<<<<<<< HEAD
 #pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd, invdrmag, invdrsqd, potperiodic)
   for (int i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
-    for (int k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
-=======
-  for (i=0; i<N; i++) {
     if (not star[i]->flags.check(active)) continue;
-    for (k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
->>>>>>> Got sph working again
+    for (int k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -213,15 +207,10 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-<<<<<<< HEAD
 #pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
   for (int i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
-=======
-  for (i=0; i<N; i++) {
     if (not star[i]->flags.check(active)) continue;
->>>>>>> Got sph working again
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------

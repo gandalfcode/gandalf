@@ -319,7 +319,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   double sqd_condition_number = modE*modB / (ndim*ndim) ;
 
   if (sqd_condition_number < 1e4) {
-    part.flags.unset_flag(bad_gradients);
+    part.flags.unset(bad_gradients);
 
     // Complete the calculation of the gradients:
     for (var=0; var<nvar; var++) {
@@ -330,7 +330,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   }
   else {
     // Compute SPH (corrected) gradients instead
-    part.flags.set_flag(bad_gradients);
+    part.flags.set(bad_gradients);
 
 
     cout << "Bad integral gradient, using SPH gradients:\n"
