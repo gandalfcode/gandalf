@@ -57,7 +57,17 @@ class Hydrodynamics;
 template <int ndim>
 class Nbody
 {
- public:
+protected:
+
+#if defined _OPENMP
+  static const int maxNbodyPerThread = 16;     ///< Max. no. of N-body particles per OpenMP thread
+                                               ///< if conditional OpenMP is employed.
+  const int maxNbodyOpenMp;                    ///< Max. total of N-body particles for OpenMP
+                                               ///< if conditional OpenMP is employed.
+#endif
+
+
+public:
 
   // Constructor and destructor functions
   //-----------------------------------------------------------------------------------------------

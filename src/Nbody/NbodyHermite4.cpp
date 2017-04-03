@@ -80,7 +80,6 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                           // Star and dimension counters
   FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT dr_corr[ndim];                 // Periodic corrected position vector
@@ -98,16 +97,18 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
+  for (int i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd    = DotProduct(dr, dr, ndim);
       drmag    = sqrt(drsqd);
@@ -119,15 +120,15 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
       // Add contribution to main star array
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
-      for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
-      for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
+      for (int k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
+      for (int k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
         (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
         (FLOAT) 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
 
       // Add periodic gravity contribution (if activated)
       if (simbox.PeriodicGravity) {
         ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
-        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        for (int k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
         star[i]->gpot += potperiodic;
       }
 

@@ -157,7 +157,7 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
     nodelist[i] = i;
     NNtree[i].Ncomp = 1;
     NNtree[i].Nstar = 1;
-    for (k=0; k<ndim; k++) NNtree[i].r[k] = nbody->stardata[i].r[k];
+    for (k=0; k<ndim; k++) NNtree[i].rpos[k] = nbody->stardata[i].r[k];
     Nnode++;
     Nfreenode++;
   }
@@ -181,13 +181,14 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
     //---------------------------------------------------------------------------------------------
     for (ii=0; ii<Nfreenode; ii++) {
       i = nodelist[ii];
+      NNtree[i].inearest = -1;
       NNtree[i].rsqdnearest = big_number;
 
       for (jj=0; jj<Nfreenode; jj++) {
         j = nodelist[jj];
         if (i == j) continue;
 
-        for (k=0; k<ndim; k++) dr[k] = NNtree[i].r[k] - NNtree[j].r[k];
+        for (k=0; k<ndim; k++) dr[k] = NNtree[i].rpos[k] - NNtree[j].rpos[k];
         drsqd = DotProduct(dr,dr,ndim);
         if (drsqd < NNtree[i].rsqdnearest) {
           NNtree[i].rsqdnearest = drsqd;
@@ -209,7 +210,7 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
         // If each node is the others nearest neighbour, then create a new
         // parent node with the two original nodes as child nodes
         if (NNtree[i].inearest == j && NNtree[j].inearest == i) {
-          for (k=0; k<ndim; k++) NNtree[Nnode].rpos[k] = (FLOAT) 0.5*(NNtree[i].r[k] + NNtree[j].r[k]);
+          for (k=0; k<ndim; k++) NNtree[Nnode].rpos[k] = (FLOAT) 0.5*(NNtree[i].rpos[k] + NNtree[j].rpos[k]);
           for (k=0; k<ndim; k++) dr[k] = NNtree[Nnode].rpos[k] - NNtree[i].rpos[k];
           drsqd = DotProduct(dr,dr,ndim);
           NNtree[Nnode].radius  = sqrt(drsqd);

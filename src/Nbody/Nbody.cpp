@@ -39,7 +39,9 @@
 #include "Parameters.h"
 #include "SmoothingKernel.h"
 #include "Nbody.h"
-
+#if defined _OPENMP
+#include <omp.h>
+#endif
 using namespace std;
 
 
@@ -49,13 +51,16 @@ using namespace std;
 /// Nbody class constructor
 //=================================================================================================
 template <int ndim>
-Nbody<ndim>::Nbody(int nbody_softening_aux, int _perturbers, int sub_systems_aux,
-                   DOUBLE nbody_mult_aux, string KernelName, int Npec_aux):
-  nbody_softening(nbody_softening_aux),
+Nbody<ndim>::Nbody(int _nbody_softening, int _perturbers, int _sub_systems,
+                   DOUBLE _nbody_mult, string KernelName, int _Npec):
+#if defined _OPENMP
+  maxNbodyOpenMp(omp_get_max_threads()*maxNbodyPerThread),
+#endif
+  nbody_softening(_nbody_softening),
   perturbers(_perturbers),
-  sub_systems(sub_systems_aux),
-  Npec(Npec_aux),
-  nbody_mult(nbody_mult_aux),
+  sub_systems(_sub_systems),
+  Npec(_Npec),
+  nbody_mult(_nbody_mult),
   kerntab(TabulatedKernel<ndim>(KernelName))
 {
   allocated     = false;
@@ -219,7 +224,6 @@ void Nbody<ndim>::CalculateDirectGravForces
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                           // Star and dimension counters
   FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT dr_corr[ndim];                 // Periodic corrected position vector
@@ -233,29 +237,31 @@ void Nbody<ndim>::CalculateDirectGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
+#pragma omp parallel for if (N > maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(aperiodic, dr, dr_corr, drdt, drsqd, dv, invdrmag, potperiodic)
+  for (int i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd    = DotProduct(dr, dr, ndim);
       invdrmag = (FLOAT) 1.0/sqrt(drsqd);
       drdt     = DotProduct(dv,dr,ndim)*invdrmag;
       star[i]->gpot += star[j]->m*invdrmag;
-      for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
-      for (k=0; k<ndim; k++) star[i]->adot[k] +=
+      for (int k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
+      for (int k=0; k<ndim; k++) star[i]->adot[k] +=
         star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
       // Add periodic gravity contribution (if activated)
       if (simbox.PeriodicGravity) {
         ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
-        for (k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        for (int k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
         star[i]->gpot += potperiodic;
       }
 
@@ -284,13 +290,13 @@ void Nbody<ndim>::CheckBoundaries
   DomainBox<ndim> &simbox,             ///< [in] Main simulation domain box
   NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  debug2("[SphIntegration::CheckBoundaries]");
+  debug2("[Nbody::CheckBoundaries]");
 
 
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   //===============================================================================================
-#pragma omp parallel for default(none) shared(N,simbox,star)
+#pragma omp parallel for if (N > maxNbodyOpenMp) default(none) shared(N,simbox,star)
   for (int i=0; i<N; i++) {
 
     // --------------------------------------------------------------------------------------------

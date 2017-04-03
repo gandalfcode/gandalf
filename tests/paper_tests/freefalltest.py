@@ -121,7 +121,7 @@ axarr2.scatter(data100.x_data, data100.y_data, color='black', marker='^', s=24.0
 axarr2.legend(fontsize=12)
 
 plt.show()
-fig.savefig('freefall.eps', dpi=50)
+fig2.savefig('freefall.eps', dpi=50)
 
 # Prevent program from closing before showing plot window
 block()
