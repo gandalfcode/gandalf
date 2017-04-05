@@ -386,7 +386,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 #if defined(VERIFY_ALL)
           neibmanager.VerifyNeighbourList(i, sph->Nhydro, sphdata, "all");
-          neibmanager.VerifyReducedNeighbourList(i, neiblist, sph->Nhydro, sphdata, "all");
+          neibmanager.VerifyReducedNeighbourList(i, neiblist, sph->Nhydro, sphdata, hydromask,
+                                                 "all");
 #endif
 
           // Compute all neighbour contributions to hydro forces

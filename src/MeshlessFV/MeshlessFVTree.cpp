@@ -410,7 +410,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
 #if defined(VERIFY_ALL)
         neibmanager.VerifyNeighbourList(i, mfv->Nhydro, mfvdata, "all");
-        neibmanager.VerifyReducedNeighbourList(i, neiblist, mfv->Nhydro, mfvdata, "all");
+        neibmanager.VerifyReducedNeighbourList(i, neiblist, mfv->Nhydro, mfvdata, hmask, "all");
 #endif
         // Compute all neighbour contributions to gradients
         mfv->ComputeGradients(activepart[j], neiblist);
@@ -515,7 +515,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();

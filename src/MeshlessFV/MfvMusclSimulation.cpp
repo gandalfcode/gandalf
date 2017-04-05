@@ -92,16 +92,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   if (mfv->hydro_forces) mpicontrol->GetExportedParticlesAccelerations(mfv);
 #endif
 
-  // Compute the dust forces if present.
-  if (mfvdust != NULL){
-    // Copy properties from original particles to ghost particles
-    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
-#ifdef MPI_PARALLEL
-    MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
-#endif
-    mfvdust->UpdateAllDragForces(mfv->Nhydro, mfv->Ntot, mfv->GetMeshlessFVParticleArray()) ;
-  }
-
   // Advance all global time variables
   n++;
   Nsteps++;
@@ -193,6 +183,27 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     }
 #endif
   }
+
+  // Compute the dust forces if present.
+  if (mfvdust != NULL) {
+
+    // Make sure the density is up to date
+    if (not (mfv->self_gravity == 1 || nbody->Nnbody > 0))
+      mfvneib->UpdateAllProperties(mfv, nbody);
+
+    // Copy properties from original particles to ghost particles
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
+#endif
+    mfvdust->UpdateAllDragForces(mfv->Nhydro, mfv->Ntot, mfv->GetMeshlessFVParticleArray()) ;
+
+    for (i=0; i<mfv->Nhydro; i++) {
+      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i) ;
+      if (part.flags.check(active)) part.flags.set(update_density) ;
+    }
+  }
+
 
   // Compute N-body forces
   //-----------------------------------------------------------------------------------------------

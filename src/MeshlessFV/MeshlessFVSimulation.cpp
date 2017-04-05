@@ -570,6 +570,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
         part.rdmdt0[k] = 0.0;
       }
       for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
+      for (k=0; k<ndim+2; k++) part.dQdt[k] = (FLOAT) 0.0;
       part.level  = 0;
       part.nstep  = 0;
       part.nlast  = 0;

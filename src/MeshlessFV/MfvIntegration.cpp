@@ -45,7 +45,7 @@ void MfvIntegration<ndim,ParticleType>::AdvanceParticles
 
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(partdata, mfv, nvar, irho)
+#pragma omp parallel for default(none) shared(partdata, mfv, nvar, irho, cout)
   for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
@@ -82,7 +82,6 @@ void MfvIntegration<ndim,ParticleType>::AdvanceParticles
       //-------------------------------------------------------------------------------------------
       for (int k=0; k<ndim; k++)
         part.r[k] = part.r0[k] + (FLOAT) 0.5*(part.v0[k] + part.v[k])*dt;
-
     }
   }
 
@@ -115,7 +114,7 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(partdata, mfv, nvar, irho, ietot)
+#pragma omp parallel for default(none) shared(partdata, mfv, nvar, irho, ietot, cout)
   for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];    // Local reference to particle
     if (part.flags.is_dead()) continue;
@@ -140,7 +139,6 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
       // Further update conserved quantities if computing gravitational/nbody  contributions
       for (k=0; k<ndim; k++) {
         Qcons[k] += 0.5 * part.dt * (part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
-        part.v[k] = Qcons[k] / Qcons[irho] ;
       }
       Qcons[ietot] += 0.5 * part.dt *
         (DotProduct(part.Qcons0, part.a0, ndim) + DotProduct(Qcons, part.a, ndim) +
@@ -152,21 +150,18 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
       mfv->UpdatePrimitiveVector(part) ;
 
       // Update all values to the beginning of the next step
-      // Note: We update a0 later since the old acceleration is needed for the drag force
-      //       computation at the start of the next step
+      for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
+      for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
+      for (k=0; k<ndim; k++) part.rdmdt[k]  = 0.0;
+      for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
       part.nlast   = n;
       part.tlast   = t;
       part.dt      = part.dt_next;
       part.dt_next = 0;
       part.flags.set(active);
       part.flags.unset(end_timestep);
-      for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
-      for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
-      for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
-      for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
-      for (k=0; k<ndim; k++) part.rdmdt[k] = 0.0;
-      for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
-
 
     }
     //---------------------------------------------------------------------------------------------

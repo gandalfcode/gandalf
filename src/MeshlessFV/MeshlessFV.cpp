@@ -189,6 +189,10 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOA
     part.u = eos->SpecificInternalEnergy(part);
     part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
 
+    if (part.u < 0)
+      cout << part.iorig << " " << part.ptype << ", " << part.u << " "
+        << Qcons[ietot] << " " << ekin << "\n";
+
     assert(part.u > 0);
     assert(part.press > 0);
   }

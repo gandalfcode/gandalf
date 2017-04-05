@@ -33,27 +33,55 @@
 #include "Tree.h"
 #include "NeighbourManager.h"
 
+/* Velocity at the start of the kick */
+template<int ndim>
+double get_initial_velocity(const GradhSphParticle<ndim>& part, int k) {
+  return part.v[k] - 0.5*part.dt * part.a0[k];
+}
 
+template<int ndim>
+double get_initial_velocity(const MeshlessFVParticle<ndim>& part, int k) {
+  return part.v0[k] ;
+}
+
+/* Difference in velocity at the start of the kick */
+template<int ndim, class NeibType>
+double get_velocity_difference(const GradhSphParticle<ndim>& part,
+                               const NeibType& neib, int k) {
+  return (part.v[k] - neib.v[k]) - 0.5*part.dt *(part.a0[k] - neib.a0[k]);
+}
+
+template<int ndim, class NeibType>
+double get_velocity_difference(const MeshlessFVParticle<ndim>& part,
+                               const NeibType& neib, int k) {
+  return part.v0[k] - neib.v0[k] ;
+}
+
+/* Acceleration during the kick */
 template<int ndim>
 double get_total_accel(const GradhSphParticle<ndim>& part, int k) {
   return part.a[k] ;
 }
 
+/* For the meshless, use the time-averaged momentum change */
 template<int ndim>
 double get_total_accel(const MeshlessFVParticle<ndim>& part, int k) {
-  return (part.Qcons0[MeshlessFV<ndim>::irho]*part.a[k] + part.dQdt[k]) / part.m ;
+  double a_grav  = 0.5*(part.a[k] + part.a0[k]*part.Qcons0[MeshlessFV<ndim>::irho]/part.m);
+  double a_hydro = part.dQ[k] / (part.m * part.dt) ;
+  return a_grav + a_hydro ;
 }
 
+/* Acceleration at the start of the time-step (might be used to correct the initial velocity */
 template<int ndim>
 double get_old_accel(const GradhSphParticle<ndim>& part, int k) {
   return part.a0[k] ;
 }
 
+/* Not used for the meshless */
 template<int ndim>
 double get_old_accel(const MeshlessFVParticle<ndim>& part, int k) {
-  return (part.Qcons0[MeshlessFV<ndim>::irho]*part.a0[k] + part.dQdt[k]) / part.m ;
+  return 0 ;
 }
-
 
 template<int ndim>
 void update_particle(GradhSphParticle<ndim>& part, FLOAT* acc, FLOAT dudt, double) {
@@ -65,17 +93,28 @@ void update_particle(GradhSphParticle<ndim>& part, FLOAT* acc, FLOAT dudt, doubl
 }
 
 template<int ndim>
-void update_particle(MeshlessFVParticle<ndim>& part, FLOAT* acc, FLOAT dudt, double timestep) {
+void update_particle(MeshlessFVParticle<ndim>& part, FLOAT* acc, FLOAT dudt, double dt) {
 
-  double dt = part.nstep * timestep ;
 
-  for(int k=0; k<ndim; k++) {
-    part.dQdt[k] += part.m * acc[k] ;
-    part.dQ[k]   += part.m * acc[k] * dt ;
+  if (part.ptype == gas_type) {
+    // Add change in Kinetic energy to dudt to get total change in total energy
+
+    for (int k=0; k<ndim; k++) {
+      double v0 = get_initial_velocity(part,k) + get_total_accel(part, k)*dt;
+      dudt += acc[k] * (v0 + acc[k]*dt/2) ;
+    }
+
+    part.dQ[MeshlessFV<ndim>::ietot]   += part.m * dudt * dt;
+    part.dQdt[MeshlessFV<ndim>::ietot] += part.m * dudt ;
+  }
+  else {
+    assert(dudt == 0) ;
   }
 
-  if(part.ptype == gas_type)
-    part.dudt += dudt ;
+  for(int k=0; k<ndim; k++) {
+    part.dQ[k]   = part.m * acc[k] * dt ;
+    part.dQdt[k] = part.m * acc[k] ;
+  }
 }
 
 
@@ -111,13 +150,17 @@ class DustSphNgbFinder
 	vector<NeighbourManager<ndim,ParticleType<ndim> > > neibmanagerbuf;
 public:
 	DustSphNgbFinder(Parameters* params, TreeBase<ndim> * t,TreeBase<ndim> * gt=NULL)
-	: _tree(t), _ghosttree(gt), w_tstep(std::numeric_limits<DOUBLE>::quiet_NaN())
+	: _tree(t), _ghosttree(gt), w_tstep(std::numeric_limits<DOUBLE>::signaling_NaN())
 	{
-	  if (params->stringparams["sim"].find("sph") != std::string::npos) {
+	  std::string simtype = params->stringparams["sim"] ;
+	  if (simtype.find("sph") != std::string::npos) {
 	    if (params->stringparams["sph_integration"] == "lfkdk")
 	      w_tstep = 0.5;
 	    if (params->stringparams["sph_integration"] == "lfdkd")
 	      w_tstep = 1.0;
+	  }
+	  else if (simtype == "meshlessfv" || simtype == "mfvmuscl") {
+	    w_tstep = 1.0 ;
 	  }
 
 	  // Check that we set w_tstep
@@ -178,11 +221,12 @@ class DustInterpolant
   //===============================================================================================
   struct DustTestPartInterp
   {
-	DustTestPartInterp() { } ;
+	DustTestPartInterp() : cs(0) { } ;
 	DustTestPartInterp(const ParticleType<ndim>& p){
 	  cs = p.sound ;
 	  for (int k=0; k < ndim; ++k){
 		  v[k]  = p.v[k] ;
+		  v0[k] = p.v0[k];
 		  a[k]  = get_total_accel(p, k) ;
 		  a0[k] = get_old_accel(p, k) ;
 	  }
@@ -190,8 +234,11 @@ class DustInterpolant
 
 	FLOAT cs;
 	FLOAT v[ndim] ;
+	FLOAT v0[ndim];
 	FLOAT a[ndim] ;
-	FLOAT a0[ndim] ;
+	FLOAT a0[ndim];
+
+	typedef ParticleType<ndim> BaseParticle;
   };
 
 public:
@@ -233,7 +280,7 @@ public:
   { } ;
 
   void ComputeDragForces(ParticleType<ndim>&, NeighbourList<ParticleType<ndim> >&, DOUBLE,
-		                 FLOAT *, FLOAT&) ;
+		                 FLOAT *) ;
 
 private:
   Kernel kern ;
@@ -598,16 +645,15 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     int cc;                                      // Aux. cell counter
     int i;                                       // Particle id
     int j;                                       // Aux. particle counter
-    int k;                                       // Dimension counter
     int Nactive;                                 // ..
     vector<int>                 activelist(_tree->MaxNumPartInLeafCell()); // Ids of Active parts
     vector<ParticleType<ndim> > activepart(_tree->MaxNumPartInLeafCell()); // Local array of parts
     NeighbourManager<ndim,ParticleType<ndim> >& neibmanager = neibmanagerbuf[ithread];
-
+    vector<FLOAT> dudt_local(Ntot, 0) ;
 
     // Loop over all active cells
     //=============================================================================================
-#pragma omp for schedule(guided)
+#pragma omp for schedule(guided) nowait
     for (cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim>& cell = celllist[cc];
 
@@ -615,10 +661,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       Nactive = _tree->ComputeActiveParticleList(cell,sphdata, &(activelist[0]));
 
       // Make local copies of active particles
-      for (j=0; j<Nactive; j++) {
+      for (j=0; j<Nactive; j++)
         activepart[j] = sphdata[activelist[j]];
-      }
-
 
       // Compute neighbour list for cell from real and periodic ghost particles
       neibmanager.clear();
@@ -628,6 +672,14 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       mpighosttree->ComputeNeighbourList(cell, neibmanager);
 #endif
       neibmanager.EndSearch(cell,sphdata);
+
+      // Initialize the change in energy
+      for (j=0; j<Nactive; j++)
+        activepart[j].dudt = 0;
+
+      int Nneib =  neibmanager.GetNumAllNeib() ;
+      for (j=0; j<Nneib; j++)
+        neibmanager[j].dudt = 0;
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
@@ -642,23 +694,42 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
           NeighbourList<ParticleType<ndim> > neiblist =
               neibmanager.GetParticleNeib(activepart[j],dragmask,do_pair_once);
 
+#if defined(VERIFY_ALL)
+          neibmanager.VerifyNeighbourList(i, Nhydro, sphdata, "all");
+          neibmanager.VerifyReducedNeighbourList(i, neiblist, Nhydro, sphdata, dragmask, "all");
+#endif
+
+
           DOUBLE dt_drag = drag_timestep(activepart[j]);
 
-          Forces.ComputeDragForces(activepart[j],neiblist, dt_drag, &(a_drag[i*ndim]), dudt[i]);
+          Forces.ComputeDragForces(activepart[j],neiblist, dt_drag, &(a_drag[i*ndim]));
         }
 
       }
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
-    	i = activelist[j];
-    	sphdata[i].div_v = activepart[j].div_v ;
-    	sphdata[i].sound = activepart[j].sound ;
+        i = activelist[j];
+        sphdata[i].div_v = activepart[j].div_v ;
+        sphdata[i].sound = activepart[j].sound ;
+        dudt_local[i] += activepart[j].dudt ;
+      }
+      for (j=0; j<Nneib; j++) {
+        std::pair<int,ParticleType<ndim>*> neighbour=neibmanager.GetNeibI(j);
+        dudt_local[neighbour.first] += neighbour.second->dudt ;
+      }
+    }
+
+#pragma omp critical
+    {
+      for (i=0; i<Nhydro; i++) {
+        dudt[i] += dudt_local[i] ;
       }
     }
     //===============================================================================================
 
-
+// Barrier here because of no-wait in loop over cells.
+#pragma omp barrier
 #pragma omp for
     for (i=0; i<Nhydro; i++) {
       update_particle(sphdata[i], &a_drag[i*ndim], dudt[i], drag_timestep(sphdata[i]));
@@ -754,8 +825,8 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
       gsound += m[j]*w*d[j].cs ;
       for (k=0; k < ndim; k++) {
         // Get the velocity at the start of the kick and the acceleration
-        dv[k] += m[j]*w*(d[j].v[k] - 0.5 * d[j].a0[k]*parti.dt) ;
-        da[k] += m[j]*w* d[j].a[k] ;
+        dv[k] += m[j]*w*get_velocity_difference(parti, d[j], k) ;
+        da[k] += m[j]*w*(get_total_accel(parti, k) - d[j].a[k]) ;
       }
     }
     //---------------------------------------------------------------------------------------------
@@ -767,8 +838,8 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
 
     gsound *= invrho * hfactor ;
     for (k=0; k < ndim; k++) {
-      dv[k] = (parti.v[k] - 0.5*get_old_accel(parti,k)*parti.dt) - dv[k]*invrho*hfactor ;
-      da[k] = get_total_accel(parti, k) - da[k]*invrho*hfactor ;
+      dv[k] *= invrho*hfactor ;
+      da[k] *= invrho*hfactor ;
      }
 
     // If h changes below some fixed tolerance, exit iteration loop
@@ -886,8 +957,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 (ParticleType<ndim>& parti,                         ///< [inout] Particle i data
  NeighbourList<ParticleType<ndim> >& neiblist,      ///< [in] List of neighbours
  DOUBLE dt,                                          ///< [in] Time to average drag force over
- FLOAT* a_drag,                                     ///< [out] drag acceleration
- FLOAT& dudt)                                       ///< [out] change in internal energy
+ FLOAT* a_drag)                                     ///< [out] drag acceleration
  {
   int j;                               // Neighbour list id
   int k;                               // Dimension counter
@@ -908,13 +978,10 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 	  parti.div_v = 0;
   }
 
-  for(k=0; k < ndim; k++) a_drag[k] = 0;
-
   FLOAT invh_i =  1/parti.h ;
 
-  // Local copy of heating rate
-  double _dudt = 0 ;
   double _adrag[ndim] ;
+  double norm = 0;
   for(k=0; k < ndim; k++) _adrag[k] = 0;
 
   // Loop over all potential neighbours in the list
@@ -925,23 +992,22 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 
     FLOAT invh_j =  1/neiblist[j].h ;
 
-    for (k=0; k<ndim; k++) draux[k] = neiblist[j].r[k] - parti.r[k];
+    for (k=0; k<ndim; k++) draux[k] = parti.r[k] - neiblist[j].r[k];
     const FLOAT drmag =  sqrt(DotProduct(draux,draux,ndim));
 
 
-    if (parti.ptype == gas_type)
+    if (parti.ptype != dust_type)
       wkern = pow(invh_i, ndim)*kern.wdrag(drmag*invh_i);
     else
       wkern = pow(invh_j, ndim)*kern.wdrag(drmag*invh_j);
 
     wkern *= neiblist[j].m / neiblist[j].rho ;
+    norm  += wkern ;
 
     for (k=0; k<ndim; k++) {
       if (drmag>0) draux[k] /= drmag;
-      dv[k] =
-          ((neiblist[j].v[k] - 0.5*get_old_accel(neiblist[j],k)*parti.dt) -
-           (parti.v[k]       - 0.5*get_old_accel(parti,      k)*parti.dt)) ;
-      da[k] = get_total_accel(neiblist[j], k) - get_total_accel(parti, k) ;
+      dv[k] = get_velocity_difference(parti, neiblist[j], k) ;
+      da[k] = get_total_accel(parti, k) - get_total_accel(neiblist[j], k) ;
     }
     dvdr = DotProduct(draux, dv, ndim);
     dadr = DotProduct(draux, da, ndim);
@@ -985,17 +1051,38 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
     S = (dvdr * Xi - dadr * Lambda) ;
 
     for (k=0; k<ndim; k++)
-      _adrag[k] += ndim * neiblist[j].rho * S * draux[k] * wkern ;
-
-    // Add Change in K.E to thermal energy generation
-    if (_use_energy_term && parti.ptype == gas_type)
-    	_dudt += ndim * neiblist[j].rho * S *(dvdr - 0.5*rho*S*dt)* wkern ;
+      _adrag[k] -= ndim * neiblist[j].rho * S * draux[k] * wkern ;
   }
   //-----------------------------------------------------------------------------------------------
-   dudt = _dudt ;
-   for(k=0; k < ndim; k++) a_drag[k] = _adrag[k];
 
+  // Save the drag acceleration
+  for(k=0; k < ndim; k++) a_drag[k] = _adrag[k];
 
+  if (_use_energy_term) {
+    // Change in (specific) Kinetic energy due to drag forces
+    double dEk_dt = 0 ;
+    for (k=0; k<ndim; k++) {
+      double v0 = get_initial_velocity(parti,k) + get_total_accel(parti, k)*dt;
+      dEk_dt += a_drag[k] * (v0 + a_drag[k]*dt/2) ;
+    }
+
+    if (parti.ptype == dust_type) {
+      // Spread the change in energy for the dust amongst its gas neighbours.
+      for (j=0; j < Nneib; j++) {
+        FLOAT invh_j =  1/neiblist[j].h ;
+
+        const FLOAT drmag = Distance(parti.r, neiblist[j].r, ndim);
+
+        FLOAT wkern = pow(invh_j, ndim)*kern.wdrag(drmag*invh_j);
+        wkern /= norm * neiblist[j].rho ;
+
+        neiblist[j].dudt -= parti.m * wkern * dEk_dt ;
+      }
+    } else {
+      // Keep the change in energy for the gas particle
+      parti.dudt -= dEk_dt;
+    }
+  }
   return;
 }
 
@@ -1003,7 +1090,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
 
 
 //=================================================================================================
-//  Funtion _DustFactoryKern
+//  Function _DustFactoryKern
 /// \brief   DustFactory function definition for selecting the kernel template.
 /// \details Sets up the drag force object from the parameters.
 /// \author  R. A. Booth

@@ -53,13 +53,16 @@ Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
-
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
-SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing kernel choice                 : kernel = quintic
 SPH smoothing length iteration tolerance    : h_converge = 0.001
+      	 	  	   		    : h_fac = 1.13
+					    : riemann_solver = hllc
+					    : slope_limiter = gizmo
+					    : zero_mass_flux = 1
 
 
 #---------------------------------
@@ -78,7 +81,7 @@ SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.3
-No. of block timestep levels                : Nlevels = 10
+No. of block timestep levels                : Nlevels = 1
 Maximum timestep level difference           : level_diff_max = 1
 
 
