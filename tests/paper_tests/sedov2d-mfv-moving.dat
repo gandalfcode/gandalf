@@ -68,7 +68,6 @@ Smoothing length parameter                  : h_fac = 1.0
 # SPH artificial viscosity options
 #---------------------------------
 Riemann solver                              : riemann_solver = exact
-Order of Riemann solver                     : riemann_order = 2
 Slope limiter                               : slope_limiter = gizmo
 Finite mass scheme?                         : zero_mass_flux = 0
 
@@ -79,8 +78,8 @@ Finite mass scheme?                         : zero_mass_flux = 0
 SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.15
 SPH energy equation timestep multiplier     : energy_mult = 0.2
-No. of block timestep levels                : Nlevels = 5
-Maximum timestep level difference           : level_diff_max = 1
+No. of block timestep levels                : Nlevels = 1
+Maximum timestep level difference           : level_diff_max = 20
 
 
 #---------------------

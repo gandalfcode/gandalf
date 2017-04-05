@@ -36,13 +36,14 @@ tmax   = 1.0
 rmin   = 0.005
 rmax   = 1.05
 rho    = 3.0/4.0/3.114157
+radius = 1.0
 stride = 8
 sim_no = 0
 
 # Analytical solutions for grav. acceleration and potential
 r_acc = np.arange(rmin, 0.99999*rmax, 0.001)
 a_acc = -r_acc
-gpot_acc = -r_acc
+gpot_acc = 0.666666668*math.pi*rho*(r_acc*r_acc - 3.0*radius*radius)
 
 # Run the simulation
 mainsim = newsim('freefall.dat')
@@ -80,31 +81,35 @@ data100.x_data /= 1.1107
 # Create matplotlib figure object with shared x-axis
 #--------------------------------------------------------------------------------------------------
 #fig, axarr = plt.subplots(2, 1, sharex='col', sharey='row', figsize=(10,4))
-fig, axarr = plt.subplots(2, 1, figsize=(7,10), sharex='row')
-fig.subplots_adjust(hspace=0.001, wspace=0.001)
-fig.subplots_adjust(bottom=0.08, top=0.97, left=0.13, right=0.98)
+fig, axarr = plt.subplots(2, 1, figsize=(7,8), sharex='col')
+fig.subplots_adjust(hspace=0.0001, wspace=0.0001)
+fig.subplots_adjust(bottom=0.07, top=0.97, left=0.12, right=0.98)
 
 axarr[0].set_ylabel(r"$a_{_{\rm r}}$")
 #axarr[0].set_xlabel(r"$r$")
-axarr[0].set_xlim([rmin, rmax])
+axarr[0].set_xlim([0.0001, 1.04])
+axarr[0].set_ylim(-1.1,0.1)
 axarr[0].plot(r_acc, a_acc, color="red", linestyle='-', lw=0.5)
 axarr[0].scatter(r_data[::stride], a_data[::stride], color='black', marker='.', s=4.0)
 #axarr[0].legend(fontsize=12)
 axarr[1].set_ylabel(r"$\phi$")
 axarr[1].set_xlabel(r"$r$")
 axarr[1].set_xlim([rmin, rmax])
+axarr[1].set_ylim(-1.55,-0.85)
 axarr[1].plot(r_acc, gpot_acc, color="red", linestyle='-', lw=0.5)
 axarr[1].scatter(r_data[::stride], -gpot_data[::stride], color='black', marker='.', s=4.0)
 #axarr[1].legend(fontsize=12)
 
 plt.show()
-fig.savefig('sphereaccel.eps', dpi=50)
+fig.savefig('sphereaccel.pdf', dpi=50)
 
 
 
 # Create matplotlib figure object with shared x-axis
 #--------------------------------------------------------------------------------------------------
 fig2, axarr2 = plt.subplots(1, 1, figsize=(7,5))
+fig2.subplots_adjust(hspace=0.001, wspace=0.001)
+fig2.subplots_adjust(bottom=0.1, top=0.99, left=0.1, right=0.98)
 
 axarr2.set_ylabel(r"$R_{_{\rm LAG}}$")
 axarr2.set_xlabel(r"$t/t_{_{\rm FF}}$")
@@ -121,7 +126,7 @@ axarr2.scatter(data100.x_data, data100.y_data, color='black', marker='^', s=24.0
 axarr2.legend(fontsize=12)
 
 plt.show()
-fig2.savefig('freefall.eps', dpi=50)
+fig2.savefig('freefall.pdf', dpi=50)
 
 # Prevent program from closing before showing plot window
 block()
