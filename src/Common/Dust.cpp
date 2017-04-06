@@ -115,6 +115,13 @@ void update_particle(MeshlessFVParticle<ndim>& part, FLOAT* acc, FLOAT dudt, dou
     part.dQ[k]   = part.m * acc[k] * dt ;
     part.dQdt[k] = part.m * acc[k] ;
   }
+
+  // Update the particle position according to the drag terms.
+  for(int k=0; k<ndim; k++) {
+    part.v[k] = part.v0[k] + part.dQ[k] + part.a0[k]*dt ;
+    part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*dt;
+    part.flags.set(update_density) ;
+  }
 }
 
 
