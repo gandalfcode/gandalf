@@ -16,6 +16,12 @@ DOUBLE MfvIntegration<ndim,ParticleType>::Timestep(Particle<ndim>& _part, Hydrod
   const FLOAT dt_grav = accel_mult*
     sqrt(part.h/sqrt(DotProduct(part.a0, part.a0, ndim) + small_number));
 
+  if (dt_cfl < 1e-10 || dt_grav < 1e-10) {
+    cout << part.iorig << " " << part.ptype << " "
+         << part.h << " " << part.vsig_max << " " << DotProduct(part.a0, part.a0, ndim) << "\n";
+
+  }
+
   if (mfv->hydro_forces) return min(dt_cfl, dt_grav);
   else if (mfv->self_gravity) return dt_grav;
   else return big_number;

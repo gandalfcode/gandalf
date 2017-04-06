@@ -222,7 +222,7 @@ OBJ += Ic.o BinaryAccretionIc.o BlobIc.o BondiAccretionIc.o
 OBJ += BossBodenheimerIc.o ContactDiscontinuityIc.o DustyBoxIc.o
 OBJ += EvrardCollapseIc.o EwaldIc.o FilamentIc.o GaussianRingIc.o GreshoVortexIc.o
 OBJ += HierarchicalSystemIc.o IsothermalSphereIc.o KelvinHelmholtzIc.o NohIc.o PlummerSphereIc.o
-OBJ += PolytropeIc.o RayleighTaylorIc.o SedovBlastwaveIc.o ShearflowIc.o ShocktubeIc.o
+OBJ += PolytropeIc.o RayleighTaylorIc.o SedovBlastwaveIc.o ShearflowIc.o ShocktubeIc.o Shock2DIc.o
 OBJ += SilccIc.o SoundwaveIc.o SpitzerExpansionIc.o TurbulentCoreIc.o UniformIc.o ICRegularization.o
 OBJ += DiscIc.o
 

@@ -392,6 +392,7 @@ void Parameters::SetDefaultValues(void)
   // Initial conditions parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["particle_distribution"] = "cubic_lattice";
+  intparams["use_fixed_spacing"] = 0 ;
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
   intparams["Nreg"] = 1;

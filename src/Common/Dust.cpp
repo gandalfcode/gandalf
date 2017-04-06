@@ -109,11 +109,12 @@ void update_particle(MeshlessFVParticle<ndim>& part, FLOAT* acc, FLOAT dudt, dou
   }
   else {
     assert(dudt == 0) ;
+    part.vsig_max = part.h*std::abs(part.div_v) + part.sound ;
   }
 
   for(int k=0; k<ndim; k++) {
-    part.dQ[k]   = part.m * acc[k] * dt ;
-    part.dQdt[k] = part.m * acc[k] ;
+    part.dQ[k]   += part.m * acc[k] * dt ;
+    part.dQdt[k] += part.m * acc[k] ;
   }
 
   // Update the particle position according to the drag terms.

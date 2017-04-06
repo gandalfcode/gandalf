@@ -162,6 +162,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "shocktube") {
     icGenerator = new ShocktubeIc<ndim>(this, invndim);
   }
+  else if (ic == "shock2d") {
+    icGenerator = new Shock2DIc<ndim>(this, invndim);
+  }
   else if (ic == "shearflow") {
     icGenerator = new ShearflowIc<ndim>(this, invndim);
   }
