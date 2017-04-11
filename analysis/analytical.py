@@ -260,6 +260,11 @@ class shocktube (AnalyticalSolution):
         self.iMAX   = 16384
         if sim.simparams.stringparams["gas_eos"] == "isothermal":
             self.gamma = 1.0 + 1e-5
+
+            cs2 = simfloatparams['temp0'] / simfloatparams['mu_bar']
+
+            self.PinL   = self.RHOinL * cs2
+            self.PinR   = self.RHOinR * cs2
         else:
             self.gamma = simfloatparams["gamma_eos"]
 
