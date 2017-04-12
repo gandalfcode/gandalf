@@ -64,6 +64,68 @@ def growth_timescale(lambda_jeans):
     return np.sqrt(1/4.0/np.pi/rho0)*wavelength/np.sqrt(wavelength*wavelength - lambda_jeans*lambda_jeans)
 
 
+# Quick sims to generate
+periodic_sim = newsim('jeans.dat')
+periodic_sim.SetParam('tsnapfirst', 0.0)
+periodic_sim.SetParam('temp0', 0.1)
+periodic_sim.SetParam('amp', 0.15)
+periodic_sim.SetParam('Nstepsmax',1)
+setupsim()
+run()
+
+# Get grav. data for simulaton for plotting
+x_data0   = get_data("x", sim=sim_no)
+ax_data0  = get_data("ax", sim=sim_no)
+ax_analytical0  = get_analytical_data("x", "ax", sim=sim_no)
+sim_no = sim_no + 1
+
+
+# Quick sims to generate
+nonperiodic_sim = newsim('jeans.dat')
+nonperiodic_sim.SetParam('tsnapfirst', 0.0)
+nonperiodic_sim.SetParam('temp0', 0.1)
+nonperiodic_sim.SetParam('amp', 0.15)
+nonperiodic_sim.SetParam('Nstepsmax',1)
+nonperiodic_sim.SetParam('boundary_lhs[0]','open')
+nonperiodic_sim.SetParam('boundary_rhs[0]','open')
+nonperiodic_sim.SetParam('boundary_lhs[1]','open')
+nonperiodic_sim.SetParam('boundary_rhs[1]','open')
+nonperiodic_sim.SetParam('boundary_lhs[2]','open')
+nonperiodic_sim.SetParam('boundary_rhs[2]','open')
+setupsim()
+run()
+
+# Get grav. data for simulaton for plotting
+x_data1   = get_data("x", sim=sim_no)
+ax_data1  = get_data("ax", sim=sim_no)
+sim_no = sim_no + 1
+
+
+
+# Create matplotlib figure object with shared x-axis
+#--------------------------------------------------------------------------------------------------
+fig, axarr = plt.subplots(1, 1, figsize=(7,6), sharex='row')
+fig.subplots_adjust(hspace=0.001, wspace=0.001)
+fig.subplots_adjust(bottom=0.11, top=0.98, left=0.13, right=0.98)
+
+#axarr[0].set_ylabel(r"$\rho$")
+#axarr[0].set_xlim([xmin, xmax])
+#axarr[0].plot(rho_analytical.x_data, rho_analytical.y_data, color="red", linestyle='-', lw=0.5)
+##axarr[0].plot(x_solution, jeans_unstable_solution(x_solution, *popt), color='blue')
+#axarr[0].scatter(x_data[::stride], rho_data[::stride], color='black', marker='.', s=4.0)
+axarr.set_ylabel(r"$a_{x}$")
+axarr.set_xlabel(r"$x$")
+axarr.set_xlim([xmin, xmax])
+axarr.set_ylim([-1.9,1.9])
+axarr.plot(ax_analytical0.x_data, ax_analytical0.y_data, color="red", linestyle='-', lw=0.5, label='Solution')
+axarr.scatter(x_data1[::stride], ax_data1[::stride], color='blue', marker='+', s=8.0, label='No periodic corrections')
+axarr.scatter(x_data0[::stride], ax_data0[::stride], color='black', marker='.', s=16.0, label='Ewald corrections')
+legend1 = axarr.legend(loc='upper right', fontsize=12)
+
+plt.show()
+fig.savefig('jeansaccel.pdf', dpi=50)
+
+
 
 # Perform small suite of simulations to compare to expected with dispersion relation.
 #--------------------------------------------------------------------------------------------------
@@ -83,7 +145,7 @@ for i in range(numSimMax):
 
     print 'LAMBDA_JEANS : ',lambda_jeans,tsim
 
-    sim = newsim('jeans.dat')
+    sim = newsim('jeans_mfm.dat')
     sim.SetParam('tend', tsim)
     sim.SetParam('tsnapfirst', tsim)
     sim.SetParam('temp0', temp0)
@@ -98,6 +160,7 @@ for i in range(numSimMax):
     vx_analytical  = get_analytical_data("x", "vx", sim=sim_no)
     sim_no = sim_no + 1
 
+
     # Compute best-fit for simulation
     if wavelength > lambda_jeans:
         omega_analytical = 1.0/growth_timescale(lambda_jeans)
@@ -111,12 +174,12 @@ for i in range(numSimMax):
 
         print 'UNSTABLE SOLUTION : ',popt[0],popt[1]
 
-        fig, axarr = plt.subplots(1, 1, figsize=(7,10), sharex='row')
-        axarr.set_ylabel(r"$\rho$")
-        axarr.set_xlim([xmin, xmax])
-        axarr.plot(rho_analytical.x_data, rho_analytical.y_data, color="red", linestyle='-', lw=0.5)
-        axarr.plot(x_solution, jeans_unstable_solution(x_solution, *popt), color='blue')
-        axarr.scatter(x_data[::stride], rho_data[::stride], color='black', marker='.', s=4.0)
+        #fig, axarr = plt.subplots(1, 1, figsize=(7,10), sharex='row')
+        #axarr.set_ylabel(r"$\rho$")
+        #axarr.set_xlim([xmin, xmax])
+        #axarr.plot(rho_analytical.x_data, rho_analytical.y_data, color="red", linestyle='-', lw=0.5)
+        #axarr.plot(x_solution, jeans_unstable_solution(x_solution, *popt), color='blue')
+        #axarr.scatter(x_data[::stride], rho_data[::stride], color='black', marker='.', s=4.0)
         #plt.show()
         #block()
 
@@ -132,35 +195,14 @@ for i in range(numSimMax):
 
         print 'STABLE SOLUTION : ',popt[0],popt[1]
 
-        fig, axarr = plt.subplots(1, 1, figsize=(7,10), sharex='row')
-        axarr.set_ylabel(r"$\rho$")
-        axarr.set_xlim([xmin, xmax])
-        axarr.plot(rho_analytical.x_data, rho_analytical.y_data, color="red", linestyle='-', lw=0.5)
-        axarr.plot(x_solution, jeans_stable_solution(x_solution, *popt), color='blue')
-        axarr.scatter(x_data[::stride], rho_data[::stride], color='black', marker='.', s=4.0)
+        #fig, axarr = plt.subplots(1, 1, figsize=(7,10), sharex='row')
+        #axarr.set_ylabel(r"$\rho$")
+        #axarr.set_xlim([xmin, xmax])
+        #axarr.plot(rho_analytical.x_data, rho_analytical.y_data, color="red", linestyle='-', lw=0.5)
+        #axarr.plot(x_solution, jeans_stable_solution(x_solution, *popt), color='blue')
+        #axarr.scatter(x_data[::stride], rho_data[::stride], color='black', marker='.', s=4.0)
         #plt.show()
         #block()
-
-
-# Create matplotlib figure object with shared x-axis
-#--------------------------------------------------------------------------------------------------
-fig, axarr = plt.subplots(2, 1, figsize=(7,10), sharex='row')
-fig.subplots_adjust(hspace=0.001, wspace=0.001)
-fig.subplots_adjust(bottom=0.08, top=0.97, left=0.13, right=0.98)
-
-axarr[0].set_ylabel(r"$\rho$")
-axarr[0].set_xlim([xmin, xmax])
-axarr[0].plot(rho_analytical.x_data, rho_analytical.y_data, color="red", linestyle='-', lw=0.5)
-#axarr[0].plot(x_solution, jeans_unstable_solution(x_solution, *popt), color='blue')
-axarr[0].scatter(x_data[::stride], rho_data[::stride], color='black', marker='.', s=4.0)
-axarr[1].set_ylabel(r"$v_{x}$")
-axarr[1].set_xlabel(r"$x$")
-axarr[1].set_xlim([xmin, xmax])
-axarr[1].plot(vx_analytical.x_data, vx_analytical.y_data, color="red", linestyle='-', lw=0.5)
-axarr[1].scatter(x_data[::stride], vx_data[::stride], color='black', marker='.', s=4.0)
-
-plt.show()
-fig.savefig('jeanstest.eps', dpi=50)
 
 
 
@@ -178,7 +220,7 @@ x_unstable_aux = wavelength/unstable_wavelengths
 y_unstable = growth_timescale(x_unstable_aux)
 
 
-axarr2.set_xlabel(r"$\lambda/\lambda_{_{\rm JEANS}}$")
+axarr2.set_xlabel(r"$\lambda/\lambda_{_{\rm J}}$")
 axarr2.set_ylabel(r"$T$")
 #axarr2.set_yscale("log")
 axarr2.set_xlim([lmin, lmax])
@@ -188,12 +230,12 @@ axarr2.plot(stable_wavelengths, y_stable, color='red')
 axarr2.plot(unstable_wavelengths, y_unstable, color='red')
 axarr2.plot([1.0, 1.0], [0.0, 3.0], color='blue', linestyle='-.', linewidth=0.5)
 #axarr2.scatter(ratio_values, omega_values, color='black', marker='*', s=8.0)
-axarr2.scatter(stable_lambdas, stable_periods, marker='o', facecolors='none', edgecolors='black', s=24.0, label='Oscillating')
-axarr2.scatter(unstable_lambdas, unstable_periods, facecolors='none', edgecolors='black', marker='*', s=24.0, label='Collapsing')
-legend = axarr2.legend(loc='upper right', fontsize=12)
+axarr2.scatter(stable_lambdas, stable_periods, marker='o', facecolors='none', edgecolors='black', s=32.0, label='Oscillating')
+axarr2.scatter(unstable_lambdas, unstable_periods, facecolors='none', edgecolors='black', marker='*', s=32.0, label='Collapsing')
+legend2 = axarr2.legend(loc='upper right', fontsize=12)
 
 plt.show()
-fig2.savefig('jeansdispersion.eps', dpi=50)
+fig2.savefig('jeanstest.pdf', dpi=50)
 
 
 run()

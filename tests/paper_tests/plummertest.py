@@ -22,8 +22,8 @@ rc('text', usetex=True)
 # Set all plot limits
 tmin     = 0.00
 tmax     = 98.0
-rmin     = 0.2
-rmax     = 13.0
+rmin     = 0.13
+rmax     = 11.0
 tsize    = tmax - tmin
 rsize    = rmax - rmin
 rplummer = 1.0
@@ -111,10 +111,10 @@ axarr.plot(star_data90.x_data, star_data90.y_data, linestyle='-', color='red', l
 axarr.plot(gas_data10.x_data, gas_data10.y_data, linestyle='--', color='black', lw=1.0, label='Gas')
 axarr.plot(gas_data50.x_data, gas_data50.y_data, linestyle='--', color='black', lw=1.0)
 axarr.plot(gas_data90.x_data, gas_data90.y_data, linestyle='--', color='black', lw=1.0)
-axarr.text(tmin + 0.03*tsize, 0.7, "$10\%$", fontsize=12)
-axarr.text(tmin + 0.03*tsize, 2.0, "$50\%$", fontsize=12)
-axarr.text(tmin + 0.03*tsize, 5.0, "$90\%$", fontsize=12)
-axarr.text(tmin + 0.03*tsize, rmax - 0.3*rsize, "$N_s = 500$, $N_g = 5000$", fontsize=12)
+axarr.text(tmin + 0.02*tsize, 0.7, "$10\%$", fontsize=14)
+axarr.text(tmin + 0.02*tsize, 1.5, "$50\%$", fontsize=14)
+axarr.text(tmin + 0.02*tsize, 4.2, "$90\%$", fontsize=14)
+#axarr.text(tmin + 0.02*tsize, rmax - 0.2*rsize, "$N_s = 500$, $N_g = 5000$", fontsize=16)
 legend = axarr.legend(loc='upper right', fontsize=12)
 
 plt.show()

@@ -1,0 +1,108 @@
+#------------------------------------------------------------------
+# Jeans test
+# ..
+#------------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = JEANS-MFM
+Select SPH simulation                       : sim = mfvmuscl
+Select shocktube initial conditions         : ic = jeans
+1D shocktube test                           : ndim = 3
+Pressure of LHS fluid                       : press1 = 1.0
+Density of LHS fluid                        : rhofluid1 = 1.0
+Sound wave amplitude                        : amp = 0.025
+No. of particles in LHS fluid               : Nlattice1[0] = 16
+No. of particles in LHS fluid               : Nlattice1[1] = 16
+No. of particles in LHS fluid               : Nlattice1[2] = 16
+Local arrangement of particles              : particle_distribution = hexagonal_lattice
+Use dimensionless units                     : dimensionless = 1
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = 0.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
+LHS position of boundary in y-dimension     : boxmin[1] = 0.0
+RHS position of boundary in y-dimension     : boxmax[1] = 0.866
+LHS position of boundary in z-dimension     : boxmin[2] = 0.0
+RHS position of boundary in z-dimension     : boxmax[2] = 0.8164
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+LHS boundary type in z-dimension            : boundary_lhs[2] = periodic
+RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 0.5
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.25
+Screen output frequency (in no. of steps)   : noutputstep = 1
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = isothermal
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+Isothermal temperature                      : temp0 = 0.05
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = none
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#---------------------------------
+# Finite-Volume options
+#---------------------------------
+Riemann solver                              : riemann_solver = exact
+Slope limiter                               : slope_limiter = gizmo
+Finite mass scheme?                         : zero_mass_flux = 1
+Fix particle positions?                     : static_particles = 0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+No. of block timestep levels                : Nlevels = 1
+
+
+#--------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 0
+SPH neighbour search algorithm              : neib_search = kdtree
+Opening angle                               : thetamaxsqd = 0.15
+Maximum number of leaf particles            : Nleafmax = 6
+Tree gravity walk MAC                       : gravity_mac = gadget2
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 1
+Number of points on the Ewald grid          : nEwaldGrid = 16  #17
+                                            : EFratio = 1.4

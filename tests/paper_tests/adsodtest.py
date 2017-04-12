@@ -12,16 +12,18 @@ rc('font', **{'family': 'normal', 'weight' : 'bold', 'size' : 14})
 rc('text', usetex=True)
 
 # Set all plot limits
-xmin   = -9.5
-xmax   = 9.5
+xmin   = -9.9
+xmax   = 9.9
 rhomin = 0.15
 rhomax = 1.15
 vxmin  = -0.15
 vxmax  = 0.95
-umin   = 1.7
-umax   = 2.7
+umin   = 1.53
+umax   = 2.85
 Nleft  = 160
 Nright = 40
+#Nleft = 80
+#Nright = 20
 
 
 # Extract data from Grad-h SPH simulation

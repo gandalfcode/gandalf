@@ -28,6 +28,10 @@ y_ideal = 0.5*ymax*xmin*xmin/x_ideal/x_ideal
 gradh_Nres = []
 gradh_L1values = []
 
+# Set empty lists to store results from each resolution
+gradh_unnorm_Nres = []
+gradh_unnorm_L1values = []
+
 mfv_Nres = []
 mfv_L1values = []
 
@@ -48,6 +52,9 @@ for i in range(numSimMax):
     L1error = L1errornorm("soundwave", x="x", y="rho", xmin=0.0, xmax=1.0, normalise=1.0)
     gradh_Nres.append(Nhydro)
     gradh_L1values.append(L1error)
+    L1error = L1errornorm("soundwave", x="x", y="rho", xmin=0.0, xmax=1.0)
+    gradh_unnorm_Nres.append(Nhydro)
+    gradh_unnorm_L1values.append(L1error)
     #plot("x","rho")
     #plotanalytical("x","rho")
 
@@ -105,10 +112,11 @@ ax.set_xlim([xmin, xmax])
 ax.set_ylim([ymin, ymax])
 ax.set_xlabel(r"$N$", fontsize=12)
 ax.set_ylabel(r"$L1$", fontsize=12)
-ax.scatter(gradh_Nres, gradh_L1values, color='black', marker='+', s=16.0, label='Gradh-SPH')
-ax.scatter(mfv_Nres, mfv_L1values, color='blue', marker='x', s=16.0, label='MFV')
+ax.scatter(gradh_Nres, gradh_L1values, color='black', marker='+', s=48.0, label='Gradh-SPH (normalised)')
+#ax.scatter(gradh_unnorm_Nres, gradh_unnorm_L1values, color='black', marker='o', s=48.0, label='Gradh-SPH')
+ax.scatter(mfm_Nres, mfm_L1values, color='red', marker='^', s=48.0, label='MFM')
+ax.scatter(mfv_Nres, mfv_L1values, color='blue', marker='x', s=48.0, label='MFV')
 #ax.scatter(mfv_static_Nres, mfv_static_L1values, color='green', marker='*', s=16.0, label='MFV-static')
-ax.scatter(mfm_Nres, mfm_L1values, color='red', marker='^', s=16.0, label='MFM')
 ax.plot(x_ideal, y_ideal, linestyle=':', color='red')
 legend = ax.legend(loc='upper right', fontsize=12)
 

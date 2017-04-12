@@ -28,9 +28,11 @@ abin = 1.0
 ebin = 0.5
 etot0 = -0.5*m1*m2/abin
 period = 2.0*math.pi*math.sqrt(abin*abin*abin/(m1 + m2))
+ttot = 150.0
+ttot /= period
 
-errormin = 3.3333e-13
-errormax = 3.3333e-2
+errormin = 6.666666e-12
+errormax = 3.3333e-1
 
 
 # Energy error
@@ -42,7 +44,6 @@ kdksim.SetParam('nbody','lfkdk')
 setupsim()
 run()
 kdkerror = get_time_data("t","energy_error",linestyle='-')
-
 
 # Leapfrog DKD
 dkdsim = newsim('binary.dat')
@@ -63,26 +64,33 @@ hermite4error = get_time_data("t","energy_error",linestyle='-')
 # 4th-order Hermite
 hermite4tssim = newsim('binary.dat')
 hermite4tssim.SetParam('nbody','hermite4ts')
-hermite4tssim.SetParam('Npec',5)
+hermite4tssim.SetParam('Npec',2)
 setupsim()
 run()
 hermite4tserror = get_time_data("t","energy_error",linestyle='-')
 
 
+# Normalise times
+kdkerror.x_data /= period
+dkderror.x_data /= period
+hermite4error.x_data /= period
+hermite4tserror.x_data /= period
+
+
 # 6th-order Hermite
-hermite6tssim = newsim('binary.dat')
-hermite6tssim.SetParam('nbody','hermite6ts')
-hermite6tssim.SetParam('Npec',5)
-setupsim()
-run()
-hermite6tserror = get_time_data("t","energy_error",linestyle='-.')
+#hermite6tssim = newsim('binary.dat')
+#hermite6tssim.SetParam('nbody','hermite6ts')
+#hermite6tssim.SetParam('Npec',5)
+#setupsim()
+#run()
+#hermite6tserror = get_time_data("t","energy_error",linestyle='-.')
 
 
 
 # Create matplotlib figure object with shared x-axis
 #--------------------------------------------------------------------------------------------------
 #fig, axarr = plt.subplots(2, 1, sharex='col', sharey='row', figsize=(10,4))
-fig, axarr = plt.subplots(1, 1, figsize=(14,5), sharex='row')
+fig, axarr = plt.subplots(1, 1, figsize=(14,4), sharex='row')
 #fig.subplots_adjust(hspace=0.001, wspace=0.001)
 fig.subplots_adjust(bottom=0.11, top=0.98, left=0.07, right=0.98)
 
@@ -90,7 +98,7 @@ axarr.set_ylabel(r"$\Delta E/E_0$")
 axarr.set_xlabel(r"$t$")
 axarr.set_yscale("log")
 axarr.set_ylim([errormin, errormax])
-axarr.set_xlim([0.0, 300.0])
+axarr.set_xlim([0.0, ttot])
 axarr.plot(kdkerror.x_data, kdkerror.y_data, color="red", linestyle=':', label='Leapfrog KDK', lw=1.0)
 #axarr.plot(dkderror.x_data, dkderror.y_data, color="blue", linestyle='-', label='Leapfrog DKD', lw=1.0)
 axarr.plot(hermite4error.x_data, hermite4error.y_data, color="black", linestyle='-', label='4th order Hermite', lw=1.0)
@@ -101,7 +109,7 @@ legend = axarr.legend(loc='upper right', fontsize=12)
 
 
 plt.show()
-fig.savefig('binaryerror.eps', dpi=50)
+fig.savefig('binaryerror.pdf', dpi=50)
 
 
 # Prevent program from closing before showing plot window

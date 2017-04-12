@@ -146,7 +146,7 @@ axarr[1].plot(theta_values, monopole_error_values, color="red", linestyle='-', l
 axarr[1].legend(fontsize=12)
 
 plt.show()
-fig.savefig('treeerror.eps', dpi=50)
+fig.savefig('treeerror.pdf', dpi=50)
 
 # Prevent program from closing before showing plot window
 block()
