@@ -305,7 +305,7 @@ void NbodySimulation<ndim>::MainLoop(void)
 
 
   // Compute timesteps for all particles
-  if (Nlevels == 1) this->ComputeGlobalTimestep();
+  if (Nlevels <= 1) this->ComputeGlobalTimestep();
   else this->ComputeBlockTimesteps();
 
   // Advance time variables
@@ -411,8 +411,8 @@ void NbodySimulation<ndim>::MainLoop(void)
 template <int ndim>
 void NbodySimulation<ndim>::ComputeGlobalTimestep(void)
 {
-  int i;                            // Particle counter
-  DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
+  const FLOAT nbody_mult = simparams->floatparams["nbody_mult"];   // Local copy of multiplier
+  DOUBLE dt_min = big_number_dp;                                // Local copy of minimum timestep
 
   debug2("[NbodySimulation::ComputeGlobalTimestep]");
 
@@ -425,14 +425,19 @@ void NbodySimulation<ndim>::ComputeGlobalTimestep(void)
     nresync    = integration_step;
 
     // Compute minimum timestep due to stars/systems
-    for (i=0; i<nbody->Nnbody; i++) {
-      nbody->nbodydata[i]->dt = nbody->Timestep(nbody->nbodydata[i]);
+    for (int i=0; i<nbody->Nnbody; i++) {
+      if (Nlevels <= 0) {
+        nbody->nbodydata[i]->dt = nbody_mult;
+      }
+      else {
+        nbody->nbodydata[i]->dt = nbody->Timestep(nbody->nbodydata[i]);
+      }
       dt_min = min(dt_min,nbody->nbodydata[i]->dt);
     }
 
     // Set all particles to same timestep
     timestep = dt_min;
-    for (i=0; i<nbody->Nnbody; i++) {
+    for (int i=0; i<nbody->Nnbody; i++) {
       nbody->nbodydata[i]->level = level_max;
       nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
       nbody->nbodydata[i]->nlast = n;
