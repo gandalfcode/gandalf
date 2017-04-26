@@ -80,7 +80,7 @@ FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
 
   // Compute temperature
   FLOAT temp = max(temp0*pow(stardistmin,-templaw), tempmin);
-  return temp/gammam1/mu_bar;
+  return temp;
 }
 
 //=================================================================================================
