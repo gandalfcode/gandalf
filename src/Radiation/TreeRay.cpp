@@ -146,10 +146,10 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::~TreeRay()
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
 void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
- (int Nhydro,                          ///< [in] No. of SPH particle
+ (int Nhydro,                          ///< [in] No. of hydro particles
   int Nnbody,                          ///< [in] No. of N-body particles
   int Nsink,                           ///< [in] No. of sink particles
-  SphParticle<ndim> *part_gen,         ///< [in] Generic SPH particle data array
+  Particle<ndim> *part_gen,            ///< [in] Generic hydro particle data array
   NbodyParticle<ndim> **nbodydata,     ///< [in] N-body data array
   SinkParticle<ndim> *sinkdata)        ///< [in] Sink data array
 {

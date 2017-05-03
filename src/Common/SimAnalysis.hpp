@@ -278,7 +278,7 @@ void Simulation<ndim>::RecordDiagnostics(void)
   outfile.close();
 
   // Now calculate and output any test specific diagnostics
-  OutputTestDiagnostics();
+  //OutputTestDiagnostics();
 
   return;
 }
@@ -310,7 +310,9 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
     FLOAT mu_ion     = simparams->floatparams["mu_ion"];
     FLOAT cion       = sqrtf(temp_ion/mu_ion);
     FLOAT radius_ion = (FLOAT) 0.0;
+    FLOAT rmax_ion   = (FLOAT) 0.0;
     FLOAT m_ion      = (FLOAT) 0.0;
+    FLOAT m_ion_rmax = (FLOAT) 0.0;
     FLOAT m_if       = (FLOAT) 0.0;
     FLOAT arecomb    = simparams->floatparams["arecomb"]*
       simunits.t.outscale*simunits.t.outcgs/pow(simunits.r.outscale*simunits.r.outcgs,3);
@@ -332,10 +334,14 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       FLOAT temp = hydro->eos->Temperature(part);
-      m_ion += part.ionfrac*part.m;
+      m_ion += part.m*temp/temp_ion;
       if (temp > 0.05*temp_ion && temp < 0.95*temp_ion) {
-        m_if += part.m;
-        radius_ion += part.m*sqrt(DotProduct(part.r, part.r, ndim));
+        m_if += part.m*temp/temp_ion;
+        radius_ion += part.m*temp*sqrt(DotProduct(part.r, part.r, ndim))/temp_ion;
+      }
+      if (temp > 0.99*temp_ion) {
+        m_ion_rmax += part.m;
+        rmax_ion = max(rmax_ion, sqrt(DotProduct(part.r, part.r, ndim)));
       }
     }
     //---------------------------------------------------------------------------------------------
@@ -353,7 +359,8 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
       solfile.open(solname.c_str(), std::ofstream::app);
     }
     outfile << t*simunits.t.outscale << "    " << radius_ion*simunits.r.outscale << "    "
-            << m_ion*simunits.m.outscale << endl;
+            << m_ion*simunits.m.outscale << "   " << rmax_ion*simunits.r.outscale << "    "
+            << m_ion_rmax*simunits.m.outscale << endl;
     solfile << t*simunits.t.outscale << "   "
             << Rstromgren*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(4.0/7.0))*simunits.r.outscale
             << "    " << m_h*m_h*NLyC*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(6.0/7.0))*

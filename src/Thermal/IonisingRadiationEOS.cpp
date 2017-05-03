@@ -74,8 +74,14 @@ IonisingRadiation<ndim>::~IonisingRadiation()
 template <int ndim>
 FLOAT IonisingRadiation<ndim>::EntropicFunction(Particle<ndim> &part)
 {
-  //return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
-  return eos->EntropicFunction(part);
+  // Checks if particle's internal energy has been changed by the ionisation routine
+  // If it has it compares this new internal energy to that of the EOS and chooses the largest.
+  if (part.ionstate != 0) {
+    FLOAT non_ionised = eos->SpecificInternalEnergy(part);
+    if (part.u > non_ionised) return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
+    else return eos->EntropicFunction(part);
+  }
+  else return eos->EntropicFunction(part);
 }
 
 
@@ -87,8 +93,14 @@ FLOAT IonisingRadiation<ndim>::EntropicFunction(Particle<ndim> &part)
 template <int ndim>
 FLOAT IonisingRadiation<ndim>::SoundSpeed(Particle<ndim> &part)
 {
-  //return sqrt(gammam1*part.u);
-  return eos->SoundSpeed(part);
+  // Checks if particle's internal energy has been changed by the ionisation routine
+  // If it has it compares this new internal energy to that of the EOS and chooses the largest.
+  if (part.ionstate != 0) {
+    FLOAT non_ionised = eos->SpecificInternalEnergy(part);
+    if (part.u > non_ionised) return sqrt(gammam1*part.u);
+    else return eos->SoundSpeed(part);;
+  }
+  else return eos->SoundSpeed(part);
 }
 
 
@@ -119,7 +131,15 @@ FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 template <int ndim>
 FLOAT IonisingRadiation<ndim>::Temperature(Particle<ndim> &part)
 {
-  return eos->Temperature(part);
+  // Checks if particle's internal energy has been changed by the ionisation routine
+  // If it has it compares this new internal energy to that of the EOS and chooses the largest.
+  if (part.ionstate != 0) {
+    FLOAT non_ionised = eos->SpecificInternalEnergy(part);
+    if (part.u > non_ionised) return part.u*gammam1/(1/part.mu_bar);
+    else return eos->Temperature(part);
+  }
+  else return eos->Temperature(part);
+
 }
 
 

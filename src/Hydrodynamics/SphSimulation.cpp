@@ -445,7 +445,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
           sph->GetSphParticleArray(), nbody->nbodydata, sinks->sink);
     }
 
-
     // Update thermal properties (if radiation field has altered them)
     for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
@@ -1485,4 +1484,3 @@ void SphSimulation<ndim>::WriteExtraSinkOutput(void)
 
   return;
 }
-

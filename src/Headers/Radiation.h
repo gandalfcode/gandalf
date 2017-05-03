@@ -50,6 +50,9 @@
 using namespace std;
 
 
+// Compiler flag for optimised version (in terms of memory allocation) for Scott's ionisation algorithm
+#define RAD_OPTIMISE
+
 
 //=================================================================================================
 //  enum radiationSourceType
@@ -100,26 +103,40 @@ struct RadiationSource {
 //  Struct ionpar
 /// ..
 //=================================================================================================
+#ifdef RAD_OPTIMISE
+static const int maxSources=16;
+#endif
 struct ionpar
 {
   int sink;                         // Is particle sink
   int fionised;
   int neighstorcont;
-  double x;                         // Particle x,y,z co-ordinates
-  double y;
-  double z;
-  double rho;                       // Density
-  double t;                         // Temperature
-  double h;                         // Smoothing length
-  double u;                         // Specific internal energy
+  DOUBLE x;                         // Particle x,y,z co-ordinates
+  DOUBLE y;
+  DOUBLE z;
+  DOUBLE rho;                       // Density
+  DOUBLE t;                         // Temperature
+  DOUBLE h;                         // Smoothing length
+  DOUBLE u;                         // Specific internal energy
+#ifdef RAD_OPTIMISE
+  int checked[maxSources];
+  int ionised[maxSources];                     // Is particle ionised by source?
+  int neigh[maxSources];                       // Part. neib array (Neibs closest to sources)
+  int neighstor[200];
+  DOUBLE angle[maxSources];
+  DOUBLE prob[maxSources];                     // Prob. of transmition from each source
+  DOUBLE photons[maxSources];                  // No. of photons lost up to this point
+  DOUBLE rad_pre_acc[3];
+#else
   int *checked;
   int *ionised;                     // Is particle ionised by source?
   int *neigh;                       // Part. neib array (Neibs closest to sources)
   int *neighstor;
-  double *angle;
-  double *prob;                     // Prob. of transmition from each source
-  double *photons;                  // No. of photons lost up to this point
-  double *rad_pre_acc;
+  DOUBLE *angle;
+  DOUBLE *prob;                     // Prob. of transmition from each source
+  DOUBLE *photons;                  // No. of photons lost up to this point
+  DOUBLE *rad_pre_acc;
+#endif
 };
 
 
@@ -140,7 +157,7 @@ class Radiation
   Radiation() {};
   ~Radiation() {};
 
-  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
+  virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *) = 0;
 
   CodeTiming *timing;                  ///< Pointer to code timing object
@@ -160,31 +177,43 @@ class Radiation
 template <int ndim, template<int> class ParticleType>
 class MultipleSourceIonisation : public Radiation<ndim>
 {
- public:
+public:
 
-  MultipleSourceIonisation(SphNeighbourSearch<ndim> *, float, float,
-                           float, float, double, float, float, float, double);
-  //MultipleSourceIonisation(SphNeighbourSearch<ndim> *,float,float,
-  //                         float,float,float,float,float,float);
+  // Constructor and destructor
+  //-----------------------------------------------------------------------------------------------
+  MultipleSourceIonisation(NeighbourSearch<ndim> *, FLOAT, FLOAT, FLOAT,
+                           FLOAT, FLOAT, DOUBLE, FLOAT, FLOAT, FLOAT, FLOAT, DOUBLE);
   ~MultipleSourceIonisation();
 
-  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
+
+  // Function prototypes
+  //-----------------------------------------------------------------------------------------------
+  virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *);
 
-  void ionisation_intergration(int, int, NbodyParticle<ndim> **,
-                               SphParticle<ndim> *, double, double,
-                               SphNeighbourSearch<ndim> *, double, double,
-                               double, double, double, double);
-  void photoncount(ionpar *,int *,double *, int &,int &,int &,int &);
-  double lost(ionpar *,int *,double *,int &, int &,int &,int &,int &);
-  void probs(int &, ionpar *, int *, int &, double *);
+  void ionisation_intergration(int, int, NbodyParticle<ndim> **, Particle<ndim> *,
+                               DOUBLE, DOUBLE, NeighbourSearch<ndim> *,
+                               DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE);
+  void photoncount(ionpar *, int *, DOUBLE *, int &, int &, int &, int &);
+  DOUBLE lost(ionpar *, int *, DOUBLE *, int &, int &, int &, int &, int &);
+  void probs(int &, ionpar *, int *, int &, DOUBLE *);
 
 
-  SphNeighbourSearch<ndim> *sphneib;
-  float mu_bar,temp0,mu_ion,temp_ion,gamma_eos,scale,tempscale; //cmscott
-  double rad_cont,Ndotmin; //cmscott
-  //float mu_bar,temp0,mu_ion,temp_ion,Ndotmin,gamma_eos,scale,tempscale;
+  // Variables
+  //-----------------------------------------------------------------------------------------------
+  FLOAT mu_bar;
+  FLOAT X_comp;
+  FLOAT temp0;
+  FLOAT mu_ion;
+  FLOAT temp_ion;
+  FLOAT gamma_eos;
+  FLOAT arecomb;
+  FLOAT scale;
+  FLOAT tempscale;
+  DOUBLE rad_cont;
+  DOUBLE Ndotmin;
   vector< vector<int> > ionisation_fraction;
+  NeighbourSearch<ndim> *neib;
 };
 
 
@@ -199,9 +228,8 @@ class MultipleSourceIonisation : public Radiation<ndim>
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 class TreeMonteCarlo : public Radiation<ndim>
 {
+public:
   using Radiation<ndim>::timing;
-
- public:
 
 
   // Constructor and destructor
@@ -212,9 +240,9 @@ class TreeMonteCarlo : public Radiation<ndim>
 
   // Function prototypes
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
+  virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
-  void IterateRadiationField(int, int, int, int, SphParticle<ndim> *,
+  void IterateRadiationField(int, int, int, int, Particle<ndim> *,
                              NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
   PhotonPacket<ndim> GenerateNewPhotonPacket(RadiationSource<ndim> &);
   void ScatterPhotonPacket(PhotonPacket<ndim> &);
@@ -258,11 +286,11 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
   // Function prototypes
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
+  virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *);
-  void InterpolateParticleProperties(const int, const int, SphParticle<ndim> *);
+  void InterpolateParticleProperties(const int, const int, Particle<ndim> *);
   void IterateRadiationField(const int, const int, const int, const int, const int,
-                             SphParticle<ndim> *, NbodyParticle<ndim> **, SinkParticle<ndim> *);
+                             Particle<ndim> *, NbodyParticle<ndim> **, SinkParticle<ndim> *);
   PhotonPacket<ndim> GenerateNewPhotonPacket(const RadiationSource<ndim> &, RandomNumber *);
   void ScatterPhotonPacket(PhotonPacket<ndim> &, RandomNumber *);
   bool UpdateIonisationFraction(const int, const int);
@@ -311,7 +339,7 @@ class NullRadiation : public Radiation<ndim>
 
   NullRadiation(): Radiation<ndim>() {};
 
-  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
+  virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *) {};
 };
 #endif

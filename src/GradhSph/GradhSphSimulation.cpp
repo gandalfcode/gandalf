@@ -278,10 +278,10 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
        floatparams["rayRadRes"], floatparams["relErr"], stringparams["errControl"],
        simbox, &simunits, simparams, sphneib);
   }
-  else if (gas_radiation == "ionisation") {
+  else if (gas_radiation == "ionisation" && ndim == 3) {
     radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>
-      (sphneib, floatparams["mu_bar"], floatparams["mu_ion"], floatparams["temp0"],
-       floatparams["temp_ion"], floatparams["Ndotmin"], floatparams["gamma_eos"],
+      (sphneib, floatparams["mu_bar"], floatparams["X_comp"], floatparams["mu_ion"], floatparams["temp0"],
+       floatparams["temp_ion"], floatparams["NLyCmin"], floatparams["gamma_eos"],floatparams["arecomb"],
        pow(simunits.r.outscale*simunits.r.outcgs, 3.)/
        pow(simunits.m.outscale*simunits.m.outcgs, 2.),
        simunits.temp.outscale, pow(simunits.r.outscale*simunits.r.outcgs,-4)*

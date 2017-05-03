@@ -638,10 +638,13 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::level_diff_max;
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::neib;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
-  using Simulation<ndim>::sph_single_timestep;
   using Simulation<ndim>::sink_particles;
+  using Simulation<ndim>::snDriver;
+  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::radiation;
   using Simulation<ndim>::randnumb;
   using Simulation<ndim>::rank;
   using Simulation<ndim>::rebuild_tree;
@@ -650,9 +653,6 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
-  using Simulation<ndim>::neib;
-  using Simulation<ndim>::radiation;
-  using Simulation<ndim>::snDriver;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;

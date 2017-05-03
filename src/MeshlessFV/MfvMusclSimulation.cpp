@@ -61,7 +61,24 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
 
-  debug2("[MfvMusclSimulation:MainLoop]");
+  debug2("[MfvMusclSimulation::MainLoop]");
+
+  // Update all active cell counters in the tree
+  mfvneib->UpdateActiveParticleCounters(mfv->GetMeshlessFVParticleArray(), mfv);
+
+  // Calculate all properties (and copy updated data to ghost particles)
+  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, mfv->GetMeshlessFVParticleArray(), mfv, nbody);
+  mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+
+  // Update the radiation field
+  //if (Nsteps%nradstep == 0 || recomputeRadiation) {
+    radiation->UpdateRadiationField(mfv->Nhydro, nbody->Nnbody, sinks->Nsink,
+  				                          mfv->GetMeshlessFVParticleArray(), nbody->nbodydata, sinks->sink);
+  //}
+
+  // Calculate all matrices and gradients (and copy updated data to ghost particles)
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, mfv->GetMeshlessFVParticleArray(), mfv, nbody);
+  mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
 
   if (time_step_limiter_type == "conservative") {
     mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
