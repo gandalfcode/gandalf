@@ -606,12 +606,13 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
     mfvneib->UpdateAllProperties(mfv, nbody);
-    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+    LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
 
     radiation->UpdateRadiationField(mfv->Nhydro, nbody->Nnbody, sinks->Nsink,
      				                        mfv->GetMeshlessFVParticleArray(), nbody->nbodydata, sinks->sink);
 
-    mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+    //mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+    LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
 
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);

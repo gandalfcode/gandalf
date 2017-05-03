@@ -281,6 +281,9 @@ void MultipleSourceIonisation<ndim, ParticleType>::photoncount
     if (ionisedpart[testpart].ionised[pp]==1) ionisedpart[testpart].fionised = 1;
   }
 
+  return;
+}
+
 
 
 //=================================================================================================
@@ -389,7 +392,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
     ionisation_fraction.resize(N+1);
     for (ii=0; ii<N+1; ii++) {
       ionisation_fraction[ii].resize(newnos);
-      for (pp=0; pp<nos; pp++){
+      for (pp=0; pp<nos; pp++) {
         ionisation_fraction[ii][pp] = 0;
       }
     }
@@ -398,7 +401,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
 
   // Add ionisedpart particle data
 #pragma omp parallel for private(ii,jj)
-  for (ii=0; ii<N - nos; ii++) {
+  for (ii=0; ii<N-nos; ii++) {
     ionisedpart[ii].x             = partdata[ii].r[0];   // Particle x from gandalf
     ionisedpart[ii].y             = partdata[ii].r[1];   // Particle y from gandalf
     ionisedpart[ii].z             = partdata[ii].r[2];   // Particle z from gandalf
@@ -527,7 +530,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
 #ifdef RAD_OPTIMISE
   int maxneigh = 200;
   int Nneigb;
-  inr *current_paricle_nn = new int[maxneigh];
+  int *current_paricle_nn = new int[maxneigh];
 #else
   int maxneigh = max(N/8, 2000);
   int current_paricle_nn[maxneigh];              // Working particle neighbour list
@@ -541,7 +544,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
   for (ii=0; ii<N; ii++) {
 
     // Find NNnumber nearest neighbours
-    Nneigb = neib->GetGatherNeighbourList(partdata[ii].r, 2.0*partdata[ii].h*,
+    Nneigb = neib->GetGatherNeighbourList(partdata[ii].r, 2.0*partdata[ii].h,
                                           partgen, N, maxneigh, current_paricle_nn);
 #ifdef RAD_OPTIMISE
     while (Nneigb == -1) {
