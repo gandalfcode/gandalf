@@ -72,7 +72,7 @@ ay_bf = get_data("ay")#, sim=sim_no, snap=0)
 az_bf = get_data("az")#, sim=sim_no, snap=0)
 
 
-# Fast monpole errors as a function of opening angle
+# Fast monopole errors as a function of opening angle
 #--------------------------------------------------------------------------------------------------
 for i in range(numSimMax):
     sim_no = sim_no + 1
@@ -82,6 +82,7 @@ for i in range(numSimMax):
     print 'THETAMAX : ',theta,exponent
     sim = newsim("freefall.dat")
     sim.SetParam('thetamaxsqd',thetamaxsqd)
+    sim.SetParam('multipole',"fast_monopole")
     sim.SetParam('Nstepsmax',1)
     setupsim()
     start = time.time()
@@ -121,6 +122,30 @@ for i in range(numSimMax):
     monopole_runtimes.append(end - start)
 
 
+# Quadrupole errors as a function of opening angle
+#--------------------------------------------------------------------------------------------------
+for i in range(numSimMax):
+    sim_no = sim_no + 1
+    exponent = 1.0*i/(numSimMax - 1)
+    theta = thetamin*math.pow(thetamax/thetamin,exponent)
+    thetamaxsqd = theta*theta
+    sim = newsim("freefall.dat")
+    sim.SetParam('thetamaxsqd',thetamaxsqd)
+    sim.SetParam('multipole',"quadrupole")
+    sim.SetParam('Nstepsmax',1)
+    setupsim()
+    start = time.time()
+    run()
+    end = time.time()
+    ax_tree = get_data("ax") #, sim=sim_no, snap=0)
+    ay_tree = get_data("ay") #, sim=sim_no, snap=0)
+    az_tree = get_data("az") #, sim=sim_no, snap=0)
+    N = ax_tree.size
+    error = ForceError(N, ax_bf, ay_bf, az_bf, ax_tree, ay_tree, az_tree)
+    quadrupole_error_values.append(error)
+    quadrupole_runtimes.append(end - start)
+
+
 
 # Create matplotlib figure object with shared x-axis
 #--------------------------------------------------------------------------------------------------
@@ -134,6 +159,7 @@ axarr[0].set_ylabel(r"$t_{_{\rm CPU}}$")
 axarr[0].set_xlabel(r"$\delta\,{\bf a}$")
 axarr[0].plot(fast_monopole_error_values, fast_monopole_runtimes, color="blue", linestyle='-', label='Fast monopole')
 axarr[0].plot(monopole_error_values, monopole_runtimes, color="red", linestyle='-', label='Monopole')
+axarr[0].plot(quadrupole_error_values, quadrupole_runtimes, color="black", linestyle='-', label='Quadrupole')
 axarr[0].legend(fontsize=12)
 
 axarr[1].set_xscale("log")
@@ -143,6 +169,7 @@ axarr[1].set_xlabel(r"$\theta$")
 axarr[1].set_xlim([thetamin, thetamax])
 axarr[1].plot(theta_values, fast_monopole_error_values, color="blue", linestyle='-', label='Fast monopole')
 axarr[1].plot(theta_values, monopole_error_values, color="red", linestyle='-', label='Monopole')
+axarr[1].plot(theta_values, quadrupole_error_values, color="black", linestyle='-', label='Quadrupole')
 axarr[1].legend(fontsize=12)
 
 plt.show()

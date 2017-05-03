@@ -117,7 +117,7 @@ ax.scatter(gradh_Nres, gradh_L1values, color='black', marker='+', s=48.0, label=
 ax.scatter(mfm_Nres, mfm_L1values, color='red', marker='^', s=48.0, label='MFM')
 ax.scatter(mfv_Nres, mfv_L1values, color='blue', marker='x', s=48.0, label='MFV')
 #ax.scatter(mfv_static_Nres, mfv_static_L1values, color='green', marker='*', s=16.0, label='MFV-static')
-ax.plot(x_ideal, y_ideal, linestyle=':', color='red')
+ax.plot(x_ideal, y_ideal, linestyle=':', color='red', label='$\propto N^{-2}$')
 legend = ax.legend(loc='upper right', fontsize=12)
 
 

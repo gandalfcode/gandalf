@@ -21,13 +21,14 @@ vxmin  = -0.15
 vxmax  = 0.95
 umin   = 1.7
 umax   = 2.7
-Nleft  = 160
-Nright = 40
+Nleft  = 240
+Nright = 60
+Nunequal = 60
 
 
 # Extract data from Grad-h SPH simulation
 gradhsphsim = newsim("adsod-gradhsph.dat")
-#gradhsphsim.SetParam('gas_eos',"isothermal")
+gradhsphsim.SetParam('gas_eos',"isothermal")
 gradhsphsim.SetParam('gamma_eos',1.11)
 gradhsphsim.SetParam('Nlattice1[0]',Nleft)
 gradhsphsim.SetParam('Nlattice2[0]',Nright)
@@ -39,10 +40,10 @@ vx0  = get_data('vx') #, sim=0, snap=10)
 
 # Extract data from Grad-h SPH simulation
 gradhsphsim_unequal = newsim("adsod-gradhsph.dat")
-#gradhsphsim_unequal.SetParam('gas_eos',"isothermal")
+gradhsphsim_unequal.SetParam('gas_eos',"isothermal")
 gradhsphsim_unequal.SetParam('gamma_eos',1.11)
-gradhsphsim_unequal.SetParam('Nlattice1[0]',Nleft)
-gradhsphsim_unequal.SetParam('Nlattice2[0]',Nleft)
+gradhsphsim_unequal.SetParam('Nlattice1[0]',Nunequal)
+gradhsphsim_unequal.SetParam('Nlattice2[0]',Nunequal)
 setupsim()
 run()
 x1   = get_data('x') #, sim=0, snap=10)
@@ -51,7 +52,7 @@ vx1  = get_data('vx') #, sim=0, snap=10)
 
 # Extract data from MFV simulation
 mfvsim = newsim("adsod-mfv-moving.dat")
-#mfvsim.SetParam('gas_eos',"isothermal")
+mfvsim.SetParam('gas_eos',"isothermal")
 mfvsim.SetParam('gamma_eos',1.11)
 mfvsim.SetParam('Nlattice1[0]',Nleft)
 mfvsim.SetParam('Nlattice2[0]',Nright)
@@ -63,10 +64,10 @@ vx2  = get_data('vx') #, sim=1, snap=10)
 
 # Extract data from MFV simulation
 mfvsim_unequal = newsim("adsod-mfv-moving.dat")
-#mfvsim_unequal.SetParam('gas_eos',"isothermal")
+mfvsim_unequal.SetParam('gas_eos',"isothermal")
 mfvsim_unequal.SetParam('gamma_eos',1.11)
-mfvsim_unequal.SetParam('Nlattice1[0]',Nleft)
-mfvsim_unequal.SetParam('Nlattice2[0]',Nleft)
+mfvsim_unequal.SetParam('Nlattice1[0]',Nunequal)
+mfvsim_unequal.SetParam('Nlattice2[0]',Nunequal)
 setupsim()
 run()
 x3   = get_data('x') #, sim=1, snap=10)
@@ -75,7 +76,7 @@ vx3  = get_data('vx') #, sim=1, snap=10)
 
 # Extract data from MFV simulation
 mfmsim = newsim("adsod-mfm-moving.dat")
-#mfmsim.SetParam('gas_eos',"isothermal")
+mfmsim.SetParam('gas_eos',"isothermal")
 mfmsim.SetParam('gamma_eos',1.11)
 mfmsim.SetParam("riemann_solver", "exact")
 setupsim()
@@ -86,11 +87,11 @@ vx4  = get_data('vx') #, sim=2, snap=10)
 
 # Extract data from MFV simulation
 mfmsim_unequal = newsim("adsod-mfm-moving.dat")
-#mfmsim_unequal.SetParam('gas_eos',"isothermal")
+mfmsim_unequal.SetParam('gas_eos',"isothermal")
 mfmsim_unequal.SetParam('gamma_eos',1.11)
 mfmsim_unequal.SetParam("riemann_solver", "exact")
-mfmsim_unequal.SetParam('Nlattice1[0]',Nleft)
-mfmsim_unequal.SetParam('Nlattice2[0]',Nleft)
+mfmsim_unequal.SetParam('Nlattice1[0]',Nunequal)
+mfmsim_unequal.SetParam('Nlattice2[0]',Nunequal)
 setupsim()
 run()
 x5   = get_data('x') #, sim=1, snap=10)
@@ -99,7 +100,7 @@ vx5  = get_data('vx') #, sim=1, snap=10)
 
 # Extract data from MFV simulation
 mfmsim_hllc = newsim("adsod-mfm-moving.dat")
-#mfmsim_hllc.SetParam('gas_eos',"isothermal")
+mfmsim_hllc.SetParam('gas_eos',"isothermal")
 mfmsim_hllc.SetParam('gamma_eos',1.11)
 mfmsim_hllc.SetParam("riemann_solver", "hllc")
 setupsim()
@@ -110,11 +111,11 @@ vx6  = get_data('vx') #, sim=2, snap=10)
 
 # Extract data from MFV simulation
 mfmsim_unequal_hllc = newsim("adsod-mfm-moving.dat")
-#mfmsim_unequal_hllc.SetParam('gas_eos',"isothermal")
+mfmsim_unequal_hllc.SetParam('gas_eos',"isothermal")
 mfmsim_unequal_hllc.SetParam('gamma_eos',1.11)
 mfmsim_unequal_hllc.SetParam("riemann_solver", "hllc")
-mfmsim_unequal_hllc.SetParam('Nlattice1[0]',Nleft)
-mfmsim_unequal_hllc.SetParam('Nlattice2[0]',Nleft)
+mfmsim_unequal_hllc.SetParam('Nlattice1[0]',Nunequal)
+mfmsim_unequal_hllc.SetParam('Nlattice2[0]',Nunequal)
 setupsim()
 run()
 x7   = get_data('x') #, sim=1, snap=10)
@@ -138,24 +139,24 @@ axarr[0].set_xlabel(r"$x$")
 axarr[0].set_xlim([xmin, xmax])
 axarr[0].set_ylim([rhomin, rhomax])
 axarr[0].plot(rhodata.x_data, rhodata.y_data, linestyle='-', color="red", label='Exact solution')
-axarr[0].scatter(x0, rho0, color='black', marker='+', label='Gradh-SPH, equal-mass')
-axarr[0].scatter(x1, rho1, marker='o', facecolors='none', edgecolors='blue', label='Gradh-SPH, unequal-mass')
+axarr[0].scatter(x0, rho0, marker='o', facecolors='none', edgecolors='blue', s=10, label='Gradh-SPH, equal-mass')
+axarr[0].scatter(x1, rho1, color='black', marker='+', s=32, label='Gradh-SPH, unequal-mass')
 axarr[0].legend(fontsize=10)
 
 axarr[1].set_xlabel(r"$x$")
 axarr[1].set_xlim([xmin, xmax])
 axarr[1].set_ylim([rhomin, rhomax])
 axarr[1].plot(rhodata.x_data, rhodata.y_data, linestyle='-', color="red", label='Exact solution')
-axarr[1].scatter(x2, rho2, color='black', marker='+', label='MFV, equal-mass')
-axarr[1].scatter(x3, rho3, marker='o', facecolors='none', edgecolors='blue', label='MFV, unequal-mass')
+axarr[1].scatter(x2, rho2, marker='o', facecolors='none', edgecolors='blue', s=10, label='MFV, equal-mass')
+axarr[1].scatter(x3, rho3, color='black', marker='+', s=32, label='MFV, unequal-mass')
 axarr[1].legend(fontsize=10)
 
 axarr[2].set_xlabel(r"$x$")
 axarr[2].set_xlim([xmin, xmax])
 axarr[2].set_ylim([rhomin, rhomax])
 axarr[2].plot(rhodata.x_data, rhodata.y_data, linestyle='-', color="red", label='Exact solution')
-axarr[2].scatter(x4, rho4, color='black', marker='+', label='MFM, equal-mass')
-axarr[2].scatter(x5, rho5, marker='o', facecolors='none', edgecolors='blue', label='MFM, unequal-mass')
+axarr[2].scatter(x4, rho4, marker='o', facecolors='none', edgecolors='blue', s=10, label='MFM, equal-mass')
+axarr[2].scatter(x5, rho5, color='black', marker='+', s=32, label='MFM, unequal-mass')
 axarr[2].legend(fontsize=10)
 
 #axarr[3].set_xlabel(r"$x$")

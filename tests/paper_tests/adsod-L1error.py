@@ -15,6 +15,7 @@ xmin = 33.0
 xmax = 3333.0
 ymin = 3.3e-4
 ymax = 1.666666e-1
+numSims = 7
 
 
 # Make simple N^-2 line
@@ -38,7 +39,7 @@ mfv_static_L1values = []
 
 
 # Lowest resolution simulation (16 particles)
-for i in range(7):
+for i in range(numSims):
     Nlhs = int(32*math.pow(2,i))
     Nrhs = int(8*math.pow(2,i))
     sim = newsim("adsod-gradhsph.dat")
@@ -54,7 +55,7 @@ for i in range(7):
 
 
 # Lowest resolution simulation (16 particles)
-for i in range(7):
+for i in range(numSims):
     Nlhs = int(20*math.pow(2,i))
     Nrhs = int(20*math.pow(2,i))
     sim = newsim("adsod-mfv-moving.dat")
@@ -70,7 +71,7 @@ for i in range(7):
 
 
 # Lowest resolution simulation (16 particles)
-for i in range(7):
+for i in range(numSims):
     Nlhs = int(20*math.pow(2,i))
     Nrhs = int(20*math.pow(2,i))
     sim = newsim("adsod-mfm-moving.dat")
@@ -101,7 +102,7 @@ ax.scatter(gradh_Nres, gradh_L1values, color='black', marker='+', s=32.0, label=
 ax.scatter(mfm_Nres, mfm_L1values, color='red', marker='^', s=32.0, label='MFM')
 ax.scatter(mfv_Nres, mfv_L1values, color='blue', marker='x', s=32.0, label='MFV')
 #ax.scatter(mfv_static_Nres, mfv_static_L1values, color='green', marker='*', s=16.0, label='MFV-static')
-ax.plot(x_ideal, y_ideal, linestyle=':', color='red')
+ax.plot(x_ideal, y_ideal, linestyle=':', color='red', label='$\propto N^{-1}$')
 legend = ax.legend(loc='upper right', fontsize=12)
 
 print gradh_Nres
