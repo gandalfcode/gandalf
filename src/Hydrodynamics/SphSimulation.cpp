@@ -120,6 +120,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sinks->sink_particles      = intparams["sink_particles"];
   sinks->create_sinks        = intparams["create_sinks"];
   sinks->smooth_accretion    = intparams["smooth_accretion"];
+  sinks->Nsinkfixed          = intparams["Nsinkfixed"];
   sinks->alpha_ss            = floatparams["alpha_ss"];
   sinks->smooth_accrete_frac = floatparams["smooth_accrete_frac"];
   sinks->smooth_accrete_dt   = floatparams["smooth_accrete_dt"];

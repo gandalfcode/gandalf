@@ -52,6 +52,7 @@ Sinks<ndim>::Sinks(NeighbourSearch<ndim>* _neibsearch)
   allocated_memory = false;
   Nsink            = 0;
   Nsinkmax         = 0;
+  Nsinkfixed       = -1;
 }
 
 
@@ -122,6 +123,9 @@ void Sinks<ndim>::SearchForNewSinkParticles
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rho_max;                       // Maximum density of sink candidates
+
+  // Skip searching for new sinks if maximum required (used principally for sink tests)
+  if (Nsink >= Nsinkfixed && Nsinkfixed != -1) return;
 
   debug2("[Sinks::SearchForNewSinkParticles]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_NEW_SINKS");

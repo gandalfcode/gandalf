@@ -43,7 +43,7 @@ sim_no = 0
 # Analytical solutions for grav. acceleration and potential
 r_acc = np.arange(rmin, 0.99999*rmax, 0.001)
 a_acc = -r_acc
-gpot_acc = 0.666666668*math.pi*rho*(r_acc*r_acc - 3.0*radius*radius)
+gpot_acc = 0.5*(r_acc*r_acc - 3.0*radius*radius)
 
 # Run the simulation
 mainsim = newsim('freefall.dat')
