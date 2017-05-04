@@ -448,6 +448,13 @@ void Parameters::SetDefaultValues(void)
   floatparams["zmax"] = 1.0;
   floatparams["thermal_energy"] = 1.0;
   floatparams["mach"] = 2.7;
+  floatparams["DiscIcMass"] = 0.01;
+  floatparams["DiscIcP"] = 1.5;
+  floatparams["DiscIcQ"] = 0.5;
+  floatparams["DiscIcRin"] = 1;
+  floatparams["DiscIcRout"] = 5;
+  floatparams["DiscIcHr"] = 0.05;
+
 
   // Regularising initial conditions parameters
   //-----------------------------------------------------------------------------------------------
