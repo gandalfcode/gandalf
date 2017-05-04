@@ -42,7 +42,7 @@ SpitzerExpansionIc<ndim>::SpitzerExpansionIc(Simulation<ndim>* _sim, FLOAT _invn
   if (simparams->intparams["ndim"] != 3) {
     ExceptionHandler::getIstance().raise("Spitzer expansion sim only runs in 3D");
   }
-  if (simparams->intparams["dimensionless"] == 0) {
+  if (simparams->intparams["dimensionless"] == 1) {
     ExceptionHandler::getIstance().raise("dimensionless units not permitted");
   }
 }
@@ -66,6 +66,8 @@ void SpitzerExpansionIc<ndim>::Generate(void)
     FLOAT rhofluid;                      // ..
     FLOAT volume;                        // Volume of sphere
     FLOAT *r;                            // Particle position vectors
+    Sinks<ndim>* sinks = sim->sinks;     // Point to Sinks object
+    Nbody<ndim>* nbody = sim->nbody;
 
     // Local copies of important parameters
     int Npart            = simparams->intparams["Nhydro"];
@@ -111,7 +113,7 @@ void SpitzerExpansionIc<ndim>::Generate(void)
 
 
     // Record particle positions and initialise all other variables
-    #pragma omp parallel for default(none) shared(mcloud,Npart,r,rhofluid,volume) private(i,k)
+#pragma omp parallel for default(none) shared(mcloud,Npart,r,rhofluid,volume) private(i,k)
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (k=0; k<ndim; k++) {
@@ -126,6 +128,22 @@ void SpitzerExpansionIc<ndim>::Generate(void)
       part.iorig = i;
     }
 
+    // Add sink particle at centre
+    Particle<ndim> part;
+    for (int k=0; k<ndim; k++) part.r[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+
+    // Mass required in stellar.dat table to give 10^48 photons/sec
+    part.m = (FLOAT) 23.0;
+    part.h = hydro->h_fac*pow(mcloud/(FLOAT) Npart /rhofluid,invndim);
+
+    // Create sink source from particle
+    sinks->CreateNewSinkParticle(-1, 0.0, part, hydro, nbody);
+
+    nbody->Nstar++;
+    nbody->Nnbody++;
+    sinks->Nsink++;
+
     sim->initial_h_provided = true;
 
     delete[] r;
@@ -135,7 +153,6 @@ void SpitzerExpansionIc<ndim>::Generate(void)
 
   return;
 }
-
 
 
 

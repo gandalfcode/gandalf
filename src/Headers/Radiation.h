@@ -51,7 +51,8 @@ using namespace std;
 
 
 // Compiler flag for optimised version (in terms of memory allocation) for Scott's ionisation algorithm
-#define RAD_OPTIMISE
+// (Comment out for now due to OpenMP bug, but will fix asap).
+//#define RAD_OPTIMISE
 
 
 //=================================================================================================

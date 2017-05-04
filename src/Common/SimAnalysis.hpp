@@ -309,6 +309,7 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
     FLOAT temp_ion   = simparams->floatparams["temp_ion"]/simunits.temp.outscale;
     FLOAT mu_ion     = simparams->floatparams["mu_ion"];
     FLOAT cion       = sqrtf(temp_ion/mu_ion);
+    FLOAT cneutral   = sqrtf(10.0/simparams->floatparams["mu_bar"]/simunits.temp.outscale);
     FLOAT radius_ion = (FLOAT) 0.0;
     FLOAT rmax_ion   = (FLOAT) 0.0;
     FLOAT m_ion      = (FLOAT) 0.0;
@@ -323,10 +324,12 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
     FLOAT m_h        = m_hydrogen/simunits.m.outscale/simunits.m.outSI;
     FLOAT Rstromgren = powf(0.75*m_h*m_h*NLyC/(pi*arecomb*rhoneutral*rhoneutral),onethird);
 
-    cout << "RSTROMGREN : " << Rstromgren*simunits.r.outscale << endl;
-    cout << "Sound speed of ionised gas : " << cion*simunits.v.outscale*simunits.v.outSI << endl;
-    cout << "Pressure 1 : " << rhoneutral*temp_ion/mu_ion  << endl;
-    cout << "Pressure 2 : " << cion*cion*rhoneutral << endl;
+    cout << "RSTROMGREN : " << Rstromgren*simunits.r.outscale << "  " << simunits.r.outunit << endl;
+    cout << "Tion       : " << temp_ion*simunits.temp.outscale << "  " <<  simunits.temp.outunit << endl;
+    cout << "cion       : " << cion*simunits.v.outscale << "  " << simunits.v.outunit  << endl;
+    cout << "cneutral   : " << cneutral*simunits.v.outscale << "  " << simunits.v.outunit  << endl;
+    cout << "Pressure 1 : " << rhoneutral*temp_ion/mu_ion*simunits.press.outscale << "  " << simunits.press.outunit << endl;
+    cout << "Pressure 2 : " << cion*cion*rhoneutral*simunits.press.outscale << "  " << simunits.press.outunit << endl;
 
 
     // Compute location of ionisation front
@@ -358,13 +361,13 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
       outfile.open(filename.c_str(), std::ofstream::app);
       solfile.open(solname.c_str(), std::ofstream::app);
     }
-    outfile << t*simunits.t.outscale << "    " << radius_ion*simunits.r.outscale << "    "
-            << m_ion*simunits.m.outscale << "   " << rmax_ion*simunits.r.outscale << "    "
+    outfile << t*simunits.t.outscale << "   " << radius_ion*simunits.r.outscale << "   "
+            << m_ion*simunits.m.outscale << "   " << rmax_ion*simunits.r.outscale << "   "
             << m_ion_rmax*simunits.m.outscale << endl;
     solfile << t*simunits.t.outscale << "   "
             << Rstromgren*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(4.0/7.0))*simunits.r.outscale
-            << "    " << m_h*m_h*NLyC*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(6.0/7.0))*
-                         simunits.m.outscale/(arecomb*rhoneutral)
+            << "   " << m_h*m_h*NLyC*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(6.0/7.0))*
+                        simunits.m.outscale/(arecomb*rhoneutral)
             << endl;
     solfile.close();
     outfile.close();

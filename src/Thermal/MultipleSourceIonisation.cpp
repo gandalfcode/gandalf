@@ -41,10 +41,9 @@ using namespace std;
 //	MultipleSourceIonisation::MultipleSourceIonisation
 //	MultipleSourceIonisation class constructor
 //=================================================================================================
-
 template <int ndim, template<int> class ParticleType>
 MultipleSourceIonisation<ndim,ParticleType>::MultipleSourceIonisation(
-  NeighbourSearch<ndim> *partneibaux ,
+  NeighbourSearch<ndim> *partneibaux,
   FLOAT mu_baraux,
   FLOAT X_compaux,
   FLOAT mu_ionaux,
@@ -57,24 +56,25 @@ MultipleSourceIonisation<ndim,ParticleType>::MultipleSourceIonisation(
   FLOAT tempscaleaux,
   DOUBLE rad_contaux)
 {
-  neib = partneibaux;
-  mu_bar=mu_baraux;
-  X_comp=X_compaux;
-  mu_ion=mu_ionaux;
-  temp0=temp0aux;
-  temp_ion=temp_ionaux;
-  Ndotmin=Ndotminaux;
-  gamma_eos=gamma_eosaux;
-  arecomb=arecombaux;
-  scale=scaleaux;
-  tempscale=tempscaleaux;
-  rad_cont=rad_contaux;
+  neib      = partneibaux;
+  mu_bar    = mu_baraux;
+  X_comp    = X_compaux;
+  mu_ion    = mu_ionaux;
+  temp0     = temp0aux;
+  temp_ion  = temp_ionaux;
+  Ndotmin   = Ndotminaux;
+  gamma_eos = gamma_eosaux;
+  arecomb   = arecombaux;
+  scale     = scaleaux;
+  tempscale = tempscaleaux;
+  rad_cont  = rad_contaux;
 #ifdef MPI_PARALLEL
   string message = "Multiple Source Ionisations does not work with MPI";
   ExceptionHandler::getIstance().raise(message);
 #endif
-
 }
+
+
 
 //=================================================================================================
 //  MultipleSourceIonisation::~MultipleSourceIonisation
@@ -105,8 +105,8 @@ void MultipleSourceIonisation<ndim, ParticleType>::UpdateRadiationField
 
   debug2("[MultipleSourceIonisation::UpdateRadiationField]");
 
-  ionisation_intergration(nos,N,ndata,partdata,scale,tempscale,neib,
-                          temp0,mu_bar,mu_ion,temp_ion,Ndotmin,1./gamma_eos);
+  ionisation_intergration(nos, N, ndata, partdata, scale, tempscale, neib,
+                          temp0, mu_bar, mu_ion, temp_ion, Ndotmin, 1./gamma_eos);
 
   return;
 }
@@ -126,11 +126,11 @@ void MultipleSourceIonisation<ndim, ParticleType>::probs
   DOUBLE *ndot)
 {
   int pp;
-  DOUBLE fluxcontrole[nos];                                            //To store temporary radii
-  DOUBLE sum=0;	                                                       //Controle to stop devision by zero
+  DOUBLE fluxcontrole[nos];                      // To store temporary radii
+  DOUBLE sum = 0.0;                              // Control to stop division by zero
 
   // Loop over sources and add photon flux at current location
-  for (pp=0;pp<nos;pp++) {
+  for (pp=0; pp<nos; pp++) {
 
     // If the particle is ionised by the source we are testing, calculate contribution
     if (ionisedpart[ionisedpart[testpart].neigh[pp]].ionised[pp] == 1) {
@@ -142,16 +142,16 @@ void MultipleSourceIonisation<ndim, ParticleType>::probs
     }
 
    // Add to controle parameter to ensure we carry out the scaling
-    sum = sum + fluxcontrole[pp];
+    sum += fluxcontrole[pp];
   }
 
-  //Scale so total fraction of used photons is one
-  for (pp=0;pp<nos;pp++) {
-    if (sum > 0) {                                               // Do we have to scale
-      ionisedpart[testpart].prob[pp]=fluxcontrole[pp]/sum;       // Scale to one
+  // Scale so total fraction of used photons is one
+  for (pp=0; pp<nos; pp++) {
+    if (sum > 0.0) {                                               // Do we have to scale
+      ionisedpart[testpart].prob[pp] = fluxcontrole[pp]/sum;     // Scale to one
     }
     else {
-      ionisedpart[testpart].prob[pp]=fluxcontrole[pp];           // Pass through 0s as no photons are received
+      ionisedpart[testpart].prob[pp] = fluxcontrole[pp];         // Pass through 0s as no photons are received
     }
   }
 
@@ -186,6 +186,7 @@ DOUBLE MultipleSourceIonisation<ndim, ParticleType>::lost
 
     // Works out amount of photons lost along the path
     // Is the particle a sink (this stops recursion when we get to the source)
+    //---------------------------------------------------------------------------------------------
     if (ionisedpart[testpart].sink == 0) {
 
       // Call the probs function to work out ionisation fraction of each source
@@ -193,7 +194,6 @@ DOUBLE MultipleSourceIonisation<ndim, ParticleType>::lost
 
       // Does the particle have a neighbour for this source?
       if (ionisedpart[testpart].neigh[pp] != N) {
-
         d1 = sqrt(pow(ionisedpart[testpart].x - ionisedpart[sinkid[pp]].x, 2) +
                   pow(ionisedpart[testpart].y - ionisedpart[sinkid[pp]].y, 2) +
                   pow(ionisedpart[testpart].z - ionisedpart[sinkid[pp]].z, 2));
@@ -203,11 +203,11 @@ DOUBLE MultipleSourceIonisation<ndim, ParticleType>::lost
 
         if (ionisedpart[ionisedpart[testpart].neigh[pp]].sink == 0) {
           absorbed = ((pow((ionisedpart[testpart].rho + ionisedpart[ionisedpart[testpart].neigh[pp]].rho)/2.,2.))/3.)*
-                     (pow(d1,3.)-pow(d2,3.))*(ionisedpart[testpart].prob[pp]) +
+                     (pow(d1,3.) - pow(d2,3.))*(ionisedpart[testpart].prob[pp]) +
                       lost(ionisedpart, sinkid, ndot, N, pp, ionisedpart[testpart].neigh[pp], nos, change);
         }
         else {
-          absorbed = ((pow((ionisedpart[testpart].rho),2.))/3.)*(pow(d1,3.)-pow(d2,3.))*
+          absorbed = ((pow((ionisedpart[testpart].rho),2.))/3.)*(pow(d1,3.) - pow(d2,3.))*
                      (ionisedpart[testpart].prob[pp]) +
                       lost(ionisedpart, sinkid, ndot, N, pp, ionisedpart[testpart].neigh[pp], nos, change);
         }
@@ -216,17 +216,16 @@ DOUBLE MultipleSourceIonisation<ndim, ParticleType>::lost
 
       // All photons used up as we cant have links to the dummy partcile
       else {
-        absorbed=ndot[pp];
+        absorbed = ndot[pp];
       }
     }
-    ionisedpart[testpart].photons[pp] = absorbed;
+    //---------------------------------------------------------------------------------------------
+
 
     if ((ndot[pp] - absorbed) > 0) {
 
       // Record if the particle is changing state (for convergence)
-      if (ionisedpart[testpart].ionised[pp] == 0) {
-        change = change + 1;
-      }
+      if (ionisedpart[testpart].ionised[pp] == 0) change++;
 
       // Set particle as source ionised
       ionisedpart[testpart].ionised[pp] = 1;
@@ -234,19 +233,22 @@ DOUBLE MultipleSourceIonisation<ndim, ParticleType>::lost
     else {
 
       // Record if the particle is changing state (for convergence)
-      if (ionisedpart[testpart].ionised[pp] == 1) {
-        change=change+1;
-      }
+      if (ionisedpart[testpart].ionised[pp] == 1) change++;
 
       // Set particle as not source ionised
       ionisedpart[testpart].ionised[pp] = 0;
     }
+
+    ionisedpart[testpart].photons[pp] = absorbed;
     ionisedpart[testpart].checked[pp] = 1;
     return absorbed;
   }
+  //-----------------------------------------------------------------------------------------------
   else {
     return ionisedpart[testpart].photons[pp];
   }
+  //-----------------------------------------------------------------------------------------------
+
 }
 
 
@@ -271,14 +273,14 @@ void MultipleSourceIonisation<ndim, ParticleType>::photoncount
   ionisedpart[testpart].fionised = 0;
 
   // Looping over all sources to test if the amount lost smaller than the amount available
-  for (pp=0;pp<nos;pp++) {
+  for (pp=0; pp<nos; pp++) {
     lost(ionisedpart, sinkid, ndot, N, pp, testpart, nos, change);
   }
 
   // Check to see if the particle should be ionised
   ionisedpart[testpart].fionised = 0;
-  for (pp=0;pp<nos;pp++) {
-    if (ionisedpart[testpart].ionised[pp]==1) ionisedpart[testpart].fionised = 1;
+  for (pp=0; pp<nos; pp++) {
+    if (ionisedpart[testpart].ionised[pp] == 1) ionisedpart[testpart].fionised = 1;
   }
 
   return;
@@ -308,6 +310,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
 {
   int ii,jj,pp,tt; //Integer allocation for loops
   int debug=0,smoothing=1; //Debug mode controler and maximum number of neighbours allowed
+  int nos = 0;                                   ///< No. of sources
   FLOAT delta=0;
   const FLOAT m_per_hatom=m_hydrogen*1000.0/X_comp;
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (partgen);
@@ -332,25 +335,26 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
     return;
   }
 
-  int nos = 0;                                   ///< No. of sources
-#ifndef RAD_OPTIMISE
-  int *newnosid = new int[newnos];               ///< Which sinks are active sources
-#else
-  if (nos > maxSources) {
-    string message = "Too many sources for optimised mode.";
-    ExceptionHandler::getIstance().raise(message);
-  }
+#ifdef RAD_OPTIMISE
   int newnosid[maxSources];
+#else
+  int *newnosid = new int[newnos];               ///< Which sinks are active sources
 #endif
 
   // Determines which sinks are active sources based on user choices
-  for(ii=0; ii<newnos; ii++) {
+  for (ii=0; ii<newnos; ii++) {
     if (ndata[ii]->NLyC >= Ndotmin) {
       nos = nos + 1;
       newnosid[nos - 1] = ii;
     }
   }
 
+#ifdef RAD_OPTIMISE
+  if (nos > maxSources) {
+    string message = "Too many sources for optimised mode.";
+    ExceptionHandler::getIstance().raise(message);
+  }
+#endif
 
   // Checks if the sinks are of large enough size
   if (nos == 0) {
@@ -363,11 +367,10 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
   }
 
   // Increases N to accomidate sinks
-  N = N + nos;
+  N += nos;
 
   if (debug == 1) {
     gettimeofday(&end, NULL);
-
     delta = (((end.tv_sec  - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec) / 1.e6)-delta;
     cout<<delta<<"s to ";
     cout<<"Starting"<<endl; //Debug message
@@ -376,12 +379,12 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
 
   // Fill ionisedpart particle array
   // Create sink id table and ndot table
-#ifndef RAD_OPTIMISE
-  int *sinkid = new int[nos];
-  DOUBLE *ndot = new DOUBLE[nos];
-#else
+#ifdef RAD_OPTIMISE
   int sinkid[maxSources];
   DOUBLE ndot[maxSources];
+#else
+  int *sinkid = new int[nos];
+  DOUBLE *ndot = new DOUBLE[nos];
 #endif
 
   // Create the ionisedpart array and resize to the number of particles
@@ -389,7 +392,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
   ionpar *ionisedpart = new ionpar[N+1];
 
   if (ionisation_fraction.size() == 0) {
-    ionisation_fraction.resize(N+1);
+    ionisation_fraction.resize(N + 1);
     for (ii=0; ii<N+1; ii++) {
       ionisation_fraction[ii].resize(newnos);
       for (pp=0; pp<nos; pp++) {
@@ -400,6 +403,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
   ionisation_fraction.resize(N + 1);
 
   // Add ionisedpart particle data
+  //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for private(ii,jj)
   for (ii=0; ii<N-nos; ii++) {
     ionisedpart[ii].x             = partdata[ii].r[0];   // Particle x from gandalf
@@ -422,14 +426,12 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
     ionisedpart[ii].rad_pre_acc   = new DOUBLE[ndim];
 #endif
 
-    for(jj=0; jj<ndim; jj++) {
-      ionisedpart[ii].rad_pre_acc[jj] = 0;
-    }
+    for (jj=0; jj<ndim; jj++) ionisedpart[ii].rad_pre_acc[jj] = 0;
     ionisation_fraction[ii].resize(newnos); //Resize operation
 
     // Correctly filling new spaces with 0
     for (jj=0; jj<(newnos - ionisation_fraction[ii].size()); jj++) {
-      ionisedpart[ii].ionised[ionisation_fraction[ii].size()+jj-1]=0;
+      ionisedpart[ii].ionised[ionisation_fraction[ii].size() + jj - 1] = 0;
     }
 
     // Copying in current values for active sources
@@ -444,12 +446,14 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
       ionisedpart[ii].prob[jj]    = 0;
     }
     for(jj=0; jj<200; jj++) {
-      ionisedpart[ii].neighstor[jj]=N;
+      ionisedpart[ii].neighstor[jj] = N;
     }
   }
+  //-----------------------------------------------------------------------------------------------
 
 
-  // Add sink propertys to sink particles
+  // Add sink properties to sink particles
+  //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for private(ii,jj)
   for (ii=0; ii<nos; ii++) {
     ionisedpart[N-nos+ii].t             = ti;                        // Set stars to ionised gas temp for smoothing
@@ -475,18 +479,19 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
     for(jj=0; jj<3; jj++) {
       ionisedpart[N-nos+ii].rad_pre_acc[jj]=0;
     }
-    for(jj=0;jj<nos;jj++) {
+    for(jj=0; jj<nos; jj++) {
       ionisedpart[N-nos+ii].angle[jj]   = 2.*pi;
       ionisedpart[N-nos+ii].neigh[jj]   = N;
       ionisedpart[N-nos+ii].checked[jj] = 0;
       ionisedpart[N-nos+ii].prob[jj]    = 0;
       ionisedpart[N-nos+ii].ionised[jj] = 0;
     }
-    ionisedpart[N-nos+ii].ionised[ii] =1;                   //Set the sink location in the ionised array to 1
+    ionisedpart[N-nos+ii].ionised[ii] = 1;                   //Set the sink location in the ionised array to 1
     for(jj=0; jj<200; jj++) {
       ionisedpart[N-nos+ii].neighstor[jj] = N;
     }
   }
+  //-----------------------------------------------------------------------------------------------
 
 
   // Add control ionisedpart to which all particles are initally linked
@@ -497,13 +502,13 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
   ionisedpart[N].rho  = 1e100;
   ionisedpart[N].sink = 0;
 #ifndef RAD_OPTIMISE
-  ionisedpart[N].angle        = new DOUBLE[nos];
-  ionisedpart[N].neigh        = new int[nos];
-  ionisedpart[N].photons      = new DOUBLE[nos];
-  ionisedpart[N].checked      = new int[nos];
-  ionisedpart[N].prob         = new DOUBLE[nos];
-  ionisedpart[N].ionised      = new int[nos];
-  ionisedpart[N].rad_pre_accv = new DOUBLE[ndim];
+  ionisedpart[N].angle       = new DOUBLE[nos];
+  ionisedpart[N].neigh       = new int[nos];
+  ionisedpart[N].photons     = new DOUBLE[nos];
+  ionisedpart[N].checked     = new int[nos];
+  ionisedpart[N].prob        = new DOUBLE[nos];
+  ionisedpart[N].ionised     = new int[nos];
+  ionisedpart[N].rad_pre_acc = new DOUBLE[ndim];
 #endif
   for (jj=0; jj<ndim; jj++) {
     ionisedpart[N].rad_pre_acc[jj] = 0;
@@ -520,38 +525,39 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
   // Debug message
   if (debug == 1) {
     gettimeofday(&end, NULL);
-
     delta = (((end.tv_sec  - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec) / 1.e6)-delta;
     cout << delta << "s to Particle arrays created" << endl;
   }
 
-  // Find the closest source neighbour in chain for each particle
-  //-----------------------------------------------------------------------------------------------
+
 #ifdef RAD_OPTIMISE
   int maxneigh = 200;
   int Nneigb;
-  int *current_paricle_nn = new int[maxneigh];
+  int *current_particle_nn = new int[maxneigh];
 #else
   int maxneigh = max(N/8, 2000);
-  int current_paricle_nn[maxneigh];              // Working particle neighbour list
+  int current_particle_nn[maxneigh];              // Working particle neighbour list
   int Nneigb;                                    // No. of neighbours found by neib roughtine
 #endif
   DOUBLE dot,mag,angletest; 				//holding variables
   DOUBLE distanceii,distancejj,temp_radius,temp_radius2;	//Distance between the source of the test particle ii and the neighbour particle jj
 
+  // Find the closest source neighbour in chain for each particle.
   // Begin neighbour find.  Loop over all particles
-#pragma omp parallel for private(current_paricle_nn,ii,jj,tt,Nneigb,temp_radius,temp_radius2,dot,mag,angletest,pp,distanceii,distancejj) //Initiate openmp
+  //-----------------------------------------------------------------------------------------------
+#pragma omp parallel for private(current_particle_nn,ii,jj,tt,Nneigb,temp_radius,temp_radius2,dot,mag,angletest,pp,distanceii,distancejj) //Initiate openmp
   for (ii=0; ii<N; ii++) {
 
     // Find NNnumber nearest neighbours
     Nneigb = neib->GetGatherNeighbourList(partdata[ii].r, 2.0*partdata[ii].h,
-                                          partgen, N, maxneigh, current_paricle_nn);
+                                          partgen, N, maxneigh, current_particle_nn);
 #ifdef RAD_OPTIMISE
     while (Nneigb == -1) {
       maxneigh = maxneigh*2;
-      delete [] current_paricle_nn;
-      current_paricle_nn = new int[maxneigh];
-      Nneigb = neib->GetGatherNeighbourList(partdata[ii].r,partdata[ii].h*3.,partgen,N,maxneigh,current_paricle_nn); //Find NNnumber nearest neighbours
+      delete [] current_particle_nn;
+      current_particle_nn = new int[maxneigh];
+      Nneigb = neib->GetGatherNeighbourList(partdata[ii].r, 3.0*partdata[ii].h, partgen,
+                                            N, maxneigh, current_particle_nn);
     }
 #else
     if (!(Nneigb >= 0 && Nneigb <= maxneigh)) {
@@ -564,76 +570,84 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
     for (tt=0;tt<nos;tt++){
       if(sqrt(pow((ionisedpart[sinkid[tt]].x - ionisedpart[ii].x), 2) +
               pow((ionisedpart[sinkid[tt]].y - ionisedpart[ii].y), 2) +
-              pow((ionisedpart[sinkid[tt]].z - ionisedpart[ii].z), 2)) <= ionisedpart[ii].h*2.) {
-      current_paricle_nn[Nneigb]=sinkid[tt];
-      Nneigb = Nneigb + 1;
+              pow((ionisedpart[sinkid[tt]].z - ionisedpart[ii].z), 2)) <= 2.0*ionisedpart[ii].h) {
+        current_particle_nn[Nneigb] = sinkid[tt];
+        Nneigb++;
       }
     }
 
     // For each of these neighbours write my id to there neighstorcont array
+    //---------------------------------------------------------------------------------------------
     for (jj=0; jj<Nneigb; jj++) {
 
       // If there is still room in the neighstorecont array.
       // (This should always be true but this ensures no seg fault)
-      if (ionisedpart[current_paricle_nn[jj]].neighstorcont < 200) {
-        ionisedpart[current_paricle_nn[jj]].neighstor[ionisedpart[current_paricle_nn[jj]].neighstorcont] = ii;
-        ionisedpart[current_paricle_nn[jj]].neighstorcont += 1;
+      if (ionisedpart[current_particle_nn[jj]].neighstorcont < 200) {
+        ionisedpart[current_particle_nn[jj]].neighstor[ionisedpart[current_particle_nn[jj]].neighstorcont] = ii;
+        ionisedpart[current_particle_nn[jj]].neighstorcont += 1;
       }
       else {
-        temp_radius = sqrt(pow(ionisedpart[ii].x - ionisedpart[current_paricle_nn[jj]].x, 2) +
-                           pow(ionisedpart[ii].y - ionisedpart[current_paricle_nn[jj]].y, 2) +
-                           pow(ionisedpart[ii].z - ionisedpart[current_paricle_nn[jj]].z, 2));
+        temp_radius = sqrt(pow(ionisedpart[ii].x - ionisedpart[current_particle_nn[jj]].x, 2) +
+                           pow(ionisedpart[ii].y - ionisedpart[current_particle_nn[jj]].y, 2) +
+                           pow(ionisedpart[ii].z - ionisedpart[current_particle_nn[jj]].z, 2));
         for (tt=0; tt<200; tt++) {
-          temp_radius2 = sqrt(pow(ionisedpart[ii].x - ionisedpart[ionisedpart[current_paricle_nn[jj]].neighstor[tt]].x, 2) +
-                              pow(ionisedpart[ii].y - ionisedpart[ionisedpart[current_paricle_nn[jj]].neighstor[tt]].y, 2) +
-                              pow(ionisedpart[ii].z - ionisedpart[ionisedpart[current_paricle_nn[jj]].neighstor[tt]].z, 2));
+          temp_radius2 = sqrt(pow(ionisedpart[ii].x - ionisedpart[ionisedpart[current_particle_nn[jj]].neighstor[tt]].x, 2) +
+                              pow(ionisedpart[ii].y - ionisedpart[ionisedpart[current_particle_nn[jj]].neighstor[tt]].y, 2) +
+                              pow(ionisedpart[ii].z - ionisedpart[ionisedpart[current_particle_nn[jj]].neighstor[tt]].z, 2));
           if (temp_radius > temp_radius2) {
-            ionisedpart[current_paricle_nn[jj]].neighstor[tt] = ii;
+            ionisedpart[current_particle_nn[jj]].neighstor[tt] = ii;
             break;
           }
         }
       }
 
+      //-------------------------------------------------------------------------------------------
       for (pp=0; pp<nos; pp++) {
 
         // Work out the distances for both test and candidate particle
         distanceii = sqrt(pow(ionisedpart[ii].x - ionisedpart[sinkid[pp]].x, 2) +
                           pow(ionisedpart[ii].y - ionisedpart[sinkid[pp]].y, 2) +
                           pow(ionisedpart[ii].z - ionisedpart[sinkid[pp]].z, 2));
-        distancejj = sqrt(pow(ionisedpart[current_paricle_nn[jj]].x - ionisedpart[sinkid[pp]].x, 2) +
-                          pow(ionisedpart[current_paricle_nn[jj]].y - ionisedpart[sinkid[pp]].y, 2) +
-                          pow(ionisedpart[current_paricle_nn[jj]].z - ionisedpart[sinkid[pp]].z, 2));
+        distancejj = sqrt(pow(ionisedpart[current_particle_nn[jj]].x - ionisedpart[sinkid[pp]].x, 2) +
+                          pow(ionisedpart[current_particle_nn[jj]].y - ionisedpart[sinkid[pp]].y, 2) +
+                          pow(ionisedpart[current_particle_nn[jj]].z - ionisedpart[sinkid[pp]].z, 2));
 
-        // If the candidate particle is closer than the test particle it is a candidate (Also has controle so a particle cant be its own neighbour)
-        if (distancejj < distanceii && ii != current_paricle_nn[jj]) {
+        // If the candidate particle is closer than the test particle it is a candidate (Also has control so a particle cant be its own neighbour)
+        if (distancejj < distanceii && ii != current_particle_nn[jj]) {
 
           // Use the dot product to work out the angle between the conneting line and the neighbour particle
-          dot = ((ionisedpart[ii].x - ionisedpart[sinkid[pp]].x)*(ionisedpart[current_paricle_nn[jj]].x - ionisedpart[sinkid[pp]].x)) +
-                ((ionisedpart[ii].y - ionisedpart[sinkid[pp]].y)*(ionisedpart[current_paricle_nn[jj]].y - ionisedpart[sinkid[pp]].y)) +
-                ((ionisedpart[ii].z - ionisedpart[sinkid[pp]].z)*(ionisedpart[current_paricle_nn[jj]].z - ionisedpart[sinkid[pp]].z));
+          dot = ((ionisedpart[ii].x - ionisedpart[sinkid[pp]].x)*(ionisedpart[current_particle_nn[jj]].x - ionisedpart[sinkid[pp]].x)) +
+                ((ionisedpart[ii].y - ionisedpart[sinkid[pp]].y)*(ionisedpart[current_particle_nn[jj]].y - ionisedpart[sinkid[pp]].y)) +
+                ((ionisedpart[ii].z - ionisedpart[sinkid[pp]].z)*(ionisedpart[current_particle_nn[jj]].z - ionisedpart[sinkid[pp]].z));
           mag = (sqrt(pow(ionisedpart[ii].x - ionisedpart[sinkid[pp]].x, 2) +
                       pow(ionisedpart[ii].y - ionisedpart[sinkid[pp]].y, 2) +
                       pow(ionisedpart[ii].z - ionisedpart[sinkid[pp]].z, 2)))*
-                (sqrt(pow(ionisedpart[current_paricle_nn[jj]].x - ionisedpart[sinkid[pp]].x, 2) +
-                      pow(ionisedpart[current_paricle_nn[jj]].y - ionisedpart[sinkid[pp]].y, 2) +
-                      pow(ionisedpart[current_paricle_nn[jj]].z - ionisedpart[sinkid[pp]].z, 2)));
+                (sqrt(pow(ionisedpart[current_particle_nn[jj]].x - ionisedpart[sinkid[pp]].x, 2) +
+                      pow(ionisedpart[current_particle_nn[jj]].y - ionisedpart[sinkid[pp]].y, 2) +
+                      pow(ionisedpart[current_particle_nn[jj]].z - ionisedpart[sinkid[pp]].z, 2)));
           angletest = acos(dot/mag);
 
-          // If the partcle is a sink set angle to be max (Stops non-relavant sinks becoming a neighbour)
-          if (ionisedpart[current_paricle_nn[jj]].sink == 1) angletest = 2.*pi;
+          // If the partcle is a sink set angle to be max (stops non-relavant sinks becoming a neighbour)
+          if (ionisedpart[current_particle_nn[jj]].sink == 1) angletest = 2.*pi;
 
           // If the neighbour is the relavant source set angletest to be neg hence particle will be neighbour
-          if (current_paricle_nn[jj] == sinkid[pp]) angletest = -1e50;
+          if (current_particle_nn[jj] == sinkid[pp]) angletest = -1e50;
 
-          // If Neighbour is closest so far to the connecting line then set current neighbour to be the neighbour
+          // If neighbour is closest so far to the connecting line then set current neighbour to be the neighbour
           if (angletest<ionisedpart[ii].angle[pp]) {
-            ionisedpart[ii].angle[pp] = angletest;  //Set new comparison angle to be that of the neighbour
-            ionisedpart[ii].neigh[pp] = current_paricle_nn[jj];  //Write particle id to neigh array
+            ionisedpart[ii].angle[pp] = angletest;  // Set new comparison angle to be that of the neighbour
+            ionisedpart[ii].neigh[pp] = current_particle_nn[jj];  // Write particle id to neigh array
           }
         }
+
       }
+      //-------------------------------------------------------------------------------------------
+
     }
+    //---------------------------------------------------------------------------------------------
+
   }
+  //-----------------------------------------------------------------------------------------------
 
   // Debug message
   if (debug == 1) {
@@ -644,7 +658,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
 
 
   // Loop over all particles
-#pragma omp parallel for private(current_paricle_nn,dot,mag,angletest,jj,pp,distanceii,distancejj,ii,tt,Nneigb,temp_radius,temp_radius2)
+#pragma omp parallel for private(current_particle_nn,dot,mag,angletest,jj,pp,distanceii,distancejj,ii,tt,Nneigb,temp_radius,temp_radius2)
   for (ii=0;ii<N;ii++) {
 
     // Loop over all sources
@@ -748,45 +762,50 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
   DOUBLE rad,s,w,invmu;
   if (smoothing) {
 
-#pragma omp parallel for private(jj,ii,rad,s,w,invmu,current_paricle_nn,Nneigb) //Initalise openmp
+#pragma omp parallel for private(jj,ii,rad,s,w,invmu,current_particle_nn,Nneigb) //Initalise openmp
     for (ii=0; ii<N; ii++) {
 
       if (ionisedpart[ii].fionised == 1) {
 
         //Find NNnumber nearest neighbours
         Nneigb = neib->GetGatherNeighbourList(partdata[ii].r, partdata[ii].h*3., partgen,
-                                              N, maxneigh, current_paricle_nn);
+                                              N, maxneigh, current_particle_nn);
 
 #ifdef RAD_OPTIMISE
         while (Nneigb == -1) {
           maxneigh=maxneigh*2;
-          delete [] current_paricle_nn;
-          current_paricle_nn = new int[maxneigh];
-          Nneigb = neib->GetGatherNeighbourList(partdata[ii].r,partdata[ii].h*3.,partgen,N,maxneigh,current_paricle_nn); //Find NNnumber nearest neighbours
+          delete [] current_particle_nn;
+          current_particle_nn = new int[maxneigh];
+          Nneigb = neib->GetGatherNeighbourList(partdata[ii].r,partdata[ii].h*3.,partgen,N,maxneigh,current_particle_nn); //Find NNnumber nearest neighbours
+        }
+#else
+        if (!(Nneigb >= 0 && Nneigb <= maxneigh)) {
+          cout << "Invalid value of Nneighb : " << Nneigb << "   " << maxneigh << endl;
+          exit(0);
         }
 #endif
 
         // For each of the neighbours
         for (jj=0; jj<Nneigb; jj++) {
 
-          if (ionisedpart[current_paricle_nn[jj]].fionised == 0) {
+          if (ionisedpart[current_particle_nn[jj]].fionised == 0) {
 
-            rad = (sqrt(pow(ionisedpart[current_paricle_nn[jj]].x - ionisedpart[ii].x, 2) +
-                        pow(ionisedpart[current_paricle_nn[jj]].y - ionisedpart[ii].y, 2) +
-                        pow(ionisedpart[current_paricle_nn[jj]].z - ionisedpart[ii].z, 2)));
+            rad = (sqrt(pow(ionisedpart[current_particle_nn[jj]].x - ionisedpart[ii].x, 2) +
+                        pow(ionisedpart[current_particle_nn[jj]].y - ionisedpart[ii].y, 2) +
+                        pow(ionisedpart[current_particle_nn[jj]].z - ionisedpart[ii].z, 2)));
             s   = rad/(ionisedpart[ii].h*1.5);          //Work out s for smoothing kernal
 
             // Work out w for the kernal
-            if (s < 1) w = 1 - (3./2.)*pow(s,2.) + (3./4.)*pow(s,3.);
-            else if (s < 2) w = (1./4.)*pow(2-s,3.);
-            else w = 0;
+            if (s < 1) w = 1 - 1.5*pow(s,2.) + 0.75*pow(s,3.);
+            else if (s < 2) w = 0.25*pow(2 - s,3.);
+            else w = 0.0;
 
-            if (ionisedpart[current_paricle_nn[jj]].t < ti*w) {
-              ionisedpart[current_paricle_nn[jj]].t = ti*w;
+            if (ionisedpart[current_particle_nn[jj]].t < ti*w) {
+              ionisedpart[current_particle_nn[jj]].t = ti*w;
             }
           }
           else {
-            ionisedpart[current_paricle_nn[jj]].t = ti;
+            ionisedpart[current_particle_nn[jj]].t = ti;
           }
         }
       }
@@ -804,7 +823,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
 
   DOUBLE theta,thi,photon_acceleration;
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for private(jj,ii,rad,s,w,invmu,current_paricle_nn,Nneigb,theta,thi,photon_acceleration) //Initalise openmp
+#pragma omp parallel for private(jj,ii,rad,s,w,invmu,current_particle_nn,Nneigb,theta,thi,photon_acceleration) //Initalise openmp
   for (ii=0; ii<N; ii++) {
 
     // If the particle is ionised then its temperature must be the ionised temperature
@@ -873,7 +892,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
   delete [] ionisedpart[ii].rad_pre_acc;
   }
 #else
-  delete [] current_paricle_nn;
+  delete [] current_particle_nn;
 #endif
   delete [] ionisedpart;
 
