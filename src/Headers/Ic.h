@@ -1068,6 +1068,38 @@ public:
 };
 
 
+//=================================================================================================
+//  Class CMZIc
+/// \brief
+/// \details
+/// \author  J. E. Dale, G. P. Rosotti
+/// \date    04/05/2017
+//=================================================================================================
+template <int ndim>
+class CMZIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  CMZIc(Simulation<ndim>* _sim, FLOAT _invndim);
+  virtual ~CMZIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
 
 namespace Regularization {
 

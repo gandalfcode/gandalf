@@ -223,6 +223,7 @@ OBJ += EvrardCollapseIc.o EwaldIc.o FilamentIc.o GaussianRingIc.o GreshoVortexIc
 OBJ += HierarchicalSystemIc.o IsothermalSphereIc.o KelvinHelmholtzIc.o NohIc.o PlummerSphereIc.o
 OBJ += PolytropeIc.o RayleighTaylorIc.o SedovBlastwaveIc.o ShearflowIc.o ShocktubeIc.o
 OBJ += SilccIc.o SoundwaveIc.o SpitzerExpansionIc.o TurbulentCoreIc.o UniformIc.o ICRegularization.o
+OBJ += CMZIc.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
