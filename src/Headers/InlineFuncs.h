@@ -465,6 +465,16 @@ inline bool ParticleInBox (const Particle<ndim>& part,const Box<ndim>& box)
 }
 
 
+//=================================================================================================
+//  SegmentInCell
+//  Returns true if the segment connecting two points intersects (or is fully contained) the box
+//=================================================================================================
+template <int ndim>
+inline bool SegmentInCell (const FLOAT rp[ndim], const FLOAT rp2[ndim], const Box<ndim>& box)
+{
+  ExceptionHandler::getIstance().raise("SegmentInCell not implemented!!!!");
+}
+
 
 //=================================================================================================
 //  compute_displs

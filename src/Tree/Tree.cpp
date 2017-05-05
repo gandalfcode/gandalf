@@ -26,6 +26,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <deque>
 #include "Precision.h"
 #include "Exception.h"
 #include "DomainBox.h"
@@ -551,6 +552,75 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
 }
 
+
+//=================================================================================================
+//  Tree::ComputeSegmentNeighbourList
+/// Compute the list of cells containing particles whose smoothing sphere intersects a segment
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::ComputeSegmentNeighbourList
+ (const FLOAT rp[ndim],        ///< [in] First end of the segment (ionising source)
+  const FLOAT rp2[ndim],       ///< [in] Second end of the segment (target particle),
+  const Particle<ndim> *part_gen,      ///< [in] Particle data array
+  std::deque<std::pair<FLOAT,int> >& id_distance_pairs)    ///< [out] List of particle ids
+{
+
+  const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen);
+
+  // Start with root cell and walk through entire tree
+  int cc = 0;
+
+  id_distance_pairs.clear();
+
+  while (cc < Ncell) {
+    if (SegmentInCell(rp,rp2,celldata[cc].hbox)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (celldata[cc].copen != -1) {
+        cc = celldata[cc].copen;
+      }
+
+      // Ignore empty cells
+      else if (celldata[cc].N == 0) {
+        cc = celldata[cc].cnext;
+      }
+
+      // If leaf-cell, add to the list
+      else if (celldata[cc].copen == -1) {
+        int i = celldata[cc].ifirst;
+        while (i != -1) {
+          id_distance_pairs.push_back(std::pair<FLOAT,int>(0,i));
+          if (i == celldata[cc].ilast) break;
+          i = inext[i];
+        }
+       cc = celldata[cc].cnext;
+      }
+
+    }
+
+
+    // If not in range, then open next cell
+    //---------------------------------------------------------------------------------------------
+    else {
+      cc = celldata[cc].cnext;
+    }
+
+  }
+
+  // Gather distances
+  for (auto it = id_distance_pairs.begin(); it != id_distance_pairs.end(); it++) {
+    const ParticleType<ndim>& part = partdata[it->second];
+    FLOAT dr[ndim];
+    for (int k=0; k<ndim; k++) dr[k] = part.r[k]-rp[k];
+    const FLOAT drsqd = DotProduct(dr,dr,ndim);
+    it->first=drsqd;
+  }
+
+  // Sort the particles using the distances
+  std::sort(id_distance_pairs.begin(),id_distance_pairs.end());
+
+
+}
 
 
 //=================================================================================================

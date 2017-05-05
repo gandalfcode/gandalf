@@ -29,6 +29,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <deque>
 #include "TreeCell.h"
 #include "CodeTiming.h"
 #include "Constants.h"
@@ -110,6 +111,8 @@ protected:
 			                               const FLOAT, const int, int &, int *) = 0 ;
 	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
+	virtual void ComputeSegmentNeighbourList(const FLOAT rp[ndim],const FLOAT rp2[ndim],const Particle<ndim> *part_gen,std::deque<std::pair<FLOAT,int> >& id_distance_pairs)=0;
+
 	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
 	virtual void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&) = 0 ;
 	virtual void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &,
@@ -288,6 +291,7 @@ protected:
   int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                            const int, int &, int *, Particle<ndim> *);
   void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
+  void ComputeSegmentNeighbourList(const FLOAT rp[ndim],const FLOAT rp2[ndim],const Particle<ndim> *part_gen,std::deque<std::pair<FLOAT,int> >& id_distance_pairs);
   void ComputeNeighbourAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerBase&);
   void ComputeGravityInteractionAndGhostList(const TreeCellBase<ndim> &, NeighbourManagerDim<ndim>& neibmanager);
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
