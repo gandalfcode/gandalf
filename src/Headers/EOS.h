@@ -296,6 +296,7 @@ class LocallyIsothermal: public Isothermal<ndim>
 private:
   FLOAT templaw;
   FLOAT tempmin;
+  bool DiscIc;
 
   Nbody<ndim>* nbody;
 };

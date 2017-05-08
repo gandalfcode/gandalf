@@ -45,6 +45,10 @@ LocallyIsothermal<ndim>::LocallyIsothermal(Parameters* simparams, SimUnits *unit
   tempmin(simparams->floatparams["tempmin"]/units->temp.outscale),
   nbody(0)
 {
+  if (simparams->stringparams["ic"]=="disc")
+    DiscIc=true;
+  else
+    DiscIc=false;
 }
  
 
@@ -75,6 +79,7 @@ FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
     FLOAT stardist = DotProduct(dr,dr,ndim);
 
     stardistmin = std::min(stardist, stardistmin) ;
+    if (DiscIc) break;
   }
   stardistmin = sqrt(stardistmin) ;
 
