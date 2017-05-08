@@ -41,6 +41,9 @@ DiscIc<ndim>::DiscIc(Simulation<ndim>* _sim, FLOAT _invndim) :
   if (simparams->intparams["ndim"] == 1){
     ExceptionHandler::getIstance().raise("The disc IC require at least 2 dimensions!");
   }
+  if (simparams->intparams["sink_particles"] == 0) {
+    ExceptionHandler::getIstance().raise("You can't run a disc simulation without sink accretion!");
+  }
 }
 
 //=================================================================================================
@@ -68,7 +71,13 @@ void DiscIc<ndim>::Generate(void)
 
   // Allocate global and local memory for all particles
   hydro->Nhydro = Npart;
-  sim->nbody->Nstar = 2;
+  if (simparams->intparams["DiscIcPlanet"]==0) {
+    sim->nbody->Nstar = 1;
+  }
+  else {
+    sim->nbody->Nstar = 2;
+  }
+
   sim->AllocateParticleMemory();
 
   // Compute the particle mass
@@ -82,7 +91,7 @@ void DiscIc<ndim>::Generate(void)
 
   FLOAT f_max;
   if (p <=1 ) {
-    ExceptionHandler::getIstance().raise("Not implemented!");
+    f_max = pow(rout/rin,-(p-1));
   }
   else {
     f_max = 1;
@@ -180,20 +189,20 @@ void DiscIc<ndim>::Generate(void)
   for (int k=0; k<ndim; k++) star.r[k] = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) star.v[k] = (FLOAT) 0.0;
   star.m = 1;
-  star.h = rin;
-  star.radius = rin;
+  star.h = rin/hydro->kernp->kernrange;
 
   // Set up the planet
-  StarParticle<ndim>& planet = nbody->stardata[1];
-  planet.r[0] = 3.0;
-  planet.r[1] = 0.0;
-  if (ndim==3) planet.r[2] = 0.0;
-  planet.v[0] = 0.0;
-  planet.v[1] = 1.0/std::sqrt(3);
-  if (ndim==3) planet.v[2] = 0.0;
-  planet.m = 1e-3;
-  planet.h = 0.1;
-  star.radius = 0.1;
+  if (simparams->intparams["DiscIcPlanet"] == 1) {
+    StarParticle<ndim>& planet = nbody->stardata[1];
+    planet.r[0] = simparams->floatparams["DiscIcPlanetRadius"];
+    planet.r[1] = 0.0;
+    if (ndim==3) planet.r[2] = 0.0;
+    planet.v[0] = 0.0;
+    planet.v[1] = 1.0/std::sqrt(simparams->floatparams["DiscIcPlanetRadius"]);
+    if (ndim==3) planet.v[2] = 0.0;
+    planet.m = simparams->floatparams["DiscIcPlanetMass"];
+    planet.h = simparams->floatparams["DiscIcPlanetAccretionRadius"]/hydro->kernp->kernrange;
+  }
 
 
 }

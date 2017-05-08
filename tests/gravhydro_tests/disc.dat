@@ -73,3 +73,5 @@ Stock tree every step                       : ntreestockstep = 1
 # Misc. options
 #--------------
 Switch-off self-gravity of gas              : self_gravity = 0
+: sink_particles = 1
+: nbody = lfkdk

@@ -454,7 +454,10 @@ void Parameters::SetDefaultValues(void)
   floatparams["DiscIcRin"] = 1;
   floatparams["DiscIcRout"] = 5;
   floatparams["DiscIcHr"] = 0.05;
-
+  intparams["DiscIcPlanet"] = 1;
+  floatparams["DiscIcPlanetRadius"] = 1;
+  floatparams["DiscIcPlanetMass"] = 1e-3;
+  floatparams["DiscIcPlanetAccretionRadius"] = 0.1;
 
   // Regularising initial conditions parameters
   //-----------------------------------------------------------------------------------------------
