@@ -526,7 +526,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
  #endif
 
-    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
+    sphdust->UpdateAllDragForces(sph) ;
   }
 
 
@@ -544,7 +544,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       for (k=0; k <ndim; k++) part.a[k] = part.a0[k] ;
     }
 
-    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
+    sphdust->UpdateAllDragForces(sph) ;
   }
 
   // Set particle values for initial step (e.g. r0, v0, a0, u0)
@@ -853,7 +853,7 @@ void SphSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
 #endif
-    sphdust->UpdateAllDragForces(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray()) ;
+    sphdust->UpdateAllDragForces(sph) ;
 
     // Unset active particles
     for (i=0; i<sph->Nhydro; i++)

@@ -332,7 +332,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Setup the dust force object
   //-----------------------------------------------------------------------------------------------
-  sphdust = DustFactory<ndim, GradhSphParticle>::ProcessParameters(simparams, timing, sph->types, t, gt, mpit) ;
+  sphdust = DustFactory<ndim, GradhSphParticle>::ProcessParameters(simparams, timing, sph->types,
+                                                                   simbox, t, gt, mpit) ;
+
+#if defined MPI_PARALLEL
+  if (sphdust != NULL) sphdust->SetMpiControl(mpicontrol);
+#endif
 
   return;
 }

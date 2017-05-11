@@ -545,6 +545,7 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
 
   std::partial_sum(Nreceive_per_node.begin(), Nreceive_per_node.end(), i_start_ghost.begin());
 
+
   for (vector<int>::iterator it = i_start_ghost.begin(); it != i_start_ghost.end(); it++) {
     *it += hydro->Nhydro+hydro->NPeriodicGhost;
   }
@@ -616,9 +617,16 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
   // Update the real particles from the received data
   for (int i=0; i< total_ghost_receive; i++) {
     const ReturnDataType& received = buffer_receive[i] ;
-     assert(received.iorig != -1) ;
 
-    received.update_received(partdata[received.iorig]) ;
+    assert(received.iorig != -1 &&  received.iorig < hydro->Nhydro + hydro->NPeriodicGhost) ;
+
+    // Find the real particle that the ghost corresponds
+    int j = received.iorig ;
+    while (j >= hydro->Nhydro) {
+      assert(partdata[j].flags.check(any_boundary)) ;
+      j = partdata[j].iorig ;
+    }
+    received.update_received(partdata[j]) ;
   }
 
   return;
@@ -643,7 +651,6 @@ namespace MpiReturnParticle {
     ReturnSink(const Particle<ndim>& p) : iorig(p.iorig), m(p.m) {} ;
 
     void update_received(Particle<ndim>& p) const {
-      assert(p.iorig == iorig) ;
       p.m = m ;
       if (p.m == 0) {
         p.flags.unset(active);
@@ -662,19 +669,19 @@ namespace MpiReturnParticle {
   //===============================================================================================
   template<int ndim>
   class ReturnDust {
-    public:
+  public:
     ReturnDust() : iorig(-1), dudt(0) {} ;
-    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {} ;
+    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {};
 
-      void update_received(Particle<ndim>& p) const {
-        assert(p.iorig == iorig) ;
-        p.dudt = dudt ;
-      }
+    void update_received(Particle<ndim>& p) const {
+      assert(p.ptype == gas_type) ;
+      p.dudt += dudt ;
+    }
 
-      int iorig;
-    private:
-      double dudt;
-    };
+    int iorig;
+  private:
+    double dudt;
+  };
 
 } // namespace MpiReturnParticle
 

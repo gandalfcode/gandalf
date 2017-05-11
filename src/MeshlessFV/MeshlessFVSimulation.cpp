@@ -236,7 +236,12 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 #endif
 
   // Setup the dust
-  mfvdust = DustFactory<ndim, MeshlessFVParticle>::ProcessParameters(simparams, timing, mfv->types, t, gt, mpit) ;
+  mfvdust = DustFactory<ndim, MeshlessFVParticle>::ProcessParameters(simparams, timing, mfv->types,
+                                                                     simbox, t, gt, mpit) ;
+
+#if defined MPI_PARALLEL
+ if (mfvdust != NULL) mfvdust->SetMpiControl(mpicontrol);
+#endif
 
   // Depending on the dimensionality, calculate expected neighbour number
   //-----------------------------------------------------------------------------------------------

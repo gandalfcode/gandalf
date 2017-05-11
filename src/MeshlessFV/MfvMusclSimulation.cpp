@@ -196,7 +196,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
 #endif
-    mfvdust->UpdateAllDragForces(mfv->Nhydro, mfv->Ntot, mfv->GetMeshlessFVParticleArray()) ;
+    mfvdust->UpdateAllDragForces(mfv) ;
 
     for (i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i) ;

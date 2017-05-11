@@ -48,7 +48,7 @@ protected:
   DustBase() { } ;
 public:
   virtual ~DustBase() {} ;
-  virtual void UpdateAllDragForces(int , int, Particle<ndim> *) = 0 ;
+  virtual void UpdateAllDragForces(Hydrodynamics<ndim>*) = 0 ;
   CodeTiming * timing;
 
 #if defined MPI_PARALLEL
@@ -74,6 +74,7 @@ class DustFactory
 public:
   static DustBase<ndim>* ProcessParameters(Parameters* params, CodeTiming* timing,
 		  	  	  	  	  	  	  	  	   ParticleTypeRegister& types,
+		  	  	  	  	  	  	  	  	   DomainBox<ndim>& simbox,
 							               TreeBase<ndim>* t, TreeBase<ndim>* ghost,
 							               TreeBase<ndim>* mpi_tree)  ;
 } ;

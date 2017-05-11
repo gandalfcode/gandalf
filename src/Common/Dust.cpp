@@ -96,6 +96,8 @@ void update_particle(GradhSphParticle<ndim>& part, FLOAT* acc, FLOAT dudt, doubl
 template<int ndim>
 void update_particle(MeshlessFVParticle<ndim>& part, FLOAT* acc, FLOAT dudt, double dt) {
 
+  // dudt gets updated using particles exported to other processors
+  dudt += part.dudt ;
 
   if (part.ptype == gas_type) {
     // Add change in Kinetic energy to dudt to get total change in total energy
@@ -124,6 +126,9 @@ void update_particle(MeshlessFVParticle<ndim>& part, FLOAT* acc, FLOAT dudt, dou
     part.r[k] = part.r0[k] + 0.5*(part.v0[k] + part.v[k])*dt;
     part.flags.set(update_density) ;
   }
+
+  // Throw away now we have added it to the conserved arrays
+  part.dudt = 0 ;
 }
 
 
@@ -156,6 +161,9 @@ class DustSphNgbFinder
 : public DustBase<ndim>
 {
 	using DustBase<ndim>::timing ;
+#ifdef MPI_PARALLEL
+	using DustBase<ndim>::mpicontrol ;
+#endif
 	vector<NeighbourManager<ndim,ParticleType<ndim> > > neibmanagerbuf;
 public:
 	DustSphNgbFinder(Parameters* params, TreeBase<ndim> * t,TreeBase<ndim> * gt=NULL)
@@ -188,10 +196,10 @@ public:
 
 protected:
 	template<class Interp>
-	void FindNeibAndDoInterp(int ,int, ParticleType<ndim> *,Typemask, Interp&) ;
+	void FindNeibAndDoInterp(Hydrodynamics<ndim>*, Typemask, Interp&) ;
 
 	template<class ForceCalc>
-	void FindNeibAndDoForces(int ,int, ParticleType<ndim> *,
+	void FindNeibAndDoForces(Hydrodynamics<ndim>*,
 				             const ParticleTypeRegister&, ForceCalc&) ;
 private:
 	TreeBase<ndim>* _tree, *_ghosttree ;   ///< Pointer to neighbour tree
@@ -291,6 +299,8 @@ public:
   void ComputeDragForces(ParticleType<ndim>&, NeighbourList<ParticleType<ndim> >&, DOUBLE,
 		                 FLOAT *) ;
 
+  bool NeedEnergyUpdate() const { return _use_energy_term ; }
+
 private:
   Kernel kern ;
   StoppingTime t_stop ;
@@ -321,13 +331,11 @@ public:
 	   _Forces(Forces)
   { } ;
 
-  void UpdateAllDragForces(int NPart, int Ntot, Particle<ndim> *sph_gen){
+  void UpdateAllDragForces(Hydrodynamics<ndim>* hydro){
 
     debug2("[DustFull::UpdateAllDragForces]") ;
 
-    ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
-
-    FindNeibAndDoForces(NPart, Ntot, sphdata, _types, _Forces) ;
+    FindNeibAndDoForces(hydro, _types, _Forces) ;
   }
 private:
   ParticleTypeRegister _types ;
@@ -355,16 +363,14 @@ public:
 	 :  DustSphNgbFinder<ndim, ParticleType>(params, t, gt),
 	    _interp(Interp)
     { } ;
-	void UpdateAllDragForces(int NPart, int Ntot, Particle<ndim> *sph_gen)
+	void UpdateAllDragForces(Hydrodynamics<ndim>* hydro)
 	{
 		debug2("[DustTestParticle::UpdateAllDragForces]") ;
-
-		ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph_gen) ;
 
 		Typemask mask ;
 		mask[gas_type] = true ;
 
-		FindNeibAndDoInterp(NPart, Ntot, sphdata, mask, _interp) ;
+		FindNeibAndDoInterp(hydro, mask, _interp) ;
 	}
 private:
   DI _interp ;
@@ -383,9 +389,7 @@ private:
 template<int ndim, template<int> class ParticleType>
 template<class Interpolant>
 void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
-(int Nhydro,                               ///< [in] No. of SPH particles
- int Ntot,                                 ///< [in] No. of SPH + ghost particles
- ParticleType<ndim> *sphdata,              ///< [inout] Pointer to SPH ptcl array
+(Hydrodynamics<ndim>* hydro,                ///< [in] Hydro class
  Typemask mask,                            ///< [in] Types to include in the interpolation
  Interpolant& Interp)                      ///< [in] Interpolating function
 {
@@ -393,6 +397,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 
   typedef typename Interpolant::DataType InterpData;
 
+  ParticleType<ndim>* sphdata = hydro->template GetParticleArray<ParticleType>();
+  int Nhydro = hydro->Nhydro ;
 
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;    // List of active cells
@@ -411,7 +417,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,sphdata, mask, Interp)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,sphdata, mask, Interp, Nhydro)
  {
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
@@ -598,13 +604,13 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 template<int ndim, template<int> class ParticleType>
 template<class ForceCalc>
 void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
-(int Nhydro,                              ///< [in] No. of SPH particles
- int Ntot,                                ///< [in] No. of SPH + ghost particles
- ParticleType<ndim> *sphdata,             ///< [inout] Pointer to SPH ptcl array
+(Hydrodynamics<ndim>* hydro,              ///< [in] Hydro class
  const ParticleTypeRegister& types,       ///< [in] Type data for particles
  ForceCalc& Forces)                       ///< [in] Force calculation functor
 {
   using std::vector ;
+
+  ParticleType<ndim>* sphdata = hydro->template GetParticleArray<ParticleType>();
 
   int cactive;                             // No. of active cells
   vector<TreeCellBase<ndim> > celllist;    // List of active cells
@@ -641,17 +647,18 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
   // Set-up all OMP threads
   //===============================================================================================
-  vector<FLOAT> a_drag(ndim*Ntot, 0) ;            // temporary to hold the drag accelerations
-  vector<FLOAT> dudt(Ntot, 0) ;                   // temporary to hold the drag heating
+  vector<FLOAT> a_drag(ndim*hydro->Ntot, 0) ;          // temporary to hold the drag accelerations
+  vector<FLOAT> dudt(hydro->Ntot, 0) ;                 // temporary to hold the drag heating
 
 #ifdef MPI_PARALLEL
   // Zero the update for the thermal energy of ghosts so we can tell which ones have had updates
   // from other processors
-  for (int i=Nhydro; i < Nhydro+NPeriodicGhost; i++)
-    sphdata[i].dudt = 0 ;
+  if (Forces.NeedEnergyUpdate())
+    for (int i=hydro->Nhydro; i < hydro->Nhydro+hydro->NPeriodicGhost; i++)
+      sphdata[i].dudt = 0 ;
 #endif
 
-#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag, dudt, cout)
+#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces,hydro,a_drag, dudt, cout)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -665,7 +672,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
     vector<int>                 activelist(_tree->MaxNumPartInLeafCell()); // Ids of Active parts
     vector<ParticleType<ndim> > activepart(_tree->MaxNumPartInLeafCell()); // Local array of parts
     NeighbourManager<ndim,ParticleType<ndim> >& neibmanager = neibmanagerbuf[ithread];
-    vector<FLOAT> dudt_local(Ntot, 0) ;
+    vector<FLOAT> dudt_local(hydro->Ntot, 0) ;
 
     // Loop over all active cells
     //=============================================================================================
@@ -738,7 +745,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
 #pragma omp critical
     {
-      for (i=0; i<Nhydro; i++) {
+      for (i=0; i<hydro->Ntot; i++) {
         dudt[i] += dudt_local[i] ;
       }
     }
@@ -746,29 +753,26 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 
 #ifdef MPI_PARALLEL
     // Communicate back the dudt contributions from particles on external processors
-    std::list<int> copy_back;
-    for(int n=0, i = Nhydro + NPeriodicGhost; n<Nmpighost; n++, i++) {
-      if (dudt[i] > 0) {
-        sphdata[i].dudt = dudt[i] ;
-        copy_back.push_back[i] ;
+#pragma omp barrier
+#pragma omp single
+    if (Forces.NeedEnergyUpdate()) {
+      std::list<int> copy_back;
+      for(int n=0, i = hydro->Nhydro + hydro->NPeriodicGhost; n<hydro->Nmpighost; n++, i++) {
+        if (dudt[i] > 0) {
+          sphdata[i].dudt = dudt[i] ;
+          copy_back.push_back(i) ;
+        }
+      }
+
+      mpicontrol->UpdateMpiGhostParents(copy_back, hydro, update_dust_parents);
     }
-    mpicontrol->UpdateMpiGhostParents(copy_back, hydro, update_dust_parents);
-
-    // Now add the dudt contribution to the array
-    for(i = Nhydro; i < Nhydro + NPeriodicGhost; i++) {
-      if (sphdata[i].dudt > 0) {
-        j = i ;
-        while (sphdata[i].iorig > Nhydro)
-          j = sphdata[i].iorig ;
-
-        dudt[j] += sphdata[i].dudt ;
 #endif
 
 
 // Barrier here because of no-wait in loop over cells.
 #pragma omp barrier
 #pragma omp for
-    for (i=0; i<Nhydro; i++) {
+    for (i=0; i<hydro->Nhydro; i++) {
       update_particle(sphdata[i], &a_drag[i*ndim], dudt[i], drag_timestep(sphdata[i]));
     }
   }
@@ -1254,6 +1258,7 @@ DustBase<ndim>* DustFactory<ndim, ParticleType>::ProcessParameters
 (Parameters * simparams,
 CodeTiming * timing,
 ParticleTypeRegister& types,
+DomainBox<ndim>& simbox,
 TreeBase<ndim>* t,
 TreeBase<ndim>* ghost,
 TreeBase<ndim>* mpi_tree)
@@ -1265,10 +1270,11 @@ TreeBase<ndim>* mpi_tree)
 	if (stringparams["dust_forces"] == "none")
 		return NULL ;
 
-	if (stringparams["neib_searhch"] == "bruteforce"){
-	  ExceptionHandler::getIstance().raise("Dust forces are not compatible with brute force "
-			                               "neighbour finding") ;
+	if (IsAnyBoundaryReflecting(simbox)) {
+	  ExceptionHandler::getIstance().raise(
+	      "Error: Dust does not work with reflecting boundaries");
 	}
+
 
 	if (intparams["dimensionless"] == 0){
 	  ExceptionHandler::getIstance().raise("Error: Non-dimensionless simulations with dust are "
