@@ -28,6 +28,7 @@
 #include "DragLaws.h"
 #include "Dust.h"
 #include "MeshlessFV.h"
+#include "MpiControl.h"
 #include "Particle.h"
 #include "Precision.h"
 #include "Tree.h"
@@ -643,6 +644,13 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   vector<FLOAT> a_drag(ndim*Ntot, 0) ;            // temporary to hold the drag accelerations
   vector<FLOAT> dudt(Ntot, 0) ;                   // temporary to hold the drag heating
 
+#ifdef MPI_PARALLEL
+  // Zero the update for the thermal energy of ghosts so we can tell which ones have had updates
+  // from other processors
+  for (int i=Nhydro; i < Nhydro+NPeriodicGhost; i++)
+    sphdata[i].dudt = 0 ;
+#endif
+
 #pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces, Nhydro, Ntot, a_drag, dudt, cout)
   {
 #if defined _OPENMP
@@ -735,6 +743,27 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       }
     }
     //===============================================================================================
+
+#ifdef MPI_PARALLEL
+    // Communicate back the dudt contributions from particles on external processors
+    std::list<int> copy_back;
+    for(int n=0, i = Nhydro + NPeriodicGhost; n<Nmpighost; n++, i++) {
+      if (dudt[i] > 0) {
+        sphdata[i].dudt = dudt[i] ;
+        copy_back.push_back[i] ;
+    }
+    mpicontrol->UpdateMpiGhostParents(copy_back, hydro, update_dust_parents);
+
+    // Now add the dudt contribution to the array
+    for(i = Nhydro; i < Nhydro + NPeriodicGhost; i++) {
+      if (sphdata[i].dudt > 0) {
+        j = i ;
+        while (sphdata[i].iorig > Nhydro)
+          j = sphdata[i].iorig ;
+
+        dudt[j] += sphdata[i].dudt ;
+#endif
+
 
 // Barrier here because of no-wait in loop over cells.
 #pragma omp barrier
