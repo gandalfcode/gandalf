@@ -1,12 +1,15 @@
 \documentclass[a4paper]{article}
 \usepackage{amsmath}
 \usepackage{txfonts}
+\usepackage{natbib}
 
 \usepackage{graphicx}
 %\usepackage{amssymb}
 \usepackage{supertabular}
 \usepackage{array}
 %\usepackage[colorlinks,final]{hyperref}
+
+\usepackage{aas_macros}
 
 \usepackage{standalone}
 \usepackage{sphinx}
@@ -344,6 +347,7 @@ blastwave         & = Blastwave test \\
 bondi             & = Spherically symmetric Bondi accretion test \\
 box               & = Create a uniform box of gas \\
 cdiscontinuity    & = Contact discontinuity test \\
+disc					& = Accretion disc initial conditions \\
 ewaldcylinder     & = Cylinder for 1D Ewald gravity test \\
 ewaldsine         & = Sinusoidal density for 3D Ewald gravity test \\
 ewaldslab         & = Slab for 2D Ewald gravity test \\
@@ -1010,6 +1014,8 @@ hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed 
 \item \var{asound}       : Sound speed
 \item \var{zmax}         : ??
 
+\item \var{DiscIc}: There are multiple parameters prefixed with this string; they contol the accretion disc setup. Please refer to section \ref{sec:disc} for an extensive explanation.
+
 \end{itemize}
 
 
@@ -1231,6 +1237,7 @@ It is possible to generate initial conditions `on-the-fly' using internal subrou
 - bondi          &: Spherically symmetric Bondi accretion test \\
 - box            &: Create uniform box \\
 - cdiscontinuity &: Contact-discontinuity test \\
+- disc &: Accretion disc. See section \ref{sec:disc}. \\
 - ewald          &: Several tests of Ewald gravity \\
 - gresho         &: Gresho vortex test \\
 - khi            &: Kelvin-helmholtz instability \\
@@ -1248,7 +1255,7 @@ It is possible to generate initial conditions `on-the-fly' using internal subrou
 \newline
 \newline
 
-\noindent N-body simultions : \\
+\noindent N-body simulations : \\
 \newline
 \begin{tabular}{ll}
 - binary    &: Simple circular binary system test \\
@@ -1275,6 +1282,45 @@ The subroutines that create the initial conditions are all contained in the \var
 \var{else if (ic == ``myic'') \{icGenerator.MyNewInitialConditions();\}}
 \end{itemize}
 To select your own initial conditions when running GANDALF, you simply set the \var{ic} parameter in your parameters file to the chosen string, e.g. \var{ic = myic}\,.
+
+
+\subsection{Description of initial conditions}
+
+\subsubsection{Accretion disc}
+
+\label{sec:disc}
+
+If ``ic'' is set to ``disc'', a standard thin accretion disc (e.g., \citealt{Pringle1981}) will be generated. See table \ref{table:disc} for a summary of the parameters. This setup can be used in 2-d (that is, vertically integrated) or in 3-d. Currently the setup only works in dimensionless units. A star with a mass of 1 is created at the origin of the coordinate system. The disc will extend in radius from ``DiscIcRin'' to ``DiscIcRout''. The disc has an initial power-law surface density profile $\Sigma \propto r^{-p}$, where the value of the exponent $p$ is given by the parameter ``DiscIcP''. The normalization is fixed by the parameter ``DiscIcMass'', which is the total mass of the disc (relative to the star). The equation of state used is locally isothermal; the sound speed follows a power-law with radius: $c_s \propto r^{-q}$, where the exponent $q$ is given by the parameter ``DiscIcQ''. When running in 3-d, the disc is assumed to be vertically isothermal and in hydrostatic equilibrium in the vertical direction, that is, $\rho \propto \exp (-z^2/2H^2)$, where $H=c_s/\Omega$ and $\Omega$ is the keplerian angular frequency. The normalization of the sound speed is set by the parameter ``DiscIcHr'', which sets the aspect ratio $H/r$ at the inner radius of the disc. Notice that we use random placement to initialise the disc; the initial density structure will thus be noisy. This in general not an issue since the particles typically rearrange themselves over one orbit. However, please keep this into account if you a need a structure with little noise already in the initial conditions.
+
+The setup also supports the option of embedding a planet in the disc. This is selected if the parameter ``DiscIcPlanet'' takes a value of 1. The planet will be on a keplerian orbit; see table \ref{sec:disc} for setting the orbital parameters and planet mass. The setup does not currently support multiple planets, but it would be very straightforward to extend it - please contact the authors if you are interested in it.
+
+Finally, the star and the planet will accrete mass from the disc if sink particles are switched on in the disc. This is controlled by the normal parameter ``sink\_particles''. The accretion radius of the star is always fixed to the inner radius of the disc; the accretion radius of the planet instead is controlled by the parameter ``DiscIcPlanetAccretionRadiusHill'', which sets the accretion radius in units of the Hill radius of the planet. Notice that, if the planet accretes, effectively its gravity is not smoothed, since we smooth the gravitational potential only inside the accretion radius. If you are not using sink particles, instead, the parameter ``DiscIcPlanetAccretionRadiusHill'' expresses the smoothing length of the gravitational potential. Currently is not possible to let only the star accrete and not the planet (or viceversa); please contact the authors if you require this behaviour.
+
+Table \ref{table:disc} lists all the parameters discussed so far and their default values. Most of the default values come from the standard setup of \citet{deValBorro2006}; note however that we use a surface density $\propto r^{-1}$ rather than a flat one. We also do not employ ghost particles at the inner and outer boundary.
+
+\begin{table}
+
+
+\begin{tabular}{llc}
+\textbf{Parameter name} & \textbf{Description} & \textbf{Default value}\\
+DiscIcMass & Disc mass & 0.01\\
+DiscIcP & Power-law exponent of the surface density & 1\\
+DiscIcQ & Power-law exponent of the sound speed & 0.5 \\
+DiscIcRin & Inner radius of the disc & 0.4\\
+DiscIcRout & Outer radius of the disc & 2.5\\
+DiscIcHr & Aspect ratio of the disc at the inner radius\\
+DiscIcPlanet & Wheter the setup contains a planet (0 or 1) & 1\\
+DiscIcPlanetRadius & Semi-major axis of the planet & 1\\
+DiscIcPlanetEccen & Eccentricity of the orbit & 0\\
+DiscIcPlanetIncl & Inclination of the orbit (in degrees) & 0\\
+DiscIcPlanetMass & Mass of the planet & 1e-3\\
+DiscIcPlanetAccretionRadiusHill & Accretion radius of the planet (in units of the Hill radius) & 0.4\\
+\end{tabular}
+\caption{Summary of the parameters controlling the disc setup and their default values}
+\label{table:disc}
+\end{table}
+
+
 
 
 
@@ -2209,7 +2255,8 @@ List of possible new features for future versions.
 \section{Command reference for the python functions}
 \label{reference_facade}
 \input{../analysis/_build/latex/GANDALF}
-
+\bibliographystyle{mnras}
+\bibliography{biblio}
 
 \end{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
