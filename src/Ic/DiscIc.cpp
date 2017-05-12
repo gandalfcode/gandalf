@@ -69,13 +69,21 @@ void DiscIc<ndim>::Generate(void)
   const FLOAT rin = simparams->floatparams["DiscIcRin"];
   const FLOAT rout = simparams->floatparams["DiscIcRout"];
   const FLOAT H_r = simparams->floatparams["DiscIcHr"];
+  const bool HaveDust = (simparams->stringparams["dust_forces"] != "none");
+  int NDust = 0;
+  int Ntotal = Npart;
+  if (HaveDust) {
+    NDust = simparams->intparams["Ndust"];
+    Ntotal += NDust;
+  }
+  const FLOAT DustGasRatio = simparams->floatparams["DustGasRatio"];
 
   // Assume units where GM_\ast=1
   const FLOAT GStar_M = 1;
 
 
   // Allocate global and local memory for all particles
-  hydro->Nhydro = Npart;
+  hydro->Nhydro = Ntotal;
   if (simparams->intparams["DiscIcPlanet"]==0) {
     sim->nbody->Nstar = 1;
   }
@@ -86,13 +94,16 @@ void DiscIc<ndim>::Generate(void)
   sim->AllocateParticleMemory();
 
   // Compute the particle mass
-  const FLOAT massi = mass/Npart;
+  FLOAT massi = mass/Npart;
+  if (HaveDust) massi *= 1-DustGasRatio;
+  const FLOAT massi_dust = mass*DustGasRatio/NDust;
+
 
   // Normalisation of sound speed at rin
   const FLOAT cs0 = H_r*std::sqrt(GStar_M/rin);
 
-  // Normalization of the surface density at rin
-  const FLOAT sig0=(2-p)*mass*std::pow(rin,-p)/(2*pi) / (pow(rout,2-p)-pow(rin,2-p));
+  // Normalization of the gas surface density at rin
+  const FLOAT sig0=(2-p)*mass*(1-DustGasRatio)*std::pow(rin,-p)/(2*pi) / (pow(rout,2-p)-pow(rin,2-p));
 
   FLOAT f_max;
   if (p <=1 ) {
@@ -102,12 +113,20 @@ void DiscIc<ndim>::Generate(void)
     f_max = 1;
   }
 
+
   // Generate particle positions, velocity and internal energies
-  for (int i=0; i<Npart; i++) {
+  for (int i=0; i<Ntotal; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
 
     // Set mass
-    part.m = massi;
+    if (i<Npart) {
+      part.m = massi;
+      part.ptype = gas_type;
+    }
+    else {
+      part.m = massi_dust;
+      part.ptype = dust_type;
+    }
 
     // ---------------------------------------
     // POSITIONS
@@ -152,10 +171,10 @@ void DiscIc<ndim>::Generate(void)
     // ---------------------------------------
 
     // Keplerian velocity
-    const FLOAT vk = std::sqrt(GStar_M/r);
-    const FLOAT vphi = vk*std::sqrt(1.-0.5*(H/r)*(H/r)*(1.5+p+q));
-    part.v[0] = -vphi*cos(phi);
-    part.v[1] = vphi*sin(phi);
+    FLOAT vk = std::sqrt(GStar_M/r);
+    if (i>Npart) vk *= std::sqrt(1.-0.5*(H/r)*(H/r)*(1.5+p+q));
+    part.v[0] = -vk*cos(phi);
+    part.v[1] = vk*sin(phi);
     if (ndim == 3) {
       part.v[2] = 0;
     }
@@ -165,7 +184,8 @@ void DiscIc<ndim>::Generate(void)
     // ---------------------------------------
 
     // Rough density for smoothing length and density
-    const FLOAT sigma = sig0*f/(r/rin);
+    FLOAT sigma = sig0*f/(r/rin);
+    if (i>=Npart) sigma *= DustGasRatio;
 
     const FLOAT rhoz = zf/(H*std::sqrt(M_PI));
     if (ndim == 3) {
@@ -174,13 +194,19 @@ void DiscIc<ndim>::Generate(void)
     else {
       part.rho = sigma;
     }
-    part.h = hydro->h_fac*std::pow(part.m/part.rho,1./ndim);
+    // Apply safety factor to initial estimate
+    part.h = 2*hydro->h_fac*std::pow(part.m/part.rho,1./ndim);
+    if (i>=Npart) {
+      part.h_dust = part.h;
+    }
 
     // ---------------------------------------
     // THERMAL PHYSICS
     // ---------------------------------------
-    part.sound = cs;
-    part.u = part.sound*part.sound/gammaone;
+    if (i<Npart) {
+      part.sound = cs;
+      part.u = part.sound*part.sound/gammaone;
+    }
 
   }
 
@@ -209,10 +235,10 @@ void DiscIc<ndim>::Generate(void)
     planet.v[1] = 1.0/std::sqrt(rp)*std::sqrt( (1.0-e)/(1.0+e))* \
         std::cos(i*M_PI/180.0);
     if (ndim==3) planet.v[2] = planet.v[1]*std::sin(i*M_PI/180.0)/  \
-        std::cos(i*M_PI/180.0);;
+        std::cos(i*M_PI/180.0);
     planet.m = simparams->floatparams["DiscIcPlanetMass"];
     planet.h = simparams->floatparams["DiscIcPlanetAccretionRadiusHill"]*
-        rp*pow(simparams->floatparams["DiscIcPlanetMass"],1./3)/hydro->kernp->kernrange;
+        rp*pow(simparams->floatparams["DiscIcPlanetMass"]/3.,1./3)/hydro->kernp->kernrange;
   }
 
 
