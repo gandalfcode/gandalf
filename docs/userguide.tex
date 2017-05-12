@@ -1295,6 +1295,8 @@ If ``ic'' is set to ``disc'', a standard thin accretion disc (e.g., \citealt{Pri
 
 The setup also supports the option of embedding a planet in the disc. This is selected if the parameter ``DiscIcPlanet'' takes a value of 1. The planet will be on a keplerian orbit; see table \ref{sec:disc} for setting the orbital parameters and planet mass. The setup does not currently support multiple planets, but it would be very straightforward to extend it - please contact the authors if you are interested in it.
 
+As explained in chapter \ref{sec:dust}, GANDALF can solve for the dust dynamics in addition to the gas dynamics. If you wish to follow also the dust dynamics, the parameter ``NDust'' controls the number of dust particles and the parameter ``DustGasRatio'' gives the mass ratio between the dust and the gas. Notice that when using dust the parameter ``DiscIcMass'' refers to the \textit{total} (i.e., gas+dust) mass of the disc. Other choices of the dust algorithm are described in chapter \ref{sec:dust}.
+
 Finally, the star and the planet will accrete mass from the disc if sink particles are switched on in the disc. This is controlled by the normal parameter ``sink\_particles''. The accretion radius of the star is always fixed to the inner radius of the disc; the accretion radius of the planet instead is controlled by the parameter ``DiscIcPlanetAccretionRadiusHill'', which sets the accretion radius in units of the Hill radius of the planet. Notice that, if the planet accretes, effectively its gravity is not smoothed, since we smooth the gravitational potential only inside the accretion radius. If you are not using sink particles, instead, the parameter ``DiscIcPlanetAccretionRadiusHill'' expresses the smoothing length of the gravitational potential. Currently is not possible to let only the star accrete and not the planet (or viceversa); please contact the authors if you require this behaviour.
 
 Table \ref{table:disc} lists all the parameters discussed so far and their default values. Most of the default values come from the standard setup of \citet{deValBorro2006}; note however that we use a surface density $\propto r^{-1}$ rather than a flat one. We also do not employ ghost particles at the inner and outer boundary.
@@ -1316,6 +1318,8 @@ DiscIcPlanetEccen & Eccentricity of the orbit & 0\\
 DiscIcPlanetIncl & Inclination of the orbit (in degrees) & 0\\
 DiscIcPlanetMass & Mass of the planet & 1e-3\\
 DiscIcPlanetAccretionRadiusHill & Accretion radius of the planet (in units of the Hill radius) & 0.4\\
+NDust & Number of dust particles & 0\\
+DustGasRatio & Dust to gas ratio when using dust & 0.01
 \end{tabular}
 \caption{Summary of the parameters controlling the disc setup and their default values}
 \label{table:disc}
@@ -1951,6 +1955,8 @@ You might notice that the matplotlib window freezes when you are running a simul
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Dust Dynamics}
+
+\label{sec:dust}
 
 \subsection{Theory}
 The equations of motion for the mutual dynamics of gas and dust coupled by drag forces are
