@@ -28,7 +28,9 @@
 #include "DragLaws.h"
 #include "Dust.h"
 #include "MeshlessFV.h"
+#ifdef MPI_PARALLEL
 #include "MpiControl.h"
+#endif
 #include "Particle.h"
 #include "Precision.h"
 #include "Tree.h"
@@ -757,7 +759,9 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 #pragma omp single
     if (Forces.NeedEnergyUpdate()) {
       std::list<int> copy_back;
-      for(int n=0, i = hydro->Nhydro + hydro->NPeriodicGhost; n<hydro->Nmpighost; n++, i++) {
+      for(int n=0; n<hydro->Nmpighost; n++) {
+        int i = hydro->Nhydro + hydro->NPeriodicGhost + n ;
+
         if (dudt[i] > 0) {
           sphdata[i].dudt = dudt[i] ;
           copy_back.push_back(i) ;
@@ -767,6 +771,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       mpicontrol->UpdateMpiGhostParents(copy_back, hydro, update_dust_parents);
     }
 #endif
+
 
 
 // Barrier here because of no-wait in loop over cells.

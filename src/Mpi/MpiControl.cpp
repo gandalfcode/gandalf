@@ -543,6 +543,7 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
   // This vector holds for each processor where its ghosts start in the main hydro array
   vector<int> i_start_ghost(Nmpi);
 
+  assert(Nreceive_per_node[rank] == 0);
   std::partial_sum(Nreceive_per_node.begin(), Nreceive_per_node.end(), i_start_ghost.begin());
 
 
@@ -550,13 +551,16 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
     *it += hydro->Nhydro+hydro->NPeriodicGhost;
   }
 
-
   for (list<int>::iterator it = ids_ghosts.begin(); it != ids_ghosts.end(); it++) {
     const int index = *it;
+    assert(index >= hydro->Nhydro + hydro->NPeriodicGhost);
+    assert(index <  hydro->Nhydro + hydro->Nghost);
 
     // Find to which processor we should send the particle
     const int proc = std::upper_bound(i_start_ghost.begin(),
                                       i_start_ghost.end(), index) - i_start_ghost.begin();
+
+
     N_updates_per_proc[proc]++;
     assert(N_updates_per_proc[proc]<=Nreceive_per_node[proc]);
 
@@ -589,30 +593,16 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
 
   vector<ReturnDataType> buffer_receive(total_ghost_receive);
 
-  // Convert the distances into bytes:
-  for (int iproc=0; iproc<Nmpi; iproc++)  {
-    N_updates_per_proc[iproc]    *= sizeof(ReturnDataType);
-    displs_ghosts[iproc]         *= sizeof(ReturnDataType);
-    N_updates_from_proc[iproc]   *= sizeof(ReturnDataType);
-    displs_ghosts_receive[iproc] *= sizeof(ReturnDataType);
-  }
+  MPI_Datatype MpiReturnType;
+  MPI_Datatype types[1] = {MPI_BYTE};
+  MPI_Aint offsets[1] = {0};
+  int blocklen[1] = {sizeof(ReturnDataType)};
 
+  MPI_Type_create_struct(1,blocklen,offsets,types,&MpiReturnType);
 
-  MPI_Alltoallv(&buffer[0], &N_updates_per_proc[0], &displs_ghosts[0], MPI_BYTE,
+  MPI_Alltoallv(&buffer[0], &N_updates_per_proc[0], &displs_ghosts[0], MpiReturnType,
                 &buffer_receive[0], &N_updates_from_proc[0], &displs_ghosts_receive[0],
-                MPI_BYTE, MPI_COMM_WORLD);
-
-  /*
-
-  // Send the updated masses and the iorigs (to retrieve the parent particles)
-  MPI_Alltoallv(&buffer[0], &N_updates_per_proc[0], &displs_ghosts[0], GANDALF_MPI_FLOAT,
-                &buffer_receive[0], &N_updates_from_proc[0], &displs_ghosts_receive[0],
-                GANDALF_MPI_FLOAT, MPI_COMM_WORLD);
-
-  MPI_Alltoallv(&buffer_iorig[0], &N_updates_per_proc[0], &displs_ghosts[0], MPI_INT,
-                &buffer_receive_iorig[0], &N_updates_from_proc[0], &displs_ghosts_receive[0],
-                MPI_INT, MPI_COMM_WORLD);
-*/
+                MpiReturnType, MPI_COMM_WORLD);
 
   // Update the real particles from the received data
   for (int i=0; i< total_ghost_receive; i++) {
@@ -620,12 +610,13 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
 
     assert(received.iorig != -1 &&  received.iorig < hydro->Nhydro + hydro->NPeriodicGhost) ;
 
-    // Find the real particle that the ghost corresponds
+    // Find the real particle that the ghost corresponds to
     int j = received.iorig ;
     while (j >= hydro->Nhydro) {
       assert(partdata[j].flags.check(any_boundary)) ;
       j = partdata[j].iorig ;
     }
+    assert(j >= 0 && j < hydro->Nhydro);
     received.update_received(partdata[j]) ;
   }
 
@@ -792,8 +783,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
     if (iproc == rank) continue;
 
     // Pack the information to send
-   neibsearch->GetExportInfo(iproc, hydro, send_buffer[j],
-                                                      mpinode[iproc], rank, Nmpi);
+   neibsearch->GetExportInfo(iproc, hydro, send_buffer[j], mpinode[iproc], rank, Nmpi);
 
     // Post the send now that we know what to transmit
     MPI_Isend(&send_buffer[j][0],send_buffer[j].size(),MPI_CHAR,iproc,5,MPI_COMM_WORLD,&send_req[j]);
@@ -1117,6 +1107,7 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
     vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
     for (ipart=0; ipart<particles_on_this_node.size(); ipart++) {
       particles_to_export[index] = partdata[particles_on_this_node[ipart]];
+      particles_to_export[index].iorig = particles_on_this_node[ipart];
       index++;
     }
   }

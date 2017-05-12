@@ -199,6 +199,9 @@ void MpiGhostsSpecific<ndim, ParticleType>::CopyHydroDataToGhosts
  (DomainBox<ndim> simbox,              ///< [in] Simulation box
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to hydrodynamics object
 {
+  debug2("[MpiGhostsSpecific::CopyHydroDataToGhosts]");
+
+
   ParticleType<ndim>* ghost_array;
   ParticleType<ndim>* main_array = hydro->template GetParticleArray<ParticleType>();
   int Nmpighosts = mpicontrol->UpdateGhostParticles(main_array,&ghost_array);
@@ -206,6 +209,10 @@ void MpiGhostsSpecific<ndim, ParticleType>::CopyHydroDataToGhosts
 
   for (int j=0; j<Nmpighosts; j++) {
     int i = start_index + j;
+
+    assert(main_array[i].ptype == ghost_array[j].ptype);
+    assert(main_array[i].iorig == ghost_array[j].iorig);
+
     main_array[i] = ghost_array[j];
     main_array[i].flags.unset(active);
   }
