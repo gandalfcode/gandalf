@@ -31,9 +31,6 @@ Output file format                          : out_file_form = su
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = locally_isothermal
 Ratio of specific heats of gas              : gamma_eos = 1.66
-					    : tempmin = 0
-					    : templaw = 1
-					    : temp0 = 0.0025
 
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options

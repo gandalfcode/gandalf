@@ -1,6 +1,6 @@
 //=================================================================================================
-//  LocalIsotherm.cpp
-//  Contains functions for a locally isothermal EOS.
+//  DiscLocallyIsotherm.cpp
+//  Contains functions for a locally isothermal EOS used in discs.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -19,9 +19,9 @@
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
 //=================================================================================================
- 
- 
- 
+
+
+
 #include <math.h>
 #include "Debug.h"
 #include "Constants.h"
@@ -31,70 +31,80 @@
 #include "SphIntegration.h"
 #include "Parameters.h"
 using namespace std;
- 
- 
- 
+
+
+
 //=================================================================================================
-//  LocalIsotherm::LocalIsotherm()
-/// LocalIsotherm class constructor
+//  DiscLocallyIsothermal::DiscLocallyIsothermal()
+/// DiscLocallyIsothermal class constructor
 //=================================================================================================
 template <int ndim>
-LocallyIsothermal<ndim>::LocallyIsothermal(Parameters* simparams, SimUnits *units):
+DiscLocallyIsothermal<ndim>::DiscLocallyIsothermal(Parameters* simparams, SimUnits *units):
   Isothermal<ndim>(simparams, units),
-  templaw(simparams->floatparams["templaw"]),
-  tempmin(simparams->floatparams["tempmin"]/units->temp.outscale),
+  slope(simparams->floatparams["DiscIcQ"]),
+  norm(simparams->floatparams["DiscIcHr"]*sqrt(1./simparams->floatparams["DiscIcRin"])),
+  rin(simparams->floatparams["DiscIcRin"]),
   nbody(0)
 {
 }
- 
+
 
 //=================================================================================================
-//  LocalIsotherm::LocalIsotherm()
-/// LocalIsotherm class desstructor
+//  DiscLocallyIsothermal::DiscLocallyIsothermal()
+/// DiscLocallyIsothermal class desstructor
 //=================================================================================================
 template <int ndim>
-LocallyIsothermal<ndim>::~LocallyIsothermal()
+DiscLocallyIsothermal<ndim>::~DiscLocallyIsothermal()
 {
 
 }
 
 //=================================================================================================
-//  LocalIsotherm::Temperature
-/// Set the temperature given distance to nearest star
+//  DiscLocallyIsothermal::SoundSpeed
+/// Set the sound speed given distance to the star
 //=================================================================================================
 template <int ndim>
-FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
+FLOAT DiscLocallyIsothermal<ndim>::SoundSpeed(Particle<ndim> & part)
 {
-  FLOAT stardistmin=1e30;
   NbodyParticle<ndim>** star = nbody->nbodydata;
 
-  // Compute distance to closest star
-  for(int i=0; i<nbody->Nnbody; i++){
-    FLOAT dr[ndim] ;
-    for (int j=0; j<ndim;j++) dr[j] = part.r[j]-star[i]->r[j];
-    FLOAT stardist = DotProduct(dr,dr,ndim);
+  // Compute distance to star
+  FLOAT dr[ndim] ;
+  for (int j=0; j<ndim;j++) dr[j] = part.r[j]-star[0]->r[j];
+  FLOAT r2 = DotProduct(dr,dr,ndim);
+  FLOAT r = sqrt(r2) ;
 
-    stardistmin = std::min(stardist, stardistmin) ;
-  }
-  stardistmin = sqrt(stardistmin) ;
-
-  // Compute temperature
-  FLOAT temp = max(temp0*pow(stardistmin,-templaw), tempmin);
-  return temp;
+  // Compute sound speed
+  FLOAT cs = norm*pow(r/rin,-slope);;
+  return cs;
 }
 
 //=================================================================================================
-//  LocalIsotherm::SpecificInternalEnergy
-/// Set the internal energt given distance to nearest star
+//  DiscLocallyIsothermal::SpecificInternalEnergy
+/// Set the internal energy given the position of the particle
 //=================================================================================================
 template <int ndim>
-FLOAT LocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
+FLOAT DiscLocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
 {
-  FLOAT temp = LocallyIsothermal<ndim>::Temperature(part);
-  return temp/gammam1/mu_bar;
+  FLOAT cs = SoundSpeed(part);
+  return cs*cs/gammam1;
 }
- 
-template class LocallyIsothermal<1>;
-template class LocallyIsothermal<2>;
-template class LocallyIsothermal<3>;
+
+
+//=================================================================================================
+//  DiscLocallyIsothermal::Temperature
+/// Set the temperature given the position of the particle
+//=================================================================================================
+template <int ndim>
+FLOAT DiscLocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
+{
+  FLOAT cs = SoundSpeed(part);
+  return mu_bar*cs*cs;
+}
+
+
+
+template class DiscLocallyIsothermal<1>;
+template class DiscLocallyIsothermal<2>;
+template class DiscLocallyIsothermal<3>;
 

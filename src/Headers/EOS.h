@@ -296,7 +296,46 @@ class LocallyIsothermal: public Isothermal<ndim>
 private:
   FLOAT templaw;
   FLOAT tempmin;
-  bool DiscIc;
+
+  Nbody<ndim>* nbody;
+};
+
+
+//=================================================================================================
+//  Class DiscLocallyIsothermal
+/// \brief   Locally isothermal equation of state for discs
+/// \details Locally isothermal equation of state for discs
+/// \author  G. Rosotti
+/// \date    03/04/2013
+//=================================================================================================
+template <int ndim>
+class DiscLocallyIsothermal: public Isothermal<ndim>
+{
+  using Isothermal<ndim>::gamma;
+  using Isothermal<ndim>::gammam1;
+  using Isothermal<ndim>::gammaMinusOne;
+  using Isothermal<ndim>::oneMinusGamma;
+  using Isothermal<ndim>::temp0;
+  using Isothermal<ndim>::mu_bar;
+
+ public:
+
+  DiscLocallyIsothermal(Parameters*, SimUnits *);
+  virtual ~DiscLocallyIsothermal();
+
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+
+
+  virtual void set_nbody_data(Nbody<ndim>* nbody_aux) {
+    nbody = nbody_aux;
+  } ;
+
+private:
+  FLOAT slope;
+  FLOAT norm;
+  FLOAT rin;
 
   Nbody<ndim>* nbody;
 };

@@ -95,6 +95,9 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   else if(_gas_eos == "locally_isothermal") {
     eos = new LocallyIsothermal<ndim>(params, &units);
   }
+  else if (_gas_eos == "disc_locally_isothermal") {
+    eos = new DiscLocallyIsothermal<ndim>(params, &units);
+  }
   else if (_gas_eos == "polytropic") {
     eos = new Polytropic<ndim>(params, &units);
   }

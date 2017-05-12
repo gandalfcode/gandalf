@@ -55,6 +55,11 @@ void DiscIc<ndim>::Generate(void)
 {
   debug2("[DiscIc::Generate");
 
+  if (simparams->stringparams["gas_eos"] != "disc_locally_isothermal") {
+    cout << "Warning: you have not selected the disc locally isothermal EOS!" << endl;
+    cout << "Are you sure this is what you want?" << endl;
+  }
+
   // Local copy of important parameters
   const int Npart = simparams->intparams["Nhydro"];
   const FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
