@@ -523,6 +523,84 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
 
 }
 
+
+//=================================================================================================
+// namespace MpiReturnParticle
+/// Contains classes for returning data computed for ghosts to their original processes.
+//=================================================================================================
+
+namespace MpiReturnParticle {
+  //===============================================================================================
+  // Sink
+  /// Return mass for particles that have been partially accreted and flag fully accreted ones as
+  /// dead.
+  //===============================================================================================
+  template<int ndim>
+  class ReturnSink {
+  public:
+    ReturnSink() : iorig(-1), m(0) {} ;
+    ReturnSink(const Particle<ndim>& p) : iorig(p.iorig), m(p.m) {} ;
+
+    void update_received(Particle<ndim>& p) const {
+      p.m = m ;
+      if (p.m == 0) {
+        p.flags.unset(active);
+        p.flags.set(dead);
+      }
+    }
+
+    int iorig ;
+  private:
+    double m ;
+  };
+
+  //===============================================================================================
+  // ReturnDust
+  /// Return the temperature update from drag forces
+  //===============================================================================================
+  template<int ndim>
+  class ReturnDust {
+  public:
+    ReturnDust() : iorig(-1), dudt(0) {} ;
+    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {};
+
+    void update_received(Particle<ndim>& p) const {
+      assert(p.ptype == gas_type) ;
+      p.dudt += dudt ;
+    }
+
+    int iorig;
+  private:
+    double dudt;
+  };
+
+  //===============================================================================================
+  // CreateMPIDataType
+  /// Creates the MPI data type for a given return type
+  //===============================================================================================
+  template<class DataType>
+  MPI_Datatype& CreateMPIDataType() {
+    static bool first = true ;
+    static MPI_Datatype MpiReturnType ;
+    if (first) {
+      MPI_Datatype types[1] = {MPI_BYTE};
+      MPI_Aint offsets[1] = {0};
+      int blocklen[1] = {sizeof(DataType)};
+
+      MPI_Type_create_struct(1,blocklen,offsets,types, &MpiReturnType);
+      MPI_Type_commit(&MpiReturnType);
+      first = false;
+    }
+    return MpiReturnType ;
+  }
+
+} // namespace MpiReturnParticle
+
+
+
+
+
+
 //=================================================================================================
 //  MpiControl::UpdateMpiGhostParents
 /// If the MPI ghosts have been modified locally (e.g. because of accretion), need to propagate
@@ -593,12 +671,8 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
 
   vector<ReturnDataType> buffer_receive(total_ghost_receive);
 
-  MPI_Datatype MpiReturnType;
-  MPI_Datatype types[1] = {MPI_BYTE};
-  MPI_Aint offsets[1] = {0};
-  int blocklen[1] = {sizeof(ReturnDataType)};
-
-  MPI_Type_create_struct(1,blocklen,offsets,types,&MpiReturnType);
+  MPI_Datatype& MpiReturnType =
+      MpiReturnParticle::CreateMPIDataType<ReturnDataType>();
 
   MPI_Alltoallv(&buffer[0], &N_updates_per_proc[0], &displs_ghosts[0], MpiReturnType,
                 &buffer_receive[0], &N_updates_from_proc[0], &displs_ghosts_receive[0],
@@ -622,59 +696,6 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
 
   return;
 }
-
-
-//=================================================================================================
-// namespace MpiReturnParticle
-/// Contains classes for returning data computed for ghosts to their original processes.
-//=================================================================================================
-
-namespace MpiReturnParticle {
-  //===============================================================================================
-  // Sink
-  /// Return mass for particles that have been partially accreted and flag fully accreted ones as
-  /// dead.
-  //===============================================================================================
-  template<int ndim>
-  class ReturnSink {
-  public:
-    ReturnSink() : iorig(-1), m(0) {} ;
-    ReturnSink(const Particle<ndim>& p) : iorig(p.iorig), m(p.m) {} ;
-
-    void update_received(Particle<ndim>& p) const {
-      p.m = m ;
-      if (p.m == 0) {
-        p.flags.unset(active);
-        p.flags.set(dead);
-      }
-    }
-
-    int iorig ;
-  private:
-    double m ;
-  };
-
-  //===============================================================================================
-  // ReturnDust
-  /// Return the temperature update from drag forces
-  //===============================================================================================
-  template<int ndim>
-  class ReturnDust {
-  public:
-    ReturnDust() : iorig(-1), dudt(0) {} ;
-    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {};
-
-    void update_received(Particle<ndim>& p) const {
-      assert(p.ptype == gas_type) ;
-      p.dudt += dudt ;
-    }
-
-    int iorig;
-  private:
-    double dudt;
-  };
-
-} // namespace MpiReturnParticle
 
 //=================================================================================================
 //  MpiControl::UpdateMpiGhostParents
@@ -700,8 +721,6 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
       ExceptionHandler::getIstance().raise("Requested MpiGhost update not recognised");
   }
 }
-
-
 
 //=================================================================================================
 //  MpiControlType::ExportParticlesBeforeForceLoop
