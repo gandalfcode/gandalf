@@ -193,15 +193,21 @@ void DiscIc<ndim>::Generate(void)
 
   // Set up the planet
   if (simparams->intparams["DiscIcPlanet"] == 1) {
+    const FLOAT e = simparams->floatparams["DiscIcPlanetEccen"];
+    const FLOAT rp = simparams->floatparams["DiscIcPlanetRadius"];
+    const FLOAT i = simparams->floatparams["DiscIcPlanetIncl"];
     StarParticle<ndim>& planet = nbody->stardata[1];
-    planet.r[0] = simparams->floatparams["DiscIcPlanetRadius"];
+    planet.r[0] = rp*(1.+e);
     planet.r[1] = 0.0;
     if (ndim==3) planet.r[2] = 0.0;
     planet.v[0] = 0.0;
-    planet.v[1] = 1.0/std::sqrt(simparams->floatparams["DiscIcPlanetRadius"]);
-    if (ndim==3) planet.v[2] = 0.0;
+    planet.v[1] = 1.0/std::sqrt(rp)*std::sqrt( (1.0-e)/(1.0+e))* \
+        std::cos(i*M_PI/180.0);
+    if (ndim==3) planet.v[2] = planet.v[1]*std::sin(i*M_PI/180.0)/  \
+        std::cos(i*M_PI/180.0);;
     planet.m = simparams->floatparams["DiscIcPlanetMass"];
-    planet.h = simparams->floatparams["DiscIcPlanetAccretionRadius"]/hydro->kernp->kernrange;
+    planet.h = simparams->floatparams["DiscIcPlanetAccretionRadiusHill"]*
+        rp*pow(simparams->floatparams["DiscIcPlanetMass"],1./3)/hydro->kernp->kernrange;
   }
 
 

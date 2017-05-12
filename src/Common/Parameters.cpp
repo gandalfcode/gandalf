@@ -449,15 +449,17 @@ void Parameters::SetDefaultValues(void)
   floatparams["thermal_energy"] = 1.0;
   floatparams["mach"] = 2.7;
   floatparams["DiscIcMass"] = 0.01;
-  floatparams["DiscIcP"] = 1.5;
+  floatparams["DiscIcP"] = 1.0;
   floatparams["DiscIcQ"] = 0.5;
-  floatparams["DiscIcRin"] = 1;
-  floatparams["DiscIcRout"] = 5;
+  floatparams["DiscIcRin"] = 0.4;
+  floatparams["DiscIcRout"] = 2.5;
   floatparams["DiscIcHr"] = 0.05;
   intparams["DiscIcPlanet"] = 1;
   floatparams["DiscIcPlanetRadius"] = 1;
   floatparams["DiscIcPlanetMass"] = 1e-3;
-  floatparams["DiscIcPlanetAccretionRadius"] = 0.1;
+  floatparams["DiscIcPlanetAccretionRadiusHill"] = 0.4;
+  floatparams["DiscIcPlanetEccen"]=0.;
+  floatparams["DiscIcPlanetIncl"]=0.;
 
   // Regularising initial conditions parameters
   //-----------------------------------------------------------------------------------------------
