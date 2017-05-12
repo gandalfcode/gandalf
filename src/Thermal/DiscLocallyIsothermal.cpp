@@ -66,13 +66,13 @@ DiscLocallyIsothermal<ndim>::~DiscLocallyIsothermal()
 template <int ndim>
 FLOAT DiscLocallyIsothermal<ndim>::SoundSpeed(Particle<ndim> & part)
 {
-  NbodyParticle<ndim>** star = nbody->nbodydata;
+  StarParticle<ndim>* star = nbody->stardata;
 
   // Compute distance to star
   FLOAT dr[ndim] ;
-  for (int j=0; j<ndim;j++) dr[j] = part.r[j]-star[0]->r[j];
+  for (int j=0; j<ndim;j++) dr[j] = part.r[j]-star[0].r[j];
   FLOAT r2 = DotProduct(dr,dr,ndim);
-  FLOAT r = sqrt(r2) ;
+  FLOAT r = sqrt(r2);
 
   // Compute sound speed
   FLOAT cs = norm*pow(r/rin,-slope);;

@@ -29,7 +29,7 @@ Output file format                          : out_file_form = su
 # Thermal physics options
 #------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
-Main gas thermal physics treatment          : gas_eos = locally_isothermal
+Main gas thermal physics treatment          : gas_eos = disc_locally_isothermal
 Ratio of specific heats of gas              : gamma_eos = 1.66
 
 #----------------------------------------

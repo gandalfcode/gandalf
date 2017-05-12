@@ -66,12 +66,12 @@ template <int ndim>
 FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
 {
   FLOAT stardistmin=1e30;
-  NbodyParticle<ndim>** star = nbody->nbodydata;
+  StarParticle<ndim>* star = nbody->stardata;
 
   // Compute distance to closest star
-  for(int i=0; i<nbody->Nnbody; i++){
+  for(int i=0; i<nbody->Nstar; i++){
     FLOAT dr[ndim] ;
-    for (int j=0; j<ndim;j++) dr[j] = part.r[j]-star[i]->r[j];
+    for (int j=0; j<ndim;j++) dr[j] = part.r[j]-star[i].r[j];
     FLOAT stardist = DotProduct(dr,dr,ndim);
 
     stardistmin = std::min(stardist, stardistmin) ;
