@@ -143,7 +143,7 @@ void DiscIc<ndim>::Generate(void)
     FLOAT f_test, r, f;
     do {
       r = rin + (rout - rin) * std::rand()/RAND_MAX;
-      f_test = std::rand()/RAND_MAX*f_max;
+      f_test = FLOAT(std::rand())/RAND_MAX*f_max;
       f = std::pow(r/rin,-(p-1.) );
     } while (f_test >= f);
 
