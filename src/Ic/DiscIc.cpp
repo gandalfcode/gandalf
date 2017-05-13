@@ -103,7 +103,11 @@ void DiscIc<ndim>::Generate(void)
   const FLOAT cs0 = H_r*std::sqrt(GStar_M/rin);
 
   // Normalization of the gas surface density at rin
-  const FLOAT sig0=(2-p)*mass*(1-DustGasRatio)*std::pow(rin,-p)/(2*pi) / (pow(rout,2-p)-pow(rin,2-p));
+  FLOAT sig0;
+  if (p!=2)
+    sig0=(2-p)*mass*(1-DustGasRatio)*std::pow(rin,-p)/(2*pi) / (pow(rout,2-p)-pow(rin,2-p));
+  else
+    sig0 = mass*(1-DustGasRatio)*rin*rin/(2*pi) / (log(rout)-log(rin));
 
   FLOAT f_max;
   if (p <=1 ) {
