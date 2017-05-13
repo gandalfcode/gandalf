@@ -137,13 +137,13 @@ void DiscIc<ndim>::Generate(void)
     // ---------------------------------------
 
     // Phi
-    const FLOAT phi = 2*M_PI*std::rand()/RAND_MAX;
+    const FLOAT phi = 2*M_PI*randnumb->floatrand();
 
     // Radius, constructed from r*sigma
     FLOAT f_test, r, f;
     do {
-      r = rin + (rout - rin) * std::rand()/RAND_MAX;
-      f_test = FLOAT(std::rand())/RAND_MAX*f_max;
+      r = rin + (rout - rin) * randnumb->floatrand();
+      f_test = randnumb->floatrand()*f_max;
       f = std::pow(r/rin,-(p-1.) );
     } while (f_test >= f);
 
@@ -161,8 +161,8 @@ void DiscIc<ndim>::Generate(void)
     FLOAT zf_test=zf_max;
     FLOAT z, zf;
     do {
-      z = z_min+(z_max-z_min)*std::rand()/RAND_MAX;
-      zf_test = zf_max*std::rand()/RAND_MAX;
+      z = z_min+(z_max-z_min)*randnumb->floatrand();
+      zf_test = zf_max*randnumb->floatrand();
       zf = std::exp(-pow(z/H,2));
     } while (zf_test >= zf);
 
