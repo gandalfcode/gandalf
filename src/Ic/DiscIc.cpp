@@ -172,7 +172,12 @@ void DiscIc<ndim>::Generate(void)
 
     // Keplerian velocity
     FLOAT vk = std::sqrt(GStar_M/r);
-    if (i>Npart) vk *= std::sqrt(1.-0.5*(H/r)*(H/r)*(1.5+p+q));
+    if (i>Npart) {
+      if (ndim==2)
+        vk *= std::sqrt(1.-(H/r)*(H/r)*(p+2*q));
+      else
+        vk *= std::sqrt(1.-0.5*(H/r)*(H/r)*(1.5+p+q));
+    }
     part.v[0] = -vk*cos(phi);
     part.v[1] = vk*sin(phi);
     if (ndim == 3) {
