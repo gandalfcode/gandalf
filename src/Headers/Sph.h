@@ -146,6 +146,7 @@ class Sph : public Hydrodynamics<ndim>
 
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
+  int conservative_sph_gravity;        ///< Use Price & Monagahan (2007) conservative gravity
   int fixed_sink_mass;                 ///< Fix masses of sink particles
   //int Ngather;                         ///< Average no. of gather neighbours
   FLOAT alpha_visc_min;                ///< Min. time-dependent viscosity alpha
@@ -217,6 +218,9 @@ public:
   using Sph<ndim>::Nhydromax;
   using Sph<ndim>::sphdata_unsafe;
 
+  using Hydrodynamics<ndim>::rho_sink;
+  using Hydrodynamics<ndim>::sink_particles;
+
   typedef typename GradhSphBase<ndim>::HydroNeib HydroNeib;
   typedef typename GradhSphBase<ndim>::DirectNeib  DirectNeib;
 
@@ -245,6 +249,18 @@ public:
 #if defined MPI_PARALLEL
   virtual void FinishReturnExport ();
 #endif
+
+  inline FLOAT h_rho_func(const FLOAT m, const FLOAT rho) const
+  {
+    return h_fac*pow(m/rho, invndim);
+    //return h_fac*pow((FLOAT) 0.5*m*((FLOAT) 1.0/rho + (FLOAT) 1.0/rho_sink), invndim);
+  }
+  inline FLOAT h_rho_deriv(const FLOAT h, const FLOAT m, const FLOAT rho) const
+  {
+    return -invndim*h/rho;
+    //return -h*invndim*pow(rho, -(FLOAT) 2.0)/((FLOAT) 1.0/rho + (FLOAT) 1.0/rho_sink);
+  }
+
 
   kernelclass<ndim> kern;                  ///< SPH kernel
   GradhSphParticle<ndim> *sphdata;         ///< Pointer to particle data
