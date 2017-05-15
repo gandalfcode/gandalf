@@ -933,7 +933,7 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
     // list error in order to generate a larger neighbour list (not properly implemented yet).
     if (h > hmax) return 0;
 
-  } while (h > h_lower_bound && h < h_upper_bound);
+  } while (h > h_lower_bound && h <= h_upper_bound);
   //===============================================================================================
 
   assert(!(isinf(h)) && !(isnan(h)));
