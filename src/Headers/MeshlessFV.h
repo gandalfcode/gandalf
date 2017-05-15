@@ -108,8 +108,8 @@ public:
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void) {
-    this->template DoDeleteDeadParticles<MeshlessFVParticle>() ;
+  virtual int DeleteDeadParticles(void) {
+    return this->template DoDeleteDeadParticles<MeshlessFVParticle>() ;
   }
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {
     MeshlessFVParticle<ndim>& mfvpart = static_cast<MeshlessFVParticle<ndim>& > (part);

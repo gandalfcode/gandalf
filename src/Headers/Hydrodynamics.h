@@ -81,9 +81,9 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
-  virtual void DeleteDeadParticles(void) = 0;
+  virtual int DeleteDeadParticles(void) = 0;
 protected:
-  template<template <int> class ParticleType> void DoDeleteDeadParticles() ;
+  template<template <int> class ParticleType> int DoDeleteDeadParticles() ;
 public:
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) = 0;
   virtual void ZeroAccelerations() = 0;
@@ -153,7 +153,7 @@ public:
 
 template<int ndim>
 template<template<int> class ParticleType>
-void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
+int Hydrodynamics<ndim>::DoDeleteDeadParticles() {
   int i;                               // Particle counter
   int itype;                           // Current particle type
   int Ndead = 0;                       // No. of 'dead' particles
@@ -183,7 +183,7 @@ void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
   }
 
   // Reorder all arrays following with new order, with dead particles at end
-  if (Ndead == 0) return;
+  if (Ndead == 0) return Ndead;
 
   // Reduce hydro particle counters once dead particles have been removed and reset all
   // other particle counters since a ghost and tree rebuild is required.
@@ -197,7 +197,7 @@ void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
     assert(!partdata[i].flags.is_dead());
   }
 
-  return;
+  return Ndead;
 
 }
 
@@ -220,7 +220,7 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
 
   virtual void AllocateMemory(int) {};
   virtual void DeallocateMemory(void) {};
-  virtual void DeleteDeadParticles(void) {};
+  virtual int DeleteDeadParticles(void) {};
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {};
   virtual void ZeroAccelerations() {} ;
 

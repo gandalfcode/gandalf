@@ -102,7 +102,7 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
-  virtual void DeleteDeadParticles(void) = 0;
+  virtual int DeleteDeadParticles(void) = 0;
 
   // Other functions
   //-----------------------------------------------------------------------------------------------

@@ -104,7 +104,7 @@ class Sph : public Hydrodynamics<ndim>
 
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
-  virtual void DeleteDeadParticles(void) = 0;
+  virtual int DeleteDeadParticles(void) = 0;
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {part.m -= dm;}
 
   virtual void ZeroAccelerations() ;
@@ -230,8 +230,8 @@ public:
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void) {
-    this->template DoDeleteDeadParticles<GradhSphParticle>() ;
+  virtual int DeleteDeadParticles(void) {
+    return this->template DoDeleteDeadParticles<GradhSphParticle>() ;
   }
 
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
@@ -293,8 +293,8 @@ class SM2012Sph: public Sph<ndim>
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void) {
-    this->template DoDeleteDeadParticles<SM2012SphParticle>() ;
+  virtual int DeleteDeadParticles(void) {
+    return this->template DoDeleteDeadParticles<SM2012SphParticle>() ;
   }
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
