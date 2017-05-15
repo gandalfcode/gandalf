@@ -28,7 +28,7 @@
 #include "EOS.h"
 #include "Hydrodynamics.h"
 #include "Sinks.h"
-#include "SphIntegration.h"
+#include "Integration.h"
 #include "Parameters.h"
 using namespace std;
 
