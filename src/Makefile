@@ -200,7 +200,7 @@ OBJ += GradhSphTree.o
 OBJ += SM2012SphTree.o
 OBJ += Ewald.o
 OBJ += AdiabaticEOS.o BarotropicEOS.o Barotropic2EOS.o
-OBJ += PolytropicEOS.o IsothermalEOS.o RadwsEOS.o LocallyIsothermal.o
+OBJ += PolytropicEOS.o IsothermalEOS.o RadwsEOS.o LocallyIsothermal.o DiscLocallyIsothermal.o
 OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
 OBJ += MultipleSourceIonisation.o
 OBJ += KDRadiationTree.o TreeMonteCarlo.o
@@ -223,6 +223,7 @@ OBJ += EvrardCollapseIc.o EwaldIc.o FilamentIc.o GaussianRingIc.o GreshoVortexIc
 OBJ += HierarchicalSystemIc.o IsothermalSphereIc.o KelvinHelmholtzIc.o NohIc.o PlummerSphereIc.o
 OBJ += PolytropeIc.o RayleighTaylorIc.o SedovBlastwaveIc.o ShearflowIc.o ShocktubeIc.o
 OBJ += SilccIc.o SoundwaveIc.o SpitzerExpansionIc.o TurbulentCoreIc.o UniformIc.o ICRegularization.o
+OBJ += DiscIc.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o

@@ -112,6 +112,9 @@ void Simulation<ndim>::GenerateIC(void)
   else if (ic == "cdiscontinuity") {
     icGenerator = new ContactDiscontinuityIc<ndim>(this, invndim);
   }
+  else if (ic == "disc") {
+    icGenerator = new DiscIc<ndim>(this, invndim);
+  }
   else if (ic == "dustybox") {
     icGenerator = new DustyBoxIc<ndim>(this, invndim);
   }

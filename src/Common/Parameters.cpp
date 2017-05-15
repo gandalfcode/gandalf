@@ -398,6 +398,7 @@ void Parameters::SetDefaultValues(void)
   intparams["field_type"] = 1;
   intparams["gridsize"] = 64;
   intparams["Nhydro"] = 0;
+  intparams["Ndust"] = 0;
   intparams["Nhydromax"] = -1;
   intparams["Nstar"] = 0;
   intparams["Nstarmax"] = -1;
@@ -448,6 +449,19 @@ void Parameters::SetDefaultValues(void)
   floatparams["zmax"] = 1.0;
   floatparams["thermal_energy"] = 1.0;
   floatparams["mach"] = 2.7;
+  floatparams["DiscIcMass"] = 0.01;
+  floatparams["DiscIcP"] = 1.0;
+  floatparams["DiscIcQ"] = 0.5;
+  floatparams["DiscIcRin"] = 0.4;
+  floatparams["DiscIcRout"] = 2.5;
+  floatparams["DiscIcHr"] = 0.05;
+  intparams["DiscIcPlanet"] = 1;
+  floatparams["DiscIcPlanetRadius"] = 1;
+  floatparams["DiscIcPlanetMass"] = 1e-3;
+  floatparams["DiscIcPlanetAccretionRadiusHill"] = 0.4;
+  floatparams["DiscIcPlanetEccen"]=0.;
+  floatparams["DiscIcPlanetIncl"]=0.;
+  floatparams["DustGasRatio"]=0.01;
 
   // Regularising initial conditions parameters
   //-----------------------------------------------------------------------------------------------

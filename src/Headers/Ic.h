@@ -1068,6 +1068,37 @@ public:
 };
 
 
+//=================================================================================================
+//  Class DiscIc
+/// \brief
+/// \details
+/// \author  G. P. Rosotti
+/// \date    03/05/2017
+//=================================================================================================
+template <int ndim>
+class DiscIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  DiscIc(Simulation<ndim>* _sim, FLOAT _invndim);
+  virtual ~DiscIc() {};
+
+  virtual void Generate(void);
+
+};
+
 
 namespace Regularization {
 

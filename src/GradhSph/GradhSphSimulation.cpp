@@ -132,6 +132,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   else if (stringparams["gas_eos"] == "rad_ws" || stringparams["gas_eos"] == "radws") {
     eos_type = radws;
   }
+  else if (stringparams["gas_eos"] == "disc_locally_isothermal") {
+    eos_type = disc_locally_isothermal;
+  }
   else {
     string message = "Unrecognised eos parameter : gas_eos = " + simparams->stringparams["gas_eos"];
     ExceptionHandler::getIstance().raise(message);
