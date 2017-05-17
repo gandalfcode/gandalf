@@ -573,6 +573,8 @@ K & = Kelvin
 
 \item \var{courant\_mult} : Courant timestep multiplier
 
+\item \var{visc\_mult} : Viscosity timestep multiplier
+
 \item \var{nbody\_mult} : N-body timestep multiplier
 
 \item \var{subsys\_mult} : Sub-system N-body timestep multiplier
@@ -730,6 +732,9 @@ none		 & = No additional limiter \\
 conservative & = Predictive global timestep limiter of Springel (2009) \\
 simple		 & = Saitoh \& Makino type limiter. Reduces the time step if it is detected to be too large.
 \end{tabular}
+
+\item \var{shear\_visc} Enable viscosity with constant kinematic shear viscoity
+\item \var{bulk\_visc}  Enable viscosity with constant kinematic bulk  viscoity
 
 \end{itemize}
 
