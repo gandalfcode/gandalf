@@ -253,7 +253,8 @@ class MfvCommon : public MeshlessFV<ndim>
   ExactRiemannSolver<ndim> riemannExact ;
   HllcRiemannSolver<ndim> riemannHLLC ;
   int RiemannSolverType ;
-
+  ViscousFlux<ndim> viscosity;
+  bool need_viscosity;
 
 
 };
@@ -301,6 +302,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::viscosity;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::need_viscosity;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -375,6 +378,8 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::viscosity;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::need_viscosity;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;

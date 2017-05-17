@@ -286,6 +286,8 @@ void Parameters::SetDefaultValues(void)
   intparams["zero_mass_flux"] = 1;
   intparams["static_particles"] = 0;
   stringparams["time_step_limiter"] = "none";
+  floatparams["shear_visc"] = 0;
+  floatparams["bulk_visc"] = 0;
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------

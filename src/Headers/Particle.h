@@ -398,6 +398,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
   FLOAT rdmdt[ndim];                   ///< ..
   FLOAT rdmdt0[ndim];                  ///< ..
+  FLOAT alpha_slope[ndim+2];           ///< Slope limiter parameter
 
   // SPH particle constructor to initialise all values
   //-----------------------------------------------------------------------------------------------
@@ -413,6 +414,8 @@ struct MeshlessFVParticle : public Particle<ndim>
     for (int k=0; k<ndim; k++) rdmdt0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim+2; k++) dQ[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim+2; k++) dQdt[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim+2; k++) alpha_slope[k] = (FLOAT) 0.0;
+
   }
 
 #ifdef MPI_PARALLEL
@@ -492,6 +495,7 @@ struct MeshlessFVParticle : public Particle<ndim>
 			  for (int kk=0; kk<ndim; kk++) grad[k][kk]=p.grad[k][kk];
 			  dQ[k]=0;
 			  dQdt[k]=0;
+			  alpha_slope[k] = p.alpha_slope[k];
 		  }
 		  for (int k=0; k<ndim; k++) {
 			  for (int kk=0; kk<ndim; kk++) B[k][kk]=p.B[k][kk];
@@ -519,10 +523,12 @@ struct MeshlessFVParticle : public Particle<ndim>
 	  FLOAT dQ[ndim+2];
 	  FLOAT dQdt[ndim+2];
 	  FLOAT rdmdt[ndim];
+	  FLOAT alpha_slope[ndim+2];
 	  FLOAT h;
 	  FLOAT hrangesqd;
 	  FLOAT ndens;
 	  FLOAT hfactor;
+
 
 	  static const int NDIM=ndim;
 

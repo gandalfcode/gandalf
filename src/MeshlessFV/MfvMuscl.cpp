@@ -196,6 +196,11 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
       riemannHLLC.ComputeFluxes(Wi, Wj, Aunit, vface, flux);
     }
 
+    // Add the viscosity
+    if (need_viscosity) {
+      viscosity.ComputeViscousFlux(Wi, Wj, part.grad, neibpart[j].grad, flux) ;
+    }
+
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
       const FLOAT f = DotProduct(flux[var], Aij, ndim);
