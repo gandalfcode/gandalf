@@ -240,6 +240,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["courant_mult"] = 0.15;
   floatparams["nbody_mult"] = 0.1;
   floatparams["subsys_mult"] = 0.05;
+  floatparams["visc_mult"] = 0.3 ;
   intparams["Nlevels"] = 1;
   intparams["level_diff_max"] = 1;
   intparams["sph_single_timestep"] = 0;

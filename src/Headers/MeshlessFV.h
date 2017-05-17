@@ -157,9 +157,9 @@ public:
   const bool staticParticles;          ///< ..
   const FLOAT accel_mult;              ///< ..
   const FLOAT courant_mult;            ///< ..
-  //const FLOAT gamma_eos;               ///< ..
-  //const FLOAT gammam1;                 ///< ..
   const FLOAT h_converge;              ///< h-rho iteration tolerance
+  const FLOAT visc_coeff;              ///< Max kinematic viscosity
+  const FLOAT visc_mult ;              ///< Viscosity time-step multiplier
 
 
   // MeshlessFV particle counters and main particle data array
