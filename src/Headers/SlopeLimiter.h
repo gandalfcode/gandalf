@@ -353,9 +353,9 @@ class GizmoLimiter : public ScalarLimiter<ndim>
 
     //---------------------------------------------------------------------------------------------
     for (var=0; var<ndim+2; var++) {
-
-      dW[var] = DotProduct(parti.grad[var], draux, ndim) ;
-      for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
+      FLOAT alpha = parti.alpha_slope[var];
+      dW[var] = alpha * DotProduct(parti.grad[var], draux, ndim) ;
+      for (int k=0; k<ndim; k++) gradW[var][k] = alpha * parti.grad[var][k];
 
 
       for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];

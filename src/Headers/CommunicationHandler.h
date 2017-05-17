@@ -180,6 +180,7 @@ class MeshlessCommunicationHandler {
     	}
     	for (int ivar=0; ivar<ndim+2; ivar++) {
     		Wprim[ivar]=p.Wprim[ivar];
+    		alpha_slope[ivar]=p.alpha_slope[ivar];
     		for (int k=0; k<ndim; k++) {
         		grad[ivar][k] = p.grad[ivar][k];
     		}
@@ -203,6 +204,7 @@ class MeshlessCommunicationHandler {
     FLOAT Wprim[ndim+2];
     FLOAT grad[ndim+2][ndim];
     FLOAT B[ndim][ndim];
+    FLOAT alpha_slope[ndim+2];
     FLOAT vsig_max;
     FLOAT sound;
   };
@@ -278,6 +280,7 @@ public:
 
 	for (int ivar=0; ivar<ndim+2; ivar++) {
 		p2.Wprim[ivar]=p.Wprim[ivar];
+		p2.alpha_slope[ivar]=p.alpha_slope[ivar];
 		for (int k=0; k<ndim; k++) {
 			p2.grad[ivar][k] = p.grad[ivar][k];
 		}
