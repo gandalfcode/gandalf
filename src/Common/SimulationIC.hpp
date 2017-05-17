@@ -97,6 +97,9 @@ void Simulation<ndim>::GenerateIC(void)
   }
   // Generate initial conditions on-the-fly via various IC class functions
   //-----------------------------------------------------------------------------------------------
+  else if (ic == "basic_sine") {
+    icGenerator = new BasicIc<ndim>(this, invndim);
+  }
   else if (ic == "binaryacc") {
     icGenerator = new BinaryAccretionIc<ndim>(this, invndim);
   }

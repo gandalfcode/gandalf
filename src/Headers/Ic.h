@@ -164,6 +164,48 @@ public:
 
 
 //=================================================================================================
+//  Class BasicIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    19/11/2016
+//=================================================================================================
+template <int ndim>
+class BasicIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+  FLOAT rho;
+  FLOAT lambda;
+  FLOAT amp;
+
+
+public:
+
+  BasicIc(Simulation<ndim>* _sim, FLOAT _invndim);
+  ~BasicIc() {};
+
+  virtual void Generate();
+  virtual FLOAT GetDensity(const FLOAT *, const int) const;
+  virtual void SetParticleProperties();
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
+
+
+};
+
+
+
+
+//=================================================================================================
 //  Class BinaryAccretionIc
 /// \brief   Binary accretion simulation IC class.
 /// \details Binary accretion simulation IC class.

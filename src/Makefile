@@ -217,13 +217,13 @@ OBJ += CodeTiming.o
 OBJ += Dust.o
 OBJ += Particle.o RandomNumber.o
 OBJ += Supernova.o SupernovaDriver.o
-OBJ += Ic.o BinaryAccretionIc.o BlobIc.o BondiAccretionIc.o
-OBJ += BossBodenheimerIc.o ContactDiscontinuityIc.o DustyBoxIc.o
+OBJ += Ic.o BasicIc.o BinaryAccretionIc.o BlobIc.o BondiAccretionIc.o
+OBJ += BossBodenheimerIc.o ContactDiscontinuityIc.o DiscIc.o DustyBoxIc.o
 OBJ += EvrardCollapseIc.o EwaldIc.o FilamentIc.o GaussianRingIc.o GreshoVortexIc.o
 OBJ += HierarchicalSystemIc.o IsothermalSphereIc.o KelvinHelmholtzIc.o NohIc.o PlummerSphereIc.o
 OBJ += PolytropeIc.o RayleighTaylorIc.o SedovBlastwaveIc.o ShearflowIc.o ShocktubeIc.o
-OBJ += SilccIc.o SoundwaveIc.o SpitzerExpansionIc.o TurbulentCoreIc.o UniformIc.o ICRegularization.o
-OBJ += DiscIc.o
+OBJ += SilccIc.o SoundwaveIc.o SpitzerExpansionIc.o TurbulentCoreIc.o
+OBJ += UniformIc.o ICRegularization.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
