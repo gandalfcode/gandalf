@@ -688,7 +688,12 @@ price2008   & = Price (2008) conductivity \\
 wadsley2008 & = Wadsley et al. (2008) conductivity
 \end{tabular}
 
-\item \var{time\_dependent\_avisc} : Morris \& Monaghan time-dependent viscosity ($1$ or $0$)
+\item \var{time\_dependent\_avisc} : Aritificial viscosity switch 
+\begin{tabular}{ll}
+none     &= No switch, artificial viscoisty always set to \var{alpha\_visc}.\\
+mm97     &= Morris \& Monaghan (1997) switch \\
+cd2010   &= Advanced switch by Cullen \& Dehnen (2010), using the balsar swith
+\end{tabular}
 
 \item \var{alpha\_visc} : (Maximum) value of alpha viscosity parameter
 
