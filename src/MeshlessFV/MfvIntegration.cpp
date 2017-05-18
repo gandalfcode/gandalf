@@ -16,8 +16,9 @@ DOUBLE MfvIntegration<ndim,ParticleType>::Timestep(Particle<ndim>& _part, Hydrod
   FLOAT dt_grav = accel_mult*
     sqrt(part.h/sqrt(DotProduct(part.a0, part.a0, ndim) + small_number));
 
- if (mfv->visc_coeff > 0) {
-   dt_cfl = min(dt_cfl, mfv->visc_mult * 0.5*part.h*part.h/mfv->visc_coeff);
+ if (visc_coeff > 0) {
+   FLOAT dt_visc = visc_mult * 0.5*part.h*part.h/visc_coeff;
+   dt_cfl = min(dt_cfl, dt_visc);
  }
 
   if (dt_cfl < 1e-10 || dt_grav < 1e-10) {

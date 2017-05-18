@@ -158,8 +158,6 @@ public:
   const FLOAT accel_mult;              ///< ..
   const FLOAT courant_mult;            ///< ..
   const FLOAT h_converge;              ///< h-rho iteration tolerance
-  const FLOAT visc_coeff;              ///< Max kinematic viscosity
-  const FLOAT visc_mult ;              ///< Viscosity time-step multiplier
 
 
   // MeshlessFV particle counters and main particle data array

@@ -212,9 +212,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 
   // Meshless-time integration object
-  hydroint = new MfvIntegration<ndim, MeshlessFVParticle>(floatparams["accel_mult"],
-                                                          floatparams["courant_mult"],
-                                                          intparams["static_particles"]);
+  hydroint = new MfvIntegration<ndim, MeshlessFVParticle>(simparams);
 
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------

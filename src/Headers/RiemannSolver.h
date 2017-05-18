@@ -434,7 +434,7 @@ class ViscousFlux
                           const FLOAT gradv_l[][ndim], const FLOAT gradv_r[][ndim],
                           FLOAT flux[ndim+2][ndim]) const {
 
-    // Compute centre states
+    // Compute average face state
     FLOAT W[ndim+2], gradv[ndim][ndim], div_v(0) ;
     for (int i=0; i < ndim+2; i++) W[i] = (Wl[i] + Wr[i])/2 ;
     for (int i=0; i < ndim; i++) {
@@ -460,8 +460,8 @@ class ViscousFlux
     // Add the fluxes
     for (int i=0; i < ndim; i++) {
       for (int j=0; j < ndim; j++) {
-        flux[i][j]  += stress[i][j];
-        flux[iE][j] += stress[i][j]*W[i];
+        flux[i][j]  -= stress[i][j];
+        flux[iE][j] -= stress[i][j]*W[i];
       }
     }
   }
