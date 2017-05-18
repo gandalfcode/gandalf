@@ -44,6 +44,16 @@ static const string ascii_tag("SERENASCIIDUMPV2");
 static const int string_length = 20;
 
 
+struct Ptype_info
+{
+    Ptype_info()
+     : ptype(-1), Nbefore(0), Ntot_type(0)
+    { } ;
+
+    int ptype ;
+    int Nbefore ;
+    int Ntot_type ;
+};
 
 //=================================================================================================
 //  SimulationBase::ReadSnapshotFile
@@ -909,6 +919,55 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 }
 
 
+template<int ndim, class T>
+void WriteSerenFormArrayScalar(formatted_output& outfile, Hydrodynamics<ndim>* hydro,
+                               T Particle<ndim>::*data,
+                               const std::vector<Ptype_info>& types,
+                               T unit=1)
+{
+
+  for (unsigned int itype=0; itype < types.size(); ++itype){
+    int ptype     = types[itype].ptype ;
+    int Ntot_type = types[itype].Ntot_type ;
+
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype) {
+        outfile << part.*data * unit << endl;
+        n++;
+      }
+    }
+    assert(n == Ntot_type) ;
+  }
+}
+
+template<int ndim, class T>
+void WriteSerenFormArrayVector(formatted_output& outfile, Hydrodynamics<ndim>* hydro,
+                               T (Particle<ndim>::*data)[ndim],
+                               const std::vector<Ptype_info>& types,
+                               T unit=1)
+{
+  for (unsigned int itype=0; itype < types.size(); ++itype){
+    int ptype     = types[itype].ptype ;
+    int Ntot_type = types[itype].Ntot_type ;
+
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype) {
+        for (int k=0; k < ndim; k++) {
+          outfile << (part.*data)[k] * unit;
+        }
+        outfile << endl;
+        n++;
+      }
+    }
+    assert(n == Ntot_type) ;
+  }
+}
+
+
 
 //=================================================================================================
 //  Simulation::WriteSerenFormSnapshotFile
@@ -1026,27 +1085,35 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
     typedata[ndata][4] = 0;             ndata++;
   }
 
-  // Set important header information
-  idata[0]    = hydro->Nhydro;
-  idata[1]    = nbody->Nstar;
+  std::vector<Ptype_info> types(4) ;
+  types[0].ptype = icm_type ;
+  types[1].ptype = gas_type ;
+  types[2].ptype = cdm_type ;
+  types[3].ptype = dust_type;
 
   for (int n=0; n < hydro->Nhydro; n++){
-    int ptype = hydro->GetParticlePointer(n).ptype;
+    int ptype = hydro->GetParticlePointer(n).ptype ;
     switch (ptype) {
-      case icm_type:
-        idata[3]++; break;
-      case gas_type:
-        idata[4]++; break;
-      case cdm_type:
-        idata[5]++; break;
-      case dust_type:
-        idata[6]++; break;
-      default:
-        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
-        idata[7]++ ; break ;
+    case icm_type:
+      types[0].Ntot_type++; break;
+    case gas_type:
+      types[1].Ntot_type++; break;
+    case cdm_type:
+      types[2].Ntot_type++; break;
+    case dust_type:
+      types[3].Ntot_type++; break;
+    default:
+      ExceptionHandler::getIstance().raise("SerenUnformReader: Type not recognised");
     }
   }
 
+  // Set important header information
+  idata[0]    = hydro->Nhydro;
+  idata[1]    = nbody->Nstar;
+  idata[3]    = types[0].Ntot_type;
+  idata[4]    = types[1].Ntot_type;
+  idata[5]    = types[2].Ntot_type;
+  idata[6]    = types[3].Ntot_type;
   idata[19]   = nunit;
   idata[20]   = ndata;
   ilpdata[0]  = Noutsnap;
@@ -1089,86 +1156,32 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
   if (hydro->Nhydro > 0) {
 
     // porig
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.iorig << endl;
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::iorig, types);
 
     // Positions
-    //---------------------------------------------------------------------------------------------
-    if (ndim == 1) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.r[0]*simunits.r.outscale << endl;
-      }
-    }
-    else if (ndim == 2) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.r[0]*simunits.r.outscale << part.r[1]*simunits.r.outscale << endl;
-      }
-    }
-    else if (ndim == 3) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.r[0]*simunits.r.outscale << part.r[1]*simunits.r.outscale
-                       << part.r[2]*simunits.r.outscale << endl;
-      }
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayVector(outfile_format, hydro, &Particle<ndim>::r, types, simunits.r.outscale);
 
     // Masses
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.m*simunits.m.outscale << endl;
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::m, types, simunits.m.outscale);
 
     // Smoothing lengths
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.h*simunits.r.outscale << endl;
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::h, types, simunits.r.outscale);
 
     // Velocities
-    //---------------------------------------------------------------------------------------------
-    if (ndim == 1) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.v[0]*simunits.v.outscale << endl;
-      }
-    }
-    else if (ndim == 2) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.v[0]*simunits.v.outscale
-                << part.v[1]*simunits.v.outscale << endl;
-      }
-    }
-    else if (ndim == 3) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.v[0]*simunits.v.outscale
-                << part.v[1]*simunits.v.outscale
-                << part.v[2]*simunits.v.outscale << endl;
-      }
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayVector(outfile_format, hydro, &Particle<ndim>::v, types, simunits.v.outscale);
 
     // Densities
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.rho*simunits.rho.outscale << endl;;
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::rho, types, simunits.rho.outscale);
 
     // Specific internal energies
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.u*simunits.u.outscale << endl;
-    }
-
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::u, types, simunits.u.outscale);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -1543,23 +1556,14 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
 }
 
+
+
+
 #ifdef MPI_PARALLEL
-
-struct MPI_Ptype_info
-{
-	MPI_Ptype_info()
-	 : ptype(-1), Nbefore(0), Ntot_type(0)
-	{ } ;
-
-	int ptype ;
-	int Nbefore ;
-	int Ntot_type ;
-};
-
 template<int ndim, class T>
 void WriteSerenFormArrayScalar_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 								   T Particle<ndim>::*data, T* buffer,
-								   const std::vector<MPI_Ptype_info>& types,
+								   const std::vector<Ptype_info>& types,
 								   T unit=1)
 {
   for (unsigned int itype=0; itype < types.size(); ++itype){
@@ -1591,7 +1595,7 @@ void WriteSerenFormArrayScalar_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 template<int ndim, class T>
 void WriteSerenFormArrayVector_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 								   T (Particle<ndim>::*data)[ndim], T* buffer,
-								   const std::vector<MPI_Ptype_info>& types,
+								   const std::vector<Ptype_info>& types,
 								   T unit=1)
 {
   for (unsigned int itype=0; itype < types.size(); ++itype){
@@ -1695,7 +1699,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     typedata[ndata][4] = 0; ndata++;
 
     data_id[ndata] = "r";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
+    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;problem
     typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 1; ndata++;
 
@@ -1733,7 +1737,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   }
 
   // Collect the number of particles of each type
-  std::vector<MPI_Ptype_info> types(4) ;
+  std::vector<Ptype_info> types(4) ;
   types[0].ptype = icm_type ;
   types[1].ptype = gas_type ;
   types[2].ptype = cdm_type ;
@@ -1751,7 +1755,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       case dust_type:
         types[3].Ntot_type++; break;
       default:
-        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
+        ExceptionHandler::getIstance().raise("SerenUnformReader: Type not recognised");
     }
   }
 
@@ -1943,6 +1947,55 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   return true;
 }
 #else
+
+template<int ndim, class T>
+void WriteSerenUnformArrayScalar(BinaryWriter& writer, Hydrodynamics<ndim>* hydro,
+                                 T Particle<ndim>::*data,
+                                 const std::vector<Ptype_info>& types,
+                                 T unit=1)
+{
+
+  for (unsigned int itype=0; itype < types.size(); ++itype){
+    int ptype     = types[itype].ptype ;
+    int Ntot_type = types[itype].Ntot_type ;
+
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype) {
+        writer.write_value((T)(part.*data * unit)) ;
+        n++;
+      }
+    }
+    assert(n == Ntot_type) ;
+  }
+}
+
+template<int ndim, class T>
+void WriteSerenUnformArrayVector(BinaryWriter& writer, Hydrodynamics<ndim>* hydro,
+                                 T (Particle<ndim>::*data)[ndim],
+                                 const std::vector<Ptype_info>& types,
+                                 T unit=1)
+{
+  for (unsigned int itype=0; itype < types.size(); ++itype){
+    int ptype     = types[itype].ptype ;
+    int Ntot_type = types[itype].Ntot_type ;
+
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype) {
+        for (int k=0; k < ndim; k++) {
+          writer.write_value((T)((part.*data)[k] * unit));
+        }
+        n++;
+      }
+    }
+    assert(n == Ntot_type) ;
+  }
+}
+
+
 template <int ndim>
 bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 {
@@ -2048,25 +2101,36 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     typedata[ndata][4] = 0; ndata++;
   }
 
+  // Collect the number of particles of each type
+  std::vector<Ptype_info> types(4) ;
+  types[0].ptype = icm_type ;
+  types[1].ptype = gas_type ;
+  types[2].ptype = cdm_type ;
+  types[3].ptype = dust_type;
+
+  for (int n=0; n < hydro->Nhydro; n++){
+    int ptype = hydro->GetParticlePointer(n).ptype ;
+    switch (ptype) {
+      case icm_type:
+        types[0].Ntot_type++; break;
+      case gas_type:
+        types[1].Ntot_type++; break;
+      case cdm_type:
+        types[2].Ntot_type++; break;
+      case dust_type:
+        types[3].Ntot_type++; break;
+      default:
+        ExceptionHandler::getIstance().raise("SerenUnformReader: Type not recognised");
+    }
+  }
+
   // Set important header information
   idata[0]    = hydro->Nhydro;
   idata[1]    = nbody->Nstar;
-  for (int n=0; n < hydro->Nhydro; n++){
-    int ptype = hydro->GetParticlePointer(n).ptype;
-    switch (ptype) {
-      case icm_type:
-        idata[3]++; break;
-      case gas_type:
-        idata[4]++; break;
-      case cdm_type:
-        idata[5]++; break;
-      case dust_type:
-        idata[6]++; break;
-      default:
-        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
-        idata[7]++; break;
-    }
-  }
+  idata[3]    = types[0].Ntot_type;
+  idata[4]    = types[1].Ntot_type;
+  idata[5]    = types[2].Ntot_type;
+  idata[6]    = types[3].Ntot_type;
   idata[19]   = nunit;
   idata[20]   = ndata;
   ilpdata[0]  = Noutsnap;
@@ -2124,54 +2188,31 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
     // porig
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value(part.iorig);
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::iorig, types);
 
     // Positions
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      for (int k=0; k<ndim; k++) writer.write_value((FLOAT)(part.r[k]*simunits.r.outscale));
-    }
+    WriteSerenUnformArrayVector(writer, hydro, &Particle<ndim>::r, types, simunits.r.outscale);
 
     // Masses
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value((FLOAT)(part.m*simunits.m.outscale));
-      assert(part.m > 0.0);
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::m, types, simunits.m.outscale);
 
     // Smoothing lengths
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value((FLOAT)(part.h*simunits.r.outscale));
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::h, types, simunits.r.outscale);
 
     // Velocities
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      for (int k=0; k<ndim; k++)
-        writer.write_value((FLOAT)(part.v[k]*simunits.v.outscale));
-    }
+    WriteSerenUnformArrayVector(writer, hydro, &Particle<ndim>::v, types, simunits.v.outscale);
 
     // Densities
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value((FLOAT)(part.rho*simunits.rho.outscale));
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::rho, types, simunits.rho.outscale);
 
     // Specific internal energies
     //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value((FLOAT)(part.u*simunits.u.outscale));
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::u, types, simunits.u.outscale);
 
   }
 
