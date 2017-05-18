@@ -1699,7 +1699,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     typedata[ndata][4] = 0; ndata++;
 
     data_id[ndata] = "r";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;problem
+    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
     typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 1; ndata++;
 
