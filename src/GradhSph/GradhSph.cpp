@@ -309,7 +309,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   ComputeThermalProperties(parti);
 
   if (tdavisc == cd2010) {
-    ComputeCullenAndDehnenViscosity(parti, ngbs, kern);
+    this->ComputeCullenAndDehnenViscosity(parti, ngbs, kern);
   }
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
