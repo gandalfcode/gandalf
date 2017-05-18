@@ -120,10 +120,11 @@ class Sph : public Hydrodynamics<ndim>
   virtual void ComputeThermalProperties(SphParticle<ndim> &) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) = 0;
 
+#if !defined(SWIG)
   template<template<int> class Kernel>
   void ComputeCullenAndDehnenViscosity(SphParticle<ndim> &, const vector<DensityParticle> &,
                                        Kernel<ndim>&);
-
+#endif
 
   // SPH array memory allocation functions
   //-----------------------------------------------------------------------------------------------
