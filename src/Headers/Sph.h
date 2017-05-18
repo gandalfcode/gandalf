@@ -366,7 +366,7 @@ Kernel<ndim>& kern)                                 ///< [in] Kernel
     }
 
   FLOAT invh = 1 / parti.h;
-  FLOAT hfac = parti.hfactor;
+  FLOAT hfac = invh * parti.hfactor / parti.rho ;
   int Nneib = ngbs.size() ;
   for (int i=0; i < Nneib; ++i) {
 
@@ -377,8 +377,8 @@ Kernel<ndim>& kern)                                 ///< [in] Kernel
     for (int j=0; j < ndim; j++)
       for (int k=0; k < ndim; k++) {
         rr[j][k] += w * dr[j] * dr[k] ;
-        dv[j][k] += w * dr[j] * ngbs[i].v[j] - parti.v[j] ;
-        da[j][k] += w * dr[j] * ngbs[i].a[j] - parti.a[j] ;
+        dv[j][k] += w * dr[j] * (ngbs[i].v[k] - parti.v[k]) ;
+        da[j][k] += w * dr[j] * (ngbs[i].a[k] - parti.a[k]) ;
       }
   }
 
@@ -402,9 +402,9 @@ Kernel<ndim>& kern)                                 ///< [in] Kernel
     alpha_loc = alpha_visc ;
   } else {
     // Ok gradients
-    for (int i=0; i<ndim; ++i)
-      for (int j=0; j < ndim; j++)
-        for (int k=0; k < ndim; k++) {
+    for (int i=0; i<ndim; i++)
+      for (int j=0; j<ndim; j++)
+        for (int k=0; k<ndim; k++) {
           dvdx[i][j] += T[j][k] * dv[k][i];
           dadx[i][j] += T[j][k] * da[k][i];
         }
