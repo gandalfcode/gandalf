@@ -240,6 +240,31 @@ struct SphParticle : public Particle<ndim>
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
   }
+
+  class DensityParticle {
+  public:
+    DensityParticle() : m(0), u(0), gpot(0), ptype(0) {} ;
+    DensityParticle(const SphParticle<ndim>&p) {
+      for (int i=0; i<ndim; i++) {
+        r[i] = p.r[i];
+        v[i] = p.v[i];
+        a[i] = p.a[i];
+      }
+      m = p.m;
+      u = p.u;
+      gpot=p.gpot;
+      ptype=p.ptype;
+    }
+
+    FLOAT r[ndim];
+    FLOAT v[ndim];
+    FLOAT a[ndim];
+    FLOAT m;
+    FLOAT u;
+    FLOAT gpot;
+    int ptype;
+  };
+
 };
 
 
