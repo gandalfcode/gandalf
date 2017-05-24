@@ -44,6 +44,16 @@ static const string ascii_tag("SERENASCIIDUMPV2");
 static const int string_length = 20;
 
 
+struct Ptype_info
+{
+    Ptype_info()
+     : ptype(-1), Nbefore(0), Ntot_type(0)
+    { } ;
+
+    int ptype ;
+    int Nbefore ;
+    int Ntot_type ;
+};
 
 //=================================================================================================
 //  SimulationBase::ReadSnapshotFile
@@ -911,47 +921,105 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
 
 //=================================================================================================
+//  Simulation::WriteSerenFormArrayScalar
+/// Write an array of scalars to a Seren formatted file.
+//=================================================================================================
+template<int ndim, class T>
+void WriteSerenFormArrayScalar(formatted_output& outfile, Hydrodynamics<ndim>* hydro,
+                               T Particle<ndim>::*data,
+                               const std::vector<Ptype_info>& types,
+                               T unit=1)
+{
+
+  for (unsigned int itype=0; itype < types.size(); ++itype){
+    int ptype     = types[itype].ptype ;
+    int Ntot_type = types[itype].Ntot_type ;
+
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype && !part.flags.is_dead()) {
+        outfile << part.*data * unit << endl;
+        n++;
+      }
+    }
+    assert(n == Ntot_type) ;
+  }
+}
+
+
+
+//=================================================================================================
+//  Simulation::WriteSerenFormArrayVector
+/// Write an array of vectors to a Seren formatted file.
+//=================================================================================================
+template<int ndim, class T>
+void WriteSerenFormArrayVector(formatted_output& outfile, Hydrodynamics<ndim>* hydro,
+                               T (Particle<ndim>::*data)[ndim],
+                               const std::vector<Ptype_info>& types,
+                               T unit=1)
+{
+  for (unsigned int itype=0; itype < types.size(); ++itype){
+    int ptype     = types[itype].ptype ;
+    int Ntot_type = types[itype].Ntot_type ;
+
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype && !part.flags.is_dead()) {
+        for (int k=0; k < ndim; k++) {
+          outfile << (part.*data)[k] * unit;
+        }
+        outfile << endl;
+        n++;
+      }
+    }
+    assert(n == Ntot_type) ;
+  }
+}
+
+
+
+//=================================================================================================
 //  Simulation::WriteSerenFormSnapshotFile
 /// Write hydro and N-body particle data to snapshot file in Seren format.
 //=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::WriteSerenFormSnapshotFile
- (string filename)                     ///< [in] Filename to write new snapshot to
+ (string filename)                               ///< [in] Filename to write new snapshot to
 {
-  //int dmdt_range_aux;          // Accretion history array size
-  int i;                       // Aux. counter
-  //int ifirst;                  // i.d. of first particle
-  //int ilast;                   // i.d. of last particle
-  //int j;                       // Aux. counter
-  int k;                       // Dimension counter
-  int ndata;                   // No. of data arrays written
-  int nunit;                   // No. of unit strings
-  int idata[50];               // Integer data array
-  int ilpdata[50];             // Long integer data array
-  int typedata[50][5];         // Hydro particle data array information
-  FLOAT rdata[50];             // Real data array
-  DOUBLE ddata[50];            // Double float data array
-  string format_id;            // File format (for verification)
-  string data_id[50];          // String ids of arrays written
-  string unit_data[50];        // String ids of units written
-  int sink_data_length;        // Length of sink float array
-  string dummystring;          // Dummy string variable
-  ofstream outfile;            // Output file stream
+  int i;                                         // Aux. counter
+  int k;                                         // Dimension counter
+  int ndata = 0;                                 // No. of data arrays written
+  int nunit = 0;                                 // No. of unit strings
+  int sink_data_length;                          // Length of sink float array
+  int idata[50];                                 // Integer data array
+  int ilpdata[50];                               // Long integer data array
+  int typedata[50][5];                           // Hydro particle data array information
+  int Nlivehydro = 0;                            // No. of live (i.e. non-accreted) particles
+  FLOAT rdata[50];                               // Real data array
+  DOUBLE ddata[50];                              // Double float data array
+  string format_id;                              // File format (for verification)
+  string data_id[50];                            // String ids of arrays written
+  string unit_data[50];                          // String ids of units written
+  string dummystring;                            // Dummy string variable
+  ofstream outfile;                              // Output file stream
 
   debug2("[Simulation::WriteSerenFormSnapshotFile]");
-
   cout << "Writing snapshot file : " << filename << endl;
 
   outfile.open(filename.c_str());
-  outfile.setf (std::ios::scientific, std::ios::floatfield);
+  outfile.setf(std::ios::scientific, std::ios::floatfield);
   formatted_output outfile_format(outfile, 18, 2, 10);
 
   for (i=0; i<50; i++) idata[i] = 0;
   for (i=0; i<50; i++) ilpdata[i] = 0;
   for (i=0; i<50; i++) rdata[i] = (FLOAT) 0.0;
   for (i=0; i<50; i++) ddata[i] = 0.0;
-  nunit = 0;
-  ndata = 0;
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (!part.flags.is_dead()) Nlivehydro++;
+  }
 
   // Set units
   if (!simunits.dimensionless) {
@@ -982,40 +1050,40 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
 
   // Set array ids and array information data if there are any hydro particles
   //-----------------------------------------------------------------------------------------------
-  if (hydro->Nhydro > 0) {
+  if (Nlivehydro > 0) {
     data_id[ndata] = "porig";
     typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 2;
+    typedata[ndata][2] = Nlivehydro;     typedata[ndata][3] = 2;
     typedata[ndata][4] = 0;              ndata++;
 
     data_id[ndata] = "r";
     typedata[ndata][0] = ndim;           typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = Nlivehydro;     typedata[ndata][3] = 4;
     typedata[ndata][4] = 1;              ndata++;
 
     data_id[ndata] = "m";
     typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = Nlivehydro;     typedata[ndata][3] = 4;
     typedata[ndata][4] = 2;              ndata++;
 
     data_id[ndata] = "h";
     typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = Nlivehydro;     typedata[ndata][3] = 4;
     typedata[ndata][4] = 1;              ndata++;
 
     data_id[ndata] = "v";
     typedata[ndata][0] = ndim;           typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = Nlivehydro;     typedata[ndata][3] = 4;
     typedata[ndata][4] = 4;              ndata++;
 
     data_id[ndata] = "rho";
     typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = Nlivehydro;     typedata[ndata][3] = 4;
     typedata[ndata][4] = 6;              ndata++;
 
     data_id[ndata] = "u";
     typedata[ndata][0] = 1;              typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = Nlivehydro;     typedata[ndata][3] = 4;
     typedata[ndata][4] = 20;             ndata++;
   }
 
@@ -1026,27 +1094,36 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
     typedata[ndata][4] = 0;             ndata++;
   }
 
-  // Set important header information
-  idata[0]    = hydro->Nhydro;
-  idata[1]    = nbody->Nstar;
+  std::vector<Ptype_info> types(4);
+  types[0].ptype = icm_type;
+  types[1].ptype = gas_type;
+  types[2].ptype = cdm_type;
+  types[3].ptype = dust_type;
 
-  for (int n=0; n < hydro->Nhydro; n++){
-    int ptype = hydro->GetParticlePointer(n).ptype;
-    switch (ptype) {
-      case icm_type:
-        idata[3]++; break;
-      case gas_type:
-        idata[4]++; break;
-      case cdm_type:
-        idata[5]++; break;
-      case dust_type:
-        idata[6]++; break;
-      default:
-        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
-        idata[7]++ ; break ;
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (part.flags.is_dead()) continue;
+    switch (part.ptype) {
+    case icm_type:
+      types[0].Ntot_type++; break;
+    case gas_type:
+      types[1].Ntot_type++; break;
+    case cdm_type:
+      types[2].Ntot_type++; break;
+    case dust_type:
+      types[3].Ntot_type++; break;
+    default:
+      ExceptionHandler::getIstance().raise("SerenUnformReader: Type not recognised");
     }
   }
 
+  // Set important header information
+  idata[0]    = Nlivehydro;
+  idata[1]    = nbody->Nstar;
+  idata[3]    = types[0].Ntot_type;
+  idata[4]    = types[1].Ntot_type;
+  idata[5]    = types[2].Ntot_type;
+  idata[6]    = types[3].Ntot_type;
   idata[19]   = nunit;
   idata[20]   = ndata;
   ilpdata[0]  = Noutsnap;
@@ -1058,6 +1135,9 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
   ddata[1]    = tsnaplast*simunits.t.outscale;
   ddata[2]    = hydro->mmean*simunits.m.outscale;
   ddata[10]   = tlitesnaplast*simunits.t.outscale;
+
+  assert(Nlivehydro == idata[3] + idata[4] + idata[5] + idata[6]);
+
 
   // Write header information to file
   //-----------------------------------------------------------------------------------------------
@@ -1086,89 +1166,35 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
 
   // Write arrays for hydro particles
   //-----------------------------------------------------------------------------------------------
-  if (hydro->Nhydro > 0) {
+  if (Nlivehydro > 0) {
 
     // porig
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.iorig << endl;
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::iorig, types);
 
     // Positions
-    //---------------------------------------------------------------------------------------------
-    if (ndim == 1) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.r[0]*simunits.r.outscale << endl;
-      }
-    }
-    else if (ndim == 2) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.r[0]*simunits.r.outscale << part.r[1]*simunits.r.outscale << endl;
-      }
-    }
-    else if (ndim == 3) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.r[0]*simunits.r.outscale << part.r[1]*simunits.r.outscale
-                       << part.r[2]*simunits.r.outscale << endl;
-      }
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayVector(outfile_format, hydro, &Particle<ndim>::r, types, simunits.r.outscale);
 
     // Masses
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.m*simunits.m.outscale << endl;
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::m, types, simunits.m.outscale);
 
     // Smoothing lengths
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.h*simunits.r.outscale << endl;
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::h, types, simunits.r.outscale);
 
     // Velocities
-    //---------------------------------------------------------------------------------------------
-    if (ndim == 1) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.v[0]*simunits.v.outscale << endl;
-      }
-    }
-    else if (ndim == 2) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.v[0]*simunits.v.outscale
-                << part.v[1]*simunits.v.outscale << endl;
-      }
-    }
-    else if (ndim == 3) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        outfile_format << part.v[0]*simunits.v.outscale
-                << part.v[1]*simunits.v.outscale
-                << part.v[2]*simunits.v.outscale << endl;
-      }
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayVector(outfile_format, hydro, &Particle<ndim>::v, types, simunits.v.outscale);
 
     // Densities
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.rho*simunits.rho.outscale << endl;;
-    }
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::rho, types, simunits.rho.outscale);
 
     // Specific internal energies
-    //---------------------------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      outfile_format << part.u*simunits.u.outscale << endl;
-    }
-
+    //-------------------------------------------------------------------------
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::u, types, simunits.u.outscale);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -1252,6 +1278,7 @@ void Simulation<ndim>::ReadSerenUnformHeaderFile
 
   return;
 }
+
 
 
 //=================================================================================================
@@ -1540,86 +1567,80 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   infile.close();
 
   return true;
-
 }
 
+
+
 #ifdef MPI_PARALLEL
-
-struct MPI_Ptype_info
-{
-	MPI_Ptype_info()
-	 : ptype(-1), Nbefore(0), Ntot_type(0)
-	{ } ;
-
-	int ptype ;
-	int Nbefore ;
-	int Ntot_type ;
-};
-
 template<int ndim, class T>
 void WriteSerenFormArrayScalar_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 								   T Particle<ndim>::*data, T* buffer,
-								   const std::vector<MPI_Ptype_info>& types,
+								   const std::vector<Ptype_info>& types,
 								   T unit=1)
 {
-  for (unsigned int itype=0; itype < types.size(); ++itype){
-	int ptype     = types[itype].ptype ;
-	int Nbefore   = types[itype].Nbefore ;
-	int Ntot_type = types[itype].Ntot_type ;
+  for (unsigned int itype=0; itype < types.size(); ++itype) {
+    int ptype     = types[itype].ptype ;
+    int Nbefore   = types[itype].Nbefore ;
+    int Ntot_type = types[itype].Ntot_type ;
 
-	int n = 0 ;
-	for (int i=0; i<hydro->Nhydro; i++) {
-	  Particle<ndim>& part = hydro->GetParticlePointer(i);
-	  if (part.ptype == ptype)
-        buffer[n++] = part.*data * unit ;
-	}
-	assert(n <= (Ntot_type - Nbefore)) ;
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype && !part.flags.is_dead()) {
+        buffer[n++] = part.*data * unit;
+      }
+    }
+    assert(n <= (Ntot_type - Nbefore)) ;
 
-	MPI_Offset offset ;
-	MPI_File_get_position(file, &offset) ;
-	// Seek at the right position in the file
-	MPI_File_seek(file, sizeof(T)*Nbefore, MPI_SEEK_CUR);
-	// Write data
-	MPI_Status status;
-	MPI_File_write_all (file, buffer, n*sizeof(T), MPI_BYTE, &status);
-	// Seek at the end of the porig section
-	MPI_Offset end_write = offset + sizeof(T)*Ntot_type;
-	MPI_File_seek(file, end_write, MPI_SEEK_SET);
+    MPI_Offset offset ;
+    MPI_File_get_position(file, &offset) ;
+    // Seek at the right position in the file
+    MPI_File_seek(file, sizeof(T)*Nbefore, MPI_SEEK_CUR);
+    // Write data
+    MPI_Status status;
+    MPI_File_write_all (file, buffer, n*sizeof(T), MPI_BYTE, &status);
+    // Seek at the end of the porig section
+    MPI_Offset end_write = offset + sizeof(T)*Ntot_type;
+    MPI_File_seek(file, end_write, MPI_SEEK_SET);
   }
 }
+
+
 
 template<int ndim, class T>
 void WriteSerenFormArrayVector_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 								   T (Particle<ndim>::*data)[ndim], T* buffer,
-								   const std::vector<MPI_Ptype_info>& types,
+								   const std::vector<Ptype_info>& types,
 								   T unit=1)
 {
-  for (unsigned int itype=0; itype < types.size(); ++itype){
-	int ptype     = types[itype].ptype ;
-	int Nbefore   = types[itype].Nbefore ;
-	int Ntot_type = types[itype].Ntot_type ;
+  for (unsigned int itype=0; itype < types.size(); ++itype) {
+    int ptype     = types[itype].ptype ;
+    int Nbefore   = types[itype].Nbefore ;
+    int Ntot_type = types[itype].Ntot_type ;
 
-	int n = 0 ;
-	for (int i=0; i<hydro->Nhydro; i++) {
-	  Particle<ndim>& part = hydro->GetParticlePointer(i);
-	  if (part.ptype == ptype)
-		  for (int k=0; k < ndim; k++)
-			  buffer[n++] = (part.*data)[k] * unit ;
-	}
-	assert(n <= ndim*(Ntot_type - Nbefore)) ;
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype && !part.flags.is_dead()) {
+        for (int k=0; k < ndim; k++) buffer[n++] = (part.*data)[k] * unit;
+      }
+    }
+    assert(n <= ndim*(Ntot_type - Nbefore));
 
-	MPI_Offset offset ;
-	MPI_File_get_position(file, &offset) ;
-	// Seek at the right position in the file
-	MPI_File_seek(file, sizeof(T)*Nbefore*ndim, MPI_SEEK_CUR);
-	// Write data
-	MPI_Status status;
-	MPI_File_write_all (file, buffer, sizeof(T)*n, MPI_BYTE, &status);
-	// Seek at the end of the porig section
-	MPI_Offset end_write = offset + sizeof(T)*Ntot_type*ndim;
-	MPI_File_seek(file, end_write, MPI_SEEK_SET);
+    MPI_Offset offset;
+    MPI_File_get_position(file, &offset);
+    // Seek at the right position in the file
+    MPI_File_seek(file, sizeof(T)*Nbefore*ndim, MPI_SEEK_CUR);
+    // Write data
+    MPI_Status status;
+    MPI_File_write_all (file, buffer, sizeof(T)*n, MPI_BYTE, &status);
+    // Seek at the end of the porig section
+    MPI_Offset end_write = offset + sizeof(T)*Ntot_type*ndim;
+    MPI_File_seek(file, end_write, MPI_SEEK_SET);
   }
 }
+
+
 
 //=================================================================================================
 //  Simulation::WriteSerenUnformSnapshotFile
@@ -1628,37 +1649,38 @@ void WriteSerenFormArrayVector_MPI(MPI_File& file, Hydrodynamics<ndim>* hydro,
 template <int ndim>
 bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 {
-  int i;                            // Aux. counter
-  int idata[50];                    // Integer data array
-  int ii;                           // Aux. counter
-  int k;                            // Aux. loop counter
-  int typedata[50][5];              // Hydro particle data array information
-  int ndata;                        // No. of data arrays written
-  int nunit;                        // No. of unit strings
-  int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
-  long ilpdata[50];                 // Long integer data array
-  FLOAT rdata[50];                  // Real data array
-  FLOAT sdata[sink_data_length];    // Sink data packet
-  DOUBLE ddata[50];                 // Double float data array
-  string unit_data[50];             // String ids of units written
-  string data_id[50];               // String ids of arrays written
+  int i;                                         // Aux. counter
+  int idata[50];                                 // Integer data array
+  int ii;                                        // Aux. counter
+  int k;                                         // Aux. loop counter
+  int typedata[50][5];                           // Hydro particle data array information
+  int ndata = 0;                                 // No. of data arrays written
+  int nunit = 0;                                 // No. of unit strings
+  int Nlivehydro = 0;                            // No. of live (i.e. not-accreted) hydro ptcls
+  int sink_data_length = 12+2*ndim;              // (+ 2*dmdt_range_aux);
+  long ilpdata[50];                              // Long integer data array
+  FLOAT rdata[50];                               // Real data array
+  FLOAT sdata[sink_data_length];                 // Sink data packet
+  DOUBLE ddata[50];                              // Double float data array
+  string unit_data[50];                          // String ids of units written
+  string data_id[50];                            // String ids of arrays written
 
   debug2("[Simulation::WriteSerenUnformSnapshotFile]");
-
-  if (rank==0)
-    cout << "Writing snapshot file : " << filename << endl;
-
-  // Total number of particles
-  int Ntot_hydro;
-  MPI_Allreduce(&hydro->Nhydro,&Ntot_hydro,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  if (rank == 0) cout << "Writing snapshot file : " << filename << endl;
 
   // Zero arrays
   for (i=0; i<50; i++) idata[i] = 0;
   for (i=0; i<50; i++) ilpdata[i] = 0;
   for (i=0; i<50; i++) rdata[i] = 0.0;
   for (i=0; i<50; i++) ddata[i] = 0.0;
-  nunit = 0;
-  ndata = 0;
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (!part.flags.is_dead()) Nlivehydro++;
+  }
+
+  // Total number of particles
+  int Ntot_hydro;
+  MPI_Allreduce(&Nlivehydro, &Ntot_hydro, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
   // Set units
   if (!simunits.dimensionless) {
@@ -1687,61 +1709,62 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   }
 
   // Set array ids and array information data if there are any hydro particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (Ntot_hydro > 0) {
     data_id[ndata] = "porig";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 2;
-    typedata[ndata][4] = 0; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro;    typedata[ndata][3] = 2;
+    typedata[ndata][4] = 0;             ndata++;
 
     data_id[ndata] = "r";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1; ndata++;
+    typedata[ndata][0] = ndim;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1;             ndata++;
 
     data_id[ndata] = "m";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 2; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 2;             ndata++;
 
     data_id[ndata] = "h";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1;             ndata++;
 
     data_id[ndata] = "v";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 4; ndata++;
+    typedata[ndata][0] = ndim;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 4;             ndata++;
 
     data_id[ndata] = "rho";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 6; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 6;             ndata++;
 
     data_id[ndata] = "u";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 20; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 20;            ndata++;
   }
 
   if (nbody->Nstar > 0) {
     data_id[ndata] = "sink_v1";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = nbody->Nstar; typedata[ndata][3] = 7;
-    typedata[ndata][4] = 0; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = nbody->Nstar;  typedata[ndata][3] = 7;
+    typedata[ndata][4] = 0;             ndata++;
   }
 
   // Collect the number of particles of each type
-  std::vector<MPI_Ptype_info> types(4) ;
+  std::vector<Ptype_info> types(4) ;
   types[0].ptype = icm_type ;
   types[1].ptype = gas_type ;
   types[2].ptype = cdm_type ;
   types[3].ptype = dust_type;
 
-  for (int n=0; n < hydro->Nhydro; n++){
-    int ptype = hydro->GetParticlePointer(n).ptype ;
-    switch (ptype) {
+  for (int i=0; n<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (part.flags.is_dead()) continue;
+    switch (part.ptype) {
       case icm_type:
         types[0].Ntot_type++; break;
       case gas_type:
@@ -1751,7 +1774,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       case dust_type:
         types[3].Ntot_type++; break;
       default:
-        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
+        ExceptionHandler::getIstance().raise("SerenUnformReader: Type not recognised");
     }
   }
 
@@ -1771,9 +1794,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   // Set important header information
   idata[0]    = Ntot_hydro;
   idata[1]    = nbody->Nstar;
-  for (int n=0; n< 4; n++){
-	idata[3+n] = types[n].Ntot_type ;
-  }
+  for (int n=0; n<4; n++) idata[3+n] = types[n].Ntot_type;
   idata[19]   = nunit;
   idata[20]   = ndata;
   ilpdata[0]  = Noutsnap;
@@ -1787,10 +1808,8 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   ddata[10]   = tlitesnaplast*simunits.t.outscale;
 
 
-  // Write header information to file
-  // Only cpu 0 does it
-  //---------------------------------------------------------------------------
-
+  // Write header information to file (only cpu 0 does it).
+  //----------------------------------------------------------------------------------------------
   if (rank==0) {
     ofstream outfile(filename.c_str(),ios::binary);
     BinaryWriter writer(outfile);
@@ -1813,24 +1832,22 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     for (i=0; i<50; i++) writer.write_value(ddata[i]);
     for (i=0; i<nunit; i++) {
       std::ostringstream stream;
-      stream << std::left << std::setw(string_length) << std::setfill(' ')
-                    << unit_data[i];
+      stream << std::left << std::setw(string_length) << std::setfill(' ') << unit_data[i];
       outfile << stream.str();
     }
     for (i=0; i<ndata; i++) {
       std::ostringstream stream;
-      stream << std::left << std::setw(string_length) << std::setfill(' ')
-                << data_id[i];
+      stream << std::left << std::setw(string_length) << std::setfill(' ') << data_id[i];
       outfile << stream.str();
     }
     for (i=0; i<ndata; i++) {
-      for (int j=0; j< 5; j++) writer.write_value(typedata[i][j]);
+      for (int j=0; j<5; j++) writer.write_value(typedata[i][j]);
     }
   }
 
 
   // Write arrays for hydro particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (Ntot_hydro > 0) {
 
     // Let's make sure root has finished writing the header before we start writing
@@ -1850,69 +1867,60 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     void* buffer = malloc(sizeof(FLOAT)*ndim*hydro->Nhydro);
 
     // porig
-    //-------------------------------------------------------------------------
-     WriteSerenFormArrayScalar_MPI<ndim, int>(file,  hydro,
-    		                                 &Particle<ndim>::iorig,
-    							             reinterpret_cast<int*>(buffer),
-    							             types) ;
+    //---------------------------------------------------------------------------------------------
+     WriteSerenFormArrayScalar_MPI<ndim, int>(file,  hydro, &Particle<ndim>::iorig,
+                                              reinterpret_cast<int*>(buffer), types);
+
     // Positions
-    //-------------------------------------------------------------------------
-    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, hydro,
-        		                               &Particle<ndim>::r,
-        							           reinterpret_cast<FLOAT*>(buffer),
-        							           types,
-        							           simunits.r.outscale);
+    //---------------------------------------------------------------------------------------------
+    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::r,
+                                               reinterpret_cast<FLOAT*>(buffer),
+                                               types, simunits.r.outscale);
+
     // Masses
-    //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro,
-        		                               &Particle<ndim>::m,
-        							           reinterpret_cast<FLOAT*>(buffer),
-        							           types,
-        							           simunits.m.outscale);
+    //---------------------------------------------------------------------------------------------
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::m,
+                                               reinterpret_cast<FLOAT*>(buffer),
+                                               types, simunits.m.outscale);
+
     // Smoothing lengths
-    //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro,
-         		                               &Particle<ndim>::h,
-         							           reinterpret_cast<FLOAT*>(buffer),
-         							           types,
-         							           simunits.r.outscale);
+    //---------------------------------------------------------------------------------------------
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::h,
+                                               reinterpret_cast<FLOAT*>(buffer),
+                                               types, simunits.r.outscale);
+
     // Velocities
-    //-------------------------------------------------------------------------
-    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, hydro,
-            		                           &Particle<ndim>::v,
-            							       reinterpret_cast<FLOAT*>(buffer),
-            							       types,
-            							       simunits.v.outscale);
+    //---------------------------------------------------------------------------------------------
+    WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::v,
+                                               reinterpret_cast<FLOAT*>(buffer),
+                                               types, simunits.v.outscale);
+
     // Densities
-    //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro,
-         		                               &Particle<ndim>::rho,
-         							           reinterpret_cast<FLOAT*>(buffer),
-         							           types,
-         							           simunits.rho.outscale);
+    //---------------------------------------------------------------------------------------------
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::rho,
+                                               reinterpret_cast<FLOAT*>(buffer),
+                                               types, simunits.rho.outscale);
+
     // Specific internal energies
-    //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro,
-         		                               &Particle<ndim>::u,
-         							           reinterpret_cast<FLOAT*>(buffer),
-         							           types,
-         							           simunits.u.outscale);
+    //---------------------------------------------------------------------------------------------
+    WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::u,
+                                               reinterpret_cast<FLOAT*>(buffer),
+                                               types, simunits.u.outscale);
+
     MPI_Offset end;
-    MPI_File_get_position(file,&end);
-    assert((unsigned int)end ==
-        (end_header + ((2*ndim + 4)*sizeof(FLOAT) + sizeof(int))*Ntot_hydro));
+    MPI_File_get_position(file, &end);
+    assert((unsigned int) end ==
+           (end_header + ((2*ndim + 4)*sizeof(FLOAT) + sizeof(int))*Ntot_hydro));
 
     free(buffer);
 
     MPI_File_close(&file);
-
-
   }
 
 
   // Sinks/stars
-  //---------------------------------------------------------------------------
-  if (rank==0 && nbody->Nstar > 0) {
+  //----------------------------------------------------------------------------------------------
+  if (rank == 0 && nbody->Nstar > 0) {
 
     ofstream outfile(filename.c_str(),ios::binary|ios::app);
     BinaryWriter writer(outfile);
@@ -1936,30 +1944,76 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       }
     }
   }
-  //---------------------------------------------------------------------------
-
-
+  //-----------------------------------------------------------------------------------------------
 
   return true;
 }
 #else
+
+template<int ndim, class T>
+void WriteSerenUnformArrayScalar(BinaryWriter& writer, Hydrodynamics<ndim>* hydro,
+                                 T Particle<ndim>::*data,
+                                 const std::vector<Ptype_info>& types,
+                                 T unit=1)
+{
+  for (unsigned int itype=0; itype < types.size(); ++itype){
+    int ptype     = types[itype].ptype;
+    int Ntot_type = types[itype].Ntot_type;
+    int n = 0;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype && !part.flags.is_dead()) {
+        writer.write_value((T)(part.*data * unit)) ;
+        n++;
+      }
+    }
+    assert(n == Ntot_type) ;
+  }
+}
+
+template<int ndim, class T>
+void WriteSerenUnformArrayVector(BinaryWriter& writer, Hydrodynamics<ndim>* hydro,
+                                 T (Particle<ndim>::*data)[ndim],
+                                 const std::vector<Ptype_info>& types,
+                                 T unit=1)
+{
+  for (unsigned int itype=0; itype < types.size(); ++itype){
+    int ptype     = types[itype].ptype ;
+    int Ntot_type = types[itype].Ntot_type ;
+
+    int n = 0 ;
+    for (int i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.ptype == ptype && !part.flags.is_dead()) {
+        for (int k=0; k < ndim; k++) {
+          writer.write_value((T)((part.*data)[k] * unit));
+        }
+        n++;
+      }
+    }
+    assert(n == Ntot_type) ;
+  }
+}
+
+
 template <int ndim>
 bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 {
-  int i;                            // Aux. counter
-  int idata[50];                    // Integer data array
-  int ii;                           // Aux. counter
-  int k;                            // Aux. loop counter
-  int typedata[50][5];              // Hydro particle data array information
-  int ndata;                        // No. of data arrays written
-  int nunit;                        // No. of unit strings
-  int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
-  long ilpdata[50];                 // Long integer data array
-  FLOAT rdata[50];                  // Real data array
-  FLOAT sdata[sink_data_length];    // Sink data packet
-  DOUBLE ddata[50];                 // Double float data array
-  string unit_data[50];             // String ids of units written
-  string data_id[50];               // String ids of arrays written
+  int i;                                         // Aux. counter
+  int idata[50];                                 // Integer data array
+  int ii;                                        // Aux. counter
+  int k;                                         // Aux. loop counter
+  int typedata[50][5];                           // Hydro particle data array information
+  int ndata = 0;                                 // No. of data arrays written
+  int nunit = 0;                                 // No. of unit strings
+  int Nlivehydro = 0;                            //
+  int sink_data_length = 12+2*ndim;              // (+ 2*dmdt_range_aux);
+  long ilpdata[50];                              // Long integer data array
+  FLOAT rdata[50];                               // Real data array
+  FLOAT sdata[sink_data_length];                 // Sink data packet
+  DOUBLE ddata[50];                              // Double float data array
+  string unit_data[50];                          // String ids of units written
+  string data_id[50];                            // String ids of arrays written
 
   debug2("[Simulation::WriteSerenUnformSnapshotFile]");
 
@@ -1973,8 +2027,10 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   for (i=0; i<50; i++) ilpdata[i] = 0;
   for (i=0; i<50; i++) rdata[i] = 0.0;
   for (i=0; i<50; i++) ddata[i] = 0.0;
-  nunit = 0;
-  ndata = 0;
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (!part.flags.is_dead()) Nlivehydro++;
+  }
 
   // Set units
   if (!simunits.dimensionless) {
@@ -2003,42 +2059,42 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   }
 
   // Set array ids and array information data if there are any hydro particles
-  //---------------------------------------------------------------------------
-  if (hydro->Nhydro > 0) {
+  //-----------------------------------------------------------------------------------------------
+  if (Nlivehydro > 0) {
     data_id[ndata] = "porig";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 2;
-    typedata[ndata][4] = 0; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 2;
+    typedata[ndata][4] = 0;             ndata++;
 
     data_id[ndata] = "r";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1; ndata++;
+    typedata[ndata][0] = ndim;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1;             ndata++;
 
     data_id[ndata] = "m";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 2; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 2;             ndata++;
 
     data_id[ndata] = "h";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1;             ndata++;
 
     data_id[ndata] = "v";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 4; ndata++;
+    typedata[ndata][0] = ndim;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 4;             ndata++;
 
     data_id[ndata] = "rho";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 6; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 6;             ndata++;
 
     data_id[ndata] = "u";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 20; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 20;            ndata++;
   }
 
   if (nbody->Nstar > 0) {
@@ -2048,25 +2104,37 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     typedata[ndata][4] = 0; ndata++;
   }
 
-  // Set important header information
-  idata[0]    = hydro->Nhydro;
-  idata[1]    = nbody->Nstar;
-  for (int n=0; n < hydro->Nhydro; n++){
-    int ptype = hydro->GetParticlePointer(n).ptype;
-    switch (ptype) {
+  // Collect the number of particles of each type
+  std::vector<Ptype_info> types(4) ;
+  types[0].ptype = icm_type ;
+  types[1].ptype = gas_type ;
+  types[2].ptype = cdm_type ;
+  types[3].ptype = dust_type;
+
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (part.flags.is_dead()) continue;
+    switch (part.ptype) {
       case icm_type:
-        idata[3]++; break;
+        types[0].Ntot_type++; break;
       case gas_type:
-        idata[4]++; break;
+        types[1].Ntot_type++; break;
       case cdm_type:
-        idata[5]++; break;
+        types[2].Ntot_type++; break;
       case dust_type:
-        idata[6]++; break;
+        types[3].Ntot_type++; break;
       default:
-        ExceptionHandler::getIstance().raise("SerenFormReader: Type not recognised");
-        idata[7]++; break;
+        ExceptionHandler::getIstance().raise("SerenUnformReader: Type not recognised");
     }
   }
+
+  // Set important header information
+  idata[0]    = Nlivehydro;
+  idata[1]    = nbody->Nstar;
+  idata[3]    = types[0].Ntot_type;
+  idata[4]    = types[1].Ntot_type;
+  idata[5]    = types[2].Ntot_type;
+  idata[6]    = types[3].Ntot_type;
   idata[19]   = nunit;
   idata[20]   = ndata;
   ilpdata[0]  = Noutsnap;
@@ -2079,9 +2147,11 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   ddata[2]    = hydro->mmean*simunits.m.outscale;
   ddata[10]   = tlitesnaplast*simunits.t.outscale;
 
+  assert(Nlivehydro == idata[3] + idata[4] + idata[5] + idata[6]);
+
 
   // Write header information to file
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   {
     std::ostringstream stream;
     stream << std::left << std::setw(string_length) << std::setfill(' ')
@@ -2104,80 +2174,48 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   for (i=0; i<50; i++) writer.write_value(ddata[i]);
   for (i=0; i<nunit; i++) {
     std::ostringstream stream;
-    stream << std::left << std::setw(string_length) << std::setfill(' ')
-                  << unit_data[i];
+    stream << std::left << std::setw(string_length) << std::setfill(' ') << unit_data[i];
     outfile << stream.str();
   }
   for (i=0; i<ndata; i++) {
     std::ostringstream stream;
-    stream << std::left << std::setw(string_length) << std::setfill(' ')
-              << data_id[i];
+    stream << std::left << std::setw(string_length) << std::setfill(' ') << data_id[i];
     outfile << stream.str();
   }
   for (i=0; i<ndata; i++) {
-    for (int j=0; j< 5; j++) writer.write_value(typedata[i][j]);
+    for (int j=0; j<5; j++) writer.write_value(typedata[i][j]);
   }
 
   // Write arrays for hydro particles
-  //---------------------------------------------------------------------------
-  if (hydro->Nhydro > 0) {
+  //-----------------------------------------------------------------------------------------------
+  if (Nlivehydro > 0) {
 
     // porig
-    //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value(part.iorig);
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::iorig, types);
 
     // Positions
-    //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      for (int k=0; k<ndim; k++) writer.write_value((FLOAT)(part.r[k]*simunits.r.outscale));
-    }
+    WriteSerenUnformArrayVector(writer, hydro, &Particle<ndim>::r, types, simunits.r.outscale);
 
     // Masses
-    //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value((FLOAT)(part.m*simunits.m.outscale));
-      assert(part.m > 0.0);
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::m, types, simunits.m.outscale);
 
     // Smoothing lengths
-    //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value((FLOAT)(part.h*simunits.r.outscale));
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::h, types, simunits.r.outscale);
 
     // Velocities
-    //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      for (int k=0; k<ndim; k++)
-        writer.write_value((FLOAT)(part.v[k]*simunits.v.outscale));
-    }
+    WriteSerenUnformArrayVector(writer, hydro, &Particle<ndim>::v, types, simunits.v.outscale);
 
     // Densities
-    //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value((FLOAT)(part.rho*simunits.rho.outscale));
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::rho, types, simunits.rho.outscale);
 
     // Specific internal energies
-    //-------------------------------------------------------------------------
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      writer.write_value((FLOAT)(part.u*simunits.u.outscale));
-    }
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::u, types, simunits.u.outscale);
 
   }
 
 
   // Sinks/stars
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
     for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
     int values[6] = {2,2,0,sink_data_length,0,0};
@@ -2198,13 +2236,14 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       }
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   outfile.close();
 
   return true;
 }
 #endif
+
 
 
 //=================================================================================================
@@ -2215,24 +2254,23 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 template <int ndim>
 bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 {
-  int i;                            // Aux. counter
-  int idata[50];                    // Integer data array
-  int ii;                           // Aux. counter
-  int k;                            // Aux. loop counter
-  int typedata[50][5];              // Hydro particle data array information
-  int ndata;                        // No. of data arrays written
-  int nunit;                        // No. of unit strings
-  int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
-  long ilpdata[50];                 // Long integer data array
-  float rdata[50];                  // Real data array
-  float sdata[sink_data_length];    // Sink data packet
-  double ddata[50];                 // Double float data array
-  string unit_data[50];             // String ids of units written
-  string data_id[50];               // String ids of arrays written
-
+  int i;                                         // Aux. counter
+  int idata[50];                                 // Integer data array
+  int ii;                                        // Aux. counter
+  int k;                                         // Aux. loop counter
+  int typedata[50][5];                           // Hydro particle data array information
+  int ndata = 0;                                 // No. of data arrays written
+  int nunit = 0;                                 // No. of unit strings
+  int Nlivehydro = 0;                            // No. of live (i.e. not -accreted) hydro ptcls
+  int sink_data_length = 12+2*ndim;              // (+ 2*dmdt_range_aux);
+  long ilpdata[50];                              // Long integer data array
+  float rdata[50];                               // Real data array
+  float sdata[sink_data_length];                 // Sink data packet
+  double ddata[50];                              // Double float data array
+  string unit_data[50];                          // String ids of units written
+  string data_id[50];                            // String ids of arrays written
 
   debug2("[Simulation::WriteSerenLiteSnapshotFile]");
-
   cout << "Writing snapshot file : " << filename << endl;
 
   ofstream outfile(filename.c_str(),ios::binary);
@@ -2243,8 +2281,10 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   for (i=0; i<50; i++) ilpdata[i] = 0;
   for (i=0; i<50; i++) rdata[i] = 0.0;
   for (i=0; i<50; i++) ddata[i] = 0.0;
-  nunit = 0;
-  ndata = 0;
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (!part.flags.is_dead()) Nlivehydro++;
+  }
 
   // Set units
   if (!simunits.dimensionless) {
@@ -2273,33 +2313,33 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   }
 
   // Set array ids and array information data if there are any hydro particles
-  //---------------------------------------------------------------------------
-  if (hydro->Nhydro > 0) {
+  //-----------------------------------------------------------------------------------------------
+  if (Nlivehydro > 0) {
 
     data_id[ndata] = "r";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1; ndata++;
+    typedata[ndata][0] = ndim;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1;             ndata++;
 
     data_id[ndata] = "m";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 2; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 2;             ndata++;
 
     data_id[ndata] = "h";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1;             ndata++;
 
     data_id[ndata] = "rho";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 6; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 6;             ndata++;
 
     data_id[ndata] = "u";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 20; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = Nlivehydro;    typedata[ndata][3] = 4;
+    typedata[ndata][4] = 20;            ndata++;
   }
 
   if (nbody->Nstar > 0) {
@@ -2310,11 +2350,12 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   }
 
   // Set important header information
-  idata[0]   = hydro->Nhydro;
+  idata[0]   = Nlivehydro;
   idata[1]   = nbody->Nstar;
-  for (int n=0; n < hydro->Nhydro; n++){
-    int ptype = hydro->GetParticlePointer(n).ptype;
-    switch (ptype) {
+  for (int i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    if (part.flags.is_dead()) continue;
+    switch (part.ptype) {
       case icm_type:
         idata[3]++ ; break ;
       case gas_type:
@@ -2340,7 +2381,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 
 
   // Write header information to file
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   {
     std::ostringstream stream;
     stream << std::left << std::setw(string_length) << std::setfill(' ') << binary_tag;
@@ -2372,41 +2413,46 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 
 
   // Write arrays for hydro particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (hydro->Nhydro > 0) {
 
     // Positions
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.flags.is_dead()) continue;
       for (int k=0; k<ndim; k++) writer.write_value((float) (part.r[k]*simunits.r.outscale));
     }
 
     // Masses
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.flags.is_dead()) continue;
       writer.write_value((float) (part.m*simunits.m.outscale));
     }
 
     // Smoothing lengths
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.flags.is_dead()) continue;
       writer.write_value((float) (part.h*simunits.r.outscale));
     }
 
     // Densities
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.flags.is_dead()) continue;
       writer.write_value((float) (part.rho*simunits.rho.outscale));
     }
 
     // Specific internal energies
-    //-------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.flags.is_dead()) continue;
       writer.write_value((float) (part.u*simunits.u.outscale));
     }
 
@@ -2414,7 +2460,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 
 
   // Sinks/stars
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
     for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
     int values[6] = {2,2,0,sink_data_length,0,0};
@@ -2435,7 +2481,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
       }
     }
   }
-  //---------------------------------------------------------------------------
+  //----------------------------------------------------------------------------------------------
 
   outfile.close();
 
