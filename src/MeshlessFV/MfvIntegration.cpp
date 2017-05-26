@@ -23,7 +23,8 @@ DOUBLE MfvIntegration<ndim,ParticleType>::Timestep(Particle<ndim>& _part, Hydrod
 
   if (dt_cfl < 1e-10 || dt_grav < 1e-10) {
     cout << part.iorig << " " << part.ptype << " "
-         << part.h << " " << part.vsig_max << " " << DotProduct(part.a0, part.a0, ndim) << "\n";
+         << part.h << ", " << part.sound << " " << part.vsig_max
+         << ", " << DotProduct(part.a0, part.a0, ndim) << "\n";
 
   }
 

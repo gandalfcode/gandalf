@@ -202,6 +202,7 @@ struct Particle
     dudt0     = (FLOAT) 0.0;
     gpot      = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
+    dt_next   = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
@@ -412,7 +413,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT press;                         ///< Pressure
   FLOAT invomega;                      ///< ..
   FLOAT div_v;                         ///< Velocity divergence
-  //FLOAT vsig_max;                      ///< Maximum signal velocity to all neighbours
   FLOAT ndens;                         ///< Particle number density, inverse volume
   FLOAT zeta;                          ///< ..
   FLOAT B[ndim][ndim];                 ///< Inverse matrix for gradient calculations
@@ -433,8 +433,8 @@ struct MeshlessFVParticle : public Particle<ndim>
     press     = (FLOAT) 0.0;
     div_v     = (FLOAT) 0.0;
     ndens     = (FLOAT) 0.0;
-   // vsig_max  = (FLOAT) 0.0;
     zeta      = (FLOAT) 0.0;
+    div_v     = (FLOAT) 0.0 ;
     for (int k=0; k<ndim; k++) rdmdt[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) rdmdt0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim+2; k++) dQ[k] = (FLOAT) 0.0;
