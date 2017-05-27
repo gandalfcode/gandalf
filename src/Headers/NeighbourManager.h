@@ -608,6 +608,7 @@ public:
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
+         if (partdata[j].flags.is_dead()) continue;
          if (drsqd <= partdata[i].hrangesqd) truengb.push_back(j);
        }
      }
@@ -616,6 +617,7 @@ public:
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
+         if (partdata[j].flags.is_dead()) continue;
          if (drsqd <= partdata[i].hrangesqd ||
              drsqd <= partdata[j].hrangesqd) truengb.push_back(j);
        }
