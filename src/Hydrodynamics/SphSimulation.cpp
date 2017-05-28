@@ -839,12 +839,7 @@ void SphSimulation<ndim>::MainLoop(void)
       nbody->UpdateStellarProperties();
       if (extra_sink_output) WriteExtraSinkOutput();
     }
-    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock) {
-      sph->DeleteDeadParticles();
-      rebuild_tree = true;
-    }
+
   }
 
 

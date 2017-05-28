@@ -1761,8 +1761,8 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   types[2].ptype = cdm_type ;
   types[3].ptype = dust_type;
 
-  for (int i=0; n<hydro->Nhydro; i++) {
-    Particle<ndim>& part = hydro->GetParticlePointer(i);
+  for (int i=0; i<hydro->Nhydro; i++) {
+    const Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (part.flags.is_dead()) continue;
     switch (part.ptype) {
       case icm_type:
@@ -1774,7 +1774,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       case dust_type:
         types[3].Ntot_type++; break;
       default:
-        ExceptionHandler::getIstance().raise("SerenUnformReader: Type not recognised");
+        ExceptionHandler::getIstance().raise("SerenUnformReader: Type not recognised : " + part.ptype);
     }
   }
 

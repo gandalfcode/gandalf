@@ -1018,7 +1018,7 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
     //=============================================================================================
 
 #ifdef VERIFY_ALL
-    PrintArray("Ncellexport : ",Nmpi,Ncellexport);
+    //PrintArray("Ncellexport : ",Nmpi,Ncellexport);
     PrintArray("Npartexport : ",Nmpi,Npartexport);
 #endif
 
