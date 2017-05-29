@@ -51,14 +51,20 @@ class SlopeLimiter
   virtual ~SlopeLimiter() {};
 
   template <class Part1Type, class NeibList>
-  void CellLimiter(Part1Type& parti, NeibList& neibpart) {} ;
+  void CellLimiter(Part1Type& parti, NeibList& neibpart) {
+    for (int var=0; var<ndim+2; var++) {
+      parti.alpha_slope[var] = 1 ;
+    }
+  } ;
 
   template <class Part1Type, class Part2Type>
   void ComputeLimitedSlopes(Part1Type& parti, Part2Type& partj,
-                                    FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2]) {
+                            FLOAT draux[ndim], FLOAT gradW[ndim+2][ndim], FLOAT dW[ndim+2]) {
+
     for (int var=0; var<ndim+2; var++) {
-      dW[var] = DotProduct(parti.grad[var], draux, ndim);
-      for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
+      FLOAT alpha = parti.alpha_slope[var] ;
+      dW[var] = alpha * DotProduct(parti.grad[var], draux, ndim);
+      for (int k=0; k<ndim; k++) gradW[var][k] = alpha * parti.grad[var][k];
     }
   }
 
@@ -163,8 +169,7 @@ class TVDScalarLimiter : public SlopeLimiter<ndim>
     }
 
     for (var=0; var<ndim+2; var++)
-      for (int k=0; k<ndim; k++)
-        parti.grad[var][k] *= alpha[var] ;
+      parti.alpha_slope[var] = alpha[var] ;
   }
 
 private:
@@ -235,8 +240,7 @@ class ScalarLimiter: public SlopeLimiter<ndim>
       if (dW != 0)
         alpha = max(0., min(1., min(dWmax/dW, dWmin/dW))) ;
 
-      for (int k=0; k<ndim; k++)
-        parti.grad[var][k] *= alpha ;
+      parti.alpha_slope[var] = alpha;
     }
   }
 
@@ -308,8 +312,7 @@ class Springel2009Limiter: public SlopeLimiter<ndim>
     }
 
     for (var=0; var<ndim+2; var++)
-     for (k =0; k < ndim; k++)
-       parti.grad[var][k] *= alpha[var] ;
+      parti.alpha_slope[var] = alpha[var];
   }
 
 private:
@@ -350,9 +353,9 @@ class GizmoLimiter : public ScalarLimiter<ndim>
 
     //---------------------------------------------------------------------------------------------
     for (var=0; var<ndim+2; var++) {
-
-      dW[var] = DotProduct(parti.grad[var], draux, ndim) ;
-      for (int k=0; k<ndim; k++) gradW[var][k] = parti.grad[var][k];
+      FLOAT alpha = parti.alpha_slope[var];
+      dW[var] = alpha * DotProduct(parti.grad[var], draux, ndim) ;
+      for (int k=0; k<ndim; k++) gradW[var][k] = alpha * parti.grad[var][k];
 
 
       for (int k=0; k<ndim; k++) dr[k] = partj.r[k] - parti.r[k];

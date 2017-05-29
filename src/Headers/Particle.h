@@ -202,6 +202,7 @@ struct Particle
     dudt0     = (FLOAT) 0.0;
     gpot      = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
+    dt_next   = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
@@ -240,6 +241,31 @@ struct SphParticle : public Particle<ndim>
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
   }
+
+  class DensityParticle {
+  public:
+    DensityParticle() : m(0), u(0), gpot(0), ptype(0) {} ;
+    DensityParticle(const SphParticle<ndim>&p) {
+      for (int i=0; i<ndim; i++) {
+        r[i] = p.r[i];
+        v[i] = p.v[i];
+        a[i] = p.a[i];
+      }
+      m = p.m;
+      u = p.u;
+      gpot=p.gpot;
+      ptype=p.ptype;
+    }
+
+    FLOAT r[ndim];
+    FLOAT v[ndim];
+    FLOAT a[ndim];
+    FLOAT m;
+    FLOAT u;
+    FLOAT gpot;
+    int ptype;
+  };
+
 };
 
 
@@ -387,7 +413,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT press;                         ///< Pressure
   FLOAT invomega;                      ///< ..
   FLOAT div_v;                         ///< Velocity divergence
-  //FLOAT vsig_max;                      ///< Maximum signal velocity to all neighbours
   FLOAT ndens;                         ///< Particle number density, inverse volume
   FLOAT zeta;                          ///< ..
   FLOAT B[ndim][ndim];                 ///< Inverse matrix for gradient calculations
@@ -398,6 +423,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
   FLOAT rdmdt[ndim];                   ///< ..
   FLOAT rdmdt0[ndim];                  ///< ..
+  FLOAT alpha_slope[ndim+2];           ///< Slope limiter parameter
 
   // SPH particle constructor to initialise all values
   //-----------------------------------------------------------------------------------------------
@@ -407,12 +433,14 @@ struct MeshlessFVParticle : public Particle<ndim>
     press     = (FLOAT) 0.0;
     div_v     = (FLOAT) 0.0;
     ndens     = (FLOAT) 0.0;
-   // vsig_max  = (FLOAT) 0.0;
     zeta      = (FLOAT) 0.0;
+    div_v     = (FLOAT) 0.0 ;
     for (int k=0; k<ndim; k++) rdmdt[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) rdmdt0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim+2; k++) dQ[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim+2; k++) dQdt[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim+2; k++) alpha_slope[k] = (FLOAT) 0.0;
+
   }
 
 #ifdef MPI_PARALLEL
@@ -492,6 +520,7 @@ struct MeshlessFVParticle : public Particle<ndim>
 			  for (int kk=0; kk<ndim; kk++) grad[k][kk]=p.grad[k][kk];
 			  dQ[k]=0;
 			  dQdt[k]=0;
+			  alpha_slope[k] = p.alpha_slope[k];
 		  }
 		  for (int k=0; k<ndim; k++) {
 			  for (int kk=0; kk<ndim; kk++) B[k][kk]=p.B[k][kk];
@@ -519,10 +548,12 @@ struct MeshlessFVParticle : public Particle<ndim>
 	  FLOAT dQ[ndim+2];
 	  FLOAT dQdt[ndim+2];
 	  FLOAT rdmdt[ndim];
+	  FLOAT alpha_slope[ndim+2];
 	  FLOAT h;
 	  FLOAT hrangesqd;
 	  FLOAT ndens;
 	  FLOAT hfactor;
+
 
 	  static const int NDIM=ndim;
 

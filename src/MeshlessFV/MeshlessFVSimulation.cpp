@@ -212,9 +212,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 
   // Meshless-time integration object
-  hydroint = new MfvIntegration<ndim, MeshlessFVParticle>(floatparams["accel_mult"],
-                                                          floatparams["courant_mult"],
-                                                          intparams["static_particles"]);
+  hydroint = new MfvIntegration<ndim, MeshlessFVParticle>(simparams);
 
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
@@ -630,6 +628,12 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       }
 #endif
     }
+
+    mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#endif
   } // End of force iteration.
 
   // ..
@@ -668,20 +672,36 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
   }
 
-  if (time_step_limiter_type == "conservative") {
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
+  // Compute the dust forces if present.
+  if (mfvdust != NULL) {
+
+    // Copy properties from original particles to ghost particles
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
-    mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
-    mpicontrol->GetExportedParticlesAccelerations(mfv);
+    MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
 #endif
+    mfvdust->UpdateAllDragForces(mfv) ;
+
+    for (i=0; i<mfv->Nhydro; i++) {
+      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+      for (k=0; k<ndim+2; k++) part.dQdt[k] = 0 ;
+    }
   }
+
 
   // Compute timesteps for all particles
   if (Nlevels == 1) {
     this->ComputeGlobalTimestep();
   }
   else {
+    if (time_step_limiter_type == "conservative") {
+      mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
+  #ifdef MPI_PARALLEL
+      mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+      mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
+      mpicontrol->GetExportedParticlesAccelerations(mfv);
+  #endif
+    }
     this->ComputeBlockTimesteps();
   }
 

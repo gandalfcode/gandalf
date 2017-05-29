@@ -140,15 +140,10 @@ void GradhSph<ndim, kernelclass>::DeallocateMemory(void)
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 int GradhSph<ndim, kernelclass>::ComputeH
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of potential neighbours
-  const FLOAT hmax,                    ///< [in] Max. h permitted by neib list
-  FLOAT *m,                            ///< [in] Array of neib. masses
-  FLOAT *mu,                           ///< [in] Array of m*u (not needed here)
-  FLOAT *drsqd,                        ///< [in] Array of neib. distances squared
-  FLOAT *gpot,                         ///< [in] Array of neib. grav. potentials
-  SphParticle<ndim> &part,             ///< [inout] Particle i data
-  Nbody<ndim> *nbody)                  ///< [in] Main N-body object
+ (SphParticle<ndim> &part,                                ///< [inout] Particle i data
+  FLOAT hmax,                                             ///< [in] Maximum smoothing length
+  const vector<DensityParticle> &ngbs,                    ///< [in] Neighbour properties
+  Nbody<ndim> *nbody)                                     ///< [in] Main N-body object
 {
   int j;                               // Neighbour id
   int k;                               // Dimension counter
@@ -170,6 +165,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
     if (hmax < hmin_sink) return -1;
   }
 
+  int Nneib = ngbs.size();
+
   // Some basic sanity-checking in case of invalid input into routine
   assert(Nneib > 0);
   assert(hmax > (FLOAT) 0.0);
@@ -177,6 +174,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   assert(parti.m > (FLOAT) 0.0);
 
   FLOAT invh ;
+
 
   // Main smoothing length iteration loop
   //===============================================================================================
@@ -194,10 +192,12 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
-      ssqd           = drsqd[j]*invhsqd;
-      parti.rho      += m[j]*kern.w0_s2(ssqd);
-      parti.invomega += m[j]*invh*kern.womega_s2(ssqd);
-      parti.zeta     += m[j]*kern.wzeta_s2(ssqd);
+      const DensityParticle &ngb = ngbs[j];
+      for (k=0; k<ndim; k++) dr[k] = ngb.r[k] - parti.r[k];
+      ssqd           = invhsqd*DotProduct(dr, dr, ndim);
+      parti.rho      += ngb.m*kern.w0_s2(ssqd);
+      parti.invomega += ngb.m*invh*kern.womega_s2(ssqd);
+      parti.zeta     += ngb.m*kern.wzeta_s2(ssqd);
     }
     //---------------------------------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
     // Density must at least equal its self-contribution
     // (failure could indicate neighbour list problem)
-    assert(parti.rho >= parti.m*parti.hfactor*kern.w0_s2(0.0));
+    assert(parti.rho >= 0.99*parti.m*parti.hfactor*kern.w0_s2(0.0));
 
     FLOAT invrho = 0 ;
     if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;
@@ -268,8 +268,11 @@ int GradhSph<ndim, kernelclass>::ComputeH
   if (create_sinks == 1) {
     parti.flags.set(potmin);
     for (j=0; j<Nneib; j++) {
-      if (gpot[j] > (FLOAT) 1.000000001*parti.gpot &&
-          drsqd[j]*invhsqd < kern.kernrangesqd) parti.flags.unset(potmin);
+      const DensityParticle &ngb = ngbs[j];
+      FLOAT drsqd = DotProduct(dr,dr,ndim);
+      for (k=0; k<ndim; k++) dr[k] = ngb.r[k] - parti.r[k];
+      if (ngb.gpot > (FLOAT) 1.000000001*parti.gpot &&
+          drsqd*invhsqd < kern.kernrangesqd) parti.flags.unset(potmin);
     }
   }
 
@@ -305,6 +308,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // Set important thermal variables here
   ComputeThermalProperties(parti);
 
+  if (tdavisc == cd2010) {
+    this->ComputeCullenAndDehnenViscosity(parti, ngbs, kern);
+  }
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
@@ -401,7 +407,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
         paux       -= alpha_visc*vsignal*dvdr*winvrho;
         parti.dudt -= 0.5*neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
       }
-      else if (avisc == mon97mm97) {
+      else if (avisc == mon97mm97 || avisc == mon97cd2010) {
         alpha_mean = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
         vsignal    = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
         paux       -= alpha_mean*vsignal*dvdr*winvrho;
@@ -436,9 +442,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   // Set velocity divergence and compressional heating rate terms
   parti.div_v    *= invrho_i;
   parti.dudt     -= eos->Pressure(parti)*parti.div_v*invrho_i*parti.invomega;
-  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*invh_i +
-    max(-parti.div_v, (FLOAT) 0.0)*(alpha_visc - parti.alpha);
-
+  if (tdavisc == mm97) {
+    parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*invh_i +
+        max(-parti.div_v, (FLOAT) 0.0)*(alpha_visc - parti.alpha);
+  }
 
   return;
 }
@@ -513,7 +520,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
         paux       -= alpha_visc*vsignal*dvdr*winvrho;
         parti.dudt -= 0.5*neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
       }
-      else if (avisc == mon97mm97) {
+      else if (avisc == mon97mm97 || avisc == mon97cd2010) {
         alpha_mean  = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
         vsignal     = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
         paux       -= alpha_mean*vsignal*dvdr*winvrho;
@@ -559,9 +566,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   // Set velocity divergence and compressional heating rate terms
   parti.div_v   *= invrho_i;
   parti.dudt    -= eos->Pressure(parti)*parti.div_v*invrho_i*parti.invomega;
-  parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*invh_i +
-    max(parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
-
+  if (tdavisc == mm97) {
+    parti.dalphadt = (FLOAT) 0.1*parti.sound*(alpha_visc_min - parti.alpha)*invh_i +
+        max(parti.div_v,(FLOAT) 0.0)*(alpha_visc - parti.alpha);
+  }
 
   return;
 }
@@ -727,11 +735,13 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
 #if defined MPI_PARALLEL
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::FinishReturnExport () {
-	for (int i=0; i<Nhydro; i++) {
-		GradhSphParticle<ndim>& part = sphdata[i];
-		part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)/part.h +
-			    max(-part.div_v, (FLOAT) 0.0)*(alpha_visc - part.alpha);
-	}
+  if (tdavisc == mm97) {
+    for (int i=0; i<Nhydro; i++) {
+      GradhSphParticle<ndim>& part = sphdata[i];
+      part.dalphadt = (FLOAT) 0.1*part.sound*(alpha_visc_min - part.alpha)/part.h +
+          max(-part.div_v, (FLOAT) 0.0)*(alpha_visc - part.alpha);
+    }
+  }
 }
 #endif
 

@@ -70,7 +70,9 @@ double get_total_accel(const GradhSphParticle<ndim>& part, int k) {
 template<int ndim>
 double get_total_accel(const MeshlessFVParticle<ndim>& part, int k) {
   double a_grav  = 0.5*(part.a[k] + part.a0[k]*part.Qcons0[MeshlessFV<ndim>::irho]/part.m);
-  double a_hydro = part.dQ[k] / (part.m * part.dt) ;
+  double a_hydro = 0 ;
+  if (part.dt > 0)
+    a_hydro = part.dQ[k] / (part.m * part.dt) ;
   return a_grav + a_hydro ;
 }
 

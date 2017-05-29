@@ -12,13 +12,19 @@ DOUBLE MfvIntegration<ndim,ParticleType>::Timestep(Particle<ndim>& _part, Hydrod
 
   MeshlessFVParticle<ndim>& part = *reinterpret_cast<MeshlessFVParticle<ndim>*>(&_part);
 
-  const FLOAT dt_cfl = 2*courant_mult*part.h/part.vsig_max;
-  const FLOAT dt_grav = accel_mult*
+  FLOAT dt_cfl = 2*courant_mult*part.h/part.vsig_max;
+  FLOAT dt_grav = accel_mult*
     sqrt(part.h/sqrt(DotProduct(part.a0, part.a0, ndim) + small_number));
+
+ if (visc_coeff > 0) {
+   FLOAT dt_visc = visc_mult * 0.5*part.h*part.h/visc_coeff;
+   dt_cfl = min(dt_cfl, dt_visc);
+ }
 
   if (dt_cfl < 1e-10 || dt_grav < 1e-10) {
     cout << part.iorig << " " << part.ptype << " "
-         << part.h << " " << part.vsig_max << " " << DotProduct(part.a0, part.a0, ndim) << "\n";
+         << part.h << ", " << part.sound << " " << part.vsig_max
+         << ", " << DotProduct(part.a0, part.a0, ndim) << "\n";
 
   }
 

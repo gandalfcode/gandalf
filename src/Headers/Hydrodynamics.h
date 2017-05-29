@@ -220,7 +220,7 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
 
   virtual void AllocateMemory(int) {};
   virtual void DeallocateMemory(void) {};
-  virtual int DeleteDeadParticles(void) {};
+  virtual int DeleteDeadParticles(void) {return 0;};
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {};
   virtual void ZeroAccelerations() {} ;
 

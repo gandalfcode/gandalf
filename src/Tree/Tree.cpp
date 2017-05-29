@@ -1010,6 +1010,7 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
             if (dr > 0) {
               dr = sqrt(dr) ;
               dvdr /= dr + small_number ;
+              dr = max(dr, part.h);
 
               FLOAT vsig = part.sound + neibpart[l].sound - dvdr ;
               part.vsig_max = max(part.vsig_max, vsig*part.h/dr) ;

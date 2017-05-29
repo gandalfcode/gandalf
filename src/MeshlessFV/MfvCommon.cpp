@@ -54,7 +54,9 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
                    h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
   kern(kernelclass<ndim>(KernelName)),
   riemannExact(gamma_aux, params->intparams["zero_mass_flux"]),
-  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal")
+  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal"),
+  viscosity(params->floatparams["shear_visc"], params->floatparams["bulk_visc"]),
+  need_viscosity(params->floatparams["shear_visc"] || params->floatparams["bulk_visc"])
 {
   this->kernp      = &kern;
   this->kernrange  = this->kernp->kernrange;
@@ -76,6 +78,7 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
     string message = "Unrecognised parameter : riemann_solver = " + riemann_solver;
     ExceptionHandler::getIstance().raise(message);
   }
+
 }
 
 

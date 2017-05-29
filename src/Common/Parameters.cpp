@@ -240,6 +240,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["courant_mult"] = 0.15;
   floatparams["nbody_mult"] = 0.1;
   floatparams["subsys_mult"] = 0.05;
+  floatparams["visc_mult"] = 0.3 ;
   intparams["Nlevels"] = 1;
   intparams["level_diff_max"] = 1;
   intparams["sph_single_timestep"] = 0;
@@ -286,6 +287,8 @@ void Parameters::SetDefaultValues(void)
   intparams["zero_mass_flux"] = 1;
   intparams["static_particles"] = 0;
   stringparams["time_step_limiter"] = "none";
+  floatparams["shear_visc"] = 0;
+  floatparams["bulk_visc"] = 0;
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------

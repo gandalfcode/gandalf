@@ -171,8 +171,12 @@ public:
   using TimeIntegration<ndim>::timing;
 
 
-  MfvIntegration(DOUBLE a_mult, DOUBLE courant, bool staticParts)
-  : accel_mult(a_mult), courant_mult(courant), staticParticles(staticParts)
+  MfvIntegration(Parameters *simparams)
+  : accel_mult(simparams->floatparams["accel_mult"]),
+    courant_mult(simparams->floatparams["courant_mult"]),
+    visc_mult(simparams->floatparams["visc_mult"]),
+    visc_coeff(simparams->floatparams["shear_visc"] + simparams->floatparams["bulk_visc"]),
+    staticParticles(simparams->intparams["static_particles"])
   { } ;
   virtual ~MfvIntegration() {} ;
 
@@ -186,7 +190,10 @@ public:
  private:
   const DOUBLE accel_mult ;
   const DOUBLE courant_mult ;
+  const DOUBLE visc_mult ;
+  const DOUBLE visc_coeff;
   bool staticParticles;
+
 };
 
 
