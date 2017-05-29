@@ -830,7 +830,6 @@ void SphSimulation<ndim>::MainLoop(void)
       nbody->UpdateStellarProperties();
       if (extra_sink_output) WriteExtraSinkOutput();
     }
-
   }
 
   // Compute timesteps for all particles (for next step, needed for dust accelerations.)
@@ -870,13 +869,6 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // End-step terms for all star particles
   if (nbody->Nstar > 0) nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
-
-  // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-  if (sink_particles==1 && ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-	   timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock)) {
-    int Ndead = sph->DeleteDeadParticles();
-    if (Ndead>0) rebuild_tree = true;
-  }
 
 
   return;
@@ -940,4 +932,3 @@ void SphSimulation<ndim>::WriteExtraSinkOutput(void)
 
   return;
 }
-

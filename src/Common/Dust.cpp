@@ -722,8 +722,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
               neibmanager.GetParticleNeib(activepart[j],dragmask,do_pair_once);
 
 #if defined(VERIFY_ALL)
-          neibmanager.VerifyNeighbourList(i, Nhydro, sphdata, "all");
-          neibmanager.VerifyReducedNeighbourList(i, neiblist, Nhydro, sphdata, dragmask, "all");
+          neibmanager.VerifyNeighbourList(i, hydro->Nhydro, sphdata, "all");
+          neibmanager.VerifyReducedNeighbourList(i, neiblist, hydro->Nhydro, sphdata, dragmask, "all");
 #endif
 
 

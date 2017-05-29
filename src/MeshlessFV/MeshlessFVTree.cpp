@@ -579,7 +579,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
             neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
 
 #if defined(VERIFY_ALL)
-        neibmanager.VerifyNeighbourList(i, Nhydro, mfvdata, "all");
+        neibmanager.VerifyNeighbourList(i, mfv->Nhydro, mfvdata, "all");
 #endif
 
         // Compute all neighbour contributions to hydro fluxes

@@ -1018,7 +1018,7 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
     //=============================================================================================
 
 #ifdef VERIFY_ALL
-    PrintArray("Ncellexport : ",Nmpi,Ncellexport);
+    //PrintArray("Ncellexport : ",Nmpi,Ncellexport);
     PrintArray("Npartexport : ",Nmpi,Npartexport);
 #endif
 
@@ -1923,6 +1923,7 @@ void HydroTree<ndim,ParticleType>::CheckValidNeighbourList
     for (j=0; j<Ntot; j++) {
       for (k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
+      if (partdata[j].flags.is_dead()) continue;
       if (drsqd <= kernrangesqd*partdata[i].h*partdata[i].h) trueneiblist[Ntrueneib++] = j;
     }
   }
@@ -1930,6 +1931,7 @@ void HydroTree<ndim,ParticleType>::CheckValidNeighbourList
     for (j=0; j<Ntot; j++) {
       for (k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
+      if (partdata[j].flags.is_dead()) continue;
       if (drsqd < kernrangesqd*partdata[i].h*partdata[i].h ||
           drsqd < kernrangesqd*partdata[j].h*partdata[j].h) trueneiblist[Ntrueneib++] = j;
     }

@@ -205,7 +205,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
           for (jj=0; jj<Nneib; jj++) {
 
             // Only include particles of appropriate types in density calculation
-            if (!sph->types[activepart[j].ptype].hmask[ngb[jj].ptype]) continue ;
+            if (!sph->types[activepart[j].ptype].hmask[ngb[jj].ptype]) continue;
+
 
             for (k=0; k<ndim; k++) draux[k] = ngb[jj].r[k] - rp[k];
             drsqdaux = DotProduct(draux,draux,ndim) + small_number;
@@ -359,9 +360,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
               neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
 
 #if defined(VERIFY_ALL)
-          neibmanager.VerifyNeighbourList(i, sph->Nhydro, sphdata, "all");
-          neibmanager.VerifyReducedNeighbourList(i, neiblist, sph->Nhydro, sphdata, hydromask,
-                                                 "all");
+          neibmanager.VerifyNeighbourList(activelist[j], sph->Nhydro, sphdata, "all");
+          neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, sph->Nhydro,
+                                                 sphdata, hydromask, "all");
 #endif
 
           // Compute all neighbour contributions to hydro forces
@@ -559,9 +560,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
             int Ntotneib = neibmanager.GetNumAllNeib();
 
             for (int jj=0; jj< Ntotneib; jj++) {
-
-            if (!gravmask[neibmanager[jj].ptype]) continue;
-
+              if (!gravmask[neibmanager[jj].ptype]) continue;
               FLOAT draux[ndim];
               for (int k=0; k<ndim; k++) draux[k] = neibmanager[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(neibmanager[jj].m, draux, aperiodic, potperiodic);
@@ -597,11 +596,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
       // Compute all star forces for active particles
       if (nbody->Nnbody > 0) {
-		  for (int j=0; j<Nactive; j++) {
-			  if (activelist[j] < sph->Nhydro) {
-				  sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
-			  }
-		  }
+        for (int j=0; j<Nactive; j++) {
+          if (activelist[j] < sph->Nhydro) {
+            sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+          }
+        }
       }
 
       // Add all active particles contributions to main array
@@ -619,11 +618,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       // Update levelneib for neighbours
       const int Nneib_cell = neibmanager.GetNumAllNeib();
       for (int jj=0; jj<Nneib_cell; jj++) {
-    	std::pair<int,HydroParticle*> neighbour=neibmanager.GetNeibI(jj);
-    	const int i=neighbour.first;
-    	HydroParticle& neibpart=*(neighbour.second);
-    	levelneib[i]=max(levelneib[i],neibpart.levelneib);
-       }
+        std::pair<int,HydroParticle*> neighbour=neibmanager.GetNeibI(jj);
+        const int i=neighbour.first;
+        HydroParticle& neibpart=*(neighbour.second);
+        levelneib[i]=max(levelneib[i],neibpart.levelneib);
+      }
 
     }
     //=============================================================================================
