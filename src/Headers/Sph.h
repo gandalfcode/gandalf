@@ -92,6 +92,7 @@ class Sph : public Hydrodynamics<ndim>
   using Hydrodynamics<ndim>::Ntot;
   using Hydrodynamics<ndim>::types;
 
+  typedef typename SphParticle<ndim>::DensityParticle DensityParticle;
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
@@ -104,7 +105,7 @@ class Sph : public Hydrodynamics<ndim>
 
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
-  virtual void DeleteDeadParticles(void) = 0;
+  virtual int DeleteDeadParticles(void) = 0;
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {part.m -= dm;}
 
   virtual void ZeroAccelerations() ;
@@ -114,11 +115,16 @@ class Sph : public Hydrodynamics<ndim>
   // SPH functions for computing SPH sums with neighbouring particles
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   //-----------------------------------------------------------------------------------------------
-  virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-                       SphParticle<ndim> &, Nbody<ndim> *) = 0;
+  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const vector<DensityParticle> &,
+                       Nbody<ndim> *) = 0;
   virtual void ComputeThermalProperties(SphParticle<ndim> &) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) = 0;
 
+#if !defined(SWIG)
+  template<template<int> class Kernel>
+  void ComputeCullenAndDehnenViscosity(SphParticle<ndim> &, const vector<DensityParticle> &,
+                                       Kernel<ndim>&);
+#endif
 
   // SPH array memory allocation functions
   //-----------------------------------------------------------------------------------------------
@@ -147,7 +153,6 @@ class Sph : public Hydrodynamics<ndim>
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
   int fixed_sink_mass;                 ///< Fix masses of sink particles
-  //int Ngather;                         ///< Average no. of gather neighbours
   FLOAT alpha_visc_min;                ///< Min. time-dependent viscosity alpha
   FLOAT msink_fixed;                   ///< Fixed sink mass value
   string riemann_solver;               ///< Selected Riemann solver
@@ -164,6 +169,7 @@ public:
   typedef GradhSphParticle<ndim> ParticleType ;
   typedef typename ParticleType::HydroForcesParticle HydroNeib ;
   typedef typename GravityNeighbourLists<HydroNeib>::DirectType DirectNeib ;
+
 
   GradhSphBase(int hydro_forces_aux, int self_gravity_aux,
   FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
@@ -216,9 +222,12 @@ public:
   using Sph<ndim>::hmin_sink;
   using Sph<ndim>::Nhydromax;
   using Sph<ndim>::sphdata_unsafe;
+  using Sph<ndim>::tdavisc;
 
   typedef typename GradhSphBase<ndim>::HydroNeib HydroNeib;
   typedef typename GradhSphBase<ndim>::DirectNeib  DirectNeib;
+  typedef typename SphParticle<ndim>::DensityParticle DensityParticle;
+
 
  //public:
 
@@ -226,17 +235,15 @@ public:
            aviscenum, acondenum, tdaviscenum, string, string, SimUnits &, Parameters *);
   virtual ~GradhSph();
 
-  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
   virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void) {
-    this->template DoDeleteDeadParticles<GradhSphParticle>() ;
+  virtual int DeleteDeadParticles(void) {
+    return this->template DoDeleteDeadParticles<GradhSphParticle>() ;
   }
 
-  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               SphParticle<ndim> &, Nbody<ndim> *);
+  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const vector<DensityParticle> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
   virtual void ComputeSphGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
   virtual void ComputeSphHydroGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
@@ -248,7 +255,6 @@ public:
 
   kernelclass<ndim> kern;                  ///< SPH kernel
   GradhSphParticle<ndim> *sphdata;         ///< Pointer to particle data
-
 };
 
 
@@ -285,21 +291,20 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::sphdata_unsafe;
 
  public:
+  typedef typename SphParticle<ndim>::DensityParticle DensityParticle;
 
   SM2012Sph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
             aviscenum, acondenum, tdaviscenum, string, string, SimUnits &, Parameters *);
   virtual ~SM2012Sph();
 
-  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
   virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void) {
-    this->template DoDeleteDeadParticles<SM2012SphParticle>() ;
+  virtual int DeleteDeadParticles(void) {
+    return this->template DoDeleteDeadParticles<SM2012SphParticle>() ;
   }
-  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               SphParticle<ndim> &, Nbody<ndim> *);
+  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const vector<DensityParticle> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
   void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *, const FLOAT *,
                              const FLOAT *, SphParticle<ndim> &, SphParticle<ndim>* );
@@ -315,6 +320,127 @@ class SM2012Sph: public Sph<ndim>
   SM2012SphParticle<ndim> *sphdata;         ///< Pointer to particle data
 
 };
+
+
+//=================================================================================================
+//  CurlVelSqd
+/// Square of the curl in 1,2 and 3 dimensions
+//=================================================================================================
+inline FLOAT CurlVelSqd(FLOAT gradv[1][1]) {
+  return 0;
+}
+inline FLOAT CurlVelSqd(FLOAT gradv[2][2]) {
+  FLOAT curl = (gradv[1][0] - gradv[0][1]) ;
+  return curl*curl ;
+}
+inline FLOAT CurlVelSqd(FLOAT gradv[3][3]) {
+  FLOAT curl[3] = {
+      gradv[1][2] - gradv[2][1],
+      gradv[2][0] - gradv[0][2],
+      gradv[0][1] - gradv[1][0] } ;
+
+  return DotProduct(curl, curl, 3) ;
+}
+
+//=================================================================================================
+//  Sph::ComputeCullenAndDehnenViscosity
+/// Compute the viscosity limiter for the Cullen & Dehnen switch
+//=================================================================================================
+template <int ndim>
+template<template<int> class Kernel>
+void Sph<ndim>::ComputeCullenAndDehnenViscosity
+(SphParticle<ndim> & parti,                         ///< [inout] Particle to compute the switch for
+const vector<DensityParticle> &ngbs,                ///< [in] List of neighbours
+Kernel<ndim>& kern)                                 ///< [in] Kernel
+{
+
+  // Buffers for gradients of vectors
+  FLOAT dv[ndim][ndim];
+  FLOAT da[ndim][ndim];
+  FLOAT rr[ndim][ndim];
+  FLOAT dvdx[ndim][ndim];
+  FLOAT dadx[ndim][ndim];
+
+  for (int i=0; i<ndim; ++i)
+    for (int j=0; j<ndim; ++j) {
+      rr[i][j] = da[i][j] = dv[i][j] = dadx[i][j] = dvdx[i][j] = 0 ;
+    }
+
+  FLOAT invh = 1 / parti.h;
+  FLOAT hfac = invh * parti.hfactor / parti.rho ;
+  int Nneib = ngbs.size() ;
+  for (int i=0; i < Nneib; ++i) {
+
+    FLOAT dr[ndim];
+    for (int j=0; j < ndim; j++) dr[j] = ngbs[i].r[j] - parti.r[j] ;
+    FLOAT w = ngbs[i].m * hfac * kern.w1(invh * sqrt(DotProduct(dr, dr, ndim)));
+
+    for (int j=0; j < ndim; j++)
+      for (int k=0; k < ndim; k++) {
+        rr[j][k] += w * dr[j] * dr[k] ;
+        dv[j][k] += w * dr[j] * (ngbs[i].v[k] - parti.v[k]) ;
+        da[j][k] += w * dr[j] * (ngbs[i].a[k] - parti.a[k]) ;
+      }
+  }
+
+  // Invert the rr matrix and compute the gradients
+  FLOAT T[ndim][ndim] ;
+  InvertMatrix(rr, T) ;
+
+  // Check the accuracy of the integral gradients (using the square of the condition number),
+  // if it's bad, we'll set alpha_loc to alpha_max.
+  double modR(0), modT(0) ;
+  for (int i=0; i<ndim; i++)
+    for (int j=0; j<ndim; j++){
+      modR += rr[i][j]*rr[i][j];
+      modT +=  T[i][j]* T[i][j];
+    }
+  double sqd_condition_number = modR*modT / (ndim*ndim) ;
+
+  FLOAT alpha_loc = 0;
+  if (sqd_condition_number > 1e4) {
+    // Bad gradients
+    alpha_loc = alpha_visc ;
+  } else {
+    // Ok gradients
+    for (int i=0; i<ndim; i++)
+      for (int j=0; j<ndim; j++)
+        for (int k=0; k<ndim; k++) {
+          dvdx[i][j] += T[j][k] * dv[k][i];
+          dadx[i][j] += T[j][k] * da[k][i];
+        }
+
+    // Now compute the components needed for the limiter:
+    FLOAT ddivdt = 0;
+    FLOAT divv2 = 0;
+    for (int i=0; i<ndim; ++i) {
+      ddivdt += dadx[i][i] ;
+      for (int j=0; j<ndim; ++j)
+        ddivdt -= dvdx[i][j]*dvdx[j][i];
+
+      divv2 += dvdx[i][i] ;
+    }
+
+    divv2 *= divv2;
+    FLOAT curlv2 = CurlVelSqd(dvdx) ;
+
+    FLOAT f_balsara = 1 ;
+    if (curlv2 > 0)
+      f_balsara = (divv2 / (divv2 + curlv2)) ;
+
+    if (ddivdt < 0) {
+      alpha_loc = (10 * parti.h*parti.h / (parti.sound*parti.sound)) * f_balsara * (-ddivdt) ;
+      alpha_loc = min(alpha_loc, alpha_visc) ;
+    }
+  }
+
+  if (alpha_loc > parti.alpha)
+    parti.alpha = alpha_loc ;
+
+  parti.dalphadt = (FLOAT)0.1*parti.sound*(alpha_visc_min - parti.alpha)*invh;
+}
+
+
 
 #endif
 

@@ -202,8 +202,8 @@ TEST_F(TreeTest, StructureTest)
         pcount[i]++;
         leafcount++;
         Ncount++;
-        if (partdata[i].flags.check_flag(active)) activecount++;
-        if (partdata[i].flags.check_flag(active)) Nactivecount++;
+        if (partdata[i].flags.check(active)) activecount++;
+        if (partdata[i].flags.check(active)) Nactivecount++;
         ASSERT_LE(partdata[i].h, cell.hmax);
         for (k=0; k<3; k++) ASSERT_LE(partdata[i].r[k], cell.bbmax[k]);
         for (k=0; k<3; k++) ASSERT_GE(partdata[i].r[k], cell.bbmin[k]);

@@ -186,74 +186,74 @@ void Ic<ndim>::CheckInitialConditions(void)
 
   // Loop through all particles performing various checks
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<hydro->Nhydro; i++) {
-    Particle<ndim>& part = hydro->GetParticlePointer(i);
-    bool boxflag = true;
-    bool okflag  = true;
+  if (hydro != NULL) {
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      bool boxflag = true;
+      bool okflag  = true;
 
-    // Check that main particle properties are valid floating point numbers
-    if (!isnormal(part.m)) okflag = false;
-    if (!isfinite(part.u)) okflag = false;
-    for (k=0; k<ndim; k++) {
-      if (!isfinite(part.r[k])) okflag = false;
-      if (!isfinite(part.v[k])) okflag = false;
-    }
+      // Check that main particle properties are valid floating point numbers
+      if (!isnormal(part.m)) okflag = false;
+      if (!isfinite(part.u)) okflag = false;
+      for (k=0; k<ndim; k++) {
+        if (!isfinite(part.r[k])) okflag = false;
+        if (!isfinite(part.v[k])) okflag = false;
+      }
 
-    // Check that all particles reside inside any defined boundaries
-    for (k=0; k<ndim; k++) {
-      if (part.r[k] < icBox.min[k]) {
-        if (icBox.boundary_lhs[k] == periodicBoundary || icBox.boundary_lhs[k] == mirrorBoundary) {
-          if (cutbox) {
-            part.flags.set_flag(dead);
+      // Check that all particles reside inside any defined boundaries
+      for (k=0; k<ndim; k++) {
+        if (part.r[k] < icBox.min[k]) {
+          if (icBox.boundary_lhs[k] == periodicBoundary || icBox.boundary_lhs[k] == mirrorBoundary) {
+            if (cutbox) {
+              part.flags.set(dead);
+            }
+            else {
+              boxflag = false;
+            }
           }
-          else {
-            boxflag = false;
+        }
+        if (part.r[k] > icBox.max[k]) {
+          if (icBox.boundary_rhs[k] == periodicBoundary || icBox.boundary_lhs[k] == mirrorBoundary) {
+            if (cutbox) {
+              part.flags.set(dead);
+            }
+            else {
+              boxflag = false;
+            }
           }
         }
       }
-      if (part.r[k] > icBox.max[k]) {
-        if (icBox.boundary_rhs[k] == periodicBoundary || icBox.boundary_lhs[k] == mirrorBoundary) {
-          if (cutbox) {
-            part.flags.set_flag(dead);
-          }
-          else {
-            boxflag = false;
-          }
-        }
+
+      // If flag indicates a problem, print error and quit
+      if (!okflag) {
+        ExceptionHandler::getIstance().raise("Error : Invalid floating point values for particles");
       }
+      if (!boxflag) {
+        cout << "Particle " << i << " not inside periodic box" << endl;
+        for (k=0; k<ndim; k++)
+          cout << "r[" << k << "] : " << part.r[k] << "    "
+          << icBox.min[k] << "    " << icBox.max[k] << endl;
+      }
+
+      valid_ic = valid_ic && okflag;
+
     }
+    //-----------------------------------------------------------------------------------------------
 
-    // If flag indicates a problem, print error and quit
-    if (!okflag) {
-      ExceptionHandler::getIstance().raise("Error : Invalid floating point values for particles");
-    }
-    if (!boxflag) {
-      cout << "Particle " << i << " not inside periodic box" << endl;
-      for (k=0; k<ndim; k++)
-        cout << "r[" << k << "] : " << part.r[k] << "    "
-             << icBox.min[k] << "    " << icBox.max[k] << endl;
-    }
-
-    valid_ic = valid_ic && okflag;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  // Check particles are sorted in type order
-  if (hydro->Nhydro > 0) {
-    int ptype =  hydro->GetParticlePointer(0).ptype;
-    for (i=1; i<hydro->Nhydro; i++) {
+    // Check particles are sorted in type order
+    int ptype =  -1 ;
+    for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       if (part.ptype < ptype) {
         ExceptionHandler::getIstance().raise("Error Particles must be ordered by ptype");
       }
       ptype = part.ptype;
     }
+  }
 
-    if (!valid_ic) {
-      string message = "Invalid initial conditions for SPH particles";
-      ExceptionHandler::getIstance().raise(message);
-    }
+  if (!valid_ic) {
+    string message = "Invalid initial conditions for SPH particles";
+    ExceptionHandler::getIstance().raise(message);
   }
 
   return;

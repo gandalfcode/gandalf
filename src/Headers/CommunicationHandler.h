@@ -148,7 +148,7 @@ public:
     p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
     p2.hfactor = pow(1/p2.h,ndim+1);
     p2.sound = hydro->eos->SoundSpeed(p2);
-    p2.flags.set_flag(active);
+    p2.flags.set(active);
 
     p2.gpot=0;
     p2.div_v=0;
@@ -180,6 +180,7 @@ class MeshlessCommunicationHandler {
     	}
     	for (int ivar=0; ivar<ndim+2; ivar++) {
     		Wprim[ivar]=p.Wprim[ivar];
+    		alpha_slope[ivar]=p.alpha_slope[ivar];
     		for (int k=0; k<ndim; k++) {
         		grad[ivar][k] = p.grad[ivar][k];
     		}
@@ -203,6 +204,7 @@ class MeshlessCommunicationHandler {
     FLOAT Wprim[ndim+2];
     FLOAT grad[ndim+2][ndim];
     FLOAT B[ndim][ndim];
+    FLOAT alpha_slope[ndim+2];
     FLOAT vsig_max;
     FLOAT sound;
   };
@@ -278,6 +280,7 @@ public:
 
 	for (int ivar=0; ivar<ndim+2; ivar++) {
 		p2.Wprim[ivar]=p.Wprim[ivar];
+		p2.alpha_slope[ivar]=p.alpha_slope[ivar];
 		for (int k=0; k<ndim; k++) {
 			p2.grad[ivar][k] = p.grad[ivar][k];
 		}

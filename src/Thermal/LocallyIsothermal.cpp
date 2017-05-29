@@ -23,12 +23,13 @@
  
  
 #include <math.h>
+
+#include "../Headers/Integration.h"
 #include "Debug.h"
 #include "Constants.h"
 #include "EOS.h"
 #include "Hydrodynamics.h"
 #include "Sinks.h"
-#include "SphIntegration.h"
 #include "Parameters.h"
 using namespace std;
  

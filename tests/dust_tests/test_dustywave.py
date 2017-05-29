@@ -45,3 +45,13 @@ class DustyWaveTestParticleTest(DustyWaveTest):
         self.expected_l1error_gas  = 2.4e-6
         self.expected_l1error_dust = 5.4e-7
 
+
+class DustyWaveTestMeshless(DustyWaveTest):
+    def setUp(self):
+        self.sim=newsim("tests/dust_tests/dustywave_meshless.dat")
+        self.sim.SetParam("drag_law", "epstein")
+        self.run_id="DUSTYWAVE_MFV"
+        self.sim.SetParam("run_id",self.run_id)
+        self.expected_l1error_gas  = 1.6e-5
+        self.expected_l1error_dust = 5.7e-7
+

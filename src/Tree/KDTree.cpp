@@ -878,7 +878,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     while (i != -1) {
       if (!partdata[i].flags.is_dead()) {
         cell.N++;
-        if (partdata[i].flags.check_flag(active)) cell.Nactive++;
+        if (partdata[i].flags.check(active)) cell.Nactive++;
         cell.hmax = max(cell.hmax,partdata[i].h);
         cell.maxsound = max(cell.maxsound, partdata[i].sound);
         if (gravmask[partdata[i].ptype]) {
@@ -1227,7 +1227,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
     // Else walk through linked list to obtain list and number of active ptcls.
     while (i != -1) {
-      if (i < Ntot && partdata[i].flags.check_flag(active) && !partdata[i].flags.is_dead())
+      if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
         celldata[c].Nactive++;
       if (i == ilast) break;
       i = inext[i];
@@ -1423,8 +1423,8 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
         pcount[i]++;
         leafcount++;
         Ncount++;
-        if (partdata[i].flags.check_flag(active)) activecount++;
-        if (partdata[i].flags.check_flag(active)) Nactivecount++;
+        if (partdata[i].flags.check(active)) activecount++;
+        if (partdata[i].flags.check(active)) Nactivecount++;
         if (partdata[i].h > cell.hmax) {
           cout << "hmax flag error : " << c << "    "
                << partdata[i].h << "   " << cell.hmax << endl;

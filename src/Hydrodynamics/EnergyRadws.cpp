@@ -30,6 +30,8 @@
 #include <string>
 #include <vector>
 #include <math.h>
+
+#include "../Headers/Integration.h"
 #include "Constants.h"
 #include "Debug.h"
 #include "EnergyEquation.h"
@@ -40,7 +42,6 @@
 #include "Particle.h"
 #include "SimUnits.h"
 #include "SmoothingKernel.h"
-#include "SphIntegration.h"
 using namespace std;
 
 
@@ -207,22 +208,21 @@ EnergyRadws<ndim,ParticleType>::~EnergyRadws()
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EnergyIntegration
  (const int n,                         ///< [in] Integer time in block time struct
-  const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  Particle<ndim>* part_gen)            ///< [inout] Pointer to SPH particle array
+  Hydrodynamics<ndim>* hydro)
 {
   int i;                               // Particle counter
   FLOAT dt;                            // Timestep since start of step
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[EnergyRadws::EnergyIntegration]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_INTEGRATION");
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,i) shared(partdata)
-  for (i=0; i<Npart; i++) {
+#pragma omp parallel for default(none) private(dt,i) shared(partdata, hydro)
+  for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim>& part = partdata[i];
     if (part.flags.is_dead()) continue;
 
@@ -256,29 +256,28 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EndTimestep
  (const int n,                         ///< [in] Integer time in block time struct
-  const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  Particle<ndim>* part_gen)            ///< [inout] Pointer to SPH particle array
+  Hydrodynamics<ndim>* hydro)
 {
   int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
   FLOAT temp;                          // ..
   //FLOAT dt_therm;                      // ..
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[EnergyRadws::EndTimestep]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,temp) shared(partdata)
-  for (i=0; i<Npart; i++) {
+#pragma omp parallel for default(none) private(dn,i,temp) shared(partdata, hydro)
+  for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
     dn = n - part.nlast;
 
-    if (dn == part.nstep) {
+    if (part.flags.check(end_timestep)) {
       temp = eos->Temperature(part);
 
       // Get new ueq and dt_therm
