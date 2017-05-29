@@ -51,6 +51,11 @@ template <int ndim>
 class Sinks;
 
 
+enum MPI_ghost_update_type  {
+    update_sink_parents = 0,
+    update_dust_parents = 1
+};
+
 //=================================================================================================
 //  Class MpiControl
 /// \brief   Main MPI control class for managing MPI simulations.
@@ -119,7 +124,8 @@ class MpiControl
   virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
                                                 Parameters*,  bool&) = 0;
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
-  virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* hydro)=0;
+  virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* hydro,
+                                      MPI_ghost_update_type=update_sink_parents)=0;
   void UpdateSinksAfterAccretion(Sinks<ndim>* sink);
 
   Box<ndim> MyDomain();
@@ -173,12 +179,15 @@ public:
 
   virtual void ExportParticlesBeforeForceLoop (Hydrodynamics<ndim> *);
   virtual void GetExportedParticlesAccelerations (Hydrodynamics<ndim> *);
-  virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>*);
+  virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>*,MPI_ghost_update_type);
 
   void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>*);
   void ReceiveParticles(int Node, int& Nparticles, ParticleType<ndim>** array);
   int SendReceiveGhosts(const FLOAT, Hydrodynamics<ndim> *,ParticleType<ndim>**);
   int UpdateGhostParticles(ParticleType<ndim>*, ParticleType<ndim>**);
+
+private:
+  template<class ReturnDataType> void DoUpdateMpiGhostParents(list<int>& ids, Hydrodynamics<ndim>*);
 
 };
 

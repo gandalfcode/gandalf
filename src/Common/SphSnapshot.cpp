@@ -240,7 +240,8 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   data.clear();
 
   // Read which species are there
-  if (simulation->hydro != NULL && simulation->hydro->GetParticleArray() != NULL) {
+  // if (simulation->hydro != NULL && simulation->hydro->GetParticleArray() != NULL) {
+  if (simulation->hydro != NULL) {
     // Compute Ndust - note that here Nhydro is Ngas+Ndust
     Nhydro = simulation->hydro->Nhydro;
     for (int n=0; n < Nhydro; n++){

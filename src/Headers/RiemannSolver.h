@@ -409,4 +409,81 @@ class ShocktubeSolution
 #endif
 
 };
+
+//=================================================================================================
+//  Class ViscousFlux
+/// \brief   Computes the viscous flux at an interface
+/// \details Simple arithmetic average for the interface flux in a diffusion problem. Assumes
+///          a constant kinematic viscosity (shear and bulk). Provides an interface for more
+///          complex viscosities as well
+/// \author  R. A. Booth
+/// \date    17/5/2017
+//=================================================================================================
+template<int ndim>
+class ViscousFlux
+{
+ public:
+
+  ViscousFlux(FLOAT nu_shear, FLOAT nu_bulk=0)
+   : _nu_shear0(nu_shear), _nu_bulk0(nu_bulk)
+ { }
+
+  virtual ~ViscousFlux(){} ;
+
+  void ComputeViscousFlux(const FLOAT Wl[ndim+2], const FLOAT Wr[ndim+2],
+                          const FLOAT gradv_l[][ndim], const FLOAT gradv_r[][ndim],
+                          FLOAT flux[ndim+2][ndim]) const {
+
+    // Compute average face state
+    FLOAT W[ndim+2], gradv[ndim][ndim], div_v(0) ;
+    for (int i=0; i < ndim+2; i++) W[i] = (Wl[i] + Wr[i])/2 ;
+    for (int i=0; i < ndim; i++) {
+      for (int j=0; j < ndim; j++) {
+        gradv[i][j] = (gradv_l[i][j] + gradv_r[i][j])/2 ;
+      }
+      div_v += gradv[i][i];
+    }
+
+    // Face viscosity
+    FLOAT eta_s = eta_shear(W);
+    FLOAT eta_b = eta_bulk(W) ;
+
+
+    FLOAT stress[ndim][ndim];
+    for (int i=0; i < ndim; i++) {
+      for (int j=0; j < ndim; j++) {
+        stress[i][j] = eta_s * (gradv[i][j] + gradv[j][i]);
+      }
+      stress[i][i] += (eta_b - 2*eta_s/3)*div_v;
+    }
+
+    // Add the fluxes
+    for (int i=0; i < ndim; i++) {
+      for (int j=0; j < ndim; j++) {
+        flux[i][j]  -= stress[i][j];
+        flux[iE][j] -= stress[i][j]*W[i];
+      }
+    }
+  }
+
+protected:
+  virtual FLOAT eta_shear(const FLOAT *W) const {
+    return _nu_shear0 * W[irho];
+  }
+  virtual FLOAT eta_bulk(const FLOAT *W) const  {
+    return _nu_bulk0 * W[irho];
+  }
+
+private:
+  FLOAT _nu_shear0, _nu_bulk0 ;
+
+  static const int nvar = ndim + 2;
+  static const int irho   = ndim ;
+  static const int ipress = ndim + 1 ;
+  static const int iE     = ipress ;
+};
+
+
+
+
 #endif

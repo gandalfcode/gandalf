@@ -207,7 +207,7 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
       nbody->stardata[i].gpot   = 0.0;
       nbody->stardata[i].gpe    = 0.0;
       nbody->stardata[i].tlast  = t;
-      nbody->stardata[i].active = true;
+      nbody->stardata[i].flags.set(active);
       nbody->stardata[i].level  = level_step;
       nbody->stardata[i].nstep  = 0;
       nbody->stardata[i].nlast  = 0;
@@ -225,7 +225,7 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
     //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
         nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r,nbody->nbodydata[i]->v,
                                             nbody->nbodydata[i]->a,nbody->nbodydata[i]->adot,
                                             nbody->nbodydata[i]->gpot);
@@ -233,6 +233,9 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
   }
+
+  if (Nlevels == 1) this->ComputeGlobalTimestep();
+  else this->ComputeBlockTimesteps();
 
   // Set particle values for initial step (e.g. r0, v0, a0)
   nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
@@ -277,7 +280,7 @@ void NbodySimulation<ndim>::MainLoop(void)
         for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
         nbody->stardata[i].gpot = 0.0;
         nbody->stardata[i].gpe  = 0.0;
-        nbody->stardata[i].active = true;
+        nbody->stardata[i].flags.set(active);
         nbody->nbodydata[i] = &(nbody->stardata[i]);
       }
       nbody->Nnbody = nbody->Nstar;
@@ -304,9 +307,6 @@ void NbodySimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 
 
-  // Compute timesteps for all particles
-  if (Nlevels <= 1) this->ComputeGlobalTimestep();
-  else this->ComputeBlockTimesteps();
 
   // Advance time variables
   n = n + 1;
@@ -330,7 +330,7 @@ void NbodySimulation<ndim>::MainLoop(void)
 
       // Zero all acceleration terms
       for (i=0; i<nbody->Nnbody; i++) {
-        if (nbody->nbodydata[i]->active) {
+        if (nbody->nbodydata[i]->flags.check(active)) {
           for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = 0.0;
           for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = 0.0;
           for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
@@ -349,7 +349,7 @@ void NbodySimulation<ndim>::MainLoop(void)
       //nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
 
       for (i=0; i<nbody->Nnbody; i++) {
-        if (nbody->nbodydata[i]->active) {
+        if (nbody->nbodydata[i]->flags.check(active)) {
           nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r,nbody->nbodydata[i]->v,
                                               nbody->nbodydata[i]->a,nbody->nbodydata[i]->adot,
                                               nbody->nbodydata[i]->gpot);
@@ -394,6 +394,9 @@ void NbodySimulation<ndim>::MainLoop(void)
     //nbody->CorrectionTerms(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
   //}
 
+  // Compute timesteps for all particles
+  if (Nlevels == 1) this->ComputeGlobalTimestep();
+  else this->ComputeBlockTimesteps();
 
   // Set all end-of-step variables
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
@@ -401,7 +404,7 @@ void NbodySimulation<ndim>::MainLoop(void)
   return;
 }
 
-
+/*
 
 //=================================================================================================
 //  NbodySimulation::ComputeGlobalTimestep
@@ -659,3 +662,5 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 
   return;
 }
+
+*/

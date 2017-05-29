@@ -184,12 +184,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Create SPH particle integration object
   //-----------------------------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
-    sphint = new SphLeapfrogKDK<ndim, GradhSphParticle>
+    hydroint = new SphLeapfrogKDK<ndim, GradhSphParticle>
       (floatparams["accel_mult"], floatparams["courant_mult"],
        floatparams["energy_mult"], eos_type, tdavisc);
   }
   else if (stringparams["sph_integration"] == "lfdkd") {
-    sphint = new SphLeapfrogDKD<ndim, GradhSphParticle>
+    hydroint = new SphLeapfrogDKD<ndim, GradhSphParticle>
       (floatparams["accel_mult"], floatparams["courant_mult"],
        floatparams["energy_mult"], eos_type, tdavisc);
     integration_step = max(integration_step,2);
@@ -332,7 +332,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Setup the dust force object
   //-----------------------------------------------------------------------------------------------
-  sphdust = DustFactory<ndim, GradhSphParticle>::ProcessParameters(simparams, timing, sph->types, t, gt, mpit) ;
+  sphdust = DustFactory<ndim, GradhSphParticle>::ProcessParameters(simparams, timing, sph->types,
+                                                                   simbox, t, gt, mpit) ;
+
+#if defined MPI_PARALLEL
+  if (sphdust != NULL) sphdust->SetMpiControl(mpicontrol);
+#endif
 
   return;
 }

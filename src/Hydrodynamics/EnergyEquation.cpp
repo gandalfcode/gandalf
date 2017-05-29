@@ -27,10 +27,11 @@
 #include <math.h>
 #include "Sph.h"
 #include "SmoothingKernel.h"
-#include "SphIntegration.h"
 #include "Particle.h"
 #include "EOS.h"
 #include "EnergyEquation.h"
+
+#include "../Headers/Integration.h"
 #include "Debug.h"
 using namespace std;
 

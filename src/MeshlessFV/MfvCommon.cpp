@@ -54,7 +54,9 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
                    h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
   kern(kernelclass<ndim>(KernelName)),
   riemannExact(gamma_aux, params->intparams["zero_mass_flux"]),
-  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal")
+  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal"),
+  viscosity(params->floatparams["shear_visc"], params->floatparams["bulk_visc"]),
+  need_viscosity(params->floatparams["shear_visc"] || params->floatparams["bulk_visc"])
 {
   this->kernp      = &kern;
   this->kernrange  = this->kernp->kernrange;
@@ -76,6 +78,7 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
     string message = "Unrecognised parameter : riemann_solver = " + riemann_solver;
     ExceptionHandler::getIstance().raise(message);
   }
+
 }
 
 
@@ -262,7 +265,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
       part.B[k][kk] = (FLOAT) 0.0;
     }
   }
-  if (create_sinks==1) part.flags.set_flag(potmin);
+  if (create_sinks==1) part.flags.set(potmin);
 
 
   // Loop over all potential neighbours in the list
@@ -299,7 +302,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
     // Calculate the minimum neighbour potential (used later to identify new sinks)
     if (create_sinks == 1) {
         if (neibpart[j].gpot > (FLOAT) 1.000000001*part.gpot &&
-            drsqd*invhsqd < kern.kernrangesqd) part.flags.unset_flag(potmin);
+            drsqd*invhsqd < kern.kernrangesqd) part.flags.unset(potmin);
     }
 
   }
@@ -319,7 +322,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   double sqd_condition_number = modE*modB / (ndim*ndim) ;
 
   if (sqd_condition_number < 1e4) {
-    part.flags.unset_flag(bad_gradients);
+    part.flags.unset(bad_gradients);
 
     // Complete the calculation of the gradients:
     for (var=0; var<nvar; var++) {
@@ -330,7 +333,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   }
   else {
     // Compute SPH (corrected) gradients instead
-    part.flags.set_flag(bad_gradients);
+    part.flags.set(bad_gradients);
 
 
     cout << "Bad integral gradient, using SPH gradients:\n"

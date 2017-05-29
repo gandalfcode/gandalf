@@ -10,7 +10,7 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = DUSTYWAVE
-Select SPH simulation                       : sim = sph
+Select SPH simulation                       : sim = mfvmuscl
 Select shocktube initial conditions         : ic = soundwave
 1D shocktube test                           : ndim = 1
 Pressure of LHS fluid                       : press1 = 1.0
@@ -52,7 +52,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = quintic
 SPH smoothing length iteration tolerance    : h_converge = 0.000000001
-
+    	      	     	       		    : h_fac = 1.0
 
 #---------------------------------
 # SPH artificial viscosity options
@@ -61,9 +61,8 @@ Artificial viscosity choice                 : avisc = none
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 0.01
 Artificial viscosity beta value             : beta_visc = 0.02
-Riemann solver                              : riemann_solver = exact
-Order of Riemann solver                     : riemann_order = 2
-Slope limiter                               : slope_limiter = mine
+Riemann solver                              : riemann_solver = hllc
+Slope limiter                               : slope_limiter = gizmo
 
 
 #-------------------------

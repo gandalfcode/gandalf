@@ -52,7 +52,7 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
   int iorig;                        // Original (real) particle id
   int itype;                        // Ghost particle type
   int j;                            // Ghost particle counter
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* sphdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[PeriodicGhosts::CopyHydroDataToGhosts]");
 
@@ -68,7 +68,7 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     sphdata[i] = sphdata[iorig];
     sphdata[i].iorig = iorig;
     sphdata[i].flags = type_flag(itype);
-    sphdata[i].flags.unset_flag(active);
+    sphdata[i].flags.unset(active);
 
     // Modify ghost position based on ghost type
     // Ghosts of ghosts refer only to their previous ghosts not the base cell, so
@@ -172,13 +172,13 @@ void MpiGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
 	  hydro->AllocateMemory(hydro->Ntot + Nmpighosts);
   }
 
-  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
+  ParticleType<ndim>* main_array = hydro->template GetParticleArray<ParticleType>();
   int start_index = hydro->Nhydro + hydro->NPeriodicGhost;
 
   for (j=0; j<Nmpighosts; j++) {
     i = start_index + j;
     main_array[i] = ghost_array[j];
-    main_array[i].flags.unset_flag(active);
+    main_array[i].flags.unset(active);
   }
 
   hydro->Nmpighost = Nmpighosts;
@@ -199,15 +199,22 @@ void MpiGhostsSpecific<ndim, ParticleType>::CopyHydroDataToGhosts
  (DomainBox<ndim> simbox,              ///< [in] Simulation box
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to hydrodynamics object
 {
+  debug2("[MpiGhostsSpecific::CopyHydroDataToGhosts]");
+
+
   ParticleType<ndim>* ghost_array;
-  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
+  ParticleType<ndim>* main_array = hydro->template GetParticleArray<ParticleType>();
   int Nmpighosts = mpicontrol->UpdateGhostParticles(main_array,&ghost_array);
   int start_index = hydro->Nhydro + hydro->NPeriodicGhost;
 
   for (int j=0; j<Nmpighosts; j++) {
     int i = start_index + j;
+
+    assert(main_array[i].ptype == ghost_array[j].ptype);
+    assert(main_array[i].iorig == ghost_array[j].iorig);
+
     main_array[i] = ghost_array[j];
-    main_array[i].flags.unset_flag(active);
+    main_array[i].flags.unset(active);
   }
 
 }

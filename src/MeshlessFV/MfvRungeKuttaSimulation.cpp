@@ -87,10 +87,12 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 
   // Integrate positions of particles
-  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, mfv->GetMeshlessFVParticleArray());
-
-  // Advance N-body particle positions
+  hydroint->AdvanceParticles(n, t, timestep, mfv);
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+
+  // Check all boundary conditions
+  // (DAVID : create an analagous of this function for N-body)
+  hydroint->CheckBoundaries(simbox,mfv);
 
   // Re-build/re-stock tree now particles have moved
   mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
@@ -138,7 +140,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
     // Zero all acceleration terms
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = (FLOAT) 0.0;
@@ -165,7 +167,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
 
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
         nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
                                             nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
                                             nbody->nbodydata[i]->gpot);
@@ -180,7 +182,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 
   // End-step terms for all hydro particles
-  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+  hydroint->EndTimestep(n, t, timestep, mfv);
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
 
@@ -302,7 +304,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
     // Zero all acceleration terms
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = (FLOAT) 0.0;
@@ -313,7 +315,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
     if (sink_particles == 1) {
       for (i=0; i<sinks->Nsink; i++) {
-        if (sinks->sink[i].star->active) {
+        if (sinks->sink[i].star->flags.check(active)) {
           for (k=0; k<ndim; k++) sinks->sink[i].fhydro[k] = (FLOAT) 0.0;
         }
       }
@@ -402,7 +404,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-    part.flags.set_flag(active);
+    part.flags.set(active);
   }
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 

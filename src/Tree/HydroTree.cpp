@@ -315,7 +315,7 @@ void HydroTree<ndim,ParticleType>::BuildTree
   const FLOAT timestep,                ///< [in] Smallest physical timestep
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
-  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim> *partdata = hydro->template GetParticleArray<ParticleType>();
   CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_TREE");
 
   debug2("[HydroTree::BuildTree]");
@@ -387,7 +387,7 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
   const FLOAT timestep,                ///< [in] Smallest physical timestep
   Hydrodynamics<ndim> *hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
-  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim> *partdata = hydro->template GetParticleArray<ParticleType>();
   CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_GHOST_TREE");
 
   debug2("[HydroTree::BuildGhostTree]");
@@ -480,7 +480,7 @@ template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateActiveParticleCounters
  (Hydrodynamics<ndim> *hydro)          ///< [in] Pointer to hydrodynamics object
 {
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
   tree->UpdateActiveParticleCounters(partdata);
 }
 
@@ -560,7 +560,7 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
   NbodyParticle<ndim> *star;           // Pointer to star particle
 
   int Ntot = hydro->Ntot;
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
 
   debug2("[GradhSphTree::UpdateAllStarGasForces]");
@@ -570,7 +570,7 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
   Nactive = 0;
   activelist = new int[nbody->Nstar];
   for (int i=0; i<nbody->Nstar; i++) {
-    if (nbody->nbodydata[i]->active) activelist[Nactive++] = i;
+    if (nbody->nbodydata[i]->flags.check(active)) activelist[Nactive++] = i;
   }
 
 
@@ -677,7 +677,7 @@ void HydroTree<ndim,ParticleType>::UpdateTimestepsLimitsFromDistantParticles
  {
   int cactive = 0;                      // No. of active cells
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[HydroTree::UpdateTimestepsLimitsFromDistantParticles]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_DISTANT_TIMESTEPS");
@@ -783,7 +783,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 {
   int cactive;                          // No. of active cells
   vector<TreeCellBase<ndim> > celllist; // List of active tree cells
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[GradhHydroTree::UpdateGravityExportForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_DISTANT_FORCES");
@@ -948,7 +948,7 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
 {
   int cactive;                         // No. of active cells
   TreeCellBase<ndim> **celllist;           // List of pointers to binary tree cells
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[HydroTree::UpdateHydroExportList]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MPI_HYDRO_EXPORT");
@@ -1018,7 +1018,7 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
     //=============================================================================================
 
 #ifdef VERIFY_ALL
-    PrintArray("Ncellexport : ",Nmpi,Ncellexport);
+    //PrintArray("Ncellexport : ",Nmpi,Ncellexport);
     PrintArray("Npartexport : ",Nmpi,Npartexport);
 #endif
 
@@ -1243,7 +1243,7 @@ void HydroTree<ndim,ParticleType>::StockPrunedTree
 	  debug2("[HydroTree::StockPrunedTree]");
 	  CodeTiming::BlockTimer timer = timing->StartNewTimer("STOCK_PRUNED_TREE");
 
-	  Particle<ndim> *partdata = hydro->GetParticleArray();
+	  ParticleType<ndim> *partdata = hydro->template GetParticleArray<ParticleType>();
 	  // Update all work counters in the tree for load-balancing purposes
 	  tree->UpdateWorkCounters();
 
@@ -1366,7 +1366,7 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
   const FLOAT timestep,                ///< Smallest physical timestep
   Hydrodynamics<ndim> *hydro)          ///< Pointer to Hydrodynamics object
 {
-  ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim> *partdata = hydro->template GetParticleArray<ParticleType>();
   CodeTiming::BlockTimer timer = timing->StartNewTimer("BUILD_MPIGHOST_TREE");
 
   debug2("[HydroTree::BuildMpiGhostTree]");
@@ -1483,7 +1483,7 @@ void HydroTree<ndim,ParticleType>::FindMpiTransferParticles
 
     // Start from root-cell
     tree->FindBoxOverlapParticles(nodebox, particles_to_export[inode],
-                                                     hydro->GetParticleArray()) ;
+                                                     hydro->template GetParticleArray<ParticleType>()) ;
 
     // Copy particles to per processor array
     all_particles_to_export.insert(all_particles_to_export.end(),
@@ -1703,7 +1703,7 @@ int HydroTree<ndim,ParticleType>::GetExportInfo
                                                 ids_active_cells,
                                                 ids_active_particles,
                                                 send_buffer,
-                                                hydro->GetParticleArray()) ;
+                                                hydro->template GetParticleArray<ParticleType>()) ;
 
   assert(exported_particles == Nactive);
   assert(ids_active_particles.size() == static_cast<unsigned int>(Nactive)) ;
@@ -1851,7 +1851,8 @@ void HydroTree<ndim,ParticleType>::GetBackExportInfo
   send_buffer.reserve(size_imp_part+size_imp_cells);
   tree->PackParticlesAndCellsForMPIReturn(part_start_index, N_received_particles,
                                           cell_start_index, N_received_cells,
-                                          send_buffer, hydro->GetParticleArray());
+                                          send_buffer,
+                                          hydro->template GetParticleArray<ParticleType>());
 
 
   assert(send_buffer.size() == static_cast<unsigned int>(size_imp_part+size_imp_cells)) ;
@@ -1922,6 +1923,7 @@ void HydroTree<ndim,ParticleType>::CheckValidNeighbourList
     for (j=0; j<Ntot; j++) {
       for (k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
+      if (partdata[j].flags.is_dead()) continue;
       if (drsqd <= kernrangesqd*partdata[i].h*partdata[i].h) trueneiblist[Ntrueneib++] = j;
     }
   }
@@ -1929,6 +1931,7 @@ void HydroTree<ndim,ParticleType>::CheckValidNeighbourList
     for (j=0; j<Ntot; j++) {
       for (k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
+      if (partdata[j].flags.is_dead()) continue;
       if (drsqd < kernrangesqd*partdata[i].h*partdata[i].h ||
           drsqd < kernrangesqd*partdata[j].h*partdata[j].h) trueneiblist[Ntrueneib++] = j;
     }

@@ -27,6 +27,7 @@
 
 #include "Precision.h"
 #include "Constants.h"
+#include "Flags.h"
 
 
 //=================================================================================================
@@ -42,7 +43,7 @@ class NbodyParticle
 {
  public:
 
-  bool active;                         ///< Flag if active (i.e. recompute step)
+  type_flag flags;                     ///< Flags for active / end of time step
   int istar;                           ///< Internal i.d.
   int Ncomp;                           ///< No. of internal components
   int level;                           ///< Current timestep level
@@ -71,6 +72,7 @@ class NbodyParticle
   FLOAT gpe_internal;                  ///< Internal grav. potential energy
   FLOAT gpe_pert;                      ///< Perturber grav. potential energy
   DOUBLE dt;                           ///< Particle timestep
+  DOUBLE dt_next;                      ///< Particle timestep for next step
   DOUBLE dt_internal;                  ///< Internal timestep (e.g. due to sub-systems)
   DOUBLE tlast;                        ///< Time at beginning of last step
   DOUBLE NLyC;                         ///< No. of ionising photons per second
@@ -80,7 +82,6 @@ class NbodyParticle
   //---------------------------------------------------------------------------
   NbodyParticle()
   {
-    active = false;
     level  = 0;
     nstep  = 0;
     nlast  = 0;
