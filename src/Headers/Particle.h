@@ -29,6 +29,7 @@
 #include "Precision.h"
 #include "Constants.h"
 #include "Exception.h"
+#include "Flags.h"
 #ifdef MPI_PARALLEL
 #include <stddef.h>
 #include "mpi.h"
@@ -39,111 +40,7 @@ template<int ndim> class SM2012CommunicationHandler;
 
 template<int ndim> class GradhSphBase;
 
-
-enum flags {
-
-	none = 0,
-	dead = 1 << 0,
-	active = 1 << 1,
-	potmin = 1 << 2,
-
-	update_density = 1 << 3, // For meshless
-	bad_gradients = 1 << 5,  // For meshless
-
-	x_periodic_lhs = 1 << 7,
-	y_periodic_lhs = 1 << 8,
-	z_periodic_lhs = 1 << 9,
-
-	x_periodic_rhs = 1 << 10,
-	y_periodic_rhs = 1 << 11,
-	z_periodic_rhs = 1 << 12,
-
-  x_periodic = x_periodic_lhs | x_periodic_rhs,
-  y_periodic = y_periodic_lhs | y_periodic_rhs,
-  z_periodic = z_periodic_lhs | z_periodic_rhs,
-
-
-	x_mirror_lhs = 1 << 13,
-	y_mirror_lhs = 1 << 14,
-	z_mirror_lhs = 1 << 15,
-
-	x_mirror_rhs = 1 << 16,
-	y_mirror_rhs = 1 << 17,
-	z_mirror_rhs = 1 << 18,
-
-  x_mirror = x_mirror_lhs | x_mirror_rhs,
-  y_mirror = y_mirror_lhs | y_mirror_rhs,
-  z_mirror = z_mirror_lhs | z_mirror_rhs,
-
-  periodic_boundary = x_periodic | y_periodic | z_periodic,
-  mirror_boundary   = x_mirror   | y_mirror   | z_mirror,
-
-  any_boundary = periodic_boundary | mirror_boundary,
-};
-
-
-const int periodic_bound_flags[3][2] = {
-   {x_periodic_lhs, x_periodic_rhs},
-   {y_periodic_lhs, y_periodic_rhs},
-   {z_periodic_lhs, z_periodic_rhs},
-};
-
-
-const int mirror_bound_flags[3][2] = {
-   {x_mirror_lhs, x_mirror_rhs},
-   {y_mirror_lhs, y_mirror_rhs},
-   {z_mirror_lhs, z_mirror_rhs},
-};
-
-
-//=================================================================================================
-//  Class type_flag
-/// \brief  ...
-/// \author R. A. Booth
-/// \date   31/3/2016
-//=================================================================================================
-class type_flag {
-private:
-  unsigned int _flag;
-
-
-public:
-  type_flag(unsigned int flag = none) : _flag(flag) {}
-
-  unsigned int& set_flag(unsigned int flag) {
-    return _flag |= flag;
-  }
-  unsigned int& unset_flag(unsigned int flag) {
-    return _flag &= ~flag;
-  }
-  unsigned int get() const {
-    return _flag;
-  }
-  void reset() {
-    _flag = none;
-  }
-
-  bool check_flag(unsigned int flag) const {
-    return (_flag & flag) ;
-  }
-  bool is_dead() const {
-    return _flag & dead;
-  }
-  bool is_boundary() const {
-    return _flag & any_boundary;
-  }
-  bool is_periodic() const {
-    return _flag & periodic_boundary;
-  }
-  bool is_mirror() const {
-    return _flag & mirror_boundary;
-  }
-
-};
-
-
 enum parttype {gas_type, icm_type, cdm_type, dust_type, boundary_type, Ntypes};
-
 
 
 //=================================================================================================
@@ -264,6 +161,7 @@ struct Particle
   FLOAT dudt;                       ///< Compressional heating rate
   FLOAT gpot;                       ///< Gravitational potential
   DOUBLE dt;                        ///< Particle timestep
+  DOUBLE dt_next;                   ///< Next time-step timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
   FLOAT ionfrac;                    ///< Ionisation fraction
   FLOAT Xion;                       ///< Ionisation fraciton (from tree)
@@ -304,6 +202,7 @@ struct Particle
     dudt0     = (FLOAT) 0.0;
     gpot      = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
+    dt_next   = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
@@ -342,6 +241,31 @@ struct SphParticle : public Particle<ndim>
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
   }
+
+  class DensityParticle {
+  public:
+    DensityParticle() : m(0), u(0), gpot(0), ptype(0) {} ;
+    DensityParticle(const SphParticle<ndim>&p) {
+      for (int i=0; i<ndim; i++) {
+        r[i] = p.r[i];
+        v[i] = p.v[i];
+        a[i] = p.a[i];
+      }
+      m = p.m;
+      u = p.u;
+      gpot=p.gpot;
+      ptype=p.ptype;
+    }
+
+    FLOAT r[ndim];
+    FLOAT v[ndim];
+    FLOAT a[ndim];
+    FLOAT m;
+    FLOAT u;
+    FLOAT gpot;
+    int ptype;
+  };
+
 };
 
 
@@ -489,7 +413,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT press;                         ///< Pressure
   FLOAT invomega;                      ///< ..
   FLOAT div_v;                         ///< Velocity divergence
-  //FLOAT vsig_max;                      ///< Maximum signal velocity to all neighbours
   FLOAT ndens;                         ///< Particle number density, inverse volume
   FLOAT zeta;                          ///< ..
   FLOAT B[ndim][ndim];                 ///< Inverse matrix for gradient calculations
@@ -500,6 +423,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
   FLOAT rdmdt[ndim];                   ///< ..
   FLOAT rdmdt0[ndim];                  ///< ..
+  FLOAT alpha_slope[ndim+2];           ///< Slope limiter parameter
 
   // SPH particle constructor to initialise all values
   //-----------------------------------------------------------------------------------------------
@@ -509,12 +433,14 @@ struct MeshlessFVParticle : public Particle<ndim>
     press     = (FLOAT) 0.0;
     div_v     = (FLOAT) 0.0;
     ndens     = (FLOAT) 0.0;
-   // vsig_max  = (FLOAT) 0.0;
     zeta      = (FLOAT) 0.0;
+    div_v     = (FLOAT) 0.0 ;
     for (int k=0; k<ndim; k++) rdmdt[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) rdmdt0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim+2; k++) dQ[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim+2; k++) dQdt[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim+2; k++) alpha_slope[k] = (FLOAT) 0.0;
+
   }
 
 #ifdef MPI_PARALLEL
@@ -594,6 +520,7 @@ struct MeshlessFVParticle : public Particle<ndim>
 			  for (int kk=0; kk<ndim; kk++) grad[k][kk]=p.grad[k][kk];
 			  dQ[k]=0;
 			  dQdt[k]=0;
+			  alpha_slope[k] = p.alpha_slope[k];
 		  }
 		  for (int k=0; k<ndim; k++) {
 			  for (int kk=0; kk<ndim; kk++) B[k][kk]=p.B[k][kk];
@@ -621,10 +548,12 @@ struct MeshlessFVParticle : public Particle<ndim>
 	  FLOAT dQ[ndim+2];
 	  FLOAT dQdt[ndim+2];
 	  FLOAT rdmdt[ndim];
+	  FLOAT alpha_slope[ndim+2];
 	  FLOAT h;
 	  FLOAT hrangesqd;
 	  FLOAT ndens;
 	  FLOAT hfactor;
+
 
 	  static const int NDIM=ndim;
 

@@ -110,7 +110,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     drsqd = DotProduct(draux, draux, ndim);
 
     // Compute psi-tilda values using integral / sph gradients.
-    if (not part.flags.check_flag(bad_gradients)) {
+    if (not part.flags.check(bad_gradients)) {
       for (k=0; k<ndim; k++) {
         psitildaj[k] = 0;
         for (int kk=0; kk<ndim; kk++)
@@ -124,7 +124,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
       for (k=0; k<ndim; k++)  psitildaj[k] = - (draux[k]/dr) * w;
     }
 
-    if (not neibpart[j].flags.check_flag(bad_gradients)) {
+    if (not neibpart[j].flags.check(bad_gradients)) {
       for (k=0; k<ndim; k++) {
       psitildai[k] = 0;
       for (int kk=0; kk<ndim; kk++)
@@ -194,6 +194,11 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     }
     else {
       riemannHLLC.ComputeFluxes(Wi, Wj, Aunit, vface, flux);
+    }
+
+    // Add the viscosity
+    if (need_viscosity) {
+      viscosity.ComputeViscousFlux(Wi, Wj, part.grad, neibpart[j].grad, flux) ;
     }
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators

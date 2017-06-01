@@ -100,7 +100,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 #pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
   for (int i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -369,8 +369,8 @@ void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
       star[i]->a0[k]*dt + (FLOAT) 0.5*star[i]->adot0[k]*dt*dt;
 
     // If at end of step, set system particle as active
-    if (dn == nstep) star[i]->active = true;
-    else star[i]->active = false;
+    if (dn == nstep) star[i]->flags.set(active);
+    else star[i]->flags.unset(active);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -499,30 +499,30 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
   FLOAT timestep,                      ///< [in] Smallest timestep value
   NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  int nstep;                           // Particle (integer) step size
 
   debug2("[NbodyHermite4::EndTimestep]");
 
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
 
     // If at end of the current step, set quantites for start of new step
-    if (dn == nstep) {
+    if (star[i]->flags.check(end_timestep)) {
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
       for (k=0; k<ndim; k++) star[i]->adot0[k] = star[i]->adot[k];
       for (k=0; k<ndim; k++) star[i]->apert[k] = 0.0;
       for (k=0; k<ndim; k++) star[i]->adotpert[k] = 0.0;
-      star[i]->active = false;
+
       star[i]->nlast = n;
       star[i]->tlast = t;
+      star[i]->dt = star[i]->dt_next ;
+      star[i]->dt_next = 0 ;
+      star[i]->flags.unset(active);
+      star[i]->flags.unset(end_timestep);
     }
 
   }

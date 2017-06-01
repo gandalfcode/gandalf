@@ -173,7 +173,7 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
 
   // Set particle flag to active to ensure force is computed asap
   part.flags = none;
-  part.flags.set_flag(active);
+  part.flags.set(active);
 
   return part;
 }
@@ -277,8 +277,8 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart        = origpart;
   ghostpart.r[k]   = rk;
   ghostpart.v[k]   = vk;
-  ghostpart.flags.unset_flag(active);
-  ghostpart.flags.set_flag(ghosttype); // Allow ghost to have multiple ghost flags
+  ghostpart.flags.unset(active);
+  ghostpart.flags.set(ghosttype); // Allow ghost to have multiple ghost flags
   ghostpart.iorig  = i;
   Nghost++;
 

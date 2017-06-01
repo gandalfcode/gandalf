@@ -88,7 +88,10 @@ protected:
   virtual void UpdateAllProperties(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual double GetMaximumSmoothingLength() const = 0;
   virtual TreeBase<ndim>* GetTree() const = 0;
-  virtual TreeBase<ndim>* GetGhhotTree() const = 0;
+  virtual TreeBase<ndim>* GetGhostTree() const = 0;
+#ifdef MPI_PARALLEL
+  virtual TreeBase<ndim>* GetMPIGhostTree() const = 0;
+#endif
   virtual void SetTimingObject(CodeTiming*) = 0 ;
   virtual void ToggleNeighbourCheck(bool do_check) = 0 ;
   virtual void UpdateTimestepsLimitsFromDistantParticles(Hydrodynamics<ndim>*,const bool) = 0 ;
@@ -175,7 +178,10 @@ protected:
                                       DomainBox<ndim> &, Ewald<ndim> *);
   virtual double GetMaximumSmoothingLength() const;
   virtual TreeBase<ndim>* GetTree() const { return tree; }
-  virtual TreeBase<ndim>* GetGhhotTree() const { return ghosttree; }
+  virtual TreeBase<ndim>* GetGhostTree() const { return ghosttree; }
+#ifdef MPI_PARALLEL
+  virtual TreeBase<ndim>* GetMPIGhostTree() const { return mpighosttree; }
+#endif
   virtual void SetTimingObject(CodeTiming* timer) { timing = timer ; }
   virtual void ToggleNeighbourCheck(bool do_check) { neibcheck = do_check; }
 

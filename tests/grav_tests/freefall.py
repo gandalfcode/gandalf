@@ -28,7 +28,11 @@ def timeratiofreefall(snap,type=None,unit="default"):
 if __name__=="__main__":
     # Create new freefall collapse simulation from 'freefall.dat' file and then
     # run the simulation
-    newsim('freefall.dat')
+    import sys
+    if len(sys.argv) > 1:
+        newsim(sys.argv[1])
+    else:
+        newsim('freefall.dat')
     setupsim()
     run()
     
@@ -44,6 +48,9 @@ if __name__=="__main__":
     for i,t in enumerate(time):
         analytical_5[i]=freefall_analytical_radius(t)
     
+    print 'Error norm:', 
+    print np.linalg.norm((analytical_5 - r_5)*initial_radius, ord=1)/time.size
+
     # Plot Lagrangian radii as a function of time
     time_plot("tr","lr3",linestyle='-')
     limit("lr3",0.0,1.05)

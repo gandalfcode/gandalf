@@ -170,7 +170,7 @@ SimulationBase::SimulationBase
   tlitesnapnext=0;
   tend=1.0;
   level_step=1;
-  sph_single_timestep=0;
+  hydro_single_timestep=0;
   level_diff_max=1;
   sink_particles=0;
   dt_max=0;
@@ -1185,7 +1185,7 @@ void Simulation<ndim>::ProcessParameters(void)
   pruning_level_min   = intparams["pruning_level_min"];
   pruning_level_max   = intparams["pruning_level_max"];
   run_id              = stringparams["run_id"];
-  sph_single_timestep = intparams["sph_single_timestep"];
+  hydro_single_timestep = intparams["sph_single_timestep"];
   tmax_wallclock      = floatparams["tmax_wallclock"];
   tend                = floatparams["tend"]/simunits.t.outscale;
   tlitesnapnext       = floatparams["tlitesnapfirst"]/simunits.t.outscale;
@@ -1621,6 +1621,544 @@ void Simulation<ndim>::UpdateDiagnostics(void)
     diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
     cout << "Eerror : " << diag.Eerror << endl;
   }
+}
+
+
+
+//=================================================================================================
+//  Simulation::ComputeGlobalTimestep
+/// Computes global timestep for the simulation.  Calculates the minimum
+/// timestep for all hydro and N-body particles in the simulation.
+//=================================================================================================
+template<int ndim>
+void Simulation<ndim>::ComputeGlobalTimestep() {
+  int i;                               // Particle counter
+  DOUBLE dt;                           // Particle timestep
+  DOUBLE dt_min = big_number_dp;       // Local copy of minimum timestep
+  DOUBLE dt_nbody;                     // Aux. minimum N-body timestep
+  DOUBLE dt_hydro;                       // Aux. minimum hydro timestep
+
+  debug2("[Simulation::DoComputeGlobalTimestep]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GLOBAL_TIMESTEPS");
+
+
+   // Only update timestep when all particles are synced at end of last step.
+   //-----------------------------------------------------------------------------------------------
+   if (n == nresync) {
+
+     n            = 0;
+     level_max    = 0;
+     level_step   = level_max + integration_step - 1;
+     nresync      = integration_step;
+     dt_min_nbody = big_number_dp;
+     dt_min_hydro = big_number_dp;
+
+     // Find minimum timestep from all hydro particles
+     //---------------------------------------------------------------------------------------------
+ #pragma omp parallel default(none) private(i,dt,dt_nbody,dt_hydro) shared(dt_min)
+     {
+       dt       = big_number_dp;
+       dt_nbody = big_number_dp;
+       dt_hydro = big_number_dp;
+
+       if (hydro != NULL) {
+ #pragma omp for
+         for (i=0; i<hydro->Nhydro; i++) {
+           Particle<ndim>& part = hydro->GetParticlePointer(i);
+           part.flags.set(end_timestep) ;
+           part.level     = 0;
+           part.levelneib = 0;
+           part.nstep     = pow(2,level_step - part.level);
+           part.dt_next   = hydroint->Timestep(part,hydro);
+           dt             = min(dt,      part.dt_next);
+           dt_hydro       = min(dt_hydro,part.dt_next);
+         }
+       }
+
+       // Now compute minimum timestep due to stars/systems
+       if (nbody != NULL) {
+ #pragma omp for
+         for (i=0; i<nbody->Nnbody; i++) {
+           nbody->nbodydata[i]->flags.set(end_timestep);
+           nbody->nbodydata[i]->level = 0;
+           nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
+           nbody->nbodydata[i]->dt_next  = nbody->Timestep(nbody->nbodydata[i]);
+           dt       = min(dt,nbody->nbodydata[i]->dt_next);
+           dt_nbody = min(dt_nbody,nbody->nbodydata[i]->dt_next);
+         }
+       }
+
+ #pragma omp critical
+       {
+         if (dt < dt_min) dt_min = dt;
+         if (dt_hydro < dt_min_hydro) dt_min_hydro = dt_hydro;
+         if (dt_nbody < dt_min_nbody) dt_min_nbody = dt_nbody;
+       }
+
+     }
+     //---------------------------------------------------------------------------------------------
+
+ #ifdef MPI_PARALLEL
+     dt = dt_min;
+     MPI_Allreduce(&dt, &dt_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+ #endif
+     timestep = dt_min;
+
+     // Set minimum timestep for all hydro and N-body particles
+     if (hydro != NULL)
+       for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).dt_next = timestep;
+     if (nbody != NULL)
+       for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->dt_next = timestep;
+
+   }
+   //-----------------------------------------------------------------------------------------------
+
+   return;
+
+
+}
+
+
+
+
+//=================================================================================================
+//  Simulation::ComputeBlockTimesteps
+/// Compute timesteps for all particles using hierarchical block timesteps.
+//=================================================================================================
+template<int ndim>
+void Simulation<ndim>::ComputeBlockTimesteps(void)
+{
+  int i;                                     // Particle counter
+  int istep;                                 // Aux. variable for changing steps
+  int last_level;                            // Previous timestep level
+  int level;                                 // Particle timestep level
+  int level_max_aux;                         // Aux. maximum level variable
+  int level_max_nbody = 0;                   // level_max for star particles only
+  int level_max_old;                         // Old level_max
+  int level_max_hydro = 0;                     // level_max for hydro particles only
+  int level_min_hydro = 9999999;               // level_min for hydro particles
+  int level_nbody;                           // local thread var. for N-body level
+  int level_hydro;                             // local thread var. for hydro level
+  int nfactor;                               // Increase/decrease factor of n
+  int nstep;                                 // Particle integer step-size
+  DOUBLE dt;                                 // Aux. timestep variable
+  DOUBLE dt_min = big_number_dp;             // Minimum timestep
+  DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
+  DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
+  DOUBLE dt_hydro;                             // Aux. minimum hydro timestep
+
+  debug2("[Simulation::DoComputeBlockTimesteps]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
+
+
+  dt_min_nbody = big_number_dp;
+  dt_min_hydro = big_number_dp;
+
+
+  // Synchronise all timesteps and reconstruct block timestep structure.
+  //===============================================================================================
+  if (n == nresync) {
+
+    n = 0;
+    timestep = big_number_dp;
+
+#pragma omp parallel default(none) private(dt,dt_min_aux,dt_nbody,dt_hydro,i)
+    {
+      // Initialise all timestep and min/max variables
+      dt_min_aux = big_number_dp;
+      dt_hydro   = big_number_dp;
+      dt_nbody   = big_number_dp;
+
+      // Find minimum timestep from all hydro particles
+      if (hydro != NULL) {
+#pragma omp for
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+          if (part.flags.is_dead()) continue;
+          dt           = hydroint->Timestep(part,hydro);
+          dt_min_aux   = min(dt_min_aux,dt);
+          dt_hydro     = min(dt_hydro,dt);
+          part.dt_next = dt;
+        }
+      }
+
+      // Now compute minimum timestep due to stars/systems
+      if (nbody != NULL) {
+#pragma omp for
+        for (i=0; i<nbody->Nnbody; i++) {
+          dt         = nbody->Timestep(nbody->nbodydata[i]);
+          dt_min_aux = min(dt_min_aux,dt);
+          dt_nbody   = min(dt_nbody,dt);
+          nbody->nbodydata[i]->dt_next = dt;
+        }
+      }
+#pragma omp critical
+      {
+        timestep     = min(timestep,dt_min_aux);
+        dt_min_hydro = min(dt_min_hydro,dt_hydro);
+        dt_min_nbody = min(dt_min_nbody,dt_nbody);
+      }
+#pragma omp barrier
+    }
+
+
+    // For MPI, determine the global minimum timestep over all processors
+#ifdef MPI_PARALLEL
+    dt = timestep;
+    MPI_Allreduce(&dt, &timestep, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    dt = dt_min_hydro;
+    MPI_Allreduce(&dt, &dt_min_hydro, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    dt = dt_min_nbody;
+    MPI_Allreduce(&dt, &dt_min_nbody, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#endif
+
+
+    // Calculate new block timestep levels
+    level_max  = Nlevels - 1;
+    level_step = level_max + integration_step - 1;
+    dt_max     = timestep*pow(2.0, level_max);
+
+    // Calculate the maximum level occupied by all SPH particles
+    level_max_hydro = min(ComputeTimestepLevel(dt_min_hydro, dt_max), level_max);
+    level_max_nbody = min(ComputeTimestepLevel(dt_min_nbody, dt_max), level_max);
+
+    // Populate timestep levels with N-body particles.
+    // Ensures that N-body particles occupy levels lower than all hydro particles
+    if (nbody != NULL) {
+      for (i=0; i<nbody->Nnbody; i++) {
+        dt = nbody->nbodydata[i]->dt_next;
+        level = min(ComputeTimestepLevel(dt, dt_max), level_max);
+        nbody->nbodydata[i]->level = max(level, level_max_hydro);
+        nbody->nbodydata[i]->nlast = n;
+        nbody->nbodydata[i]->nstep = pow(2, level_step - nbody->nbodydata[i]->level);
+        nbody->nbodydata[i]->tlast = t;
+        nbody->nbodydata[i]->dt_next = nbody->nbodydata[i]->nstep * timestep;
+        nbody->nbodydata[i]->flags.set(end_timestep);
+      }
+    }
+
+    // If particles are sink neighbours, set to same timesteps as sinks
+    if (hydro != NULL) {
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
+        if (part.sinkid != -1) {
+          if (sinks->sink[part.sinkid].star->level - part.level > level_diff_max) {
+            part.level     = sinks->sink[part.sinkid].star->level - level_diff_max;
+            part.levelneib = sinks->sink[part.sinkid].star->level;
+            level_max_hydro  = max(level_max_hydro, part.level);
+          }
+        }
+      }
+
+      // If enforcing a single hydro timestep, set it here.
+      // Otherwise, populate the timestep levels with hydro particles.
+      if (hydro_single_timestep == 1) {
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+          if (part.flags.is_dead()) continue;
+          part.level     = level_max_hydro;
+          part.levelneib = level_max_hydro;
+          part.nstep     = pow(2, level_step - part.level);
+          part.nlast     = n ;
+          part.dt_next   = part.nstep * timestep;
+          part.flags.set(end_timestep) ;
+        }
+        level_min_hydro = level_max_hydro;
+      }
+      else {
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+          if (part.flags.is_dead()) continue;
+          dt             = part.dt_next;
+          level          = min(ComputeTimestepLevel(dt, dt_max), level_max);
+          part.level     = level;
+          part.levelneib = level;
+          part.nstep     = pow(2, level_step - part.level);
+          part.nlast     = n ;
+          part.dt_next   = part.nstep * timestep;
+          part.flags.set(end_timestep) ;
+
+          level_min_hydro  = min(level_min_hydro, part.level);
+        }
+      }
+    }
+
+    nresync = pow(2, level_step);
+    assert(nresync > 0);
+    timestep = dt_max / (DOUBLE) nresync;
+
+  }
+  // If not resynchronising, check if any hydro/N-body particles need to move
+  // up or down timestep levels.
+  //===============================================================================================
+  else {
+
+    level_max_old   = level_max;
+    level_max       = 0;
+    level_max_nbody = 0;
+    level_max_hydro = 0;
+
+
+#pragma omp parallel default(shared) private(dt,dt_nbody,dt_hydro,i)\
+     private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor)
+    {
+      dt_hydro      = big_number_dp;
+      dt_nbody      = big_number_dp;
+      level_max_aux = 0;
+      level_nbody   = 0;
+      level_hydro   = 0;
+
+
+      // Find all hydro particles at the beginning of a new timestep
+      //-------------------------------------------------------------------------------------------
+      if (hydro != NULL) {
+#pragma omp for
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+          if (part.flags.is_dead()) continue;
+
+          // hydro particles whose timestep has been artificially reduced by Saitoh & Makino scheme.
+          if (n - part.nlast == part.nstep && part.nstep != pow(2,level_step - part.level)) {
+            dt             = hydroint->Timestep(part, hydro);
+            level          = max(ComputeTimestepLevel(dt, dt_max), part.levelneib - level_diff_max);
+            part.level     = max(part.level, level);
+            part.levelneib = part.level;
+            part.nlast     = n;
+            part.nstep     = pow(2, level_step - part.level);
+            part.dt_next   = part.nstep * timestep;
+            part.flags.set(end_timestep) ;
+          }
+          // hydro particles that have naturally reached the end of their step
+          else if (n - part.nlast == part.nstep) {
+            nstep      = part.nstep;
+            last_level = part.level;
+
+            // Compute new timestep value and level number
+            dt    = hydroint->Timestep(part, hydro);
+            level = max(ComputeTimestepLevel(dt, dt_max), part.levelneib - level_diff_max);
+
+            // Move up one level (if levels are correctly synchronised) or
+            // down several levels if required
+            if (level < last_level && last_level > 1 && n%(2*nstep) == 0) {
+              part.level = last_level - 1;
+            }
+            else if (level > last_level) {
+              part.level = level;
+            }
+            else {
+              part.level = last_level;
+            }
+
+            part.levelneib = level;
+            part.nlast     = n;
+            part.nstep     = pow(2, level_step - part.level);
+            part.dt_next   = part.nstep * timestep;
+            part.flags.set(end_timestep);
+          }
+
+          // Find maximum level of all hydro particles
+          level_hydro     = max(level_hydro, part.level);
+          level_max_aux = max(level_max_aux, part.level);
+
+          dt_hydro = min(dt_hydro, part.dt);
+        }
+        //-------------------------------------------------------------------------------------------
+
+
+#pragma omp critical
+        {
+          dt_min        = min(dt_min, dt_hydro);
+          dt_min_hydro  = min(dt_min_hydro, dt_hydro);
+          level_max     = max(level_max, level_max_aux);
+          level_max_hydro = max(level_max_hydro, level_hydro);
+        }
+#pragma omp barrier
+
+#if defined MPI_PARALLEL
+#pragma omp master
+        {
+          level = level_max_hydro;
+          MPI_Allreduce(&level, &level_max_hydro, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        }
+#pragma omp barrier
+#endif
+      }
+
+      // Now find all N-body particles at the beginning of a new timestep
+      //-------------------------------------------------------------------------------------------
+      if (nbody != NULL) {
+#pragma omp for
+        for (i=0; i<nbody->Nnbody; i++) {
+
+          // Skip particles that are not at end of step
+          if (n - nbody->nbodydata[i]->nlast == nbody->nbodydata[i]->nstep) {
+            nstep = nbody->nbodydata[i]->nstep;
+            last_level = nbody->nbodydata[i]->level;
+
+            // Compute new timestep value and level number
+            dt    = nbody->Timestep(nbody->nbodydata[i]);
+            level = max(ComputeTimestepLevel(dt, dt_max), level_max_hydro);
+
+            // Move up one level (if levels are correctly synchronised) or
+            // down several levels if required
+            if (level < last_level && level > level_max_hydro && last_level > 1 && n%(2*nstep) == 0) {
+              nbody->nbodydata[i]->level = last_level - 1;
+            }
+            else if (level > last_level) {
+              nbody->nbodydata[i]->level = level;
+            }
+            else {
+              nbody->nbodydata[i]->level = last_level;
+            }
+
+            nbody->nbodydata[i]->nlast = n;
+            nbody->nbodydata[i]->nstep = pow(2, level_step - nbody->nbodydata[i]->level);
+            nbody->nbodydata[i]->tlast = t;
+            nbody->nbodydata[i]->dt_next = nbody->nbodydata[i]->nstep * timestep;
+            nbody->nbodydata[i]->flags.set(end_timestep);
+          }
+
+          // Find maximum level of all N-body particles
+          level_nbody   = max(level_nbody, nbody->nbodydata[i]->level);
+          level_max_aux = max(level_max_aux, nbody->nbodydata[i]->level);
+          dt_nbody      = min(dt_nbody, nbody->nbodydata[i]->dt_next);
+        }
+        //-------------------------------------------------------------------------------------------
+
+#pragma omp critical
+        {
+          dt_min          = min(dt_min, dt_nbody);
+          dt_min_nbody    = min(dt_min_nbody, dt_nbody);
+          level_max       = max(level_max, level_max_aux);
+          level_max_nbody = max(level_max_nbody, level_nbody);
+        }
+#pragma omp barrier
+
+      }
+    }
+
+    // For MPI, find the global maximum timestep levels for each processor
+#ifdef MPI_PARALLEL
+    level = level_max;
+    MPI_Allreduce(&level, &level_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    level = level_max_nbody;
+    MPI_Allreduce(&level, &level_max_nbody, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    assert(level_max_hydro >= 0);
+#endif
+
+    assert(!(isnan(dt_min)) && !(isinf(dt_min)));
+    assert(!(isnan(dt_max)) && !(isinf(dt_max)));
+
+
+    if (hydro != NULL) {
+      // Set fixed hydro timestep level here in case maximum has changed
+      if (hydro_single_timestep == 1) {
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+          if (part.flags.is_dead()) continue;
+          if (part.nlast == n) part.level = level_max_hydro;
+        }
+      }
+
+      // Update all timestep variables if we have removed or added any levels
+      istep = pow(2, level_step - level_max_old + 1);
+
+      // Adjust integer time if levels are added or removed
+      if (level_max > level_max_old) {
+        nfactor = pow(2, level_max - level_max_old);
+        n *= nfactor;
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+          if (part.flags.is_dead()) continue;
+          part.nstep *= nfactor;
+          part.nlast *= nfactor;
+        }
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
+      }
+      else if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0) {
+        level_max = level_max_old - 1;
+
+        nfactor = pow(2, level_max_old - level_max);
+        assert(n%nfactor == 0);
+        n /= nfactor;
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+          if (part.flags.is_dead()) continue;
+          part.nlast /= nfactor;
+          part.nstep /= nfactor;
+        }
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
+      }
+      else {
+        level_max = level_max_old;
+      }
+    }
+
+    level_step = level_max + integration_step - 1;
+    nresync    = pow(2, level_step);
+    timestep   = dt_max / (DOUBLE) nresync;
+
+    // Update values of nstep for both hydro and star particles
+    if (hydro != NULL) {
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
+        if (part.flags.is_dead()) continue;
+        if (part.nlast == n) part.nstep = pow(2, level_step - part.level);
+      }
+    }
+    if (nbody != NULL) {
+      for (i=0; i<nbody->Nnbody; i++) {
+        if (nbody->nbodydata[i]->nlast == n) {
+          nbody->nbodydata[i]->nstep = pow(2, level_step - nbody->nbodydata[i]->level);
+        }
+      }
+    }
+
+    assert(level_max >= level_max_old - 1);
+
+  }
+  //===============================================================================================
+
+
+  // Various asserts for debugging
+  if (hydro != NULL) {
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.flags.is_dead()) continue;
+      assert(part.level <= level_max);
+      assert(part.nlast <= n);
+      assert(part.tlast <= t);
+      assert(part.nstep == pow(2,level_step - part.level));
+      assert(part.nlast != n || n%part.nstep == 0);
+    }
+  }
+  if (nbody != NULL) {
+    for (i=0; i<nbody->Nnbody; i++) {
+      assert(nbody->nbodydata[i]->level <= level_max);
+      assert(nbody->nbodydata[i]->nlast <= n);
+      assert(nbody->nbodydata[i]->nstep == pow(2,level_step - nbody->nbodydata[i]->level));
+      assert(nbody->nbodydata[i]->nlast != n || n%nbody->nbodydata[i]->nstep == 0);
+      assert(nbody->nbodydata[i]->level >= level_max_hydro);
+      assert(nbody->nbodydata[i]->tlast <= t);
+    }
+  }
+  assert(timestep >= 0.0 && !(isinf(timestep)) && !(isnan(timestep)));
+  assert(dt_max > 0.0 && !(isinf(dt_max)) && !(isnan(dt_max)));
+  assert(level_step == level_max + integration_step - 1);
+  assert(level_max_hydro <= level_max);
+  assert(level_max_nbody <= level_max);
+  assert(n <= nresync);
+  if (timestep <= 0.0) {
+    cout << "Timestep fallen to zero : " << timestep << "    dtmax: " << dt_max
+         << "    nresync " << nresync << endl;
+    ExceptionHandler::getIstance().raise("Error : timestep fallen to zero");
+  }
+
+
+  return;
+
 }
 
 

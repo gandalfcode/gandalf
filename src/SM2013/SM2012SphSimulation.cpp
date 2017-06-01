@@ -191,13 +191,13 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   // Create SPH particle integration object
   //---------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
-    sphint = new SphLeapfrogKDK<ndim, SM2012SphParticle>(floatparams["accel_mult"],
+    hydroint = new SphLeapfrogKDK<ndim, SM2012SphParticle>(floatparams["accel_mult"],
 			              floatparams["courant_mult"],
 			              floatparams["energy_mult"],
 				      gas_eos, tdavisc);
   }
   else if (stringparams["sph_integration"] == "lfdkd") {
-    sphint = new SphLeapfrogDKD<ndim, SM2012SphParticle>(floatparams["accel_mult"],
+    hydroint = new SphLeapfrogDKD<ndim, SM2012SphParticle>(floatparams["accel_mult"],
 			              floatparams["courant_mult"],
 			              floatparams["energy_mult"],
 				      gas_eos, tdavisc);

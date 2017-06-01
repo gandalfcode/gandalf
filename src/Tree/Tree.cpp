@@ -69,7 +69,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
-    if (i < Ntot && partdata[i].flags.check_flag(active) && !partdata[i].flags.is_dead())
+    if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
       activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
@@ -1010,6 +1010,7 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
             if (dr > 0) {
               dr = sqrt(dr) ;
               dvdr /= dr + small_number ;
+              dr = max(dr, part.h);
 
               FLOAT vsig = part.sound + neibpart[l].sound - dvdr ;
               part.vsig_max = max(part.vsig_max, vsig*part.h/dr) ;
@@ -1847,7 +1848,7 @@ void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsFromMPITransfer
   typename TreeCell<ndim>::HandlerType handler_cell;
   typedef typename TreeCell<ndim>::HandlerType::DataType StreamlinedCell;
 
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
 
   //---------------------------------------------------------------------------------------------
@@ -1924,7 +1925,7 @@ void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsForMPIReturn
  vector<char>& recv_buffer,
  Hydrodynamics<ndim>* hydro)
  {
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   typename ParticleType<ndim>::HandlerType handler;
   typedef typename ParticleType<ndim>::HandlerType::ReturnDataType StreamlinedPart;

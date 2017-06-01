@@ -151,7 +151,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       if (part.flags.is_dead()) continue;
 
       // Only consider hydro particles located at a local potential minimum
-      if (!part.flags.check_flag(potmin)) continue;
+      if (!part.flags.check(potmin)) continue;
 
       // If density of a hydro particle is too low, skip to next particle
       if (part.rho < rho_sink || part.rho < rho_max) continue;
@@ -321,7 +321,7 @@ void Sinks<ndim>::CreateNewSinkParticle
   sink[Nsink].star->nstep        = part.nstep;
   sink[Nsink].star->nlast        = part.nlast;
   sink[Nsink].star->level        = part.level;
-  sink[Nsink].star->active       = part.flags.check_flag(active);
+  sink[Nsink].star->flags.set(active, part.flags.check(active));
   sink[Nsink].star->Ncomp        = 1;
   for (k=0; k<ndim; k++) sink[Nsink].star->r[k]     = part.r[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->v[k]     = part.v[k];
@@ -338,8 +338,8 @@ void Sinks<ndim>::CreateNewSinkParticle
 
   // Remove SPH particle from main arrays
   part.m      = (FLOAT) 0.0;
-  part.flags.unset_flag(active);
-  part.flags.set_flag(dead);
+  part.flags.unset(active);
+  part.flags.set(dead);
 
   return;
 }
@@ -361,7 +361,7 @@ void Sinks<ndim>::AccreteMassToSinks
   debug2("[Sinks::AccreteMassToSinks]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SINK_ACCRETE_MASS");
 
-  Particle<ndim> *partdata = hydro->GetParticleArray();
+  Particle<ndim> *partdata = hydro->GetParticleArrayUnsafe();
 
   // Allocate local memory and initialise values
   for (int i=0; i<hydro->Ntot; i++) hydro->GetParticlePointer(i).sinkid = -1;
@@ -476,7 +476,7 @@ void Sinks<ndim>::AccreteMassToSinks
       cout << "a0 : " << sink[s].star->a[0] << "    " << sink[s].star->a[1] << "    " << sink[s].star->a[2] << endl;
   */
       // Skip sink if it contains no gas, or unless it's at the beginning of its current step.
-      //if (sink[s].Ngas == 0 || !sink[s].star->active) continue;
+      //if (sink[s].Ngas == 0 || !sink[s].star->flags.check(active)) continue;
       //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
       //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != sink[s].star->nstep/2) continue;
 
@@ -685,8 +685,8 @@ void Sinks<ndim>::AccreteMassToSinks
             dt < smooth_accrete_dt*sink[s].trot) {
           mtemp       = part.m;
           part.m      = (FLOAT) 0.0;
-          part.flags.set_flag(dead);
-          part.flags.unset_flag(active);
+          part.flags.set(dead);
+          part.flags.unset(active);
         }
         else {
           //part.m -= mtemp;

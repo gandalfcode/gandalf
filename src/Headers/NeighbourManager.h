@@ -562,7 +562,11 @@ public:
                            const string& searchmode) {
 
     std::vector<int> reducedngb = neib_idx ;
-    __VerifyNeighbourList(i, reducedngb, Ntot, partdata, searchmode, "all") ;
+
+    Typemask types ;
+    for (int n=0; n<Ntypes; n++) types[n] = true ;
+
+    __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "all") ;
   }
 
   //===============================================================================================
@@ -575,6 +579,7 @@ public:
    template <class InParticleType>
    void VerifyReducedNeighbourList(int i, const NeighbourList<ParticleType>& ngbs,
                                    int Ntot, const InParticleType& partdata,
+                                   const Typemask& types,
                                    const string& searchmode) {
 
      // Get the idx of the reduced neighbour list
@@ -582,7 +587,7 @@ public:
      for (int k=0; k<ngbs.size(); k++)
        reducedngb[k] = neib_idx[ngbs._idx[k]];
 
-     __VerifyNeighbourList(i, reducedngb, Ntot, partdata, searchmode, "reduced") ;
+     __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "reduced") ;
    }
 
    //===============================================================================================
@@ -594,7 +599,7 @@ public:
    //===============================================================================================
    template <class InParticleType>
    void __VerifyNeighbourList(int i, std::vector<int>& reducedngb,
-                              int Ntot, const InParticleType& partdata,
+                              int Ntot, const InParticleType& partdata, const Typemask& types,
                               const string& searchmode, const string& listtype) {
      std::vector<int> truengb ;
      FLOAT drsqd ;
@@ -605,6 +610,8 @@ public:
      // Compute the complete (true) list of neighbours
      if (searchmode == "gather") {
        for (int j=0; j<Ntot; j++) {
+         if (not types[partdata[i].ptype]) continue ;
+
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
@@ -614,6 +621,8 @@ public:
      }
      else if (searchmode == "all") {
        for (int j=0; j<Ntot; j++) {
+         if (not types[partdata[i].ptype]) continue ;
+
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);

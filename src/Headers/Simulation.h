@@ -4,7 +4,7 @@
 //  - SimulationBase
 //  - Simulation
 //  - SphSimulation
-//  - GradhSphSimulation
+//  - GradhSphydromulation
 //  - SM2012SphSimulation
 //  - MeshlessFVSimulation
 //  - NbodySimulation
@@ -45,6 +45,7 @@
 #include "Ghosts.h"
 #include "HeaderInfo.h"
 #include "Hydrodynamics.h"
+#include "Integration.h"
 //#include "Ic.h"
 #include "MeshlessFV.h"
 #include "MfvNeighbourSearch.h"
@@ -59,7 +60,6 @@
 #include "SmoothingKernel.h"
 #include "Sph.h"
 #include "SphNeighbourSearch.h"
-#include "SphIntegration.h"
 #include "Supernova.h"
 #include "TimeStepControl.h"
 #include "TreeRay.h"
@@ -174,7 +174,7 @@ class SimulationBase
   int pruning_level_max;               ///< Max. level of pruned trees for MPI
   int rank;                            ///< Process i.d. (for MPI simulations)
   int sink_particles;                  ///< Switch on sink particles
-  int sph_single_timestep;             ///< Flag if SPH ptcls use same step
+  int hydro_single_timestep;             ///< Flag if SPH ptcls use same step
   int level_diff_max;                  ///< Max. allowed neib timestep level diff
   int level_max;                       ///< Maximum timestep level
   int level_step;                      ///< Level of smallest timestep unit
@@ -256,8 +256,8 @@ class Simulation : public SimulationBase
   // Subroutine prototypes
   //-----------------------------------------------------------------------------------------------
   virtual void CalculateDiagnostics(void);
-  virtual void ComputeGlobalTimestep(void)=0;
-  virtual void ComputeBlockTimesteps(void)=0;
+  virtual void ComputeGlobalTimestep() ;
+  virtual void ComputeBlockTimesteps() ;
   virtual void GenerateIC(void);
   virtual void ImportArray(double* input, int size, string quantity, string type="sph");
   virtual void OutputDiagnostics(void);
@@ -305,7 +305,7 @@ class Simulation : public SimulationBase
   Radiation<ndim> *radiation;          ///< Radiation field object
   RandomNumber *randnumb;              ///< Random number object (pointer)
   Sinks<ndim> *sinks;                  ///< Sink particle object
-  SphIntegration<ndim> *sphint;        ///< SPH Integration scheme pointer
+  TimeIntegration<ndim> *hydroint;     ///< Time Integration scheme for hydro pointer
   SphNeighbourSearch<ndim> *sphneib;   ///< SPH Neighbour scheme pointer
   NeighbourSearch<ndim> *neib;         ///< Generic pointer to neighbour search
   SupernovaDriver<ndim> *snDriver;     ///< Supernova feedback driver
@@ -352,7 +352,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::hydroint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::litesnap;
   using Simulation<ndim>::LocalGhosts;
@@ -386,7 +386,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
-  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::hydro_single_timestep;
   using Simulation<ndim>::sink_particles;
   using Simulation<ndim>::randnumb;
   using Simulation<ndim>::rank;
@@ -415,8 +415,6 @@ class SphSimulation : public Simulation<ndim>
   virtual void ProcessSphParameters(void)=0;
   virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
-  virtual void ComputeGlobalTimestep(void);
-  virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
 
@@ -447,7 +445,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::hydroint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
@@ -476,7 +474,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
-  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::hydro_single_timestep;
   using Simulation<ndim>::sink_particles;
   using Simulation<ndim>::rank;
   using Simulation<ndim>::rebuild_tree;
@@ -524,7 +522,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::hydroint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
@@ -553,7 +551,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
-  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::hydro_single_timestep;
   using Simulation<ndim>::sink_particles;
   using Simulation<ndim>::rank;
   using Simulation<ndim>::rebuild_tree;
@@ -606,7 +604,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::hydroint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::litesnap;
   using Simulation<ndim>::LocalGhosts;
@@ -640,7 +638,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
-  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::hydro_single_timestep;
   using Simulation<ndim>::sink_particles;
   using Simulation<ndim>::randnumb;
   using Simulation<ndim>::rank;
@@ -661,8 +659,6 @@ class MeshlessFVSimulation : public Simulation<ndim>
   MeshlessFVSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
   virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void) = 0;
-  virtual void ComputeGlobalTimestep(void);
-  virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
   virtual void FinaliseSimulation(void);
@@ -671,6 +667,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< Meshless FV neighbour search object pointer
 
   string time_step_limiter_type;               ///< Time step limiting algorithm to employ
+  DustBase<ndim>* mfvdust ;                    ///< Dust forces for dust particles.
 };
 
 
@@ -703,7 +700,7 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::hydroint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::litesnap;
   using Simulation<ndim>::LocalGhosts;
@@ -737,7 +734,7 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
-  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::hydro_single_timestep;
   using Simulation<ndim>::sink_particles;
   using Simulation<ndim>::randnumb;
   using Simulation<ndim>::rank;
@@ -752,6 +749,8 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
   using MeshlessFVSimulation<ndim>::mfv;
   using MeshlessFVSimulation<ndim>::mfvneib;
   using MeshlessFVSimulation<ndim>::time_step_limiter_type;
+  using MeshlessFVSimulation<ndim>::mfvdust;
+
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
@@ -760,8 +759,6 @@ class MfvMusclSimulation : public MeshlessFVSimulation<ndim>
   MfvMusclSimulation (Parameters* parameters) : MeshlessFVSimulation<ndim>(parameters) {};
   //virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
-  //virtual void ComputeGlobalTimestep(void);
-  //virtual void ComputeBlockTimesteps(void);
   //virtual void ProcessParameters(void);
   //virtual void WriteExtraSinkOutput(void);
 
@@ -802,7 +799,7 @@ class MfvRungeKuttaSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::hydroint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::litesnap;
   using Simulation<ndim>::LocalGhosts;
@@ -836,7 +833,7 @@ class MfvRungeKuttaSimulation : public MeshlessFVSimulation<ndim>
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
-  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::hydro_single_timestep;
   using Simulation<ndim>::sink_particles;
   using Simulation<ndim>::randnumb;
   using Simulation<ndim>::rank;
@@ -858,8 +855,6 @@ class MfvRungeKuttaSimulation : public MeshlessFVSimulation<ndim>
   MfvRungeKuttaSimulation (Parameters* parameters) : MeshlessFVSimulation<ndim>(parameters) {};
   //virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
-  //virtual void ComputeGlobalTimestep(void);
-  //virtual void ComputeBlockTimesteps(void);
   //virtual void ProcessParameters(void);
   //virtual void WriteExtraSinkOutput(void);
 
@@ -931,8 +926,6 @@ public:
   NbodySimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
   virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
-  virtual void ComputeGlobalTimestep(void);
-  virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
 
 };
