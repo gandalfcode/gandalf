@@ -20,7 +20,7 @@ rc('text', usetex=True)
 
 
 numMinRes = 4000
-numSimMax = 4
+numSimMax = 7
 nmin = numMinRes
 nmax = numMinRes*math.pow(2,numSimMax-1)
 mmin = 0.04
@@ -28,9 +28,11 @@ mmax = 0.21
 
 gradh_Nres = []
 gradh_msink = []
+gradh_smooth_msink = []
 
 mfm_Nres = []
 mfm_msink = []
+mfm_smooth_msink = []
 
 
 # Lowest resolution simulation (16 particles)
@@ -45,7 +47,21 @@ for i in range(numSimMax):
     run()
     sinkMassData = get_data("m", type='star')
     gradh_Nres.append(Npart)
-    gradh_msink.append(sinkMassData[0])
+    gradh_msink.append(0.5*(sinkMassData[0] + sinkMassData[1]))
+
+
+# Lowest resolution simulation (16 particles)
+for i in range(numSimMax):
+    Npart = int(numMinRes*math.pow(2,i))
+    sim = newsim("bb-gradh.dat")
+    sim.SetParam('Nhydro',Npart)
+    sim.SetParam('rho_sink',1.0e-13)
+    sim.SetParam('smooth_accretion',1)
+    sim.SetParam('tend',0.03)
+    setupsim()
+    run()
+    sinkMassData = get_data("m", type='star')
+    gradh_smooth_msink.append(0.5*(sinkMassData[0] + sinkMassData[1]))
 
 
 # Lowest resolution simulation (16 particles)
@@ -60,7 +76,21 @@ for i in range(numSimMax):
     run()
     sinkMassData = get_data("m", type='star')
     mfm_Nres.append(Npart)
-    mfm_msink.append(sinkMassData[0])
+    mfm_msink.append(0.5*(sinkMassData[0] + sinkMassData[1]))
+
+
+# Lowest resolution simulation (16 particles)
+for i in range(numSimMax):
+    Npart = int(numMinRes*math.pow(2,i))
+    sim = newsim("bb-mfm.dat")
+    sim.SetParam('Nhydro',Npart)
+    sim.SetParam('rho_sink',1.0e-13)
+    sim.SetParam('smooth_accretion',1)
+    sim.SetParam('tend',0.03)
+    setupsim()
+    run()
+    sinkMassData = get_data("m", type='star')
+    mfm_smooth_msink.append(0.5*(sinkMassData[0] + sinkMassData[1]))
 
 
 
@@ -75,10 +105,14 @@ ax.set_xlim([nmin, nmax])
 ax.set_ylim([mmin, mmax])
 ax.set_xlabel(r"$N$", fontsize=12)
 ax.set_ylabel(r"$m$", fontsize=12)
-ax.scatter(gradh_Nres, gradh_msink, color='black', marker='+', s=32.0, label='Gradh-SPH')
+ax.scatter(gradh_Nres, gradh_msink, color='black', marker='+', s=32.0, label='Gradh')
 ax.plot(gradh_Nres, gradh_msink, linestyle=':', color='black')
+ax.scatter(gradh_Nres, gradh_smooth_msink, color='black', marker='+', s=32.0, label='SPH, smooth')
+ax.plot(gradh_Nres, gradh_smooth_msink, linestyle=':', color='black')
 ax.scatter(mfm_Nres, mfm_msink, color='red', marker='^', s=32.0, label='MFM')
 ax.plot(mfm_Nres, mfm_msink, linestyle=':', color='red')
+ax.scatter(mfm_Nres, mfm_smooth_msink, color='red', marker='^', s=32.0, label='MFM, smooth')
+ax.plot(mfm_Nres, mfm_smooth_msink, linestyle=':', color='red')
 legend = ax.legend(loc='upper right', fontsize=12)
 
 

@@ -12,17 +12,18 @@ import math
 
 
 xmin = 128.0
-xmax = 16384.0
-ymin = 3.3e-12
-ymax = 3.3e-6
+xmax = 32768.0
+ymin = 6.666e-4
+ymax = 6.666e3
 numSimMax = 9
+Nstepsmax = 4
 
 
 # Make simple N^-2 line
 Nmax = 1000
 x = np.arange(xmin, xmax, 2.0)
-ydirect = 0.00000025*x*x
-ytree = 0.000005*x*np.log(x)
+ydirect = 0.00000005*x*x
+ytree = 0.00000125*x*np.log(x)
 
 # Set empty lists to store results from each resolution
 Nvalues = []
@@ -37,7 +38,8 @@ for i in range(numSimMax):
     sim = newsim("freefall.dat")
     sim.SetParam('Nhydro',Nhydro)
     sim.SetParam('tsnapfirst',2.0)
-    sim.SetParam("Nstepsmax",4)
+    sim.SetParam('ntreebuildstep',1)
+    sim.SetParam("Nstepsmax",Nstepsmax)
     sim.SetParam("neib_search","bruteforce")
     setupsim()
 
@@ -46,7 +48,7 @@ for i in range(numSimMax):
     end = time.time()
 
     Nvalues.append(Nhydro)
-    bruteforce_time.append(end - start)
+    bruteforce_time.append((end - start)/Nstepsmax)
 
 
 
@@ -56,7 +58,8 @@ for i in range(numSimMax):
     sim = newsim("freefall.dat")
     sim.SetParam('Nhydro',Nhydro)
     sim.SetParam('tsnapfirst',2.0)
-    sim.SetParam("Nstepsmax",4)
+    sim.SetParam('ntreebuildstep',1)
+    sim.SetParam("Nstepsmax",Nstepsmax)
     sim.SetParam("neib_search","kdtree")
     setupsim()
 
@@ -64,7 +67,7 @@ for i in range(numSimMax):
     run()
     end = time.time()
 
-    kdtree_time.append(end - start)
+    kdtree_time.append((end - start)/Nstepsmax)
 
 
 fig, ax = plt.subplots(figsize=(7,5))
@@ -73,8 +76,8 @@ fig, ax = plt.subplots(figsize=(7,5))
 
 ax.set_xscale("log")
 ax.set_yscale("log")
-#ax.set_xlim([xmin, xmax])
-#ax.set_ylim([ymin, ymax])
+ax.set_xlim([xmin, xmax])
+ax.set_ylim([ymin, ymax])
 ax.set_xlabel(r"$N$", fontsize=12)
 ax.set_ylabel(r"$t_{_{\rm CPU}}$", fontsize=12)
 ax.scatter(Nvalues, bruteforce_time, color='black', marker='+', s=8.0, label='Direct sum')
@@ -86,7 +89,7 @@ ax.legend(fontsize=12)
 
 
 plt.show()
-fig.savefig('treescaling.eps', dpi=50)
+fig.savefig('treescaling.pdf', dpi=50)
 
 
 block()
