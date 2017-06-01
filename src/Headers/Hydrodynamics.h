@@ -128,8 +128,10 @@ public:
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
   bool allocated;                      ///< Is memory allocated?
-  int create_sinks;                    ///< Create new sink particles?
   bool newParticles;                   ///< Have new ptcls been added? If so, flag to rebuild tree
+  int create_sinks;                    ///< Create new sink particles?
+  int sink_particles;                  ///< Are using sink particles?
+  
   int Ngather;                         ///< No. of gather neighbours
   int Nghost;                          ///< No. of ghost particles (total among all kinds of ghosts)
   int NImportedParticles;              ///< No. of imported particles
@@ -142,6 +144,7 @@ public:
   FLOAT hmin_sink;                     ///< Minimum smoothing length for sinks
   FLOAT kernrange;                     ///< Kernel range
   FLOAT mmean;                         ///< Mean SPH particle mass
+  FLOAT rho_sink;                      ///< Sink formation density
   ParticleTypeRegister types;          ///< Array of particle types
 
   EOS<ndim> *eos;                      ///< Equation-of-state
