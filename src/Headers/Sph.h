@@ -152,7 +152,7 @@ class Sph : public Hydrodynamics<ndim>
 
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
-  int conservative_sph_gravity;        ///< Use Price & Monagahan (2007) conservative gravity
+  int conservative_sph_star_gravity;   ///< Use Hubber et al. (2013) conservative SPH-star gravity
   int fixed_sink_mass;                 ///< Fix masses of sink particles
   FLOAT alpha_visc_min;                ///< Min. time-dependent viscosity alpha
   FLOAT msink_fixed;                   ///< Fixed sink mass value

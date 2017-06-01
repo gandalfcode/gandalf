@@ -285,8 +285,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.invomega = (FLOAT) 1.0 - h_rho_deriv(parti.h, part.m, parti.rho)*parti.invomega;
     parti.invomega = (FLOAT) 1.0/parti.invomega;
 
-    // Use Price & Monaghan (2007) zeta conservative-gravity correction terms
-    if (this->conservative_sph_gravity == 1) {
+    // Use Hubber et al. (2013) zeta SPH-star conservative-gravity correction terms
+    if (this->conservative_sph_star_gravity == 1) {
       if (nbody->nbody_softening == 1) {
         for (j=0; j<nbody->Nstar; j++) {
           invhsqd = pow((FLOAT) 2.0 / (parti.h + nbody->stardata[j].h),2);
@@ -303,11 +303,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
           parti.zeta += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
         }
       }
-      parti.zeta = h_rho_deriv(parti.h, part.m, parti.rho)*parti.zeta*parti.invomega;
     }
-    else {
-      parti.zeta = (FLOAT) 0.0;
-    }
+    parti.zeta = h_rho_deriv(parti.h, part.m, parti.rho)*parti.zeta*parti.invomega;
+
   }
   else {
     parti.invomega = (FLOAT) 1.0;
