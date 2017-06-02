@@ -385,14 +385,14 @@ inline void ComputeQuadropole(const MultipoleMoment<1>& cell, const FLOAT rp[1],
                               FLOAT agrav[1], FLOAT& gpot) {
 
   FLOAT dr[1] ;
-  for (int k=0; k<1; k++) dr[k] = cell.r[k] - rp[k];
+  for (int k=0; k<1; k++) dr[k] = rp[k] - cell.r[k];
   FLOAT drsqd    = DotProduct(dr,dr,1) + small_number;
   FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
   FLOAT invdrmag = sqrt(invdrsqd);
   FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
 
   // First add monopole term for acceleration
-  for (int k=0; k<1; k++) agrav[k] += cell.m*dr[k]*invdrsqd*invdrmag;
+  for (int k=0; k<1; k++) agrav[k] -= cell.m*dr[k]*invdrsqd*invdrmag;
 
   FLOAT qscalar = cell.q[0]*dr[0]*dr[0];
   FLOAT qfactor = 2.5*qscalar*invdr5*invdrsqd;
@@ -403,14 +403,14 @@ inline void ComputeQuadropole(const MultipoleMoment<1>& cell, const FLOAT rp[1],
 inline void ComputeQuadropole(const MultipoleMoment<2>& cell, const FLOAT rp[2],
                               FLOAT agrav[2], FLOAT& gpot) {
   FLOAT dr[2] ;
-  for (int k=0; k<2; k++) dr[k] = cell.r[k] - rp[k];
+  for (int k=0; k<2; k++) dr[k] = rp[k] - cell.r[k];
   FLOAT drsqd    = DotProduct(dr,dr,2) + small_number;
   FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
   FLOAT invdrmag = sqrt(invdrsqd);
   FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
 
   // First add monopole term for acceleration
-  for (int k=0; k<2; k++) agrav[k] += cell.m*dr[k]*invdrsqd*invdrmag;
+  for (int k=0; k<2; k++) agrav[k] -= cell.m*dr[k]*invdrsqd*invdrmag;
 
   FLOAT qscalar = cell.q[0]*dr[0]*dr[0] + cell.q[2]*dr[1]*dr[1] +
     2.0*cell.q[1]*dr[0]*dr[1];
@@ -423,14 +423,14 @@ inline void ComputeQuadropole(const MultipoleMoment<2>& cell, const FLOAT rp[2],
 inline void ComputeQuadropole(const MultipoleMoment<3>& cell, const FLOAT rp[3],
                               FLOAT agrav[3], FLOAT& gpot) {
   FLOAT dr[3] ;
-  for (int k=0; k<3; k++) dr[k] = cell.r[k] - rp[k];
+  for (int k=0; k<3; k++) dr[k] = rp[k] - cell.r[k]; //cell.r[k] - rp[k];
   FLOAT drsqd    = DotProduct(dr,dr,3) + small_number;
   FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
   FLOAT invdrmag = sqrt(invdrsqd);
   FLOAT invdr5 = invdrsqd*invdrsqd*invdrmag ;
 
   // First add monopole term for acceleration
-  for (int k=0; k<3; k++) agrav[k] += cell.m*dr[k]*invdrsqd*invdrmag;
+  for (int k=0; k<3; k++) agrav[k] -= cell.m*dr[k]*invdrsqd*invdrmag;
 
   FLOAT qscalar = cell.q[0]*dr[0]*dr[0] + cell.q[2]*dr[1]*dr[1] -
           (cell.q[0] + cell.q[2])*dr[2]*dr[2] +
