@@ -569,7 +569,7 @@ inline void FastMultipoleForces<1>::AddQuadrupoleContribution(const MultipoleMom
   AddMonopoleContribution(cell);
 
   FLOAT dr[1] ;
-  for (int k=0; k<1; k++) dr[k] = cell.r[k] - rc[k];
+  for (int k=0; k<1; k++) dr[k] = rc[k] - cell.r[k];
   FLOAT drsqd    = DotProduct(dr,dr,1) + small_number;
   FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
   FLOAT invdrmag = sqrt(invdrsqd);
@@ -587,16 +587,16 @@ inline void FastMultipoleForces<1>::AddQuadrupoleContribution(const MultipoleMom
   for (int k=0; k<1; k++) dphi[k] += qx[k] - qfactor*dr[k];
   for (int k=0; k<1; k++) qx[k] *= 5*invdrsqd;
 
-  q[0] += - qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
+  q[0] += qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
 
-  q[0] += qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
+  q[0] -= qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
 }
 template<>
 inline void FastMultipoleForces<2>::AddQuadrupoleContribution(const MultipoleMoment<2>& cell) {
   AddMonopoleContribution(cell);
 
   FLOAT dr[2] ;
-  for (int k=0; k<2; k++) dr[k] = cell.r[k] - rc[k];
+  for (int k=0; k<2; k++) dr[k] = rc[k] - cell.r[k];
   FLOAT drsqd    = DotProduct(dr,dr,2) + small_number;
   FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
   FLOAT invdrmag = sqrt(invdrsqd);
@@ -617,20 +617,20 @@ inline void FastMultipoleForces<2>::AddQuadrupoleContribution(const MultipoleMom
   for (int k=0; k<2; k++) dphi[k] += qx[k] - qfactor*dr[k];
   for (int k=0; k<2; k++) qx[k] *= 5*invdrsqd;
 
-  q[0] += - qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
-  q[1] += - qfactor*(7*dr[0]*dr[1]*invdrsqd);
-  q[2] += - qfactor*(7*dr[1]*dr[1]*invdrsqd - 1);
+  q[0] += qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
+  q[1] += qfactor*(7*dr[0]*dr[1]*invdrsqd);
+  q[2] += qfactor*(7*dr[1]*dr[1]*invdrsqd - 1);
 
-  q[0] += qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
-  q[1] += qx[0]*dr[1] + qx[1]*dr[0] - cell.q[1]*invdr5;
-  q[2] += qx[1]*dr[1] + qx[1]*dr[1] - cell.q[2]*invdr5;
+  q[0] -= qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
+  q[1] -= qx[0]*dr[1] + qx[1]*dr[0] - cell.q[1]*invdr5;
+  q[2] -= qx[1]*dr[1] + qx[1]*dr[1] - cell.q[2]*invdr5;
 }
 template<>
 inline void FastMultipoleForces<3>::AddQuadrupoleContribution(const MultipoleMoment<3>& cell) {
   AddMonopoleContribution(cell);
 
   FLOAT dr[3] ;
-  for (int k=0; k<3; k++) dr[k] = cell.r[k] - rc[k];
+  for (int k=0; k<3; k++) dr[k] = rc[k] - cell.r[k];
   FLOAT drsqd    = DotProduct(dr,dr,3) + small_number;
   FLOAT invdrsqd = (FLOAT) 1.0/drsqd;
   FLOAT invdrmag = sqrt(invdrsqd);
@@ -653,19 +653,19 @@ inline void FastMultipoleForces<3>::AddQuadrupoleContribution(const MultipoleMom
   for (int k=0; k<3; k++) dphi[k] += qx[k] - qfactor*dr[k];
   for (int k=0; k<3; k++) qx[k] *= 5*invdrsqd;
 
-  q[0] += - qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
-  q[1] += - qfactor*(7*dr[0]*dr[1]*invdrsqd);
-  q[2] += - qfactor*(7*dr[1]*dr[1]*invdrsqd - 1);
-  q[3] += - qfactor*(7*dr[0]*dr[2]*invdrsqd);
-  q[4] += - qfactor*(7*dr[1]*dr[2]*invdrsqd);
-  q[5] += - qfactor*(7*dr[2]*dr[2]*invdrsqd - 1);
+  q[0] += qfactor*(7*dr[0]*dr[0]*invdrsqd - 1);
+  q[1] += qfactor*(7*dr[0]*dr[1]*invdrsqd);
+  q[2] += qfactor*(7*dr[1]*dr[1]*invdrsqd - 1);
+  q[3] += qfactor*(7*dr[0]*dr[2]*invdrsqd);
+  q[4] += qfactor*(7*dr[1]*dr[2]*invdrsqd);
+  q[5] += qfactor*(7*dr[2]*dr[2]*invdrsqd - 1);
 
-  q[0] += qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
-  q[1] += qx[0]*dr[1] + qx[1]*dr[0] - cell.q[1]*invdr5;
-  q[2] += qx[1]*dr[1] + qx[1]*dr[1] - cell.q[2]*invdr5;
-  q[3] += qx[0]*dr[2] + qx[2]*dr[0] - cell.q[3]*invdr5;
-  q[4] += qx[1]*dr[2] + qx[2]*dr[1] - cell.q[4]*invdr5;
-  q[5] += qx[2]*dr[2] + qx[2]*dr[2] + (cell.q[0] + cell.q[2])*invdr5;
+  q[0] -= qx[0]*dr[0] + qx[0]*dr[0] - cell.q[0]*invdr5;
+  q[1] -= qx[0]*dr[1] + qx[1]*dr[0] - cell.q[1]*invdr5;
+  q[2] -= qx[1]*dr[1] + qx[1]*dr[1] - cell.q[2]*invdr5;
+  q[3] -= qx[0]*dr[2] + qx[2]*dr[0] - cell.q[3]*invdr5;
+  q[4] -= qx[1]*dr[2] + qx[2]*dr[1] - cell.q[4]*invdr5;
+  q[5] -= qx[2]*dr[2] + qx[2]*dr[2] + (cell.q[0] + cell.q[2])*invdr5;
 }
 //=================================================================================================
 //  ApplyMonopoleForces
