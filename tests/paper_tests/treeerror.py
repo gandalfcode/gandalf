@@ -57,7 +57,7 @@ rc('text', usetex=True)
 
 
 # Set all plot limits
-Nhydro      = 16000
+Nhydro      = 8000
 Nstepsmax   = 1
 tmin        = 0.001
 tmax        = 1.0
@@ -65,14 +65,15 @@ rmin        = 0.0
 rmax        = 1.0
 rho         = 3.0/4.0/3.14157
 stride      = 8
-numSimMax   = 8
+numSimMax   = 6
 thetamin    = 0.1
-thetamax    = 1.0
+thetamax    = 0.995
 macerrormin = 3.3333e-10
 macerrormax = 3.3333e-3
-errormin    = 3.3333e-8
-errormax    = 3.3333e-2
+errormin    = 3.3333e-7
+errormax    = 6.6666e-2
 sim_no      = 0
+thetamac    = 0.5
 
 theta_values                        = []
 monopole_geo_error_values           = []
@@ -248,8 +249,10 @@ for i in range(numSimMax):
     macerror = macerrormin*math.pow(macerrormax/macerrormin, exponent)
     print 'MACERROR : ',macerror
     sim = newsim("freefall.dat")
-    sim.SetParam('gravity_mac',"gadget2")
+    #sim.SetParam('gravity_mac',"gadget2")
+    sim.SetParam('gravity_mac',"eigenmac")
     sim.SetParam('macerror',macerror)
+    sim.SetParam('thetamaxsqd',thetamac*thetamac)
     sim.SetParam('multipole',"fast_monopole")
     sim.SetParam('Nstepsmax',Nstepsmax)
     sim.SetParam('Nhydro',Nhydro)
@@ -278,8 +281,10 @@ for i in range(numSimMax):
     macerror = macerrormin*math.pow(macerrormax/macerrormin, exponent)
     print 'MACERROR : ',macerror
     sim = newsim("freefall.dat")
-    sim.SetParam('gravity_mac',"gadget2")
+    #sim.SetParam('gravity_mac',"gadget2")
+    sim.SetParam('gravity_mac',"eigenmac")
     sim.SetParam('macerror',macerror)
+    sim.SetParam('thetamaxsqd',thetamac*thetamac)
     sim.SetParam('multipole',"monopole")
     sim.SetParam('Nstepsmax',Nstepsmax)
     sim.SetParam('Nhydro',Nhydro)
@@ -307,8 +312,10 @@ for i in range(numSimMax):
     macerror = macerrormin*math.pow(macerrormax/macerrormin, exponent)
     print 'MACERROR : ',macerror
     sim = newsim("freefall.dat")
-    sim.SetParam('gravity_mac',"gadget2")
+    #sim.SetParam('gravity_mac',"gadget2")
+    sim.SetParam('gravity_mac',"eigenmac")
     sim.SetParam('macerror',macerror)
+    sim.SetParam('thetamaxsqd',thetamac*thetamac)
     sim.SetParam('multipole',"quadrupole")
     sim.SetParam('Nstepsmax',Nstepsmax)
     sim.SetParam('Nhydro',Nhydro)
@@ -336,8 +343,10 @@ for i in range(numSimMax):
     macerror = macerrormin*math.pow(macerrormax/macerrormin, exponent)
     print 'MACERROR : ',macerror
     sim = newsim("freefall.dat")
-    sim.SetParam('gravity_mac',"gadget2")
+    #sim.SetParam('gravity_mac',"gadget2")
+    sim.SetParam('gravity_mac',"eigenmac")
     sim.SetParam('macerror',macerror)
+    sim.SetParam('thetamaxsqd',thetamac*thetamac)
     sim.SetParam('multipole',"fast_quadrupole")
     sim.SetParam('Nstepsmax',Nstepsmax)
     sim.SetParam('Nhydro',Nhydro)
@@ -359,12 +368,11 @@ for i in range(numSimMax):
 
 
 
-
 # Create matplotlib figure object with shared x-axis
 #--------------------------------------------------------------------------------------------------
-fig, axarr = plt.subplots(1, 2, figsize=(14,7), sharey='col')
+fig, axarr = plt.subplots(1, 2, sharey='col', figsize=(14,5))
 fig.subplots_adjust(hspace=0.001, wspace=0.0001)
-fig.subplots_adjust(bottom=0.09, top=0.97, left=0.09, right=0.96)
+fig.subplots_adjust(bottom=0.1, top=0.98, left=0.06, right=0.99)
 
 #axarr[0].set_xscale("log")
 #axarr[0].set_yscale("log")
@@ -385,11 +393,11 @@ axarr[0].set_ylim([errormin, errormax])
 axarr[0].plot(theta_values, monopole_geo_error_values, color="red", linestyle='-', label='Monopole')
 axarr[0].plot(theta_values, fast_monopole_geo_error_values, color="blue", linestyle=':', label='Fast monopole')
 axarr[0].plot(theta_values, quadrupole_geo_error_values, color="black", linestyle='--', label='Quadrupole')
-#axarr[0].plot(theta_values, fast_quadrupole_geo_error_values, color="green", linestyle='-', label='Fast quadrupole')
+axarr[0].plot(theta_values, fast_quadrupole_geo_error_values, color="green", linestyle='-.', label='Fast quadrupole')
 axarr[0].scatter(theta_values, monopole_geo_error_values, color="red")
 axarr[0].scatter(theta_values, fast_monopole_geo_error_values, color="blue")
 axarr[0].scatter(theta_values, quadrupole_geo_error_values, color="black")
-#axarr[0].scatter(theta_values, fast_quadrupole_geo_error_values, color="green")
+axarr[0].scatter(theta_values, fast_quadrupole_geo_error_values, color="green")
 legend0 = axarr[0].legend(loc='upper left', fontsize=12)
 
 axarr[1].set_xscale("log")
@@ -401,11 +409,12 @@ axarr[1].set_ylim([errormin, errormax])
 axarr[1].plot(macerror_values, monopole_gadget_error_values, color="red", linestyle='-', label='Monopole')
 axarr[1].plot(macerror_values, fast_monopole_gadget_error_values, color="blue", linestyle='-', label='Fast monopole')
 axarr[1].plot(macerror_values, quadrupole_gadget_error_values, color="black", linestyle='-', label='Quadrupole')
-#axarr[1].plot(macerror_values, fast_quadrupole_gadget_error_values, color="green", linestyle='-', label='Fast quadrupole')
+axarr[1].plot(macerror_values, fast_quadrupole_gadget_error_values, color="green", linestyle='-.', label='Fast quadrupole')
 axarr[1].scatter(macerror_values, monopole_gadget_error_values, color="red")
 axarr[1].scatter(macerror_values, fast_monopole_gadget_error_values, color="blue")
 axarr[1].scatter(macerror_values, quadrupole_gadget_error_values, color="black")
-#axarr[1].scatter(macerror_values, fast_quadrupole_gadget_error_values, color="green")
+axarr[1].scatter(macerror_values, fast_quadrupole_gadget_error_values, color="green")
+axarr[1].set_yticks([])
 legend1 = axarr[0].legend(loc='upper left', fontsize=12)
 
 plt.show()

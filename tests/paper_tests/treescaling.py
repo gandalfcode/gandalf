@@ -5,36 +5,49 @@
 #==============================================================================
 from gandalf.analysis.facade import *
 from gandalf.analysis.compute import L1errornorm
+from matplotlib import rc
 import matplotlib.pyplot as plt
 import numpy as np
 import time
 import math
 
 
-xmin = 128.0
-xmax = 32768.0
+#rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
+rc('font', **{'family': 'normal', 'weight' : 'bold', 'size' : 14})
+rc('text', usetex=True)
+
+
+numBruteforceSimMax = 10
+numTreeSimMax = 16
+numSimMax = max(numBruteforceSimMax, numTreeSimMax)
+Nstepsmax = 1
+thetamaxsqd = 0.15
+Nhydromin = 128
+xmin = 0.999*Nhydromin
+xmax = 1.001*Nhydromin*math.pow(2,numSimMax-1)
 ymin = 6.666e-4
-ymax = 6.666e3
-numSimMax = 9
-Nstepsmax = 4
+ymax = 3.333e3
 
 
 # Make simple N^-2 line
 Nmax = 1000
 x = np.arange(xmin, xmax, 2.0)
-ydirect = 0.00000005*x*x
-ytree = 0.00000125*x*np.log(x)
+ydirect = 0.0000001*x*x
+ytree = 0.000002*x*np.log(x)
+
 
 # Set empty lists to store results from each resolution
-Nvalues = []
+bruteforce_N = []
 bruteforce_time = []
+kdtree_N = []
 kdtree_time = []
 
 
 
 # Brute-force computation
-for i in range(numSimMax):
-    Nhydro = int(128*math.pow(2,i))
+for i in range(numBruteforceSimMax):
+    Nhydro = int(Nhydromin*math.pow(2,i))
+    print i,numSimMax,Nhydro
     sim = newsim("freefall.dat")
     sim.SetParam('Nhydro',Nhydro)
     sim.SetParam('tsnapfirst',2.0)
@@ -47,18 +60,19 @@ for i in range(numSimMax):
     run()
     end = time.time()
 
-    Nvalues.append(Nhydro)
+    bruteforce_N.append(Nhydro)
     bruteforce_time.append((end - start)/Nstepsmax)
 
 
 
 # KD-tree computation
-for i in range(numSimMax):
-    Nhydro = int(128*math.pow(2,i))
+for i in range(numTreeSimMax):
+    Nhydro = int(Nhydromin*math.pow(2,i))
     sim = newsim("freefall.dat")
     sim.SetParam('Nhydro',Nhydro)
     sim.SetParam('tsnapfirst',2.0)
     sim.SetParam('ntreebuildstep',1)
+    sim.SetParam('thetamaxsqd',thetamaxsqd)
     sim.SetParam("Nstepsmax",Nstepsmax)
     sim.SetParam("neib_search","kdtree")
     setupsim()
@@ -67,12 +81,13 @@ for i in range(numSimMax):
     run()
     end = time.time()
 
+    kdtree_N.append(Nhydro)
     kdtree_time.append((end - start)/Nstepsmax)
 
 
 fig, ax = plt.subplots(figsize=(7,5))
 #fig.subplots_adjust(hspace=0.02, wspace=0.0001)
-#fig.subplots_adjust(bottom=0.14, top=0.98, left=0.16, right=0.98)
+fig.subplots_adjust(bottom=0.09, top=0.98, left=0.11, right=0.98)
 
 ax.set_xscale("log")
 ax.set_yscale("log")
@@ -80,11 +95,11 @@ ax.set_xlim([xmin, xmax])
 ax.set_ylim([ymin, ymax])
 ax.set_xlabel(r"$N$", fontsize=12)
 ax.set_ylabel(r"$t_{_{\rm CPU}}$", fontsize=12)
-ax.scatter(Nvalues, bruteforce_time, color='black', marker='+', s=8.0, label='Direct sum')
-ax.scatter(Nvalues, kdtree_time, color='black', marker='^', s=8.0, label='KD-tree')
-ax.plot(x, ydirect, linestyle=':', color='red')
-ax.plot(x, ytree, linestyle=':', color='red')
-ax.legend(fontsize=12)
+ax.scatter(bruteforce_N, bruteforce_time, color='black', marker='+', s=16.0, label='Direct sum')
+ax.scatter(kdtree_N, kdtree_time, color='black', marker='^', s=16.0, label='KD-tree')
+ax.plot(x, ydirect, linestyle=':', color='red', label='${\cal O}(N^2)$')
+ax.plot(x, ytree, linestyle='--', color='red', label='${\cal O}(N\,\log{N})$')
+legend = ax.legend(loc='upper left', fontsize=12)
 
 
 
