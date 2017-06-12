@@ -599,18 +599,20 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #endif
 
-    mfvneib->UpdateAllProperties(mfv, nbody);
+    if (iter == 0) {
+      mfvneib->UpdateAllProperties(mfv, nbody);
 
-    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+      LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+      MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
 
-    mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
-    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+      mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
+      LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+      MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
+    }
 
     if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
 
@@ -630,11 +632,13 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
     }
 
+    /*
     mfvneib->UpdateGradientMatrices(mfv, nbody, simbox);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
+     */
   } // End of force iteration.
 
   // ..
