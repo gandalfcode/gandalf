@@ -581,7 +581,7 @@ string SimulationBase::Output(void)
 
 
   // Output diagnostics to screen if passed sufficient number of block steps
-  if (Nblocksteps%ndiagstep == 0 && n == nresync) {
+  if (Nblocksteps%ndiagstep == 0 && n%nresync == 0) {
     CalculateDiagnostics();
     OutputDiagnostics();
     UpdateDiagnostics();
@@ -590,7 +590,7 @@ string SimulationBase::Output(void)
   }
 
   // Create temporary snapshot file
-  if (n == nresync && Nsteps - nlastrestart >= nrestartstep) {
+  if (n%nresync == 0 && Nsteps - nlastrestart >= nrestartstep) {
     RestartSnapshot();
     nlastrestart = Nsteps;
   }
