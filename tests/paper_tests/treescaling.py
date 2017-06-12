@@ -18,7 +18,7 @@ rc('text', usetex=True)
 
 
 numBruteforceSimMax = 10
-numTreeSimMax = 16
+numTreeSimMax = 17
 numSimMax = max(numBruteforceSimMax, numTreeSimMax)
 Nstepsmax = 1
 thetamaxsqd = 0.15
@@ -29,11 +29,12 @@ ymin = 6.666e-4
 ymax = 3.333e3
 
 
-# Make simple N^-2 line
+# Make simple N, N^2 and NlogN lines
 Nmax = 1000
 x = np.arange(xmin, xmax, 2.0)
 ydirect = 0.0000001*x*x
 ytree = 0.000002*x*np.log(x)
+yN = 0.000009*x
 
 
 # Set empty lists to store results from each resolution
@@ -97,6 +98,7 @@ ax.set_xlabel(r"$N$", fontsize=12)
 ax.set_ylabel(r"$t_{_{\rm CPU}}$", fontsize=12)
 ax.scatter(bruteforce_N, bruteforce_time, color='black', marker='+', s=16.0, label='Direct sum')
 ax.scatter(kdtree_N, kdtree_time, color='black', marker='^', s=16.0, label='KD-tree')
+ax.plot(x, yN, linestyle='-.', color='red', label='${\cal O}(N)$')
 ax.plot(x, ydirect, linestyle=':', color='red', label='${\cal O}(N^2)$')
 ax.plot(x, ytree, linestyle='--', color='red', label='${\cal O}(N\,\log{N})$')
 legend = ax.legend(loc='upper left', fontsize=12)
