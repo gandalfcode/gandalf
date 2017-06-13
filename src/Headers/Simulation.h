@@ -142,6 +142,8 @@ class SimulationBase
 
   virtual double GetInitialEnergy() = 0;
 
+  float GetBlockTime(string _blockString) {return timing->GetBlockTime(_blockString);}
+
 
 
   // Input-output routines
