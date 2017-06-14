@@ -60,9 +60,10 @@ for i in range(numBruteforceSimMax):
     start = time.time()
     run()
     end = time.time()
+    dt = end - start  #sim.GetBlockTime("SPH_ALL_FORCES")
 
     bruteforce_N.append(Nhydro)
-    bruteforce_time.append((end - start)/Nstepsmax)
+    bruteforce_time.append(dt)
 
 
 
@@ -74,6 +75,8 @@ for i in range(numTreeSimMax):
     sim.SetParam('tsnapfirst',2.0)
     sim.SetParam('ntreebuildstep',1)
     sim.SetParam('thetamaxsqd',thetamaxsqd)
+    sim.SetParam('multipole','fast_monopole')
+    sim.SetParam('Nleafmax',3)
     sim.SetParam("Nstepsmax",Nstepsmax)
     sim.SetParam("neib_search","kdtree")
     setupsim()
@@ -81,9 +84,11 @@ for i in range(numTreeSimMax):
     start = time.time()
     run()
     end = time.time()
+    dt = end - start  #sim.GetBlockTime("SPH_ALL_FORCES")
 
     kdtree_N.append(Nhydro)
-    kdtree_time.append((end - start)/Nstepsmax)
+    kdtree_time.append(dt)
+
 
 
 fig, ax = plt.subplots(figsize=(7,5))
