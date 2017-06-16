@@ -183,9 +183,8 @@ class HllcRiemannSolver
     else if (Smin >= 0)
       Hydro_Flux(Sl, n, flux) ;
     else {
-      // Compute the flux on the correct side of the contact wave
-      if (not _isothermal) {
-        if (vm > 0) {
+      // Compute the flux on the correct side of the contact wave{
+      if (vm > 0) {
           Hydro_Flux(Sl, n, flux) ;
           add_RH_flux(Sl, n, Smin, vm, flux) ;
         }
@@ -193,27 +192,9 @@ class HllcRiemannSolver
           Hydro_Flux(Sr, n, flux) ;
           add_RH_flux(Sr, n, Smax, vm, flux) ;
         }
-      }
-      else {
-        // No contact discontinuity for isothermal: use HLL flux
-        FLOAT fl[ndim+2], fr[ndim+2], Ur[ndim+2], Ul[ndim+2];
-        for (int i=0; i < ndim; ++i) {
-          Ul[i] = Sl.v[i] * Sl.rho;
-          Ur[i] = Sr.v[i] * Sr.rho;
-        }
-        Ul[irho] = Sl.rho ; Ur[irho] = Sr.rho ;
-        Ul[iE]   = Sl.e   ; Ur[iE]   = Sl.e   ;
-
-        Hydro_Flux(Sl, n, fl) ;
-        Hydro_Flux(Sr, n, fr) ;
-
-        for (int i=0; i < ndim+2; ++i)
-          flux[i] = (Smax*fl[i] - Smin*fr[i] + Smax*Smin*(Ur[i] - Ul[i])) / (Smax - Smin) ;
-      }
     }
 
     if (_zmf) {
-      //assert(fabs(flux[irho]) < 1e-14*(Wl[irho] + Wr[irho])) ;
       flux[irho] = 0 ;
     }
 
@@ -325,7 +306,7 @@ class HllcRiemannSolver
     }
     else {
       // The sound speeds should just be the same, but they might differ
-      // slightly (ife.g. locally isothermal equations of state are used). We
+      // slightly (if e.g. a locally isothermal equations of state are used). We
       // use a Roe averaged thermal energy as a sensible guess in this case.
       cs_av = sqrt(fl*cs_l*cs_l + fr*cs_r*cs_r) ;
     }
@@ -346,11 +327,16 @@ class HllcRiemannSolver
       dml = Sl.rho * (vl - Smin),
       dmr = Sr.rho * (vr - Smax);
 
-    double
-      Pl = vl*dml + Sl.press,
-      Pr = vr*dmr + Sr.press;
+    if (not _isothermal) {
+      double
+        Pl = vl*dml + Sl.press,
+        Pr = vr*dmr + Sr.press;
 
-    return (Pr - Pl) / (dmr - dml) ;
+      return (Pr - Pl) / (dmr - dml) ;
+    }
+    else {
+      return (Smax*dml - Smin*dmr) / (dml - dmr) ;
+    }
   }
 
   /* Evaluate the hydrodynamic flux from state s in direction [0] */
