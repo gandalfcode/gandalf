@@ -62,6 +62,7 @@ Sph<ndim>::Sph(int _hydro_forces, int _self_gravity, FLOAT _alpha_visc, FLOAT _b
 {
   Ngather = 0;
   hmin_sink = big_number;
+  conservative_sph_star_gravity = params->intparams["conservative_sph_star_gravity"];
 }
 
 
@@ -142,4 +143,3 @@ void Sph<ndim>::ZeroAccelerations()
 template class Sph<1>;
 template class Sph<2>;
 template class Sph<3>;
-
