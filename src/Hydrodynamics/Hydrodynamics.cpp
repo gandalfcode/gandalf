@@ -72,7 +72,9 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   NImportedParticles = 0;
   Nmpighost          = 0;
   NPeriodicGhost     = 0;
+  rho_sink           = params->floatparams["rho_sink"]/(units.rho.outscale*units.rho.outcgs);
   create_sinks       = params->intparams["create_sinks"];
+  sink_particles     = params->intparams["sink_particles"];
 
   // Select and construct equation of state object from given parameters
   //-----------------------------------------------------------------------------------------------

@@ -43,7 +43,7 @@ CreateTimeData('y',particle_data,quantity='y')
 
 
 # Leapfrog KDK
-kdksim = newsim('binary.dat')
+kdksim = newsim('binaryorbit.dat')
 kdksim.SetParam('nbody','lfkdk')
 setupsim()
 run()
@@ -52,7 +52,7 @@ y_kdk = get_time_data("t","y")
 
 
 # Leapfrog DKD
-dkdsim = newsim('binary.dat')
+dkdsim = newsim('binaryorbit.dat')
 dkdsim.SetParam('nbody','lfdkd')
 setupsim()
 run()
@@ -61,7 +61,7 @@ y_dkd = get_time_data("t","y")
 
 
 # 4th-order Hermite
-hermite4sim = newsim('binary.dat')
+hermite4sim = newsim('binaryorbit.dat')
 hermite4sim.SetParam('nbody','hermite4')
 setupsim()
 run()
@@ -70,7 +70,7 @@ y_hermite4 = get_time_data("t","y")
 
 
 # 4th-order Hermite TS
-hermite4tssim = newsim('binary.dat')
+hermite4tssim = newsim('binaryorbit.dat')
 hermite4tssim.SetParam('nbody','hermite4ts')
 hermite4tssim.SetParam('Npec',5)
 setupsim()
@@ -80,7 +80,7 @@ y_4ts = get_time_data("t","y")
 
 
 # 6th-order Hermite
-#hermite6tssim = newsim('binary.dat')
+#hermite6tssim = newsim('binaryorbit.dat')
 #hermite6tssim.SetParam('nbody','hermite6ts')
 #hermite6tssim.SetParam('Npec',5)
 #setupsim()
@@ -121,7 +121,7 @@ axarr[3].text(xmin + 0.02*xsize, ymax - 0.1*ysize, "(d) 4th-order Hermite TS", f
 
 
 plt.show()
-fig.savefig('binaryorbit.eps', dpi=50)
+fig.savefig('binaryorbit.pdf', dpi=50)
 
 
 # Prevent program from closing before showing plot window

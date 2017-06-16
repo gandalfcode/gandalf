@@ -52,6 +52,7 @@ Sinks<ndim>::Sinks(NeighbourSearch<ndim>* _neibsearch)
   allocated_memory = false;
   Nsink            = 0;
   Nsinkmax         = 0;
+  Nsinkfixed       = -1;
 }
 
 
@@ -119,9 +120,17 @@ void Sinks<ndim>::SearchForNewSinkParticles
   int isink;                           // i.d. of hydro particle to form sink from
   int k;                               // Dimension counter
   int s;                               // Sink counter
+  FLOAT da[ndim];                      // Relative acceleration vector
+  FLOAT dadr;                          // Component of acceleration in direction of sink
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT dvdr;                          // Component of velocity in direction of sink
   FLOAT rho_max;                       // Maximum density of sink candidates
+  FLOAT tff;                           // Free-fall collapse timescale
+
+  // Skip searching for new sinks if maximum required (used principally for sink tests)
+  if (Nsink >= Nsinkfixed && Nsinkfixed != -1) return;
 
   debug2("[Sinks::SearchForNewSinkParticles]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_NEW_SINKS");
@@ -135,7 +144,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
     isink = -1;
     rho_max = (FLOAT) 0.0;
 
-    // Loop over all SPH particles finding the particle with the highest
+    // Loop over all hydro particles to find the particle with the highest
     // density that obeys all of the formation criteria, if any do.
     //---------------------------------------------------------------------------------------------
     for (i=0; i<hydro->Nhydro; i++) {
@@ -149,7 +158,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       if (!part.flags.check(potmin)) continue;
 
       // If density of a hydro particle is too low, skip to next particle
-      if (part.rho < rho_sink) continue;
+      if (part.rho < rho_sink || part.rho < rho_max) continue;
 
       // Make sure candidate particle is at the end of its current timestep
       if (n%part.nstep != 0) continue;
@@ -157,10 +166,27 @@ void Sinks<ndim>::SearchForNewSinkParticles
       // If hydro particle neighbours a nearby sink, skip to next particle
       for (s=0; s<Nsink; s++) {
         for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
+        for (k=0; k<ndim; k++) da[k] = part.a[k] - sink[s].star->a[k];
+        for (k=0; k<ndim; k++) dv[k] = part.v[k] - sink[s].star->v[k];
         drsqd = DotProduct(dr, dr, ndim);
+        dadr  = DotProduct(dr, da, ndim);
+        dvdr  = DotProduct(dr, dv, ndim);
+        tff   = (FLOAT) 0.5 / sqrt(part.rho);
+
+        // If sink candidate will reach another sink within the current freefall time, then
+        // ignore candidate since it will likely be accreted or tidally perturbed
+        if (tff > drsqd / dvdr && dvdr > 0) sink_flag = false;
+
+        // Hill sphere criterion (slightly different numerical factor from Seren implementation)
+        if (part.rho < -dadr/drsqd ) sink_flag = false;
+
+        // If hydro particle neighbours a nearby sink, skip to next particle
         if (drsqd < pow(sink_radius*part.h + sink[s].radius, 2)) sink_flag = false;
+
+        // Skip looping over other sinks if sink candidate has already been excluded
+        if (!sink_flag) break;
       }
-      if (!sink_flag) continue;
+
 
       // If candidate particle has passed all the tests, then check if it is
       // the most dense candidate.  If yes, record the particle id and density

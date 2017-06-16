@@ -120,6 +120,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sinks->sink_particles      = intparams["sink_particles"];
   sinks->create_sinks        = intparams["create_sinks"];
   sinks->smooth_accretion    = intparams["smooth_accretion"];
+  sinks->Nsinkfixed          = intparams["Nsinkfixed"];
   sinks->alpha_ss            = floatparams["alpha_ss"];
   sinks->smooth_accrete_frac = floatparams["smooth_accrete_frac"];
   sinks->smooth_accrete_dt   = floatparams["smooth_accrete_dt"];
@@ -420,7 +421,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph, nbody);
+    if (iter == 0)
+      sphneib->UpdateAllSphProperties(sph, nbody);
 
 
 #ifdef MPI_PARALLEL
@@ -434,24 +436,24 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
 
+    if (iter == 0) {
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        part.ionfrac = (FLOAT) 0.9999999;
+      }
+      // Update the radiation field
+      for (int jj=0; jj<10; jj++) {
+        radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
+            sph->GetSphParticleArray(), nbody->nbodydata, sinks->sink);
+      }
 
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      part.ionfrac = (FLOAT) 0.9999999;
+
+      // Update thermal properties (if radiation field has altered them)
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        sph->ComputeThermalProperties(part);
+      }
     }
-    // Update the radiation field
-    for (int jj=0; jj<10; jj++) {
-      radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
-          sph->GetSphParticleArray(), nbody->nbodydata, sinks->sink);
-    }
-
-
-    // Update thermal properties (if radiation field has altered them)
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      sph->ComputeThermalProperties(part);
-    }
-
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->self_gravity == 1) {

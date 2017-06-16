@@ -249,8 +249,7 @@ void CodeTiming::ComputeTimingStatistics
   tend_wall = WallClockTime();
   ttot      = (double) (tend - tstart) / (double) CLOCKS_PER_SEC;
   ttot_wall = tend_wall - tstart_wall ;
-
-  vector<map<string, TimingBlock> > totals = blockmap ;
+  totals    = blockmap;
 
   int NOpenMP = 1;
   int Nmpi = 1;
@@ -497,4 +496,3 @@ const
   }
 }
 #endif
-

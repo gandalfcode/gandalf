@@ -191,9 +191,18 @@ class CodeTiming
   __BlockTimerProxy NewTimer(string block_name);
 
   void ComputeTimingStatistics(string);
+  double RunningTime() const;
 
-  double RunningTime() const ;
-
+  float GetBlockTime(string _blockString) {
+    std::map<string,TimingBlock>::iterator it;
+    for (unsigned int l=0; l<totals.size(); l++) {
+      it = totals[l].find(_blockString);
+      if (it != totals[l].end()) {
+        return (float) it->second.ttot_wall;
+      }
+    }
+    return 0.0f;
+  }
 
   // Private functions
   //-----------------------------------------------------------------------------------------------
@@ -241,6 +250,7 @@ class CodeTiming
   clock_t tend;                                ///< End of integer clock
 
   vector<map<string,TimingBlock> > blockmap;   ///< Map of timing block names
-  vector<string> activeblocks;                 ///< Block currently being timed at each level ;
+  vector<map<string,TimingBlock> > totals;     ///< Timing map containing total time data
+  vector<string> activeblocks;                 ///< Block currently being timed at each level
 };
 #endif

@@ -140,6 +140,11 @@ class SimulationBase
   virtual void SetComFrame(void)=0;
   virtual void FinaliseSimulation(void) {};
 
+  virtual double GetInitialEnergy() = 0;
+
+  float GetBlockTime(string _blockString) {return timing->GetBlockTime(_blockString);}
+
+
 
   // Input-output routines
   //-----------------------------------------------------------------------------------------------
@@ -268,6 +273,8 @@ class Simulation : public SimulationBase
   virtual void RecordDiagnostics(void);
   virtual void SetComFrame(void);
   virtual void UpdateDiagnostics(void);
+
+  virtual double GetInitialEnergy() {return diag0.Etot;}
 
 
   // Input-output routines

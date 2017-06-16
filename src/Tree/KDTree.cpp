@@ -890,9 +890,9 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
          if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
          if (partdata[i].r[k] > cell.bb.max[k]) cell.bb.max[k] = partdata[i].r[k];
          if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k])
-         cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+           cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
          if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
-          cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+           cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
          if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
          if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
         }
@@ -976,7 +976,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child2.vbox.max[k],cell.vbox.max[k]);
       cell.hmax = max(cell.hmax,child2.hmax);
       cell.maxsound = max(cell.maxsound,child2.maxsound);
-      cell.amin = min(cell.amin, child2.amin);
       if (gravity_mac == gadget2)
         cell.amin = min(cell.amin, child2.amin);
       else if (gravity_mac == eigenmac)
@@ -1053,14 +1052,23 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
   // Calculate eigenvalue MAC criteria
   if (gravity_mac == eigenmac) {
-    if (ndim == 3)
+    if (ndim == 3) {
       p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
-        cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
-    if (p >= (FLOAT) 0.0) cell.mac = (FLOAT) 0.0;
-    else {
-      lambda = (FLOAT) 2.0*sqrt(-p/(FLOAT) 3.0);
-      cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
+          cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
+      if (p >= (FLOAT) 0.0) {
+        lambda = 0;
+      } else {
+        lambda = (FLOAT) 2.0*sqrt(-p/(FLOAT) 3.0);
+      }
+    } else if (ndim == 2) {
+      p = (cell.q[0]-cell.q[2])*(cell.q[0]-cell.q[2]) + 4*cell.q[1]*cell.q[1];
+      lambda = 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), 0.);
+    } else {
+      lambda = fabs(cell.q[0]) ;
     }
+
+    cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
+
   }
   else {
     cell.mac = (FLOAT) 0.0;

@@ -250,6 +250,7 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   stringparams["sph_integration"] = "lfkdk";
   stringparams["kernel"] = "m4";
+  intparams["conservative_sph_star_gravity"] = 1;
   intparams["tabulated_kernel"] = 1;
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
@@ -331,6 +332,7 @@ void Parameters::SetDefaultValues(void)
   intparams["smooth_accretion"] = 0;
   intparams["fixed_sink_mass"] = 0;
   intparams["extra_sink_output"] = 0;
+  intparams["Nsinkfixed"] = -1;
   floatparams["rho_sink"] = 1.e-12;
   floatparams["alpha_ss"] = 0.01;
   floatparams["sink_radius"] = 2.0;
