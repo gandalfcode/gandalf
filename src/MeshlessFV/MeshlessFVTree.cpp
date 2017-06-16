@@ -513,6 +513,13 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     return;
   }
 
+   typedef FLOAT (*fluxArray)[ndim+2];
+   typedef FLOAT (*rdmdtArray)[ndim];
+
+    fluxArray* dQBufferGlob = new fluxArray[Nthreads];
+    fluxArray* fluxBufferGlob = new fluxArray[Nthreads];
+    rdmdtArray* rdmdtBufferGlob = new rdmdtArray[Nthreads];
+
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout,dQBufferGlob,fluxBufferGlob,rdmdtBufferGlob)
