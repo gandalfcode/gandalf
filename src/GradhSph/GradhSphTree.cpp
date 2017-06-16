@@ -633,7 +633,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
     // Propagate the changes in levelneib to the main array
-#pragma omp for
+#pragma omp for schedule(static)
     for (int i=0; i<sph->Ntot; i++) {
       for (int ithread=0; ithread<Nthreads; ithread++)
         sphdata[i].levelneib = max(sphdata[i].levelneib, levelneibbuf[ithread][i]);
