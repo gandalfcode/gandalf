@@ -453,7 +453,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 #else
     int Nthreads = 1 ;
 #endif
-#pragma omp barrier
 #pragma omp for schedule(static)
       for(i=0; i<Ntot; ++i) {
         for (k=0; k<Nthreads; k++)
@@ -516,7 +515,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout,dQBufferGlob,fluxBufferGlob,rdmdtBufferGlob)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -527,9 +526,12 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     int k;                                         // Dimension counter
     int Nactive;                                   // ..
     int* activelist   = activelistbuf[ithread];    // ..
-    FLOAT (*dQBuffer)[ndim+2]      = new FLOAT[Ntot][ndim+2];  // ..
-    FLOAT (*fluxBuffer)[ndim+2]    = new FLOAT[Ntot][ndim+2];  // ..
-    FLOAT (*rdmdtBuffer)[ndim]     = new FLOAT[Ntot][ndim];    // ..
+    fluxArray dQBuffer      = new FLOAT[Ntot][ndim+2];  // ..
+    dQBufferGlob[ithread] = dQBuffer;
+    fluxArray fluxBuffer   = new FLOAT[Ntot][ndim+2];  // ..
+    fluxBufferGlob[ithread] = fluxBuffer;
+    rdmdtArray rdmdtBuffer    = new FLOAT[Ntot][ndim];    // ..
+    rdmdtBufferGlob[ithread] = rdmdtBuffer;
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     NeighbourManager<ndim,FluxParticle>& neibmanager = neibmanagerbufflux[ithread];
 
@@ -614,26 +616,29 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
 
     // Add all buffers back to main arrays
-    // Could be simply atomic?
-#pragma omp critical
-    {
+#pragma omp for schedule(static)
       for (i=0; i<Ntot; i++) {
+	for (int ithread=0; ithread<Nthreads; ithread++) {
         if (mfvdata[i].flags.check(active)) {
-          for (int k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
-          for (int k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
-        }
-        for (int k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
+		  for (int k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBufferGlob[ithread][i][k];
+		  for (int k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBufferGlob[ithread][i][k];
+		}
+		for (int k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBufferGlob[ithread][i][k];
+	}
       }
-    }
 
-    // Free-up local memory for OpenMP thread
     delete[] rdmdtBuffer;
-    delete[] dQBuffer;
     delete[] fluxBuffer;
+    delete[] dQBuffer;
+
 
   }
   //===============================================================================================
 
+
+  delete[] rdmdtBufferGlob;
+  delete[] fluxBufferGlob;
+  delete[] dQBufferGlob;
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL

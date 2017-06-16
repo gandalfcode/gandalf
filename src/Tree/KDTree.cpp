@@ -265,6 +265,7 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   CreateTreeStructure();
   //if (ltot != ltot_old) CreateTreeStructure();
 
+
   // Create bounding box of SPH particles
   for (k=0; k<ndim; k++) bbmin[k] = big_number;
   for (k=0; k<ndim; k++) bbmax[k] = -big_number;
@@ -556,7 +557,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
         if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,partdata,celldata[cell.c1]);
         else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,partdata,celldata[cell.c2]);
       }
-#pragma omp barrier
     }
   }
   else {
@@ -775,7 +775,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
         if (i == 0) StockTree(child1,partdata, stock_leaf);
         else if (i == 1) StockTree(child2,partdata, stock_leaf);
       }
-#pragma omp barrier
     }
     else {
       for (i=0; i<2; i++) {
