@@ -115,8 +115,6 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(int Nparticles, int 
     Nparticles = max(Nparticles,Ntotmax);
 
     g2c      = new int[gmax];
-    ids      = new int[Nparticles];
-    inext    = new int[Nparticles];
     celldata = new struct TreeCell<ndim>[Ncells];
 
     allocated_tree = true;
@@ -152,19 +150,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int Nc
 
 
   if (Nparticles > Ntotmax ) {
-
-	  int* idsold = ids;
-	  int* inextold = inext;
-
-	  ids = new int[Nparticles];
-	  inext    = new int[Nparticles];
-
-	  std::copy(idsold,idsold+Ntotmax,ids);
-	  std::copy(inextold,inextold+Ntotmax,inext);
-
-	  delete[] idsold;
-	  delete[] inextold;
-
 	  Ntotmax = Nparticles;
   }
 
@@ -200,8 +185,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 
   if (allocated_tree) {
     delete[] celldata;
-    delete[] inext;
-    delete[] ids;
     delete[] g2c;
     allocated_tree = false;
   }
@@ -280,9 +263,6 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
         bbmin[k] = min(bbmin[k], partdata[i].r[k] - kernrange*partdata[i].h);
       }
     }
-    for (i=ifirst; i<=ilast; i++) ids[i] = i;
-    for (i=ifirst; i<ilast; i++) inext[i] = i+1;
-    inext[ilast] = -1;
   }
   else {
     ifirst = -1;
@@ -348,6 +328,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
   cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
   cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
   cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl;
+  cout << "Max No part in leaf cell: " << Nleafmax << "\n";
 #endif
 
   return;
@@ -462,9 +443,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 #endif
     if (cell.N > 0) {
       assert(cell.ilast - cell.ifirst == cell.N - 1);
-      for (j=cell.ifirst; j<cell.ilast; j++) inext[ids[j]] = ids[j+1];
-      cell.ifirst = ids[cell.ifirst];
-      cell.ilast = ids[cell.ilast];
     }
     else {
       cell.ifirst = -1;
@@ -576,16 +554,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 
   // Re-set the cell first and last particles now that child cells have been
   // re-ordered by the QuickSelect algorithm
-  if (celldata[cell.c1].N > 0) {
-    cell.ifirst = celldata[cell.c1].ifirst;
-    inext[celldata[cell.c1].ilast] = celldata[cell.c2].ifirst;
-  }
-  else {
-    cell.ifirst = celldata[cell.c2].ifirst;
-  }
-  cell.ilast = celldata[cell.c2].ilast;
-
-
   assert(cell.N == celldata[cell.c1].N + celldata[cell.c2].N);
   assert(!(cell.ifirst == -1 && cell.ilast == -1));
 
@@ -673,22 +641,21 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelectSort
 }
 
 
-// Predicate for comparing particles and sorting an array of ids
+// Predicate for comparing particles and sorting particles
 template<class ParticleType>
-class ParticleSorterID {
+class ParticleSorter {
 
 public:
-  ParticleSorterID(ParticleType* partdata, int jdir)
-    : _partdata(partdata), _j(jdir) { } ;
+  ParticleSorter(int jdir)
+    : _j(jdir) { } ;
 
-
-  bool operator()(int i0, int i1) const {
-    return _partdata[i0].r[_j] < _partdata[i1].r[_j] ;
+  bool operator()(const ParticleType& l, const ParticleType& r) const {
+    return l.r[_j] < r.r[_j] ;
   }
 private:
-  ParticleType* _partdata;
   int _j ;
 };
+
 
 
 //=================================================================================================
@@ -704,73 +671,9 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
   int k,                               ///< Dimension of sort
   ParticleType<ndim> *partdata)        ///< Pointer to main SPH object
 {
-
-  ParticleSorterID<ParticleType<ndim> > pred(partdata, k) ;
-  std::nth_element(ids+left, ids+jpivot, ids+right+1, pred);
-  return partdata[ids[jpivot]].r[k];
-
-
-  int j;                               // ..
-  int jguess;                          // ..
-  int jtemp;                           // ..
-  FLOAT rpivot;                        // ..
-
-
-  // Place all particles left or right of chosen pivot point.
-  // Iterate until correct median pivot has been identified.
-  //-----------------------------------------------------------------------------------------------
-  do {
-
-    // Make a guess of pivot value
-    jguess = (left + right)/2;
-    rpivot = partdata[ids[jguess]].r[k];
-
-    // ..
-    jtemp       = ids[jguess];
-    ids[jguess] = ids[right];
-    ids[right]  = jtemp;
-
-    // ..
-    jguess = left;
-
-    //---------------------------------------------------------------------------------------------
-    for (j=left; j<right; j++) {
-      //assert(j < Ntot);
-      if (partdata[ids[j]].r[k] <= rpivot) {
-        jtemp       = ids[j];
-        ids[j]      = ids[jguess];
-        ids[jguess] = jtemp;
-        jguess++;
-      }
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-
-    // Move ?? particle from end of array to index i
-    jtemp       = ids[right];
-    ids[right]  = ids[jguess];
-    ids[jguess] = jtemp;
-
-    //assert(left < Ntot);
-    //assert(right < Ntot);
-    //assert(jguess < Ntot);
-    //assert(jpivot < Ntot);
-
-
-    // jguess is lower than jpivot.
-    // Only need to search between jguess+1 and right
-    if (jguess < jpivot) left = jguess + 1;
-
-    // jguess is higher than jpivot.
-    // Only need to search between left and jguess-1
-    else if (jguess > jpivot) right = jguess - 1;
-
-  } while (jguess != jpivot);
-  //-----------------------------------------------------------------------------------------------
-
-
-  return rpivot;
+  ParticleSorter<ParticleType<ndim> > pred(k) ;
+  std::nth_element(partdata+left, partdata+jpivot, partdata+right+1, pred);
+  return partdata[jpivot].r[k];
 }
 
 
@@ -876,27 +779,10 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   //-----------------------------------------------------------------------------------------------
   if (cell.level == ltot && stock_leaf) {
 
-    // First, check if any particles have been accreted and remove them
-    // from the linked list.  If cell no longer contains any live particles,
-    // then set N = 0 to ensure cell is not included in future tree-walks.
-    i = cell.ifirst;
-    cell.ifirst = -1;
-    iaux = -1;
-    while (i != -1) {
-      if (!partdata[i].flags.is_dead()) {
-        if (iaux == -1) cell.ifirst = i;
-        else inext[iaux] = i;
-        iaux = i;
-      }
-      if (i == cell.ilast) break;
-      i = inext[i];
-    };
-    cell.ilast = iaux;
 
 
     // Loop over all particles in cell summing their contributions
-    i = cell.ifirst;
-    while (i != -1) {
+    for (i = cell.ifirst; i <= cell.ilast; ++i) {
       if (!partdata[i].flags.is_dead()) {
         cell.N++;
         if (partdata[i].flags.check(active)) cell.Nactive++;
@@ -923,9 +809,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         else if (gravity_mac == eigenmac)
           cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
       }
-      if (i == cell.ilast) break;
-      i = inext[i];
-    };
+    }
 
     // Normalise all cell values
     if (cell.N > 0) {
@@ -939,9 +823,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
     // Compute quadrupole moment terms if selected
     if (need_quadrupole_moments) {
-      i = cell.ifirst;
 
-      while (i != -1) {
+      for (i = cell.ifirst; i <= cell.ilast; ++i) {
         if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
           mi = partdata[i].m;
           for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
@@ -961,8 +844,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
             cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
           }
         }
-        if (i == cell.ilast) break;
-        i = inext[i];
       }
     }
 
@@ -1182,10 +1063,9 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
   if (cell.level == ltot) {
-    i = cell.ifirst;
 
     // Loop over all particles in cell summing their contributions
-    while (i != -1) {
+    for (i = cell.ifirst; i <= cell.ilast; ++i) {
       cell.hmax = max(cell.hmax,partdata[i].h);
       for (k=0; k<ndim; k++) {
         if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
@@ -1195,8 +1075,6 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
           cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
         }
       }
-      if (i == cell.ilast) break;
-      i = inext[i];
     };
 
   }
@@ -1253,11 +1131,9 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
     ilast = celldata[c].ilast;
 
     // Else walk through linked list to obtain list and number of active ptcls.
-    while (i != -1) {
+    for (; i <= ilast; ++i) {
       if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
         celldata[c].Nactive++;
-      if (i == ilast) break;
-      i = inext[i];
     };
 
   }
@@ -1387,18 +1263,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
     }
   }
 
-  // Check inext linked list values and ids array are all valid
-  for (i=ifirst; i<=ilast; i++) {
-    if (!(ids[i] >= ifirst && ids[i] <= ilast)) {
-      cout << "Problem with ids array : " << i << "   " << ids[i] << endl;
-      ExceptionHandler::getIstance().raise("Error with ids array in KDTree");
-    }
-    if (!(inext[i] >= -1)) {
-      cout << "Problem with inext linked lists : " << i << "   " << inext[i] << endl;
-      ExceptionHandler::getIstance().raise("Error with inext linked lists in KDTree");
-    }
-  }
-
 
   // Verify linked lists are valid for all levels of tree
   //-----------------------------------------------------------------------------------------------
@@ -1410,13 +1274,9 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 
       // Check that particles are not in linked lists more than once
       if (cell.level == l) {
-        i = cell.ifirst;
-        while (i != -1) {
+        for (i = cell.ifirst; i <= cell.ilast; ++i) {
           pcount[i]++;
-          if (i == cell.ilast) break;
-          i = inext[i];
         }
-
       }
     }
 
@@ -1445,8 +1305,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 
     // Check that particles are not in linked lists more than once
     if (cell.level == ltot) {
-      i = cell.ifirst;
-      while (i != -1) {
+      for (i = cell.ifirst; i <= cell.ilast; ++i) {
         pcount[i]++;
         leafcount++;
         Ncount++;
@@ -1457,8 +1316,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
                << partdata[i].h << "   " << cell.hmax << endl;
           ExceptionHandler::getIstance().raise("hmax flag error in KDTree");
         }
-        if (i == cell.ilast) break;
-        i = inext[i];
       }
       if (leafcount > Nleafmax) {
         ExceptionHandler::getIstance().raise("Error : leaf particle error in KDTree");
