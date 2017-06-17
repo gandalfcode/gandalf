@@ -76,7 +76,6 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
-  using Tree<ndim,ParticleType,TreeCell>::inext;
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::kernrange;
   using Tree<ndim,ParticleType,TreeCell>::lmax;
