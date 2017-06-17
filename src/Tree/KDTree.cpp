@@ -829,8 +829,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 	  cell.m        = (FLOAT) 0.0;
 	  cell.hmax     = (FLOAT) 0.0;
 	  cell.rmax     = (FLOAT) 0.0;
-	  cell.dhmaxdt  = (FLOAT) 0.0;
-	  cell.drmaxdt  = (FLOAT) 0.0;
 	  cell.mac      = (FLOAT) 0.0;
 	  cell.cdistsqd = big_number;
 	  cell.maxsound = (FLOAT) 0.0;
@@ -1072,7 +1070,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   else {
     cell.mac = (FLOAT) 0.0;
   }
-  
+
 
   return;
 }
@@ -1103,8 +1101,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
     for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
-    //celldata[c].rmax += celldata[c].drmaxdt*dt;
-    //celldata[c].hmax += celldata[c].dhmaxdt*dt;
 
   }
   //-----------------------------------------------------------------------------------------------
