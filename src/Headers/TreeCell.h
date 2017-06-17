@@ -36,8 +36,6 @@ struct TreeCellBase {
   FLOAT rmax;                          ///< Radius of bounding sphere
   FLOAT hmax;                          ///< Maximum smoothing length inside cell
   FLOAT maxsound;                      ///< Maximum sound speed inside the cell
-  FLOAT drmaxdt;                       ///< Rate of change of bounding sphere
-  FLOAT dhmaxdt;                       ///< Rate of change of maximum h
   FLOAT q[5];                          ///< Quadrupole moment tensor
   union {
     FLOAT amin;                        ///< Minimum grav accel of particles in the cell

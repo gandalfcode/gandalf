@@ -188,8 +188,6 @@ void Tree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
     for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
-    //celldata[c].rmax += celldata[c].drmaxdt*dt;
-    //celldata[c].hmax += celldata[c].dhmaxdt*dt;
 
   }
   //-----------------------------------------------------------------------------------------------

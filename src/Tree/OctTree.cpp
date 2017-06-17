@@ -490,8 +490,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       cell.m        = (FLOAT) 0.0;
       cell.hmax     = (FLOAT) 0.0;
       cell.rmax     = (FLOAT) 0.0;
-      cell.dhmaxdt  = (FLOAT) 0.0;
-      cell.drmaxdt  = (FLOAT) 0.0;
       cell.mac      = (FLOAT) 0.0;
       cell.cdistsqd = big_number;
       cell.maxsound = (FLOAT) 0.0;
