@@ -23,6 +23,7 @@
 //=================================================================================================
 
 
+#include <algorithm>
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
@@ -672,6 +673,23 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelectSort
 }
 
 
+// Predicate for comparing particles and sorting an array of ids
+template<class ParticleType>
+class ParticleSorterID {
+
+public:
+  ParticleSorterID(ParticleType* partdata, int jdir)
+    : _partdata(partdata), _j(jdir) { } ;
+
+
+  bool operator()(int i0, int i1) const {
+    return _partdata[i0].r[_j] < _partdata[i1].r[_j] ;
+  }
+private:
+  ParticleType* _partdata;
+  int _j ;
+};
+
 
 //=================================================================================================
 //  KDTree::QuickSelect
@@ -686,6 +704,12 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
   int k,                               ///< Dimension of sort
   ParticleType<ndim> *partdata)        ///< Pointer to main SPH object
 {
+
+  ParticleSorterID<ParticleType<ndim> > pred(partdata, k) ;
+  std::nth_element(ids+left, ids+jpivot, ids+right+1, pred);
+  return partdata[ids[jpivot]].r[k];
+
+
   int j;                               // ..
   int jguess;                          // ..
   int jtemp;                           // ..
