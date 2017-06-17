@@ -378,45 +378,6 @@ class IonisingRadiation: public EOS<ndim>
 
 
 //=================================================================================================
-//  Class MCRadiationEOS
-/// \brief   Ionising radiation from stars/sinks including general EOS
-/// \details Ionising radiation from stars/sinks including general EOS
-/// \author  S. Balfour, D. A. Hubber
-/// \date    24/04/2014
-//=================================================================================================
-template <int ndim>
-class MCRadiationEOS: public EOS<ndim>
-{
-  using EOS<ndim>::gamma;
-  using EOS<ndim>::gammam1;
-  using EOS<ndim>::gammaMinusOne;
-  using EOS<ndim>::oneMinusGamma;
-
- public:
-
-  MCRadiationEOS(Parameters*, SimUnits *);
-  ~MCRadiationEOS();
-
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
-
-  void set_nbody_data(Nbody<ndim>* nbody) {
-    eos->set_nbody_data(nbody);
-  }
-
-  FLOAT mu_bar;
-  FLOAT mu_ion;
-  FLOAT temp0;
-  FLOAT temp_ion;
-  EOS<ndim> *eos;
-
-};
-
-
-
-//=================================================================================================
 //  Class Radws
 /// \brief   Equation of state for Stamatellos wt al. (2007) radiative cooling scheme
 /// \details ...

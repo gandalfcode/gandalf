@@ -290,12 +290,6 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
        simunits.temp.outscale, pow(simunits.r.outscale*simunits.r.outcgs,-4)*
        pow(simunits.t.outscale*simunits.t.outcgs,+2)/simunits.m.outscale*simunits.m.outcgs);
   }
-  else if (gas_radiation == "monoionisation") {
-    radiation = new MonochromaticIonisationMonteCarlo<ndim,1,GradhSphParticle,MonoIonTreeCell>
-      (intparams["Nleafmax"], intparams["Nraditerations"], intparams["Nradlevels"],
-       floatparams["Nphotonratio"], floatparams["temp_ion"], floatparams["arecomb"],
-       floatparams["NLyC"], stringparams["rand_algorithm"], &simunits, sph->eos);
-  }
   else if (gas_radiation == "none") {
     radiation = new NullRadiation<ndim>();
   }
