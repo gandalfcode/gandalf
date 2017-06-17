@@ -210,10 +210,14 @@ struct Particle
     dt        = (DOUBLE) 0.0;
     dt_next   = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
+<<<<<<< HEAD
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
     ueq       = (FLOAT) 0.0;
     dt_therm  = (FLOAT) 0.0;
+=======
+    mu_bar    = (FLOAT) 1.0;
+>>>>>>> Removed Monte-Carlo radiation routines from code, including variables used in the Particle data structure (MC routines preserved in other branch incase it needs to be revived in the future).
     vsig_max  = (FLOAT) 0.0;
     ionstate  = 0;
   }

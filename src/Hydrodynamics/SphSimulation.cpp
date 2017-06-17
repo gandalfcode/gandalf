@@ -437,18 +437,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
 
-    if (iter == 0) {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-        part.ionfrac = (FLOAT) 0.9999999;
-      }
-      // Update the radiation field
-      for (int jj=0; jj<10; jj++) {
-        radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
-            sph->GetSphParticleArray(), nbody->nbodydata, sinks->sink);
-      }
-
-
+    // Update the radiation field
+    for (int jj=0; jj<10; jj++) {
+      radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
+                                      sph->GetSphParticleArray(), nbody->nbodydata, sinks->sink);
+    }
+    
       // Update thermal properties (if radiation field has altered them)
       for (i=0; i<sph->Nhydro; i++) {
         SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
