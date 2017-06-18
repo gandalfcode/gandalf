@@ -2164,7 +2164,6 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
       if (part.flags.is_dead()) continue;
       assert(part.level <= level_max);
       assert(part.nlast <= n);
-      assert(part.tlast <= t);
       assert(part.nstep == pow(2,level_step - part.level));
       assert(part.nlast != n || n%part.nstep == 0);
     }

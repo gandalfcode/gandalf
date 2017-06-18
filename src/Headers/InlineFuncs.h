@@ -557,6 +557,21 @@ inline int ComputeTimestepLevel
   return (int) level;
 }
 
+// Inline functions to return quantities removed from main particle data structure
+inline int ComputeNstep(const int level, const int level_step)
+{
+  return (int) pow(2, level_step - level);
+}
+inline int ComputeNlast(const int level, const int level_step, const int n)
+{
+  return n%(int) pow(2, level_step - level);
+}
+inline FLOAT ComputeTimestep(const int level, const int level_step, const FLOAT timestep)
+{
+  return timestep*(FLOAT) (pow(2, level_step - level));
+}
+
+
 inline bool isPowerOfTwo (int x)
 {
  while (((x % 2) == 0) && x > 1) /* While x is even and > 1 */

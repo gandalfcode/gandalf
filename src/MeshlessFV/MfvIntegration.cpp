@@ -188,7 +188,6 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
       for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
       part.cooling = 0;
       part.nlast   = n;
-      part.tlast   = t;
       part.dt      = part.dt_next;
       part.dt_next = 0;
       part.flags.set(active);
@@ -299,4 +298,3 @@ void MfvIntegration<ndim, ParticleType>::SetActiveParticles
 template class MfvIntegration<1,MeshlessFVParticle>;
 template class MfvIntegration<2,MeshlessFVParticle>;
 template class MfvIntegration<3,MeshlessFVParticle>;
-

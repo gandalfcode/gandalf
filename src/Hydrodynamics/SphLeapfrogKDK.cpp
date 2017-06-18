@@ -101,7 +101,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
     // Compute time since beginning of current step
     nstep = part.nstep;
     dn = n - part.nlast;
-    dt = t - part.tlast;
+    dt = (FLOAT) dn*timestep;
 
     // Advance particle positions and velocities
     for (k=0; k<ndim; k++) part.r[k] = part.r0[k] + part.v0[k]*dt + 0.5*part.a0[k]*dt*dt;
@@ -257,7 +257,6 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
       }
 
       part.nlast   = n;
-      part.tlast   = t;
       part.dt      = part.dt_next;
       part.dt_next = 0;
       part.flags.unset(active);

@@ -102,8 +102,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
     // Compute time since beginning of current step
     nstep = part.nstep;
     dn = n - part.nlast;
-    //dt = timestep*(FLOAT) dn;
-    dt = t - part.tlast;
+    dt = timestep*(FLOAT) dn;
 
     // Advance particle positions and velocities depending on if we're before
     // or after the half-step.
@@ -201,7 +200,6 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
       }
 
       part.nlast   = n;
-      part.tlast   = t;
       part.dt      = part.dt_next;
       part.dt_next = 0;
       part.flags.unset(active);
