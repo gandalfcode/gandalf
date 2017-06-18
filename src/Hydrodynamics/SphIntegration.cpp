@@ -92,7 +92,7 @@ DOUBLE SphIntegration<ndim>::Timestep
 
   // Courant condition.  If hydro forces are not used, compute the
   // timescale using only div_v, i.e. the compression timescale.
-  if (sph->hydro_forces == 1 && sph->avisc == mon97 && part.sinkid != -1) {
+  if (sph->hydro_forces == 1 && sph->avisc == mon97 && part.flags.check(inside_sink)) {
     timestep = courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp);
   }
   else if (sph->hydro_forces == 1 && sph->avisc == mon97) {

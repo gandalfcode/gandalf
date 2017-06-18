@@ -999,7 +999,7 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
               dr = max(dr, part.h);
 
               FLOAT vsig = part.sound + neibpart[l].sound - dvdr ;
-              part.vsig_max = max(part.vsig_max, vsig*part.h/dr) ;
+              part.vsig_max = max((FLOAT) part.vsig_max, vsig*part.h/dr) ;
               assert(part.vsig_max >= 0) ;
             }
           }

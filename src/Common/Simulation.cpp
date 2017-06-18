@@ -1876,10 +1876,10 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
     if (hydro != NULL) {
       for (i=0; i<hydro->Nhydro; i++) {
         Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.sinkid != -1) {
-          if (sinks->sink[part.sinkid].star->level - part.level > level_diff_max) {
-            part.level     = sinks->sink[part.sinkid].star->level - level_diff_max;
-            part.levelneib = sinks->sink[part.sinkid].star->level;
+        if (part.flags.check(inside_sink)) {
+          if (level_max_nbody - part.level > level_diff_max) {
+            part.level     = level_max_nbody - level_diff_max;
+            part.levelneib = level_max_nbody;
             level_max_hydro  = max(level_max_hydro, part.level);
           }
         }

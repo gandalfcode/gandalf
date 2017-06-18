@@ -537,7 +537,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             cell.N++;
             if (partdata[i].flags.check(active)) cell.Nactive++;
             cell.hmax = max(cell.hmax, partdata[i].h);
-            cell.maxsound = max(cell.maxsound, partdata[i].sound);
+            cell.maxsound = max(cell.maxsound, (FLOAT) partdata[i].sound);
             if (gravmask[partdata[i].ptype]) {
               cell.m += partdata[i].m;
               for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];

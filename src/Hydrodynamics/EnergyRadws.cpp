@@ -182,7 +182,6 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
       EnergyFindEqui(part.rho, temp, temp_amb, col2, part.u, part.dudt,
                      part.ueq, part.dt_therm);
 
-
       part.u0 = part.u;
       part.dudt0 = part.dudt;
     }

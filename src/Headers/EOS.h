@@ -113,13 +113,13 @@ struct StateVector {
 template<int ndim>
 struct EosParticleProxy {
   EosParticleProxy()
-  : rho(0), u(0), p(0), ionfrac(0), ionstate(0)
+  : rho(0), u(0), p(0), ionstate(0)
   {
     for (int i=0; i < ndim; ++i) r[i] = 0;
     for (int i=0; i < ndim; ++i) v[i] = 0;
   }
   EosParticleProxy(Particle<ndim>& p)
-    : rho(p.rho), u(p.u), p(p.pressure), ionfrac(p.ionfrac), ionstate(p.ionstate)
+    : rho(p.rho), u(p.u), p(p.pressure), ionstate(p.ionstate)
   {
     for (int i=0; i < ndim; ++i) r[i] = p.r[i];
     for (int i=0; i < ndim; ++i) v[i] = p.v[i];
@@ -130,7 +130,6 @@ struct EosParticleProxy {
   FLOAT rho;
   FLOAT u;
   FLOAT p;
-  FLOAT ionfrac;
   int   ionstate;
 };
 
