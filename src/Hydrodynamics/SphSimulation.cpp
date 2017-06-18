@@ -406,7 +406,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Zero accelerations (here for now)
     for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      part.tlast     = t;
       part.level     = 0;
       part.levelneib = 0;
       part.nstep     = 0;

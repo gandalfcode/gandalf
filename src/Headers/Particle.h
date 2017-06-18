@@ -172,10 +172,10 @@ struct Particle
   int nlast;                        ///< Integer time at beginning of step
   //int sinkid;                       ///< i.d. of sink particle
   DOUBLE dt;                        ///< Particle timestep
-  DOUBLE tlast;                     ///< Time at beginning of current step
-  FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
+  //DOUBLE tlast;                     ///< Time at beginning of current step
+  //FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
   int ionstate;                     ///< States current ionisation state of the particle
-  //                                  ///< (0 is neutral, 1 is smoothed and 2 is ionised)
+                                    ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
   Particle() {
     flags     = none;
@@ -204,9 +204,9 @@ struct Particle
     dt_next   = (DOUBLE) 0.0;
 
     //sinkid    = -1;
-    //nstep     = 0;
-    //nlast     = 0;
-    //dt        = (DOUBLE) 0.0;
+    nstep     = 0;
+    nlast     = 0;
+    dt        = (DOUBLE) 0.0;
     //tlast     = (DOUBLE) 0.0;
 
     mu_bar    = 1.0f;

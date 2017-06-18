@@ -152,7 +152,6 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   part.levelneib = sim->level_max;
   part.nstep     = pow(2,sim->level_step - part.level);
   part.nlast     = sim->n - part.nstep;
-  part.tlast     = sim->t;
   part.m         = m;
   part.h         = (FLOAT) 1.0;
   part.u         = u;

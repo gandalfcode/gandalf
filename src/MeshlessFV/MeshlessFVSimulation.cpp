@@ -578,7 +578,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       part.level  = 0;
       part.nstep  = 0;
       part.nlast  = 0;
-      part.tlast  = t;
       part.flags.set(active);
     }
     for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set(active);
