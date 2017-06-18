@@ -1071,7 +1071,7 @@ void DustSemiImplictForces<ndim, ParticleType, StoppingTime, Kernel>::ComputeDra
       gsound = neiblist[j].sound ;
       grho = neiblist[j].rho ;
       drho = parti.rho ;
-      parti.sound = max(parti.sound, gsound) ;
+      parti.sound = max((FLOAT) parti.sound, gsound) ;
       parti.div_v = max(parti.div_v, sqrt(DotProduct(dv,dv,ndim))/parti.h);
     }
 

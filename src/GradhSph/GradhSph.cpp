@@ -281,7 +281,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
   // If there are star particles, compute N-body zeta correction term
   //-----------------------------------------------------------------------------------------------
-  if (part.sinkid == -1) {
+  if (!part.flags.check(inside_sink)) {
     parti.invomega = (FLOAT) 1.0 - h_rho_deriv(parti.h, part.m, parti.rho)*parti.invomega;
     parti.invomega = (FLOAT) 1.0/parti.invomega;
 

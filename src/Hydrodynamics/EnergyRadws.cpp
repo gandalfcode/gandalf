@@ -281,9 +281,11 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
       temp = eos->Temperature(part);
 
       // Get new ueq and dt_therm
+      FLOAT _mu_bar = (FLOAT) part.mu_bar;
       EnergyFindEqui(part.rho, temp, part.gpot, part.u, part.dudt,
-                     part.ueq, part.dt_therm, part.mu_bar);
+                     part.ueq, part.dt_therm, _mu_bar);
       part.u0 = part.u;
+      part.mu_bar = (float) _mu_bar;
       //part.dudt0 = part.dudt;
     }
 

@@ -124,9 +124,8 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
 
   // If there are sink particles present, check if the particle is inside one.
   // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
-  if (part.sinkid != -1) {
+  if (part.flags.check(inside_sink)) {
     h_lower_bound = hmin_sink;
-    //h_lower_bound = nbody->stardata[part.sinkid].h;  //hmin_sink;
     if (hmax < hmin_sink) return -1;
   }
 
@@ -220,7 +219,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
   part.invomega  = (FLOAT) 1.0/part.invomega;
   part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.m*part.h*part.zeta*part.invomega/part.ndens;
-  
+
 
   // Set important thermal variables here
   this->ComputeThermalProperties(part);
@@ -294,7 +293,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
     }
 
     // Calculate maximum signal velocity
-    part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
+    part.vsig_max = max((FLOAT) part.vsig_max, part.sound + neibpart[j].sound -
         min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
     part.levelneib = max(part.levelneib, neibpart[j].level) ;
     neibpart[j].levelneib = max(neibpart[j].levelneib, part.level);
@@ -580,4 +579,3 @@ template class MfvCommon<3, QuinticKernel, GizmoLimiter<3> >;
 template class MfvCommon<1, TabulatedKernel, GizmoLimiter<1> >;
 template class MfvCommon<2, TabulatedKernel, GizmoLimiter<2> >;
 template class MfvCommon<3, TabulatedKernel, GizmoLimiter<3> >;
-
