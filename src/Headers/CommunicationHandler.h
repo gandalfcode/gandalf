@@ -256,7 +256,7 @@ public:
 	    }
 
 	    p2.gpot += p.gpot;
-	    p2.vsig_max = max(p2.vsig_max,p.vsig_max);
+	    p2.vsig_max = max((FLOAT) p2.vsig_max,p.vsig_max);
   }
 
   void ReceiveParticle (const void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
@@ -425,7 +425,7 @@ public:
       }
       c.m += p.m;
       c.hmax = max(c.hmax,p.h);
-      c.maxsound = max(c.maxsound,p.sound);
+      c.maxsound = max(c.maxsound, (FLOAT) p.sound);
       c.amin = min(c.amin,
                    sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
     }
