@@ -23,6 +23,7 @@ struct TreeCellBase {
   int ilast;                           ///< i.d. of last particle in cell
   int N;                               ///< No. of particles in cell
   int Nactive;                         ///< No. of active particles in cell
+  float maxsound;                      ///< Maximum sound speed inside the cell
   FLOAT cdistsqd;                      ///< Minimum distance to use COM values
   FLOAT mac;                           ///< Multipole-opening criterion value
   Box<ndim> bb ;                       ///< Bounding box
@@ -34,7 +35,6 @@ struct TreeCellBase {
   FLOAT m;                             ///< Mass contained in cell
   FLOAT rmax;                          ///< Radius of bounding sphere
   FLOAT hmax;                          ///< Maximum smoothing length inside cell
-  FLOAT maxsound;                      ///< Maximum sound speed inside the cell
   FLOAT q[5];                          ///< Quadrupole moment tensor
   union {
     FLOAT amin;                        ///< Minimum grav accel of particles in the cell
