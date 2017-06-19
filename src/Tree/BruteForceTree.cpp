@@ -249,8 +249,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
   for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
-  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
   // Now do the leaf cells
   if (Npart > 0) {
@@ -265,8 +263,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
       celldata[c].level  = 1;
       for (k=0; k<ndim; k++) celldata[c].bb.min[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
       for (k=0; k<ndim; k++) celldata[c].bb.max[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
-      for (k=0; k<ndim; k++) celldata[c].cexit[0][k] = -1; // TODO: Check this
-      for (k=0; k<ndim; k++) celldata[c].cexit[1][k] = -1;
 #ifdef MPI_PARALLEL
       celldata[c].worktot = 0.0;
 #endif

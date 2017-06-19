@@ -279,8 +279,6 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
   for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
-  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
 
   // If there are particles in the tree, recursively build tree from root node down
@@ -487,10 +485,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   // Set properties of first child cell
   for (k=0; k<ndim; k++) celldata[cell.c1].bb.min[k] = cell.bb.min[k];
   for (k=0; k<ndim; k++) celldata[cell.c1].bb.max[k] = cell.bb.max[k];
-  for (k=0; k<ndim; k++) celldata[cell.c1].cexit[0][k] = cell.cexit[0][k];
-  for (k=0; k<ndim; k++) celldata[cell.c1].cexit[1][k] = cell.cexit[1][k];
   celldata[cell.c1].bb.max[k_divide] = rdivide;
-  celldata[cell.c1].cexit[1][k_divide] = cell.c2;
   celldata[cell.c1].N = cell.N/2;
   if (celldata[cell.c1].N != 0) {
     celldata[cell.c1].ifirst = ifirst;
@@ -501,10 +496,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   // Set properties of second child cell
   for (k=0; k<ndim; k++) celldata[cell.c2].bb.min[k] = cell.bb.min[k];
   for (k=0; k<ndim; k++) celldata[cell.c2].bb.max[k] = cell.bb.max[k];
-  for (k=0; k<ndim; k++) celldata[cell.c2].cexit[0][k] = cell.cexit[0][k];
-  for (k=0; k<ndim; k++) celldata[cell.c2].cexit[1][k] = cell.cexit[1][k];
   celldata[cell.c2].bb.min[k_divide] = rdivide;
-  celldata[cell.c2].cexit[0][k_divide] = cell.c1;
   celldata[cell.c2].N = cell.N - celldata[cell.c1].N;
   if (celldata[cell.c2].N != 0) {
     celldata[cell.c2].ifirst = ifirst + cell.N/2;
@@ -512,18 +504,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
     assert(celldata[cell.c2].ilast - celldata[cell.c2].ifirst == celldata[cell.c2].N - 1);
   }
   assert(cell.N == celldata[cell.c1].N + celldata[cell.c2].N);
-
-  // MAYBE NEED TO ADD THESE LINES ??
-  // Set new cell boundaries depending on number of particles in cells
-  /*if (radcell[cell.c1].N > 0 && radcell[cell.c2].N > 0) {
-    radcell[cell.c1].bb.max[k_divide] = rdivide;
-    radcell[cell.c2].bb.min[k_divide] = rdivide;
-    radcell[cell.c1].cexit[1][k_divide] = cell.c2;
-    radcell[cell.c2].cexit[0][k_divide] = cell.c1;
-  }
-  else if (radcell[cell.c2].N > 0) {
-    radcell[cell.c1].bb.max[k_divide] = -big_number;
-  }*/
 
 
   // Now divide the new child cells as a recursive function
