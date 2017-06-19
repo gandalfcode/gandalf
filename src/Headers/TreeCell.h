@@ -23,7 +23,6 @@ struct TreeCellBase {
   int ilast;                           ///< i.d. of last particle in cell
   int N;                               ///< No. of particles in cell
   int Nactive;                         ///< No. of active particles in cell
-  int cexit[2][ndim];                  ///< Left and right exit cells (per dim)
   FLOAT cdistsqd;                      ///< Minimum distance to use COM values
   FLOAT mac;                           ///< Multipole-opening criterion value
   Box<ndim> bb ;                       ///< Bounding box
