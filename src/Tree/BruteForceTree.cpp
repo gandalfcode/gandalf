@@ -322,12 +322,12 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   // Zero all summation variables for all cells
   cell.Nactive  = 0;
   cell.N        = 0;
+  cell.maxsound = 0.0f;
   cell.m        = (FLOAT) 0.0;
   cell.hmax     = (FLOAT) 0.0;
   cell.rmax     = (FLOAT) 0.0;
   cell.mac      = (FLOAT) 0.0;
   cell.cdistsqd = big_number;
-  cell.maxsound = (FLOAT) 0.0;
   if (gravity_mac == gadget2)
     cell.amin = big_number ;
   else if (gravity_mac == eigenmac)
@@ -352,7 +352,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
       cell.N++;
 	  if (partdata[i].flags.check(active)) cell.Nactive++;
 	  cell.hmax = max(cell.hmax,partdata[i].h);
-	  cell.maxsound = max(cell.maxsound, (FLOAT) partdata[i].sound);
+	  cell.maxsound = max(cell.maxsound, partdata[i].sound);
 	  if (gravmask[partdata[i].ptype]) {
 		cell.m += partdata[i].m;
 		for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
