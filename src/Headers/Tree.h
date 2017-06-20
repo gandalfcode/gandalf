@@ -35,6 +35,7 @@
 #include "DomainBox.h"
 #include "Hydrodynamics.h"
 #include "InlineFuncs.h"
+#include "Multipole.h"
 #include "Nbody.h"
 #include "Parameters.h"
 #include "Particle.h"
@@ -233,7 +234,7 @@ protected:
  public:
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-       string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
+       string _gravity_mac, multipole_method _multipole, const DomainBox<ndim>& domain,
        const ParticleTypeRegister& pt_reg, const bool _IAmPruned) :
     	   TreeBase<ndim>(domain),
     gravity_mac(geometric), multipole(_multipole), Nleafmax(_Nleafmax),
@@ -372,8 +373,8 @@ protected:
 
   // Const variables for tree class
   //-----------------------------------------------------------------------------------------------
-  MAC_Type gravity_mac;                  ///< Multipole-acceptance criteria for tree
-  const string multipole;              ///< Multipole-order for cell gravity
+  MAC_Type gravity_mac;                ///< Multipole-acceptance criteria for tree
+  const multipole_method multipole;    ///< Multipole-order for cell gravity
   const int Nleafmax;                  ///< Max. number of particles per leaf cell
   const FLOAT invthetamaxsqd;          ///< 1 / thetamaxsqd
   const FLOAT kernrange;               ///< Extent of employed kernel

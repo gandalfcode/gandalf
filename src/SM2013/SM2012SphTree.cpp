@@ -48,7 +48,7 @@ template <int ndim, template<int> class ParticleType>
 SM2012SphTree<ndim,ParticleType>::SM2012SphTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, multipole_method _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
   ParticleTypeRegister& types):
  SphTree<ndim,ParticleType>

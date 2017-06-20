@@ -232,10 +232,24 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   //-------------------------------------------------------------------------
   string tree_type = stringparams["neib_search"];
 
+  multipole_method multipole ;
+  if (stringparams["multipole"] == "monopole")
+    multipole = monopole ;
+  else if (stringparams["multipole"] == "quadrupole")
+    multipole = quadrupole ;
+  else if (stringparams["multipole"] == "fast_monopole")
+    multipole = fast_monopole ;
+  else if (stringparams["multipole"] == "fast_quadrupole")
+    multipole = fast_quadrupole ;
+  else {
+    string message = "Multipole type not recognised.";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   sphneib = new SM2012SphTree<ndim,SM2012SphParticle>
      (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
       floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
+      stringparams["gravity_mac"], multipole, &simbox, sph->kernp, timing, sph->types);
 
 
 #if defined MPI_PARALLEL

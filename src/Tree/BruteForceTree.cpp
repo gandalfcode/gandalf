@@ -52,7 +52,8 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 BruteForceTree<ndim,ParticleType,TreeCell>::BruteForceTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                            	   	   	   	   FLOAT kernrangeaux, FLOAT macerroraux,
-                                           	   	   	   	   string gravity_mac_aux, string multipole_aux,
+                                           	   	   	   	   string gravity_mac_aux,
+                                           	   	   	   	   multipole_method multipole_aux,
                                            	   	   	   	   const DomainBox<ndim>& domain,
                                            	   	   	   	   const ParticleTypeRegister& reg,
 														   const bool IAmPruned):
@@ -321,7 +322,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
 
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
+      multipole == quadrupole || multipole == fast_quadrupole || gravity_mac == eigenmac ;
 
   // Zero all summation variables for all cells
   cell.Nactive  = 0;

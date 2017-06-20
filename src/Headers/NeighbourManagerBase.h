@@ -10,6 +10,7 @@
 
 #include <vector>
 #include "TreeCell.h"
+#include "Multipole.h"
 
 
 //=================================================================================================
@@ -23,23 +24,39 @@
 //=================================================================================================
 class NeighbourManagerBase {
 protected:
+    struct range {
+      int begin, end ;
+    };
 	vector<int> tempneib;
 	vector<int> tempperneib;
 	vector<int> tempdirectneib;
 
 public:
-	/* Add a neighbour that does not need automatic ghost generation */
-    void AddNeib(const int i) {
+    /* Add a range of neighbours */
+	template<int ndim>
+    void AddNeibs(const TreeCellBase<ndim>& cell) {
+      int ibegin = cell.ifirst ;
+      int iend   = cell.ilast +1 ;
+      for (int i=ibegin; i < iend; i++)
         tempneib.push_back(i);
     }
-    /* Add a neighbour that we need ghosts of */
-	void AddPeriodicNeib(const int i) {
-		tempperneib.push_back(i);
-	}
-	/* Add a distant particle for gravity force */
-	void AddDirectNeib(const int i) {
-		tempdirectneib.push_back(i);
-	}
+    /* Add a neighbours that we need ghosts of */
+    template<int ndim>
+    void AddPeriodicNeibs(const TreeCellBase<ndim>& cell) {
+      int ibegin = cell.ifirst ;
+      int iend   = cell.ilast +1 ;
+      for (int i=ibegin; i < iend; i++)
+        tempperneib.push_back(i);
+    }
+    /* Add a distant particles for gravity force */
+    template<int ndim>
+    void AddDirectNeibs(const TreeCellBase<ndim>& cell) {
+      int ibegin = cell.ifirst ;
+      int iend   = cell.ilast +1 ;
+      for (int i=ibegin; i < iend; i++)
+        tempdirectneib.push_back(i);
+    }
+
 
 	void clear() {
 	  tempneib.clear();
@@ -58,13 +75,29 @@ template <int ndim>
 class NeighbourManagerDim : public NeighbourManagerBase {
 protected:
 	vector<MultipoleMoment<ndim> > gravcell;
+	FastMultipoleForces<ndim> multipole ;
 	using NeighbourManagerBase::tempneib;
     using NeighbourManagerBase::tempperneib;
     using NeighbourManagerBase::tempdirectneib;
 public:
+    NeighbourManagerDim() : multipole_type(monopole) { } ;
+
     /* Add the multipole moments of a gravity cell */
 	void AddGravCell(const MultipoleMoment<ndim>& moment) {
-		gravcell.push_back(moment);
+
+      gravcell.push_back(moment);
+
+	  switch (multipole_type) {
+	  case monopole:
+	  case quadrupole:
+		break;
+	  case fast_monopole:
+	    multipole.AddMonopoleContribution(moment);
+	    break ;
+	  case fast_quadrupole:
+        multipole.AddQuadrupoleContribution(moment);
+        break ;
+	  }
 	}
 
 	//===============================================================================================
@@ -76,10 +109,32 @@ public:
 	  return gravcell.size();
 	}
 
-    void clear() {
+    //===============================================================================================
+    //  ComputeFastMultipoleForces
+    /// \brief Compute the fast multipole forces the given particles.
+    //==============================================================================================
+	template<class ParticleType>
+	void ComputeFastMultipoleForces(int Nactive, ParticleType& activepart,
+	                                const ParticleTypeRegister& types) {
+	  for (int j=0; j<Nactive; j++)
+	    if (types[activepart[j].ptype].self_gravity)
+	      multipole.ApplyForcesTaylor(activepart[j].r, activepart[j].atree, activepart[j].gpot) ;
+	}
+
+
+    void set_target_cell(const TreeCellBase<ndim>& cell) {
       NeighbourManagerBase::clear();
       gravcell.clear();
+
+      multipole.set_target_cell(cell.r);
     }
+
+    void set_multipole_type(multipole_method multipole) {
+      multipole_type = multipole ;
+    }
+
+private:
+    multipole_method multipole_type ;
 };
 
 
