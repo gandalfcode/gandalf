@@ -240,10 +240,25 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     }
   }
 
+  multipole_method multipole ;
+  if (stringparams["multipole"] == "monopole")
+    multipole = monopole ;
+  else if (stringparams["multipole"] == "quadrupole")
+    multipole = quadrupole ;
+  else if (stringparams["multipole"] == "fast_monopole")
+    multipole = fast_monopole ;
+  else if (stringparams["multipole"] == "fast_quadrupole")
+    multipole = fast_quadrupole ;
+  else {
+    string message = "Multipole type not recognised.";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
   sphneib = new GradhSphTree<ndim,GradhSphParticle>
     (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-     stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
+     stringparams["gravity_mac"], multipole, &simbox, sph->kernp, timing, sph->types);
 
   // Here I do a horrible hack to get at the underlying tree, needed for the dust.
   TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;

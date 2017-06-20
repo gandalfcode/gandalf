@@ -115,7 +115,6 @@ protected:
   using HydroTree<ndim,ParticleType>::activepartbuf;
   using HydroTree<ndim,ParticleType>::allocated_buffer;
   using HydroTree<ndim,ParticleType>::box;
-  using HydroTree<ndim,ParticleType>::cellbuf;
   using HydroTree<ndim,ParticleType>::gravity_mac;
   using HydroTree<ndim,ParticleType>::kernp;
   using HydroTree<ndim,ParticleType>::kernrange;
@@ -147,7 +146,7 @@ protected:
   MeshlessFVTree(string tree_type,
                  int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
                  FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-                 string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
+                 string _gravity_mac, multipole_method _multipole, DomainBox<ndim> *_box,
                  SmoothingKernel<ndim> *_kern, CodeTiming *_timing, ParticleTypeRegister&);
   virtual ~MeshlessFVTree();
 

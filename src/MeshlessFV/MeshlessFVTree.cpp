@@ -52,7 +52,7 @@ template <int ndim, template<int> class ParticleType>
 MeshlessFVTree<ndim,ParticleType>::MeshlessFVTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, multipole_method _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
   ParticleTypeRegister& types):
  HydroTree<ndim,ParticleType>
@@ -384,7 +384,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
       for (j=0; j<Nactive; j++) activepart[j] = mfvdata[activelist[j]];
 
       // Compute neighbour list for cell from real and periodic ghost particles
-      neibmanager.clear();
+      neibmanager.set_target_cell(cell);
       tree->ComputeNeighbourAndGhostList(cell, neibmanager);
 #ifdef MPI_PARALLEL
       mpighosttree->ComputeNeighbourList(cell,neibmanager);
@@ -567,7 +567,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
       }
 
       // Compute neighbour list for cell from real and periodic ghost particles
-      neibmanager.clear();
+      neibmanager.set_target_cell(cell);
       tree->ComputeNeighbourAndGhostList(cell, neibmanager);
       neibmanager.EndSearch(cell,mfvdata);
 
@@ -720,6 +720,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
     ParticleType<ndim>* activepart  = activepartbuf[ithread];   // ..
     Typemask gravmask = mfv->types.gravmask;
     NeighbourManagerGrav neibmanager = neibmanagerbufgrav[ithread];
+
+    neibmanager.set_multipole_type(multipole) ;
+
+
     Typemask hydromask ;
     // This creates a mask which is always false. The purpose is that in this way no particle will be added to the
     // list of hydro neighbours
@@ -755,12 +759,12 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 
 
         // Compute neighbour list for cell depending on physics options
-        neibmanager.clear();
+        neibmanager.set_target_cell(cell);
         tree->ComputeGravityInteractionAndGhostList(cell, neibmanager);
         neibmanager.EndSearchGravity(cell,partdata);
 
         MultipoleMoment<ndim>* gravcell;
-        const int Ngravcell = neibmanager.GetGravCell(&gravcell);
+        int Ngravcell = neibmanager.GetGravCell(&gravcell);
 
         // Loop over all active particles in the cell
         //-------------------------------------------------------------------------------------------
@@ -782,11 +786,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
             mfv->ComputeDirectGravForces(activepart[j], neiblists.directlist);
 
             // Compute gravitational force due to distant cells
-            if (multipole == "monopole") {
+            if (multipole == monopole) {
               ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree,
                                         activepart[j].r, Ngravcell, gravcell);
             }
-            else if (multipole == "quadrupole") {
+            else if (multipole == quadrupole) {
               ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].atree,
                                           activepart[j].r, Ngravcell, gravcell);
             }
@@ -817,11 +821,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
 
 
         // Compute 'fast' multipole terms here
-        if (multipole == "fast_monopole") {
-          ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart, mfv->types);
-        }
-        else if (multipole == "fast_quadrupole") {
-          ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart, mfv->types);
+        if (multipole == fast_monopole || multipole == fast_quadrupole) {
+          neibmanager.ComputeFastMultipoleForces(Nactive, activepart, mfv->types) ;
         }
       } // End of self-gravity for this cell
 

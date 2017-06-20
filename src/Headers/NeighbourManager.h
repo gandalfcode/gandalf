@@ -248,8 +248,8 @@ public:
     _kernrange(kernrange)
   { };
 
-  void clear() {
-    NeighbourManagerDim<ndim>::clear();
+  void set_target_cell(const TreeCellBase<ndim>& cell) {
+    NeighbourManagerDim<ndim>::set_target_cell(cell);
     neiblist.clear();
     neibdata.clear();
     neib_idx.clear();

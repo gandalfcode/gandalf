@@ -108,7 +108,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  KDTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
+  KDTree(int, FLOAT, FLOAT, FLOAT, string, multipole_method, const DomainBox<ndim>&,
 		 const ParticleTypeRegister&, const bool);
   ~KDTree();
 
