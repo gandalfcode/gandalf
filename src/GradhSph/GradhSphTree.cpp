@@ -51,7 +51,7 @@ template <int ndim, template<int> class ParticleType>
 GradhSphTree<ndim,ParticleType>::GradhSphTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, multipole_method _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
   ParticleTypeRegister& types):
  SphTree<ndim,ParticleType>
@@ -344,7 +344,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
       // Compute neighbour list for cell from real and periodic ghost particles
 
 
-      neibmanager.clear();
+      neibmanager.set_target_cell(cell);
       tree->ComputeNeighbourAndGhostList(cell, neibmanager);
       neibmanager.EndSearch(cell,sphdata);
 
@@ -488,6 +488,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
     Typemask gravmask = sph->types.gravmask;
     NeighbourManager<ndim,HydroParticle>& neibmanager = neibmanagerbufhydro[ithread];
 
+    neibmanager.set_multipole_type(multipole) ;
+
     // Zero timestep level array
     for (int i=0; i<sph->Ntot; i++) levelneib[i] = 0;
 
@@ -515,12 +517,12 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       }
 
       // Compute neighbour list for cell depending on physics options
-      neibmanager.clear();
+      neibmanager.set_target_cell(cell);
       tree->ComputeGravityInteractionAndGhostList(cell, neibmanager);
       neibmanager.EndSearchGravity(cell,sphdata);
 
       MultipoleMoment<ndim>* gravcell;
-      const int Ngravcell = neibmanager.GetGravCell(&gravcell);
+      int Ngravcell = neibmanager.GetGravCell(&gravcell);
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
@@ -546,11 +548,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
           method->ComputeDirectGravForces(activepart[j], neiblists.directlist);
 
           // Compute gravitational force due to distant cells
-          if (multipole == "monopole") {
+          if (multipole == monopole) {
             ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree,
                                       activepart[j].r, Ngravcell, gravcell);
           }
-          else if (multipole == "quadrupole") {
+          else if (multipole == quadrupole) {
             ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].atree,
                                         activepart[j].r, Ngravcell, gravcell);
          }
@@ -585,11 +587,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
       // Compute 'fast' multipole terms here
-      if (multipole == "fast_monopole") {
-        ComputeFastMonopoleForces(Nactive, Ngravcell, gravcell, cell, activepart, sph->types);
-      }
-      else if (multipole == "fast_quadrupole") {
-        ComputeFastQuadrupoleForces(Nactive, Ngravcell, gravcell, cell, activepart, sph->types);
+      if (multipole == fast_monopole || multipole == fast_quadrupole) {
+        neibmanager.ComputeFastMultipoleForces(Nactive, activepart, sph->types) ;
       }
 
 

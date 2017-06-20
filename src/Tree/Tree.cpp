@@ -521,11 +521,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-        i = celldata[cc].ifirst;
-        int ilast = celldata[cc].ilast;
-        for (; i <= ilast; ++i) {
-          neibmanager.AddNeib(i);
-        };
+        neibmanager.AddNeibs(celldata[cc]) ;
         cc = celldata[cc].cnext;
       }
 
@@ -583,12 +579,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-        int i = celldata[cc].ifirst;
-        int ilast = celldata[cc].ilast;
-        for (; i <= ilast; ++i) {
-          neibmanager.AddPeriodicNeib(i) ;
-        }
-       cc = celldata[cc].cnext;
+        neibmanager.AddPeriodicNeibs(celldata[cc]) ;
+        cc = celldata[cc].cnext;
       }
 
     }
@@ -660,12 +652,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-
-        int i = celldata[cc].ifirst;
-        int ilast = celldata[cc].ilast;
-        for (; i <= ilast; ++i) {
-          neibmanager.AddPeriodicNeib(i);
-        };
+        neibmanager.AddPeriodicNeibs(celldata[cc]);
         cc = celldata[cc].cnext;
       }
 
@@ -686,7 +673,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (celldata[cc].copen == -1 && celldata[cc].N == 1) {
-        neibmanager.AddDirectNeib(celldata[cc].ifirst);
+        neibmanager.AddDirectNeibs(celldata[cc]);
       }
       else {
     	neibmanager.AddGravCell(MultipoleMoment<ndim>(celldata[cc]));
@@ -706,11 +693,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
       // If leaf-cell, add particles to list
       else {
-        int i = celldata[cc].ifirst;
-        int ilast = celldata[cc].ilast;
-        for (; i <= ilast; ++i) {
-          neibmanager.AddDirectNeib(i);
-        }
+        neibmanager.AddDirectNeibs(celldata[cc]) ;
         cc = celldata[cc].cnext;
       }
     }

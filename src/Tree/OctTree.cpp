@@ -48,7 +48,7 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                              FLOAT kernrangeaux, FLOAT macerroraux,
-                                             string gravity_mac_aux, string multipole_aux,
+                                             string gravity_mac_aux, multipole_method multipole_aux,
                                              const DomainBox<ndim>& domain,
                                     		 const ParticleTypeRegister& reg,
 											 const bool IAmPruned):
@@ -470,7 +470,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   debug2("[OctTree::StockTree]");
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
+      multipole == quadrupole || multipole == fast_quadrupole || gravity_mac == eigenmac ;
 
   // Loop over all levels in tree starting from lowest up to the top root cell level.
   //===============================================================================================
