@@ -9,6 +9,7 @@
 #define SRC_HEADERS_NEIGHBOURMANAGERBASE_H_
 
 #include <vector>
+#include <deque>
 #include "TreeCell.h"
 #include "Multipole.h"
 
@@ -27,34 +28,28 @@ protected:
     struct range {
       int begin, end ;
     };
-	vector<int> tempneib;
-	vector<int> tempperneib;
-	vector<int> tempdirectneib;
+	std::deque<range> tempneib;
+	std::deque<range> tempperneib;
+	std::deque<range> tempdirectneib;
 
 public:
     /* Add a range of neighbours */
 	template<int ndim>
     void AddNeibs(const TreeCellBase<ndim>& cell) {
-      int ibegin = cell.ifirst ;
-      int iend   = cell.ilast +1 ;
-      for (int i=ibegin; i < iend; i++)
-        tempneib.push_back(i);
+      range r = {cell.ifirst, cell.ilast+1} ;
+      tempneib.push_back(r);
     }
     /* Add a neighbours that we need ghosts of */
     template<int ndim>
     void AddPeriodicNeibs(const TreeCellBase<ndim>& cell) {
-      int ibegin = cell.ifirst ;
-      int iend   = cell.ilast +1 ;
-      for (int i=ibegin; i < iend; i++)
-        tempperneib.push_back(i);
+      range r = {cell.ifirst, cell.ilast+1} ;
+      tempperneib.push_back(r);
     }
     /* Add a distant particles for gravity force */
     template<int ndim>
     void AddDirectNeibs(const TreeCellBase<ndim>& cell) {
-      int ibegin = cell.ifirst ;
-      int iend   = cell.ilast +1 ;
-      for (int i=ibegin; i < iend; i++)
-        tempdirectneib.push_back(i);
+      range r = {cell.ifirst, cell.ilast+1} ;
+      tempdirectneib.push_back(r);
     }
 
 
@@ -79,6 +74,7 @@ protected:
 	using NeighbourManagerBase::tempneib;
     using NeighbourManagerBase::tempperneib;
     using NeighbourManagerBase::tempdirectneib;
+    using NeighbourManagerBase::range;
 public:
     NeighbourManagerDim() : multipole_type(monopole) { } ;
 
