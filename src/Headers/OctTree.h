@@ -98,10 +98,8 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::celldata;
   using Tree<ndim,ParticleType,TreeCell>::gravity_mac;
   using Tree<ndim,ParticleType,TreeCell>::gtot;
-  using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
-  using Tree<ndim,ParticleType,TreeCell>::inext;
   using Tree<ndim,ParticleType,TreeCell>::lmax;
   using Tree<ndim,ParticleType,TreeCell>::ltot;
   using Tree<ndim,ParticleType,TreeCell>::ltot_old;
@@ -136,6 +134,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void AllocateTreeMemory(int,int,bool);
   void ReallocateMemory(int,int);
   void DeallocateTreeMemory(void);
+  int DivideCell(int, int, int, int, ParticleType<ndim>*, int) ;
   void StockTree(Particle<ndim> *part_gen, bool stock_leaf) {
     ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
     StockTree(celldata[0], partdata, stock_leaf) ;

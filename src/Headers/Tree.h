@@ -405,8 +405,6 @@ protected:
   int Nthreads;                        ///< No. of OpenMP threads
   FLOAT hmax;                          ///< Store hmax in the tree
   int *g2c;                            ///< i.d. of leaf(grid) cells
-  int *ids;                            ///< Particle ids
-  int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
   Typemask gravmask ;                  ///< Particle types that contribute to gravity
 
