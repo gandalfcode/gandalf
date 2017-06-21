@@ -459,10 +459,9 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
     cell.bb.max[k] = -big_number;
   }
   for (i=cell.ifirst; i<=cell.ilast; i++) {
-    int j = ids[i];
     for (k=0; k<ndim; k++) {
-      if (cell.bb.min[k] > partdata[j].r[k]) cell.bb.min[k] = partdata[j].r[k];
-      if (cell.bb.max[k] < partdata[j].r[k]) cell.bb.max[k] = partdata[j].r[k];
+      if (cell.bb.min[k] > partdata[i].r[k]) cell.bb.min[k] = partdata[i].r[k];
+      if (cell.bb.max[k] < partdata[i].r[k]) cell.bb.max[k] = partdata[i].r[k];
     }
   }
 #endif
