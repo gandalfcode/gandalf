@@ -231,8 +231,6 @@ public:
   using NeighbourManagerDim<ndim>::tempperneib;
   using NeighbourManagerDim<ndim>::tempdirectneib;
   using NeighbourManagerDim<ndim>::gravcell;
-  using NeighbourManagerDim<ndim>::range;
-
 
   NeighbourManager(const Hydrodynamics<ndim>* hydro, const DomainBox<ndim>& domain)
   : _NPeriodicGhosts(0), _NCellDirectNeib(0),

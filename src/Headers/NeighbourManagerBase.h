@@ -74,7 +74,6 @@ protected:
 	using NeighbourManagerBase::tempneib;
     using NeighbourManagerBase::tempperneib;
     using NeighbourManagerBase::tempdirectneib;
-    using NeighbourManagerBase::range;
 public:
     NeighbourManagerDim() : multipole_type(monopole) { } ;
 
