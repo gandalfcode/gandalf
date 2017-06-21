@@ -433,7 +433,7 @@ public:
     FLOAT dr[ndim];
     for (int k=0; k<ndim; k++) {
       c.r[k] /= c.m;
-      c.rcell[k] = (FLOAT) 0.5*(c.bb.min[k] + c.bb.max[k]);
+      //c.rcell[k] = (FLOAT) 0.5*(c.bb.min[k] + c.bb.max[k]);
       dr[k] = (FLOAT) 0.5*(c.bb.max[k] - c.bb.min[k]);
     }
     c.rmax = sqrt(DotProduct(dr,dr,ndim));

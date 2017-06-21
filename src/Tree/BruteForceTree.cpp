@@ -336,7 +336,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
+  //for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
   for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
   for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
@@ -381,7 +381,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   if (cell.m > 0) {
     for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
     for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-    for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
+    //for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
     for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
     cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
     cell.rmax = sqrt(DotProduct(dr,dr,ndim));

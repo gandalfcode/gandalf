@@ -375,7 +375,8 @@ private:
     FLOAT rc[ndim];                      // Position of cell
     const FLOAT hrangemaxsqd = pow(cell.rmax + _kernrange*cell.hmax,2);
     const FLOAT rmax = cell.rmax;
-    for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+    //for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+    cell.ComputeCellCentre(rc);
 
 
     const GhostNeighbourFinder<ndim> GhostFinder(*_domain, cell);

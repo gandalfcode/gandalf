@@ -93,7 +93,8 @@ public:
 	{
 	  _need_mirrors = false ;
 	  for (int k=0; k < ndim; k++){
-		_centre[k] = cell.rcell[k] ;
+//		_centre[k] = cell.rcell[k] ;
+    cell.ComputeCellCentre(_centre);
 		_cell.min[k] = cell.bb.min[k] ;
 		_cell.max[k] = cell.bb.max[k] ;
         _hbox.min[k] = cell.hbox.min[k] ;
@@ -324,7 +325,7 @@ public:
 	{
 		if (_any_special){
 		  for (int k=0; k < ndim; k++){
-		    FLOAT dr_k = p.r[k] - cell.rcell[k] ;
+		    FLOAT dr_k = p.r[k] - 0.5*(cell.bb.min[k] + cell.bb.max[k]);  //cell.rcell[k] ;
 		    p.r[k] = r[k] + dr_k * sign[k] ;
 		    p.v[k] *= sign[k] ;
 		  }
@@ -500,7 +501,8 @@ struct ParticleCellProxy
 : public TreeCellBase<ndim>
 {
 	using TreeCellBase<ndim>::hbox ;
-	using TreeCellBase<ndim>::rcell ;
+	//using TreeCellBase<ndim>::rcell ;
+  FLOAT rcell[ndim];
 
 
 	ParticleCellProxy(const Particle<ndim>& p)
@@ -527,7 +529,8 @@ struct DomainCellProxy
 : public TreeCellBase<ndim>
 {
 	using TreeCellBase<ndim>::hbox ;
-	using TreeCellBase<ndim>::rcell ;
+	//using TreeCellBase<ndim>::rcell ;
+  FLOAT rcell[ndim];
 
 	DomainCellProxy(const DomainBox<ndim>& box)
 	{
@@ -535,6 +538,7 @@ struct DomainCellProxy
 		{
 			rcell[k] = 0.5 * (box.max[k] + box.min[k]) ;
 			FLOAT dr = 0.6 * (box.max[k] - box.min[k]) ;
+      // DAVID : Why is this 0.6 and not 0.5 (or 0.5000001)??
 
 			hbox.max[k] = rcell[k] + dr ;
 			hbox.max[k] = rcell[k] - dr ;
