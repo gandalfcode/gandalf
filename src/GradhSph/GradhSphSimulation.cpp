@@ -67,6 +67,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   string gas_radiation = stringparams["radiation"];
 
   debug2("[GradhSphSimulation::ProcessSphParameters]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GRADH_PROCESS_PARAMETERS");
 
 
   // Set the enum for artificial viscosity
