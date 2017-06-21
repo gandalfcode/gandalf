@@ -692,7 +692,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
         activepart[j] = sphdata[activelist[j]];
 
       // Compute neighbour list for cell from real and periodic ghost particles
-      neibmanager.clear();
+      neibmanager.set_target_cell(cell);
       _tree->ComputeNeighbourAndGhostList(cell, neibmanager);
 #ifdef MPI_PARALLEL
       // Ghosts are already in the mpi tree

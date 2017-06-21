@@ -594,6 +594,7 @@ public:
      __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "reduced") ;
    }
 
+private:
    //===============================================================================================
    //  __VerifyNeighbourList
    /// \brief    Verify the list of neighbours is complete.
@@ -614,7 +615,7 @@ public:
      // Compute the complete (true) list of neighbours
      if (searchmode == "gather") {
        for (int j=0; j<Ntot; j++) {
-         if (not types[partdata[i].ptype]) continue ;
+         if (not types[partdata[j].ptype]) continue ;
 
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
@@ -625,7 +626,7 @@ public:
      }
      else if (searchmode == "all") {
        for (int j=0; j<Ntot; j++) {
-         if (not types[partdata[i].ptype]) continue ;
+         if (not types[partdata[j].ptype]) continue ;
 
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
