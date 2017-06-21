@@ -476,6 +476,9 @@ template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateActiveParticleCounters
  (Hydrodynamics<ndim> *hydro)          ///< [in] Pointer to hydrodynamics object
 {
+  debug2("[HydroTree::UpdateActiveParticleCounters]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_TREE_UPDATE_ACTIVE_COUNTERS");
+
   ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
   tree->UpdateActiveParticleCounters(partdata);
 }
@@ -510,19 +513,22 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
 
 
   debug2("[HydroTree::SearchBoundaryGhostParticles]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_TREE_SEARCH_BOUNDARY_GHOSTS");
 
 
-  // Create ghost particles in x-dimension
-  //===============================================================================================
-  for (int j = 0; j < ndim; j++) {
-    if ((simbox.boundary_lhs[j] != openBoundary || simbox.boundary_rhs[j] != openBoundary)) {
+  // Loop over all dimensions and create ghost particles
+  for (int k=0; k<ndim; k++) {
+    if ((simbox.boundary_lhs[k] != openBoundary || simbox.boundary_rhs[k] != openBoundary)) {
 
       // Do the real particles using the tree
-      tree->GenerateBoundaryGhostParticles(tghost, grange, j, simbox, hydro) ;
+      tree->GenerateBoundaryGhostParticles(tghost, grange, k, simbox, hydro) ;
 
       // Include ghosts-of-ghosts by doing ghosts explicitly.
-      if (j > 0) for (i=hydro->Nhydro; i<hydro->Ntot; i++)
-        hydro->CheckBoundaryGhostParticle(i, j, tghost,simbox);
+      if (k > 0) {
+        for (i=hydro->Nhydro; i<hydro->Ntot; i++) {
+          hydro->CheckBoundaryGhostParticle(i, k, tghost,simbox);
+        }
+      }
 
       hydro->Ntot = hydro->Nhydro + hydro->Nghost;
     }

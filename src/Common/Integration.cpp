@@ -19,6 +19,8 @@ void TimeIntegration<ndim>::CheckBoundaries
       simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
       simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary) return;
 
+  debug2("[TimeIntegration::CheckBoundaries]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("INTEGRATION_CHECK_BOUNDARIES");
 
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.

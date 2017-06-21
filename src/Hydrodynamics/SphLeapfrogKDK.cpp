@@ -193,6 +193,9 @@ void SphLeapfrogKDK<ndim, ParticleType>::SetActiveParticles
 (const int n,                         ///< [in] Current timestep number
  Hydrodynamics<ndim>* hydro)
 {
+  debug2("[SphLeapfrogKDK::CorrectionTerms]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_SET_ACTIVE_PARTICLES");
+
   Sph<ndim>* sph = reinterpret_cast<Sph<ndim>*>(hydro);
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
@@ -203,10 +206,12 @@ void SphLeapfrogKDK<ndim, ParticleType>::SetActiveParticles
     int dn = n - part.nlast;
 
     // Force calculation is at end of step
-    if (part.flags.check(end_timestep) || dn == part.nstep)
+    if (part.flags.check(end_timestep) || dn == part.nstep) {
       part.flags.set(active);
-    else
+    }
+    else {
       part.flags.unset(active);
+    }
   }
 }
 

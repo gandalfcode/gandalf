@@ -662,7 +662,7 @@ void SphSimulation<ndim>::MainLoop(void)
     sph->ZeroAccelerations();
 
     // Update the radiation field
-    if (Nsteps%nradstep == 0 || recomputeRadiation) {
+    if (simparams->stringparams["radiation"] != "none" && (Nsteps%nradstep == 0 || recomputeRadiation)) {
       radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks->Nsink,
                                       sph->GetSphParticleArray(), nbody->nbodydata, sinks->sink);
       for (i=0; i<sph->Nhydro; i++) {
@@ -704,10 +704,12 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
     // Add external potential for all active SPH particles
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      if (part.flags.check(active)) {
-        sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
+    if (simparams->stringparams["external_potential"] != "none") {
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        if (part.flags.check(active)) {
+          sph->extpot->AddExternalPotential(part.r, part.v, part.a, adot, part.gpot);
+        }
       }
     }
 
@@ -848,8 +850,9 @@ void SphSimulation<ndim>::MainLoop(void)
     sphdust->UpdateAllDragForces(sph) ;
 
     // Unset active particles
-    for (i=0; i<sph->Nhydro; i++)
+    for (i=0; i<sph->Nhydro; i++) {
       sph->GetSphParticlePointer(i).flags.unset(active);
+    }
   }
 
 
