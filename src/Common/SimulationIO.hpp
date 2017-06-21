@@ -1179,27 +1179,27 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile
 
     // Positions
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayVector(outfile_format, hydro, &Particle<ndim>::r, types, simunits.r.outscale);
+    WriteSerenFormArrayVector(outfile_format, hydro, &Particle<ndim>::r, types, (FLOAT) simunits.r.outscale);
 
     // Masses
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::m, types, simunits.m.outscale);
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::m, types, (FLOAT) simunits.m.outscale);
 
     // Smoothing lengths
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::h, types, simunits.r.outscale);
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::h, types, (FLOAT) simunits.r.outscale);
 
     // Velocities
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayVector(outfile_format, hydro, &Particle<ndim>::v, types, simunits.v.outscale);
+    WriteSerenFormArrayVector(outfile_format, hydro, &Particle<ndim>::v, types, (FLOAT) simunits.v.outscale);
 
     // Densities
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::rho, types, simunits.rho.outscale);
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::rho, types, (FLOAT) simunits.rho.outscale);
 
     // Specific internal energies
     //-------------------------------------------------------------------------
-    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::u, types, simunits.u.outscale);
+    WriteSerenFormArrayScalar(outfile_format, hydro, &Particle<ndim>::u, types, (FLOAT) simunits.u.outscale);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -1884,37 +1884,37 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     //---------------------------------------------------------------------------------------------
     WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::r,
                                                reinterpret_cast<FLOAT*>(buffer),
-                                               types, simunits.r.outscale);
+                                               types, (FLOAT) simunits.r.outscale);
 
     // Masses
     //---------------------------------------------------------------------------------------------
     WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::m,
                                                reinterpret_cast<FLOAT*>(buffer),
-                                               types, simunits.m.outscale);
+                                               types, (FLOAT) simunits.m.outscale);
 
     // Smoothing lengths
     //---------------------------------------------------------------------------------------------
     WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::h,
                                                reinterpret_cast<FLOAT*>(buffer),
-                                               types, simunits.r.outscale);
+                                               types, (FLOAT) simunits.r.outscale);
 
     // Velocities
     //---------------------------------------------------------------------------------------------
     WriteSerenFormArrayVector_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::v,
                                                reinterpret_cast<FLOAT*>(buffer),
-                                               types, simunits.v.outscale);
+                                               types, (FLOAT) simunits.v.outscale);
 
     // Densities
     //---------------------------------------------------------------------------------------------
     WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::rho,
                                                reinterpret_cast<FLOAT*>(buffer),
-                                               types, simunits.rho.outscale);
+                                               types, (FLOAT) simunits.rho.outscale);
 
     // Specific internal energies
     //---------------------------------------------------------------------------------------------
     WriteSerenFormArrayScalar_MPI<ndim, FLOAT>(file, hydro, &Particle<ndim>::u,
                                                reinterpret_cast<FLOAT*>(buffer),
-                                               types, simunits.u.outscale);
+                                               types, (FLOAT) simunits.u.outscale);
 
     MPI_Offset end;
     MPI_File_get_position(file, &end);

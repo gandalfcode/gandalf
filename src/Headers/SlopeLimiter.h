@@ -143,11 +143,11 @@ class TVDScalarLimiter : public SlopeLimiter<ndim>
   //===============================================================================================
   template <class Part1Type, class NeibList>
   void CellLimiter(Part1Type& parti, NeibList& neibpart) {
-    double dr[ndim] ;
-    double alpha[ndim+2] ;
+    FLOAT dr[ndim] ;
+    FLOAT alpha[ndim+2] ;
     int j, k, var ;
 
-    for (var=0; var<ndim+2; var++) alpha[var] = 1.0 ;
+    for (var=0; var<ndim+2; var++) alpha[var] = (FLOAT) 1.0 ;
 
     int Nneib = neibpart.size() ;
     for (j=0; j<Nneib; j++) {
@@ -157,14 +157,14 @@ class TVDScalarLimiter : public SlopeLimiter<ndim>
       // Calculate min and max values of primitives for slope limiters
       for (var=0; var<ndim+2; var++) {
         // Reconstruct slope to cell edge or neighbouring particle.
-        double dW = DotProduct(parti.grad[var], dr, ndim) ;
-        if (_edge_limit) dW *= 0.51 ;
+        FLOAT dW = DotProduct(parti.grad[var], dr, ndim) ;
+        if (_edge_limit) dW *= (FLOAT) 0.51 ;
 
-        double dWcell = neibpart[j].Wprim[var] - parti.Wprim[var] ;
+        FLOAT dWcell = neibpart[j].Wprim[var] - parti.Wprim[var] ;
 
         // Limit the reconstructive value to be between the two cell values
         if (dW != 0)
-          alpha[var] = min(alpha[var], max(0., min(1., dWcell / dW))) ;
+          alpha[var] = min(alpha[var], max((FLOAT) 0.0, min((FLOAT) 1.0, dWcell / dW))) ;
       }
     }
 
@@ -200,8 +200,8 @@ class ScalarLimiter: public SlopeLimiter<ndim>
   //===============================================================================================
   template <class Part1Type, class NeibList>
   void CellLimiter(Part1Type& parti, NeibList& neibpart) {
-    double dr[ndim], drmax ;
-    double Wmax[ndim+2], Wmin[ndim+2] ;
+    FLOAT dr[ndim], drmax ;
+    FLOAT Wmax[ndim+2], Wmin[ndim+2] ;
     int j, k, var ;
 
     // Get the max / min values over the neighbours
@@ -230,15 +230,15 @@ class ScalarLimiter: public SlopeLimiter<ndim>
     if (_edge_limit) drmax *= 0.51 ;
 
     for (var=0; var<ndim+2; var++) {
-      double gradW = sqrt(DotProduct(parti.grad[var], parti.grad[var], ndim)) ;
-      double dW = drmax * gradW ;
+      FLOAT gradW = sqrt(DotProduct(parti.grad[var], parti.grad[var], ndim)) ;
+      FLOAT dW = drmax * gradW ;
 
-      double dWmax = Wmax[var] - parti.Wprim[var] ;
-      double dWmin = parti.Wprim[var] - Wmin[var] ;
+      FLOAT dWmax = Wmax[var] - parti.Wprim[var] ;
+      FLOAT dWmin = parti.Wprim[var] - Wmin[var] ;
 
-      double alpha = 1 ;
+      FLOAT alpha = 1 ;
       if (dW != 0)
-        alpha = max(0., min(1., min(dWmax/dW, dWmin/dW))) ;
+        alpha = max((FLOAT) 0.0, min((FLOAT) 1.0, min(dWmax/dW, dWmin/dW))) ;
 
       parti.alpha_slope[var] = alpha;
     }
@@ -269,9 +269,9 @@ class Springel2009Limiter: public SlopeLimiter<ndim>
   //===============================================================================================
   template <class Part1Type, class NeibList>
   void CellLimiter(Part1Type& parti, NeibList& neibpart) {
-    double dr[ndim] ;
-    double dWmax[ndim+2], dWmin[ndim+2] ;
-    double alpha[ndim+2] ;
+    FLOAT dr[ndim] ;
+    FLOAT dWmax[ndim+2], dWmin[ndim+2] ;
+    FLOAT alpha[ndim+2] ;
     int j, k, var ;
 
     // Get the max / min values over the neighbours
@@ -300,7 +300,7 @@ class Springel2009Limiter: public SlopeLimiter<ndim>
       for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
 
       for (var=0; var<ndim+2; var++) {
-        double dW = DotProduct(parti.grad[var], dr, ndim) ;
+        FLOAT dW = DotProduct(parti.grad[var], dr, ndim) ;
 
         if (_edge_limit) dW *= 0.51 ;
 

@@ -980,10 +980,10 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
           ParticleType<ndim>& part = activepart[j] ;
 
           for (int l=0; l<NumGhosts; l++) {
-            double dvdr = 0 ;
-            double dr = 0 ;
+            FLOAT dvdr = 0 ;
+            FLOAT dr = 0 ;
             for (k=0; k<ndim; k++)  {
-              double drk = part.r[k] - neibpart[l].r[k] ;
+              FLOAT drk = part.r[k] - neibpart[l].r[k] ;
               dvdr += drk * (part.v[k] - neibpart[l].v[k]);
               dr += drk*drk ;
             }
