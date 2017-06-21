@@ -76,38 +76,30 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     if (ndim > 2) {
       if (itype & z_periodic_lhs) {
         sphdata[i].r[2] += simbox.size[2];
-        continue ;
       }
       else if (itype & z_periodic_rhs) {
     	sphdata[i].r[2] -= simbox.size[2];
-        continue ;
       }
       else if (itype & z_mirror_lhs) {
         reflect(sphdata[i], 2, simbox.min[2]);
-        continue ;
       }
       else if (itype & z_mirror_rhs) {
         reflect(sphdata[i], 2, simbox.max[2]);
-        continue ;
       }
 
     }
     if (ndim > 1) {
       if (itype & y_periodic_lhs) {
     	sphdata[i].r[1] += simbox.size[1];
-    	continue ;
       }
       else if (itype & y_periodic_rhs) {
     	sphdata[i].r[1] -= simbox.size[1];
-    	continue ;
       }
       else if (itype & y_mirror_lhs) {
     	reflect(sphdata[i], 1, simbox.min[1]);
-    	continue ;
       }
       else if (itype & y_mirror_rhs) {
         reflect(sphdata[i], 1, simbox.max[1]);
-        continue ;
       }
     }
 
@@ -117,16 +109,12 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     }
     else if (itype & x_periodic_rhs) {
       sphdata[i].r[0] -= simbox.size[0];
-      continue ;
     }
     else if (itype & x_mirror_lhs) {
       reflect(sphdata[i], 0, simbox.min[0]);
-      continue ;
     }
     else if (itype & x_mirror_rhs) {
       reflect(sphdata[i], 0, simbox.max[0]);
-
-      continue ;
     }
   }
   //-----------------------------------------------------------------------------------------------
