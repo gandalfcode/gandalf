@@ -484,7 +484,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
- (const FLOAT timestep,                    ///< [in] Lowest timestep value
+ (FLOAT timestep,                          ///< [in] Lowest timestep value
   MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
@@ -522,7 +522,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout,dQBufferGlob,fluxBufferGlob,rdmdtBufferGlob)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout,dQBufferGlob,fluxBufferGlob,rdmdtBufferGlob,timestep)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();

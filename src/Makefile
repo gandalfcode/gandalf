@@ -69,7 +69,7 @@ endif
 
 ifeq ($(OPENMP),1)
 GCCOPT   += -fopenmp
-ICCOPT   += -openmp
+ICCOPT   += -qopenmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
 
