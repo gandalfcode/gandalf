@@ -2194,22 +2194,22 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::iorig, types);
 
     // Positions
-    WriteSerenUnformArrayVector(writer, hydro, &Particle<ndim>::r, types, simunits.r.outscale);
+    WriteSerenUnformArrayVector(writer, hydro, &Particle<ndim>::r, types, (FLOAT) simunits.r.outscale);
 
     // Masses
-    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::m, types, simunits.m.outscale);
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::m, types, (FLOAT) simunits.m.outscale);
 
     // Smoothing lengths
-    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::h, types, simunits.r.outscale);
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::h, types, (FLOAT) simunits.r.outscale);
 
     // Velocities
-    WriteSerenUnformArrayVector(writer, hydro, &Particle<ndim>::v, types, simunits.v.outscale);
+    WriteSerenUnformArrayVector(writer, hydro, &Particle<ndim>::v, types, (FLOAT) simunits.v.outscale);
 
     // Densities
-    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::rho, types, simunits.rho.outscale);
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::rho, types, (FLOAT) simunits.rho.outscale);
 
     // Specific internal energies
-    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::u, types, simunits.u.outscale);
+    WriteSerenUnformArrayScalar(writer, hydro, &Particle<ndim>::u, types, (FLOAT) simunits.u.outscale);
 
   }
 
