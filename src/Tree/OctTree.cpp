@@ -699,7 +699,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           }
         } else if (ndim == 2) {
           p = (cell.q[0]-cell.q[2])*(cell.q[0]-cell.q[2]) + 4*cell.q[1]*cell.q[1];
-          lambda = 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), 0.);
+          lambda = (FLOAT) 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), (FLOAT) 0.0);
         } else {
           lambda = fabs(cell.q[0]) ;
         }
