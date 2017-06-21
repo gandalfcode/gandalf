@@ -53,6 +53,7 @@ public:
     }
 
 
+protected:
 	void clear() {
 	  tempneib.clear();
 	  tempperneib.clear();
