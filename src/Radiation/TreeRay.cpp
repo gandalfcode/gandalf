@@ -552,10 +552,8 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::StockRadiationTree
         i = cell.ifirst;
 
         // Loop over all particles in cell summing their contributions
-        while (i != -1) {
+        for (i = cell.ifirst; i <= cell.ilast; ++i) {
           for (k=0; k<nfreq; k++) cell.srcEUV[k] += (FLOAT) 0.0;
-          if (i == cell.ilast) break;
-          i = tree->inext[i];
         };
 
 
