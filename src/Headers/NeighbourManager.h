@@ -231,6 +231,8 @@ public:
   using NeighbourManagerDim<ndim>::tempperneib;
   using NeighbourManagerDim<ndim>::tempdirectneib;
   using NeighbourManagerDim<ndim>::gravcell;
+  using NeighbourManagerDim<ndim>::range;
+
 
   NeighbourManager(const Hydrodynamics<ndim>* hydro, const DomainBox<ndim>& domain)
   : _NPeriodicGhosts(0), _NCellDirectNeib(0),
@@ -393,16 +395,18 @@ private:
     // Start from direct neighbours
     if (keep_direct) {
       for (int ii=0; ii<(int) tempdirectneib.size(); ii++) {
-        const int i = tempdirectneib[ii];
-        const InParticleType& part = partdata[i];
-        // Forget immediately: direct particles and particles that do not interact gravitationally
-        if (part.flags.is_dead()) continue;
-        if (!gravmask[part.ptype]) continue;
+        NeighbourManagerBase::range rng = tempdirectneib[ii] ;
+        for (int i=rng.begin; i < rng.end; ++i) {
+          const InParticleType& part = partdata[i];
+          // Forget immediately: direct particles and particles that do not interact gravitationally
+          if (part.flags.is_dead()) continue;
+          if (!gravmask[part.ptype]) continue;
 
-        // Now create the particle
-        GhostFinder.ConstructGhostsScatterGather(part, neibdata);
-        directlist.push_back(neibdata.size()-1);
-        neib_idx.push_back(i);
+          // Now create the particle
+          GhostFinder.ConstructGhostsScatterGather(part, neibdata);
+          directlist.push_back(neibdata.size()-1);
+          neib_idx.push_back(i);
+        }
       }
     }
 
@@ -413,32 +417,34 @@ private:
     // First the ones that need ghosts to be created on the fly
     int Nneib = directlist.size();
     for (int ii=0; ii<(int) tempperneib.size(); ii++) {
-      const int i = tempperneib[ii];
-      if (partdata[i].flags.is_dead()) continue;
+      NeighbourManagerBase::range rng = tempperneib[ii] ;
+      for (int i=rng.begin; i < rng.end; ++i) {
+        if (partdata[i].flags.is_dead()) continue;
 
-      GhostFinder.ConstructGhostsScatterGather(partdata[i], neibdata);
+        GhostFinder.ConstructGhostsScatterGather(partdata[i], neibdata);
 
-      while (Nneib < (int) neibdata.size()) {
-        int Nmax = neibdata.size();
-        for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
-        drsqd = DotProduct(dr, dr, ndim);
-        FLOAT h2 = rmax + _kernrange*neibdata[Nneib].h;
-        if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
-          neiblist.push_back(Nneib);
-          neib_idx.push_back(i);
-          Nneib++;
-        }
-        else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
-          directlist.push_back(Nneib);
-          neib_idx.push_back(i);
-          Nneib++;
-        }
-        else if (Nmax > Nneib) {
-          Nmax--;
-          if (Nmax > Nneib) neibdata[Nneib] = neibdata[Nmax];
-          neibdata.resize(neibdata.size()-1);
-        }
-      }// Loop over Ghosts
+        while (Nneib < (int) neibdata.size()) {
+          int Nmax = neibdata.size();
+          for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
+          drsqd = DotProduct(dr, dr, ndim);
+          FLOAT h2 = rmax + _kernrange*neibdata[Nneib].h;
+          if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
+            neiblist.push_back(Nneib);
+            neib_idx.push_back(i);
+            Nneib++;
+          }
+          else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
+            directlist.push_back(Nneib);
+            neib_idx.push_back(i);
+            Nneib++;
+          }
+          else if (Nmax > Nneib) {
+            Nmax--;
+            if (Nmax > Nneib) neibdata[Nneib] = neibdata[Nmax];
+            neibdata.resize(neibdata.size()-1);
+          }
+        }// Loop over Ghosts
+      }
     }
 
     // Store the number of periodic particles in the neiblist
@@ -446,24 +452,24 @@ private:
 
     // Find those particles that do not need ghosts on the fly
     for (int ii=0; ii<(int) tempneib.size(); ii++) {
-      const int i = tempneib[ii];
-      if (partdata[i].flags.is_dead()) continue;
+      NeighbourManagerBase::range rng = tempneib[ii] ;
+      for (int i=rng.begin; i < rng.end; ++i) {
 
-
-      for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      FLOAT h = rmax + _kernrange*partdata[i].h;
-      if (drsqd < hrangemaxsqd || drsqd < h*h) {
-        neibdata.push_back(partdata[i]);
-        neiblist.push_back(Nneib);
-        neib_idx.push_back(i);
-        Nneib++;
-      } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
-        // Hydro candidates that fail the test get demoted to direct neighbours
-        neibdata.push_back(partdata[i]);
-        directlist.push_back(Nneib);
-        neib_idx.push_back(i);
-        Nneib++;
+        for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        FLOAT h = rmax + _kernrange*partdata[i].h;
+        if (drsqd < hrangemaxsqd || drsqd < h*h) {
+          neibdata.push_back(partdata[i]);
+          neiblist.push_back(Nneib);
+          neib_idx.push_back(i);
+          Nneib++;
+        } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
+          // Hydro candidates that fail the test get demoted to direct neighbours
+          neibdata.push_back(partdata[i]);
+          directlist.push_back(Nneib);
+          neib_idx.push_back(i);
+          Nneib++;
+        }
       }
     }
 
