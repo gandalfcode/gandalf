@@ -746,7 +746,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-	  for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
+	  //for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
 	  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
 	  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
@@ -795,9 +795,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-    }
-    if (cell.N > 0) {
-      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
@@ -872,9 +869,13 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
       for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
+<<<<<<< HEAD
     }
     if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
+=======
+      //for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
+>>>>>>> Removed rcell from TreeCell.  Can be reconstructed with new function 0.5*(bb.min + bb.max).
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
@@ -985,7 +986,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
   for (c=0; c<Ncell; c++) {
 
     for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
+    //for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].bb.min[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;

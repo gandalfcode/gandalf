@@ -29,7 +29,7 @@ struct TreeCellBase {
   Box<ndim> bb ;                       ///< Bounding box
   Box<ndim> hbox;                      ///< Bounding box for smoothing volume
   Box<ndim> vbox ;                     ///< Velocity space bounding box
-  FLOAT rcell[ndim];                   ///< Geometric centre of cell bounding box
+  //FLOAT rcell[ndim];                   ///< Geometric centre of cell bounding box
   FLOAT r[ndim];                       ///< Position of cell COM
   FLOAT v[ndim];                       ///< Velocity of cell COM
   FLOAT m;                             ///< Mass contained in cell
@@ -43,6 +43,12 @@ struct TreeCellBase {
 #ifdef MPI_PARALLEL
   double worktot;                      ///< Total work in cell
 #endif
+
+  inline void ComputeCellCentre(FLOAT rcell[ndim]) const {
+    for (int k=0; k<ndim; k++) rcell[k] = (FLOAT) 0.5*(bb.min[k] + bb.max[k]);
+  }
+
+
 };
 
 //=================================================================================================

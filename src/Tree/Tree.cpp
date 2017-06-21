@@ -181,7 +181,7 @@ void Tree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
   for (c=0; c<Ncell; c++) {
 
     for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
+    //for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].bb.min[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
@@ -224,7 +224,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rp[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rp[k];  //celldata[cc].rcell[k] - rp[k];
     drsqd = DotProduct(dr, dr, ndim);
 
 
@@ -310,7 +312,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   // Exit immediately if we have overflowed the neighbour list buffer
   if (Nneib == -1) return -1;
 
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  //for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  cell.ComputeCellCentre(rc);
   for (k=0; k<ndim; k++) gatherboxmin[k] = cell.bb.min[k] - kernrange*hmax;
   for (k=0; k<ndim; k++) gatherboxmax[k] = cell.bb.max[k] + kernrange*hmax;
 
@@ -409,7 +412,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   assert(neibpart != NULL);
   assert(partdata != NULL);
 
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  //for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  cell.ComputeCellCentre(rc);
 
   // Exit immediately if we have overflowed the neighbour list buffer
   if (Nneib == -1) return -1;
@@ -418,7 +422,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k];  //celldata[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
     // Check if bounding boxes overlap with each other
@@ -623,7 +629,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   const FLOAT rmax      = cell.rmax;
   const FLOAT amin      = cell.amin;
   const FLOAT macfactor = cell.macfactor;
-  for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  cell.ComputeCellCentre(rc);
+  //for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Start with root cell and walk through entire tree
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -631,7 +638,9 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   while (cc < Ncell) {
 
     // Calculate closest periodic replica of cell
-    for (int k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (int k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k];  //celldata[cc].rcell[k] - rc[k];
     GhostFinder.NearestPeriodicVector(dr);
     const FLOAT drsqd = DotProduct(dr, dr, ndim);
 
@@ -756,7 +765,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   //===============================================================================================
   while (cc < Ncell) {
 
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rs[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rs[k];  //celldata[cc].rcell[k] - rs[k];
     drsqd = DotProduct(dr, dr, ndim);
 
 
@@ -1177,7 +1188,9 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
 
 
     // Calculate closest periodic replica of cell
-    for (k=0; k<ndim; k++) dr[k] = celldata[c].rcell[k] - rnode[k];
+    FLOAT rc[ndim];
+    celldata[c].ComputeCellCentre(rc);
+    for (k=0; k<ndim; k++) dr[k] = rc[k] - rnode[k];  //celldata[c].rcell[k] - rnode[k];
     NearestPeriodicVector(simbox, dr, dr_corr);
 
     // Find vector to nearest edge of the node box
@@ -1365,7 +1378,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   FLOAT rmax;                          // Radius of sphere containing particles
 
   // Make local copies of important cell properties
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  //for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  cell.ComputeCellCentre(rc);
   hrangemax = cell.rmax + kernrange*cell.hmax;
   rmax = cell.rmax;
   const FLOAT amin = cell.amin ;
@@ -1378,7 +1392,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   while (cc < Ncell) {
 
     // Calculate closest periodic replica of cell
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k]; //celldata[cc].rcell[k] - rc[k];
     NearestPeriodicVector(simbox, dr, dr_corr);
     drsqd = DotProduct(dr, dr, ndim);
 
@@ -1466,7 +1482,8 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
   FLOAT rc[ndim];                      // Position of cell
 
   // Make local copies of important cell properties
-  for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
+  cellptr->ComputeCellCentre(rc);
+  //for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -1474,7 +1491,9 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
   while (cc < Ncell) {
 
     // Calculate closest periodic replica of cell
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k];  //celldata[cc].rcell[k] - rc[k];
     NearestPeriodicVector(simbox, dr, dr_corr);
     drsqd = DotProduct(dr, dr, ndim);
 
