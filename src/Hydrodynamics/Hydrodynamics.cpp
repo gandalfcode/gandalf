@@ -257,11 +257,11 @@ void Hydrodynamics<ndim>::CheckBoundaryGhostParticle
 //=================================================================================================
 template <int ndim>
 void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
- (const int i,                         ///< [in] i.d. of original particle
-  const int k,                         ///< [in] Boundary dimension for new ghost
-  const int ghosttype,                 ///< [in] Type of ghost particle (periodic, mirror, etc..)
-  const FLOAT rk,                      ///< [in] k-position of original particle
-  const FLOAT vk)                      ///< [in] k-velocity of original particle
+ (int i,                         ///< [in] i.d. of original particle
+  int k,                         ///< [in] Boundary dimension for new ghost
+  int ghosttype,                 ///< [in] Type of ghost particle (periodic, mirror, etc..)
+  FLOAT rk,                      ///< [in] k-position of original particle
+  FLOAT vk)                      ///< [in] k-velocity of original particle
 {
   // Reallocate memory if necessary
   if (Nhydro+Nghost >= Nhydromax) {
@@ -279,7 +279,11 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart.v[k]   = vk;
   ghostpart.flags.unset(active);
   ghostpart.flags.set(ghosttype); // Allow ghost to have multiple ghost flags
+
+  // Make sure the ghost points back to a real particle
+  if (i > Nhydro) i = origpart.iorig;
   ghostpart.iorig  = i;
+
   Nghost++;
 
   // Some sanity-checking since dead ghosts should not ever be CreateBoundaryGhostParticle

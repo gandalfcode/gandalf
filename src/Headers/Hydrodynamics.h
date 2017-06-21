@@ -90,7 +90,7 @@ public:
 
   void ComputeBoundingBox(FLOAT *, FLOAT *, const int);
   void CheckBoundaryGhostParticle(const int, const int, const FLOAT, const DomainBox<ndim> &);
-  void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
+  void CreateBoundaryGhostParticle(int, int, int, FLOAT, FLOAT);
   Particle<ndim>& CreateNewParticle(const int, const FLOAT, const FLOAT,
                                     const FLOAT*, const FLOAT*, SimulationBase*);
 
