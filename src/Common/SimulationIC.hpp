@@ -57,6 +57,7 @@ void Simulation<ndim>::GenerateIC(void)
   string ic = simparams->stringparams["ic"];   // Local copy of initial conditions string
 
   debug2("[Simulation::GenerateIC]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GENERATE_IC");
 
 
   // First, check special case of restarting a simulation, in which case
