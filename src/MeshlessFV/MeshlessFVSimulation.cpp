@@ -380,13 +380,14 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 
   // Set pointers to timing object
-  nbody->timing   = timing;
+  nbody->timing    = timing;
   //if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || sim == "godunov_hydro") {
   sinks->timing    = timing;
-  mfvneib->SetTimingObject(timing);
-  mfv->timing = timing;
+  mfv->timing      = timing;
+  hydro->timing    = timing;
   hydroint->timing = timing;
   uint->timing = timing;
+  mfvneib->SetTimingObject(timing);
   //}*/
 
   // Create ghost particle object

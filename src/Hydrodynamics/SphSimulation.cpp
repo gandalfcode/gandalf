@@ -178,11 +178,12 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // Set pointers to timing object
   nbody->timing   = timing;
   if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph") {
-    sinks->timing    = timing;
+    sinks->timing     = timing;
+    hydro->timing     = timing;
     hydroint->timing  = timing;
-    sphneib->SetTimingObject(timing);
-    uint->timing    = timing;
+    uint->timing      = timing;
     radiation->timing = timing;
+    sphneib->SetTimingObject(timing);
   }
 
 
@@ -208,6 +209,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   FLOAT adot[ndim];                    // Dummy adot array
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_POST_IC_SETUP");
 
   sph->DeleteDeadParticles();
 
