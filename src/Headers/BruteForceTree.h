@@ -73,7 +73,6 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::gtot;
   using Tree<ndim,ParticleType,TreeCell>::g2c;
   using Tree<ndim,ParticleType,TreeCell>::hmax;
-  using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
