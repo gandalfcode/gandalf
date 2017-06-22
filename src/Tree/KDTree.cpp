@@ -711,7 +711,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
- (TreeCell<ndim> &cell,                ///< Reference to current tree cell
+ (TreeCell<ndim> &origCell,            ///< Reference to current tree cell
   ParticleType<ndim> *partdata,        ///< Particle data array
   bool stock_leaf)					   ///< Whether to stock leaf cells
 {
@@ -723,13 +723,14 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   FLOAT mi;                            // Mass of particle i
   FLOAT p = (FLOAT) 0.0;               // ..
   FLOAT lambda = (FLOAT) 0.0;          // ..
+  TreeCell<ndim> cell = origCell;      // Local copy of tree-cell for cache-efficiency
 
 
   const bool need_quadrupole_moments =
       multipole == quadrupole || multipole == fast_quadrupole || gravity_mac == eigenmac ;
 
   // Zero all summation variables for all cells
-  if ((cell.level==ltot&&stock_leaf) || cell.copen != -1 ) {
+  if ((cell.level==ltot && stock_leaf) || cell.copen != -1 ) {
 	  cell.Nactive  = 0;
 	  cell.N        = 0;
 	  cell.maxsound = 0.0f;
@@ -754,39 +755,38 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 	  for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
   }
 
+
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
   if (cell.level == ltot && stock_leaf) {
-
 
 
     // Loop over all particles in cell summing their contributions
     for (i = cell.ifirst; i <= cell.ilast; ++i) {
       if (!partdata[i].flags.is_dead()) {
         cell.N++;
-        if (partdata[i].flags.check(active)) cell.Nactive++;
-        cell.hmax = max(cell.hmax,partdata[i].h);
-        cell.maxsound = max(cell.maxsound, partdata[i].sound);
-        if (gravmask[partdata[i].ptype]) {
-          cell.m += partdata[i].m;
-          for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-          for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
+        if (part.flags.check(active)) cell.Nactive++;
+        cell.hmax = max(cell.hmax,part.h);
+        cell.maxsound = max(cell.maxsound, part.sound);
+        if (gravmask[part.ptype]) {
+          cell.m += part.m;
+          for (k=0; k<ndim; k++) cell.r[k] += part.m*part.r[k];
+          for (k=0; k<ndim; k++) cell.v[k] += part.m*part.v[k];
         }
-        for (k=0; k<ndim; k++) {
-         if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
-         if (partdata[i].r[k] > cell.bb.max[k]) cell.bb.max[k] = partdata[i].r[k];
-         if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k])
-           cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-         if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
-           cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
-         if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
-         if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
-        }
-        if (gravity_mac == gadget2)
+        for (k=0; k<ndim; k++) cell.bb.min[k] = min(cell.bb.min[k], part.r[k]);
+        for (k=0; k<ndim; k++) cell.bb.max[k] = max(cell.bb.max[k], part.r[k]);
+        for (k=0; k<ndim; k++) cell.hbox.min[k] = min(cell.hbox.min[k], part.r[k] - kernrange*part.h);
+        for (k=0; k<ndim; k++) cell.hbox.max[k] = max(cell.hbox.min[k], part.r[k] + kernrange*part.h);
+        for (k=0; k<ndim; k++) cell.vbox.min[k] = min(cell.vbox.min[k], part.v[k]);
+        for (k=0; k<ndim; k++) cell.vbox.max[k] = max(cell.vbox.max[k], part.v[k]);
+
+        if (gravity_mac == gadget2) {
           cell.amin = min(cell.amin,
-                          sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
-        else if (gravity_mac == eigenmac)
-          cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
+                          sqrt(DotProduct(part.atree,part.atree,ndim)));
+        }
+        else if (gravity_mac == eigenmac) {
+          cell.macfactor = max(cell.macfactor,pow(part.gpot,-twothirds));
+        }
       }
     }
 
@@ -830,8 +830,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   //-----------------------------------------------------------------------------------------------
   else if (cell.copen != -1) {
 
-	  TreeCell<ndim> &child1 = celldata[cell.copen];
-	  TreeCell<ndim> &child2 = celldata[child1.cnext];
+    const TreeCell<ndim> &child1 = celldata[cell.copen];
+    const TreeCell<ndim> &child2 = celldata[child1.cnext];
 
     if (child1.N > 0) {
       for (k=0; k<ndim; k++) cell.bb.min[k] = min(child1.bb.min[k],cell.bb.min[k]);
@@ -960,6 +960,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     cell.mac = (FLOAT) 0.0;
   }
 
+  origCell = cell;
 
   return;
 }
@@ -1052,11 +1053,11 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
     for (i = cell.ifirst; i <= cell.ilast; ++i) {
       cell.hmax = max(cell.hmax,partdata[i].h);
       for (k=0; k<ndim; k++) {
-        if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
-          cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+        if (part.r[k] - kernrange*part.h < cell.hbox.min[k]) {
+          cell.hbox.min[k] = part.r[k] - kernrange*part.h;
         }
-        if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k]) {
-          cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+        if (part.r[k] + kernrange*part.h > cell.hbox.max[k]) {
+          cell.hbox.max[k] = part.r[k] + kernrange*part.h;
         }
       }
     };
