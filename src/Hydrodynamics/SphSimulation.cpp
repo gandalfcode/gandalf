@@ -591,8 +591,10 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..).
   //-----------------------------------------------------------------------------------------------
-  if (n%(int) pow(2,level_step - level_max) == 0) {
-    snDriver->Update(n, level_step, level_max, t, hydro, sphneib, randnumb);
+  if (simparams->stringparams["supernova_feedback"] != "none") {
+    if (n%(int) pow(2,level_step - level_max) == 0) {
+      snDriver->Update(n, level_step, level_max, t, hydro, sphneib, randnumb);
+    }
   }
 
   // Check all boundary conditions
@@ -714,15 +716,17 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
     // Checking if acceleration or other values are invalid
+#ifndef NDEBUG
     for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.flags.check(active)) {
-        for (k=0; k<ndim; k++) assert(part.r[k] == part.r[k]);
-        for (k=0; k<ndim; k++) assert(part.v[k] == part.v[k]);
-        for (k=0; k<ndim; k++) assert(part.a[k] == part.a[k]);
-        assert(part.gpot == part.gpot);
+        for (k=0; k<ndim; k++) assert(isfinite(part.r[k]));
+        for (k=0; k<ndim; k++) assert(isfinite(part.v[k]));
+        for (k=0; k<ndim; k++) assert(isfinite(part.a[k]));
+        assert(isfinite(part.gpot));
       }
     }
+#endif
 
 #if defined MPI_PARALLEL
     mpicontrol->GetExportedParticlesAccelerations(sph);

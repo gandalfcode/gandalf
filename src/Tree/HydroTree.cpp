@@ -228,16 +228,18 @@ void HydroTree<ndim,ParticleType>::AllocateMemory
     Ngravcellmaxbuf = new int[Nthreads];
     activelistbuf   = new int*[Nthreads];
     levelneibbuf    = new int*[Nthreads];
+    neiblistbuf     = new int*[Nthreads];
+    ptypebuf        = new int*[Nthreads];
     activepartbuf   = new ParticleType<ndim>*[Nthreads];
-    neibpartbuf     = new ParticleType<ndim>*[Nthreads];
 
     for (int ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread]     = max(1, 8*Ngather);
       Ngravcellmaxbuf[ithread] = max(1, 16*Ngather);
       activelistbuf[ithread]   = new int[Nleafmax];
       levelneibbuf[ithread]    = new int[Ntotmax];
+      neiblistbuf[ithread]     = new int[Nneibmaxbuf[ithread]];
+      ptypebuf[ithread]        = new int[Nneibmaxbuf[ithread]];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
-      neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
     }
     allocated_buffer = true;
 
@@ -280,17 +282,17 @@ void HydroTree<ndim,ParticleType>::DeallocateMemory(void)
 
     for (ithread=0; ithread<Nthreads; ithread++) {
       delete[] levelneibbuf[ithread];
-      delete[] neibpartbuf[ithread];
       delete[] activepartbuf[ithread];
+      delete[] ptypebuf[ithread];
+      delete[] neiblistbuf[ithread];
+      delete[] levelneibbuf[ithread];
       delete[] activelistbuf[ithread];
     }
     delete[] levelneibbuf;
-    delete[] neibpartbuf;
     delete[] activepartbuf;
     delete[] activelistbuf;
     delete[] Ngravcellmaxbuf;
     delete[] Nneibmaxbuf;
-
   }
 
   return;
@@ -513,7 +515,7 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
 
 
   debug2("[HydroTree::SearchBoundaryGhostParticles]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_TREE_SEARCH_BOUNDARY_GHOSTS");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_BOUNDARY_GHOSTS");
 
 
   // Loop over all dimensions and create ghost particles

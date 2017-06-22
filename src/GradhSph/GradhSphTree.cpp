@@ -129,8 +129,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
     FLOAT *mu2 = 0;                            // Trimmed array (dummy for grad-h)
     int Nneibmax = Nneibmaxbuf[ithread];       // Local copy of neighbour buffer size
     int* activelist = activelistbuf[ithread];  // Local array of active particle ids
-    int* neiblist = new int[Nneibmax];         // Local array of neighbour particle ids
-    int* ptype    = new int[Nneibmax];         // Local array of particle types
+    int* neiblist = neiblistbuf[ithread]; //new int[Nneibmax];         // Local array of neighbour particle ids
+    int* ptype    = ptypebuf[ithread]; //new int[Nneibmax];         // Local array of particle types
     vector<typename Sph<ndim>::DensityParticle> ngb;           // Local array of neighbour data
     vector<typename Sph<ndim>::DensityParticle> ngb2;          // Local array of reduced neighbour data
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
@@ -170,9 +170,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         // If there are too many neighbours so the buffers are filled,
         // reallocate the arrays and recompute the neighbour lists.
         while (Nneib == -1) {
+          delete[] ptype;
           delete[] neiblist;
           Nneibmax = 2*Nneibmax;
+          Nneibmaxbuf[ithread] = Nneibmax;
           neiblist = new int[Nneibmax];
+          ptype = new int[Nneibmax];
+          neiblistbuf[ithread] = neiblist;
+          ptypebuf[ithread] = ptype;
           ngb.resize(Nneibmax);
 
           Nneib = 0;
@@ -248,7 +253,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
     //=============================================================================================
 
     // Free-up all memory
-    delete[] neiblist;
+    //delete[] neiblist;
+    //delete[] ptype;
 
   }
   //===============================================================================================

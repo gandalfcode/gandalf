@@ -299,7 +299,9 @@ protected:
   int *Ngravcellmaxbuf;                            ///< Size of tree-cell buffers (for each thread)
   int **activelistbuf;                             ///< Arrays of active particle ids
   int **levelneibbuf;                              ///< Arrays of neighbour timestep levels
-  ParticleType<ndim> **neibpartbuf;                ///< Local copy of neighbouring ptcls
+  int **neiblistbuf;                               ///< Array of neighbour ids
+  int **ptypebuf;                                  ///< Array of neighbour ptypes
+  //ParticleType<ndim> **neibpartbuf;                ///< Local copy of neighbouring ptcls
   ParticleType<ndim> **activepartbuf;              ///< Local copy of SPH particle
 
   TreeBase<ndim> *tree;                            ///< Pointer to main (local) tree
