@@ -1797,14 +1797,15 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
 
   dt_min_nbody = big_number_dp;
   dt_min_hydro = big_number_dp;
-  timestep = big_number_dp;
-  n = 0;
 
 
 
   // Synchronise all timesteps and reconstruct block timestep structure.
   //===============================================================================================
   if (n == nresync) {
+
+    n = 0;
+    timestep = big_number_dp;
 
 
 #pragma omp parallel default(none) private(dt,dt_min_aux,dt_nbody,dt_hydro,i)\
