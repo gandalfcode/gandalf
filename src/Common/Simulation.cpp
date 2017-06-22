@@ -46,6 +46,10 @@
 using namespace std;
 
 
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
 // Declare invndim constant here (prevents warnings with some compilers)
 template <int ndim>
 const FLOAT Simulation<ndim>::invndim = 1.0/ndim;
@@ -1805,10 +1809,15 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
         }
       }
 
+#ifdef _OPENMP
       const int ithread = omp_get_thread_num();
+#else
+      const int ithread = 0;
+#endif
       timestep_temp[ithread] = dt_min_aux;
       dt_min_hydro_temp[ithread] = dt_min_hydro;
       dt_min_nbody_temp[ithread] = dt_min_nbody;
+
 
 
     }
@@ -1983,7 +1992,11 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
         }
         //-------------------------------------------------------------------------------------------
 
-        const int ithread = omp_get_thread_num();
+#ifdef _OPENMP
+      const int ithread = omp_get_thread_num();
+#else
+      const int ithread = 0;
+#endif
         dt_min_hydro_temp[ithread] = dt_hydro;
         level_max_temp[ithread] = level_max_aux;
 
