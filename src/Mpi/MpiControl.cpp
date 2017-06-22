@@ -642,7 +642,10 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
     N_updates_per_proc[proc]++;
     assert(N_updates_per_proc[proc]<=Nreceive_per_node[proc]);
 
-    buffer_proc_data[proc].push_back(ReturnDataType(partdata[index])) ;
+    ReturnDataType temp(partdata[index]) ;
+    temp.iorig = particle_ids_receive[temp.iorig] ;
+
+    buffer_proc_data[proc].push_back(temp) ;
   }
 
   // Now that we know how many ghosts we need to send to each processor, can fill the buffer
@@ -1099,6 +1102,14 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
                 particle_type, &particles_receive[0], &Nreceive_per_node[0],
                 &displacements_receive[0], particle_type, MPI_COMM_WORLD);
 
+  // Now that we've received the particles, set their iorig to the location in the
+  // received array and store the 'original' iorig
+  particle_ids_receive.resize(Nreceive_tot);
+  for (int i=0; i < Nreceive_tot; i++) {
+    particle_ids_receive[i] = particles_receive[i].iorig ;
+    particles_receive[i].iorig = i ;
+  }
+
   *array = &particles_receive[0];
 
   return Nreceive_tot;
@@ -1135,6 +1146,12 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
   MPI_Alltoallv(&particles_to_export[0], &Nexport_per_node[0], &displacements_send[0],
                 particle_type, &particles_receive[0], &Nreceive_per_node[0],
                 &displacements_receive[0], particle_type, MPI_COMM_WORLD);
+
+
+  for (int i=0; i < Nreceive_tot; i++) {
+    assert(particles_receive[i].iorig == particle_ids_receive[i]);
+    particles_receive[i].iorig = i ;
+  }
 
   *array = &particles_receive[0];
 
