@@ -40,12 +40,12 @@ ParticleTypeRegister::ParticleTypeRegister(Parameters* sim_params) {
 
   // Set flags for gas particle type
   //-----------------------------------------------------------------------------------------------
-  if (hydro_forces) _types[gas_type].hydro_forces        = true;
+  _types[gas_type].hydro_forces        = hydro_forces;
   _types[gas_type].self_gravity        = true;
   _types[gas_type].drag_forces         = true;
   _types[gas_type].hmask[gas_type]     = true;
   _types[gas_type].hmask[cdm_type]     = true;
-  if (hydro_forces) _types[gas_type].hydromask[gas_type] = true;
+  _types[gas_type].hydromask[gas_type] = hydro_forces;
   _types[gas_type].dragmask[dust_type] = true;
 
   // Set flags for cdm particle type
