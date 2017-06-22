@@ -120,7 +120,7 @@ protected:
   using HydroTree<ndim,ParticleType>::levelneibbuf;
   using HydroTree<ndim,ParticleType>::multipole;
   using HydroTree<ndim,ParticleType>::neibcheck;
-  using HydroTree<ndim,ParticleType>::neibpartbuf;
+  //using HydroTree<ndim,ParticleType>::neibpartbuf;
   using HydroTree<ndim,ParticleType>::Ngravcellmaxbuf;
   using HydroTree<ndim,ParticleType>::Nleafmax;
   using HydroTree<ndim,ParticleType>::Nneibmaxbuf;
@@ -189,7 +189,7 @@ private:
   using SphTree<ndim,ParticleType>::levelneibbuf;
   using SphTree<ndim,ParticleType>::multipole;
   using SphTree<ndim,ParticleType>::neibcheck;
-  using SphTree<ndim,ParticleType>::neibpartbuf;
+  //using SphTree<ndim,ParticleType>::neibpartbuf;
   using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
   using SphTree<ndim,ParticleType>::Nleafmax;
   using SphTree<ndim,ParticleType>::Nneibmaxbuf;
@@ -201,6 +201,8 @@ private:
   using SphTree<ndim,ParticleType>::timing;
   using SphTree<ndim,ParticleType>::tree;
   using SphTree<ndim,ParticleType>::ghosttree;
+  using HydroTree<ndim,ParticleType>::neiblistbuf;
+  using HydroTree<ndim,ParticleType>::ptypebuf;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType>::mpighosttree;
   using SphTree<ndim,ParticleType>::Nmpi;
@@ -247,7 +249,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
   using SphTree<ndim,ParticleType>::levelneibbuf;
   using SphTree<ndim,ParticleType>::multipole;
   using SphTree<ndim,ParticleType>::neibcheck;
-  using SphTree<ndim,ParticleType>::neibpartbuf;
+  //using SphTree<ndim,ParticleType>::neibpartbuf;
   using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
   using SphTree<ndim,ParticleType>::Nleafmax;
   using SphTree<ndim,ParticleType>::Nneibmaxbuf;

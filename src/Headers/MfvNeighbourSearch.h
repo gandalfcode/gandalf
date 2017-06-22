@@ -122,7 +122,7 @@ protected:
   using HydroTree<ndim,ParticleType>::levelneibbuf;
   using HydroTree<ndim,ParticleType>::multipole;
   using HydroTree<ndim,ParticleType>::neibcheck;
-  using HydroTree<ndim,ParticleType>::neibpartbuf;
+  //using HydroTree<ndim,ParticleType>::neibpartbuf;
   using HydroTree<ndim,ParticleType>::Ngravcellmaxbuf;
   using HydroTree<ndim,ParticleType>::Nleafmax;
   using HydroTree<ndim,ParticleType>::Nneibmaxbuf;

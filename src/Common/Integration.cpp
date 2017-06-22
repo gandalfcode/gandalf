@@ -12,15 +12,13 @@ void TimeIntegration<ndim>::CheckBoundaries
  (DomainBox<ndim>& simbox,             ///< Domain box object
   Hydrodynamics<ndim>* hydro)          ///< Pointer to SPH object
 {
-  debug2("[TimeIntegration::CheckBoundaries]");
-
   // If all boundaries are open, immediately return to main loop
   if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
       simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
       simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary) return;
 
   debug2("[TimeIntegration::CheckBoundaries]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("INTEGRATION_CHECK_BOUNDARIES");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("CHECK_BOUNDARIES");
 
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
