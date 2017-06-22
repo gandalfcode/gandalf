@@ -478,6 +478,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
     for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
     for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+    part.dudt0 = part.dudt;
+
     part.flags.unset(active);
   }
 
@@ -534,12 +536,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   else this->ComputeBlockTimesteps();
 
   // Compute the time-averaged initial dust forces.
-  if (sphdust != NULL){
+  if (sphdust != NULL) {
 
     // Set the acceleration to the pre-drag value
     for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       for (k=0; k <ndim; k++) part.a[k] = part.a0[k] ;
+      part.dudt = part.dudt0;
     }
 
     sphdust->UpdateAllDragForces(sph) ;
