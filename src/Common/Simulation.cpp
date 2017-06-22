@@ -1781,6 +1781,10 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
   DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
   DOUBLE dt_hydro;                             // Aux. minimum hydro timestep
+  DOUBLE timestep_temp[Nthreads];
+  DOUBLE dt_min_hydro_temp[Nthreads];
+  DOUBLE dt_min_nbody_temp[Nthreads];
+
 
   debug2("[Simulation::DoComputeBlockTimesteps]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
@@ -1788,14 +1792,15 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
 
   dt_min_nbody = big_number_dp;
   dt_min_hydro = big_number_dp;
+  timestep = big_number_dp;
+  n = 0;
+
 
 
   // Synchronise all timesteps and reconstruct block timestep structure.
   //===============================================================================================
   if (n == nresync) {
 
-    n = 0;
-    timestep = big_number_dp;
 
 #pragma omp parallel default(none) private(dt,dt_min_aux,dt_nbody,dt_hydro,i)
     {
@@ -1827,13 +1832,19 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
           nbody->nbodydata[i]->dt_next = dt;
         }
       }
-#pragma omp critical
-      {
-        timestep     = min(timestep,dt_min_aux);
-        dt_min_hydro = min(dt_min_hydro,dt_hydro);
-        dt_min_nbody = min(dt_min_nbody,dt_nbody);
-      }
-#pragma omp barrier
+
+      const int ithread = omp_get_thread_num();
+      timestep_temp[ithread] = dt_min_aux;
+      dt_min_hydro_temp[ithread] = dt_min_hydro;
+      dt_min_nbody_temp[ithread] = dt_min_nbody;
+
+
+    }
+
+    for (int ithread=0; ithread<Nthreads; ithread++) {
+      timestep = min(timestep,timestep_temp[ithread]);
+      dt_min_hydro = min(dt_min_hydro,dt_min_hydro_temp[ithread]);
+      dt_min_nbody = min(dt_min_nbody,dt_min_nbody_temp[ithread]);
     }
 
 
@@ -2157,6 +2168,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
   //===============================================================================================
 
 
+#ifndef NDEBUG
   // Various asserts for debugging
   if (hydro != NULL) {
     for (i=0; i<hydro->Nhydro; i++) {
@@ -2189,7 +2201,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
          << "    nresync " << nresync << endl;
     ExceptionHandler::getIstance().raise("Error : timestep fallen to zero");
   }
-
+#endif
 
   return;
 
