@@ -92,7 +92,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i,k) shared(sphdata, sph)
   for (i=0; i<sph->Nhydro; i++) {
-    ParticleType<ndim> part = sphdata[i];
+    ParticleType<ndim> &part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step
@@ -117,7 +117,6 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
     // Flag all dead particles as inactive here
     if (part.flags.is_dead()) part.flags.unset(active);
 
-    sphdata[i] = part;
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -151,7 +150,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i,k)  shared(sphdata, sph)
   for (i=0; i<sph->Nhydro; i++) {
-    ParticleType<ndim> part = sphdata[i];
+    ParticleType<ndim> &part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step
@@ -172,8 +171,6 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
         part.dudt0 = part.dudt;
       }
     }
-
-    sphdata[i] = part;
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -200,9 +197,9 @@ void SphLeapfrogKDK<ndim, ParticleType>::SetActiveParticles
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(sphdata, sph)
   for (int i=0; i<sph->Nhydro; i++) {
-    ParticleType<ndim> part = sphdata[i];
+    ParticleType<ndim> &part = sphdata[i];
 
-    int dn = n - part.nlast;
+    const int dn = n - part.nlast;
 
     // Force calculation is at end of step
     if (part.flags.check(end_timestep) || dn == part.nstep) {
@@ -211,7 +208,6 @@ void SphLeapfrogKDK<ndim, ParticleType>::SetActiveParticles
     else {
       part.flags.unset(active);
     }
-    sphdata[i] = part;
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -244,7 +240,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i,k) shared(sphdata, sph)
   for (i=0; i<sph->Nhydro; i++) {
-    ParticleType<ndim> part = sphdata[i];
+    ParticleType<ndim> &part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
     if (part.flags.check(end_timestep)) {
@@ -272,7 +268,6 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
       part.flags.unset(end_timestep);
     }
 
-    sphdata[i] = part;
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -311,7 +306,7 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
 #pragma omp parallel for default(none) private(i,level_new,nnewstep) \
   shared(sphdata, sph) reduction(+:activecount)
   for (i=0; i<sph->Nhydro; i++) {
-    ParticleType<ndim> part = sphdata[i];
+    ParticleType<ndim> &part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
     const int dn = n - part.nlast;
@@ -331,7 +326,6 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
       }
     }
 
-    sphdata[i] = part;
   }
   //-----------------------------------------------------------------------------------------------
 
