@@ -597,9 +597,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
     for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set(active);
 
-    // Copy all other data from real hydro particles to ghosts
-    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
-
     mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
     mfvneib->InitialiseCellWorkCounters();
