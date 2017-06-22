@@ -757,7 +757,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 #ifdef MPI_PARALLEL
     // Communicate back the dudt contributions from particles on external processors
 #pragma omp barrier
-#pragma omp single
+#pragma omp master
     if (Forces.NeedEnergyUpdate()) {
       std::list<int> copy_back;
       for(int n=0; n<hydro->Nmpighost; n++) {

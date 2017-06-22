@@ -577,7 +577,9 @@ namespace MpiReturnParticle {
   class ReturnDust {
   public:
     ReturnDust() : iorig(-1), dudt(0) {} ;
-    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {};
+    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {
+      assert(p.ptype == gas_type);
+    };
 
     void update_received(Particle<ndim>& p) const {
       assert(p.ptype == gas_type) ;
@@ -639,27 +641,28 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
   assert(Nreceive_per_node[rank] == 0);
   std::partial_sum(Nreceive_per_node.begin(), Nreceive_per_node.end(), i_start_ghost.begin());
 
-
-  for (vector<int>::iterator it = i_start_ghost.begin(); it != i_start_ghost.end(); it++) {
-    *it += hydro->Nhydro+hydro->NPeriodicGhost;
-  }
-
   for (list<int>::iterator it = ids_ghosts.begin(); it != ids_ghosts.end(); it++) {
     const int index = *it;
     assert(index >= hydro->Nhydro + hydro->NPeriodicGhost);
     assert(index <  hydro->Nhydro + hydro->Nghost);
 
+    // Create the return type
+    ReturnDataType temp(partdata[index]) ;
+
+
     // Find to which processor we should send the particle
     const int proc = std::upper_bound(i_start_ghost.begin(),
-                                      i_start_ghost.end(), index) - i_start_ghost.begin();
-
+                                      i_start_ghost.end(), temp.iorig) - i_start_ghost.begin();
 
     N_updates_per_proc[proc]++;
     assert(N_updates_per_proc[proc]<=Nreceive_per_node[proc]);
 
-    ReturnDataType temp(partdata[index]) ;
-    temp.iorig = particle_ids_receive[temp.iorig] ;
+    // Check that iorig/ptype hasn't changed
+    assert(temp.iorig == particles_receive[temp.iorig].iorig);
+    assert(particles_receive[temp.iorig].ptype == partdata[index].ptype);
 
+    // Tell the target proc where the particle belongs
+    temp.iorig = particle_ids_receive[temp.iorig] ;
     buffer_proc_data[proc].push_back(temp) ;
   }
 
@@ -704,11 +707,12 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
 
     // Find the real particle that the ghost corresponds to
     int j = received.iorig ;
-    while (j >= hydro->Nhydro) {
-      assert(partdata[j].flags.check(any_boundary)) ;
+    while (partdata[j].flags.check(any_boundary)) {
+      assert(j >= hydro->Nhydro);
       j = partdata[j].iorig ;
     }
     assert(j >= 0 && j < hydro->Nhydro);
+
     received.update_received(partdata[j]) ;
   }
 
@@ -1090,12 +1094,14 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 
   // Create vector containing all particles to export
   particles_to_export.resize(Nexport);
+  particle_ids_send.resize(Nexport);
 
   for (int inode=0; inode<Nmpi; inode++) {
     vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
 
     for (unsigned int iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
       particles_to_export[index] = partdata[particles_on_this_node[iparticle]];
+      particle_ids_send[index] = particles_to_export[index].iorig;
 
       // Record in iorig the location in memory of the particle
       particles_to_export[index].iorig = particles_on_this_node[iparticle];
@@ -1151,7 +1157,11 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
   for (inode=0; inode<Nmpi; inode++) {
     vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
     for (ipart=0; ipart<particles_on_this_node.size(); ipart++) {
-      particles_to_export[index] = partdata[particles_on_this_node[ipart]];
+      const ParticleType<ndim>& part = partdata[particles_on_this_node[ipart]];
+      // Check nobody has swapped the particles
+      assert(particle_ids_send[index] == part.iorig);
+
+      particles_to_export[index] = part;
       particles_to_export[index].iorig = particles_on_this_node[ipart];
       index++;
     }
@@ -1164,6 +1174,7 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
 
 
   for (int i=0; i < Nreceive_tot; i++) {
+    // Check that we received a particle with the expected origin
     assert(particles_receive[i].iorig == particle_ids_receive[i]);
     particles_receive[i].iorig = i ;
   }
