@@ -715,12 +715,11 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   ParticleType<ndim> *partdata,        ///< Particle data array
   bool stock_leaf)					   ///< Whether to stock leaf cells
 {
+  const FLOAT invthetamaxsqd = (FLOAT) 1.0/thetamaxsqd;
   int i;                               // Particle counter
   int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT mi;                            // Mass of particle i
   FLOAT p = (FLOAT) 0.0;               // ..
   FLOAT lambda = (FLOAT) 0.0;          // ..
   TreeCell<ndim> cell = origCell;      // Local copy of tree-cell for cache-efficiency
@@ -781,22 +780,23 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         for (k=0; k<ndim; k++) cell.vbox.max[k] = max(cell.vbox.max[k], part.v[k]);
 
         if (gravity_mac == gadget2) {
-          cell.amin = min(cell.amin,
-                          sqrt(DotProduct(part.atree,part.atree,ndim)));
+          cell.amin = min(cell.amin, DotProduct(part.atree, part.atree, ndim));
         }
         else if (gravity_mac == eigenmac) {
-          cell.macfactor = max(cell.macfactor,pow(part.gpot,-twothirds));
+          cell.macfactor = max(cell.macfactor, pow(part.gpot, -twothirds));
         }
       }
     }
 
     // Normalise all cell values
-    if (cell.m > 0) {
-      for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
-      for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
+    if (cell.N > 0) {
+      const FLOAT invm = (FLOAT) 1.0/cell.m;
+      for (k=0; k<ndim; k++) cell.r[k] *= invm;
+      for (k=0; k<ndim; k++) cell.v[k] *= invm;
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
-      cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
-      cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+      const FLOAT drsqd = DotProduct(dr, dr, ndim);
+      cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;
+      cell.rmax = sqrt(drsqd);
     }
 
     // Compute quadrupole moment terms if selected
@@ -806,7 +806,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
           mi = partdata[i].m;
           for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
-          drsqd = DotProduct(dr,dr,ndim);
+          const FLOAT drsqd = DotProduct(dr,dr,ndim);
           if (ndim == 3) {
             cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
             cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
@@ -818,7 +818,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
             cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
             cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
             cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
-          } else if (ndim == 1) {
+          }
+          else if (ndim == 1) {
             cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
           }
         }
@@ -869,25 +870,34 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
       for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
 <<<<<<< HEAD
+<<<<<<< HEAD
     }
     if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
 =======
       //for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
 >>>>>>> Removed rcell from TreeCell.  Can be reconstructed with new function 0.5*(bb.min + bb.max).
+=======
+>>>>>>> Low-level optimisations of the StockCellProperties routine in KDTree
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
-      cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
-      cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+      const FLOAT drsqd = DotProduct(dr, dr, ndim);
+      cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;
+      cell.rmax = sqrt(drsqd);
 #ifdef MPI_PARALLEL
       cell.worktot = child1.worktot + child2.worktot;
 #endif
     }
 
     // Now add individual quadrupole moment terms
+<<<<<<< HEAD
     if (need_quadrupole_moments && child1.m > 0) {
       mi = child1.m;
+=======
+    if (need_quadrupole_moments && child1.N > 0) {
+>>>>>>> Low-level optimisations of the StockCellProperties routine in KDTree
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
-      drsqd = DotProduct(dr,dr,ndim);
+      const FLOAT mi = child1.m;
+      const FLOAT drsqd = DotProduct(dr, dr, ndim);
       if (ndim == 3) {
         for (k=0; k<5; k++) cell.q[k] += child1.q[k] ;
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
@@ -908,10 +918,15 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       }
     }
 
+<<<<<<< HEAD
     if (need_quadrupole_moments && child2.m > 0) {
       mi = child2.m;
+=======
+    if (need_quadrupole_moments && child2.N > 0) {
+>>>>>>> Low-level optimisations of the StockCellProperties routine in KDTree
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
-      drsqd = DotProduct(dr,dr,ndim);
+      const FLOAT mi = child2.m;
+      const FLOAT drsqd = DotProduct(dr, dr, ndim);
       if (ndim == 3) {
         for (k=0; k<5; k++) cell.q[k] += child2.q[k] ;
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
@@ -936,8 +951,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   //-----------------------------------------------------------------------------------------------
 
 
-  // Calculate eigenvalue MAC criteria
-  if (gravity_mac == eigenmac) {
+  // Normalise Gadget2 MAC or calculate eigenvalue MAC criteria
+  if (gravity_mac == gadget2) {
+    cell.amin = sqrt(cell.amin);
+    cell.mac = (FLOAT) 0.0;
+  }
+  else if (gravity_mac == eigenmac) {
     if (ndim == 3) {
       p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
           cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
@@ -952,9 +971,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     } else {
       lambda = fabs(cell.q[0]) ;
     }
-
     cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
-
   }
   else {
     cell.mac = (FLOAT) 0.0;
