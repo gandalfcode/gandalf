@@ -1754,6 +1754,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE timestep_temp[Nthreads];
   DOUBLE dt_min_hydro_temp[Nthreads];
   DOUBLE dt_min_nbody_temp[Nthreads];
+  int level_max_temp[Nthreads];
 
 
   debug2("[Simulation::DoComputeBlockTimesteps]");
@@ -1772,7 +1773,8 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
   if (n == nresync) {
 
 
-#pragma omp parallel default(none) private(dt,dt_min_aux,dt_nbody,dt_hydro,i)
+#pragma omp parallel default(none) private(dt,dt_min_aux,dt_nbody,dt_hydro,i)\
+  shared(timestep_temp,dt_min_hydro_temp,dt_min_nbody_temp)
     {
       // Initialise all timestep and min/max variables
       dt_min_aux = big_number_dp;
@@ -1915,6 +1917,8 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
     level_max_hydro = 0;
 
 
+    if (hydro != NULL) {
+
 #pragma omp parallel default(shared) private(dt,dt_nbody,dt_hydro,i)\
      private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor)
     {
@@ -1927,7 +1931,6 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
 
       // Find all hydro particles at the beginning of a new timestep
       //-------------------------------------------------------------------------------------------
-      if (hydro != NULL) {
 #pragma omp for
         for (i=0; i<hydro->Nhydro; i++) {
           Particle<ndim>& part = hydro->GetParticlePointer(i);
@@ -1980,30 +1983,30 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
         }
         //-------------------------------------------------------------------------------------------
 
+        const int ithread = omp_get_thread_num();
+        dt_min_hydro_temp[ithread] = dt_hydro;
+        level_max_temp[ithread] = level_max_aux;
 
-#pragma omp critical
-        {
-          dt_min        = min(dt_min, dt_hydro);
-          dt_min_hydro  = min(dt_min_hydro, dt_hydro);
-          level_max     = max(level_max, level_max_aux);
-          level_max_hydro = max(level_max_hydro, level_hydro);
-        }
-#pragma omp barrier
+    }
+
+
+      for (int ithread=0; ithread<Nthreads; ithread++) {
+        dt_min = min(dt_min,dt_min_hydro_temp[ithread]);
+        level_max = max(level_max,level_max_temp[ithread]);
+      }
+      dt_min_hydro = dt_min;
+      level_max_hydro = level_max;
+
 
 #if defined MPI_PARALLEL
-#pragma omp master
-        {
-          level = level_max_hydro;
-          MPI_Allreduce(&level, &level_max_hydro, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-        }
-#pragma omp barrier
+        level = level_max_hydro;
+        MPI_Allreduce(&level, &level_max_hydro, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 #endif
       }
 
       // Now find all N-body particles at the beginning of a new timestep
       //-------------------------------------------------------------------------------------------
       if (nbody != NULL) {
-#pragma omp for
         for (i=0; i<nbody->Nnbody; i++) {
 
           // Skip particles that are not at end of step
@@ -2041,17 +2044,12 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
         }
         //-------------------------------------------------------------------------------------------
 
-#pragma omp critical
-        {
           dt_min          = min(dt_min, dt_nbody);
           dt_min_nbody    = min(dt_min_nbody, dt_nbody);
           level_max       = max(level_max, level_max_aux);
           level_max_nbody = max(level_max_nbody, level_nbody);
-        }
-#pragma omp barrier
 
       }
-    }
 
     // For MPI, find the global maximum timestep levels for each processor
 #ifdef MPI_PARALLEL
