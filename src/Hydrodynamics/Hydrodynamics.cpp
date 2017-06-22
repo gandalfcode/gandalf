@@ -275,7 +275,8 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart.flags.set(ghosttype); // Allow ghost to have multiple ghost flags
 
   // Make sure the ghost points back to a real particle
-  if (i > Nhydro) i = origpart.iorig;
+  if (i >= Nhydro) i = origpart.iorig;
+  assert(i < Nhydro);
   ghostpart.iorig  = i;
 
   Nghost++;
