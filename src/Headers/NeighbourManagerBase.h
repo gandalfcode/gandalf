@@ -101,8 +101,15 @@ public:
 	/// \brief Get the number of multipole moments stored, and return a pointer to them.
 	//===============================================================================================
 	int GetGravCell (MultipoleMoment<ndim>** gravcell_p) {
-	  *gravcell_p = &gravcell[0];
-	  return gravcell.size();
+
+	  int NgravCell = gravcell.size();
+
+	  if (NgravCell > 0)
+	    *gravcell_p = &gravcell[0];
+	  else
+	    *gravcell_p = NULL ;
+
+	  return NgravCell ;
 	}
 
     //===============================================================================================
