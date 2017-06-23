@@ -123,11 +123,8 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void ExtrapolateCellProperties(const FLOAT);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   FLOAT QuickSelectSort(int, int, int, int, ParticleType<ndim> *);
-  void StockTree(Particle<ndim> *part_gen, bool stock_leaf) {
-    ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-    StockTree(celldata[0], partdata, stock_leaf) ;
-  }
-  void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool);
+  void StockTree(Particle<ndim> *part_gen, bool stock_leaf) ;
+  //void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool);
   void StockCellProperties(TreeCell<ndim> &, ParticleType<ndim> *,bool);
   void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
     ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
