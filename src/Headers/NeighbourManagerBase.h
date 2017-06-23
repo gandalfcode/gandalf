@@ -116,8 +116,8 @@ public:
     //  ComputeFastMultipoleForces
     /// \brief Compute the fast multipole forces the given particles.
     //==============================================================================================
-	template<class ParticleType>
-	void ComputeFastMultipoleForces(int Nactive, ParticleType& activepart,
+	template<template <int> class ParticleType>
+	void ComputeFastMultipoleForces(int Nactive, ParticleType<ndim>* activepart,
 	                                const ParticleTypeRegister& types) {
 	  for (int j=0; j<Nactive; j++)
 	    if (types[activepart[j].ptype].self_gravity)
