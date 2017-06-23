@@ -451,18 +451,16 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 #ifdef MPI_PARALLEL
     cell.worktot = 0.0;
 #endif
-    if (cell.N > 0) {
-      assert(cell.ilast - cell.ifirst == cell.N - 1);
-    }
-    else {
-      cell.ifirst = -1;
-      cell.ilast = -1;
-    }
+
+    assert(cell.N > 0);
+    assert(cell.ifirst != -1);
+
     StockCellProperties(cell,partdata,true);
     return;
   }
 
 #if defined(MPI_PARALLEL)
+  /*
   i = cell.ifirst;
   for (k=0; k< ndim; k++) {
     cell.bb.min[k] = +big_number;
@@ -474,6 +472,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
       if (cell.bb.max[k] < partdata[i].r[k]) cell.bb.max[k] = partdata[i].r[k];
     }
   }
+  */
 #endif
 
   // Determine dimension to split the cell along.
@@ -855,6 +854,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   //-----------------------------------------------------------------------------------------------
   if (cell.level == ltot && stock_leaf) {
 
+    if (cell.ifirst == -1) return ;
 
     // Loop over all particles in cell summing their contributions
     for (i = cell.ifirst; i <= cell.ilast; ++i) {
