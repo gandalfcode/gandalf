@@ -1935,7 +1935,6 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
       dt_hydro      = big_number_dp;
       dt_nbody      = big_number_dp;
       level_max_aux = 0;
-      level_nbody   = 0;
       level_hydro   = 0;
 
 
@@ -2021,6 +2020,10 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
       // Now find all N-body particles at the beginning of a new timestep
       //-------------------------------------------------------------------------------------------
       if (nbody != NULL) {
+
+        level_max_aux = 0;
+        level_nbody   = 0;
+
         for (i=0; i<nbody->Nnbody; i++) {
 
           // Skip particles that are not at end of step
