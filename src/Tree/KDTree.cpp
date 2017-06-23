@@ -37,9 +37,21 @@
 #include "Particle.h"
 #include "Sph.h"
 #include "KDTree.h"
+
 #if defined _OPENMP
 #include <omp.h>
+#else
+// Define dummy functions / types for the lock
+#define omp_lock_t char
+
+#define omp_init_lock(lock)
+#define omp_destroy_lock(lock)
+
+#define omp_set_lock(lock)
+#define omp_unset_lock(lock)
 #endif
+
+
 using namespace std;
 
 
@@ -655,6 +667,75 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
   return partdata[jpivot].r[k];
 }
 
+//=================================================================================================
+//  OmpGuard
+/// A scoped guard for an OpenMP lock, adapted from the book "Pattern-Oriented Software
+/// Architecture".
+//=================================================================================================
+class OmpGuard {
+public:
+  /// Acquire the lock and store a pointer to it
+  OmpGuard(omp_lock_t *lock) : _lock (lock), _owner (false) {
+    acquire();
+  }
+  /// Set the lock explicitly
+  void acquire() {
+    omp_set_lock(_lock);
+    _owner = true;
+  }
+  /// Release the lock explicitly (owner thread only!)
+  void release() {
+    if (_owner) {
+      _owner = false;
+      omp_unset_lock(_lock);
+    }
+  }
+  ~OmpGuard() {
+    release();
+  }
+private:
+  omp_lock_t *_lock;
+  bool _owner;
+
+  // Disallow copies or assignment
+  OmpGuard(const OmpGuard &);
+  void operator=(const OmpGuard &);
+};
+
+//=================================================================================================
+// KDCellLock
+/// A class for handling whether an OpenMP thread has finished doing the work required for the
+/// children of a KDTree cell. Used for stocking the tree
+//=================================================================================================
+class KDCellLock {
+public:
+  KDCellLock() : _lock() {
+    _children[0] = _children[1] = false ;
+    omp_init_lock(&_lock);
+  } ;
+
+  bool ready() {
+    return _children[0] && _children[1] ;
+  }
+
+  void finished_child(int child) {
+    assert(_children[child] == false) ;
+    _children[child] = true ;
+  }
+
+  omp_lock_t* get_lock() {
+    return &_lock ;
+  }
+
+  ~KDCellLock() {
+    omp_destroy_lock(&_lock);
+  }
+
+private:
+  omp_lock_t _lock;
+  bool _children[2] ;
+};
+
 
 
 //=================================================================================================
@@ -664,40 +745,55 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockTree
-(TreeCell<ndim> &cell,                ///< Reference to cell to be stocked
- ParticleType<ndim> *partdata,        ///< SPH particle data array
+(Particle<ndim> *part_gen,            ///< SPH particle data array
  bool stock_leaf)					  ///< Whether to stock leaf cells
 {
-  int i;                               // Aux. child cell counter
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
-  // If cell is not leaf, stock child cells
-  if (cell.copen != -1) {
-	  TreeCell<ndim>& child1 = celldata[cell.copen];
-	  TreeCell<ndim>& child2 = celldata[child1.cnext];
-#if defined _OPENMP
-    if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,partdata, stock_leaf,child1,child2) num_threads(2)
-      for (i=0; i<2; i++) {
-        if (i == 0) StockTree(child1,partdata, stock_leaf);
-        else if (i == 1) StockTree(child2,partdata, stock_leaf);
+  // Set up an array to cache which cells we've done
+  std::vector<KDCellLock> work_list(Ncell);
+
+
+  // Loop over the leaf cells. Once a parent cell is ready to be computed, do it immediately
+#pragma omp parallel for default(none) shared(work_list, partdata, stock_leaf)
+  for (int i=0; i < gtot; i++) {
+
+    // Stock the leaf cell
+    TreeCell<ndim>* c = &celldata[g2c[i]];
+    StockCellProperties(*c, partdata, stock_leaf);
+
+    // Flag that we've done a child cell for the parent, and update the cell (recursively)
+    int cc = g2c[i];
+    int l = ltot ;
+    while (l > 0) {
+
+      // Use a heuristic to find the parent cell.
+      int child = 0;
+      int parent = cc - 1 ;
+      if (celldata[parent].level + 1 != l) {
+        parent = cc - (1 << (ltot-l+1))  ;
+        child = 1 ;
       }
-    }
-    else {
-      for (i=0; i<2; i++) {
-        if (i == 0) StockTree(child1,partdata, stock_leaf);
-        else if (i == 1) StockTree(child2,partdata, stock_leaf);
+
+      {
+        // Lock the parent cell while we decide whether we can to do work on it yet.
+        KDCellLock& work = work_list[parent];
+        OmpGuard(work.get_lock());
+        work.finished_child(child) ;
+
+        if (work.ready())
+          c = &celldata[parent];
+        else
+          c = NULL ;
       }
+
+      if (c == NULL) break ;
+
+      StockCellProperties(*c, partdata, stock_leaf) ;
+      cc = parent ;
+      l-- ;
     }
-#else
-    for (i=0; i<2; i++) {
-      if (i == 0) StockTree(child1,partdata, stock_leaf);
-      else if (i == 1) StockTree(child2,partdata, stock_leaf);
-    }
-#endif
   }
-
-  // Stock node once all children are stocked
-  StockCellProperties(cell,partdata,stock_leaf);
 
   return;
 }
