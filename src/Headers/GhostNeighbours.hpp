@@ -299,13 +299,13 @@ public:
     /// \date   27/10/2015
     /// \return The number of neighbours found
     //===============================================================================================
-    template<template <int> class ParticleType>
-    int ConstructGhostsGather(const ParticleType<ndim>& p, ParticleType<ndim>* ngbs) const
+    template<template <int> class ParticleType, class OutParticleType>
+    int ConstructGhostsGather(const ParticleType<ndim>& p, vector<OutParticleType>& ngbs) const
     {
       // First find the nearest periodic mirror
-      ngbs[0] = p ;
+      ngbs.push_back(p);
       if (_any_periodic)
-        _MakePeriodicGhost(ngbs[0]) ;
+        _MakePeriodicGhost(ngbs.back()) ;
 
 
       // Number of Ghost cells
@@ -365,8 +365,10 @@ private:
 	/// \return The number of neighbours found
 	//===============================================================================================
 	template<class ParticleType>
-	int _MakeReflectedGhostsGather(ParticleType* ngbs) const {
+	int _MakeReflectedGhostsGather(vector<ParticleType>& ngbs) const {
 	  int nc = 1 ;
+	  const int old_size = ngbs.size()-1;
+
 	  // Loop over the possible directions for reflections
 	  for (int k = 0; k < ndim; k++){
 		// Save the current number of images
@@ -376,8 +378,8 @@ private:
 		  for (int n=0; n < Nghost; n++){
 			double rk = 2*_domain.min[k] - ngbs[n].r[k] ;
 			if (rk > _hbox.min[k]) {
-			  ngbs[nc] = ngbs[n] ;
-			  reflect<ParticleType::NDIM>(ngbs[nc], k, _domain.min[k]) ;
+              ngbs.push_back(ngbs[n+old_size]);
+			  reflect<ParticleType::NDIM>(ngbs.back(), k, _domain.min[k]) ;
 			  ngbs[nc].flags.set(mirror_bound_flags[k][0]) ;
 			  nc++ ;
 			}
@@ -388,8 +390,8 @@ private:
 		  for (int n=0; n < Nghost; n++){
 			double rk = 2*_domain.max[k] - ngbs[n].r[k] ;
 			if (rk < _hbox.max[k]) {
-			  ngbs[nc] = ngbs[n] ;
-			  reflect<ParticleType::NDIM>(ngbs[nc], k, _domain.max[k]) ;
+              ngbs.push_back(ngbs[n+old_size]);
+			  reflect<ParticleType::NDIM>(ngbs.back(), k, _domain.max[k]) ;
 			  ngbs[nc].flags.set(mirror_bound_flags[k][1]) ;
 			  nc++ ;
 			}
