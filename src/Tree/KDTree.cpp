@@ -439,7 +439,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   TreeCell<ndim> &cell)                ///< Cell to be divided
 {
   int i;                               // Aux. child cell counter
-  int j;                               // Aux. particle counter
   int k;                               // Dimension counter
   int k_divide = 0;                    // Division dimension
   FLOAT rkmax = 0.0;                   // Max. box size of all dimensions
@@ -812,7 +811,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 {
   const FLOAT invthetamaxsqd = (FLOAT) 1.0/thetamaxsqd;
   int i;                               // Particle counter
-  int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT p = (FLOAT) 0.0;               // ..

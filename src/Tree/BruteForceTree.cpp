@@ -308,7 +308,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   ParticleType<ndim> *partdata)		   ///< Particle data array
 {
   int i;                               // Particle counter
-  int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared

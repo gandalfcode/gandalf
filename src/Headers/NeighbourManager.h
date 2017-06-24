@@ -648,7 +648,7 @@ public:
 
      // Get the idx of the reduced neighbour list
      std::vector<int> reducedngb(ngbs.size());
-     for (int k=0; k<ngbs.size(); k++)
+     for (unsigned int k=0; k<ngbs.size(); k++)
        reducedngb[k] = neib_idx[ngbs._idx[k]];
 
      __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "reduced") ;
@@ -698,10 +698,11 @@ private:
      }
 
      // Now compare each given neighbour with true neighbour list for validation
-     int invalid_flag = 0, j ;
+     int invalid_flag = 0;
+     unsigned int j;
      for (j=0; j<truengb.size(); j++) {
        int count = 0;
-       for (int k=0; k<reducedngb.size(); k++)
+       for (unsigned int k=0; k<reducedngb.size(); k++)
          if (reducedngb[k] == truengb[j])
            count++;
 

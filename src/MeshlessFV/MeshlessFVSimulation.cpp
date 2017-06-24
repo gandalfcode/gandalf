@@ -218,7 +218,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   //-----------------------------------------------------------------------------------------------
   string tree_type = stringparams["neib_search"] ;
 
-  multipole_method multipole ;
+  multipole_method multipole = monopole ;
   if (stringparams["multipole"] == "monopole")
     multipole = monopole ;
   else if (stringparams["multipole"] == "quadrupole")
