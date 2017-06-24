@@ -248,7 +248,7 @@ struct SphParticle : public Particle<ndim>
 
   class DensityParticle {
   public:
-    DensityParticle() : m(0), u(0), gpot(0), hrangesqd(0), ptype(0) {} ;
+    DensityParticle() : m(0), u(0), gpot(0), ptype(0) {} ;
     DensityParticle(const SphParticle<ndim>&p) {
       for (int i=0; i<ndim; i++) {
         r[i] = p.r[i];
@@ -258,7 +258,6 @@ struct SphParticle : public Particle<ndim>
       m = p.m;
       u = p.u;
       gpot=p.gpot;
-      hrangesqd = p.hrangesqd;
       ptype=p.ptype;
       flags=p.flags;
     }
@@ -269,7 +268,6 @@ struct SphParticle : public Particle<ndim>
     FLOAT m;
     FLOAT u;
     FLOAT gpot;
-    FLOAT hrangesqd;
     int ptype;
     type_flag flags;
 
@@ -470,20 +468,18 @@ struct MeshlessFVParticle : public Particle<ndim>
 
   class DensityParticle {
   public:
-    DensityParticle() : m(0), ptype(0), hrangesqd(0) {} ;
+    DensityParticle() : m(0), ptype(0) {} ;
     DensityParticle(const MeshlessFVParticle<ndim>&p) {
       for (int i=0; i<ndim; i++)
         r[i] = p.r[i];
 
       m = p.m;
-      hrangesqd = p.hrangesqd;
       ptype=p.ptype;
       flags=p.flags;
     }
 
     FLOAT r[ndim];
     FLOAT m;
-    FLOAT hrangesqd;
     int ptype;
     type_flag flags;
 

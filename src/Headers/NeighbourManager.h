@@ -430,8 +430,8 @@ private:
           if (part.flags.is_dead()) continue;
           if (!gravmask[part.ptype]) continue;
 
-          // Now create the particle
-          GhostFinder.ConstructGhostsScatterGather(part, neibdata);
+          // Now create the particle / ghosts
+          _AddParticleAndGhosts(GhostFinder, part, gather_only());
           directlist.push_back(neibdata.size()-1);
           neib_idx.push_back(i);
         }
@@ -449,7 +449,7 @@ private:
       for (int i=rng.begin; i < rng.end; ++i) {
         if (partdata[i].flags.is_dead()) continue;
 
-        GhostFinder.ConstructGhostsScatterGather(partdata[i], neibdata);
+        _AddParticleAndGhosts(GhostFinder, partdata[i], gather_only());
 
         while (Nneib < (int) neibdata.size()) {
           int Nmax = neibdata.size();
@@ -591,6 +591,24 @@ private:
     return false;
   }
 
+
+  template<class InParticleType>
+  void _AddParticleAndGhosts
+  (const GhostNeighbourFinder<ndim>& GhostFinder,
+   InParticleType& part,
+   _false_type)
+  {
+    GhostFinder.ConstructGhostsScatterGather(part, neibdata);
+  }
+
+  template<class InParticleType>
+  void _AddParticleAndGhosts
+  (const GhostNeighbourFinder<ndim>& GhostFinder,
+   InParticleType& part,
+   _true_type)
+  {
+    GhostFinder.ConstructGhostsGather(part, neibdata);
+  }
 
 
 
