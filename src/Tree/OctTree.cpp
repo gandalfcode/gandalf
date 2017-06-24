@@ -209,7 +209,7 @@ private:
 /// Sort the particles into the two sub-cells in the given direction.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int OctTree<ndim,ParticleType,TreeCell>::DivideCell
+void OctTree<ndim,ParticleType,TreeCell>::DivideCell
 (int c,                                      ///< [in] Cell to Divide
  int first,                                  ///< [in] Id of first particle
  int last,                                   ///< [in[ ID of last particle
@@ -275,7 +275,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   bool allDone = false;                // Are all cell divisions completed?
   int c;                               // Cell counter
   int cc;                              // Child cell counter
-  int ckid;                            // i.d. fo child cell
   int cnew;                            // i.d. of newly created cell
   int ilast;                           // i.d. of last particle in cell
   int i;                               // Particle counter
@@ -483,7 +482,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   int c,cc;                            // Cell counters
   int cend;                            // Last particle in cell
   int i;                               // Particle counter
-  int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
   int l;                               // Level counter
   FLOAT dr[ndim];                      // Relative position vector
