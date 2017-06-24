@@ -96,6 +96,7 @@ public:
   typedef MeshlessFVParticle<ndim> ParticleType ;
   typedef typename ParticleType::FluxParticle     FluxNeib ;
   typedef typename ParticleType::GradientParticle GradNeib ;
+  typedef typename ParticleType::DensityParticle  DensNeib ;
   typedef typename ParticleType::GravParticle     GravNeib ;
   typedef typename GravityNeighbourLists<GravNeib>::DirectType DirectNeib ;
 
@@ -126,8 +127,8 @@ public:
   // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles
   // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)
   //-----------------------------------------------------------------------------------------------
-  virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-                       MeshlessFVParticle<ndim> &, Nbody<ndim> *) = 0;
+  virtual int ComputeH(MeshlessFVParticle<ndim> &, FLOAT, const NeighbourList<DensNeib>&,
+                       Nbody<ndim> *) = 0;
   virtual void ComputeGradients(MeshlessFVParticle<ndim>&, NeighbourList<GradNeib>&) = 0;
   virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&, FLOAT) = 0;
   virtual void ComputeSmoothedGravForces(MeshlessFVParticle<ndim>&, NeighbourList<GravNeib>&) = 0;
@@ -226,6 +227,7 @@ class MfvCommon : public MeshlessFV<ndim>
   typedef MeshlessFVParticle<ndim> ParticleType ;
   typedef typename MeshlessFV<ndim>::FluxNeib     FluxNeib ;
   typedef typename MeshlessFV<ndim>::GradNeib     GradNeib ;
+  typedef typename MeshlessFV<ndim>::DensNeib     DensNeib ;
   typedef typename MeshlessFV<ndim>::GravNeib     GravNeib ;
   typedef typename MeshlessFV<ndim>::DirectNeib   DirectNeib ;
 
@@ -239,8 +241,7 @@ class MfvCommon : public MeshlessFV<ndim>
   // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles
   // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)
   //-----------------------------------------------------------------------------------------------
-  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               MeshlessFVParticle<ndim> &, Nbody<ndim> *);
+  int ComputeH(MeshlessFVParticle<ndim> &, FLOAT, const NeighbourList<DensNeib>&, Nbody<ndim> *);
   virtual void ComputeGradients(MeshlessFVParticle<ndim>&, NeighbourList<GradNeib>&);
   virtual void ComputeSmoothedGravForces(MeshlessFVParticle<ndim>&, NeighbourList<GravNeib>&);
   virtual void ComputeDirectGravForces(MeshlessFVParticle<ndim>&, NeighbourList<DirectNeib>&);

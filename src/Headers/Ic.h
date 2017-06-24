@@ -1296,14 +1296,16 @@ template<int ndim>
 class ParticleRegularizer
 {
   DomainBox<ndim> localBox;
+  DomainBox<ndim>& simbox;
   int Nreg;
 
 
 public:
-  ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& icbox);
+  ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& icbox,
+                      DomainBox<ndim>& simbox);
 
   void operator()(Hydrodynamics<ndim>* hydro, NeighbourSearch<ndim> *neib, Nbody<ndim>* nbody,
-                  const RegularizerFunction<ndim>& regularizer) const;
+                  const RegularizerFunction<ndim>& regularizer);
 };
 
 } // namespace Regularization

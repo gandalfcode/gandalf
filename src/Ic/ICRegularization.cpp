@@ -33,9 +33,13 @@ namespace Regularization {
 
 
 template<int ndim>
-ParticleRegularizer<ndim>::ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& icbox)
+ParticleRegularizer<ndim>::ParticleRegularizer
+(Parameters* simparams,
+ const DomainBox<ndim>& icbox,
+ DomainBox<ndim>& simbox_aux)
 : Nreg(simparams->intparams["Nreg"]),
-  localBox(icbox)
+  localBox(icbox),
+  simbox(simbox_aux)
 {
 }
 
@@ -46,8 +50,7 @@ void ParticleRegularizer<ndim>::operator()
  (Hydrodynamics<ndim>* hydro,
   NeighbourSearch<ndim> *neib,
   Nbody<ndim>* nbody,
-  const RegularizerFunction<ndim>& regularizer) const
-{
+  const RegularizerFunction<ndim>& regularizer) {
   using std::vector ;
   using std::min ;
   using std::max ;
@@ -64,7 +67,7 @@ void ParticleRegularizer<ndim>::operator()
     neib->BuildTree(true, 0, 1, 1, 0.0, hydro);
     neib->SearchBoundaryGhostParticles(0, localBox, hydro);
     neib->BuildGhostTree(true, 0, 1, 1, 0.0, hydro);
-    neib->UpdateAllProperties(hydro, nbody);
+    neib->UpdateAllProperties(hydro, nbody, simbox);
 
     //=============================================================================================
 #pragma omp parallel default(none) shared(rreg, hydro, neib, regularizer, cout)

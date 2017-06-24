@@ -107,8 +107,8 @@ protected:
 	virtual int ComputeActiveCellList(vector<TreeCellBase<ndim> >& ) = 0 ;
 	virtual int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
 	                                       const FLOAT, const int, int &, int *) = 0 ;
-	virtual int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-			                               const FLOAT, const int, int &, int *) = 0 ;
+	virtual void ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+			                                const FLOAT,NeighbourManagerBase& neibmanager) = 0 ;
 	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
 	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
@@ -284,8 +284,8 @@ protected:
   int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
   int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int &, int *);
-  int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-                                 const FLOAT, const int, int &, int *);
+  void ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+                                  const FLOAT,NeighbourManagerBase& neibmanager);
   int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                            const int, int &, int *, Particle<ndim> *);
   void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
