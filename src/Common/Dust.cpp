@@ -509,7 +509,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
         _tree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
         _ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
 #ifdef MPI_PARALLEL
-        _mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
+        mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
 #endif
         neibmanager.EndSearchGather(cell, sphdata);
 
