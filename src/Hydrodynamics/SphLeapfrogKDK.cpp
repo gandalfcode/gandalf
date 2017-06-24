@@ -95,7 +95,8 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(sphdata, sph)
   for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    SphParticle<ndim>& part = sphdata[i];
+
     if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step

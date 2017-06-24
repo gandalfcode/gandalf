@@ -251,7 +251,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     }
   }
 
-  multipole_method multipole ;
+  multipole_method multipole = monopole ;
   if (stringparams["multipole"] == "monopole")
     multipole = monopole ;
   else if (stringparams["multipole"] == "quadrupole")
