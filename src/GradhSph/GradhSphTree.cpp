@@ -82,7 +82,8 @@ GradhSphTree<ndim,ParticleType>::~GradhSphTree()
 template <int ndim, template<int> class ParticleType>
 void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
  (Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
+  DomainBox<ndim>& simbox)                 ///< [in] Simulation domain
 {
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;		   // List of active tree cells
@@ -93,6 +94,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
   debug2("[GradhSphTree::UpdateAllSphProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_PROPERTIES");
+
+  // Make sure we have enough neibmanagers
+  for (int t = neibmanagerbufdens.size(); t < Nthreads; ++t) {
+    neibmanagerbufdens.push_back(NeighbourManagerDensity(sph, simbox));
+  }
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
@@ -113,36 +119,21 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 #endif
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
-    int i;                                     // Particle id
     int j;                                     // Aux. particle counter
-    int jj;                                    // Aux. particle counter
-    int k;                                     // Dimension counter
     int Nactive;                               // No. of active particles in cell
-    int Ngather;                               // No. of gather neighbours
-    int Nneib;                                 // No. of neighbours from tree-walk
     int okflag;                                // Flag if particle is done
-    FLOAT draux[ndim];                         // Aux. relative position vector var
-    FLOAT drsqdaux;                            // Distance squared
     FLOAT hrangesqd;                           // Kernel extent
     FLOAT hmax;                                // Maximum smoothing length
-    FLOAT rp[ndim];                            // Local copy of particle position
-    FLOAT *mu2 = 0;                            // Trimmed array (dummy for grad-h)
-    int Nneibmax = Nneibmaxbuf[ithread];       // Local copy of neighbour buffer size
-    int* activelist = activelistbuf[ithread];  // Local array of active particle ids
-    int* neiblist = new int[Nneibmax];         // Local array of neighbour particle ids
-    int* ptype    = new int[Nneibmax];         // Local array of particle types
-    vector<typename Sph<ndim>::DensityParticle> ngb;           // Local array of neighbour data
-    vector<typename Sph<ndim>::DensityParticle> ngb2;          // Local array of reduced neighbour data
+    int* activelist = activelistbuf[ithread];   // Local array of active particle-ids
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
-
-    ngb.resize(Nneibmax) ; ngb2.reserve(Nneibmax);
+    NeighbourManager<ndim,DensityParticle>& neibmanager = neibmanagerbufdens[ithread];
 
 
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCellBase<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim> cell = celllist[cc];
 
       celldone = 1;
       hmax = cell.hmax;
@@ -153,6 +144,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       //-------------------------------------------------------------------------------------------
       do {
         hmax = (FLOAT) 1.05*hmax;
+        cell.hmax = hmax;
         celldone = 1;
 
         // Find list of active particles in current cell
@@ -160,72 +152,36 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
 
         // Compute neighbour list for cell from particles on all trees
-        Nneib = 0;
-        Nneib = tree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
-        Nneib = ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
+        neibmanager.set_target_cell(cell);
+        tree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
+        ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
 #ifdef MPI_PARALLEL
-        Nneib = mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
+        mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
 #endif
+        neibmanager.EndSearchGather(cell, sphdata);
 
-        // If there are too many neighbours so the buffers are filled,
-        // reallocate the arrays and recompute the neighbour lists.
-        while (Nneib == -1) {
-          delete[] neiblist;
-          Nneibmax = 2*Nneibmax;
-          neiblist = new int[Nneibmax];
-          ngb.resize(Nneibmax);
-
-          Nneib = 0;
-          Nneib = tree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
-          Nneib = ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
-#ifdef MPI_PARALLEL
-          Nneib = mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,
-                                                           Nneibmax,Nneib,neiblist);
-#endif
-        };
-
-        // Make local copies of important neib information (mass and position)
-        for (jj=0; jj<Nneib; jj++) {
-          j         = neiblist[jj];
-          ngb[jj] = typename Sph<ndim>::DensityParticle(sphdata[j]) ;
-        }
 
         // Loop over all active particles in the cell
         //-----------------------------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
-          i = activelist[j];
-          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+          Typemask densmask = sph->types[activepart[j].ptype].hmask;
 
           // Set gather range as current h multiplied by some tolerance factor
           hrangesqd = kernrangesqd*hmax*hmax;
-          ngb2.resize(0);
 
-          // Compute distance (squared) to all
-          //---------------------------------------------------------------------------------------
-          for (jj=0; jj<Nneib; jj++) {
+          NeighbourList<DensityParticle> neiblist =
+              neibmanager.GetParticleNeibGather(activepart[j],densmask,hrangesqd);
 
-            // Only include particles of appropriate types in density calculation
-            if (!sph->types[activepart[j].ptype].hmask[ngb[jj].ptype]) continue;
-
-
-            for (k=0; k<ndim; k++) draux[k] = ngb[jj].r[k] - rp[k];
-            drsqdaux = DotProduct(draux,draux,ndim) + small_number;
-
-            // Record distance squared and masses for all potential gather neighbours
-            if (drsqdaux <= hrangesqd) {
-              ngb2.push_back(ngb[jj]) ;
-            }
-
-          }
-          //---------------------------------------------------------------------------------------
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) this->CheckValidNeighbourList(i, Ntot, Nneib, neiblist, sphdata, "gather");
+          neibmanager.VerifyNeighbourList(activelist[j], sph->Nhydro, sphdata, "gather");
+          neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, sph->Nhydro,
+                                                 sphdata, densmask, "gather");
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
-          okflag = sph->ComputeH(activepart[j], hmax, ngb2, nbody);
+          okflag = sph->ComputeH(activepart[j], hmax, neiblist, nbody);
 
           // If h-computation is invalid, then break from loop and recompute
           // larger neighbour lists
@@ -246,9 +202,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
     }
     //=============================================================================================
-
-    // Free-up all memory
-    delete[] neiblist;
 
   }
   //===============================================================================================

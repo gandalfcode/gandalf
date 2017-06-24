@@ -84,7 +84,8 @@ MeshlessFVTree<ndim,ParticleType>::~MeshlessFVTree()
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
  (MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
+  Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox)                 ///< [in] Simuation box
 {
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;    // List of active cells
@@ -95,6 +96,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 
   debug2("[MeshlessFVTree::UpdateAllProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_PROPERTIES");
+
+  // Make sure we have enough neibmanagers
+  for (int t = neibmanagerbufdens.size(); t < Nthreads; ++t) {
+    neibmanagerbufdens.push_back(NeighbourManagerDensity(mfv, simbox));
+  }
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
@@ -114,37 +120,22 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 #endif
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
-    int i;                                     // Particle id
     int j;                                     // Aux. particle counter
-    int jj;                                    // Aux. particle counter
-    int k;                                     // Dimension counter
     int Nactive;                               // No. of active particles in cell
-    int Ngather;                               // No. of gather neighbours
-    int Nneib;                                 // No. of neighbours from tree-walk
     int okflag;                                // Flag if particle is done
-    FLOAT draux[ndim];                         // Aux. relative position vector var
-    FLOAT drsqdaux;                            // Distance squared
     FLOAT hrangesqd;                           // Kernel extent
     FLOAT hmax;                                // Maximum smoothing length
-    FLOAT rp[ndim];                            // Local copy of particle position
-    FLOAT *mu2 = 0;                            // Trimmed array (dummy for grad-h)
-    int Nneibmax = Nneibmaxbuf[ithread];       // Local copy of neighbour buffer size
-    int* activelist = activelistbuf[ithread];  // Local array of active particle ids
-    int* neiblist = new int[Nneibmax];         // Local array of neighbour particle ids
-    int* ptype    = new int[Nneibmax];         // Local array of particle types
-    FLOAT* gpot   = new FLOAT[Nneibmax];       // Local array of particle potentials
-    FLOAT* drsqd  = new FLOAT[Nneibmax];       // Local array of distances (squared)
-    FLOAT* m      = new FLOAT[Nneibmax];       // Local array of particle masses
-    FLOAT* m2     = new FLOAT[Nneibmax];       // Local reduced array of neighbour masses
-    FLOAT* r      = new FLOAT[Nneibmax*ndim];                  // Local array of particle positions
+    int* activelist = activelistbuf[ithread];   // Local array of active particle-ids
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
+    NeighbourManager<ndim,DensityParticle>& neibmanager = neibmanagerbufdens[ithread];
+
 
 
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCellBase<ndim>& cell = celllist[cc];
+      TreeCellBase<ndim> cell = celllist[cc];
       celldone = 1;
       hmax = cell.hmax;
 
@@ -169,93 +160,45 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
       //-------------------------------------------------------------------------------------------
       do {
         hmax = (FLOAT) 1.05*hmax;
+        cell.hmax = hmax;
         celldone = 1;
 
 
         // Compute neighbour list for cell from particles on all trees
-        Nneib = 0;
-        Nneib = tree->ComputeGatherNeighbourList(cell,mfvdata,hmax,Nneibmax,Nneib,neiblist);
-        Nneib = ghosttree->ComputeGatherNeighbourList(cell,mfvdata,hmax,Nneibmax,Nneib,neiblist);
+        neibmanager.set_target_cell(cell) ;
+        tree->ComputeGatherNeighbourList(cell,mfvdata,hmax,neibmanager);
+        ghosttree->ComputeGatherNeighbourList(cell,mfvdata,hmax,neibmanager);
 #ifdef MPI_PARALLEL
-        Nneib = mpighosttree->ComputeGatherNeighbourList(cell,mfvdata,hmax,Nneibmax,Nneib,neiblist);
+        mpighosttree->ComputeGatherNeighbourList(cell,mfvdata,hmax,neibmanager);
 #endif
+        neibmanager.EndSearchGather(cell, mfvdata);
 
-        // If there are too many neighbours so the buffers are filled,
-        // reallocate the arrays and recompute the neighbour lists.
-        while (Nneib == -1) {
-          delete[] r;
-          delete[] m2;
-          delete[] m;
-          delete[] drsqd;
-          delete[] gpot;
-          delete[] ptype;
-          delete[] neiblist;
-          Nneibmax = 2*Nneibmax;
-          neiblist = new int[Nneibmax];
-          ptype    = new int[Nneibmax];
-          gpot     = new FLOAT[Nneibmax];
-          drsqd    = new FLOAT[Nneibmax];
-          m        = new FLOAT[Nneibmax];
-          m2       = new FLOAT[Nneibmax];
-          r        = new FLOAT[Nneibmax*ndim];
-          Nneib = 0;
-          Nneib = tree->ComputeGatherNeighbourList(cell,mfvdata,hmax,Nneibmax,Nneib,neiblist);
-          Nneib = ghosttree->ComputeGatherNeighbourList(cell,mfvdata,hmax,Nneibmax,Nneib,neiblist);
-#ifdef MPI_PARALLEL
-          Nneib = mpighosttree->ComputeGatherNeighbourList(cell,mfvdata,hmax,
-                                                           Nneibmax,Nneib,neiblist);
-#endif
-        };
-
-
-        // Make local copies of important neib information (mass and position)
-        for (jj=0; jj<Nneib; jj++) {
-          j         = neiblist[jj];
-          //gpot[jj]  = mfvdata[j].gpot;
-          m[jj]     = mfvdata[j].m;
-          ptype[jj] = mfvdata[j].ptype;
-          for (k=0; k<ndim; k++) r[ndim*jj + k] = mfvdata[j].r[k];
-        }
 
 
         // Loop over all active particles in the cell
         //-----------------------------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
-          i = activelist[j];
-          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
 
           // Set gather range as current h multiplied by some tolerance factor
           hrangesqd = kernrangesqd*hmax*hmax;
-          Ngather = 0;
 
-          // Compute distance (squared) to all
-          //---------------------------------------------------------------------------------------
-          for (jj=0; jj<Nneib; jj++) {
+          Typemask densmask = mfv->types[activepart[j].ptype].hmask;
 
-            // Only include particles of appropriate types in density calculation
-            if (!mfv->types[activepart[j].ptype].hmask[ptype[jj]]) continue ;
+          // Set gather range as current h multiplied by some tolerance factor
+          hrangesqd = kernrangesqd*hmax*hmax;
 
-            for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
-            drsqdaux = DotProduct(draux,draux,ndim) + small_number;
-
-            // Record distance squared and masses for all potential gather neighbours
-            if (drsqdaux <= hrangesqd) {
-              //gpot[Ngather]  = gpot[jj];
-              drsqd[Ngather] = drsqdaux;
-              m2[Ngather]    = m[jj];
-              Ngather++;
-            }
-
-          }
-          //---------------------------------------------------------------------------------------
+          NeighbourList<DensityParticle> neiblist =
+              neibmanager.GetParticleNeibGather(activepart[j],densmask,hrangesqd);
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) this->CheckValidNeighbourList(i, Ntot, Nneib, neiblist, mfvdata, "gather");
+          neibmanager.VerifyNeighbourList(activelist[j], mfv->Nhydro, mfvdata, "gather");
+          neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, mfv->Nhydro,
+                                                 mfvdata, densmask, "gather");
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
-          okflag = mfv->ComputeH(i, Ngather, hmax, m2, mu2, drsqd, gpot, activepart[j], nbody);
+          okflag = mfv->ComputeH(activepart[j], hmax, neiblist, nbody);
 
           // If h-computation is invalid, then break from loop and recompute larger neighbour lists
           if (okflag == 0) {
@@ -280,14 +223,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
     }
     //=============================================================================================
 
-    // Free-up all memory
-    delete[] r;
-    delete[] m2;
-    delete[] m;
-    delete[] drsqd;
-    delete[] gpot;
-    delete[] ptype;
-    delete[] neiblist;
 
   }
   //===============================================================================================

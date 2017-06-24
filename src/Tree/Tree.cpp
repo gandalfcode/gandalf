@@ -186,14 +186,13 @@ void Tree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
     for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
     for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
-    //celldata[c].rmax += celldata[c].drmaxdt*dt;
-    //celldata[c].hmax += celldata[c].dhmaxdt*dt;
 
   }
   //-----------------------------------------------------------------------------------------------
 
   return;
 }
+
 
 
 //=================================================================================================
@@ -285,36 +284,22 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 /// plus all particles contained in adjacent cells (including diagonal cells).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
+void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
  (const TreeCellBase<ndim> &cell,      ///< [in] Pointer to current cell
   const Particle<ndim> *part_gen,      ///< [in] Particle data array
   const FLOAT hmax,                    ///< [in] Maximum smoothing length
-  const int Nneibmax,                  ///< [in] Max. no. of neighbours
-  int &Nneib,                          ///< [inout] No. of neighbours
-  int *neiblist)                       ///< [out] List of neighbour i.d.s
+  NeighbourManagerBase& neibmanager)   ///< [inout] NeighbourManager object
 {
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
 
   int cc = 0;                          // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int k;                               // Neighbour counter
-  int Ntemp = Nneib;                   // Temporary neighbour counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
   FLOAT gatherboxmin[ndim];            // Minimum gather neighbour box
   FLOAT gatherboxmax[ndim];            // Maximum gather neighbour box
-  FLOAT rc[ndim];                      // Position of cell
-  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*hmax,2);
-  assert(neiblist != NULL);
   assert(partdata != NULL);
 
-  // Exit immediately if we have overflowed the neighbour list buffer
-  if (Nneib == -1) return -1;
 
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
-  for (k=0; k<ndim; k++) gatherboxmin[k] = cell.bb.min[k] - kernrange*hmax;
-  for (k=0; k<ndim; k++) gatherboxmax[k] = cell.bb.max[k] + kernrange*hmax;
+  for (int k=0; k<ndim; k++) gatherboxmin[k] = cell.bb.min[k] - kernrange*hmax;
+  for (int k=0; k<ndim; k++) gatherboxmax[k] = cell.bb.max[k] + kernrange*hmax;
 
 
   //===============================================================================================
@@ -335,20 +320,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
 
       // If leaf-cell, add particles to list
-      else if (celldata[cc].copen == -1 && Ntemp + Nleafmax < Nneibmax) {
-        i = celldata[cc].ifirst;
-        int ilast = celldata[cc].ilast;
-        for (; i <= ilast; ++i) {
-          neiblist[Ntemp++] = i;
-        };
+      else if (celldata[cc].copen == -1) {
+        neibmanager.AddNeibs(celldata[cc]);
         cc = celldata[cc].cnext;
       }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Ntemp + Nleafmax >= Nneibmax) {
-        return -1;
-      }
-
     }
 
     // If not in range, then open next cell
@@ -359,21 +334,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
   };
   //===============================================================================================
-
-
-  // Now, trim the list to remove particles that are definitely not neighbours
-  assert(Ntemp <= Nneibmax);
-  for (j=Nneib; j<Ntemp; j++) {
-    i = neiblist[j];
-    if (partdata[i].flags.is_dead()) continue;
-    for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-    drsqd = DotProduct(dr, dr, ndim);
-    //cout << "Checking neighbour : " << j << "   " << Nneib << "   " << drsqd << "   " << hrangemaxsqd << endl;
-    if (drsqd < hrangemaxsqd) neiblist[Nneib++] = i;
-  }
-
-  assert(Nneib <= Nneibmax);
-  return Nneib;
 }
 
 
@@ -497,11 +457,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
  (const TreeCellBase<ndim> &cell,      ///< [in] Cell pointer
-	NeighbourManagerBase& neibmanager)            ///< [inout] NeighbourManager object
+  NeighbourManagerBase& neibmanager)   ///< [inout] NeighbourManager object
 {
 
   int cc = 0;                          // Cell counter
-  int i;
 
   //===============================================================================================
   while (cc < Ncell) {

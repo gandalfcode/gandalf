@@ -103,15 +103,10 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::~MfvCommon()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of potential neighbours
-  const FLOAT hmax,                    ///< [in] Max. h permitted by neib list
-  FLOAT *m,                            ///< [in] Array of neib. masses
-  FLOAT *mu,                           ///< [in] Array of m*u (not needed here)
-  FLOAT *drsqd,                        ///< [in] Array of neib. distances squared
-  FLOAT *gpot,                         ///< [in] Array of neib. grav. potentials
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  Nbody<ndim> *nbody)                  ///< [in] Main N-body object
+ (MeshlessFVParticle<ndim> &part,        ///< [inout] Particle i data
+  FLOAT hmax,                            ///< [in] Maximum allowable smoothing length
+  const NeighbourList<DensNeib>& ngbs,   ///< [in] List of neighbours
+  Nbody<ndim> *nbody)                    ///< [in] Main N-body object
 {
   int j;                               // Neighbour id
   int iteration = 0;                   // h-rho iteration counter
@@ -120,7 +115,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   FLOAT h_upper_bound = hmax;          // Upper bound on h
   FLOAT invhsqd;                       // (1 / h)^2
   FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
-
+  FLOAT dr[ndim];
 
   // If there are sink particles present, check if the particle is inside one.
   // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
@@ -131,12 +126,13 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   }
 
   // Some basic sanity-checking in case of invalid input into routine
-  assert(Nneib > 0);
   assert(hmax > (FLOAT) 0.0);
   assert(!part.flags.is_dead());
   assert(part.m > (FLOAT) 0.0);
 
   FLOAT ndens, rho, volume, invomega, zeta, h, invh, hfactor ;
+
+  int Nneib = ngbs.size();
 
   h = part.h ;
   // Main smoothing length iteration loop
@@ -155,10 +151,12 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
     // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
-      ssqd      = drsqd[j]*invhsqd;
+      const DensNeib &ngb = ngbs[j];
+      for (int k=0; k<ndim; k++) dr[k] = ngb.r[k] - part.r[k];
+      ssqd = DotProduct(dr,dr,ndim)*invhsqd;
       ndens    += kern.w0_s2(ssqd);
       invomega += invh*kern.womega_s2(ssqd);
-      zeta     += m[j]*kern.wzeta_s2(ssqd);
+      zeta     += ngb.m*kern.wzeta_s2(ssqd);
     }
     //---------------------------------------------------------------------------------------------
 

@@ -86,7 +86,7 @@ protected:
   virtual void UpdateActiveParticleCounters(Hydrodynamics<ndim> *) = 0;
   virtual void UpdateAllStarGasForces(Hydrodynamics<ndim> *, Nbody<ndim> *,
                                       DomainBox<ndim> &, Ewald<ndim> *) = 0;
-  virtual void UpdateAllProperties(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllProperties(Hydrodynamics<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual double GetMaximumSmoothingLength() const = 0;
   virtual TreeBase<ndim>* GetTree() const = 0;
   virtual TreeBase<ndim>* GetGhostTree() const = 0;

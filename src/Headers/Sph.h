@@ -115,14 +115,14 @@ class Sph : public Hydrodynamics<ndim>
   // SPH functions for computing SPH sums with neighbouring particles
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   //-----------------------------------------------------------------------------------------------
-  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const vector<DensityParticle> &,
+  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const NeighbourList<DensityParticle> &,
                        Nbody<ndim> *) = 0;
   virtual void ComputeThermalProperties(SphParticle<ndim> &) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) = 0;
 
 #if !defined(SWIG)
   template<template<int> class Kernel>
-  void ComputeCullenAndDehnenViscosity(SphParticle<ndim> &, const vector<DensityParticle> &,
+  void ComputeCullenAndDehnenViscosity(SphParticle<ndim> &, const NeighbourList<DensityParticle> &,
                                        Kernel<ndim>&);
 #endif
 
@@ -247,7 +247,7 @@ public:
     return this->template DoDeleteDeadParticles<GradhSphParticle>() ;
   }
 
-  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const vector<DensityParticle> &, Nbody<ndim> *);
+  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const NeighbourList<DensityParticle> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
   virtual void ComputeSphGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
   virtual void ComputeSphHydroGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
@@ -320,7 +320,7 @@ class SM2012Sph: public Sph<ndim>
   virtual int DeleteDeadParticles(void) {
     return this->template DoDeleteDeadParticles<SM2012SphParticle>() ;
   }
-  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const vector<DensityParticle> &, Nbody<ndim> *);
+  virtual int ComputeH(SphParticle<ndim> &, FLOAT, const NeighbourList<DensityParticle> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
   void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *, const FLOAT *,
                              const FLOAT *, SphParticle<ndim> &, SphParticle<ndim>* );
@@ -366,7 +366,7 @@ template <int ndim>
 template<template<int> class Kernel>
 void Sph<ndim>::ComputeCullenAndDehnenViscosity
 (SphParticle<ndim> & parti,                         ///< [inout] Particle to compute the switch for
-const vector<DensityParticle> &ngbs,                ///< [in] List of neighbours
+const NeighbourList<DensityParticle> &ngbs,         ///< [in] List of neighbours
 Kernel<ndim>& kern)                                 ///< [in] Kernel
 {
 
