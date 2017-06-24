@@ -161,7 +161,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
 
     // Update the density to get the correct softening & grad-h terms.
-    mfvneib->UpdateAllProperties(mfv, nbody);
+    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
@@ -189,7 +189,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
     // Make sure the density is up to date
     if (not (mfv->self_gravity == 1 || nbody->Nnbody > 0))
-      mfvneib->UpdateAllProperties(mfv, nbody);
+      mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
     // Copy properties from original particles to ghost particles
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
@@ -310,7 +310,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateActiveParticleCounters(mfv);
 
   //Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv, nbody);
+  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 #ifdef MPI_PARALLEL
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);

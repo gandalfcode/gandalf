@@ -278,7 +278,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   sphneib->InitialiseCellWorkCounters();
 #endif
-    sphneib->UpdateAllSphProperties(sph, nbody);
+    sphneib->UpdateAllSphProperties(sph, nbody, simbox);
   }
   else {
     sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, sph);
@@ -321,7 +321,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).gpot = big_number;
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph, nbody);
+  sphneib->UpdateAllSphProperties(sph, nbody, simbox);
 
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
@@ -419,7 +419,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Calculate all SPH properties
     if (iter == 0)
-      sphneib->UpdateAllSphProperties(sph, nbody);
+      sphneib->UpdateAllSphProperties(sph, nbody, simbox);
 
 
 #ifdef MPI_PARALLEL
@@ -659,7 +659,7 @@ void SphSimulation<ndim>::MainLoop(void)
     if (activecount > 0) sphneib->UpdateActiveParticleCounters(sph);
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph, nbody);
+    sphneib->UpdateAllSphProperties(sph, nbody, simbox);
 
     // Zero accelerations (here for now)
     sph->ZeroAccelerations();

@@ -83,10 +83,11 @@ class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(Hydrodynamics<ndim>* hydro, Nbody<ndim>* nbody) {
-    UpdateAllSphProperties(static_cast<Sph<ndim>*>(hydro), nbody) ;
+  virtual void UpdateAllProperties(Hydrodynamics<ndim>* hydro, Nbody<ndim>* nbody,
+                                   DomainBox<ndim> &simbox) {
+    UpdateAllSphProperties(static_cast<Sph<ndim>*>(hydro), nbody, simbox) ;
   }
-  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *,DomainBox<ndim> &) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *) = 0;
@@ -153,7 +154,7 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *) = 0;
@@ -176,6 +177,10 @@ private:
 	  typedef typename ParticleType<ndim>::HydroForcesParticle HydroParticle;
 	  typedef NeighbourManager<ndim, HydroParticle > NeighbourManagerHydro;
 	  vector<NeighbourManagerHydro> neibmanagerbufhydro;
+
+	  typedef typename ParticleType<ndim>::DensityParticle DensityParticle;
+	  typedef NeighbourManager<ndim, DensityParticle > NeighbourManagerDensity;
+	  vector<NeighbourManagerDensity> neibmanagerbufdens;
  public:
 
   using SphTree<ndim,ParticleType>::activelistbuf;
@@ -219,7 +224,7 @@ private:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *);
@@ -275,7 +280,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *){};
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *){};

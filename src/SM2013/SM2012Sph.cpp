@@ -133,7 +133,7 @@ template <int ndim, template<int> class kernelclass>
 int SM2012Sph<ndim, kernelclass >::ComputeH
  (SphParticle<ndim> &part,                                ///< [inout] Particle i data
   FLOAT hmax,                                             ///< [in] Maximum smoothing length
-  const vector<DensityParticle> &ngbs,                    ///< [in] Neighbour properties
+  const NeighbourList<DensityParticle> &ngbs,             ///< [in] Neighbour properties
   Nbody<ndim> *nbody)                                     ///< [in] Main N-body object
 {
   int j;                            // Neighbour id

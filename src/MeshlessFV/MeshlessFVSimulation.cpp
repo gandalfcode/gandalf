@@ -502,7 +502,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   if (!this->initial_h_provided) {
     mfv->InitialSmoothingLengthGuess();
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
-    mfvneib->UpdateAllProperties(mfv, nbody);
+    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
     for (i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
@@ -551,7 +551,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 
   // Calculate all hydro properties
-  mfvneib->UpdateAllProperties(mfv, nbody);
+  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
@@ -672,7 +672,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     if (iter == 0) {
-      mfvneib->UpdateAllProperties(mfv, nbody);
+      mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
       LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #ifdef MPI_PARALLEL
