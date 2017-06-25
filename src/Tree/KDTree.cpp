@@ -743,75 +743,6 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
   return partdata[jpivot].r[k];
 }
 
-//=================================================================================================
-//  OmpGuard
-/// A scoped guard for an OpenMP lock, adapted from the book "Pattern-Oriented Software
-/// Architecture".
-//=================================================================================================
-class OmpGuard {
-public:
-  /// Acquire the lock and store a pointer to it
-  OmpGuard(omp_lock_t *lock) : _lock (lock), _owner (false) {
-    acquire();
-  }
-  /// Set the lock explicitly
-  void acquire() {
-    omp_set_lock(_lock);
-    _owner = true;
-  }
-  /// Release the lock explicitly (owner thread only!)
-  void release() {
-    if (_owner) {
-      _owner = false;
-      omp_unset_lock(_lock);
-    }
-  }
-  ~OmpGuard() {
-    release();
-  }
-private:
-  omp_lock_t *_lock;
-  bool _owner;
-
-  // Disallow copies or assignment
-  OmpGuard(const OmpGuard &);
-  void operator=(const OmpGuard &);
-};
-
-//=================================================================================================
-// KDCellLock
-/// A class for handling whether an OpenMP thread has finished doing the work required for the
-/// children of a KDTree cell. Used for stocking the tree
-//=================================================================================================
-class KDCellLock {
-public:
-  KDCellLock() : _lock() {
-    _children[0] = _children[1] = false ;
-    omp_init_lock(&_lock);
-  } ;
-
-  bool ready() {
-    return _children[0] && _children[1] ;
-  }
-
-  void finished_child(int child) {
-    assert(_children[child] == false) ;
-    _children[child] = true ;
-  }
-
-  omp_lock_t* get_lock() {
-    return &_lock ;
-  }
-
-  ~KDCellLock() {
-    omp_destroy_lock(&_lock);
-  }
-
-private:
-  omp_lock_t _lock;
-  bool _children[2] ;
-};
-
 
 
 //=================================================================================================
@@ -872,12 +803,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
         cc = parent ;
         l-- ;
       }
-
-      if (c == NULL) break ;
-
-      StockCellProperties(*c, partdata, stock_leaf) ;
-      cc = parent ;
-      l-- ;
     }
   }
 
