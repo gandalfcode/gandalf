@@ -518,9 +518,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         cell.amin = big_number ;
       else if (gravity_mac == eigenmac)
         cell.macfactor = 0 ;
-      for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-      //for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) cell.r[k]        = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
       for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
       for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
@@ -544,7 +542,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             if (gravmask[partdata[i].ptype]) {
               cell.m += partdata[i].m;
               for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-              for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
             }
             for (k=0; k<ndim; k++) {
               if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
@@ -567,8 +564,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         // Normalise all cell values
         if (cell.m > 0) {
           for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
-          for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-          //for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
           for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
           cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
           cell.rmax = sqrt(DotProduct(dr,dr,ndim));
@@ -622,7 +617,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             for (k=0; k<ndim; k++) cell.vbox.min[k] = min(child.vbox.min[k],cell.vbox.min[k]);
             for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child.vbox.max[k],cell.vbox.max[k]);
             for (k=0; k<ndim; k++) cell.r[k] += child.m*child.r[k];
-            for (k=0; k<ndim; k++) cell.v[k] += child.m*child.v[k];
             cell.hmax = max(child.hmax, cell.hmax);
             cell.maxsound = max(cell.maxsound, child.maxsound);
             if (gravity_mac == gadget2)
@@ -638,7 +632,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
         if (cell.m > 0.0) {
           for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
-          for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
         }
         //for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
         for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);

@@ -371,7 +371,6 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].hmax = 0;
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
-  for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
 
 
   // If there are particles in the tree, recursively build tree from root node down
@@ -853,8 +852,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         cell.macfactor = 0 ;
       for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
-	  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-	  //for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
 	  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
 	  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
@@ -880,7 +877,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         if (gravmask[part.ptype]) {
           cell.m += part.m;
           for (k=0; k<ndim; k++) cell.r[k] += part.m*part.r[k];
-          for (k=0; k<ndim; k++) cell.v[k] += part.m*part.v[k];
         }
         for (k=0; k<ndim; k++) cell.bb.min[k] = min(cell.bb.min[k], part.r[k]);
         for (k=0; k<ndim; k++) cell.bb.max[k] = max(cell.bb.max[k], part.r[k]);
@@ -902,7 +898,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     if (cell.N > 0) {
       const FLOAT invm = (FLOAT) 1.0/cell.m;
       for (k=0; k<ndim; k++) cell.r[k] *= invm;
-      for (k=0; k<ndim; k++) cell.v[k] *= invm;
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       const FLOAT drsqd = DotProduct(dr, dr, ndim);
       cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;
@@ -978,17 +973,9 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     cell.m = child1.m + child2.m;
     if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
-      for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
-<<<<<<< HEAD
-<<<<<<< HEAD
     }
     if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
-=======
-      //for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
->>>>>>> Removed rcell from TreeCell.  Can be reconstructed with new function 0.5*(bb.min + bb.max).
-=======
->>>>>>> Low-level optimisations of the StockCellProperties routine in KDTree
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       const FLOAT drsqd = DotProduct(dr, dr, ndim);
       cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;
@@ -999,12 +986,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     // Now add individual quadrupole moment terms
-<<<<<<< HEAD
     if (need_quadrupole_moments && child1.m > 0) {
       mi = child1.m;
-=======
-    if (need_quadrupole_moments && child1.N > 0) {
->>>>>>> Low-level optimisations of the StockCellProperties routine in KDTree
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       const FLOAT mi = child1.m;
       const FLOAT drsqd = DotProduct(dr, dr, ndim);
@@ -1028,12 +1011,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       }
     }
 
-<<<<<<< HEAD
     if (need_quadrupole_moments && child2.m > 0) {
       mi = child2.m;
-=======
-    if (need_quadrupole_moments && child2.N > 0) {
->>>>>>> Low-level optimisations of the StockCellProperties routine in KDTree
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       const FLOAT mi = child2.m;
       const FLOAT drsqd = DotProduct(dr, dr, ndim);

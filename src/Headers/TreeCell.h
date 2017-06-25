@@ -31,7 +31,7 @@ struct TreeCellBase {
   Box<ndim> vbox ;                     ///< Velocity space bounding box
   //FLOAT rcell[ndim];                   ///< Geometric centre of cell bounding box
   FLOAT r[ndim];                       ///< Position of cell COM
-  FLOAT v[ndim];                       ///< Velocity of cell COM
+  //FLOAT v[ndim];                       ///< Velocity of cell COM
   FLOAT m;                             ///< Mass contained in cell
   FLOAT rmax;                          ///< Radius of bounding sphere
   FLOAT hmax;                          ///< Maximum smoothing length inside cell
