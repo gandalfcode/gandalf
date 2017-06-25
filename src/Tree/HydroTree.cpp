@@ -347,17 +347,9 @@ void HydroTree<ndim,ParticleType>::BuildTree
 
   // Else stock the tree
   //-----------------------------------------------------------------------------------------------
-  else if (n%ntreestockstep == 0) {
-
-    tree->StockTree(partdata,true);
-
-  }
-
-  // Otherwise simply extrapolate tree cell properties
-  //-----------------------------------------------------------------------------------------------
   else {
-
-    tree->ExtrapolateCellProperties(timestep);
+    
+    tree->StockTree(partdata,true);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -416,17 +408,9 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
 
   // Else stock the tree
   //-----------------------------------------------------------------------------------------------
-  else if (n%ntreestockstep == 0) {
-
-    ghosttree->StockTree(partdata,true);
-
-  }
-
-  // Otherwise simply extrapolate tree cell properties
-  //-----------------------------------------------------------------------------------------------
   else {
 
-    ghosttree->ExtrapolateCellProperties(timestep);
+    ghosttree->StockTree(partdata,true);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -1405,17 +1389,9 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
 
   // Else stock the tree
   //-----------------------------------------------------------------------------------------------
-  else if (n%ntreestockstep == 0) {
-
-    mpighosttree->StockTree(partdata,true);
-
-  }
-
-  // Otherwise simply extrapolate tree cell properties
-  //-----------------------------------------------------------------------------------------------
   else {
 
-    mpighosttree->ExtrapolateCellProperties(timestep);
+    mpighosttree->StockTree(partdata,true);
 
   }
   //-----------------------------------------------------------------------------------------------

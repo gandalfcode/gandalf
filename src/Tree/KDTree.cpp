@@ -1076,39 +1076,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
 
 //=================================================================================================
-//  KDTree::ExtrapolateCellProperties
-/// Extrapolate important physical properties of all cells in the tree.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
- (const FLOAT dt)                            ///< Smallest timestep size
-{
-  int c;                               // Cell counter
-  int k;                               // Dimension counter
-
-  debug2("[KDTree::ExtrapolateCellProperties]");
-
-
-  // ..
-  //-----------------------------------------------------------------------------------------------
-  for (c=0; c<Ncell; c++) {
-
-    for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
-    //for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bb.min[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
-
-
-
-//=================================================================================================
 //  KDTree::UpdateHmaxValues
 /// Calculate the physical properties (e.g. total mass, centre-of-mass,
 /// opening-distance, etc..) of all cells in the tree.

@@ -95,11 +95,10 @@ protected:
 	                       const FLOAT, Particle<ndim> *) = 0;
 	virtual void StockTree(Particle<ndim> *, bool) = 0 ;
 	virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
-	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 
 
-    virtual MAC_Type GetMacType() const  = 0;
-    virtual void SetMacType(MAC_Type) = 0;
+  virtual MAC_Type GetMacType() const  = 0;
+  virtual void SetMacType(MAC_Type) = 0;
 
 
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
@@ -263,7 +262,6 @@ protected:
   virtual int MaxNumCells() const
   { return gtot ; }
 
-  virtual void ExtrapolateCellProperties(const FLOAT);
   bool BoxOverlap(const FLOAT box1min[ndim], const FLOAT box1max[ndim],
 		          const FLOAT box2min[ndim], const FLOAT box2max[ndim])
   {
