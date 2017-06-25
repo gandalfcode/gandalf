@@ -163,7 +163,7 @@ struct Particle
     FLOAT dt_therm;                 ///< Thermalization time scale
     FLOAT cooling;                  ///< Cooling rate, (-dudt_cool)
   };
-  DOUBLE dt_next;                   ///< Next time-step timestep
+  FLOAT dt_next;                   ///< Next time-step timestep
 
   // Physical variables which only take a small dynamic range of values.
   // Can be stored in single precision to save space/memory
@@ -176,11 +176,11 @@ struct Particle
   int nstep;                        ///< Integer step-size of particle
   int nlast;                        ///< Integer time at beginning of step
   //int sinkid;                       ///< i.d. of sink particle
-  DOUBLE dt;                        ///< Particle timestep
+  FLOAT dt;                         ///< Particle timestep
   //DOUBLE tlast;                     ///< Time at beginning of current step
   //FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
-  int ionstate;                     ///< States current ionisation state of the particle
-                                    ///< (0 is neutral, 1 is smoothed and 2 is ionised)
+  //int ionstate;                     ///< States current ionisation state of the particle
+  //                                  ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
   Particle() {
     flags     = none;
