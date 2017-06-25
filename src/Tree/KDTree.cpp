@@ -371,7 +371,6 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].hmax = 0;
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
-  for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
 
 
   // If there are particles in the tree, recursively build tree from root node down
@@ -853,8 +852,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         cell.macfactor = 0 ;
       for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
-	  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-	  //for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
 	  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
 	  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
@@ -880,7 +877,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         if (gravmask[part.ptype]) {
           cell.m += part.m;
           for (k=0; k<ndim; k++) cell.r[k] += part.m*part.r[k];
-          for (k=0; k<ndim; k++) cell.v[k] += part.m*part.v[k];
         }
         for (k=0; k<ndim; k++) cell.bb.min[k] = min(cell.bb.min[k], part.r[k]);
         for (k=0; k<ndim; k++) cell.bb.max[k] = max(cell.bb.max[k], part.r[k]);
@@ -902,8 +898,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     if (cell.N > 0) {
       const FLOAT invm = (FLOAT) 1.0/cell.m;
       for (k=0; k<ndim; k++) cell.r[k] *= invm;
-      for (k=0; k<ndim; k++) cell.v[k] *= invm;
-      //for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       const FLOAT drsqd = DotProduct(dr, dr, ndim);
       cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;
@@ -979,7 +973,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     if (cell.N > 0) {
       cell.m = child1.m + child2.m;
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
-      for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       const FLOAT drsqd = DotProduct(dr, dr, ndim);
       cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;

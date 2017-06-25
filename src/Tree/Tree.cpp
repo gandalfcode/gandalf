@@ -1019,9 +1019,9 @@ void Tree<ndim,ParticleType,TreeCell>::GenerateBoundaryGhostParticles
 
     // If x-bounding box overlaps edge of x-domain, open cell
     //-------------------------------------------------------------------------------------------
-    if (cellptr->bb.min[j] + min((FLOAT) 0.0,cellptr->v[j]*tghost) <
+    if (cellptr->bb.min[j] + cellptr->vbox.min[j]*tghost <
         simbox.min[j] + ghost_range*cellptr->hmax ||
-        cellptr->bb.max[j] + max((FLOAT) 0.0,cellptr->v[j]*tghost) >
+        cellptr->bb.max[j] + cellptr->vbox.max[j]*tghost >
         simbox.max[j] - ghost_range*cellptr->hmax) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -1546,10 +1546,8 @@ int Tree<ndim,ParticleType,TreeCell>::FindBoxGhostParticles
 
     // Construct maximum cell bounding box depending on particle velocities
     for (int k=0; k<ndim; k++) {
-      scattermin[k] = cellptr->bb.min[k] +
-          min((FLOAT) 0.0, cellptr->v[k]*tghost) - ghost_range*cellptr->hmax;
-      scattermax[k] = cellptr->bb.max[k] +
-          max((FLOAT) 0.0, cellptr->v[k]*tghost) + ghost_range*cellptr->hmax;
+      scattermin[k] = cellptr->bb.min[k] + cellptr->vbox.min[k]*tghost - ghost_range*cellptr->hmax;
+      scattermax[k] = cellptr->bb.max[k] + cellptr->vbox.max[k]*tghost + ghost_range*cellptr->hmax;
     }
 
 
