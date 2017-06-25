@@ -61,6 +61,8 @@ struct KDTreeCell : public TreeCellBase<ndim> {
 };
 
 
+// Forward Declare
+class KDCellLock ;
 
 //=================================================================================================
 //  Class KDTree
@@ -142,6 +144,9 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);
 #endif
+
+ private:
+  KDCellLock* worklist;
 
 };
 #endif
