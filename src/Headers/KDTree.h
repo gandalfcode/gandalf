@@ -122,7 +122,6 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, TreeCell<ndim> &);
-  void ExtrapolateCellProperties(const FLOAT);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   FLOAT QuickSelectSort(int, int, int, int, ParticleType<ndim> *);
   void StockTree(Particle<ndim> *part_gen, bool stock_leaf) ;

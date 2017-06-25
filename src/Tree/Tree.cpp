@@ -162,37 +162,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
 }
 
 
-//=================================================================================================
-//  Tree::ExtrapolateCellProperties
-/// Extrapolate important physical properties of all cells in the tree.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void Tree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
- (const FLOAT dt)                      ///< [in] Smallest timestep size
-{
-  int c;                               // Cell counter
-  int k;                               // Dimension counter
-
-  debug2("[Tree::ExtrapolateCellProperties]");
-
-
-  // Loop over all cells and extrapolate all properties
-  //-----------------------------------------------------------------------------------------------
-  for (c=0; c<Ncell; c++) {
-
-    for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
-    //for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bb.min[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
-
 
 
 //=================================================================================================
