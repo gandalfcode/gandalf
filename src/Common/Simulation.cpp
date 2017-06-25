@@ -1679,8 +1679,8 @@ void Simulation<ndim>::ComputeGlobalTimestep() {
            part.levelneib = 0;
            part.nstep     = pow(2,level_step - part.level);
            part.dt_next   = hydroint->Timestep(part,hydro);
-           dt             = min(dt,      part.dt_next);
-           dt_hydro       = min(dt_hydro,part.dt_next);
+           dt             = min(dt, (DOUBLE) part.dt_next);
+           dt_hydro       = min(dt_hydro, (DOUBLE) part.dt_next);
          }
        }
 
@@ -1988,7 +1988,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
           level_hydro     = max(level_hydro, part.level);
           level_max_aux = max(level_max_aux, part.level);
 
-          dt_hydro = min(dt_hydro, part.dt);
+          dt_hydro = min(dt_hydro, (DOUBLE) part.dt);
         }
         //-------------------------------------------------------------------------------------------
 

@@ -38,6 +38,7 @@ enum flags {
   bad_gradients  = 1 << 5,             // For meshless
 
   inside_sink    = 1 << 6,             // Is particle inside a sink?
+  ionised        = 1 << 7,             // Is gas ionised or partly-ionised?
 
 
   x_periodic_lhs = 1 << 20,

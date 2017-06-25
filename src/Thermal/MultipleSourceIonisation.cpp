@@ -690,15 +690,18 @@ for (ii=0;ii<N;ii++)
 	//Set particle ionisation state
 	if (ionisedsph[ii].t==tn)
 		{
-		sphdata[ii].ionstate=0;
+			sphdata[ii].flags.unset(ionised);
+		//sphdata[ii].ionstate=0;
 		}
 	else if (ionisedsph[ii].fionised==1)
 		{
-		sphdata[ii].ionstate=2;
+			sphdata[ii].flags.set(ionised);
+		//sphdata[ii].ionstate=2;
 		}
 	else
 		{
-		sphdata[ii].ionstate=1;
+			sphdata[ii].flags.set(ionised);
+		//sphdata[ii].ionstate=1;
 		}
 
 	sphdata[ii].u=ionisedsph[ii].u;				//Write new internal energy to gandalf

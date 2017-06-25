@@ -156,7 +156,7 @@ struct Particle
   FLOAT dudt0;                      ///< dudt at beginning of step
   FLOAT dudt;                       ///< Compressional heating rate
   FLOAT gpot;                       ///< Gravitational potential
-  DOUBLE dt_next;                   ///< Next time-step timestep
+  FLOAT dt_next;                    ///< Next time-step timestep
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
 
@@ -171,11 +171,11 @@ struct Particle
   int nstep;                        ///< Integer step-size of particle
   int nlast;                        ///< Integer time at beginning of step
   //int sinkid;                       ///< i.d. of sink particle
-  DOUBLE dt;                        ///< Particle timestep
+  FLOAT dt;                         ///< Particle timestep
   //DOUBLE tlast;                     ///< Time at beginning of current step
   //FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
-  int ionstate;                     ///< States current ionisation state of the particle
-                                    ///< (0 is neutral, 1 is smoothed and 2 is ionised)
+  //int ionstate;                     ///< States current ionisation state of the particle
+  //                                  ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
   Particle() {
     flags     = none;

@@ -102,7 +102,8 @@ FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
   // Checks if particle's internal energy has been changed by the ionisation routine
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
-  if (part.ionstate != 0) {
+  //if (part.ionstate != 0) {
+  if (part.flags.check(ionised)) {
     FLOAT non_ionised = eos->SpecificInternalEnergy(part);
     if (part.u > non_ionised) return part.u;
     else return non_ionised;

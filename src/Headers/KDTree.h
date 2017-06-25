@@ -51,12 +51,10 @@ template <int ndim>
 struct KDTreeCell : public TreeCellBase<ndim> {
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
-  int c2g;                          ///< i.d. of tree-cell c/grid-cell g
 
 #ifdef MPI_PARALLEL
   typedef TreeCommunicationHandler<ndim> HandlerType;
 #endif
-
 
 };
 

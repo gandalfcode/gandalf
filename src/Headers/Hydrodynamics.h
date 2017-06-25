@@ -51,7 +51,7 @@ class EOS;
 
 class SimulationBase;
 
-static const FLOAT ghost_range = 2.5;
+static const FLOAT ghost_range = 3.0; //2.5;
 
 
 //=================================================================================================
