@@ -2113,11 +2113,15 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
       if (level_max > level_max_old) {
         nfactor = pow(2, level_max - level_max_old);
         n *= nfactor;
+
+        level_step = level_max + integration_step - 1;
+#pragma omp parallel for default(none) private(i) shared(level_step,nfactor)
         for (i=0; i<hydro->Nhydro; i++) {
           Particle<ndim>& part = hydro->GetParticlePointer(i);
           if (part.flags.is_dead()) continue;
           part.nstep *= nfactor;
           part.nlast *= nfactor;
+          if (part.nlast == n) part.nstep = pow(2, level_step - part.level);
         }
         for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
         for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
@@ -2125,14 +2129,18 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
       else if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0) {
         level_max = level_max_old - 1;
 
+        level_step = level_max + integration_step - 1;
+
         nfactor = pow(2, level_max_old - level_max);
         assert(n%nfactor == 0);
         n /= nfactor;
+#pragma omp parallel for default(none) private(i) shared(level_step,nfactor)
         for (i=0; i<hydro->Nhydro; i++) {
           Particle<ndim>& part = hydro->GetParticlePointer(i);
           if (part.flags.is_dead()) continue;
           part.nlast /= nfactor;
           part.nstep /= nfactor;
+          if (part.nlast == n) part.nstep = pow(2, level_step - part.level);
         }
         for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
         for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
@@ -2142,19 +2150,15 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
       }
     }
 
-    level_step = level_max + integration_step - 1;
     nresync    = pow(2, level_step);
     timestep   = dt_max / (DOUBLE) nresync;
 
-    // Update values of nstep for both hydro and star particles
-    if (hydro != NULL) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.flags.is_dead()) continue;
-        if (part.nlast == n) part.nstep = pow(2, level_step - part.level);
-      }
-    }
+    // Update values of nstep for both star particles
     if (nbody != NULL) {
+
+      if (hydro == NULL)
+        level_step = level_max + integration_step - 1;
+
       for (i=0; i<nbody->Nnbody; i++) {
         if (nbody->nbodydata[i]->nlast == n) {
           nbody->nbodydata[i]->nstep = pow(2, level_step - nbody->nbodydata[i]->level);
