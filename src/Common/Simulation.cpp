@@ -2115,7 +2115,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
         n *= nfactor;
 
         level_step = level_max + integration_step - 1;
-#pragma omp parallel for default(none) private(i) shared(level_step,nfactor)
+#pragma omp parallel for default(none) private(i) shared(nfactor)
         for (i=0; i<hydro->Nhydro; i++) {
           Particle<ndim>& part = hydro->GetParticlePointer(i);
           if (part.flags.is_dead()) continue;
@@ -2134,7 +2134,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
         nfactor = pow(2, level_max_old - level_max);
         assert(n%nfactor == 0);
         n /= nfactor;
-#pragma omp parallel for default(none) private(i) shared(level_step,nfactor)
+#pragma omp parallel for default(none) private(i) shared(nfactor)
         for (i=0; i<hydro->Nhydro; i++) {
           Particle<ndim>& part = hydro->GetParticlePointer(i);
           if (part.flags.is_dead()) continue;
@@ -2156,8 +2156,11 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
     // Update values of nstep for both star particles
     if (nbody != NULL) {
 
-      if (hydro == NULL)
+      if (hydro == NULL) {
         level_step = level_max + integration_step - 1;
+        nresync    = pow(2, level_step);
+        timestep   = dt_max / (DOUBLE) nresync;
+      }
 
       for (i=0; i<nbody->Nnbody; i++) {
         if (nbody->nbodydata[i]->nlast == n) {
