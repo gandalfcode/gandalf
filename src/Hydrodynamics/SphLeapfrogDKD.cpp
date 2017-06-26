@@ -244,6 +244,8 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
+    part.flags.unset(active);
+
     dn = n - part.nlast;
     if (dn == part.nstep) continue;
 

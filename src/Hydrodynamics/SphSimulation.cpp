@@ -731,12 +731,6 @@ void SphSimulation<ndim>::MainLoop(void)
     mpicontrol->GetExportedParticlesAccelerations(sph);
 #endif
 
-    // Zero all active flags once accelerations have been computed
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      part.flags.unset(active);
-    }
-
     // Check if all neighbouring timesteps are acceptable.  If not, then set any
     // invalid particles to active to recompute forces immediately.
     if (Nlevels > 1) {

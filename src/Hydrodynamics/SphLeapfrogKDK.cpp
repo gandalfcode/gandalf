@@ -310,6 +310,8 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
     ParticleType<ndim> &part = sphdata[i];
     if (part.flags.is_dead()) continue;
 
+    part.flags.unset(active);
+
     const int dn = n - part.nlast;
     if (dn == part.nstep) continue;
 

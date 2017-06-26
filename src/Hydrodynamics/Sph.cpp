@@ -125,6 +125,7 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
 template <int ndim>
 void Sph<ndim>::ZeroAccelerations()
 {
+#pragma omp parallel for default(none)
   for (int i=0; i< Nhydro; i++) {
     SphParticle<ndim>& part = GetSphParticlePointer(i);
     if (part.flags.check(active)) {
