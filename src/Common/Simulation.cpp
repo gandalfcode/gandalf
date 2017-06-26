@@ -1775,7 +1775,6 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
   int level_max_nbody = 0;                   // level_max for star particles only
   int level_max_old;                         // Old level_max
   int level_max_hydro = 0;                     // level_max for hydro particles only
-  int level_min_hydro = 9999999;               // level_min for hydro particles
   int level_nbody;                           // local thread var. for N-body level
   int level_hydro;                             // local thread var. for hydro level
   int nfactor;                               // Increase/decrease factor of n
@@ -1895,18 +1894,51 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
       }
     }
 
+    // Populate the timestep levels with hydro particles.
     // If particles are sink neighbours, set to same timesteps as sinks
     if (hydro != NULL) {
-      for (i=0; i<hydro->Nhydro; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.flags.check(inside_sink)) {
-          if (level_max_nbody - part.level > level_diff_max) {
-            part.level     = level_max_nbody - level_diff_max;
-            part.levelneib = level_max_nbody;
-            level_max_hydro  = max(level_max_hydro, part.level);
+#pragma omp parallel default(none) private(i,dt,level) shared(level_max_nbody,level_max_temp)
+      {
+
+        int level_max_hydro_thread = 0;
+
+#pragma omp for
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+
+          if (part.flags.is_dead()) continue;
+          dt             = part.dt_next;
+          level          = min(ComputeTimestepLevel(dt, dt_max), level_max);
+          part.level     = level;
+          part.levelneib = level;
+          part.nstep     = pow(2, level_step - part.level);
+          part.nlast     = n ;
+          part.dt_next   = part.nstep * timestep;
+          part.flags.set(end_timestep) ;
+
+          if (part.flags.check(inside_sink)) {
+            if (level_max_nbody - part.level > level_diff_max) {
+              part.level     = level_max_nbody - level_diff_max;
+              part.levelneib = level_max_nbody;
+              level_max_hydro_thread  = max(level_max_hydro_thread, part.level);
+            }
           }
         }
+
+#ifdef _OPENMP
+        const int ithread = omp_get_thread_num();
+#else
+        const int ithread = 0;
+#endif
+
+        level_max_temp[ithread] = level_max_hydro_thread;
+
       }
+
+      for (int ithread=0; ithread<Nthreads; ithread++) {
+        level_max_hydro = max(level_max_hydro,level_max_temp[ithread]);
+      }
+
 
       // If enforcing a single hydro timestep, set it here.
       // Otherwise, populate the timestep levels with hydro particles.
@@ -1920,23 +1952,6 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
           part.nlast     = n ;
           part.dt_next   = part.nstep * timestep;
           part.flags.set(end_timestep) ;
-        }
-        level_min_hydro = level_max_hydro;
-      }
-      else {
-        for (i=0; i<hydro->Nhydro; i++) {
-          Particle<ndim>& part = hydro->GetParticlePointer(i);
-          if (part.flags.is_dead()) continue;
-          dt             = part.dt_next;
-          level          = min(ComputeTimestepLevel(dt, dt_max), level_max);
-          part.level     = level;
-          part.levelneib = level;
-          part.nstep     = pow(2, level_step - part.level);
-          part.nlast     = n ;
-          part.dt_next   = part.nstep * timestep;
-          part.flags.set(end_timestep) ;
-
-          level_min_hydro  = min(level_min_hydro, part.level);
         }
       }
     }
