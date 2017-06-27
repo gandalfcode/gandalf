@@ -514,14 +514,14 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp,false,true);
 #endif
 
   // Search ghost particles
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro+mfv->NPeriodicGhost, mfv, mfv->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro+mfv->NPeriodicGhost, mfv, mfv->kernp,true,true);
   for (int i=0; i<mfv->Nhydro+mfv->NPeriodicGhost; i++) {
     MeshlessFVParticle<ndim>& parti =  mfv->GetMeshlessFVParticlePointer(i);
     parti.hrangesqd = mfv->kernp->kernrangesqd*parti.h*parti.h;
@@ -554,14 +554,14 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp,false,true);
 #endif
 
   // Search ghost particles
   mfvneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, mfv);
   mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp,true,true);
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
   mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #endif
@@ -666,7 +666,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 
 #ifdef MPI_PARALLEL
-    mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
+    mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp,true,true);
     MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
     mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #endif

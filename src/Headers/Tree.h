@@ -129,6 +129,7 @@ protected:
 	virtual void UpdateLeafCells(TreeBase<ndim>*)=0;
 	enum direction { to_buffer, from_buffer };
 	virtual void CopyLeafCells(vector<char>& buffer, direction)=0;
+        virtual void UpdateBoundingBoxData(MpiNode<ndim>& node) = 0;
 #endif
 
 	virtual bool ComputeSignalVelocityFromDistantInteractions(const TreeCellBase<ndim>& cell,
@@ -312,6 +313,12 @@ protected:
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
   virtual void UpdateLeafCells(TreeBase<ndim>*);
   virtual void CopyLeafCells(vector<char>& buffer, enum TreeBase<ndim>::direction);
+  virtual void UpdateBoundingBoxData(MpiNode<ndim>& node) {
+	for (int k=0; k<ndim; k++) node.rbox.min[k] = min(node.rbox.min[k],celldata[0].bb.min[k]);
+	for (int k=0; k<ndim; k++) node.rbox.max[k] = max(node.rbox.max[k],celldata[0].bb.max[k]);
+	for (int k=0; k<ndim; k++) node.hbox.min[k] = min(node.hbox.min[k],celldata[0].hbox.min[k]);
+	for (int k=0; k<ndim; k++) node.hbox.max[k] = max(node.hbox.max[k],celldata[0].hbox.max[k]);
+  }
 #endif
 
 

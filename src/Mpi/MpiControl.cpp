@@ -318,12 +318,18 @@ template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
  (int Npart,                           ///< [in] No. of hydro particles
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
-  SmoothingKernel<ndim> *kernptr)      ///< [in] Pointer to smoothing kernel object
+  SmoothingKernel<ndim> *kernptr,      ///< [in] Pointer to smoothing kernel object
+  const bool UseGhosts,          ///< [in] Wheter or not the bounding box should take periodic ghosts into account
+  const bool UseTree)      ///< [in] Wheter or not we should use the tree to compute the bounding box rather than explicitly looping
 {
   if (rank == 0) debug2("[MpiControl::UpdateAllBoundingBoxes]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("UPDATEBOUNDINGBOXES");
 
   // Update local bounding boxes
-  mpinode[rank].UpdateBoundingBoxData(Npart, hydro, kernptr);
+  if (UseTree)
+    neibsearch->UpdateBoundingBoxData(mpinode[rank],UseGhosts);
+  else
+    mpinode[rank].UpdateBoundingBoxData(Npart,hydro,kernptr);
 
   // Do an all_gather to receive the new array
   MPI_Allgather(&(mpinode[rank].hbox), 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
@@ -752,6 +758,7 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
  (Hydrodynamics<ndim>* hydro)              ///< Pointer to hydrodynamics object
 {
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("EXPORT_PARTICLES");
   vector<vector <char> > send_buffer(Nmpi-1);
   vector<vector <char> > receive_buffer(Nmpi-1);
   vector<vector <char> > header_receive(Nmpi-1);
@@ -917,6 +924,7 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
  (Hydrodynamics<ndim>* hydro)              ///< Pointer to main hydrodynamics object
 {
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GET_EXPORTED");
   vector<vector<char> > send_buffer(Nmpi-1);                // ..
   vector<vector<char> > receive_buffer(Nmpi-1);
 
