@@ -690,7 +690,7 @@ private:
          if (not types[partdata[j].ptype]) continue ;
 
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
-         GhostFinder.NearestPeriodicVector(dr);
+         ///GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
          if (partdata[j].flags.is_dead()) continue;
          if (drsqd <= partdata[i].hrangesqd) truengb.push_back(j);
@@ -715,11 +715,7 @@ private:
      for (j=0; j<truengb.size(); j++) {
        int count = 0;
        for (unsigned int k=0; k<reducedngb.size(); k++) {
-         if (partdata[reducedngb[k]].flags.check(any_boundary)) {
-           if (partdata[reducedngb[k]].iorig == truengb[j])
-             count++;
-         }
-         else if (reducedngb[k] == truengb[j])
+         if (reducedngb[k] == truengb[j])
            count++;
        }
 

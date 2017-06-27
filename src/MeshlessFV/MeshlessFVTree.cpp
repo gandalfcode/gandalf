@@ -190,13 +190,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
           NeighbourList<DensityParticle> neiblist =
               neibmanager.GetParticleNeibGather(activepart[j],densmask,hrangesqd);
 
-          // Validate that gather neighbour list is correct
-#if defined(VERIFY_ALL)
-          neibmanager.VerifyNeighbourList(activelist[j], mfv->Nhydro, mfvdata, "gather");
-          neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, mfv->Nhydro,
-                                                 mfvdata, densmask, "gather");
-#endif
-
           // Compute smoothing length and other gather properties for ptcl i
           okflag = mfv->ComputeH(activepart[j], hmax, neiblist, nbody);
 
@@ -206,6 +199,12 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
             break;
           }
 
+          // Validate that gather neighbour list is correct
+#if defined(VERIFY_ALL)
+          neibmanager.VerifyNeighbourList(activelist[j], mfv->Ntot, mfvdata, "gather");
+          neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, mfv->Ntot,
+                                                 mfvdata, densmask, "gather");
+#endif
         }
         //-----------------------------------------------------------------------------------------
 

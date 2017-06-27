@@ -414,11 +414,13 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
 
   // Optional output (for debugging)
 #if defined(VERIFY_ALL)
+  /*
   cout << "No. of ptcls in tree  : " << Ntot << "   " << Ntotmax << endl;
   cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
   cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
   cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl;
   cout << "Max No part in leaf cell: " << Nleafmax << "\n";
+  */
 #endif
 
   return;
@@ -777,7 +779,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
       StockCellProperties(*c, partdata, stock_leaf);
 
       // Flag that we've done a child cell for the parent, and update the cell (recursively)
-      int cc = g2c[i];
       int l = ltot ;
       while (l > 0) {
 
@@ -797,7 +798,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
         if (c == NULL) break ;
 
         StockCellProperties(*c, partdata, stock_leaf) ;
-        cc = parent ;
+
         l-- ;
       }
     }
@@ -1115,7 +1116,6 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
       }
 
       // Flag that we've done a child cell for the parent, and update the cell (recursively)
-      int cc = g2c[i];
       int l = ltot ;
       while (l > 0) {
 
@@ -1153,7 +1153,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
           for (int k=0; k<ndim; k++) c->hbox.min[k] = min(celldata[c2].hbox.min[k],c->hbox.min[k]);
           for (int k=0; k<ndim; k++) c->hbox.max[k] = max(celldata[c2].hbox.max[k],c->hbox.max[k]);
         }
-        cc = parent ;
+
         l-- ;
       }
     }
