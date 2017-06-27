@@ -172,14 +172,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
           NeighbourList<DensityParticle> neiblist =
               neibmanager.GetParticleNeibGather(activepart[j],densmask,hrangesqd);
 
-
-          // Validate that gather neighbour list is correct
-#if defined(VERIFY_ALL)
-          neibmanager.VerifyNeighbourList(activelist[j], sph->Nhydro, sphdata, "gather");
-          neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, sph->Nhydro,
-                                                 sphdata, densmask, "gather");
-#endif
-
           // Compute smoothing length and other gather properties for ptcl i
           okflag = sph->ComputeH(activepart[j], hmax, neiblist, nbody);
 
@@ -189,6 +181,13 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
             celldone = 0;
             break;
           }
+
+          // Validate that gather neighbour list is correct
+#if defined(VERIFY_ALL)
+          neibmanager.VerifyNeighbourList(activelist[j], sph->Ntot, sphdata, "gather");
+          neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, sph->Ntot,
+                                                 sphdata, densmask, "gather");
+#endif
 
         }
         //-----------------------------------------------------------------------------------------

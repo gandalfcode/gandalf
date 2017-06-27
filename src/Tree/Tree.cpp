@@ -1238,6 +1238,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     }
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
+    assert(prunedcells[c].parent < c);
   }
 
 #ifndef NDEBUG
