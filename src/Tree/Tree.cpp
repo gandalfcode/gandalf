@@ -1012,6 +1012,8 @@ Particle<ndim>* part_gen)               ///< [in] Particle array
 
   TreeCell<ndim>& cell = celldata[cellbase.id] ;
 
+  assert(cell.id == cellbase.id);
+
   cell.hmax = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) cell.hbox.min[k] =  big_number;
   for (int k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
@@ -1020,6 +1022,8 @@ Particle<ndim>* part_gen)               ///< [in] Particle array
   if (cell.ifirst != -1) {
     for (int j = cell.ifirst; j <= cell.ilast; ++j) {
       const ParticleType<ndim> &part = partdata[j];
+      if (part.flags.is_dead()) continue ;
+
       cell.hmax = max(cell.hmax,part.h);
       for (int k=0; k<ndim; k++) {
         cell.hbox.min[k] = min(cell.hbox.min[k], part.r[k] - kernrange*part.h);
