@@ -287,14 +287,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp,false, false);
 #endif
 
   // Search ghost particles
   sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
   sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro+sph->NPeriodicGhost, sph, sph->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro+sph->NPeriodicGhost, sph, sph->kernp,true,false);
   for (int i=0; i<sph->Nhydro+sph->NPeriodicGhost; i++) {
     SphParticle<ndim>& parti = sph->GetSphParticlePointer(i);
     parti.hrangesqd = sph->kernp->kernrangesqd*parti.h*parti.h;
@@ -322,7 +322,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   sphneib->UpdateAllSphProperties(sph, nbody, simbox);
 
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp,false,true);
 #endif
 
   // Update neighbour tree
@@ -335,7 +335,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
 
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp,true,true);
   MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
   sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
@@ -395,7 +395,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
 #ifdef MPI_PARALLEL
-    mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp,true,true);
     MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
     sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
@@ -618,7 +618,7 @@ void SphSimulation<ndim>::MainLoop(void)
 	else {
 		sphneib->StockPrunedTree(rank, sph);
 	}
-    mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp,false,true);
     mpicontrol->LoadBalancing(sph, nbody);
   }
 #endif
@@ -642,8 +642,11 @@ void SphSimulation<ndim>::MainLoop(void)
   // Re-build and communicate the new pruned trees (since the trees will necessarily change
   // once there has been communication of particles to new domains)
 #ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
+  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp,true,true);
+{
+CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_GHOSTS_MPI");
   MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
+}
   sphneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
 

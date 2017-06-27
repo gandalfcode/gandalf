@@ -115,7 +115,7 @@ class MpiControl
   void DeallocateMemory(void);
   void SetNeibSearch(NeighbourSearch<ndim>* _neibsearch) {neibsearch = _neibsearch;}
   void CollateDiagnosticsData(Diagnostics<ndim> &);
-  void UpdateAllBoundingBoxes(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *);
+  void UpdateAllBoundingBoxes(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *,const bool,const bool);
   void ComputeTotalStarGasForces(Nbody<ndim> * nbody);
 
   //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *);

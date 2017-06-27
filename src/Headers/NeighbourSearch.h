@@ -133,6 +133,7 @@ protected:
   virtual void FindParticlesToTransfer(Hydrodynamics<ndim> *, vector<vector<int> >& ,
                                        vector<int> &, const vector<int> &, MpiNode<ndim> *) = 0;
   virtual void ResetCountersExportInfo(Hydrodynamics<ndim>* hydro) = 0;
+  virtual void UpdateBoundingBoxData(MpiNode<ndim>& node, const bool) = 0;
 #endif
 
 };
@@ -248,7 +249,18 @@ protected:
 	  tree->Nimportedcell = 0;
   };
   virtual void InitialiseCellWorkCounters() {
+CodeTiming::BlockTimer timer = timing->StartNewTimer("INITIALISE_CELL_WORK");
     tree->InitialiseCellWorkCounters() ;
+  }
+  virtual void UpdateBoundingBoxData(MpiNode<ndim>& node, const bool UseGhosts) {
+     // Initialise bounding box values
+     for (int k=0; k<ndim; k++) node.rbox.min[k] = big_number;
+     for (int k=0; k<ndim; k++) node.rbox.max[k] = -big_number;
+     for (int k=0; k<ndim; k++) node.hbox.min[k] = big_number;
+     for (int k=0; k<ndim; k++) node.hbox.max[k] = -big_number;
+     tree->UpdateBoundingBoxData(node);
+     if (UseGhosts)
+	ghosttree->UpdateBoundingBoxData(node);
   }
 #endif
 #if defined(VERIFY_ALL)
