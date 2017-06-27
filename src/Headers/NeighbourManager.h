@@ -405,7 +405,6 @@ private:
     //for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
     cell.ComputeCellCentre(rc);
 
-
     const GhostNeighbourFinder<ndim> GhostFinder(*_domain, cell);
     int MaxGhosts = GhostFinder.MaxNumGhosts();
 
@@ -702,9 +701,14 @@ private:
      unsigned int j;
      for (j=0; j<truengb.size(); j++) {
        int count = 0;
-       for (unsigned int k=0; k<reducedngb.size(); k++)
-         if (reducedngb[k] == truengb[j])
+       for (unsigned int k=0; k<reducedngb.size(); k++) {
+         if (partdata[reducedngb[k]].flags.check(any_boundary)) {
+           if (partdata[reducedngb[k]].iorig == truengb[j])
+             count++;
+         }
+         else if (reducedngb[k] == truengb[j])
            count++;
+       }
 
        // If the true neighbour is not in the list, or included multiple times,
        // then output to screen and terminate program

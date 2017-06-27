@@ -636,6 +636,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   if (Forces.NeedEnergyUpdate())
     for (int i=hydro->Nhydro; i < hydro->Nhydro+hydro->NPeriodicGhost; i++)
       sphdata[i].dudt = 0 ;
+
+  mpighosttree->UpdateAllHmaxValues(sphdata);
 #endif
 
 #pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces,hydro,a_drag, dudt, cout)
@@ -701,7 +703,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
             neibmanager.VerifyNeighbourList(i, hydro->Nhydro, sphdata, "all");
             neibmanager.VerifyReducedNeighbourList(i, neiblist, hydro->Nhydro, sphdata, dragmask, "all");
 #endif
-
 
             DOUBLE dt_drag = drag_timestep(activepart[j]);
 

@@ -218,6 +218,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 
   // Update tree smoothing length values here
+  timer.EndTiming();
+  CodeTiming::BlockTimer timer2 = timing->StartNewTimer("UPDATE_HMAX");
+
   tree->UpdateAllHmaxValues(sphdata);
 
   return;
