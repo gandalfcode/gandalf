@@ -1101,6 +1101,8 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
         if (c->ifirst != -1) {
           for (int j = c->ifirst; j <= c->ilast; ++j) {
             const ParticleType<ndim> &part = partdata[j];
+            if (part.flags.is_dead()) continue ;
+
             c->hmax = max(c->hmax,part.h);
             for (int k=0; k<ndim; k++) {
               c->hbox.min[k] = min(c->hbox.min[k], part.r[k] - kernrange*part.h);
