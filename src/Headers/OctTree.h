@@ -140,11 +140,11 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
     StockTree(celldata[0], partdata, stock_leaf) ;
   }
   void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool);
-  void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
+  void UpdateAllHmaxValues(Particle<ndim> *part_gen, bool stock_leaf) {
       ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-      UpdateHmaxValues(celldata[0], partdata) ;
+      UpdateHmaxValues(celldata[0], partdata, stock_leaf) ;
     }
-  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *);
+  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *, bool);
   void UpdateActiveParticleCounters(Particle<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters() {

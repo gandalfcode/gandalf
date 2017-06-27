@@ -725,7 +725,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
  (TreeCell<ndim> &rootcell,            ///< KD-tree cell
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
+  ParticleType<ndim> *partdata,        ///< SPH particle data array
+  bool stock_leaf)                     ///< Whether to stock the leaf
 {
   int c,cc;                            // Cell counters
   int cfirst,cend;                     // ..
@@ -752,19 +753,19 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
       // If this is a leaf cell, sum over all particles
       //-------------------------------------------------------------------------------------------
       if (cell.copen == -1) {
-        for (i = cell.ifirst; i <= cell.ilast; ++i) {
-          cell.hmax = max(cell.hmax,partdata[i].h);
-          for (k=0; k<ndim; k++) {
-            if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
-              cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-            }
-            if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k]) {
-              cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+        if (stock_leaf && cell.ifirst != -1) {
+          for (i = cell.ifirst; i <= cell.ilast; ++i) {
+            cell.hmax = max(cell.hmax,partdata[i].h);
+            for (k=0; k<ndim; k++) {
+              if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
+                cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+              }
+              if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k]) {
+                cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+              }
             }
           }
-        };
-
-
+        }
       }
       // For non-leaf cells, sum over all child cells
       //-------------------------------------------------------------------------------------------
