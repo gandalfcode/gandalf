@@ -142,7 +142,12 @@ protected:
 	//                        const FLOAT, ParticleType<ndim> *) = 0;
 	virtual void AllocateTreeMemory(int,int,bool) = 0;
 	virtual void DeallocateTreeMemory(void) = 0;
-	virtual void UpdateAllHmaxValues(Particle<ndim> *) = 0;
+	virtual void UpdateAllHmaxValues(Particle<ndim> *, bool stock_leaf) = 0;
+	void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
+      UpdateAllHmaxValues(part_gen, true);
+    }
+
+	virtual void UpdateHmaxLeaf(TreeCellBase<ndim>&, Particle<ndim> *) = 0;
 	virtual double GetMaximumSmoothingLength() const = 0 ;
 	//virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 
@@ -314,7 +319,8 @@ protected:
 
   virtual void BuildTree(const int, const int, const int, const int,
                          const FLOAT, Particle<ndim> *) = 0;
-  void UpdateAllHmaxValues(Particle<ndim>* sph_gen) = 0;
+  virtual void UpdateAllHmaxValues(Particle<ndim> *, bool stock_leaf) = 0;
+  virtual void UpdateHmaxLeaf(TreeCellBase<ndim>&, Particle<ndim> *);
   virtual void StockTree(Particle<ndim> *, bool) = 0 ;
   virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
   virtual double GetMaximumSmoothingLength() const {

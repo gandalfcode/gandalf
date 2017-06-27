@@ -125,7 +125,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void StockTree(Particle<ndim> *part_gen, bool stock_leaf) ;
   //void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool);
   void StockCellProperties(TreeCell<ndim> &, ParticleType<ndim> *,bool);
-  void UpdateAllHmaxValues(Particle<ndim> *part_gen);
+  void UpdateAllHmaxValues(Particle<ndim> *part_gen, bool stock_leaf);
   void UpdateActiveParticleCounters(Particle<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters() {

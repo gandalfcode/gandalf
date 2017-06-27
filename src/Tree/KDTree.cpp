@@ -1073,11 +1073,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
- (Particle<ndim> *part_gen)        ///< SPH particle data array
+ (Particle<ndim> *part_gen,        ///< [in] SPH particle data array
+  bool stock_leaf)                 ///< [in] Whether to stock the leaf cell
 {
   ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
-#pragma omp parallel default(none) shared(partdata)
+#pragma omp parallel default(none) shared(partdata, stock_leaf)
   {
     //  Initialize the worklist
 # pragma omp for
@@ -1091,18 +1092,20 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
       // Stock the leaf cell
       TreeCell<ndim>* c = &celldata[g2c[i]];
 
-      c->hmax = (FLOAT) 0.0;
-      for (int k=0; k<ndim; k++) c->hbox.min[k] =  big_number;
-      for (int k=0; k<ndim; k++) c->hbox.max[k] = -big_number;
+      if (stock_leaf) {
+        c->hmax = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) c->hbox.min[k] =  big_number;
+        for (int k=0; k<ndim; k++) c->hbox.max[k] = -big_number;
 
-      // Loop over all particles in cell summing their contributions
-      if (c->ifirst != -1) {
-        for (int j = c->ifirst; j <= c->ilast; ++j) {
-          const ParticleType<ndim> &part = partdata[j];
-          c->hmax = max(c->hmax,part.h);
-          for (int k=0; k<ndim; k++) {
-            c->hbox.min[k] = min(c->hbox.min[k], part.r[k] - kernrange*part.h);
-            c->hbox.max[k] = max(c->hbox.max[k], part.r[k] + kernrange*part.h);
+        // Loop over all particles in cell summing their contributions
+        if (c->ifirst != -1) {
+          for (int j = c->ifirst; j <= c->ilast; ++j) {
+            const ParticleType<ndim> &part = partdata[j];
+            c->hmax = max(c->hmax,part.h);
+            for (int k=0; k<ndim; k++) {
+              c->hbox.min[k] = min(c->hbox.min[k], part.r[k] - kernrange*part.h);
+              c->hbox.max[k] = max(c->hbox.max[k], part.r[k] + kernrange*part.h);
+            }
           }
         }
       }

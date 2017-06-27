@@ -113,12 +113,12 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   }
   void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool stock_leaf);
   void StockTreeProperties(TreeCell<ndim> &, ParticleType<ndim> *);
-  void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
+  void UpdateAllHmaxValues(Particle<ndim> *part_gen, bool stock_leaf) {
     ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-    UpdateHmaxValues(celldata[0], partdata) ;
+    UpdateHmaxValues(celldata[0], partdata, stock_leaf) ;
   }
-  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *);
-  void UpdateHmaxValuesCell(TreeCell<ndim> &, ParticleType<ndim> *);
+  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *, bool);
+  void UpdateHmaxValuesCell(TreeCell<ndim> &, ParticleType<ndim> *, bool);
 
   void UpdateActiveParticleCounters(Particle<ndim> *);
 #ifdef MPI_PARALLEL

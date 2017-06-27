@@ -219,6 +219,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
         mfvdata[activelist[j]] = activepart[j];
       }
 
+      tree->UpdateHmaxLeaf(cell, mfvdata) ;
 
     }
     //=============================================================================================
@@ -241,7 +242,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
   timer.EndTiming();
   CodeTiming::BlockTimer timer2 = timing->StartNewTimer("UPDATE_HMAX");
 
-  tree->UpdateAllHmaxValues(mfvdata);
+  tree->UpdateAllHmaxValues(mfvdata, false);
 
   return;
 }

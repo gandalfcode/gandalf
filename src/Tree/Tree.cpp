@@ -996,6 +996,41 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
   // return error code, -1
   return -1;
 }
+
+
+//=================================================================================================
+// Tree::UpdateHmaxLeaf
+/// Update the Hmax Values for a leaf cell only. This function updates the Tree's copy of the
+/// leaf cell ONLY.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::UpdateHmaxLeaf
+(TreeCellBase<ndim>& cellbase,          ///< [in] Cell to update hmax for
+Particle<ndim>* part_gen)               ///< [in] Particle array
+{
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
+
+  TreeCell<ndim>& cell = celldata[cellbase.id] ;
+
+  cell.hmax = (FLOAT) 0.0;
+  for (int k=0; k<ndim; k++) cell.hbox.min[k] =  big_number;
+  for (int k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
+
+  // Loop over all particles in cell summing their contributions
+  if (cell.ifirst != -1) {
+    for (int j = cell.ifirst; j <= cell.ilast; ++j) {
+      const ParticleType<ndim> &part = partdata[j];
+      cell.hmax = max(cell.hmax,part.h);
+      for (int k=0; k<ndim; k++) {
+        cell.hbox.min[k] = min(cell.hbox.min[k], part.r[k] - kernrange*part.h);
+        cell.hbox.max[k] = max(cell.hbox.max[k], part.r[k] + kernrange*part.h);
+      }
+    }
+  }
+}
+
+
+
 //=================================================================================================
 // Tree::GenerateBoundaryGhostParticles
 /// Creates the ghost particles by walking the tree. It checks whether the cell's smoothing

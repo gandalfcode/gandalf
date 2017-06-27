@@ -479,14 +479,15 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
  (TreeCell<ndim> &cell,                ///< BruteForce-tree cell
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
-{
-  UpdateHmaxValuesCell(cell, partdata) ;
+  ParticleType<ndim> *partdata,        ///< SPH particle data array
+  bool stock_leaf)                     ///< Whether to stock the leaf cells.
+  {
+  UpdateHmaxValuesCell(cell, partdata, stock_leaf) ;
 
   int c = cell.copen ;
   if (c == -1) c = cell.cnext ;
   for (; c < Ncell; c++)
-	UpdateHmaxValuesCell(celldata[c], partdata) ;
+	UpdateHmaxValuesCell(celldata[c], partdata, stock_leaf) ;
 }
 //=================================================================================================
 //  BruteForceTree::UpdateHmaxValuesCell
@@ -496,10 +497,13 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
  (TreeCell<ndim> &cell,                ///< BruteForce-tree cell
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
+  ParticleType<ndim> *partdata,        ///< SPH particle data array
+  bool stock_leaf)                     ///< Whether to stock the leaf cells.
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
+
+  if (cell.copen == -1 && not stock_leaf) return ;
 
   // Zero all summation variables for all cells
   cell.hmax = (FLOAT) 0.0;

@@ -199,6 +199,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       // Once cell is finished, copy all active particles back to main memory
       for (j=0; j<Nactive; j++) sphdata[activelist[j]] = activepart[j];
 
+      tree->UpdateHmaxLeaf(cell, sphdata) ;
+
 
     }
     //=============================================================================================
@@ -221,7 +223,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   timer.EndTiming();
   CodeTiming::BlockTimer timer2 = timing->StartNewTimer("UPDATE_HMAX");
 
-  tree->UpdateAllHmaxValues(sphdata);
+  // Update only the non-leaf cells (we did active leaf cells already).
+  tree->UpdateAllHmaxValues(sphdata, false);
 
   return;
 }
