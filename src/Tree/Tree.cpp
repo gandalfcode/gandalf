@@ -1228,6 +1228,8 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   for (c=0; c<Nprunedcell; c++) {
     if (prunedcells[c].copen != -1) prunedcells[c].copen = newCellIds[prunedcells[c].copen];
     prunedcells[c].cnext = newCellIds[prunedcells[c].cnext];
+    if (c > 0) prunedcells[c].parent = newCellIds[prunedcells[c].parent];
+
     if (prunedcells[c].cnext <= 0 || prunedcells[c].copen >= prunedcells[c].cnext) {
       cout << "Problem with new pointers : " << c << "    " << Nprunedcell << "   "
            << "    " << Nprunedcellmax << "    copen : " << prunedcells[c].copen
