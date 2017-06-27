@@ -1077,81 +1077,92 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 /// opening-distance, etc..) of all cells in the tree.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
- (TreeCell<ndim> &cell,                ///< KD-tree cell
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
+void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
+ (Particle<ndim> *part_gen)        ///< SPH particle data array
 {
-  int cc,ccc;                          // Cell counters
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
-  // If cell is not leaf, stock child cells
-  if (cell.level != ltot) {
-#if defined _OPENMP
-    if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
-      for (i=0; i<2; i++) {
-        if (i == 0) UpdateHmaxValues(celldata[cell.c1],partdata);
-        else if (i == 1) UpdateHmaxValues(celldata[cell.c2],partdata);
-      }
-    }
-    else {
-      for (i=0; i<2; i++) {
-        if (i == 0) UpdateHmaxValues(celldata[cell.c1],partdata);
-        else if (i == 1) UpdateHmaxValues(celldata[cell.c2],partdata);
-      }
-    }
-#else
-    for (i=0; i<2; i++) {
-      if (i == 0) UpdateHmaxValues(celldata[cell.c1],partdata);
-      else if (i == 1) UpdateHmaxValues(celldata[cell.c2],partdata);
-    }
-#endif
-  }
+#pragma omp parallel default(none) shared(partdata)
+  {
+    //  Initialize the worklist
+# pragma omp for
+    for (int i=0; i < Ncell; i++)
+      worklist[i].reset() ;
 
+    // Loop over the leaf cells. Once a parent cell is ready to be computed, do it immediately
+#pragma omp for
+    for (int i=0; i < gtot; i++) {
 
-  // Zero all summation variables for all cells
-  cell.hmax = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
-  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
+      // Stock the leaf cell
+      TreeCell<ndim>* c = &celldata[g2c[i]];
 
+      c->hmax = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) c->hbox.min[k] =  big_number;
+      for (int k=0; k<ndim; k++) c->hbox.max[k] = -big_number;
 
-  // If this is a leaf cell, sum over all particles
-  //-----------------------------------------------------------------------------------------------
-  if (cell.level == ltot) {
-
-    // Loop over all particles in cell summing their contributions
-    for (i = cell.ifirst; i <= cell.ilast; ++i) {
-      cell.hmax = max(cell.hmax,partdata[i].h);
-      for (k=0; k<ndim; k++) {
-        if (part.r[k] - kernrange*part.h < cell.hbox.min[k]) {
-          cell.hbox.min[k] = part.r[k] - kernrange*part.h;
-        }
-        if (part.r[k] + kernrange*part.h > cell.hbox.max[k]) {
-          cell.hbox.max[k] = part.r[k] + kernrange*part.h;
+      // Loop over all particles in cell summing their contributions
+      if (c->ifirst != -1) {
+        for (int j = c->ifirst; j <= c->ilast; ++j) {
+          const ParticleType<ndim> &part = partdata[j];
+          c->hmax = max(c->hmax,part.h);
+          for (int k=0; k<ndim; k++) {
+            c->hbox.min[k] = min(c->hbox.min[k], part.r[k] - kernrange*part.h);
+            c->hbox.max[k] = max(c->hbox.max[k], part.r[k] + kernrange*part.h);
+          }
         }
       }
-    };
 
-  }
-  // For non-leaf cells, sum together two children cells
-  //-----------------------------------------------------------------------------------------------
-  else {
-    cc = cell.c1;
-    ccc = cell.c2;
-    if (celldata[cc].N > 0) {
-      cell.hmax = max(cell.hmax,celldata[cc].hmax);
-      for (k=0; k<ndim; k++) cell.hbox.min[k] = min(celldata[cc].hbox.min[k],cell.hbox.min[k]);
-      for (k=0; k<ndim; k++) cell.hbox.max[k] = max(celldata[cc].hbox.max[k],cell.hbox.max[k]);
-    }
-    if (celldata[ccc].N > 0) {
-      cell.hmax = max(cell.hmax,celldata[ccc].hmax);
-      for (k=0; k<ndim; k++) cell.hbox.min[k] = min(celldata[ccc].hbox.min[k],cell.hbox.min[k]);
-      for (k=0; k<ndim; k++) cell.hbox.max[k] = max(celldata[ccc].hbox.max[k],cell.hbox.max[k]);
-    }
+      // Flag that we've done a child cell for the parent, and update the cell (recursively)
+      int cc = g2c[i];
+      int l = ltot ;
+      while (l > 0) {
 
+        // Use a heuristic to find the parent cell.
+        int child = 0;
+        int parent = cc - 1 ;
+        if (celldata[parent].level + 1 != l) {
+          parent = cc - (1 << (ltot-l+1))  ;
+          child = 1 ;
+        }
+
+        {
+          // Lock the parent cell while we decide whether we can to do work on it yet.
+          KDCellLock& work = worklist[parent];
+          OmpGuard(work.get_lock());
+          work.finished_child(child) ;
+
+          if (work.ready())
+            c = &celldata[parent];
+          else
+            c = NULL ;
+        }
+
+        if (c == NULL) break ;
+
+        // Stock the parent
+        c->hmax = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) c->hbox.min[k] =  big_number;
+        for (int k=0; k<ndim; k++) c->hbox.max[k] = -big_number;
+
+        int c1 = c->c1;
+        int c2 = c->c2;
+        if (celldata[c1].N > 0) {
+          c->hmax = max(c->hmax,celldata[c1].hmax);
+          for (int k=0; k<ndim; k++) c->hbox.min[k] = min(celldata[c1].hbox.min[k],c->hbox.min[k]);
+          for (int k=0; k<ndim; k++) c->hbox.max[k] = max(celldata[c1].hbox.max[k],c->hbox.max[k]);
+        }
+        if (celldata[c2].N > 0) {
+          c->hmax = max(c->hmax,celldata[c2].hmax);
+          for (int k=0; k<ndim; k++) c->hbox.min[k] = min(celldata[c2].hbox.min[k],c->hbox.min[k]);
+          for (int k=0; k<ndim; k++) c->hbox.max[k] = max(celldata[c2].hbox.max[k],c->hbox.max[k]);
+        }
+        cc = parent ;
+        l-- ;
+      }
+    }
   }
-  //-----------------------------------------------------------------------------------------------
+
+  //-------------------------------------------------------------------------------------------
 
   return;
 }

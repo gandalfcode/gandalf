@@ -238,6 +238,9 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 #endif
 
   // Update tree smoothing length values here
+  timer.EndTiming();
+  CodeTiming::BlockTimer timer2 = timing->StartNewTimer("UPDATE_HMAX");
+
   tree->UpdateAllHmaxValues(mfvdata);
 
   return;
