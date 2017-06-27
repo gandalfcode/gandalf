@@ -18,6 +18,7 @@ struct TreeCellBase {
   int cnext;                           ///< i.d. of next cell if not opened
   int copen;                           ///< i.d. of first child cell
   int id;                              ///< Cell id
+  int parent;                          ///< Id of the cell's parent
   int level;                           ///< Level of cell on tree
   int ifirst;                          ///< i.d. of first particle in cell
   int ilast;                           ///< i.d. of last particle in cell

@@ -247,6 +247,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].id     = 0;
   celldata[0].level  = 0;
   celldata[0].hmax = 0;
+  celldata[0].parent = -1;
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
 
@@ -261,6 +262,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
       celldata[c].copen  = -1;
       celldata[c].id     = c;
       celldata[c].level  = 1;
+      celldata[c].parent = 0;
       for (k=0; k<ndim; k++) celldata[c].bb.min[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
       for (k=0; k<ndim; k++) celldata[c].bb.max[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
 #ifdef MPI_PARALLEL

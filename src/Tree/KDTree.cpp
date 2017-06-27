@@ -103,16 +103,16 @@ public:
   } ;
 
   bool ready() {
-    return _children[0] && _children[1] ;
+    return _count == 2;
   }
 
-  void finished_child(int child) {
-    assert(_children[child] == false) ;
-    _children[child] = true ;
+  void finished_child() {
+    assert(_count < 2);
+    _count++ ;
   }
 
   void reset() {
-    _children[0] = _children[1] = false ;
+    _count = 0;
   }
 
   omp_lock_t* get_lock() {
@@ -125,7 +125,7 @@ public:
 
 private:
   omp_lock_t _lock;
-  bool _children[2] ;
+  int _count ;
 
   // Disallow copies or assignment
   KDCellLock(const KDCellLock &);
@@ -467,6 +467,7 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   }
   g = 0;
   celldata[0].level = 0;
+  celldata[0].parent = -1;
 
 
   // Loop over all cells and set all other pointers
@@ -486,6 +487,9 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
       celldata[c].c2                 = c + c2L[celldata[c].level];   // id of 2nd child
       celldata[celldata[c].c2].level = celldata[c].level + 1;        // Level of 2nd child
       celldata[c].cnext              = c + cNL[celldata[c].level];   // Next cell id
+
+      celldata[c+1].parent = c ;
+      celldata[celldata[c].c2].parent = c ;
     }
 
 
@@ -777,19 +781,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
       int l = ltot ;
       while (l > 0) {
 
-        // Use a heuristic to find the parent cell.
-        int child = 0;
-        int parent = cc - 1 ;
-        if (celldata[parent].level + 1 != l) {
-          parent = cc - (1 << (ltot-l+1))  ;
-          child = 1 ;
-        }
-
+        int parent = c->parent;
         {
           // Lock the parent cell while we decide whether we can to do work on it yet.
           KDCellLock& work = worklist[parent];
           OmpGuard(work.get_lock());
-          work.finished_child(child) ;
+          work.finished_child() ;
 
           if (work.ready())
             c = &celldata[parent];
@@ -1123,18 +1120,13 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
       while (l > 0) {
 
         // Use a heuristic to find the parent cell.
-        int child = 0;
-        int parent = cc - 1 ;
-        if (celldata[parent].level + 1 != l) {
-          parent = cc - (1 << (ltot-l+1))  ;
-          child = 1 ;
-        }
+        int parent = c->parent;
 
         {
           // Lock the parent cell while we decide whether we can to do work on it yet.
           KDCellLock& work = worklist[parent];
           OmpGuard(work.get_lock());
-          work.finished_child(child) ;
+          work.finished_child() ;
 
           if (work.ready())
             c = &celldata[parent];
