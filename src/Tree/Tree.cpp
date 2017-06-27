@@ -1447,32 +1447,17 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box object
 {
   int cc = 0;                          // Cell counter
-  int k;                               // Neighbour counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT dr_corr[ndim];                 // Periodic correction vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT rc[ndim];                      // Position of cell
 
-  // Make local copies of important cell properties
-  cellptr->ComputeCellCentre(rc);
-  //for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
-
+  const GhostNeighbourFinder<ndim> GhostFinder(_domain) ;
 
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
 
-    // Calculate closest periodic replica of cell
-    FLOAT rcc[ndim];
-    celldata[cc].ComputeCellCentre(rcc);
-    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k];  //celldata[cc].rcell[k] - rc[k];
-    NearestPeriodicVector(simbox, dr, dr_corr);
-    drsqd = DotProduct(dr, dr, ndim);
-
-    // Check if bounding spheres overlap with each other (for potential SPH neibs)
+    // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (drsqd <= pow(celldata[cc].rmax + cellptr->rmax + kernrange*cellptr->hmax,2) ||
-        drsqd <= pow(cellptr->rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
+    if (GhostFinder.PeriodicBoxOverlap(celldata[cc].bb, cellptr->hbox) ||
+        GhostFinder.PeriodicBoxOverlap(celldata[cc].hbox, cellptr->bb)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {

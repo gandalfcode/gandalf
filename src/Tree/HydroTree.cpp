@@ -984,7 +984,7 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
 
         overlapflag = prunedtree[j]->ComputeHydroTreeCellOverlap(cellptr, simbox);
 
-        // If pruned tree is too close (flagged by -1), then record cell id
+        // If pruned tree is too close, then record cell id
         // for exporting to other MPI processes
         if (overlapflag) {
 
