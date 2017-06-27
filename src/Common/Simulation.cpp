@@ -1067,6 +1067,11 @@ void Simulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message.str());
   }
 
+#ifdef MPI_PARALLEL
+  if (intparams["ntreebuildstep"] != 1)
+    ExceptionHandler::getIstance().raise("Error: MPI requires to rebuild the tree at every step!!!");
+#endif
+
   // Set-up random number generator object
   //-----------------------------------------------------------------------------------------------
   if (stringparams["rand_algorithm"] == "xorshift") {
