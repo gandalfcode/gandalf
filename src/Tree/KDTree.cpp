@@ -1161,7 +1161,6 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
 
         // Use a heuristic to find the parent cell.
         int parent = c->parent;
-
         {
           // Lock the parent cell while we decide whether we can to do work on it yet.
           KDCellLock& work = worklist[parent];
