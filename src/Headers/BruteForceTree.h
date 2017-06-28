@@ -112,7 +112,7 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
     StockTree(celldata[0], partdata, stock_leaf) ;
   }
   void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool stock_leaf);
-  void StockTreeProperties(TreeCell<ndim> &, ParticleType<ndim> *);
+  void StockTreeProperties(TreeCell<ndim> &, ParticleType<ndim> *, bool);
   void UpdateAllHmaxValues(Particle<ndim> *part_gen, bool stock_leaf) {
     ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
     UpdateHmaxValues(celldata[0], partdata, stock_leaf) ;
