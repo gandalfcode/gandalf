@@ -1277,11 +1277,13 @@ void Tree<ndim,ParticleType,TreeCell>::UpdateLeafCells
 		const int ileaf = Nleaf_indices[i];
 		//Copy a few things that we need to "roll back"
 		TreeCell<ndim>& cell = celldata[ileaf];
-		const int copen = cell.copen;
-		const int cnext = cell.cnext;
+		const int copen  = cell.copen;
+		const int cnext  = cell.cnext;
+		const int parent = cell.parent;
 		cell = localcells[ilocal];
-		cell.copen = copen;
-		cell.cnext = cnext;
+		cell.copen  = copen;
+		cell.cnext  = cnext;
+		cell.parent = parent;
 	}
  }
 
