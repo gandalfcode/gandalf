@@ -52,7 +52,6 @@ struct KDTreeCell : public TreeCellBase<ndim> {
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int k_divide;                     ///< Dimension along which cell is split
 
 #ifdef MPI_PARALLEL
   typedef TreeCommunicationHandler<ndim> HandlerType;
@@ -83,10 +82,8 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::gtot;
   using Tree<ndim,ParticleType,TreeCell>::g2c;
   using Tree<ndim,ParticleType,TreeCell>::hmax;
-  using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
-  using Tree<ndim,ParticleType,TreeCell>::inext;
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::kernrange;
   using Tree<ndim,ParticleType,TreeCell>::lmax;
@@ -110,7 +107,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  KDTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
+  KDTree(int, FLOAT, FLOAT, FLOAT, string, multipole_method, const DomainBox<ndim>&,
 		 const ParticleTypeRegister&, const bool);
   ~KDTree();
 

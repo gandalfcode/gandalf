@@ -255,6 +255,7 @@ struct SphParticle : public Particle<ndim>
       u = p.u;
       gpot=p.gpot;
       ptype=p.ptype;
+      flags=p.flags;
     }
 
     FLOAT r[ndim];
@@ -264,6 +265,9 @@ struct SphParticle : public Particle<ndim>
     FLOAT u;
     FLOAT gpot;
     int ptype;
+    type_flag flags;
+
+    static const int NDIM=ndim;
   };
 
 };
@@ -458,6 +462,26 @@ struct MeshlessFVParticle : public Particle<ndim>
   typedef MeshlessCommunicationHandler<ndim> HandlerType;
 #endif
 
+  class DensityParticle {
+  public:
+    DensityParticle() : m(0), ptype(0) {} ;
+    DensityParticle(const MeshlessFVParticle<ndim>&p) {
+      for (int i=0; i<ndim; i++)
+        r[i] = p.r[i];
+
+      m = p.m;
+      ptype=p.ptype;
+      flags=p.flags;
+    }
+
+    FLOAT r[ndim];
+    FLOAT m;
+    int ptype;
+    type_flag flags;
+
+    static const int NDIM=ndim;
+  };
+
   class GradientParticle {
   public:
 	  GradientParticle (): level(0), ptype(gas_type), iorig(0), levelneib(0), flags(none), r(), v(), Wprim(), sound(0),
@@ -600,11 +624,19 @@ inline void reflect(Particle<ndim>& part, int k, double x_mirror) {
 }
 
 template<int ndim>
+inline void reflect(typename GradhSphParticle<ndim>::DensityParticle& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
+   part.v[k]*= -1 ;
+   part.a[k] *= -1 ;
+}
+
+template<int ndim>
 inline void reflect(typename GradhSphParticle<ndim>::HydroForcesParticle& part, int k, double x_mirror) {
    part.r[k] = 2*x_mirror - part.r[k] ;
    part.v[k]*= -1 ;
    part.a[k] *= -1 ;
 }
+
 
 template<int ndim>
 inline void reflect(MeshlessFVParticle<ndim>& part, int k, double x_mirror) {
@@ -644,6 +676,11 @@ inline void reflect(typename MeshlessFVParticle<ndim>::FluxParticle& part, int k
      part.B[j][k] *= -1 ;
      part.B[k][j] *= -1 ;
    }
+}
+
+template<int ndim>
+inline void reflect(typename MeshlessFVParticle<ndim>::DensityParticle& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
 }
 
 template<int ndim>

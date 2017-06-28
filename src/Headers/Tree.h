@@ -35,6 +35,7 @@
 #include "DomainBox.h"
 #include "Hydrodynamics.h"
 #include "InlineFuncs.h"
+#include "Multipole.h"
 #include "Nbody.h"
 #include "Parameters.h"
 #include "Particle.h"
@@ -106,8 +107,8 @@ protected:
 	virtual int ComputeActiveCellList(vector<TreeCellBase<ndim> >& ) = 0 ;
 	virtual int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
 	                                       const FLOAT, const int, int &, int *) = 0 ;
-	virtual int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-			                               const FLOAT, const int, int &, int *) = 0 ;
+	virtual void ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+			                                const FLOAT,NeighbourManagerBase& neibmanager) = 0 ;
 	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
 	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
@@ -233,7 +234,7 @@ protected:
  public:
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-       string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
+       string _gravity_mac, multipole_method _multipole, const DomainBox<ndim>& domain,
        const ParticleTypeRegister& pt_reg, const bool _IAmPruned) :
     	   TreeBase<ndim>(domain),
     gravity_mac(geometric), multipole(_multipole), Nleafmax(_Nleafmax),
@@ -283,8 +284,8 @@ protected:
   int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
   int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int &, int *);
-  int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-                                 const FLOAT, const int, int &, int *);
+  void ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+                                  const FLOAT,NeighbourManagerBase& neibmanager);
   int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                            const int, int &, int *, Particle<ndim> *);
   void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
@@ -372,8 +373,8 @@ protected:
 
   // Const variables for tree class
   //-----------------------------------------------------------------------------------------------
-  MAC_Type gravity_mac;                  ///< Multipole-acceptance criteria for tree
-  const string multipole;              ///< Multipole-order for cell gravity
+  MAC_Type gravity_mac;                ///< Multipole-acceptance criteria for tree
+  const multipole_method multipole;    ///< Multipole-order for cell gravity
   const int Nleafmax;                  ///< Max. number of particles per leaf cell
   const FLOAT invthetamaxsqd;          ///< 1 / thetamaxsqd
   const FLOAT kernrange;               ///< Extent of employed kernel
@@ -404,8 +405,6 @@ protected:
   int Nthreads;                        ///< No. of OpenMP threads
   FLOAT hmax;                          ///< Store hmax in the tree
   int *g2c;                            ///< i.d. of leaf(grid) cells
-  int *ids;                            ///< Particle ids
-  int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
   Typemask gravmask ;                  ///< Particle types that contribute to gravity
 

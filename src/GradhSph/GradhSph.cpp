@@ -142,7 +142,7 @@ template <int ndim, template<int> class kernelclass>
 int GradhSph<ndim, kernelclass>::ComputeH
  (SphParticle<ndim> &part,                                ///< [inout] Particle i data
   FLOAT hmax,                                             ///< [in] Maximum smoothing length
-  const vector<DensityParticle> &ngbs,                    ///< [in] Neighbour properties
+  const NeighbourList<DensityParticle> &ngbs,             ///< [in] Neighbour properties
   Nbody<ndim> *nbody)                                     ///< [in] Main N-body object
 {
   int j;                               // Neighbour id
@@ -154,7 +154,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
   FLOAT h_upper_bound = hmax;          // Upper bound on h
   FLOAT invh;                          // 1 / h
   FLOAT invhsqd;                       // (1 / h)^2
-  FLOAT invrho;                        // 1 / rho
   FLOAT rho_hmin = (FLOAT) 0.0;        // ..
   FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
@@ -211,9 +210,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // Density must at least equal its self-contribution
     // (failure could indicate neighbour list problem)
     assert(parti.rho >= 0.99*parti.m*parti.hfactor*kern.w0_s2(0.0));
-
-    if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;
-    else invrho = (FLOAT) 0.0;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&

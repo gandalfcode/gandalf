@@ -52,7 +52,8 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 BruteForceTree<ndim,ParticleType,TreeCell>::BruteForceTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                            	   	   	   	   FLOAT kernrangeaux, FLOAT macerroraux,
-                                           	   	   	   	   string gravity_mac_aux, string multipole_aux,
+                                           	   	   	   	   string gravity_mac_aux,
+                                           	   	   	   	   multipole_method multipole_aux,
                                            	   	   	   	   const DomainBox<ndim>& domain,
                                            	   	   	   	   const ParticleTypeRegister& reg,
 														   const bool IAmPruned):
@@ -112,8 +113,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(int Nparticl
     Ncells		   = max(Ncells, Ncellmax);
 
     g2c      = new int[gmax];
-    ids      = new int[Nparticles];
-    inext    = new int[Nparticles];
     celldata = new struct TreeCell<ndim>[Ncells];
 
     allocated_tree = true;
@@ -145,22 +144,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles
 
 
   if (Nparticles > Ntotmax ) {
-
-	  int* idsold = ids;
-	  int* inextold = inext;
-
-	  ids = new int[Nparticles];
-	  inext    = new int[Nparticles];
-
-	  std::copy(idsold,idsold+Ntotmax,ids);
-	  std::copy(inextold,inextold+Ntotmax,inext);
-
-	  delete[] idsold;
-	  delete[] inextold;
-
 	  Ntotmax = Ntot;
-
-
   }
 
   if (Ncells > Ncellmax) {
@@ -196,8 +180,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 
   if (allocated_tree) {
     delete[] celldata;
-    delete[] inext;
-    delete[] ids;
     delete[] g2c;
     allocated_tree = false;
   }
@@ -290,11 +272,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
       celldata[c].worktot = 0.0;
 #endif
       g2c[c-1] = c;
-      ids[i]   = i;
-      inext[i] = i+1;
       i++ ;
     }
-    inext[ilast] = -1;
     ltot = 1;
     if (Ntot > 0) StockTree(celldata[0], partdata, true);
     else ltot = 0;
@@ -333,7 +312,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   ParticleType<ndim> *partdata)		   ///< Particle data array
 {
   int i;                               // Particle counter
-  int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
@@ -343,7 +321,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
 
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
+      multipole == quadrupole || multipole == fast_quadrupole || gravity_mac == eigenmac ;
 
   // Zero all summation variables for all cells
   cell.Nactive  = 0;
@@ -372,28 +350,12 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
 
 
-  // First, check if any particles have been accreted and remove them
-  // from the linked list.  If cell no longer contains any live particles,
-  // then set N = 0 to ensure cell is not included in future tree-walks.
-  i = cell.ifirst;
-  cell.ifirst = -1;
-  iaux = -1;
-  while (i != -1) {
-    if (!partdata[i].flags.is_dead()) {
-      if (iaux == -1) cell.ifirst = i;
-      else inext[iaux] = i;
-      iaux = i;
-    }
-    if (i == cell.ilast) break;
-    i = inext[i];
-  };
-  cell.ilast = iaux;
-
   // Loop over all particles in cell summing their contributions
   i = cell.ifirst;
-  while (i != -1) {
-	if (!partdata[i].flags.is_dead()) {
-	  cell.N++;
+  int ilast = cell.ilast ;
+  for(; i <= ilast; ++i) {
+    if (!partdata[i].flags.is_dead()) {
+      cell.N++;
 	  if (partdata[i].flags.check(active)) cell.Nactive++;
 	  cell.hmax = max(cell.hmax,partdata[i].h);
 	  cell.maxsound = max(cell.maxsound, partdata[i].sound);
@@ -418,8 +380,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
       else if (gravity_mac == eigenmac)
         cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
 	}
-	if (i == cell.ilast) break;
-	i = inext[i];
   }
 
   // Normalise all cell values
@@ -437,7 +397,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
   if (need_quadrupole_moments) {
 	i = cell.ifirst;
 
-	while (i != -1) {
+	int ilast = cell.ilast ;
+	for(; i <= ilast; ++i) {
 	  if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
 		mi = partdata[i].m;
 		for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
@@ -455,8 +416,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
 		  cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
 		}
 	  }
-	  if (i == cell.ilast) break;
-	  i = inext[i];
 	}
   }
 
@@ -513,11 +472,9 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
     ilast = celldata[c].ilast;
 
     // Else walk through linked list to obtain list and number of active ptcls.
-    while (i != -1) {
+    for(; i <= ilast; ++i) {
       if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
         celldata[c].Nactive++;
-      if (i == ilast) break;
-      i = inext[i];
     };
 
   }
@@ -567,7 +524,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
   i = cell.ifirst;
 
   // Loop over all particles in cell summing their contributions
-  while (i != -1) {
+  int ilast = cell.ilast ;
+  for(; i <= ilast; ++i) {
     cell.hmax = max(cell.hmax,partdata[i].h);
     for (k=0; k<ndim; k++) {
       if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
@@ -577,8 +535,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
     	cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
       }
     }
-    if (i == cell.ilast) break;
-    i = inext[i];
   }
 
   return;

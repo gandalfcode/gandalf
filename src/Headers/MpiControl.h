@@ -165,7 +165,9 @@ public:
 
   // Buffers needed to send and receive particles
   //-----------------------------------------------------------------------------------------------
-  vector<vector<int > > particles_to_export_per_node;  ///< ..
+  vector<vector<int> > particles_to_export_per_node; ///< ..
+  vector<int> particle_ids_receive;                  ///< Origin location of imported particles
+  vector<int> particle_ids_send ;
   vector<ParticleType<ndim> > particles_to_export;   ///< Particles to be exported to other nodes
   vector<ParticleType<ndim> > particles_receive;     ///< Particles to be received from other nodes
   vector<ParticleType<ndim> > sendbuffer;            ///< Used by the SendParticles routine

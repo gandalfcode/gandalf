@@ -55,7 +55,7 @@ template <int ndim, template <int> class ParticleType>
 HydroTree<ndim,ParticleType>::HydroTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, multipole_method _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
   ParticleTypeRegister& types):
   neibcheck(true),
@@ -152,7 +152,7 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
 (string tree_type,
  int Nleafmax, FLOAT thetamaxsqd,
  FLOAT kernrange, FLOAT macerror,
- string gravity_mac, string multipole,
+ string gravity_mac, multipole_method multipole,
  const DomainBox<ndim>& domain,
  const ParticleTypeRegister& reg,
  const bool IAmPruned
@@ -230,7 +230,6 @@ void HydroTree<ndim,ParticleType>::AllocateMemory
     levelneibbuf    = new int*[Nthreads];
     activepartbuf   = new ParticleType<ndim>*[Nthreads];
     neibpartbuf     = new ParticleType<ndim>*[Nthreads];
-    cellbuf         = new MultipoleMoment<ndim>*[Nthreads];
 
     for (int ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread]     = max(1, 8*Ngather);
@@ -239,7 +238,6 @@ void HydroTree<ndim,ParticleType>::AllocateMemory
       levelneibbuf[ithread]    = new int[Ntotmax];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
       neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
-      cellbuf[ithread]         = new MultipoleMoment<ndim>[Ngravcellmaxbuf[ithread]];
     }
     allocated_buffer = true;
 
@@ -281,13 +279,11 @@ void HydroTree<ndim,ParticleType>::DeallocateMemory(void)
   if (allocated_buffer) {
 
     for (ithread=0; ithread<Nthreads; ithread++) {
-      delete[] cellbuf[ithread];
       delete[] levelneibbuf[ithread];
       delete[] neibpartbuf[ithread];
       delete[] activepartbuf[ithread];
       delete[] activelistbuf[ithread];
     }
-    delete[] cellbuf;
     delete[] levelneibbuf;
     delete[] neibpartbuf;
     delete[] activepartbuf;
@@ -628,10 +624,10 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
       nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, hydro, simbox, ewald);
 
       // Compute gravitational force due to distant cells
-      if (multipole == "monopole" || multipole == "fast_monopole") {
+      if (multipole == monopole || multipole == fast_monopole) {
         ComputeCellMonopoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
-      else if (multipole == "quadrupole" || multipole == "fast_quadrupole") {
+      else if (multipole == quadrupole || multipole == fast_quadrupole) {
         ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
 
@@ -874,11 +870,11 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       //-------------------------------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
 
-        if (multipole == "monopole") {
+        if (multipole == monopole) {
           ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree, activepart[j].r,
                                     gravcelllist.size(), &gravcelllist[0]);
         }
-        else if (multipole == "quadrupole") {
+        else if (multipole == quadrupole) {
           ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].atree, activepart[j].r,
                                       gravcelllist.size(), &gravcelllist[0]);
         }
@@ -905,11 +901,11 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
 
       // Compute 'fast' multipole terms here
-      if (multipole == "fast_monopole") {
+      if (multipole == fast_monopole) {
         ComputeFastMonopoleForces(Nactive, gravcelllist.size(), &gravcelllist[0], cell,
                                  activepart, hydro->types);
       }
-      if (multipole == "fast_quadrupole") {
+      if (multipole == fast_quadrupole) {
         ComputeFastQuadrupoleForces(Nactive, gravcelllist.size(), &gravcelllist[0], cell,
                                     activepart, hydro->types);
       }

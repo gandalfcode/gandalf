@@ -64,6 +64,7 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     iorig = sphdata[i].iorig;
     itype = sphdata[i].flags.get();
     assert(itype != none) ;
+    assert(sphdata[i].ptype == sphdata[iorig].ptype);
 
     sphdata[i] = sphdata[iorig];
     sphdata[i].iorig = iorig;
@@ -76,57 +77,44 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopyHydroDataToGhosts
     if (ndim > 2) {
       if (itype & z_periodic_lhs) {
         sphdata[i].r[2] += simbox.size[2];
-        continue ;
       }
       else if (itype & z_periodic_rhs) {
     	sphdata[i].r[2] -= simbox.size[2];
-        continue ;
       }
       else if (itype & z_mirror_lhs) {
         reflect(sphdata[i], 2, simbox.min[2]);
-        continue ;
       }
       else if (itype & z_mirror_rhs) {
         reflect(sphdata[i], 2, simbox.max[2]);
-        continue ;
       }
 
     }
     if (ndim > 1) {
       if (itype & y_periodic_lhs) {
     	sphdata[i].r[1] += simbox.size[1];
-    	continue ;
       }
       else if (itype & y_periodic_rhs) {
     	sphdata[i].r[1] -= simbox.size[1];
-    	continue ;
       }
       else if (itype & y_mirror_lhs) {
     	reflect(sphdata[i], 1, simbox.min[1]);
-    	continue ;
       }
       else if (itype & y_mirror_rhs) {
         reflect(sphdata[i], 1, simbox.max[1]);
-        continue ;
       }
     }
 
     if (itype & x_periodic_lhs) {
       sphdata[i].r[0] += simbox.size[0];
-      continue ;
     }
     else if (itype & x_periodic_rhs) {
       sphdata[i].r[0] -= simbox.size[0];
-      continue ;
     }
     else if (itype & x_mirror_lhs) {
       reflect(sphdata[i], 0, simbox.min[0]);
-      continue ;
     }
     else if (itype & x_mirror_rhs) {
       reflect(sphdata[i], 0, simbox.max[0]);
-
-      continue ;
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -207,13 +195,17 @@ void MpiGhostsSpecific<ndim, ParticleType>::CopyHydroDataToGhosts
   int Nmpighosts = mpicontrol->UpdateGhostParticles(main_array,&ghost_array);
   int start_index = hydro->Nhydro + hydro->NPeriodicGhost;
 
+  assert(hydro->Nmpighost == Nmpighosts);
+
   for (int j=0; j<Nmpighosts; j++) {
     int i = start_index + j;
 
-    assert(main_array[i].ptype == ghost_array[j].ptype);
-    assert(main_array[i].iorig == ghost_array[j].iorig);
+    int jghost = main_array[i].iorig ;
 
-    main_array[i] = ghost_array[j];
+    assert(main_array[i].ptype == ghost_array[jghost].ptype);
+    assert(main_array[i].iorig == ghost_array[jghost].iorig);
+
+    main_array[i] = ghost_array[jghost];
     main_array[i].flags.unset(active);
   }
 

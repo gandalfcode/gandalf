@@ -247,8 +247,8 @@ public:
     _kernrange(kernrange)
   { };
 
-  void clear() {
-    NeighbourManagerDim<ndim>::clear();
+  void set_target_cell(const TreeCellBase<ndim>& cell) {
+    NeighbourManagerDim<ndim>::set_target_cell(cell);
     neiblist.clear();
     neibdata.clear();
     neib_idx.clear();
@@ -262,7 +262,17 @@ public:
   //===============================================================================================
   template<class InParticleType>
   void EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
-    _EndSearch(cell, partdata, false);
+    _EndSearch<InParticleType,_false_type>(cell, partdata, false);
+  }
+
+  //===============================================================================================
+  // EndSearchGather
+  /// \brief Collect particle data needed for the neighbours and cull distant particles that do
+  ///        not contribute to the density
+  //===============================================================================================
+  template<class InParticleType>
+  void EndSearchGather(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
+    _EndSearch<InParticleType,_true_type>(cell, partdata, false);
   }
   //===============================================================================================
   // EndSearchGravity
@@ -271,7 +281,7 @@ public:
   //===============================================================================================
   template<class InParticleType>
   void EndSearchGravity(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
-    _EndSearch(cell, partdata, true);
+    _EndSearch<InParticleType,_false_type>(cell, partdata, true);
   }
 
   //===============================================================================================
@@ -318,9 +328,27 @@ public:
    const bool do_pair_once)                            ///< [in]
   {
     if (do_pair_once)
-      TrimNeighbourLists<InParticleType,_true_type>(p, hydromask, false);
+      TrimNeighbourLists<InParticleType,_true_type,_false_type>(p, hydromask, p.hrangesqd, false);
     else
-      TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, false);
+      TrimNeighbourLists<InParticleType,_false_type,_false_type>(p, hydromask, p.hrangesqd, false);
+
+    return NeighbourList<ParticleType>(culled_neiblist, neibdata) ;
+  }
+
+  //===============================================================================================
+  //  GetParticleNeibGather
+  /// \brief    Get the list of particles within a given smoothing range of the target particle.
+  /// \details  Gets a trimmed list of particles that that are within hrangeqd of the particle,
+  ///           for a density calculation.
+  /// \returns  NeighbourList object, the list of neighbours found.
+  //===============================================================================================
+  template<class InParticleType>
+  NeighbourList<ParticleType> GetParticleNeibGather
+  (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
+   const Typemask& hydromask,                          ///< [in] Boolean flags listing types we need
+   const double hrangesqd)                             ///< [in] Maximum smoothing range for gather.
+  {
+    TrimNeighbourLists<InParticleType,_false_type,_true_type>(p, hydromask, hrangesqd, false);
 
     return NeighbourList<ParticleType>(culled_neiblist, neibdata) ;
   }
@@ -340,7 +368,7 @@ public:
   (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
    const Typemask& hydromask)                          ///< [in] Type flags for hydro interactions
    {
-    TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true);
+    TrimNeighbourLists<InParticleType,_false_type,_false_type>(p, hydromask, p.hrangesqd, true);
 
     assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
 
@@ -362,8 +390,9 @@ private:
   ///          If keep_direct is true, then these become direct-list gravitational neighbours,
   ///          otherwise they are discarded. Periodic corrections are included.
   //===============================================================================================
-  template<class InParticleType>
-  void _EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata, bool keep_direct=true) {
+  template<class InParticleType, class gather_only>
+  void _EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata,
+                  bool keep_direct=true) {
 
     assert(partdata != NULL);
 
@@ -393,16 +422,18 @@ private:
     // Start from direct neighbours
     if (keep_direct) {
       for (int ii=0; ii<(int) tempdirectneib.size(); ii++) {
-        const int i = tempdirectneib[ii];
-        const InParticleType& part = partdata[i];
-        // Forget immediately: direct particles and particles that do not interact gravitationally
-        if (part.flags.is_dead()) continue;
-        if (!gravmask[part.ptype]) continue;
+        NeighbourManagerBase::range rng = tempdirectneib[ii] ;
+        for (int i=rng.begin; i < rng.end; ++i) {
+          const InParticleType& part = partdata[i];
+          // Forget immediately: direct particles and particles that do not interact gravitationally
+          if (part.flags.is_dead()) continue;
+          if (!gravmask[part.ptype]) continue;
 
-        // Now create the particle
-        GhostFinder.ConstructGhostsScatterGather(part, neibdata);
-        directlist.push_back(neibdata.size()-1);
-        neib_idx.push_back(i);
+          // Now create the particle / ghosts
+          _AddParticleAndGhosts(GhostFinder, part, gather_only());
+          directlist.push_back(neibdata.size()-1);
+          neib_idx.push_back(i);
+        }
       }
     }
 
@@ -413,32 +444,33 @@ private:
     // First the ones that need ghosts to be created on the fly
     int Nneib = directlist.size();
     for (int ii=0; ii<(int) tempperneib.size(); ii++) {
-      const int i = tempperneib[ii];
-      if (partdata[i].flags.is_dead()) continue;
+      NeighbourManagerBase::range rng = tempperneib[ii] ;
+      for (int i=rng.begin; i < rng.end; ++i) {
+        if (partdata[i].flags.is_dead()) continue;
 
-      GhostFinder.ConstructGhostsScatterGather(partdata[i], neibdata);
+        _AddParticleAndGhosts(GhostFinder, partdata[i], gather_only());
 
-      while (Nneib < (int) neibdata.size()) {
-        int Nmax = neibdata.size();
-        for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
-        drsqd = DotProduct(dr, dr, ndim);
-        FLOAT h2 = rmax + _kernrange*neibdata[Nneib].h;
-        if (drsqd < hrangemaxsqd || drsqd < h2*h2) {
-          neiblist.push_back(Nneib);
-          neib_idx.push_back(i);
-          Nneib++;
-        }
-        else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
-          directlist.push_back(Nneib);
-          neib_idx.push_back(i);
-          Nneib++;
-        }
-        else if (Nmax > Nneib) {
-          Nmax--;
-          if (Nmax > Nneib) neibdata[Nneib] = neibdata[Nmax];
-          neibdata.resize(neibdata.size()-1);
-        }
-      }// Loop over Ghosts
+        while (Nneib < (int) neibdata.size()) {
+          int Nmax = neibdata.size();
+          for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
+          drsqd = DotProduct(dr, dr, ndim);
+          if (drsqd < hrangemaxsqd || _scatter_overlap(neibdata[Nneib], drsqd, rmax, gather_only())) {
+            neiblist.push_back(Nneib);
+            neib_idx.push_back(i);
+            Nneib++;
+          }
+          else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
+            directlist.push_back(Nneib);
+            neib_idx.push_back(i);
+            Nneib++;
+          }
+          else if (Nmax > Nneib) {
+            Nmax--;
+            if (Nmax > Nneib) neibdata[Nneib] = neibdata[Nmax];
+            neibdata.resize(neibdata.size()-1);
+          }
+        }// Loop over Ghosts
+      }
     }
 
     // Store the number of periodic particles in the neiblist
@@ -446,24 +478,23 @@ private:
 
     // Find those particles that do not need ghosts on the fly
     for (int ii=0; ii<(int) tempneib.size(); ii++) {
-      const int i = tempneib[ii];
-      if (partdata[i].flags.is_dead()) continue;
+      NeighbourManagerBase::range rng = tempneib[ii] ;
+      for (int i=rng.begin; i < rng.end; ++i) {
 
-
-      for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      FLOAT h = rmax + _kernrange*partdata[i].h;
-      if (drsqd < hrangemaxsqd || drsqd < h*h) {
-        neibdata.push_back(partdata[i]);
-        neiblist.push_back(Nneib);
-        neib_idx.push_back(i);
-        Nneib++;
-      } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
-        // Hydro candidates that fail the test get demoted to direct neighbours
-        neibdata.push_back(partdata[i]);
-        directlist.push_back(Nneib);
-        neib_idx.push_back(i);
-        Nneib++;
+        for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        if (drsqd < hrangemaxsqd || _scatter_overlap(neibdata[Nneib], drsqd, rmax, gather_only())) {
+          neibdata.push_back(partdata[i]);
+          neiblist.push_back(Nneib);
+          neib_idx.push_back(i);
+          Nneib++;
+        } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
+          // Hydro candidates that fail the test get demoted to direct neighbours
+          neibdata.push_back(partdata[i]);
+          directlist.push_back(Nneib);
+          neib_idx.push_back(i);
+          Nneib++;
+        }
       }
     }
 
@@ -477,14 +508,14 @@ private:
   /// \detail This function trims the neighbour lists for a given particle, determining whether
   ///         neighbours are needed for hydro or gravity. Periodic corrections are applied.
   //===============================================================================================
-  template<class InParticleType, class do_pair_once>
-  void TrimNeighbourLists(const InParticleType& p, const Typemask& hydromask, bool keep_grav)
+  template<class InParticleType, class do_pair_once, class gather_only>
+  void TrimNeighbourLists(const InParticleType& p, const Typemask& hydromask, double hrangesqdi,
+                          bool keep_grav)
   {
     FLOAT rp[ndim];
     FLOAT draux[ndim];
 
     for (int k=0; k<ndim; k++) rp[k] = p.r[k];
-    const FLOAT hrangesqdi = p.hrangesqd;
 
     const GhostNeighbourFinder<ndim> GhostFinder(*_domain);
 
@@ -506,7 +537,7 @@ private:
 
       // Compute relative position and distance quantities for pair
       for (int k=0; k<ndim; k++) draux[k] = neibpart.r[k] - rp[k];
-      if (j < _NPeriodicGhosts && hydromask[neibpart.ptype])
+      if (j < _NPeriodicGhosts)
         GhostFinder.ApplyPeriodicDistanceCorrection(neibpart.r, draux);
 
       const FLOAT drsqd = DotProduct(draux,draux,ndim);
@@ -515,7 +546,7 @@ private:
 
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
-      if (drsqd >= hrangesqdi && drsqd >= neibpart.hrangesqd) {
+      if (drsqd >= hrangesqdi && !_scatter_overlap(neibpart, drsqd, 0, gather_only())) {
         if (keep_grav && gravmask[neibpart.ptype]) directlist.push_back(i);
       }
       else {
@@ -547,6 +578,38 @@ private:
   bool _first_appearance(const InParticleType& p, const ParticleType& neibpart, _false_type) {
     return true;
   }
+
+
+  template<class InParticleType>
+  bool _scatter_overlap(const InParticleType& p, double drsqd, double rmax, _false_type) {
+    double h = rmax + _kernrange*p.h ;
+    return drsqd < h*h;
+  }
+  template<class InParticleType>
+  bool _scatter_overlap(const InParticleType& p, double drsqd, double rmax, _true_type) {
+    return false;
+  }
+
+
+  template<class InParticleType>
+  void _AddParticleAndGhosts
+  (const GhostNeighbourFinder<ndim>& GhostFinder,
+   InParticleType& part,
+   _false_type)
+  {
+    GhostFinder.ConstructGhostsScatterGather(part, neibdata);
+  }
+
+  template<class InParticleType>
+  void _AddParticleAndGhosts
+  (const GhostNeighbourFinder<ndim>& GhostFinder,
+   InParticleType& part,
+   _true_type)
+  {
+    GhostFinder.ConstructGhostsGather(part, neibdata);
+  }
+
+
 
 public:
 
@@ -584,12 +647,13 @@ public:
 
      // Get the idx of the reduced neighbour list
      std::vector<int> reducedngb(ngbs.size());
-     for (int k=0; k<ngbs.size(); k++)
+     for (unsigned int k=0; k<ngbs.size(); k++)
        reducedngb[k] = neib_idx[ngbs._idx[k]];
 
      __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "reduced") ;
    }
 
+private:
    //===============================================================================================
    //  __VerifyNeighbourList
    /// \brief    Verify the list of neighbours is complete.
@@ -610,7 +674,7 @@ public:
      // Compute the complete (true) list of neighbours
      if (searchmode == "gather") {
        for (int j=0; j<Ntot; j++) {
-         if (not types[partdata[i].ptype]) continue ;
+         if (not types[partdata[j].ptype]) continue ;
 
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
@@ -621,7 +685,7 @@ public:
      }
      else if (searchmode == "all") {
        for (int j=0; j<Ntot; j++) {
-         if (not types[partdata[i].ptype]) continue ;
+         if (not types[partdata[j].ptype]) continue ;
 
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
@@ -633,10 +697,11 @@ public:
      }
 
      // Now compare each given neighbour with true neighbour list for validation
-     int invalid_flag = 0, j ;
+     int invalid_flag = 0;
+     unsigned int j;
      for (j=0; j<truengb.size(); j++) {
        int count = 0;
-       for (int k=0; k<reducedngb.size(); k++)
+       for (unsigned int k=0; k<reducedngb.size(); k++)
          if (reducedngb[k] == truengb[j])
            count++;
 

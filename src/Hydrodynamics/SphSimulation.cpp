@@ -274,7 +274,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   sphneib->InitialiseCellWorkCounters();
 #endif
-    sphneib->UpdateAllSphProperties(sph, nbody);
+    sphneib->UpdateAllSphProperties(sph, nbody, simbox);
   }
   else {
     sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, timestep, sph);
@@ -317,20 +317,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).gpot = big_number;
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph, nbody);
+  sphneib->UpdateAllSphProperties(sph, nbody, simbox);
 
 #ifdef MPI_PARALLEL
   mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
-#endif
-
-
-  // Search ghost particles
-  sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
-  sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
-#ifdef MPI_PARALLEL
-  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
-  MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
-  sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
 
   // Update neighbour tree
@@ -341,7 +331,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
   sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0, simbox, sph);
   sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
-  //sphneib->neibcheck = true;
+
+#ifdef MPI_PARALLEL
+  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
+  MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, sph);
+  sphneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, sph);
+#endif
 
     // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
@@ -422,7 +417,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Calculate all SPH properties
     if (iter == 0)
-      sphneib->UpdateAllSphProperties(sph, nbody);
+      sphneib->UpdateAllSphProperties(sph, nbody, simbox);
 
 
 #ifdef MPI_PARALLEL
@@ -483,6 +478,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
     for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
     for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+    part.dudt0 = part.dudt;
+
     part.flags.unset(active);
   }
 
@@ -528,6 +525,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
  #endif
 
+
     sphdust->UpdateAllDragForces(sph) ;
   }
 
@@ -538,12 +536,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   else this->ComputeBlockTimesteps();
 
   // Compute the time-averaged initial dust forces.
-  if (sphdust != NULL){
+  if (sphdust != NULL) {
 
     // Set the acceleration to the pre-drag value
     for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       for (k=0; k <ndim; k++) part.a[k] = part.a0[k] ;
+      part.dudt = part.dudt0;
     }
 
     sphdust->UpdateAllDragForces(sph) ;
@@ -642,12 +641,12 @@ void SphSimulation<ndim>::MainLoop(void)
   sphneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 
 
-    // Re-build and communicate the new pruned trees (since the trees will necessarily change
-    // once there has been communication of particles to new domains)
+  // Re-build and communicate the new pruned trees (since the trees will necessarily change
+  // once there has been communication of particles to new domains)
 #ifdef MPI_PARALLEL
-    mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
-    MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
-    sphneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
+  mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
+  MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
+  sphneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep, timestep, sph);
 #endif
 
 
@@ -660,7 +659,7 @@ void SphSimulation<ndim>::MainLoop(void)
     if (activecount > 0) sphneib->UpdateActiveParticleCounters(sph);
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph, nbody);
+    sphneib->UpdateAllSphProperties(sph, nbody, simbox);
 
     // Zero accelerations (here for now)
     sph->ZeroAccelerations();
@@ -849,6 +848,7 @@ void SphSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox, sph);
 #endif
+
     sphdust->UpdateAllDragForces(sph) ;
 
     // Unset active particles
