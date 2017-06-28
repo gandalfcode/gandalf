@@ -763,6 +763,15 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
 {
   ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
+#ifdef VERIFY_ALL
+  // Check the tree structure is ok:
+  for (int i=0; i < Ncell; i++)
+    if (celldata[i].copen != -1) {
+      assert(celldata[celldata[i].c1].parent == i);
+      assert(celldata[celldata[i].c2].parent == i);
+    }
+#endif
+
 #pragma omp parallel default(none) shared(partdata, stock_leaf)
   {
     //  Initialize the worklist
@@ -772,14 +781,17 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
 
     // Loop over the leaf cells. Once a parent cell is ready to be computed, do it immediately
 #pragma omp for
-    for (int i=0; i < gtot; i++) {
+    for (int i=0; i < Ncell; i++) {
 
-      // Stock the leaf cell
-      TreeCell<ndim>* c = &celldata[g2c[i]];
-      StockCellProperties(*c, partdata, stock_leaf);
+      TreeCell<ndim>* c = &celldata[i];
+
+      // Skip non-leaves, handle them below.
+      if (c->copen != -1) continue ;
+
+      StockCellProperties(*c, partdata, stock_leaf) ;
 
       // Flag that we've done a child cell for the parent, and update the cell (recursively)
-      int l = ltot ;
+      int l = c->level ;
       while (l > 0) {
 
         int parent = c->parent;
@@ -803,6 +815,21 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
       }
     }
   }
+
+#ifdef VERIFY_ALL
+  // Check that we did the work for all non-child cells
+  bool invalid = false;
+  for (int i=0; i < Ncell; i++)
+    if (celldata[i].copen != -1)
+      if (not worklist[i].ready()) {
+        cout << "Stock failed for cell: " << i << " level: " << celldata[i].level
+            << "\n\tchildren: " << celldata[i].c1 << ", " <<  celldata[i].c2
+            <<"\n";
+        invalid = true ;
+      }
+  if (invalid) cout << "Number of tree levels: " << ltot << "\n" ;
+  assert(!invalid) ;
+#endif
 
   return;
 }
@@ -1076,6 +1103,16 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
 {
   ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
+#ifdef VERIFY_ALL
+  // Check the tree structure is ok:
+  for (int i=0; i < Ncell; i++)
+    if (celldata[i].copen != -1) {
+      assert(celldata[celldata[i].c1].parent == i);
+      assert(celldata[celldata[i].c2].parent == i);
+    }
+#endif
+
+
 #pragma omp parallel default(none) shared(partdata, stock_leaf)
   {
     //  Initialize the worklist
@@ -1085,11 +1122,14 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
 
     // Loop over the leaf cells. Once a parent cell is ready to be computed, do it immediately
 #pragma omp for
-    for (int i=0; i < gtot; i++) {
+    for (int i=0; i < Ncell; i++) {
+
+      TreeCell<ndim>* c = &celldata[i];
+
+      // Skip non-leaves, handle them below.
+      if (c->copen != -1) continue ;
 
       // Stock the leaf cell
-      TreeCell<ndim>* c = &celldata[g2c[i]];
-
       if (stock_leaf) {
         c->hmax = (FLOAT) 0.0;
         for (int k=0; k<ndim; k++) c->hbox.min[k] =  big_number;
@@ -1111,7 +1151,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
       }
 
       // Flag that we've done a child cell for the parent, and update the cell (recursively)
-      int l = ltot ;
+      int l = c->level ;
       while (l > 0) {
 
         // Use a heuristic to find the parent cell.
@@ -1155,6 +1195,21 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
   }
 
   //-------------------------------------------------------------------------------------------
+
+#ifdef VERIFY_ALL
+  // Check that we did the work for all non-child cells
+  bool invalid = false;
+  for (int i=0; i < Ncell; i++)
+    if (celldata[i].copen != -1)
+      if (not worklist[i].ready()) {
+        cout << "UpdateHmax failed for cell: " << i << " level: " << celldata[i].level
+            << "\n\tchildren: " << celldata[i].c1 << ", " <<  celldata[i].c2
+            <<"\n";
+        invalid = true ;
+      }
+  if (invalid) cout << "Number of tree levels: " << ltot << "\n" ;
+  assert(!invalid) ;
+#endif
 
   return;
 }
