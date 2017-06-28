@@ -13,7 +13,9 @@ class AdSodTest(unittest.TestCase):
         self.run_id="ADSOD_SPH"
         self.sim.SetParam("run_id",self.run_id)
         self.sim.SetParam("ntreebuildstep", 1024)
+        self.sim.SetParam("pruning_level_min", 1)
         self.sim.SetParam("neib_search", "kdtree")
+
         self.expected_l1error = 9e-3
     
 
@@ -26,12 +28,13 @@ class AdSodTest(unittest.TestCase):
 
 class AdSodMeshlessTest(AdSodTest):
     def setUp(self):
-        self.sim=newsim(paramfile="tests/hydro_tests/adsod.dat",sim='meshlessfv',ndim=1)
+        self.sim=newsim(paramfile="tests/hydro_tests/adsod.dat",sim="meshlessfv",ndim=1)
         self.run_id="ADSOD_MESHLESS"
         self.sim.SetParam("run_id",self.run_id)
         self.sim.SetParam("ntreebuildstep", 1024)
+        self.sim.SetParam("pruning_level_min", 1)
         self.sim.SetParam("neib_search", "kdtree")
-        self.sim.SetParam("riemann_solver",'hllc')
+        self.sim.SetParam("riemann_solver","hllc")
         self.expected_l1error = 7e-3
 
 
@@ -41,6 +44,7 @@ class AdSodTest_BFTree(unittest.TestCase):
         self.run_id="ADSOD_SPH"
         self.sim.SetParam("run_id",self.run_id)
         self.sim.SetParam("ntreebuildstep", 1024)
+        self.sim.SetParam("pruning_level_min", 1)
         self.sim.SetParam("neib_search", "bruteforce")
         self.expected_l1error = 9e-3
     
@@ -54,10 +58,11 @@ class AdSodTest_BFTree(unittest.TestCase):
 
 class AdSodMeshlessTest_BFTree(AdSodTest):
     def setUp(self):
-        self.sim=newsim(paramfile="tests/hydro_tests/adsod.dat",sim='meshlessfv',ndim=1)
+        self.sim=newsim(paramfile="tests/hydro_tests/adsod.dat",sim="meshlessfv",ndim=1)
         self.run_id="ADSOD_MESHLESS"
         self.sim.SetParam("run_id",self.run_id)
         self.sim.SetParam("ntreebuildstep", 1024)
+        self.sim.SetParam("pruning_level_min", 1)
         self.sim.SetParam("neib_search", "bruteforce")
-        self.sim.SetParam("riemann_solver",'hllc')
+        self.sim.SetParam("riemann_solver","hllc")
         self.expected_l1error = 7e-3
