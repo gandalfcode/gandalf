@@ -36,16 +36,16 @@
 //=================================================================================================
 class TimeStepController {
 public:
-  TimeStepController(int num_levels=__maxlevels)
+  TimeStepController(unsigned int num_levels=__maxlevels)
     : _tCurrent(0),
       _nstepCurrent(0),
       _nlevelmax(num_levels),
       _tot_num_steps(0)
   {
-    assert(_nlevelmax <= __maxlevels) ;
+    assert( _nlevelmax <= __maxlevels) ;
 
     _levelfactor[0] = 1 ;
-    for (int i=1; i < __maxlevels; ++i)
+    for (unsigned int i=1; i < __maxlevels; ++i)
       _levelfactor[i] = 2*_levelfactor[i-1] ;
   } ;
 
@@ -183,7 +183,7 @@ public:
 
 
 private:
-  static const int __maxlevels = 32 ;
+  static const unsigned int __maxlevels = 32 ;
 
   double _tCurrent;
   double _dtLevel[__maxlevels] ;

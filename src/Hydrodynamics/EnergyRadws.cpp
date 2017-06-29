@@ -125,7 +125,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
     if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step
-    FLOAT nstep = part.nstep;
     FLOAT dn = n - part.nlast;
     FLOAT dt = timestep*(FLOAT) dn;
 

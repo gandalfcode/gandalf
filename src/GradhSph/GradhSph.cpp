@@ -154,7 +154,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
   FLOAT h_upper_bound = hmax;          // Upper bound on h
   FLOAT invh;                          // 1 / h
   FLOAT invhsqd;                       // (1 / h)^2
-  FLOAT rho_hmin = (FLOAT) 0.0;        // ..
   FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
 
@@ -162,11 +161,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // If there are sink particles present, check if the particle is inside one.
   // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
   if (sink_particles) {
-    rho_hmin      = this->rho_sink;
     h_lower_bound = h_fac*pow(parti.m/this->rho_sink, Sph<ndim>::invndim);
     if (hmax < h_lower_bound) return -1;
   }
-  rho_hmin = (FLOAT) 0.0;
 
   int Nneib = ngbs.size();
 
