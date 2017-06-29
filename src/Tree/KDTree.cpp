@@ -892,7 +892,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
     // Loop over all particles in cell summing their contributions
     for (i = cell.ifirst; i <= cell.ilast; ++i) {
-      if (!partdata[i].flags.is_dead()) {
+      const ParticleType<ndim>& part = partdata[i] ;
+      if (!part.flags.is_dead()) {
         cell.N++;
         if (part.flags.check(active)) cell.Nactive++;
         cell.hmax = max(cell.hmax,part.h);
@@ -932,7 +933,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
       for (i = cell.ifirst; i <= cell.ilast; ++i) {
         if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
-          mi = partdata[i].m;
+          FLOAT mi = partdata[i].m;
           for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
           const FLOAT drsqd = DotProduct(dr,dr,ndim);
           if (ndim == 3) {
