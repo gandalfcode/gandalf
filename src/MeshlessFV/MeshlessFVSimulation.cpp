@@ -191,6 +191,11 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   // Common set-up
   Simulation<ndim>::ProcessParameters();
 
+  if (intparams["self_gravity"] && !intparams["zero_mass_flux"]) {
+    string message = "The meshless scheme only works with MFM when self-gravity is included" ;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 
 #ifdef MPI_PARALLEL
   if (stringparams["mpi_decomposition"] == "kdtree") {
