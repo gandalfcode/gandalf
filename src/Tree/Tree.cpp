@@ -269,6 +269,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   assert(partdata != NULL);
 
 
+  FLOAT rc[ndim];
   cell.ComputeCellCentre(rc);
   for (int k=0; k<ndim; k++) gatherboxmin[k] = cell.bb.min[k] - kernrange*hmax;
   for (int k=0; k<ndim; k++) gatherboxmax[k] = cell.bb.max[k] + kernrange*hmax;

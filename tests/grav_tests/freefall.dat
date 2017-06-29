@@ -90,5 +90,5 @@ SPH neighbour search algorithm              : neib_search = kdtree
 No. of particles in leaf cell               : Nleafmax = 6
 Tree opening angle (squared)                : thetamaxsqd = 0.15
 Multipole option                            : multipole = fast_monopole
-Tree build frequency                        : ntreebuildstep = 1
+Tree build frequency                        : ntreebuildstep = 8
 Tree restocking frequency                   : ntreestockstep = 1
