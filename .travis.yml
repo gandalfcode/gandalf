@@ -40,7 +40,7 @@ script:
  - export OMPI_MCA_mpi_yield_when_idle=1
  - python --version
  - which python
- - make  -j 2 OPENMP=$OPENMP MPICPP=$MPICPP GSL=1
+ - make  -j 2 OPENMP=$OPENMP MPICPP=$MPICPP GSL=1 DEBUG_LEVEL=1
  - nose2
  - cd tests
  - ./run_tests.sh
