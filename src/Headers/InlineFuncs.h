@@ -415,16 +415,16 @@ inline FLOAT FractionalBoxOverlap
     if (box1max[k] <= box2min[k] || box1min[k] >= box2max[k]) {
       overlap *= (FLOAT) 0.0;
     }
-    else if (box1min[k] > box2min[k] && box1max[k] < box2max[k]) {
+    else if (box1min[k] >= box2min[k] && box1max[k] < box2max[k]) {
       overlap *= (box1max[k] - box1min[k]);
     }
-    else if (box1min[k] < box2min[k] && box1max[k] > box2max[k]) {
+    else if (box1min[k] < box2min[k] && box1max[k] >= box2max[k]) {
       overlap *= (box2max[k] - box2min[k]);
     }
     else if (box1min[k] < box2min[k] && box1max[k] < box2max[k]) {
       overlap *= (box1max[k] - box2min[k]);
     }
-    else if (box1min[k] > box2min[k] && box1max[k] > box2max[k]) {
+    else if (box1min[k] >= box2min[k] && box1max[k] >= box2max[k]) {
       overlap *= (box2max[k] - box1min[k]);
     }
     else {
