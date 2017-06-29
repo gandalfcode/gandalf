@@ -1942,7 +1942,6 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
      private(istep,last_level,level,level_max_aux,level_nbody,level_hydro,nstep,nfactor)
     {
       dt_hydro      = big_number_dp;
-      dt_nbody      = big_number_dp;
       level_max_aux = 0;
       level_hydro   = 0;
 
@@ -2030,6 +2029,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
       //-------------------------------------------------------------------------------------------
       if (nbody != NULL) {
 
+        dt_nbody      = big_number_dp;
         level_max_aux = 0;
         level_nbody   = 0;
 

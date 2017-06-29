@@ -226,7 +226,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
     if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step
-    FLOAT nstep = part.nstep;
     FLOAT dn = n - part.nlast;
     FLOAT dt = timestep*(FLOAT) dn;
 
@@ -261,7 +260,6 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
   const FLOAT timestep,                ///< [in] Base timestep value
   Hydrodynamics<ndim>* hydro)
 {
-  int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
   FLOAT temp;                          // ..
   //FLOAT dt_therm;                      // ..
@@ -272,11 +270,10 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,temp) shared(partdata, hydro)
+#pragma omp parallel for default(none) private(i,temp) shared(partdata, hydro)
   for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
-    dn = n - part.nlast;
 
     if (part.flags.check(end_timestep)) {
       temp = eos->Temperature(part);
