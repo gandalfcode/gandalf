@@ -216,6 +216,9 @@ protected:
   DOUBLE drag_timestep(ParticleType<ndim>& part) {
     return w_tstep*part.dt + (1 - w_tstep)*part.dt_next ;
   }
+
+private:
+  std::vector<std::vector<FLOAT> > dudt_buf ;
 };
 
 
@@ -585,9 +588,9 @@ template<int ndim, template<int> class ParticleType>
 template<class ForceCalc>
 void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 (Hydrodynamics<ndim>* hydro,              ///< [in] Hydro class
-    const ParticleTypeRegister& types,       ///< [in] Type data for particles
-    ForceCalc& Forces)                       ///< [in] Force calculation functor
-    {
+ const ParticleTypeRegister& types,       ///< [in] Type data for particles
+ ForceCalc& Forces)                       ///< [in] Force calculation functor
+{
   using std::vector ;
 
   ParticleType<ndim>* sphdata = hydro->template GetParticleArray<ParticleType>();
@@ -605,11 +608,13 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
 #else
   int Nthreads  = 1 ;
 #endif
-  for (int t = neibmanagerbuf.size(); t < Nthreads; ++t)
+  for (int t = neibmanagerbuf.size(); t < Nthreads; ++t) {
     neibmanagerbuf.push_back(NeighbourManager<ndim,
         ParticleType<ndim> >(types,_tree->MaxKernelRange(),
             _tree->GetDomain()));
 
+    dudt_buf.push_back(std::vector<FLOAT>()) ;
+  }
 
   debug2("[DustSphNgbFinder::FindNeibForces]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("DUST_GAS_PAIRWISE_FORCES");
@@ -628,7 +633,8 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   // Set-up all OMP threads
   //===============================================================================================
   vector<FLOAT> a_drag(ndim*hydro->Ntot, 0) ;          // temporary to hold the drag accelerations
-  vector<FLOAT> dudt(hydro->Ntot, 0) ;                 // temporary to hold the drag heating
+  vector<FLOAT>& dudt = dudt_buf[0];                   // Use a reference for the total heating
+
 
 #ifdef MPI_PARALLEL
   // Zero the update for the thermal energy of ghosts so we can tell which ones have had updates
@@ -640,7 +646,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
   mpighosttree->UpdateAllHmaxValues(sphdata);
 #endif
 
-#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces,hydro,a_drag, dudt, cout)
+#pragma omp parallel default(none) shared(cactive,celllist,sphdata,types,Forces,hydro,a_drag, dudt, Nthreads)
   {
 #if defined _OPENMP
       const int ithread = omp_get_thread_num();
@@ -654,11 +660,15 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
       vector<int>                 activelist(_tree->MaxNumPartInLeafCell()); // Ids of Active parts
       vector<ParticleType<ndim> > activepart(_tree->MaxNumPartInLeafCell()); // Local array of parts
       NeighbourManager<ndim,ParticleType<ndim> >& neibmanager = neibmanagerbuf[ithread];
-      vector<FLOAT> dudt_local(hydro->Ntot, 0) ;
+      vector<FLOAT>& dudt_local = dudt_buf[ithread];
+
+      dudt_local.resize(hydro->Ntot) ;
+      for (int i=0; i < hydro->Ntot; i++)
+        dudt_local[i] = 0 ;
 
       // Loop over all active cells
       //=============================================================================================
-#pragma omp for schedule(guided) nowait
+#pragma omp for schedule(guided)
       for (cc=0; cc<cactive; cc++) {
         TreeCellBase<ndim>& cell = celllist[cc];
 
@@ -724,37 +734,43 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
         }
       }
 
-#pragma omp critical
-      {
+      if (Forces.NeedEnergyUpdate()) {
+        // Collect together the total thermal update
+        // We skip the zeroth index as we dudt_buf[0] as the array for the sum.
+#pragma omp for
         for (i=0; i<hydro->Ntot; i++) {
-          dudt[i] += dudt_local[i] ;
+          for (int j=1; j < Nthreads; j++)
+            dudt[i] += dudt_buf[j][i] ;
         }
       }
       //===============================================================================================
 
 #ifdef MPI_PARALLEL
       // Communicate back the dudt contributions from particles on external processors
-#pragma omp barrier
-#pragma omp master
-      if (Forces.NeedEnergyUpdate()) {
-        std::list<int> copy_back;
-        for(int n=0; n<hydro->Nmpighost; n++) {
-          int i = hydro->Nhydro + hydro->NPeriodicGhost + n ;
 
-          if (dudt[i] > 0) {
-            sphdata[i].dudt = dudt[i] ;
-            copy_back.push_back(i) ;
+      if (Forces.NeedEnergyUpdate()) {
+#pragma omp master
+        {
+          std::list<int> copy_back;
+          for(int n=0; n<hydro->Nmpighost; n++) {
+            int i = hydro->Nhydro + hydro->NPeriodicGhost + n ;
+
+            if (dudt[i] > 0) {
+              sphdata[i].dudt = dudt[i] ;
+              copy_back.push_back(i) ;
+            }
           }
+
+          mpicontrol->UpdateMpiGhostParents(copy_back, hydro, update_dust_parents);
         }
 
-        mpicontrol->UpdateMpiGhostParents(copy_back, hydro, update_dust_parents);
+        // Barrier here to ensure MPI is finished.
+#pragma omp barrier
       }
 #endif
 
 
 
-      // Barrier here because of no-wait in loop over cells.
-#pragma omp barrier
 #pragma omp for
       for (i=0; i<hydro->Nhydro; i++) {
         update_particle(sphdata[i], &a_drag[i*ndim], dudt[i], drag_timestep(sphdata[i]));

@@ -43,8 +43,12 @@ struct TreeCellBase {
   double worktot;                      ///< Total work in cell
 #endif
 
-  inline void ComputeCellCentre(FLOAT rcell[ndim]) const {
-    for (int k=0; k<ndim; k++) rcell[k] = (FLOAT) 0.5*(bb.min[k] + bb.max[k]);
+  void ComputeCellCentre(FLOAT rc[ndim]) const {
+    for (int k=0; k<ndim; k++) rc[k] = rcell(k);
+  }
+
+  FLOAT rcell(int k) const {
+    return  (FLOAT) 0.5*(bb.min[k] + bb.max[k]);
   }
 
 
