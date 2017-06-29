@@ -51,6 +51,8 @@ public:
   void DeallocateMemory() {
     for (maptype::iterator it=values.begin(); it != values.end(); it++) {
       it->second.clear();
+      vector<SNAPFLOAT> tmp(it->second.begin(), it->second.end());
+      it->second.swap(tmp);
     }
   }
 
