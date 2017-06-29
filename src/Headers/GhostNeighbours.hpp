@@ -325,7 +325,7 @@ public:
 	{
 		if (_any_special){
 		  for (int k=0; k < ndim; k++){
-		    FLOAT dr_k = p.r[k] - 0.5*(cell.bb.min[k] + cell.bb.max[k]);  //cell.rcell[k] ;
+		    FLOAT dr_k = p.r[k] - cell.rcell(k) ;
 		    p.r[k] = r[k] + dr_k * sign[k] ;
 		    p.v[k] *= sign[k] ;
 		  }
@@ -492,62 +492,5 @@ private:
       return nc ;
     }
 };
-
-
-//=================================================================================================
-//  ParticleCellProxy
-/// Proxy class that we can use to create the Ghosts for the brute force search
-//=================================================================================================
-template<int ndim>
-struct ParticleCellProxy
-: public TreeCellBase<ndim>
-{
-	using TreeCellBase<ndim>::hbox ;
-	//using TreeCellBase<ndim>::rcell ;
-  FLOAT rcell[ndim];
-
-
-	ParticleCellProxy(const Particle<ndim>& p)
-	{
-		FLOAT dr =  sqrt(p.hrangesqd) ;
-		for (int k=0; k<ndim;k++)
-		{
-			rcell[k] = p.r[k] ;
-
-			hbox.max[k] = rcell[k] + dr ;
-			hbox.min[k] = rcell[k] - dr ;
-
-		}
-	}
-} ;
-
-
-//=================================================================================================
-//  DomainCellProxy
-/// Proxy class that we can use to create the Ghosts for the brute force search
-//=================================================================================================
-template<int ndim>
-struct DomainCellProxy
-: public TreeCellBase<ndim>
-{
-	using TreeCellBase<ndim>::hbox ;
-	//using TreeCellBase<ndim>::rcell ;
-  FLOAT rcell[ndim];
-
-	DomainCellProxy(const DomainBox<ndim>& box)
-	{
-		for (int k=0; k<ndim;k++)
-		{
-			rcell[k] = 0.5 * (box.max[k] + box.min[k]) ;
-			FLOAT dr = 0.6 * (box.max[k] - box.min[k]) ;
-      // DAVID : Why is this 0.6 and not 0.5 (or 0.5000001)??
-
-			hbox.max[k] = rcell[k] + dr ;
-			hbox.max[k] = rcell[k] - dr ;
-		}
-	}
-} ;
-
-
 
 #endif//_GHOST_NEIGHBOURS_H_
