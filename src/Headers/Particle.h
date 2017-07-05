@@ -212,7 +212,7 @@ struct Particle
     mu_bar    = (FLOAT) 1.0;
     ueq       = (FLOAT) 0.0;
     dt_therm  = (FLOAT) 0.0;
-    gamma    = (FLOAT) 1.66;
+    gamma    = (FLOAT) 1.0;
     vsig_max  = (FLOAT) 0.0;
   }
 
