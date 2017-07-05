@@ -43,12 +43,24 @@ Radws<ndim>::Radws(Parameters* simparams, SimUnits *units):
 
 
 //=================================================================================================
-//  Radws::Radws()
+//  Radws::~Radws()
 //=================================================================================================
 template <int ndim>
 Radws<ndim>::~Radws()
 {
 }
+
+
+//=================================================================================================
+//  Radws::Pressure
+/// Returns pressure of a particle based on a variable gamma
+//=================================================================================================
+template <int ndim>
+FLOAT Radws<ndim>::Pressure(Particle<ndim> &part)
+{
+  return (part.gamma - 1.0) * part.rho * part.u;
+}
+
 
 
 //=================================================================================================
@@ -59,7 +71,7 @@ Radws<ndim>::~Radws()
 template <int ndim>
 FLOAT Radws<ndim>::EntropicFunction(Particle<ndim> &part)
 {
-  return gammam1*part.u*pow(part.rho, (FLOAT) 1.0 - gamma);
+  return (part.gamma - 1.0)*part.u*pow(part.rho, (FLOAT) (1.0 - part.gamma));
 }
 
 
@@ -71,7 +83,7 @@ FLOAT Radws<ndim>::EntropicFunction(Particle<ndim> &part)
 template <int ndim>
 FLOAT Radws<ndim>::SoundSpeed(Particle<ndim> &part)
 {
-  return sqrt(gamma*gammam1*part.u);
+  return sqrt(part.gamma*(part.gamma - 1.0)*part.u);
 }
 
 
@@ -95,7 +107,7 @@ FLOAT Radws<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 template <int ndim>
 FLOAT Radws<ndim>::Temperature(Particle<ndim> &part)
 {
-  return gammam1*part.u*part.mu_bar;
+  return (part.gamma - 1.0)*part.u*part.mu_bar;
 }
 
 

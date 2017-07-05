@@ -91,6 +91,7 @@ class EnergyRadws : public EnergyEquation<ndim>
   void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
   FLOAT GetEnergy(const int, const int, const FLOAT, const FLOAT);
   FLOAT GetMuBar(const int, const int, const FLOAT, const FLOAT);
+  FLOAT GetTemp(Particle<ndim> &part);
 
 
   //-----------------------------------------------------------------------------------------------
@@ -102,6 +103,7 @@ class EnergyRadws : public EnergyEquation<ndim>
   FLOAT *eos_temp ;
   FLOAT **eos_energy;
   FLOAT **eos_mu;
+  FLOAT **eos_gamma;
   FLOAT **kappa_table;
   FLOAT **kappar_table;
   FLOAT **kappap_table;

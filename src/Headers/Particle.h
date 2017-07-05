@@ -160,6 +160,7 @@ struct Particle
   FLOAT dudt0;                      ///< dudt at beginning of step
   FLOAT dudt;                       ///< Compressional heating rate
   FLOAT gpot;                       ///< Gravitational potential
+  FLOAT gpot_hydro;                 ///< Gravitaitonal potential w/o star
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dt_next;                   ///< Next time-step timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
@@ -168,6 +169,7 @@ struct Particle
   FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
+  FLOAT gamma;                      ///< ratio of heat capacities
   FLOAT vsig_max;                   ///< Maximum signal velocity.
   FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
   int ionstate;                     ///< States current ionisation state of the particle
@@ -201,12 +203,16 @@ struct Particle
     dudt      = (FLOAT) 0.0;
     dudt0     = (FLOAT) 0.0;
     gpot      = (FLOAT) 0.0;
+    gpot_hydro = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
     dt_next   = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
     mu_bar    = (FLOAT) 1.0;
+    ueq       = (FLOAT) 0.0;
+    dt_therm  = (FLOAT) 0.0;
+    gamma    = (FLOAT) 1.66;
     vsig_max  = (FLOAT) 0.0;
   }
 
@@ -351,6 +357,7 @@ struct GradhSphParticle : public SphParticle<ndim>
 	  FLOAT u;
 	  FLOAT alpha;
       FLOAT zeta;
+    FLOAT gamma;
 	  static const int NDIM=ndim;
 
   };
