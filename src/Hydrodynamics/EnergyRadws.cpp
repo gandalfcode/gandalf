@@ -252,10 +252,8 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 
       temp = GetTemp(part);
 
-      // Get new ueq and dt_therm
-      // cout << part.gpot << "\t" << part.gpot_hydro << "\n";
-      EnergyFindEqui(part.rho, temp, part.gpot_hydro, part.u, part.dudt,
-                     part.ueq, part.dt_therm, part.mu_bar);
+      EnergyFindEqui(part.rho, temp, part.gpot, part.u, part.dudt,
+                     part.ueq, part.dt_therm);
 
 
       part.u0 = part.u;
@@ -282,8 +280,7 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
   const FLOAT u,                               ///< [in] ..
   const FLOAT dudt,                            ///< [in] ..
   FLOAT &ueq_p,                                ///< [out] ..
-  FLOAT &dt_thermal,                           ///< [out] ..
-  FLOAT &mu_bar_equi)                          ///< [out] ..
+  FLOAT &dt_thermal)                           ///< [out] ..
 {
   const FLOAT fcolumn2 = 0.010816;             // ..
   const FLOAT col2     = fcolumn2*gpot*rho;    // ..
@@ -309,7 +306,7 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
   dudt_rad = ebalance((FLOAT) 0.0, temp_ambient, temp, kappa, kappap, col2);
 
   // Calculate equilibrium temperature using implicit scheme described in Stamatellos et al. (2007)
-  EnergyFindEquiTemp(idens, rho, temp, col2, dudt, Tequi, mu_bar_equi);
+  EnergyFindEquiTemp(idens, rho, temp, col2, dudt, Tequi);
   assert(Tequi >= temp_ambient);
 
   // Get ueq_p and dudt_eq from Tequi
@@ -339,8 +336,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   const FLOAT temp,                        ///< ..
   const FLOAT col2,                        ///< ..
   const FLOAT dudt,                        ///< ..
-  FLOAT &Tequi,                            ///< ..
-  FLOAT &mu_bar_equi)                      ///< ..
+  FLOAT &Tequi)
 {
   int itemp;
   int itemplow, itemphigh;
@@ -352,7 +348,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   FLOAT kappaLow, kappaHigh, kappapLow, kappapHigh;
   FLOAT logtemp, logrho;
   FLOAT Tlow, Thigh, Tlow_log, Thigh_log, Tequi_log;
-  FLOAT mu_bar_high, mu_bar_low;
   FLOAT dtemp;
 
   logrho = log10(rho);

@@ -80,9 +80,9 @@ class EnergyRadws : public EnergyEquation<ndim>
   void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
   void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                      const FLOAT, FLOAT &, FLOAT &, FLOAT &);
+                      const FLOAT, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
-                          const FLOAT, FLOAT &, FLOAT &);
+                          const FLOAT, FLOAT &);
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
   FLOAT ebalance(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT);

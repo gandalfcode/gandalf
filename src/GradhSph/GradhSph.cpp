@@ -430,7 +430,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
       else if (acond == price2008) {
         parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
           winvrho*(invrho_i + invrho_j)*
-          sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
+          sqrt(fabs(eos->Pressure(parti) - eos->HydroForcesPressure(neibpart[j])));
       }
 
     }
@@ -543,7 +543,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
       else if (acond == price2008) {
         parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
           winvrho*(invrho_i + invrho_j)*
-          sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
+          sqrt(fabs(eos->Pressure(parti) - eos->HydroForcesPressure(neibpart[j])));
       }
 
     }

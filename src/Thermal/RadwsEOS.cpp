@@ -35,8 +35,7 @@
 template <int ndim>
 Radws<ndim>::Radws(Parameters* simparams, SimUnits *units):
   EOS<ndim>(simparams->floatparams["gamma_eos"]),
-  temp0(simparams->floatparams["temp0"]/units->temp.outscale),
-  mu_bar(simparams->floatparams["mu_bar"])
+  temp0(simparams->floatparams["temp0"]/units->temp.outscale)
 {
 }
 
