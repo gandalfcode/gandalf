@@ -200,6 +200,25 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Radiative feedback object
+  //-----------------------------------------------------------------------------------------------
+  string rad_fb = stringparams["rad_fb"];
+  if (rad_fb == "star_heating" || rad_fb == "binary_heating") {
+    radfb = new RadiativeFB<ndim>(&simunits, simparams);
+ 	}
+  else if (rad_fb == "sink_heating" || rad_fb == "star_plus_sink_heating" ||
+           rad_fb == "binary_plus_sink_heating") {
+    string fb_type = stringparams["fb_type"];
+    if (fb_type == "continuous") {
+      radfb = new ContinuousFB<ndim>(&simunits, simparams);
+    }
+    else if (fb_type == "episodic") {
+      // Create episodic RF
+    }
+  }
+  else {
+    radfb = NULL;
+  }
 
   // Energy integration object
   //-----------------------------------------------------------------------------------------------

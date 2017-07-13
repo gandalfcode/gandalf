@@ -32,6 +32,7 @@
 #include "Hydrodynamics.h"
 #include "Particle.h"
 #include "Precision.h"
+#include "RadiativeFB.h"
 #include "SimUnits.h"
 
 
@@ -80,9 +81,9 @@ class EnergyRadws : public EnergyEquation<ndim>
   void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
   void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                      const FLOAT, FLOAT &, FLOAT &);
+                      const FLOAT, const FLOAT, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
-                          const FLOAT, FLOAT &);
+                          const FLOAT, const FLOAT, FLOAT &);
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
   FLOAT ebalance(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT);
@@ -98,7 +99,7 @@ class EnergyRadws : public EnergyEquation<ndim>
   int ndens;
   int ntemp;
   FLOAT rad_const;
-  FLOAT temp_ambient;
+  FLOAT temp_ambient0;
   FLOAT *eos_dens;
   FLOAT *eos_temp ;
   FLOAT **eos_energy;

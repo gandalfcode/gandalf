@@ -170,6 +170,7 @@ struct Particle
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
   FLOAT gamma;                      ///< ratio of heat capacities
+  FLOAT temp_ambient;               ///< ambient temp. for radiative feedback
   FLOAT vsig_max;                   ///< Maximum signal velocity.
   FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
   int ionstate;                     ///< States current ionisation state of the particle
@@ -357,7 +358,6 @@ struct GradhSphParticle : public SphParticle<ndim>
 	  FLOAT u;
 	  FLOAT alpha;
       FLOAT zeta;
-    FLOAT gamma;
 	  static const int NDIM=ndim;
 
   };

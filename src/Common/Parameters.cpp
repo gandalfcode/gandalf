@@ -520,6 +520,18 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   stringparams["supernova_feedback"] = "none";
 
+  // Radiative feedback parameters
+  //-----------------------------------------------------------------------------------------------
+  stringparams["rad_fb"] = "ambient";
+  stringparams["fb_type"] = "continuous";
+  floatparams["r_smooth"] = 0.01;
+  floatparams["temp_q"] = 0.75;
+  floatparams["temp_au"] = 250;
+  floatparams["f_acc"] = 0.75;
+  floatparams["r_star"] = 3.0;
+  floatparams["r_bdwarf"] = 3.0;
+  floatparams["r_planet"] = 3.0;
+
   return;
 }
 
