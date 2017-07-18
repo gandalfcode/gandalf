@@ -85,7 +85,7 @@ void RadiativeFB<ndim>::AmbientTemp
 {
   debug2("[RadiativeFB::AmbientTemp]");
 
-  if (regime == "star_heating") {
+  if (regime == "hdisc_single") {
     FLOAT sink_x = sinks->sink[0].star->r[0];
     FLOAT sink_y = sinks->sink[0].star->r[1];
 
@@ -100,8 +100,10 @@ void RadiativeFB<ndim>::AmbientTemp
       part.temp_ambient = pow(temp_inf4 + temp_au4 * pow((r2 + rsmooth2), temp_exp), 0.25);
     }
   }
-  else if (regime == "binary_heating") {
-    // How can we parameterise primary and secondary mass? T(1AU)??
+  else if (regime == "hdisc_binary") {
+    // TODO (MERCER): Implement heating from central binary system
+    // How can we parameterise primary and secondary mass? T(1AU) from
+    // luminosity data. q will have to be assumed.
   }
 
   return;
@@ -136,7 +138,7 @@ ContinuousFB<ndim>::ContinuousFB
   num        = pow(simunits->t.outscale * simunits->t.outSI, 2.0) *
                simunits->m.outscale * simunits->m.outSI;
   denom      = pow(simunits->r.outscale * simunits->r.outSI, 3.0);
-  grav_const = G_const * num / denom;
+  grav_const = G_const * (num / denom);
 
   // Calculate L_sun in code units
   denom     = simunits->L.outscale * simunits->L.outSI;
@@ -150,6 +152,11 @@ ContinuousFB<ndim>::ContinuousFB
   // Calculate R_sun in code units
   denom     = simunits->r.outscale * simunits->r.outSI;
   rsun 	    = r_sun / denom;
+
+  // Convert object sizes to code units
+  r_planet *= rsun;
+  r_bdwarf *= rsun;
+  r_star   *= rsun;
 
 }
 
@@ -212,6 +219,12 @@ void ContinuousFB<ndim>::AmbientTemp
 
       part.temp_ambient = pow(temp_inf4 + sum, 0.25);
     }
+  }
+  else if (regime == "hdisc_single_plus_sink_heating") {
+    // TODO (MERCER): Implement heating from single central star and formed sinks
+  }
+  else if (regime == "hdisc_binary_plus_sink_heating") {
+    // TODO (MERCER): Implement heating from binary central system and formed sinks
   }
 }
 

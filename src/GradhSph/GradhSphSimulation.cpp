@@ -203,11 +203,11 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Radiative feedback object
   //-----------------------------------------------------------------------------------------------
   string rad_fb = stringparams["rad_fb"];
-  if (rad_fb == "star_heating" || rad_fb == "binary_heating") {
+  if (rad_fb == "hdisc_single" || rad_fb == "hdisc_binary") {
     radfb = new RadiativeFB<ndim>(&simunits, simparams);
  	}
-  else if (rad_fb == "sink_heating" || rad_fb == "star_plus_sink_heating" ||
-           rad_fb == "binary_plus_sink_heating") {
+  else if (rad_fb == "sink_heating" || rad_fb == "hdisc_single_plus_sink_heating" ||
+           rad_fb == "hdisc_binary_plus_sink_heating") {
     string fb_type = stringparams["fb_type"];
     if (fb_type == "continuous") {
       radfb = new ContinuousFB<ndim>(&simunits, simparams);

@@ -369,7 +369,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   minbalance = ebalance((FLOAT) 0.0, temp_ambient, temp_ambient, minkappa, minkappap, col2);
   // Find equilibrium temperature
   // ------------------------------------------------------------------------------------------------
-  if (dudt < -balance) {
+  if (dudt <= -balance) {
     if (dudt <= -minbalance) {
       Tequi = temp_ambient;
       return;
@@ -685,6 +685,8 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetTemp
   if (temp_index > ntemp - 1) temp_index = ntemp - 1;
 
   result = pow10(eos_temp[temp_index]);
+
+  if (result < part.temp_ambient) result = part.temp_ambient;
 
   part.mu_bar = eos_mu[idens][temp_index];
   part.gamma = eos_gamma[idens][temp_index];

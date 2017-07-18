@@ -1,7 +1,6 @@
 //=================================================================================================
 //  RadiativeFB.h
-//  Class definitions of main energy equation class plus inherited children
-//  classes for various energy integration algorithms.
+//  Class definitions of radiative feedback methods.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -37,7 +36,9 @@
 /// \brief   Parent class to radiative feedback methods.
 /// \details Radiative feedback is heating provided by the accretion of material from sink
 ///          particles within the simulation. This class is the main parent to different radiative
-///          feedback methods.
+///          feedback methods. The temperature contribution is parameterised by an "ambient"
+///          particle temperature. This is used within the RadWS EoS scheme to control the heating
+///          and cooling of a particle.
 /// \author  A. P. Mercer
 /// \date    10/07/2017
 //=================================================================================================
@@ -69,6 +70,16 @@ public:
   SimUnits *simunits;
 };
 
+//=================================================================================================
+//  Class ContinuousFB
+/// \brief   Contains all the necessary variables to handle continuous radiative feedback from
+///          sinks.
+/// \details Radiative feedback is heating provided by the accretion of material from sink
+///          particles within the simulation. In this regime, luminosity (and thus temperature) is
+///          added back into the system instantly i.e. continuously.
+/// \author  A. P. Mercer
+/// \date    10/07/2017
+//=================================================================================================
 template <int ndim>
 class ContinuousFB : public RadiativeFB<ndim>
 {
@@ -87,7 +98,7 @@ public:
 
   string type;
 
-  FLOAT rad_const, grav_const;
+  DOUBLE rad_const, grav_const;
   FLOAT mjup, msun, lsun, rsun;
 
   FLOAT r_star;
