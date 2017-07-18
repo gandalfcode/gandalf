@@ -529,8 +529,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["temp_au"] = 250;
   floatparams["f_acc"] = 0.75;
   floatparams["r_star"] = 3.0;
-  floatparams["r_bdwarf"] = 3.0;
-  floatparams["r_planet"] = 3.0;
+  floatparams["r_bdwarf"] = 0.2;
+  floatparams["r_planet"] = 0.075;
 
   return;
 }
