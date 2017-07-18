@@ -252,7 +252,11 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 
       temp = GetTemp(part);
 
+<<<<<<< HEAD
       EnergyFindEqui(part.rho, temp, part.temp_ambient, part.gpot_hydro, part.u, part.dudt,
+=======
+      EnergyFindEqui(part.rho, temp, part.gpot_hydro, part.u, part.dudt,
+>>>>>>> 4ac0fb56acfe1e2f174e24c719439b6635582c61
                      part.ueq, part.dt_therm);
 
 
