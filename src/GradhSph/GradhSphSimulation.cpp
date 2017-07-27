@@ -227,7 +227,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       stringparams["energy_integration"] == "rad_ws") {
     uint = new EnergyRadws<ndim, GradhSphParticle>
       (floatparams["energy_mult"], stringparams["radws_table"],
-       floatparams["temp_ambient"], &simunits, sph->eos);
+       floatparams["temp_ambient"], intparams["lombardi_method"],
+       &simunits, sph->eos);
   }
   else if (stringparams["energy_integration"] == "null" ||
            stringparams["energy_integration"] == "none") {

@@ -52,10 +52,13 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 EnergyRadws<ndim,ParticleType>::EnergyRadws
- (DOUBLE energy_mult_, string radws_table, FLOAT temp_ambient_,
+ (DOUBLE energy_mult_, string radws_table, FLOAT temp_ambient_, int lombardi_,
   SimUnits *simunits, EOS<ndim> *eos_) :
   EnergyEquation<ndim>(energy_mult_)
 {
+  // Set lombardi method flag
+  lombardi = lombardi_;
+
   int i, j, l;
   // int ndens, ntemp; defined in EnergyEquation
   DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_, eos_gamma_;
@@ -83,7 +86,7 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   if (file.good()) {
     getline(file, line);
     istringstream istr(line);
-    istr >> ndens >> ntemp ;
+    istr >> ndens >> ntemp >> fcol;
 
     eos_dens     = new FLOAT[ndens];
     eos_temp     = new FLOAT[ntemp];
@@ -234,6 +237,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
   int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
   FLOAT temp;                          // Particle temperature
+  FLOAT col2;                          // RadWS or Lombardi metric
 
   ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
@@ -242,7 +246,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn, i, temp) shared(partdata, hydro)
+#pragma omp parallel for default(none) private(dn, i, temp, col2) shared(partdata, hydro)
   for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
@@ -251,8 +255,9 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
     if (part.flags.check(end_timestep)) {
 
       temp = GetTemp(part);
+      col2 = GetCol2(part);
 
-      EnergyFindEqui(part.rho, temp, part.temp_ambient, part.gpot_hydro, part.u, part.dudt,
+      EnergyFindEqui(part.rho, temp, part.temp_ambient, col2, part.u, part.dudt,
                      part.ueq, part.dt_therm);
 
 
@@ -277,14 +282,12 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
  (const FLOAT rho,                             ///< [in] ..
   const FLOAT temp,                            ///< [in] ..
   const FLOAT temp_ambient,                    ///< [in] ..
-  const FLOAT gpot,                            ///< [in] ..
+  const FLOAT col2,                            ///< [in] ..
   const FLOAT u,                               ///< [in] ..
   const FLOAT dudt,                            ///< [in] ..
   FLOAT &ueq_p,                                ///< [out] ..
   FLOAT &dt_thermal)                           ///< [out] ..
 {
-  const FLOAT fcolumn2 = 0.010816;             // ..
-  const FLOAT col2     = fcolumn2*gpot*rho;    // ..
   const FLOAT logrho   = log10(rho);           // ..
   const int idens      = GetIDens(logrho);     // ..
   int itemp;                                   // ..
@@ -686,7 +689,11 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetTemp
 
   result = pow10(eos_temp[temp_index]);
 
-  if (result < part.temp_ambient) result = part.temp_ambient;
+  // NEED TO SHIFT UP U TO FIT THE AMBIENT TEMPERATURE
+  if (result < part.temp_ambient) {
+    result = part.temp_ambient;
+    part.u = GetEnergy(idens, temp_index, logrho, log10(result));
+  }
 
   part.mu_bar = eos_mu[idens][temp_index];
   part.gamma = eos_gamma[idens][temp_index];
@@ -694,7 +701,31 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetTemp
   return result;
 }
 
-
+//=================================================================================================
+//  EnergyRadws::GetCol2()
+/// GetTemp returns the square of the mass-weighted column density average of a particle
+/// pseudocloud. The standard RadWS (Stamatellos et al. 2007) method uses the gravitational
+/// potential and the density of the particle. The Lombardi et al. (2015) method instead
+/// uses the hydrodynamical acceleration of a particle as well as its pressure.
+//=================================================================================================
+template <int ndim, template <int> class ParticleType>
+FLOAT EnergyRadws<ndim,ParticleType>::GetCol2
+ (Particle<ndim> &part)
+{
+  if (!lombardi) {
+    return RADWS_ZETA2 * part.gpot * part.rho;
+  }
+  else {
+    FLOAT da[ndim];
+    FLOAT mag_da = 0.0, P = 0.0;
+    for (int k = 0; k < ndim; ++k) {
+      da[k] = part.a[k] - part.atree[k];
+      mag_da += da[k] * da[k];
+    }
+    P = (part.gamma - 1.0) * part.rho * part.u;
+    return (LOMBARDI_ZETA2 * P * P) / mag_da;
+  }
+}
 
 template class EnergyRadws<1, GradhSphParticle>;
 template class EnergyRadws<2, GradhSphParticle>;

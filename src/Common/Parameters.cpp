@@ -270,6 +270,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["eta_eos"] = 1.4;
   floatparams["Kpoly"] = 1.0;
   stringparams["radws_table"] = "eos.bell.cc.dat";
+  intparams["lombardi_method"] = 0;
   floatparams["temp_ambient"] = 5.0;
 
   // Artificial viscosity parameters

@@ -73,7 +73,7 @@ class EnergyRadws : public EnergyEquation<ndim>
 
   using EnergyEquation<ndim>::timing;
 
-  EnergyRadws(DOUBLE, string, FLOAT, SimUnits *, EOS<ndim> *);
+  EnergyRadws(DOUBLE, string, FLOAT, int, SimUnits *, EOS<ndim> *);
   ~EnergyRadws();
 
   //  void ReadTable();
@@ -93,11 +93,17 @@ class EnergyRadws : public EnergyEquation<ndim>
   FLOAT GetEnergy(const int, const int, const FLOAT, const FLOAT);
   FLOAT GetMuBar(const int, const int, const FLOAT, const FLOAT);
   FLOAT GetTemp(Particle<ndim> &part);
+  FLOAT GetCol2(Particle<ndim> &part);
 
 
   //-----------------------------------------------------------------------------------------------
+
+  FLOAT static const RADWS_ZETA2 = 0.0107940748;
+  FLOAT static const LOMBARDI_ZETA2 = 1.0281960;
+  int lombardi;
   int ndens;
   int ntemp;
+  FLOAT fcol;
   FLOAT rad_const;
   FLOAT temp_ambient0;
   FLOAT *eos_dens;
