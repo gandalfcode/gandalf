@@ -523,11 +523,16 @@ void Parameters::SetDefaultValues(void)
 
   // Radiative feedback parameters
   //-----------------------------------------------------------------------------------------------
-  stringparams["rad_fb"] = "ambient";
-  stringparams["fb_type"] = "continuous";
+  intparams["rad_fb"] = 0;
+  intparams["ambient_heating"] = 0;
+  intparams["disc_heating"] = 0;
+  intparams["sink_heating"] = 0;
+  stringparams["sink_fb"] = "continuous";
   floatparams["r_smooth"] = 0.01;
   floatparams["temp_q"] = 0.75;
+  floatparams["temp_q_secondary"] = 0.75;
   floatparams["temp_au"] = 250;
+  floatparams["temp_au_secondary"] = 250;
   floatparams["f_acc"] = 0.75;
   floatparams["r_star"] = 3.0;
   floatparams["r_bdwarf"] = 0.2;

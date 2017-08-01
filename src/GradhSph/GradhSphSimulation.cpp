@@ -202,21 +202,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Radiative feedback object
   //-----------------------------------------------------------------------------------------------
-  string rad_fb = stringparams["rad_fb"];
-  if (rad_fb == "hdisc_single" || rad_fb == "hdisc_binary") {
+  if (intparams["rad_fb"]) {
     radfb = new RadiativeFB<ndim>(&simunits, simparams);
- 	}
-  else if (rad_fb == "sink_heating" || rad_fb == "hdisc_single_plus_sink_heating" ||
-           rad_fb == "hdisc_binary_plus_sink_heating") {
-    string fb_type = stringparams["fb_type"];
-    if (fb_type == "continuous") {
-      radfb = new ContinuousFB<ndim>(&simunits, simparams);
-    }
-    else if (fb_type == "episodic") {
-      // Create episodic RF
-    }
-  }
-  else {
+ 	} else {
     radfb = NULL;
   }
 
@@ -228,7 +216,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     uint = new EnergyRadws<ndim, GradhSphParticle>
       (floatparams["energy_mult"], stringparams["radws_table"],
        floatparams["temp_ambient"], intparams["lombardi_method"],
-       &simunits, sph->eos);
+       &simunits, sph->eos, radfb);
   }
   else if (stringparams["energy_integration"] == "null" ||
            stringparams["energy_integration"] == "none") {

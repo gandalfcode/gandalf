@@ -172,6 +172,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Set radative feedback pointer to sinks
+  if (radfb) radfb->SetSinks(sinks);
 
   // Set pointers to timing object
   nbody->timing   = timing;
@@ -415,7 +417,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       part.div_v     = (FLOAT) 0.0;
       part.dudt      = (FLOAT) 0.0;
       part.gpot      = (FLOAT) 0.0;
-      part.temp_ambient    = (FLOAT) simparams->floatparams["temp_ambient"]/simunits.temp.outscale;
       for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) part.atree[k] = (FLOAT) 0.0;
     }
@@ -593,10 +594,8 @@ void SphSimulation<ndim>::MainLoop(void)
   hydroint->AdvanceParticles(n, (FLOAT) t, (FLOAT) timestep, sph);
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
-  // Update radiative feedback
-  if (sinks->Nsink > 0 && radfb != NULL) {
-    radfb->AmbientTemp(hydro, sinks);
-  }
+  // Update radiative feedback object with sink data
+  if (radfb) radfb->SetSinks(sinks);
 
   // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..).
   //-----------------------------------------------------------------------------------------------

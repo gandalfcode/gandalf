@@ -73,7 +73,7 @@ class EnergyRadws : public EnergyEquation<ndim>
 
   using EnergyEquation<ndim>::timing;
 
-  EnergyRadws(DOUBLE, string, FLOAT, int, SimUnits *, EOS<ndim> *);
+  EnergyRadws(DOUBLE, string, FLOAT, int, SimUnits *, EOS<ndim> *, RadiativeFB<ndim> *);
   ~EnergyRadws();
 
   //  void ReadTable();
@@ -106,6 +106,7 @@ class EnergyRadws : public EnergyEquation<ndim>
   FLOAT fcol;
   FLOAT rad_const;
   FLOAT temp_ambient0;
+  FLOAT temp_min;
   FLOAT *eos_dens;
   FLOAT *eos_temp ;
   FLOAT **eos_energy;
@@ -115,7 +116,7 @@ class EnergyRadws : public EnergyEquation<ndim>
   FLOAT **kappar_table;
   FLOAT **kappap_table;
   EOS<ndim> *eos;
-
+  RadiativeFB<ndim> *radfb;
 };
 
 

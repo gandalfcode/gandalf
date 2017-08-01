@@ -40,6 +40,7 @@
 #include "Hydrodynamics.h"
 #include "Parameters.h"
 #include "Particle.h"
+#include "RadiativeFB.h"
 #include "SimUnits.h"
 #include "SmoothingKernel.h"
 using namespace std;
@@ -53,11 +54,14 @@ using namespace std;
 template <int ndim, template <int> class ParticleType>
 EnergyRadws<ndim,ParticleType>::EnergyRadws
  (DOUBLE energy_mult_, string radws_table, FLOAT temp_ambient_, int lombardi_,
-  SimUnits *simunits, EOS<ndim> *eos_) :
+  SimUnits *simunits, EOS<ndim> *eos_, RadiativeFB<ndim> *radfb_) :
   EnergyEquation<ndim>(energy_mult_)
 {
   // Set lombardi method flag
   lombardi = lombardi_;
+
+  // Set radiative feedback
+  radfb = radfb_;
 
   int i, j, l;
   // int ndens, ntemp; defined in EnergyEquation
@@ -73,6 +77,7 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   tempunit  = simunits->temp.outscale * simunits->temp.outSI;
   rad_const = stefboltz*(num*pow(tempunit,4.0))/denom;
   temp_ambient0 = temp_ambient_ / tempunit;
+  temp_min = 5.0 / tempunit;
 
   // Check for correct opacity units
   if (simunits ->kappa.outunit != "cm2_g") {
@@ -237,6 +242,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
   int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
   FLOAT temp;                          // Particle temperature
+  FLOAT temp_amb = temp_ambient0;      // Ambient particle temperature
   FLOAT col2;                          // RadWS or Lombardi metric
 
   ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
@@ -246,7 +252,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn, i, temp, col2) shared(partdata, hydro)
+#pragma omp parallel for default(none) private(dn, i, temp, temp_amb, col2) shared(partdata, hydro)
   for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
@@ -255,9 +261,10 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
     if (part.flags.check(end_timestep)) {
 
       temp = GetTemp(part);
+      if (radfb) temp_amb = radfb->AmbientTemp(part);
       col2 = GetCol2(part);
 
-      EnergyFindEqui(part.rho, temp, part.temp_ambient, col2, part.u, part.dudt,
+      EnergyFindEqui(part.rho, temp, temp_amb, col2, part.u, part.dudt,
                      part.ueq, part.dt_therm);
 
 
@@ -280,7 +287,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
  (const FLOAT rho,                             ///< [in] ..
-  const FLOAT temp,                            ///< [in] ..
+  FLOAT temp,                            ///< [in] ..
   const FLOAT temp_ambient,                    ///< [in] ..
   const FLOAT col2,                            ///< [in] ..
   const FLOAT u,                               ///< [in] ..
@@ -299,6 +306,8 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
   FLOAT kappa;                                 // ..
   FLOAT kappar;                                // ..
   FLOAT kappap;                                // ..
+
+  if (temp < temp_ambient) temp = temp_ambient; // Consider why this stops itemphigh > ntemp
 
   logtemp = log10(temp);
   itemp   = GetITemp(logtemp);
@@ -689,9 +698,10 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetTemp
 
   result = pow10(eos_temp[temp_index]);
 
-  // NEED TO SHIFT UP U TO FIT THE AMBIENT TEMPERATURE
-  if (result < part.temp_ambient) {
-    result = part.temp_ambient;
+  // Limit temperature to 5K (CMB)
+  if (result < temp_min) {
+    result = temp_min;
+    cout << "Limiting T_amb\n";
     part.u = GetEnergy(idens, temp_index, logrho, log10(result));
   }
 

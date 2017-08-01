@@ -32,19 +32,82 @@ using namespace std;
 
 //=================================================================================================
 //  RadiativeFB::RadiativeFB()
-/// RadiativeFB class constructor
+/// RadiativeFB class constructor.
 //=================================================================================================
 template <int ndim>
 RadiativeFB<ndim>::RadiativeFB
 (SimUnits *simunits,
  Parameters *params)
 {
-  // Set the radiative feedback regime
-  regime = params->stringparams["rad_fb"];
+  // Get and limit number of central objects
+  int Ncentral = params->intparams["disc_heating"];
+  if (Ncentral < 0) Ncentral = 0;
+  if (Ncentral > 2) Ncentral = 2;
 
   // Convert to units first
   temp_unit = simunits->temp.outscale * simunits->temp.outcgs;
   temp_inf = params->floatparams["temp_ambient"] / temp_unit;
+  temp_inf4 = pow(temp_inf, 4.0);
+
+  ambient_heating = params->intparams["ambient_heating"];
+
+  if (params->intparams["disc_heating"]) {
+    disc_heating = new DiscHeating<ndim>(simunits, params, Ncentral);
+  }
+
+  if (params->intparams["sink_heating"]) {
+    if (params->stringparams["sink_fb"] == "continuous") {
+      sink_heating = new ContinuousFB<ndim>(simunits, params, Ncentral);
+    }
+  }
+
+  return;
+}
+
+//=================================================================================================
+//  RadiativeFB::~RadiativeFB()
+/// RadiativeFB class destructor.
+//=================================================================================================
+template <int ndim>
+RadiativeFB<ndim>::~RadiativeFB()
+{
+  if (disc_heating) delete disc_heating;
+  if (sink_heating) delete sink_heating;
+}
+
+//=================================================================================================
+//  RadiativeFB::AmbientTemp()
+/// Combines heating from an external ambient source, a disc enforced temperature profile, and
+/// heating from sinks.
+//=================================================================================================
+template <int ndim>
+FLOAT RadiativeFB<ndim>::AmbientTemp
+(Particle<ndim> &part)
+{
+  debug2("[RadiativeFB::AmbientTemp]");
+
+  FLOAT temp = 0.0;
+
+  if (ambient_heating) temp += temp_inf4;
+  if (disc_heating) temp += disc_heating->AmbientTemp(part, sinks);
+  if (sink_heating) temp += sink_heating->AmbientTemp(part, sinks);
+
+  return pow(temp, 0.25);
+}
+
+//=================================================================================================
+//  DiscHeating::DiscHeating()
+/// DiscHeating class constructor.
+//=================================================================================================
+template <int ndim>
+DiscHeating<ndim>::DiscHeating(
+ SimUnits *simunits,
+ Parameters *params,
+ int Ncentral_aux)
+{
+  Ncentral = Ncentral_aux;
+
+  temp_unit = simunits->temp.outscale * simunits->temp.outcgs;
   temp_au = params->floatparams["temp_au"] / temp_unit;
   temp_q = params->floatparams["temp_q"];
 
@@ -52,74 +115,58 @@ RadiativeFB<ndim>::RadiativeFB
   runit2 = pow(runit, 2.0);
   rsmooth = params->floatparams["r_smooth"];
 
-  temp_inf4 = pow(temp_inf, 4.0);
   temp_au4 = pow(temp_au, 4.0);
   temp_exp = -2.0 * temp_q;
-  rsmooth2 = pow(rsmooth, 2.0);
 
-  return;
+  rsmooth2 = pow(rsmooth, 2.0);
 }
 
 //=================================================================================================
-//  RadiativeFB::~RadiativeFB()
-/// RadiativeFB class destructor
+//  DiscHeating::DiscHeating()
+/// DiscHeating class destructor.
 //=================================================================================================
 template <int ndim>
-RadiativeFB<ndim>::~RadiativeFB()
+DiscHeating<ndim>::~DiscHeating()
 {
-  delete sinks;
-  delete simunits;
+
 }
 
 //=================================================================================================
-//  RadiativeFB::AmbientTemp()
+//  DiscHeating::DiscHeating()
 /// Calculates the ambient temperature for particles assuming a fixed temperature profile.
 /// Depending on the case, the temperature profile may be imposed due to a single or binary
 /// star. This routine should only be used for disc systems where the central object temperature
 /// profile is fixed and does not depend on accretion.
 //=================================================================================================
 template <int ndim>
-void RadiativeFB<ndim>::AmbientTemp
-(Hydrodynamics<ndim> *hydro,
- Sinks<ndim> *sinks)
-{
-  debug2("[RadiativeFB::AmbientTemp]");
+FLOAT DiscHeating<ndim>::AmbientTemp
+(Particle<ndim> &part,
+ Sinks<ndim> *sinks) {
+  FLOAT temp = 0.0;
 
-  if (regime == "hdisc_single") {
-    FLOAT sink_x = sinks->sink[0].star->r[0];
-    FLOAT sink_y = sinks->sink[0].star->r[1];
-
-#pragma omp parallel for default(none) shared(sink_x, sink_y, hydro)
-    for (int i = 0; i < hydro->Nhydro; ++i) {
-      Particle<ndim> &part = hydro->GetParticlePointer(i);
-      FLOAT part_x = part.r[0];
-      FLOAT part_y = part.r[1];
-      FLOAT r2 = pow(part_x - sink_x, 2.0) + pow(part_y - sink_y, 2.0);
-
-      // Requires unit conversion, seems to work okay with AU units though
-      part.temp_ambient = pow(temp_inf4 + temp_au4 * pow((r2 + rsmooth2), temp_exp), 0.25);
+  if (Ncentral <= sinks->Nsink) {
+    for (int i = 0; i < Ncentral; ++i) {
+      SinkParticle<ndim> sink = sinks->sink[i];
+      FLOAT dist = Distance(part.r, sink.star->r, 2); // Midplane distance only
+      temp = temp_au4 * pow((dist + rsmooth2), temp_exp);
     }
   }
-  else if (regime == "hdisc_binary") {
-    // TODO (MERCER): Implement heating from central binary system
-    // How can we parameterise primary and secondary mass? T(1AU) from
-    // luminosity data. q will have to be assumed.
-  }
-
-  return;
+  return temp;
 }
 
 //=================================================================================================
-//  ContinuousFB::ContinuousFB()
-/// ContinuousFB class constructor
+//  SinkHeating::SinkHeating()
+/// SinkHeating class constructor.
 //=================================================================================================
 template <int ndim>
-ContinuousFB<ndim>::ContinuousFB
+SinkHeating<ndim>::SinkHeating
 (SimUnits *simunits,
- Parameters *params) : RadiativeFB<ndim>(simunits, params)
+ Parameters *params,
+ int Ncentral_aux)
 {
+  Ncentral = Ncentral_aux;
+
   // Set variables from params file
-  type     = params->stringparams["fb_type"];
   f_acc    = params->floatparams["f_acc"];
   r_star   = params->floatparams["r_star"];
   r_bdwarf = params->floatparams["r_bdwarf"];
@@ -127,6 +174,8 @@ ContinuousFB<ndim>::ContinuousFB
 
   // Unit conversion, who doesn't love this?
   DOUBLE num, denom;
+
+  temp_unit = simunits->temp.outscale * simunits->temp.outcgs;
 
   // Calculate Boltzmann constant in code units
   num       = pow(simunits->r.outscale * simunits->r.outSI, 2.0) *
@@ -157,12 +206,68 @@ ContinuousFB<ndim>::ContinuousFB
   r_planet *= rsun;
   r_bdwarf *= rsun;
   r_star   *= rsun;
+}
+
+//=================================================================================================
+//  SinkHeating::SinkHeating()
+/// SinkHeating class destructor.
+//=================================================================================================
+template <int ndim>
+SinkHeating<ndim>::~SinkHeating()
+{
+
+}
+
+//=================================================================================================
+//  SinkHeating::SinkTemperature()
+/// Returns the sink temperature which is found via it's luminosity, such that:
+/// T = (L / (4 * pi * boltz * R^2))^1/4
+//=================================================================================================
+template <int ndim>
+FLOAT SinkHeating<ndim>::SinkTemperature
+(FLOAT L,
+ FLOAT r)
+{
+  return pow(L / (4.0 * pi * rad_const * r), 0.25);
+}
+
+//=================================================================================================
+//  SinkHeating::SinkLuminosity()
+/// Returns the sink luminosity which consists of two parts: an intrinsic luminosity which only
+/// applies to stars (objects M > 80 Mjup) and an accretion luminosity. Specifically
+/// L = f_n * (m / m_sun)^3 * L_sun + f_acc * (G * m * m_dot / r) * (1 - (r / 2 * rsink))
+/// f_n is the flag for intrinsic accretion. f_acc is the fraction of gravitational energy
+/// converted to heat energy (typically f_acc = 0.75, Offner et al. (2010)). R is the radius of
+/// the object at the center of the sink and Rsink is the radius of the sink itself.
+//=================================================================================================
+template <int ndim>
+FLOAT SinkHeating<ndim>::SinkLuminosity
+(FLOAT m,
+ FLOAT mdot,
+ FLOAT rsink,
+ FLOAT r,
+ int f_n)
+{
+  return f_n * pow(m / msun, 3.0) * lsun +
+         f_acc * ((grav_const * m * mdot) / r) * (1 - (r / (2.0 * rsink)));
+}
+
+//=================================================================================================
+//  ContinuousFB::ContinuousFB()
+/// ContinuousFB class constructor.
+//=================================================================================================
+template <int ndim>
+ContinuousFB<ndim>::ContinuousFB
+(SimUnits *simunits,
+ Parameters *params,
+ int Ncentral_aux) : SinkHeating<ndim>(simunits, params, Ncentral_aux)
+{
 
 }
 
 // //=================================================================================================
 // //  ContinuousFB::~ContinuousFB()
-// /// ContinuousFB class destructor
+// /// ContinuousFB class destructor.
 // //=================================================================================================
 template <int ndim>
 ContinuousFB<ndim>::~ContinuousFB()
@@ -176,95 +281,48 @@ ContinuousFB<ndim>::~ContinuousFB()
 /// when particles are accreted onto an object, the energy is instantly released into the system.
 //=================================================================================================
 template <int ndim>
-void ContinuousFB<ndim>::AmbientTemp
-(Hydrodynamics<ndim> *hydro,
+FLOAT ContinuousFB<ndim>::AmbientTemp
+(Particle<ndim> &part,
  Sinks<ndim> *sinks)
 {
-  if (regime == "sink_heating") {
-#pragma omp parallel for default(none) shared(sinks, hydro)
-    for (int i = 0; i < hydro->Nhydro; ++i) {
-      Particle<ndim> &part = hydro->GetParticlePointer(i);
-      FLOAT part_x = part.r[0];
-      FLOAT part_y = part.r[1];
-      FLOAT part_z = part.r[2];
+  FLOAT temp = 0.0;
 
-      FLOAT sum = 0.0;
-      for (int j = 1; j < sinks->Nsink; ++j) {
-        FLOAT sink_x    = sinks->sink[j].star->r[0];
-        FLOAT sink_y    = sinks->sink[j].star->r[1];
-        FLOAT sink_z    = sinks->sink[j].star->r[2];
-        FLOAT sink_m    = sinks->sink[j].star->m;
-        FLOAT sink_mdot = sinks->sink[j].dmdt;
-        FLOAT sink_r    = sinks->sink[j].radius;
+  for (int i = Ncentral; i < sinks->Nsink; ++i) {
+    SinkParticle<ndim> sink = sinks->sink[i];
 
-        // Set source radius and intrinsic luminosity flag depending on sink mass
-        FLOAT r_source = r_planet;
-        int f_n = 0;
-        if (sink_m >= 13.0 * mjup) r_source = r_bdwarf;
-        if (sink_m >= 80.0 * mjup) {
-          r_source = r_star;
-          f_n = 1;
-        }
+    FLOAT dist      = Distance(part.r, sink.star->r, ndim);
+    FLOAT sink_m    = sink.star->m;
+    FLOAT sink_mdot = sink.dmdt;
+    FLOAT sink_r    = sink.radius;
 
-        FLOAT sink_lum = SinkLuminosity(sink_m, sink_mdot, sink_r, r_source, f_n);
-        FLOAT sink_temp = SinkTemperature(sink_lum, r_source);
-
-        FLOAT r_source2 = r_source * r_source;
-        FLOAT dist = pow(part_x - sink_x, 2.0) +
-                     pow(part_y - sink_y, 2.0) +
-                     pow(part_z - sink_z, 2.0);
-
-        sum += 0.25 * (r_source2 / dist) * pow(sink_temp, 4.0);
-      }
-
-      part.temp_ambient = pow(temp_inf4 + sum, 0.25);
+    // Set source radius and intrinsic luminosity flag depending on sink mass
+    FLOAT r_source = r_planet;
+    int f_n = 0;
+    if (sink_m >= 13.0 * mjup) r_source = r_bdwarf;
+    if (sink_m >= 80.0 * mjup) {
+      r_source = r_star;
+      f_n = 1;
     }
-  }
-  else if (regime == "hdisc_single_plus_sink_heating") {
-    // TODO (MERCER): Implement heating from single central star and formed sinks
-  }
-  else if (regime == "hdisc_binary_plus_sink_heating") {
-    // TODO (MERCER): Implement heating from binary central system and formed sinks
-  }
-}
 
-//=================================================================================================
-//  ContinuousFB::SinkTemperature()
-/// Returns the sink temperature which is found via it's luminosity, such that:
-/// T = (L / (4 * pi * boltz * R^2))^1/4
-//=================================================================================================
-template <int ndim>
-FLOAT ContinuousFB<ndim>::SinkTemperature
-(FLOAT L,
- FLOAT r)
-{
-  return pow(L / (4.0 * pi * rad_const * r), 0.25);
-}
+    FLOAT sink_lum = SinkHeating<ndim>::SinkLuminosity(sink_m, sink_mdot, sink_r, r_source, f_n);
+    FLOAT sink_temp = SinkHeating<ndim>::SinkTemperature(sink_lum, r_source);
 
-//=================================================================================================
-//  ContinuousFB::SinkLuminosity()
-/// Returns the sink luminosity which consists of two parts: an intrinsic luminosity which only
-/// applies to stars (objects M > 80 Mjup) and an accretion luminosity. Specifically
-/// L = f_n * (m / m_sun)^3 * L_sun + f_acc * (G * m * m_dot / r) * (1 - (r / 2 * rsink))
-/// f_n is the flag for intrinsic accretion. f_acc is the fraction of gravitational energy
-/// converted to heat energy (typically f_acc = 0.75, Offner et al. (2010)). R is the radius of
-/// the object at the center of the sink and Rsink is the radius of the sink itself.
-//=================================================================================================
-template <int ndim>
-FLOAT ContinuousFB<ndim>::SinkLuminosity
-(FLOAT m,
- FLOAT mdot,
- FLOAT rsink,
- FLOAT r,
- int f_n)
-{
-  return f_n * pow(m / msun, 3.0) * lsun +
-         f_acc * ((grav_const * m * mdot) / r) * (1 - (r / (2.0 * rsink)));
+    FLOAT r_source2 = r_source * r_source;
+
+    temp += 0.25 * (r_source2 / dist) * pow(sink_temp, 4.0);
+  }
+  return temp;
 }
 
 template class RadiativeFB<1>;
 template class RadiativeFB<2>;
 template class RadiativeFB<3>;
+template class DiscHeating<1>;
+template class DiscHeating<2>;
+template class DiscHeating<3>;
+template class SinkHeating<1>;
+template class SinkHeating<2>;
+template class SinkHeating<3>;
 template class ContinuousFB<1>;
 template class ContinuousFB<2>;
 template class ContinuousFB<3>;

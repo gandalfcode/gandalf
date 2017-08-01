@@ -29,11 +29,14 @@
 #include "SimUnits.h"
 #include "Hydrodynamics.h"
 #include "Sinks.h"
-#include "Nbody.h"
+
+template <int ndim> class DiscHeating;
+template <int ndim> class SinkHeating;
 
 //=================================================================================================
 //  Class RadiativeFB
-/// \brief   Parent class to radiative feedback methods.
+/// \brief   Handles the radiative feedback object and find the ambient temperature for the
+///          defined methods: ambient heating, disc heating and sink heating.
 /// \details Radiative feedback is heating provided by the accretion of material from sink
 ///          particles within the simulation. This class is the main parent to different radiative
 ///          feedback methods. The temperature contribution is parameterised by an "ambient"
@@ -49,25 +52,85 @@ public:
   RadiativeFB(SimUnits *, Parameters *);
   ~RadiativeFB();
 
-  virtual void AmbientTemp(Hydrodynamics<ndim> *, Sinks<ndim> *);
+  FLOAT AmbientTemp(Particle<ndim> &);
 
-  string regime;
+  void SetSinks(Sinks<ndim> *sinks_aux) { sinks = sinks_aux; }
+
+  FLOAT temp_unit;
   FLOAT temp_inf;
+  FLOAT temp_inf4;
+
+  SimUnits *simunits;
+  Sinks<ndim> *sinks;
+
+  int ambient_heating;
+  DiscHeating<ndim> *disc_heating;
+  SinkHeating<ndim> *sink_heating;
+};
+
+//=================================================================================================
+//  Class DiscHeating
+/// \brief   Handles heating from a central protostellar system which affects the disc. The
+///          central system may be single or a binary.
+/// \details This class creates a proxy temperature profile across the disc from the central
+///          protostellar system.
+/// \author  A. P. Mercer
+/// \date    28/07/2017
+//=================================================================================================
+template <int ndim>
+class DiscHeating {
+public:
+  DiscHeating(SimUnits *, Parameters *, int);
+  ~DiscHeating();
+
+  FLOAT AmbientTemp(Particle<ndim> &, Sinks<ndim> *);
+
+private:
+  int Ncentral;
+
   FLOAT temp_au;
   FLOAT temp_q;
   FLOAT rsmooth;
 
-  // Useful values
-  FLOAT temp_inf4;
+  FLOAT temp_unit;
   FLOAT temp_au4;
   FLOAT temp_exp;
-  FLOAT temp_unit;
   FLOAT runit;
   FLOAT runit2;
   FLOAT rsmooth2;
+};
 
-  Sinks<ndim> *sinks;
-  SimUnits *simunits;
+//=================================================================================================
+//  Class SinkHeating
+/// \brief   Handles heating from sinks within the system due to accretion, and, if they are
+///          massive enough, intrinsic luminosity.
+/// \details This class acts as a parent for sink heating methods. If DiscHeating is also turned
+///          on, the central protostellar system is excluded from this method. Only formed sinks
+///          will then provide extra heating.
+/// \author  A. P. Mercer
+/// \date    28/07/2017
+//=================================================================================================
+template <int ndim>
+class SinkHeating  {
+public:
+  SinkHeating(SimUnits *, Parameters *, int);
+  ~SinkHeating();
+
+  virtual FLOAT AmbientTemp(Particle<ndim> &, Sinks<ndim> *) = 0;
+
+  FLOAT SinkTemperature(FLOAT, FLOAT);
+  FLOAT SinkLuminosity(FLOAT, FLOAT, FLOAT, FLOAT, int);
+
+  int Ncentral;
+  FLOAT temp_unit;
+  DOUBLE rad_const, grav_const;
+  FLOAT mjup, msun, lsun, rsun;
+
+  FLOAT r_star;
+  FLOAT r_bdwarf;
+  FLOAT r_planet;
+  FLOAT f_acc;
+
 };
 
 //=================================================================================================
@@ -81,32 +144,20 @@ public:
 /// \date    10/07/2017
 //=================================================================================================
 template <int ndim>
-class ContinuousFB : public RadiativeFB<ndim>
+class ContinuousFB : public SinkHeating<ndim>
 {
-  using RadiativeFB<ndim>::regime;
-  using RadiativeFB<ndim>::temp_inf4;
-  using RadiativeFB<ndim>::temp_unit;
-
-  using RadiativeFB<ndim>::simunits;
-  using RadiativeFB<ndim>::sinks;
-
+  using SinkHeating<ndim>::Ncentral;
+  using SinkHeating<ndim>::mjup;
+  using SinkHeating<ndim>::rad_const;
+  using SinkHeating<ndim>::r_planet;
+  using SinkHeating<ndim>::r_bdwarf;
+  using SinkHeating<ndim>::r_star;
 public:
-  ContinuousFB(SimUnits *, Parameters *);
+  ContinuousFB(SimUnits *, Parameters *, int);
   ~ContinuousFB();
 
-  void AmbientTemp(Hydrodynamics<ndim> *, Sinks<ndim> *);
+  FLOAT AmbientTemp(Particle<ndim> &, Sinks<ndim> *);
 
-  string type;
-
-  DOUBLE rad_const, grav_const;
-  FLOAT mjup, msun, lsun, rsun;
-
-  FLOAT r_star;
-  FLOAT r_bdwarf;
-  FLOAT r_planet;
-  FLOAT f_acc;
-
-private:
   FLOAT SinkTemperature(FLOAT, FLOAT);
   FLOAT SinkLuminosity(FLOAT, FLOAT, FLOAT, FLOAT, int);
 };

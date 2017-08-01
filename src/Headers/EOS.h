@@ -440,7 +440,5 @@ class Radws : public EOS<ndim>
   FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
   FLOAT temp0;
-  FLOAT mu_bar;
-
 };
 #endif
