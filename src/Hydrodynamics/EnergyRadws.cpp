@@ -252,7 +252,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn, i, temp, temp_amb, col2) shared(partdata, hydro)
+#pragma omp parallel for default(none) private(dn, i, temp, col2) shared(partdata, hydro, temp_amb)
   for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
@@ -287,7 +287,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
  (const FLOAT rho,                             ///< [in] ..
-  FLOAT temp,                            ///< [in] ..
+  const FLOAT temp,                            ///< [in] ..
   const FLOAT temp_ambient,                    ///< [in] ..
   const FLOAT col2,                            ///< [in] ..
   const FLOAT u,                               ///< [in] ..
@@ -307,8 +307,6 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
   FLOAT kappar;                                // ..
   FLOAT kappap;                                // ..
 
-  if (temp < temp_ambient) temp = temp_ambient; // Consider why this stops itemphigh > ntemp
-
   logtemp = log10(temp);
   itemp   = GetITemp(logtemp);
 
@@ -320,7 +318,7 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
 
   // Calculate equilibrium temperature using implicit scheme described in Stamatellos et al. (2007)
   EnergyFindEquiTemp(idens, rho, temp, temp_ambient, col2, dudt, Tequi);
-  assert(Tequi >= temp_ambient);
+  assert(Tequi >= temp_min);
 
   // Get ueq_p and dudt_eq from Tequi
   logtemp = log10(Tequi);
@@ -375,15 +373,15 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   balance = ebalance((FLOAT) 0.0, temp_ambient, temp, kappa, kappap, col2);
 
   // Get min. kappa and min balance
-  logtemp = log10(temp_ambient);
+  logtemp = log10(temp_min);
   itemp = GetITemp(logtemp);
   GetKappa(idens, itemp, logrho, logtemp, minkappa, minkappar, minkappap);
-  minbalance = ebalance((FLOAT) 0.0, temp_ambient, temp_ambient, minkappa, minkappap, col2);
+  minbalance = ebalance((FLOAT) 0.0, temp_ambient, temp_min, minkappa, minkappap, col2);
   // Find equilibrium temperature
   // ------------------------------------------------------------------------------------------------
   if (dudt <= -balance) {
     if (dudt <= -minbalance) {
-      Tequi = temp_ambient;
+      Tequi = temp_min;
       return;
     }
 
@@ -678,7 +676,7 @@ template <int ndim, template <int> class ParticleType>
 FLOAT EnergyRadws<ndim,ParticleType>::GetTemp
  (Particle<ndim> &part)
 {
-  FLOAT result = temp_ambient0;
+  FLOAT result = temp_min;
 
   FLOAT logrho = log10(part.rho);
   int idens = GetIDens(logrho);
@@ -686,23 +684,20 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetTemp
   if (part.u == 0.0) return result;
 
   int temp_index = -1;
-  FLOAT diff = 1E20;
+  FLOAT du = 1E20;
   for (int i = 0; i < ntemp; ++i) {
-    if (abs(part.u - eos_energy[idens][i]) < diff) {
-      diff = abs(part.u - eos_energy[idens][i]);
+    if (abs(part.u - eos_energy[idens][i]) < du) {
+      du = abs(part.u - eos_energy[idens][i]);
       temp_index = i;
     }
   }
-
-  if (temp_index > ntemp - 1) temp_index = ntemp - 1;
 
   result = pow10(eos_temp[temp_index]);
 
   // Limit temperature to 5K (CMB)
   if (result < temp_min) {
     result = temp_min;
-    cout << "Limiting T_amb\n";
-    part.u = GetEnergy(idens, temp_index, logrho, log10(result));
+    temp_index = GetITemp(temp_min);
   }
 
   part.mu_bar = eos_mu[idens][temp_index];
@@ -723,17 +718,22 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetCol2
  (Particle<ndim> &part)
 {
   if (!lombardi) {
-    return RADWS_ZETA2 * part.gpot * part.rho;
+    return RADWS_ZETA2 * part.gpot_hydro * part.rho;
   }
   else {
-    FLOAT da[ndim];
     FLOAT mag_da = 0.0, P = 0.0;
+
+    FLOAT tot_a = 0.0, tot_atree = 0.0;
     for (int k = 0; k < ndim; ++k) {
-      da[k] = part.a[k] - part.atree[k];
-      mag_da += da[k] * da[k];
+      tot_a += part.a[k] * part.a[k];
+      tot_atree += part.atree[k] * part.atree[k];
     }
+    FLOAT mag_a = sqrt(tot_a);
+    FLOAT mag_atree = sqrt(tot_atree);
+    mag_da = mag_a - mag_atree;
     P = (part.gamma - 1.0) * part.rho * part.u;
-    return (LOMBARDI_ZETA2 * P * P) / mag_da;
+
+    return (LOMBARDI_ZETA2 * P * P) / (mag_da * mag_da);
   }
 }
 

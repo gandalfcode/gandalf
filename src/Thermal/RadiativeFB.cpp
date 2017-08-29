@@ -71,8 +71,8 @@ RadiativeFB<ndim>::RadiativeFB
 template <int ndim>
 RadiativeFB<ndim>::~RadiativeFB()
 {
-  if (disc_heating) delete disc_heating;
-  if (sink_heating) delete sink_heating;
+  // if (disc_heating) delete disc_heating;
+  // if (sink_heating) delete sink_heating;
 }
 
 //=================================================================================================
