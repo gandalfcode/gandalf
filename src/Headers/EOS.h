@@ -85,7 +85,8 @@ class EOS
 
   virtual ~EOS() {};
 
-  template <class ParticleType> FLOAT Pressure(const ParticleType& part) {return gammam1*part.rho*part.u;} ;
+  template<class ParticleType> FLOAT HydroForcesPressure(const ParticleType &part) { return gammam1*part.rho*part.u; }
+  virtual FLOAT Pressure(Particle<ndim> &part) { return gammam1*part.rho*part.u; }
   virtual FLOAT EntropicFunction(Particle<ndim> &) = 0;
   virtual FLOAT SoundSpeed(Particle<ndim> &) = 0;
   virtual FLOAT Temperature(Particle<ndim> &) = 0;
@@ -426,14 +427,13 @@ class MCRadiationEOS: public EOS<ndim>
 template <int ndim>
 class Radws : public EOS<ndim>
 {
-  using EOS<ndim>::gamma;
-  using EOS<ndim>::gammam1;
 
  public:
 
   Radws(Parameters*, SimUnits *);
   ~Radws();
 
+  FLOAT Pressure(Particle<ndim> &);
   FLOAT EntropicFunction(Particle<ndim> &);
   FLOAT SoundSpeed(Particle<ndim> &);
   FLOAT Temperature(Particle<ndim> &);

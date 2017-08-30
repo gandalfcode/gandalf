@@ -80,9 +80,9 @@ class EnergyRadws : public EnergyEquation<ndim>
   void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
   void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                      const FLOAT, FLOAT &, FLOAT &, FLOAT &);
+                      const FLOAT, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
-                          const FLOAT, FLOAT &, FLOAT &);
+                          const FLOAT, FLOAT &);
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
   FLOAT ebalance(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT);
@@ -91,6 +91,7 @@ class EnergyRadws : public EnergyEquation<ndim>
   void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
   FLOAT GetEnergy(const int, const int, const FLOAT, const FLOAT);
   FLOAT GetMuBar(const int, const int, const FLOAT, const FLOAT);
+  FLOAT GetTemp(Particle<ndim> &part);
 
 
   //-----------------------------------------------------------------------------------------------
@@ -102,6 +103,7 @@ class EnergyRadws : public EnergyEquation<ndim>
   FLOAT *eos_temp ;
   FLOAT **eos_energy;
   FLOAT **eos_mu;
+  FLOAT **eos_gamma;
   FLOAT **kappa_table;
   FLOAT **kappar_table;
   FLOAT **kappap_table;
