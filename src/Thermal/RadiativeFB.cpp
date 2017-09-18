@@ -59,11 +59,15 @@ RadiativeFB<ndim>::RadiativeFB
   if (params->intparams["disc_heating"]) {
     disc_heating = new DiscHeating<ndim>(simunits, params, Ncentral);
   }
+  else {
+    disc_heating = NULL;
+  }
 
   if (params->intparams["sink_heating"]) {
-    if (params->stringparams["sink_fb"] == "continuous") {
-      sink_heating = new ContinuousFB<ndim>(simunits, params, Ncentral);
-    }
+    sink_heating = new SinkHeating<ndim>(simunits, params, Ncentral);
+  }
+  else {
+    sink_heating = NULL;
   }
 
   return;
@@ -76,8 +80,8 @@ RadiativeFB<ndim>::RadiativeFB
 template <int ndim>
 RadiativeFB<ndim>::~RadiativeFB()
 {
-  // if (disc_heating) delete disc_heating;
-  // if (sink_heating) delete sink_heating;
+  if (disc_heating != NULL) delete disc_heating;
+  if (sink_heating != NULL) delete sink_heating;
 }
 
 //=================================================================================================
@@ -179,6 +183,8 @@ SinkHeating<ndim>::SinkHeating
   // Unit conversion, who doesn't love this?
   DOUBLE num, denom;
 
+  temp_unit = simunits->temp.outscale * simunits->temp.outSI;
+
   // Calculate Boltzmann constant in code units
   num       = pow(simunits->r.outscale * simunits->r.outSI, 2.0) *
               simunits->t.outscale * simunits->t.outSI;
@@ -255,35 +261,12 @@ FLOAT SinkHeating<ndim>::SinkLuminosity
 }
 
 //=================================================================================================
-//  ContinuousFB::ContinuousFB()
-/// ContinuousFB class constructor.
-//=================================================================================================
-template <int ndim>
-ContinuousFB<ndim>::ContinuousFB
-(SimUnits *simunits,
- Parameters *params,
- int Ncentral_aux) : SinkHeating<ndim>(simunits, params, Ncentral_aux)
-{
-
-}
-
-// //=================================================================================================
-// //  ContinuousFB::~ContinuousFB()
-// /// ContinuousFB class destructor.
-// //=================================================================================================
-template <int ndim>
-ContinuousFB<ndim>::~ContinuousFB()
-{
-
-}
-
-//=================================================================================================
-//  ContinuousFB::AmbientTemp()
+//  SinkHeating::AmbientTemp()
 /// Calculates the ambient temperature of particles assuming continuous radiative feedback, i.e.
 /// when particles are accreted onto an object, the energy is instantly released into the system.
 //=================================================================================================
 template <int ndim>
-FLOAT ContinuousFB<ndim>::AmbientTemp
+FLOAT SinkHeating<ndim>::AmbientTemp
 (Particle<ndim> &part,
  Sinks<ndim> *sinks)
 {
@@ -306,8 +289,8 @@ FLOAT ContinuousFB<ndim>::AmbientTemp
       f_n = 1;
     }
 
-    FLOAT sink_lum = SinkHeating<ndim>::SinkLuminosity(sink_m, sink_dmdt, sink_r, r_source, f_n);
-    FLOAT sink_temp = SinkHeating<ndim>::SinkTemperature(sink_lum, r_source);
+    FLOAT sink_lum = SinkLuminosity(sink_m, sink_dmdt, sink_r, r_source, f_n);
+    FLOAT sink_temp = SinkTemperature(sink_lum, r_source);
 
     temp += 0.25 * pow(r_source / dist, 2.0) * pow(sink_temp, 4.0);
   }
@@ -323,6 +306,3 @@ template class DiscHeating<3>;
 template class SinkHeating<1>;
 template class SinkHeating<2>;
 template class SinkHeating<3>;
-template class ContinuousFB<1>;
-template class ContinuousFB<2>;
-template class ContinuousFB<3>;

@@ -104,9 +104,9 @@ private:
 //  Class SinkHeating
 /// \brief   Handles heating from sinks within the system due to accretion, and, if they are
 ///          massive enough, intrinsic luminosity.
-/// \details This class acts as a parent for sink heating methods. If DiscHeating is also turned
-///          on, the central protostellar system is excluded from this method. Only formed sinks
-///          will then provide extra heating.
+/// \details This class provides heating from sinks: accretion heating and heating from hydrogen
+///          burning. If DiscHeating is also turned on, the central protostellar system is excluded
+///          from this method. Only formed sinks will then provide extra heating.
 /// \author  A. P. Mercer
 /// \date    28/07/2017
 //=================================================================================================
@@ -116,7 +116,7 @@ public:
   SinkHeating(SimUnits *, Parameters *, int);
   ~SinkHeating();
 
-  virtual FLOAT AmbientTemp(Particle<ndim> &, Sinks<ndim> *) = 0;
+  FLOAT AmbientTemp(Particle<ndim> &, Sinks<ndim> *);
 
   FLOAT SinkTemperature(FLOAT, FLOAT);
   FLOAT SinkLuminosity(FLOAT, FLOAT, FLOAT, FLOAT, int);
@@ -131,35 +131,6 @@ public:
   FLOAT r_planet;
   FLOAT f_acc;
 
-};
-
-//=================================================================================================
-//  Class ContinuousFB
-/// \brief   Contains all the necessary variables to handle continuous radiative feedback from
-///          sinks.
-/// \details Radiative feedback is heating provided by the accretion of material from sink
-///          particles within the simulation. In this regime, luminosity (and thus temperature) is
-///          added back into the system instantly i.e. continuously.
-/// \author  A. P. Mercer
-/// \date    10/07/2017
-//=================================================================================================
-template <int ndim>
-class ContinuousFB : public SinkHeating<ndim>
-{
-  using SinkHeating<ndim>::Ncentral;
-  using SinkHeating<ndim>::mjup;
-  using SinkHeating<ndim>::rad_const;
-  using SinkHeating<ndim>::r_planet;
-  using SinkHeating<ndim>::r_bdwarf;
-  using SinkHeating<ndim>::r_star;
-public:
-  ContinuousFB(SimUnits *, Parameters *, int);
-  ~ContinuousFB();
-
-  FLOAT AmbientTemp(Particle<ndim> &, Sinks<ndim> *);
-
-  FLOAT SinkTemperature(FLOAT, FLOAT);
-  FLOAT SinkLuminosity(FLOAT, FLOAT, FLOAT, FLOAT, int);
 };
 
 #endif
