@@ -39,13 +39,18 @@ RadiativeFB<ndim>::RadiativeFB
 (SimUnits *simunits,
  Parameters *params)
 {
+  // Ensure 2 or 3 dimensions are used
+  if (ndim < 2) {
+    ExceptionHandler::getIstance().raise("Radiative feedback requires at least 2 dimensions!");
+  }
+
   // Get and limit number of central objects
   int Ncentral = params->intparams["disc_heating"];
   if (Ncentral < 0) Ncentral = 0;
   if (Ncentral > 2) Ncentral = 2;
 
   // Convert to units first
-  temp_unit = simunits->temp.outscale * simunits->temp.outcgs;
+  temp_unit = simunits->temp.outscale * simunits->temp.outSI;
   temp_inf = params->floatparams["temp_ambient"] / temp_unit;
   temp_inf4 = pow(temp_inf, 4.0);
 
@@ -107,13 +112,12 @@ DiscHeating<ndim>::DiscHeating(
 {
   Ncentral = Ncentral_aux;
 
-  temp_unit = simunits->temp.outscale * simunits->temp.outcgs;
+  temp_unit = simunits->temp.outscale * simunits->temp.outSI;
   temp_au = params->floatparams["temp_au"] / temp_unit;
   temp_q = params->floatparams["temp_q"];
 
   runit = simunits->r.outscale * simunits->r.outSI;
-  runit2 = pow(runit, 2.0);
-  rsmooth = params->floatparams["r_smooth"];
+  rsmooth = params->floatparams["r_smooth"] / runit;
 
   temp_au4 = pow(temp_au, 4.0);
   temp_exp = -2.0 * temp_q;
@@ -148,7 +152,7 @@ FLOAT DiscHeating<ndim>::AmbientTemp
     for (int i = 0; i < Ncentral; ++i) {
       SinkParticle<ndim> sink = sinks->sink[i];
       FLOAT dist = Distance(part.r, sink.star->r, 2); // Midplane distance only
-      temp = temp_au4 * pow((dist + rsmooth2), temp_exp);
+      temp = temp_au4 * pow((dist * dist + rsmooth2), temp_exp);
     }
   }
   return temp;
@@ -174,8 +178,6 @@ SinkHeating<ndim>::SinkHeating
 
   // Unit conversion, who doesn't love this?
   DOUBLE num, denom;
-
-  temp_unit = simunits->temp.outscale * simunits->temp.outcgs;
 
   // Calculate Boltzmann constant in code units
   num       = pow(simunits->r.outscale * simunits->r.outSI, 2.0) *
@@ -228,7 +230,7 @@ FLOAT SinkHeating<ndim>::SinkTemperature
 (FLOAT L,
  FLOAT r)
 {
-  return pow(L / (4.0 * pi * rad_const * r), 0.25);
+  return pow(L / (4.0 * pi * rad_const * r * r), 0.25);
 }
 
 //=================================================================================================
@@ -292,7 +294,7 @@ FLOAT ContinuousFB<ndim>::AmbientTemp
 
     FLOAT dist      = Distance(part.r, sink.star->r, ndim);
     FLOAT sink_m    = sink.star->m;
-    FLOAT sink_mdot = sink.dmdt;
+    FLOAT sink_dmdt = 1e-7 / 6.28353;// Fixed for now, requires sink.dmdt to be set
     FLOAT sink_r    = sink.radius;
 
     // Set source radius and intrinsic luminosity flag depending on sink mass
@@ -304,12 +306,10 @@ FLOAT ContinuousFB<ndim>::AmbientTemp
       f_n = 1;
     }
 
-    FLOAT sink_lum = SinkHeating<ndim>::SinkLuminosity(sink_m, sink_mdot, sink_r, r_source, f_n);
+    FLOAT sink_lum = SinkHeating<ndim>::SinkLuminosity(sink_m, sink_dmdt, sink_r, r_source, f_n);
     FLOAT sink_temp = SinkHeating<ndim>::SinkTemperature(sink_lum, r_source);
 
-    FLOAT r_source2 = r_source * r_source;
-
-    temp += 0.25 * (r_source2 / dist) * pow(sink_temp, 4.0);
+    temp += 0.25 * pow(r_source / dist, 2.0) * pow(sink_temp, 4.0);
   }
   return temp;
 }
