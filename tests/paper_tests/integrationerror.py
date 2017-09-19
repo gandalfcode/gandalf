@@ -17,7 +17,7 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 
 
 #--------------------------------------------------------------------------------------------------
-rc('font', **{'family': 'normal', 'weight' : 'bold', 'size' : 12})
+rc('font', **{'family': 'normal', 'weight' : 'bold', 'size' : 16})
 rc('text', usetex=True)
 
 
@@ -30,7 +30,7 @@ etot0 = -0.5*m1*m2/abin
 period = 2.0*math.pi*math.sqrt(abin*abin*abin/(m1 + m2))
 
 errormin = 6.666666e-12
-errormax = 3.3333e-1
+errormax = 6.666666e-1
 
 
 # Energy error
@@ -72,8 +72,8 @@ tmax     = 98.0
 tsize    = tmax - tmin
 tcross   = math.sqrt(6.0*rplummer*rplummer*rplummer/mplummer)
 tmax     /= tcross
-errormin = 6.66666e-12
-errormax = 3.33333e-2
+errormin = 6.66666e-11
+errormax = 3.33333e-1
 
 # Leapfrog KDK
 kdksim2 = newsim('plummer.dat')
@@ -142,7 +142,7 @@ hermite4tserror3.x_data /= tcross
 fig, axarr = plt.subplots(3, 1, sharex='col', sharey='row', figsize=(8,18))
 #fig, axarr = plt.subplots(2, 1, figsize=(14,8), sharex='row')
 fig.subplots_adjust(hspace=0.0001, wspace=0.0001)
-fig.subplots_adjust(bottom=0.05, top=0.99, left=0.09, right=0.98)
+fig.subplots_adjust(bottom=0.06, top=0.99, left=0.11, right=0.98)
 
 
 axarr[0].set_ylabel(r"$\Delta E/E_0$")
@@ -153,8 +153,8 @@ axarr[0].set_xlim([0.0, tmax])
 axarr[0].plot(kdkerror.x_data, kdkerror.y_data, color="red", linestyle=':', label='Leapfrog KDK', lw=1.0)
 axarr[0].plot(hermite4error.x_data, hermite4error.y_data, color="black", linestyle='-', label='4th order Hermite', lw=1.0)
 axarr[0].plot(hermite4tserror.x_data, hermite4tserror.y_data, color="blue", linestyle='--', label='4th order Hermite TS', lw=1.0)
-axarr[0].text(tmin + 0.007*tsize, 0.085*errormax, "(a) Binary orbit, $e=0.1$", fontsize=12)
-legend = axarr[0].legend(loc='upper right', fontsize=10)
+axarr[0].text(tmin + 0.007*tsize, 0.085*errormax, "(a) Binary orbit, $e=0.1$", fontsize=16)
+legend = axarr[0].legend(loc='upper right', fontsize=16)
 
 
 axarr[1].set_ylabel(r"$\Delta E/E_0$")
@@ -165,7 +165,7 @@ axarr[1].set_xlim([0.0, tmax])
 axarr[1].plot(kdkerror2.x_data, kdkerror2.y_data, color="red", linestyle=':', label='Leapfrog KDK', lw=1.0)
 axarr[1].plot(hermite4error2.x_data, hermite4error2.y_data, color="black", linestyle='-', label='4th order Hermite', lw=1.0)
 axarr[1].plot(hermite4tserror2.x_data, hermite4tserror2.y_data, color="blue", linestyle='--', label='4th order Hermite TS', lw=1.0)
-axarr[1].text(tmin + 0.007*tsize, 0.085*errormax, "(b) Plummer sphere, $N = 200$, $L = 1$", fontsize=12)
+axarr[1].text(tmin + 0.007*tsize, 0.085*errormax, "(b) Plummer sphere, $N = 200$, $L = 1$", fontsize=16)
 
 
 axarr[2].set_ylabel(r"$\Delta E/E_0$")
@@ -176,7 +176,7 @@ axarr[2].set_xlim([0.0, tmax])
 axarr[2].plot(kdkerror3.x_data, kdkerror3.y_data, color="red", linestyle=':', label='Leapfrog KDK', lw=1.0)
 axarr[2].plot(hermite4error3.x_data, hermite4error3.y_data, color="black", linestyle='-', label='4th order Hermite', lw=1.0)
 axarr[2].plot(hermite4tserror3.x_data, hermite4tserror3.y_data, color="blue", linestyle='--', label='4th order Hermite TS', lw=1.0)
-axarr[2].text(tmin + 0.007*tsize, 0.085*errormax, "(c) Plummer sphere, $N = 200$, $L = 5$", fontsize=12)
+axarr[2].text(tmin + 0.007*tsize, 0.085*errormax, "(c) Plummer sphere, $N = 200$, $L = 5$", fontsize=16)
 
 
 plt.show()

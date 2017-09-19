@@ -16,8 +16,8 @@ Maximum radius of cloud                     : radius = 10.0
 Softening radius of star                    : rstar = 0.01
 Fraction of mass within stars               : starfrac = 0.5
 Fraction of mass within gas                 : gasfrac = 0.5
-No. of SPH particles                        : Nhydro = 1000
-No. of star particles                       : Nstar = 100
+No. of SPH particles                        : Nhydro = 5000
+No. of star particles                       : Nstar = 500
 Perform dimensionless simulation            : dimensionless = 1
 Change to COM frame                         : com_frame = 1
 

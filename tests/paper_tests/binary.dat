@@ -12,7 +12,7 @@ Select SPH simulation                       : sim = nbody
 Select shocktube initial conditions         : ic = binary
 Dimensionality of cube                      : ndim = 3
 Binary semi-major axis                      : abin = 1.0
-Binary orbital eccentricity                 : ebin = 0.1
+Binary orbital eccentricity                 : ebin = 0.2
 Binary primary mass                         : m1 = 0.5
 Secondary mass                              : m2 = 0.5
 Euler angle theta rotation                  : thetarot = 0.0  #1.570796
@@ -23,7 +23,7 @@ Use dimensionless units                     : dimensionless = 1
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 300.0
-Regular snapshot output frequency           : dt_snap = 0.1
+Regular snapshot output frequency           : dt_snap = 0.2
 First snapshot                              : tsnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 512
 Diagnostic output frequency                 : ndiagstep = 4096
@@ -39,7 +39,7 @@ Tabulate SPH kernel                         : tabulated_kernel = 0
 #-------------------------
 # N-body algorithm options
 #-------------------------
-Star particle integration option            : nbody = hermite6ts
+Star particle integration option            : nbody = hermite4ts
 Use softening?                              : nbody_softening = 0
 Identify and integrate sub-systems?         : sub_systems = 0
 Update sub-system frequency                 : nsystembuildstep = 4
@@ -48,11 +48,11 @@ Output binary statistics                    : binary_stats = 1
 Grav. energy fraction for sub-systems       : gpesoft = 0.0001
 Grav. energy fraction for sub-systems       : gpehard = 0.001
 No. of P(EC)^n iteration steps              : Npec = 2
-Sub-system integration scheme               : sub_system_integration = hermite6ts
+Sub-system integration scheme               : sub_system_integration = hermite4ts
 
 #-------------------------
 # Time integration options
 #-------------------------
 N-body timestep multiplier                  : nbody_mult = 0.05
-Sub-system timestep multiplier              : subsys_mult = 0.1
+Sub-system timestep multiplier              : subsys_mult = 0.05
 No. of block timestep levels                : Nlevels = 0

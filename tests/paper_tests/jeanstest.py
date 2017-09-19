@@ -106,7 +106,7 @@ sim_no = sim_no + 1
 #--------------------------------------------------------------------------------------------------
 fig, axarr = plt.subplots(1, 1, figsize=(7,6), sharex='row')
 fig.subplots_adjust(hspace=0.001, wspace=0.001)
-fig.subplots_adjust(bottom=0.11, top=0.98, left=0.13, right=0.98)
+fig.subplots_adjust(bottom=0.10, top=0.98, left=0.12, right=0.98)
 
 #axarr[0].set_ylabel(r"$\rho$")
 #axarr[0].set_xlim([xmin, xmax])
@@ -120,7 +120,7 @@ axarr.set_ylim([-1.9,1.9])
 axarr.plot(ax_analytical0.x_data, ax_analytical0.y_data, color="red", linestyle='-', lw=0.5, label='Solution')
 axarr.scatter(x_data1[::stride], ax_data1[::stride], color='blue', marker='+', s=8.0, label='No periodic corrections')
 axarr.scatter(x_data0[::stride], ax_data0[::stride], color='black', marker='.', s=16.0, label='Ewald corrections')
-legend1 = axarr.legend(loc='upper right', fontsize=12)
+legend1 = axarr.legend(loc='upper right', fontsize=16)
 
 plt.show()
 fig.savefig('jeansaccel.pdf', dpi=50)
@@ -210,7 +210,7 @@ for i in range(numSimMax):
 #--------------------------------------------------------------------------------------------------
 fig2, axarr2 = plt.subplots(1, 1, figsize=(7,5), sharex='row')
 fig2.subplots_adjust(hspace=0.001, wspace=0.001)
-fig2.subplots_adjust(bottom=0.11, top=0.97, left=0.1, right=0.98)
+fig2.subplots_adjust(bottom=0.105, top=0.97, left=0.095, right=0.98)
 
 
 x_stable_aux = wavelength/stable_wavelengths
@@ -232,7 +232,7 @@ axarr2.plot([1.0, 1.0], [0.0, 3.0], color='blue', linestyle='-.', linewidth=0.5)
 #axarr2.scatter(ratio_values, omega_values, color='black', marker='*', s=8.0)
 axarr2.scatter(stable_lambdas, stable_periods, marker='o', facecolors='none', edgecolors='black', s=32.0, label='Oscillating')
 axarr2.scatter(unstable_lambdas, unstable_periods, facecolors='none', edgecolors='black', marker='*', s=32.0, label='Collapsing')
-legend2 = axarr2.legend(loc='upper right', fontsize=12)
+legend2 = axarr2.legend(loc='upper right', fontsize=16)
 
 plt.show()
 fig2.savefig('jeanstest.pdf', dpi=50)
