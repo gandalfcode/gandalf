@@ -66,7 +66,7 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   int i, j, l;
   // int ndens, ntemp; defined in EnergyEquation
   DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_, eos_gamma_;
-  DOUBLE num, denom, tempunit;
+  DOUBLE num, denom, tempunit, fcol;
   string line;
 
   eos = eos_;
@@ -150,6 +150,14 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
     file.close();
   }
   //-----------------------------------------------------------------------------------------------
+
+  // Set fcol2
+  if (lombardi) {
+    fcol2 = fcol * fcol * 4.0 * pi;
+  }
+  else {
+    fcol2 = fcol * fcol;
+  }
 }
 
 
@@ -406,7 +414,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
 
     while (balanceLow * balanceHigh > 0.0){
       if (itemp <= 1) {
-        cout << "Reached itemp = 1, returning" << endl;
         Tequi = pow(10.0, eos_temp[1]);
         return;
       }
@@ -445,7 +452,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
 
     while (balanceLow * balanceHigh > 0.0) {
       if (itemphigh >= ntemp - 2) {
-        cout << "Reached itemp = ntemp, returning" << endl;
         Tequi = pow(10.0, eos_temp[ntemp - 2]);
         return;
       }
@@ -692,7 +698,7 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetTemp
     }
   }
 
-  result = pow10(eos_temp[temp_index]);
+  result = pow(10.0, eos_temp[temp_index]);
 
   // Limit temperature to 5K (CMB)
   if (result < temp_min) {
@@ -718,7 +724,7 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetCol2
  (Particle<ndim> &part)
 {
   if (!lombardi) {
-    return RADWS_ZETA2 * part.gpot_hydro * part.rho;
+    return fcol2 * part.gpot_hydro * part.rho;
   }
   else {
     FLOAT mag_da = 0.0, P = 0.0;
@@ -733,7 +739,7 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetCol2
     mag_da = mag_a - mag_atree;
     P = (part.gamma - 1.0) * part.rho * part.u;
 
-    return (LOMBARDI_ZETA2 * P * P) / (mag_da * mag_da);
+    return (fcol2 * P * P) / (mag_da * mag_da);
   }
 }
 

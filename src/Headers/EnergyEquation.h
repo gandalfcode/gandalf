@@ -98,12 +98,10 @@ class EnergyRadws : public EnergyEquation<ndim>
 
   //-----------------------------------------------------------------------------------------------
 
-  FLOAT static const RADWS_ZETA2 = 0.0107940748;
-  FLOAT static const LOMBARDI_ZETA2 = 1.0281960;
   int lombardi;
   int ndens;
   int ntemp;
-  FLOAT fcol;
+  FLOAT fcol2;
   FLOAT rad_const;
   FLOAT temp_ambient0;
   FLOAT temp_min;
