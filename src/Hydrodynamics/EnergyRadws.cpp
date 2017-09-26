@@ -282,6 +282,9 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
   }
   //-----------------------------------------------------------------------------------------------
 
+  // Perform radfb update for sink accretion
+  if (radfb) radfb->Update(t);
+
   return;
 }
 
