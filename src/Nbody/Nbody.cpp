@@ -87,7 +87,7 @@ void Nbody<ndim>::AllocateMemory(int N)
 
   if (N > Nstarmax) {
 
-    NbodyParticle<ndim>** nbodydatanew = new NbodyParticle<ndim>*[N];
+    NbodyParticle<ndim>** nbodydatanew = new NbodyParticle<ndim>*[2*N];
     StarParticle<ndim>*   stardatanew  = new StarParticle<ndim>[N];
     SystemParticle<ndim>*  systemnew   = new SystemParticle<ndim>[N];
 
