@@ -117,6 +117,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 #if defined MPI_PARALLEL
 	if (!ParticleInBox(nbody->stardata[i], mydomain)  ) continue;
 #endif
+	cout << "SimAnalysis sink masses " << rank << " "<< i << " " << nbody->stardata[i].m << "\n";
     diag.mtot   += nbody->stardata[i].m;
     diag.ketot  += nbody->stardata[i].m*DotProduct(nbody->stardata[i].v,nbody->stardata[i].v,ndim);
     diag.gpetot -= nbody->stardata[i].m*nbody->stardata[i].gpot;
