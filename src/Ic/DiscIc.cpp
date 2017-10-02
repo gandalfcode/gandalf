@@ -42,7 +42,7 @@ DiscIc<ndim>::DiscIc(Simulation<ndim>* _sim, FLOAT _invndim) :
     ExceptionHandler::getIstance().raise("The disc IC require at least 2 dimensions!");
   }
   if (simparams->intparams["sink_particles"] == 0) {
-    ExceptionHandler::getIstance().raise("You can't run a disc simulation without sink accretion!");
+  //  ExceptionHandler::getIstance().raise("You can't run a disc simulation without sink accretion!");
   }
 }
 

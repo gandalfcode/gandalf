@@ -76,7 +76,6 @@ Sinks<ndim>::~Sinks()
 template <int ndim>
 void Sinks<ndim>::AllocateMemory(int N)
 {
-  cout << "sink alloc" << N << " " << Nsinkmax <<"\n";
   if (N > Nsinkmax) {
 
      SinkParticle<ndim>* sink_new = new SinkParticle<ndim>[N];
