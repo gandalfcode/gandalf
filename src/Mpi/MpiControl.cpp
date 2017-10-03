@@ -550,6 +550,18 @@ namespace MpiReturnParticle {
       }
     }
 
+    void update_received(MeshlessFVParticle<ndim>& p) const {
+      FLOAT dm = p.m - m;
+      p.m -= dm ;
+      p.dQ[MeshlessFV<ndim>::irho] -= dm;
+      for (int k=0; k<ndim; k++) p.dQ[k] -= dm*p.v[k];
+
+      if (p.m == 0) {
+        p.flags.unset(active);
+        p.flags.set(dead);
+      }
+    }
+
     int iorig ;
   private:
     double m ;
