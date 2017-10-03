@@ -408,7 +408,7 @@ template <int ndim>
 void MpiControl<ndim>::UpdateSinksAfterAccretion
  (Sinks<ndim>* sink)                             ///< [inout] Pointer to sinks array
 {
-  const int number_variables = ndim*8 + 11;      // ..
+  const int number_variables = ndim*7 + 12;      // ..
   int local_sinks = 0;                           // ..
   int offset = 0;                                // ..
   Box<ndim> mydomain = this->MyDomain();         // ..
@@ -465,6 +465,7 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
 
     }
   }
+  assert(offset == (number_variables*N_sinks_per_rank[rank]));
   //-----------------------------------------------------------------------------------------------
 
   vector<int> displ(Nmpi);
