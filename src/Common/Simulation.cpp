@@ -264,7 +264,7 @@ void SimulationBase::SplashScreen(string& paramfile)
   cout << "*   Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids    *" << endl;
   cout << "*                        Version 0.4.0 - 04/09/2015                          *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*                 Original code : D. A. Hubber & G. Rosotti                  *" << endl;
+  cout << "*                 Original code : D. A. Hubber, G. Rosotti & R. Booth        *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*              Contributions by : S. Balfour, F. Dinnbier, S. Heigl,         *" << endl;
   cout << "*                                 O. Lomax, J. Ngoumou, P. Rohde,            *" << endl;
