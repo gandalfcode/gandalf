@@ -192,7 +192,12 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   Simulation<ndim>::ProcessParameters();
 
   if (intparams["self_gravity"] && !intparams["zero_mass_flux"]) {
-    string message = "The meshless scheme only works with MFM when self-gravity is included" ;
+    string message = "The meshless scheme only works with self-gravity when MFM is activated";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  if (intparams["sink_particles"] && !intparams["zero_mass_flux"]) {
+    string message = "The meshless scheme only works with sink particles when MFM is activated";
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -387,6 +392,11 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   int k;                               // Dimension counter
 
   debug2("[MeshlessFVSimulation::PostInitialConditionsSetup]");
+
+  if (nbody->Nstar > 0 && !simparams->intparams["zero_mass_flux"]) {
+    string message = "The meshless scheme only works with star particles when MFM is activated";
+    ExceptionHandler::getIstance().raise(message);
+  }
 
   // Set iorig
   if (rank == 0) {
