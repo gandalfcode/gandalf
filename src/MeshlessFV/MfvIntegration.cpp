@@ -152,8 +152,8 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) {
         Qcons[k] += 0.5 * part.dt * (part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
       }
-      Qcons[ietot] += 0.5 * part.dt *
-        (DotProduct(part.Qcons0, part.a0, ndim) + DotProduct(Qcons, part.a, ndim) +
+      Qcons[ietot] += 0.5 *
+        (part.dt * DotProduct(part.Qcons0, part.a0, ndim) + part.dt * DotProduct(Qcons, part.a, ndim) +
          DotProduct(part.a0, part.rdmdt, ndim) + DotProduct(part.a, part.rdmdt, ndim));
 
       // Compute primitive values and update all main array quantities
