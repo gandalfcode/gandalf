@@ -907,9 +907,11 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     };
 
     // Normalise all cell values
-    if (cell.N > 0) {
+    if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
+    }
+    if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
@@ -984,10 +986,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
     cell.N = child1.N + child2.N;
     cell.Nactive = child1.Nactive + child2.Nactive;
-    if (cell.N > 0) {
-      cell.m = child1.m + child2.m;
+    cell.m = child1.m + child2.m;
+    if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
       for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
+    }
+    if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
@@ -998,7 +1002,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     // Now add individual quadrupole moment terms
-    if (need_quadrupole_moments && child1.N > 0) {
+    if (need_quadrupole_moments && child1.m > 0) {
       mi = child1.m;
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -1022,7 +1026,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       }
     }
 
-    if (need_quadrupole_moments && child2.N > 0) {
+    if (need_quadrupole_moments && child2.m > 0) {
       mi = child2.m;
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);

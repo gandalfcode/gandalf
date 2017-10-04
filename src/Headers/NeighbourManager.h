@@ -343,7 +343,7 @@ public:
    {
     TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true);
 
-    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size() +_NNonInteract) ==
+    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()+_NNonInteract) ==
                   GetNumAllNeib());
 
 
