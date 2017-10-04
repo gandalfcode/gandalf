@@ -408,7 +408,7 @@ template <int ndim>
 void MpiControl<ndim>::UpdateSinksAfterAccretion
  (Sinks<ndim>* sink)                             ///< [inout] Pointer to sinks array
 {
-  const int number_variables = ndim*7 + 12;      // ..
+  const int number_variables = ndim*6 + 14;      // ..
   int local_sinks = 0;                           // ..
   int offset = 0;                                // ..
   Box<ndim> mydomain = this->MyDomain();         // ..
