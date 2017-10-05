@@ -1001,7 +1001,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
     }
     if (cell.N > 0) {
-      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       const FLOAT drsqd = DotProduct(dr, dr, ndim);
       cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;
@@ -1013,7 +1012,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
     // Now add individual quadrupole moment terms
     if (need_quadrupole_moments && child1.m > 0) {
-      mi = child1.m;
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       const FLOAT mi = child1.m;
       const FLOAT drsqd = DotProduct(dr, dr, ndim);
@@ -1038,7 +1036,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     if (need_quadrupole_moments && child2.m > 0) {
-      mi = child2.m;
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       const FLOAT mi = child2.m;
       const FLOAT drsqd = DotProduct(dr, dr, ndim);
