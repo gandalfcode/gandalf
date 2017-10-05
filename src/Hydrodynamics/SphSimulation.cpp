@@ -214,6 +214,15 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).iorig = i;
   }
 
+  // Perform initial MPI decomposition
+  //-----------------------------------------------------------------------------------------------
+#ifdef MPI_PARALLEL
+  mpicontrol->CreateInitialDomainDecomposition(sph, nbody, simparams,
+                                               this->initial_h_provided);
+
+  this->AllocateParticleMemory();
+#endif
+
   // Copy information from the stars to the sinks
   if (simparams->intparams["sink_particles"]==1) {
     sinks->Nsink = nbody->Nstar;
@@ -225,15 +234,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       //sinks->sink[i].radius = simparams->floatparams["sink_radius"];
     }
   }
-
-
-  // Perform initial MPI decomposition
-  //-----------------------------------------------------------------------------------------------
-#ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(sph, nbody, simparams,
-                                               this->initial_h_provided);
-  this->AllocateParticleMemory();
-#endif
 
 
   // Set time variables here (for now)
