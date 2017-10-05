@@ -59,6 +59,19 @@ class SimUnit
   string inunit;                           ///< Input unit string
   string outunit;                          ///< Output unit string
 
+  // Helper functions (to implement)
+  double InputUnits_to_CodeUnits(double input_unit) {};
+  double OutputUnits_to_CodeUnits(double output_unit){};
+  double CodeUnits_to_InputUnits(double code_unit){};
+  double CodeUnits_to_Outputnits(double code_unit){};
+
+  double SI_to_CodeUnits(double SI_unit){};
+  double CGS_to_CodeUnits(double CGS_unit){};
+  double CodeUnits_to_SI(double code_unit){};
+  double CodeUnits_to_CGS(double code_unit){};
+
+
+
 };
 
 

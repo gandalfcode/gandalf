@@ -70,6 +70,8 @@ private:
 /// \author  R. A. Booth
 /// \date    17/10/2015
 //=================================================================================================
+// EpsteinNorm = 3 sqrt(pi/8) / 4
+static const double EpsteinNorm = 0.4699928014933126;
 class EpsteinDrag
 {
 public:
@@ -77,7 +79,7 @@ public:
 	: _K_d(DragCoeff)
 	{ } ;
 	FLOAT operator()(FLOAT grho, FLOAT drho, FLOAT gsound) const
-		{ return 1. / ((grho + drho) * gsound * _K_d) ; }
+		{ return EpsteinNorm / ((grho + drho) * gsound * _K_d) ; }
 private:
 	FLOAT _K_d ;
 };

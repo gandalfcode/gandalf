@@ -2040,7 +2040,23 @@ are conserved explicitly, while in the test-particle limit these are conserved f
 \end{itemize}
 
 \subsection{Drag Laws}
-Several drag laws have been implemented in via functions form of $t_s \equiv t_s (\rho_g , \rho_d , c_s)$. The different functional forms currently available can be chosen via the parameter options and are described below. The drag laws are defined in src/Headers/DragLaws.h. Currently only dimensionless units are supported when setting the stopping time.
+Several drag laws have been implemented in via functions form of $t_s \equiv t_s (\rho_g , \rho_d , c_s)$. The different functional forms currently available can be chosen via the parameter options and are described below and are defined in src/Headers/DragLaws.h. Most of these drag laws are phenomelogical in form, and only work with dimensionionless form. The one exception is the Epstein drag law. Each drag law is currently controlled by a single coefficient, the \var{drag\_coeff} ($K_\mathrm{d}$).
+
+
+Drag laws ($\rho_d$ is set to 0 in the \var{test\_particle} implementation):
+\begin{itemize}
+\item \var{fixed} --  $t_s  = 1 / K_\mathrm{d}$
+
+\item \var{density} -- $t_s  = 1 / ((\rho_d + \rho_g) K_\mathrm{d})$
+
+\item \var{epstein} -- The Epstein drag law, which is valid for paricles with size, $a < 4\lambda/9$, where $\lambda$ is the mean free path of the gas (see Booth, Sijacki  \& Clarke 2015).  \var{drag\_coeff} is the mass-to-area ratio of the grains (i.e. $4 \rho_\mathrm{s} a / 3$, for spherical grains of  material density, $\rho_\mathrm{a}$.). If non-dimensionless units are used, this \emph{must} be specified in c.g.s units.
+
+\item \var{LP2012} -- The drag law from Laibe \& Price (2012), $t_s = \rho_d \rho_g / ((\rho_d + \rho_g) K_\mathrm{d})$, as used in equations (1) and (2) above.
+
+\end{itemize}
+
+Including additional drag forces is straight forward. First add a new class to src/Headers/DragLaws.h. The new drag law can then be added to DustFactory::ProcessParameters (at the bottom of src/Common/Dust.cpp), which is responsible for selecting the desired drag law.
+
 
 \subsection{IO and initial conditions}
 Dust particles are currently supported only in the SEREN formats (both formatted and unformatted), with the dust particles following the gas particles on the disc. The number of dust particles is stored in the header, as described in section \ref{Sec:SerenForm}. The column format is \emph{not} formally supported, but if used it will currently still contain the dust particles after the gas particles as long as MPI is not used. However, the number of dust particles is not currently saved in the column format.
