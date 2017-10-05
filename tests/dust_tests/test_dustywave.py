@@ -11,8 +11,8 @@ class DustyWaveTest(unittest.TestCase):
         self.run_id="DUSTYWAVE_SPH"
         self.sim.SetParam("drag_law", "epstein")
         self.sim.SetParam("run_id",self.run_id)
-        self.expected_l1error_gas  = 2.1e-6
-        self.expected_l1error_dust = 1.5e-5
+        self.expected_l1error_gas  = 2.2e-6
+        self.expected_l1error_dust = 6.0e-7
     
 
     def test_error(self):
@@ -53,5 +53,5 @@ class DustyWaveTestMeshless(DustyWaveTest):
         self.run_id="DUSTYWAVE_MFV"
         self.sim.SetParam("run_id",self.run_id)
         self.expected_l1error_gas  = 1.6e-5
-        self.expected_l1error_dust = 7.7e-7
+        self.expected_l1error_dust = 8.2e-7
 

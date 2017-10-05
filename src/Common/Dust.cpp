@@ -1162,7 +1162,7 @@ DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeRegister& t
 
 	double K_D  = floatparams["drag_coeff"] ;
 	if (intparams["dimensionless"] == 0 && DragLaw == "epstein") {
-	  // sigma is mass / area, K_D is are / mass
+	  // sigma is mass / area, K_D is area / mass
 	  K_D = 1 / units.sigma.CGS_to_CodeUnits(1 / K_D);
 	}
 
