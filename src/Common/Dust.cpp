@@ -838,7 +838,8 @@ int DustInterpolant<ndim, ParticleType, StoppingTime, Kernel>::DoInterpolate
   FLOAT da[ndim] ;                     // Acceleration difference
 
   // Some basic sanity-checking in case of invalid input into routine
-  assert(Nneib > 0);
+  if (Nneib == 0)
+    return 0 ;
   assert(hmax > (FLOAT) 0.0);
   assert(!parti.flags.is_dead());
 
