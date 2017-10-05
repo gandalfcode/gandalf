@@ -70,8 +70,8 @@ Slope limiter                               : slope_limiter = mine
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-SPH Courant timestep condition multiplier   : courant_mult = 0.025
-SPH acceleration condition multiplier       : accel_mult = 0.05
+SPH Courant timestep condition multiplier   : courant_mult = 0.2
+SPH acceleration condition multiplier       : accel_mult = 0.2
 No. of block timestep levels                : Nlevels = 1
 
 

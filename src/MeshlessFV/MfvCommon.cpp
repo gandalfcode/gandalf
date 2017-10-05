@@ -54,7 +54,9 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
                    h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_part, units, params),
   kern(kernelclass<ndim>(KernelName)),
   riemannExact(gamma_aux, params->intparams["zero_mass_flux"]),
-  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal")
+  riemannHLLC(gamma_aux, params->intparams["zero_mass_flux"], gas_eos_aux == "isothermal"),
+  viscosity(params->floatparams["shear_visc"], params->floatparams["bulk_visc"]),
+  need_viscosity(params->floatparams["shear_visc"] || params->floatparams["bulk_visc"])
 {
   this->kernp      = &kern;
   this->kernrange  = this->kernp->kernrange;
@@ -76,6 +78,7 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::MfvCommon
     string message = "Unrecognised parameter : riemann_solver = " + riemann_solver;
     ExceptionHandler::getIstance().raise(message);
   }
+
 }
 
 
@@ -210,8 +213,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   // Compute other terms once number density and smoothing length are known
   part.ndens     = ndens ;
   part.rho       = rho ;
-  //part.h         = max(h_fac*powf(volume, MeshlessFV<ndim>::invndim), h_lower_bound);
-  part.h = h_fac*powf(volume, MeshlessFV<ndim>::invndim);
+  part.h         = h_fac*pow(volume, MeshlessFV<ndim>::invndim);
   part.hfactor   = pow(1/part.h, ndim+1);
   part.hrangesqd = kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
@@ -263,7 +265,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
       part.B[k][kk] = (FLOAT) 0.0;
     }
   }
-  if (create_sinks==1) part.flags.set_flag(potmin);
+  if (create_sinks==1) part.flags.set(potmin);
 
 
   // Loop over all potential neighbours in the list
@@ -300,7 +302,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
     // Calculate the minimum neighbour potential (used later to identify new sinks)
     if (create_sinks == 1) {
         if (neibpart[j].gpot > (FLOAT) 1.000000001*part.gpot &&
-            drsqd*invhsqd < kern.kernrangesqd) part.flags.unset_flag(potmin);
+            drsqd*invhsqd < kern.kernrangesqd) part.flags.unset(potmin);
     }
 
   }
@@ -310,10 +312,51 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
   // Invert the matrix (depending on dimensionality)
   InvertMatrix<ndim>(E,part.B) ;
 
-  // Complete the calculation of the gradients:
-  for (var=0; var<nvar; var++) {
-    for (k=0; k<ndim; k++) {
-      part.grad[var][k] = DotProduct(part.B[k], grad_tmp[var], ndim) ;
+  // Check the accuracy of the integral gradients (using the square of the condition number)
+  double modE(0), modB(0) ;
+  for (int i=0; i<ndim; i++)
+    for (int j=0; j<ndim; j++){
+      modE +=      E[i][j]*     E[i][j];
+      modB += part.B[i][j]*part.B[i][j];
+    }
+  double sqd_condition_number = modE*modB / (ndim*ndim) ;
+
+  if (sqd_condition_number < 1e4) {
+    part.flags.unset(bad_gradients);
+
+    // Complete the calculation of the gradients:
+    for (var=0; var<nvar; var++) {
+      for (k=0; k<ndim; k++) {
+        part.grad[var][k] = DotProduct(part.B[k], grad_tmp[var], ndim) ;
+      }
+    }
+  }
+  else {
+    // Compute SPH (corrected) gradients instead
+    part.flags.set(bad_gradients);
+
+
+    cout << "Bad integral gradient, using SPH gradients:\n"
+         << "\tiorig: " << part.iorig << ", ||E||, ||E^{-1}||: " << modE << " " << modB
+         << ", N_cond^2: " << sqd_condition_number << "\n";
+
+    for (var=0; var<nvar; var++)
+      for (k=0; k<ndim; k++)
+        part.grad[var][k] = 0;
+
+    for (int j=0; j<Nneib; j++) {
+      for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
+      drsqd = DotProduct(draux, draux, ndim);
+      double dr = sqrt(drsqd);
+
+      if (dr == 0) continue ;
+
+      double w = (part.hfactor/part.ndens)*kern.w1(dr/part.h);
+
+      for (var=0; var<nvar; var++)
+        for (k=0; k<ndim; k++) {
+          part.grad[var][k] -= (neibpart[j].Wprim[var] - part.Wprim[var])*(draux[k]/dr) * w ;
+        }
     }
   }
 

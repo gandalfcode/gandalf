@@ -537,7 +537,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         while (i != -1) {
           if (!partdata[i].flags.is_dead()) {
             cell.N++;
-            if (partdata[i].flags.check_flag(active)) cell.Nactive++;
+            if (partdata[i].flags.check(active)) cell.Nactive++;
             cell.hmax = max(cell.hmax, partdata[i].h);
             cell.maxsound = max(cell.maxsound, partdata[i].sound);
             if (gravmask[partdata[i].ptype]) {
@@ -566,7 +566,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         };
 
         // Normalise all cell values
-        if (cell.N > 0) {
+        if (cell.m > 0) {
           for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
           for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
           for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
@@ -693,19 +693,27 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
       // Calculate eigenvalue MAC criteria
       if (gravity_mac == eigenmac) {
-        if (ndim == 3)
-          p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2])
-            - cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
-        if (p >= (FLOAT) 0.0) cell.mac = (FLOAT) 0.0;
-        else {
-          lambda = (FLOAT) 2.0*sqrt(-onethird*p);
-          cell.mac = pow((FLOAT) 0.5*lambda/macerror, twothirds);
+        if (ndim == 3) {
+          p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
+              cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
+          if (p >= (FLOAT) 0.0) {
+            lambda = 0;
+          } else {
+            lambda = (FLOAT) 2.0*sqrt(-p/(FLOAT) 3.0);
+          }
+        } else if (ndim == 2) {
+          p = (cell.q[0]-cell.q[2])*(cell.q[0]-cell.q[2]) + 4*cell.q[1]*cell.q[1];
+          lambda = 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), 0.);
+        } else {
+          lambda = fabs(cell.q[0]) ;
         }
+
+        cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
+
       }
       else {
         cell.mac = (FLOAT) 0.0;
       }
-
     }
     //---------------------------------------------------------------------------------------------
 
@@ -837,7 +845,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
     // Else walk through linked list to obtain list and number of active ptcls.
     while (i != -1) {
-      if (partdata[i].flags.check_flag(active)) celldata[c].Nactive++;
+      if (partdata[i].flags.check(active)) celldata[c].Nactive++;
       if (i == ilast) break;
       i = inext[i];
     };
@@ -987,8 +995,8 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
         pcount[i]++;
         leafcount++;
         Ncount++;
-        if (partdata[i].flags.check_flag(active)) activecount++;
-        if (partdata[i].flags.check_flag(active)) Nactivecount++;
+        if (partdata[i].flags.check(active)) activecount++;
+        if (partdata[i].flags.check(active)) Nactivecount++;
         if (partdata[i].h > cell.hmax) {
           cout << "hmax flag error : " << c << "    "
                << partdata[i].h << "   " << cell.hmax << endl;

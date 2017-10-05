@@ -215,7 +215,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     children[i]->gpe          = 0.0;
     children[i]->gpe_pert     = 0.0;
     children[i]->gpe_internal = 0.0;
-    children[i]->active       = true;
+    children[i]->flags.set(active);
     children[i]->nstep        = 1;
     children[i]->nlast        = 0;
     children[i]->level        = 0;
@@ -285,7 +285,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
       // Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
-        children[i]->active = true;
+        children[i]->flags.set(active);
         children[i]->gpot = 0.0;
         children[i]->gpe_pert = 0.0;
         for (k=0; k<ndim; k++) children[i]->a[k] = aext[k];

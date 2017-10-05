@@ -1,0 +1,64 @@
+#-------------------------------------------------------------
+# Plummer sphere initial conditions
+#-------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = PLUMMER1
+Select SPH simulation                       : sim = nbody
+Select shocktube initial conditions         : ic = plummer
+Dimensionality of cube                      : ndim = 3
+Total mass of Plummer sphere                : mplummer = 1.0
+Radius of Plummer core                      : rplummer = 1.0
+Maximum radius of cloud                     : radius = 10.0
+Softening radius of star                    : rstar = 0.05
+Fraction of mass within stars               : starfrac = 1.0
+Fraction of mass within gas                 : gasfrac = 0.0
+No. of SPH particles                        : Nhydro = 0
+No. of star particles                       : Nstar = 200
+Perform dimensionless simulation            : dimensionless = 1
+Change to COM frame                         : com_frame = 1
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 98.0
+Time of first snapshot                      : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.2
+Screen output frequency (in no. of steps)   : noutputstep = 4096
+Diagnostic output frequency                 : ndiagstep = 2048
+No. of steps between restart files          : nrestartstep = 8196
+Output file format                          : out_file_form = su
+
+
+#-----------------------------
+# SPH softening kernel options
+#-----------------------------
+SPH smoothing kernel choice                 : kernel = m4
+Tabulate SPH kernel                         : tabulated_kernel = 0
+
+
+#-------------------------
+# N-body algorithm options
+#-------------------------
+Star particle integration option            : nbody = hermite4ts
+Identify and integrate sub-systems?         : sub_systems = 0
+Use perturbers or not?                      : perturbers = 0
+Output binary statistics                    : binary_stats = 1
+Update sub-system frequency                 : nsystembuildstep = 8
+Grav. energy fraction for sub-systems       : gpesoft = 0.05
+Grav. energy fraction for sub-systems       : gpehard = 0.001
+Use softening?                              : nbody_softening = 1
+No. of P(EC)^n iteration steps              : Npec = 2
+Sub-system integration scheme               : sub_system_integration = hermite4ts
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+N-body timestep multiplier                  : nbody_mult = 0.1
+Sub-system timestep multiplier              : subsys_mult = 0.05
+No. of block timestep levels                : Nlevels = 1

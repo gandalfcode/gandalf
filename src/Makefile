@@ -36,8 +36,9 @@ PYFOLDER = ../analysis/swig_generated
 #GTEST = /Users#/david/astro/code/gtest-1.6.0/include
 
 
-VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/GodunovSph:$(PWD)/src/GradhSph:$(PWD)/src/Headers
-VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
+VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/Feedback
+VPATH +=$(PWD)/src/GradhSph:$(PWD)/src/Headers:$(PWD)/src/Hydrodynamics
+VPATH +=$(PWD)/src/Ic:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
 VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
 VPATH +=$(PWD)/src/UnitTesting
 INCLUDE += -I$(PWD)/src/Headers
@@ -57,7 +58,7 @@ GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 ICCOPT   += -O3 -fast -fPIC -fno-exceptions
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
-GCCOPT   += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
+GCCOPT   += -Og -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
 ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
 CLANGOPT += -O3 -g -pg -Wall
 else ifeq ($(COMPILER_MODE),STANDARD)
@@ -159,7 +160,7 @@ endif
 
 
 # Include expensive verification code
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 ifeq ($(DEBUG_LEVEL),1)
 CFLAGS +=
 else ifeq ($(DEBUG_LEVEL),2)
@@ -175,11 +176,9 @@ endif
 #endif
 
 
-#CFLAGS += -DVERIFY_BINARY_TREE
-
 
 # Object files to be compiled
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 SWIG_HEADERS = Simulation.i
 WRAP_OBJ = Simulation_wrap.o
 OBJ = Parameters.o SimUnits.o
@@ -192,23 +191,23 @@ OBJ += MfvMusclSimulation.o MfvMuscl.o
 OBJ += MfvRungeKuttaSimulation.o MfvRungeKutta.o
 OBJ += NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
-OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
+OBJ += Integration.o SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
+OBJ += MfvIntegration.o
 OBJ += RiemannSolver.o
 OBJ += SphNeighbourSearch.o
 OBJ += HydroTree.o Tree.o KDTree.o OctTree.o BruteForceTree.o
-OBJ += MeshlessFVTree.o 
+OBJ += MeshlessFVTree.o
 OBJ += GradhSphTree.o
 OBJ += SM2012SphTree.o
 OBJ += Ewald.o
-OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o Barotropic2EOS.o RadwsEOS.o
+OBJ += AdiabaticEOS.o BarotropicEOS.o Barotropic2EOS.o
+OBJ += PolytropicEOS.o IsothermalEOS.o RadwsEOS.o LocallyIsothermal.o DiscLocallyIsothermal.o
 OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
 OBJ += MultipleSourceIonisation.o
 OBJ += KDRadiationTree.o TreeMonteCarlo.o
 OBJ += MonochromaticIonisationMonteCarlo.o
 OBJ += chealpix.o TreeRay.o TreeRayOnTheSpot.o
 OBJ += EnergyEquation.o EnergyRadws.o
-#OBJ += SimGhostParticles.o
-#OBJ += Render.o
 OBJ += Nbody.o NbodyLeapfrogKDK.o NbodyLeapfrogDKD.o
 OBJ += NbodyHermite4.o NbodyHermite4TS.o NbodyHermite6TS.o
 OBJ += NbodySystemTree.o
@@ -216,10 +215,15 @@ OBJ += Sinks.o
 OBJ += Ghosts.o
 OBJ += SphSnapshot.o
 OBJ += CodeTiming.o
-OBJ += IC.o
 OBJ += Dust.o
 OBJ += Particle.o RandomNumber.o
-
+OBJ += Supernova.o SupernovaDriver.o
+OBJ += Ic.o BasicIc.o BinaryAccretionIc.o BlobIc.o BondiAccretionIc.o
+OBJ += BossBodenheimerIc.o ContactDiscontinuityIc.o DiscIc.o DustyBoxIc.o
+OBJ += EvrardCollapseIc.o EwaldIc.o FilamentIc.o GaussianRingIc.o GreshoVortexIc.o
+OBJ += HierarchicalSystemIc.o IsothermalSphereIc.o KelvinHelmholtzIc.o NohIc.o PlummerSphereIc.o
+OBJ += PolytropeIc.o RayleighTaylorIc.o SedovBlastwaveIc.o ShearflowIc.o ShocktubeIc.o Shock2DIc.o
+OBJ += SilccIc.o SoundwaveIc.o SpitzerExpansionIc.o TurbulentCoreIc.o UniformIc.o ICRegularization.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o

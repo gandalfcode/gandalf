@@ -33,10 +33,11 @@
 /// thermal physics variables.
 //=================================================================================================
 template <int ndim>
-Radws<ndim>::Radws(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux) : EOS<ndim> (gamma_aux)
+Radws<ndim>::Radws(Parameters* simparams, SimUnits *units):
+  EOS<ndim>(simparams->floatparams["gamma_eos"]),
+  temp0(simparams->floatparams["temp0"]/units->temp.outscale),
+  mu_bar(simparams->floatparams["mu_bar"])
 {
-  mu_bar = mu_bar_aux;
-  temp0 = temp0aux;
 }
 
 

@@ -24,7 +24,7 @@ from facade import SimBuffer
 
 direct = ['iorig', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'ax', 'ay', 'az',
           'm', 'h', 'rho', 'u', 'dudt','sma','ecc', 'mbin','period',
-          'qbin']
+          'qbin', 'gpot']
 
 time_fetchers={}
 
@@ -146,7 +146,11 @@ def check_requested_quantity(quantity, snap):
         raise Exception("Error: you requested the quantity " + quantity + ", but the simulation is only in " + str(snap.ndim) + " dims")
     
     #if it's not a live snapshot, check that we are not requesting quantities defined only for live snapshots
-    if not snap.live:
+    try:
+        livesnap = snap.sim.live
+    except AttributeError:
+        livesnap = False
+    if not livesnap:
         if quantity in ('ax', 'ay', 'az'):
             raise Exception ("Error: accelerations are available only for live snapshots")
         elif quantity in ('dudt',):
@@ -172,7 +176,8 @@ class DirectDataFetcher:
                       'm': 'm', 'h': 'h', 'u': 'u', 't': 't',
                       'sma': 'Semi-major axis', 'ecc': 'Orbital eccentricity',
                       'mbin': 'Binary mass',
-                      'period': 'Orbital period', 'qbin': 'Mass ratio'
+                      'period': 'Orbital period', 'qbin': 'Mass ratio',
+                      'gpot': 'Gravitational potential'
                       }
     
     def __init__(self, quantity):

@@ -63,22 +63,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
   debug2("[MfvMusclSimulation:MainLoop]");
 
-  if (time_step_limiter_type == "conservative") {
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
-#ifdef MPI_PARALLEL
-    mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
-    mpicontrol->GetExportedParticlesAccelerations(mfv);
-#endif
-  }
-
-  // Compute timesteps for all particles
-  if (Nlevels == 1) {
-    this->ComputeGlobalTimestep();
-  }
-  else {
-    this->ComputeBlockTimesteps();
-  }
 
 #ifdef MPI_PARALLEL
 
@@ -117,13 +101,25 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // Integrate positions of particles
-  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, mfv->GetMeshlessFVParticleArray());
-
-  // Advance N-body particle positions
+  hydroint->AdvanceParticles(n, t, timestep, mfv);
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
+  // Check all boundary conditions
+  // (DAVID : create an analagous of this function for N-body)
+  hydroint->CheckBoundaries(simbox,mfv);
+
   // Apply Saitoh & Makino type time-step limiter
-  mfv->CheckTimesteps(level_diff_max, level_step, n, timestep, 1);
+  hydroint->CheckTimesteps(level_diff_max, level_step, n, timestep, mfv);
+
+  // Reset rebuild tree flag in preparation for next timestep
+  //rebuild_tree = false;
+
+  // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..).
+  //-----------------------------------------------------------------------------------------------
+  if (n%(int) pow(2,level_step - level_max) == 0) {
+    snDriver->Update(n, level_step, level_max, t, hydro, mfvneib, randnumb);
+  }
+
 
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
@@ -132,13 +128,13 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 	if (Nstepsaux%2==0) Nstepsaux++;
 	mfvneib->BuildTree(rebuild_tree,Nstepsaux,2, ntreestockstep,timestep,mfv);
 	if (rebuild_tree) {
-		  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
+	  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
 	}
 	else {
-		mfvneib->StockPrunedTree(rank, mfv);
+	  mfvneib->StockPrunedTree(rank, mfv);
 	}
 	mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
-    mpicontrol->LoadBalancing(mfv, nbody);
+	mpicontrol->LoadBalancing(mfv, nbody);
   }
 #endif
 
@@ -149,16 +145,113 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->InitialiseCellWorkCounters();
 #endif
 
-	//tghost = timestep*(FLOAT) (ntreebuildstep - 1);
-	tghost = 0;
-	mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-	mfvneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
-	#ifdef MPI_PARALLEL
-	mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
-	MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
-	  mfvneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,  timestep, mfv);
-	#endif
+  tghost = 0;
+  mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+  mfvneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
+#ifdef MPI_PARALLEL
+  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
+  MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
+  mfvneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,  timestep, mfv);
+#endif
 
+  // Zero gravitational / drag accelerations
+  mfv->ZeroAccelerations() ;
+
+  // Calculate terms due to self-gravity / stars
+  if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
+
+    // Update the density to get the correct softening & grad-h terms.
+    mfvneib->UpdateAllProperties(mfv, nbody);
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#ifdef MPI_PARALLEL
+    if (mfv->self_gravity ==1 ) {
+      if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+        mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
+      }
+      else {
+        mfvneib->StockPrunedTree(rank, mfv);
+      }
+      mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox, ewald);
+      mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+    }
+#endif
+    // Does only the star forces in mfv->self_gravity != 1
+    mfvneib->UpdateAllGravForces(mfv, nbody, simbox, ewald);
+#ifdef MPI_PARALLEL
+    if (mfv->self_gravity ==1 ) {
+      mpicontrol->GetExportedParticlesAccelerations(mfv);
+    }
+#endif
+  }
+
+  // Compute the dust forces if present.
+  if (mfvdust != NULL) {
+
+    // Make sure the density is up to date
+    if (not (mfv->self_gravity == 1 || nbody->Nnbody > 0))
+      mfvneib->UpdateAllProperties(mfv, nbody);
+
+    // Copy properties from original particles to ghost particles
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
+#endif
+    mfvdust->UpdateAllDragForces(mfv) ;
+
+    for (i=0; i<mfv->Nhydro; i++) {
+      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i) ;
+      if (part.flags.check(active)) part.flags.set(update_density) ;
+    }
+  }
+
+
+  // Compute N-body forces
+  //-----------------------------------------------------------------------------------------------
+  if (nbody->Nnbody > 0) {
+
+    // Zero all acceleration terms
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = (FLOAT) 0.0;
+        nbody->nbodydata[i]->gpot = (FLOAT) 0.0;
+        nbody->nbodydata[i]->gpe = (FLOAT) 0.0;
+      }
+    }
+
+
+    if (mfv->self_gravity == 1 && mfv->Nhydro > 0) {
+      mfvneib->UpdateAllStarGasForces(mfv, nbody, simbox, ewald);
+
+#if defined MPI_PARALLEL
+      // We need to sum up the contributions from the different domains
+      mpicontrol->ComputeTotalStarGasForces(nbody);
+#endif
+    }
+
+    // Calculate forces, force derivatives etc.., for active stars/systems
+    if (nbody->nbody_softening == 1) {
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+    }
+    else {
+      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata, simbox, ewald);
+    }
+
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
+        nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
+                                            nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
+                                            nbody->nbodydata[i]->gpot);
+      }
+    }
+
+    // Calculate correction step for all stars at end of step.
+    nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+
+  }
+  //-----------------------------------------------------------------------------------------------
 
   // Search for new sink particles (if activated) and accrete to existing sinks
   if (sink_particles == 1) {
@@ -177,111 +270,46 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       nbody->UpdateStellarProperties();
       //if (extra_sink_output) WriteExtraSinkOutput();
     }
-    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock) {
-      hydro->DeleteDeadParticles();
-      rebuild_tree = true;
-    }
 
-    // Re-build/re-stock tree now particles have moved
-    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
+    // Stock after sink accretion (1, 2 is a hack to force stocking)
+    mfvneib->BuildTree(rebuild_tree, 1, 2, ntreestockstep,timestep, mfv);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+    mfvneib->BuildGhostTree(rebuild_tree, 1, 2, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
-	MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
-    mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+    mfvneib->BuildMpiGhostTree(rebuild_tree, 1, 2, ntreestockstep, timestep, mfv);
 #endif
-
   }
 
 
-
-  // Calculate terms due to self-gravity / stars
-  if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
-
-    mfv->ZeroAccelerations() ;
-
-    // Update the density to get the correct softening & grad-h terms.
-    mfvneib->UpdateAllProperties(mfv, nbody, simbox);
-    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+  // Compute timesteps for all particles
+  if (Nlevels == 1) {
+    this->ComputeGlobalTimestep();
+  }
+  else {
+    if (time_step_limiter_type == "conservative") {
+      mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
 #ifdef MPI_PARALLEL
-    if (mfv->self_gravity ==1 ) {
-      if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    	     mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
-    	}
-      else {
-    		 mfvneib->StockPrunedTree(rank, mfv);
-      }
-      mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox, ewald);
       mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-    }
+      mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
+      mpicontrol->GetExportedParticlesAccelerations(mfv);
 #endif
-    // Does only the star forces in mfv->self_gravity != 1
-    mfvneib->UpdateAllGravForces(mfv, nbody, simbox, ewald);
-#ifdef MPI_PARALLEL
-    if (mfv->self_gravity ==1 ) {
-    mpicontrol->GetExportedParticlesAccelerations(mfv);
     }
-#endif
+
+    this->ComputeBlockTimesteps();
   }
 
-  // Compute N-body forces
-  //-----------------------------------------------------------------------------------------------
-  if (nbody->Nnbody > 0) {
-
-    // Zero all acceleration terms
-    for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
-        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = (FLOAT) 0.0;
-        nbody->nbodydata[i]->gpot = (FLOAT) 0.0;
-        nbody->nbodydata[i]->gpe = (FLOAT) 0.0;
-      }
-    }
-
-    if (mfv->self_gravity == 1) {
-      if (mfv->Nhydro > 0) mfvneib->UpdateAllStarGasForces(mfv, nbody);
-#if defined MPI_PARALLEL
-      // We need to sum up the contributions from the different domains
-      mpicontrol->ComputeTotalStarGasForces(nbody);
-#endif
-    }
-
-    // Calculate forces, force derivatives etc.., for active stars/systems
-    if (nbody->nbody_softening == 1) {
-      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody, nbody->nbodydata);
-    }
-    else {
-      nbody->CalculateDirectGravForces(nbody->Nnbody, nbody->nbodydata);
-    }
-
-    for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
-        nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
-                                            nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
-                                            nbody->nbodydata[i]->gpot);
-      }
-    }
-
-    // Calculate correction step for all stars at end of step.
-    nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
-
-  }
-  //-----------------------------------------------------------------------------------------------
 
 
   // End-step terms for all hydro particles
-  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+  hydroint->EndTimestep(n, t, timestep, mfv);
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Update all active cell counters in the tree
   mfvneib->UpdateActiveParticleCounters(mfv);
 
   //Calculate all properties (and copy updated data to ghost particles)
-  mfvneib->UpdateAllProperties(mfv, nbody, simbox);
+  mfvneib->UpdateAllProperties(mfv, nbody);
 
 #ifdef MPI_PARALLEL
   LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);

@@ -86,8 +86,9 @@ public:
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
-  const FLOAT gamma_eos;                 ///< gamma, ratio of specific heats
-  const FLOAT gammam1;                   ///< gamma - 1
+  const FLOAT eta_eos;                           ///< Polytropic index
+  const FLOAT gamma_eos;                         ///< gamma, ratio of specific heats
+  const FLOAT gammam1;                           ///< gamma - 1
 
 
   // Constructor
@@ -101,7 +102,7 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
-  virtual void DeleteDeadParticles(void) = 0;
+  virtual int DeleteDeadParticles(void) = 0;
 
   // Other functions
   //-----------------------------------------------------------------------------------------------

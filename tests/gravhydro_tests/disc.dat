@@ -1,0 +1,74 @@
+#----------------------------------------
+# Adiabatic Sod shock tube test
+# Creates an adiabatic Sod shocktube test
+#----------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = DISC1
+Select SPH simulation                       : sim = gradhsph
+Select shocktube initial conditions         : ic = disc
+Ndim                           : ndim = 2
+Number of particles		: Nhydro = 10000
+Dimensionsless			: dimensionless = 1
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 100.0
+Regular snapshot output frequency           : dt_snap = 1.0
+Time for first snapshot                     : tsnapfirst = 0.0
+Screen output frequency (in no. of steps)   : noutputstep = 32
+Output file format                          : out_file_form = su
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = disc_locally_isothermal
+Ratio of specific heats of gas              : gamma_eos = 1.66
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.2
+SPH acceleration condition multiplier       : accel_mult = 0.4
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 1
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 1
+SPH neighbour search algorithm              : neib_search = kdtree
+Build tree every step                       : ntreebuildstep = 8
+Stock tree every step                       : ntreestockstep = 1
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0
+: sink_particles = 1
+: nbody = lfkdk

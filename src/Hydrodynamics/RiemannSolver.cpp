@@ -238,12 +238,13 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
     else if (2.0*fabs(pstar - pold)/(pstar + pold) < tolerance) break;
 
     // Check the star variables have not become NaNs
-    if (pstar != pstar || ustar != ustar) {
-      std::cout << "Checking Riemann values : " << pstar << "   "
-                << ustar << "   iteration : " << iteration << std::endl;
+    if (!isfinite(pstar)) {
+      std::cout << "Checking Riemann values : " << pstar
+                << "   iteration : " << iteration << std::endl;
       std::cout << "rho : " << dl << "   " << dr << "     vel : " << ul << "    "
                 << ur << "    press : " << pl << "    " << pr << std::endl;
-      std::cout << "f/fprime : " << fl << "   " << fr << "   " << flprime << "   " << frprime << endl;
+      std::cout << "f/fprime : " << fl << "   " << fr
+                << "   " << flprime << "   " << frprime << endl;
       ExceptionHandler::getIstance().raise("Error : Invalid star values in Riemann solver");
     }
 
@@ -436,14 +437,14 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);      // LHS sound speed
   const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);    // RHS sound speed
   int k,kv;                            // Dimension counters
-  FLOAT pstar;                         // Pressure in star region
-  FLOAT ustar;                         // Velocity in star region
   FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
   FLOAT rotMat[ndim][ndim];            // Rotation matrix
   FLOAT invRotMat[ndim][ndim];         // Inverse rotation matrix
   FLOAT uleft[ndim];                   // Left velocity state
   FLOAT uright[ndim];                  // Right velocity state
   FLOAT Wface[nvar];                   // Primitive vector at working face
+  FLOAT pstar = small_number;          // Pressure in star region
+  FLOAT ustar = (FLOAT) 0.0;           // Velocity in star region
 
   assert(Wleft[ipress] > 0.0);
   assert(Wleft[irho] > 0.0);

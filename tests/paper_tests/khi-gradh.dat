@@ -43,7 +43,7 @@ RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
 #--------------------------
 # Simulation time variables
 #-------------------------
-Simulation end time                         : tend = 2.1
+Simulation end time                         : tend = 3.0
 Regular snapshot output frequency           : dt_snap = 0.1
 Time of first snapshot                      : tsnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
@@ -74,9 +74,6 @@ Artificial conductivity choice              : acond = wadsley2008
 Use time-dependent viscosity?               : time_dependent_avisc = none
 Artificial viscosity alpha value            : alpha_visc = 0.1
 Artificial viscosity beta value             : beta_visc = 0.2
-Riemann solver                              : riemann_solver = exact
-Order of Riemann solver                     : riemann_order = 1
-Slope limiter                               : slope_limiter = simple
 
 
 #-------------------------

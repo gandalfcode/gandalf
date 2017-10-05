@@ -1,12 +1,15 @@
 \documentclass[a4paper]{article}
 \usepackage{amsmath}
 \usepackage{txfonts}
+\usepackage{natbib}
 
 \usepackage{graphicx}
 %\usepackage{amssymb}
 \usepackage{supertabular}
 \usepackage{array}
 %\usepackage[colorlinks,final]{hyperref}
+
+\usepackage{aas_macros}
 
 \usepackage{standalone}
 \usepackage{sphinx}
@@ -32,7 +35,7 @@
         basicstyle=\ttfamily}
 
 \title{GANDALF v\VERNO userguide}
-\author{David Hubber \& Giovanni Rosotti}
+\author{David Hubber, Giovanni Rosotti \& Richard Booth}
 
 \maketitle
 \tableofcontents
@@ -173,7 +176,7 @@ clang & : CLANG compiler\\
 mpic++ & : Compiles the code with MPI. \\
 \end{tabular}
 
-As an alternative, if you do not have the MPI compiler wrappers available (mpic++) you can enable MPI by adding the line 
+As an alternative, if you do not have the MPI compiler wrappers available (mpic++) you can enable MPI by adding the line
 \begin{lstlisting}
 MPI=1
 \end{lstlisting}
@@ -344,6 +347,7 @@ blastwave         & = Blastwave test \\
 bondi             & = Spherically symmetric Bondi accretion test \\
 box               & = Create a uniform box of gas \\
 cdiscontinuity    & = Contact discontinuity test \\
+disc					& = Accretion disc initial conditions \\
 ewaldcylinder     & = Cylinder for 1D Ewald gravity test \\
 ewaldsine         & = Sinusoidal density for 3D Ewald gravity test \\
 ewaldslab         & = Slab for 2D Ewald gravity test \\
@@ -569,6 +573,8 @@ K & = Kelvin
 
 \item \var{courant\_mult} : Courant timestep multiplier
 
+\item \var{visc\_mult} : Viscosity timestep multiplier
+
 \item \var{nbody\_mult} : N-body timestep multiplier
 
 \item \var{subsys\_mult} : Sub-system N-body timestep multiplier
@@ -599,7 +605,8 @@ energy\_eqn & = Solve energy equation \\
 isothermal  & = Isothermal EOS \\
 barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase during protostellar collapse) \\
 barotropic2  & = Similar to barotropic, but using discrete power laws rather than smooth change \\
-rad\_ws     & = EOS relating to Stamatellos et al. (2007) cooling method 
+rad\_ws     & = EOS relating to Stamatellos et al. (2007) cooling method \\
+disc\_locally\_isothermal & = Locally isothermal equation of state, to be used with the disc setup.
 \end{tabular}
 
 
@@ -681,7 +688,12 @@ price2008   & = Price (2008) conductivity \\
 wadsley2008 & = Wadsley et al. (2008) conductivity
 \end{tabular}
 
-\item \var{time\_dependent\_avisc} : Morris \& Monaghan time-dependent viscosity ($1$ or $0$)
+\item \var{time\_dependent\_avisc} : Aritificial viscosity switch \\
+\begin{tabular}{ll}
+none     &= No switch, artificial viscoisty always set to \var{alpha\_visc}.\\
+mm97     &= Morris \& Monaghan (1997) switch \\
+cd2010   &= Advanced switch by Cullen \& Dehnen (2010), using the balsar swith
+\end{tabular}
 
 \item \var{alpha\_visc} : (Maximum) value of alpha viscosity parameter
 
@@ -716,7 +728,7 @@ gizmo         & = Original GIZMO paper (Hopkins 2015) slope limiter \\
 minmod        & = simplified implementation of minmod slope limiter
 \end{tabular}
 
-\item \var{zero\_mass\_flux} : Use Meshless-Finite Mass scheme to prevent mass-flux between particles?   ($1$ or $0$)
+\item \var{zero\_mass\_flux} : Use Meshless-Finite Mass (MFM) scheme to prevent mass-flux between particles?  Should be activated if self-gravity or star/sink particles are used in conjunction with any MFV scheme.  ($1$ or $0$)
 \item \var{static\_particles} : Use static particles (Eulerian approach)?  ($1$ or $0$)
 
 \item \var{time\_step\_limiter} : Use an additional limiter on the time-steps \\
@@ -725,6 +737,9 @@ none		 & = No additional limiter \\
 conservative & = Predictive global timestep limiter of Springel (2009) \\
 simple		 & = Saitoh \& Makino type limiter. Reduces the time step if it is detected to be too large.
 \end{tabular}
+
+\item \var{shear\_visc} Enable viscosity with constant kinematic shear viscoity
+\item \var{bulk\_visc}  Enable viscosity with constant kinematic bulk  viscoity
 
 \end{itemize}
 
@@ -945,10 +960,8 @@ hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed 
 
 \item \var{smooth\_ic} : Smooth any particle quantities around discontinuities
 \item \var{com\_frame} : Translate ICs to COM frame before starting simulation
-\item \var{regularise\_particle\_ics} : Regularise particle initial conditions before main simulation
-\item \var{Nreg}         : No. of regularisation iterations
-%\item \var{field\_type}  : ..
-%\item \var{gridsize}     : ..
+%\item \var{field\_type} : ..
+%\item \var{gridsize}    : ..
 \item \var{Nhydro}       : No. of hydrodynamical particles
 \item \var{Nhydromax}    : Maximum no. of hysrodynamical particles
 \item \var{Nstar}        : No. of star particles
@@ -1012,11 +1025,30 @@ hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed 
 \item \var{asound}       : Sound speed
 \item \var{zmax}         : ??
 
+\item \var{DiscIc}: There are multiple parameters prefixed with this string; they contol the accretion disc setup. Please refer to section \ref{sec:disc} for an extensive explanation.
+
 \end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Random numer generator parameters}
+\subsection{Regularised initial conditions parameters}
+
+\begin{itemize}
+
+\item \var{regularise\_particle\_ics} : Regularise particle initial conditions before main simulation
+\item \var{regularise\_smooth\_density} : Regularisation uses the smoothed density field
+\item \var{Nreg}         : No. of regularisation iterations
+\item \var{alpha\_reg}   : Glass-creation regularisation factor (0 = no glass; $> 0$ = glass-like)
+\item \var{rho\_reg}     : Density-field regularisation factor ($> 0$ = iterates to required density field)
+\item \var{Nreg}         : No. of regularisation iterations
+
+\end{itemize}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Random number generator parameters}
 
 \begin{itemize}
 
@@ -1072,11 +1104,11 @@ GANDALF supports several simple file formats for reading in initial conditions o
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Column format}
 The column format is the simplest snapshot file format in GANDALF and consists of a simple header plus a fixed column-data format with particle data.  It is designed for ease-of-use in quickly generating initial conditions, or perhaps porting initial conditions from other codes/generators.  It is certainly not designed as a long-term format for use in large simulations, partly due to being an ASCII file which can quickly get unfeasibly large for big simulations.
 
-The header comprises of four lines, each with one variable in the following order : 
+The header comprises of four lines, each with one variable in the following order :
 \begin{itemize}
 \item \var{Nhydro} : No. of hydro particles
 \item \var{Nstar}  : No. of star/sink particles
@@ -1085,7 +1117,7 @@ The header comprises of four lines, each with one variable in the following orde
 \end{itemize}
 Each of the 4 header variables is preceded by a hash (`\#') in order that simple plotting programs (e.g. gnuplot) will ignore the headers allowing the particle data to be simply plotted.  Older versions of GANDALF may not have this hash but nevertheless should still easily be read-in by the code.
 
-The particle data is then split up into \var{Nhydro} + \var{Nstar} rows, hydro particles first and then star particles.  The data columns are ordered as : 
+The particle data is then split up into \var{Nhydro} + \var{Nstar} rows, hydro particles first and then star particles.  The data columns are ordered as :
 \begin{itemize}
 \item \var{x [,y, z]} : Particle position vectors (depending on value of \var{ndim})
 \item \var{vx [,vy, vz]} : Particle velocity vectors (depending on value of \var{ndim})
@@ -1094,19 +1126,19 @@ The particle data is then split up into \var{Nhydro} + \var{Nstar} rows, hydro p
 \item \var{rho} : Particle density (set to 0 for stars)
 \item \var{u} : Particle specific internal energy (set to 0 for stars)
 \end{itemize}
-Since the column format was only designed for simple IO and plotting, it is a rather minimalistic format that does not necessarily contain all the required data or options for full simulations.  For example, all stars are automatically set to being sinks.  Therefore it is not recommended for long-term use other than simple plotting (e.g. for debugging or developing/transfering ICs).  
+Since the column format was only designed for simple IO and plotting, it is a rather minimalistic format that does not necessarily contain all the required data or options for full simulations.  For example, all stars are automatically set to being sinks.  Therefore it is not recommended for long-term use other than simple plotting (e.g. for debugging or developing/transfering ICs).
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{SEREN format}
 \label{Sec:SerenForm}
-The SEREN format is a legacy format from the original SEREN code which is currently the main format for use in GANDALF.  There are two different version of the SEREN format; 
+The SEREN format is a legacy format from the original SEREN code which is currently the main format for use in GANDALF.  There are two different version of the SEREN format;
 \begin{itemize}
 \item \var{seren\_form} or \var{sf} : `Formatted' (i.e. ASCII)
 \item \var{seren\_unform} or \var{su} : `Unformatted' (i.e. binary)
 \end{itemize}
-The format consists of a large multi-part header with different data types, including information about the units used as well as the particle data and star/sink data arrays.  The full header array sizes are given below.  In the formatted/ASCII case, each array element is printed on a separate line but is compressed as a single stream.  For any fields not given below, assume the quantity to be unused and therefore defaulted to zero in the header.  The header reads as follows: 
+The format consists of a large multi-part header with different data types, including information about the units used as well as the particle data and star/sink data arrays.  The full header array sizes are given below.  In the formatted/ASCII case, each array element is printed on a separate line but is compressed as a single stream.  For any fields not given below, assume the quantity to be unused and therefore defaulted to zero in the header.  The header reads as follows:
 \begin{itemize}
 \item \var{format\_id} : A string identifying the exact format type (for verification)
 \item \var{pr} : Floating point precision (4 = single precision, 8 = double precision)
@@ -1168,7 +1200,7 @@ The format consists of a large multi-part header with different data types, incl
 \item \var{u} : Hydro particle specific internal energies
 \item \var{sink\_v1} : Star/sink particle data (N.B. a more complicated data structure due to the various star/sink properties in SEREN; recommended to look at the source code for more info)
 \end{itemize}
-\item \var{typedata} : Information on each particle array, such as the variable type, unit type, etc..  For the data held in array \var{idata}, the data information in each field is : 
+\item \var{typedata} : Information on each particle array, such as the variable type, unit type, etc..  For the data held in array \var{idata}, the data information in each field is :
 \begin{itemize}
 \item typedata[idata][0] : Dimensionality of array (i.e. 1 to ndim)
 \item typedata[idata][1] : i.d. of first particle in array in Fortran (i.e. normally 1 as opposed to 0 in C/C++)
@@ -1181,9 +1213,9 @@ The headers, in particular \var{data\_id} and \var{typedata}, contain all the in
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{SEREN `lite' format}
-The SEREN `lite' format is a minimised version of the SEREN format designed for creating many snapshots for movies.  It has various restrictions which do NOT make it useful for other forms of analysis or restarting simulation, such as : 
+The SEREN `lite' format is a minimised version of the SEREN format designed for creating many snapshots for movies.  It has various restrictions which do NOT make it useful for other forms of analysis or restarting simulation, such as :
 \begin{itemize}
 \item No velocity information (only contains position, mass, smoothing length, density and specific internal energy)
 \item Hard-wired to single precision to obtain the smallest file-size in binary format
@@ -1195,7 +1227,7 @@ It can used simulataneously with the other more complete formats, which can inst
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating initial conditions}
 
 There are three main ways of generating initial conditions in GANDALF.
@@ -1216,6 +1248,7 @@ It is possible to generate initial conditions `on-the-fly' using internal subrou
 - bondi          &: Spherically symmetric Bondi accretion test \\
 - box            &: Create uniform box \\
 - cdiscontinuity &: Contact-discontinuity test \\
+- disc &: Accretion disc. See section \ref{sec:disc}. \\
 - ewald          &: Several tests of Ewald gravity \\
 - gresho         &: Gresho vortex test \\
 - khi            &: Kelvin-helmholtz instability \\
@@ -1233,7 +1266,7 @@ It is possible to generate initial conditions `on-the-fly' using internal subrou
 \newline
 \newline
 
-\noindent N-body simultions : \\
+\noindent N-body simulations : \\
 \newline
 \begin{tabular}{ll}
 - binary    &: Simple circular binary system test \\
@@ -1262,9 +1295,52 @@ The subroutines that create the initial conditions are all contained in the \var
 To select your own initial conditions when running GANDALF, you simply set the \var{ic} parameter in your parameters file to the chosen string, e.g. \var{ic = myic}\,.
 
 
+\subsection{Description of initial conditions}
+
+\subsubsection{Accretion disc}
+
+\label{sec:disc}
+
+If ``ic'' is set to ``disc'', a standard thin accretion disc (e.g., \citealt{Pringle1981}) will be generated. See table \ref{table:disc} for a summary of the parameters. This setup can be used in 2-d (that is, vertically integrated) or in 3-d. Currently the setup only works in dimensionless units. A star with a mass of 1 is created at the origin of the coordinate system. The disc will extend in radius from ``DiscIcRin'' to ``DiscIcRout''. The disc has an initial power-law surface density profile $\Sigma \propto r^{-p}$, where the value of the exponent $p$ is given by the parameter ``DiscIcP''. The normalization is fixed by the parameter ``DiscIcMass'', which is the total mass of the disc (relative to the star). This setup is designed to use a locally isothermal equation of state, where the sound speed follows a power-law with radius: $c_s \propto r^{-q}$, where the exponent $q$ is given by the parameter ``DiscIcQ''. This equation of state is selected if ``gas\_eos'' has the value ``disc\_locally\_isothermal''. The setup emits a warning if one uses a different equation of state. When running in 3-d, the disc is assumed to be vertically isothermal and in hydrostatic equilibrium in the vertical direction, that is, $\rho \propto \exp (-z^2/2H^2)$, where $H=c_s/\Omega$ and $\Omega$ is the keplerian angular frequency. The normalization of the sound speed is set by the parameter ``DiscIcHr'', which sets the aspect ratio $H/r$ at the inner radius of the disc. Notice that we use random placement to initialise the disc; the initial density structure will thus be noisy. This in general not an issue since the particles typically rearrange themselves over one orbit. However, please keep this into account if you a need a structure with little noise already in the initial conditions.
+
+The setup also supports the option of embedding a planet in the disc. This is selected if the parameter ``DiscIcPlanet'' takes a value of 1. The planet will be on a keplerian orbit; see table \ref{sec:disc} for setting the orbital parameters and planet mass. The setup does not currently support multiple planets, but it would be very straightforward to extend it - please contact the authors if you are interested in it.
+
+As explained in chapter \ref{sec:dust}, GANDALF can solve for the dust dynamics in addition to the gas dynamics. If you wish to follow also the dust dynamics, the parameter ``NDust'' controls the number of dust particles and the parameter ``DustGasRatio'' gives the mass ratio between the dust and the gas. Notice that when using dust the parameter ``DiscIcMass'' refers to the \textit{total} (i.e., gas+dust) mass of the disc. Other choices of the dust algorithm are described in chapter \ref{sec:dust}.
+
+Finally, the star and the planet will accrete mass from the disc if sink particles are switched on in the disc. This is controlled by the normal parameter ``sink\_particles''. The accretion radius of the star is always fixed to the inner radius of the disc; the accretion radius of the planet instead is controlled by the parameter ``DiscIcPlanetAccretionRadiusHill'', which sets the accretion radius in units of the Hill radius of the planet. Notice that, if the planet accretes, effectively its gravity is not smoothed, since we smooth the gravitational potential only inside the accretion radius. If you are not using sink particles, instead, the parameter ``DiscIcPlanetAccretionRadiusHill'' expresses the smoothing length of the gravitational potential. Currently is not possible to let only the star accrete and not the planet (or viceversa); please contact the authors if you require this behaviour.
+
+Table \ref{table:disc} lists all the parameters discussed so far and their default values. Most of the default values come from the standard setup of \citet{deValBorro2006}; note however that we use a surface density $\propto r^{-1}$ rather than a flat one. We also do not employ ghost particles at the inner and outer boundary.
+
+\begin{table}
+
+
+\begin{tabular}{llc}
+\textbf{Parameter name} & \textbf{Description} & \textbf{Default value}\\
+DiscIcMass & Disc mass & 0.01\\
+DiscIcP & Power-law exponent of the surface density & 1\\
+DiscIcQ & Power-law exponent of the sound speed & 0.5 \\
+DiscIcRin & Inner radius of the disc & 0.4\\
+DiscIcRout & Outer radius of the disc & 2.5\\
+DiscIcHr & Aspect ratio of the disc at the inner radius\\
+DiscIcPlanet & Wheter the setup contains a planet (0 or 1) & 1\\
+DiscIcPlanetRadius & Semi-major axis of the planet & 1\\
+DiscIcPlanetEccen & Eccentricity of the orbit & 0\\
+DiscIcPlanetIncl & Inclination of the orbit (in degrees) & 0\\
+DiscIcPlanetMass & Mass of the planet & 1e-3\\
+DiscIcPlanetAccretionRadiusHill & Accretion radius of the planet (in units of the Hill radius) & 0.4\\
+NDust & Number of dust particles & 0\\
+DustGasRatio & Dust to gas ratio when using dust & 0.01
+\end{tabular}
+\caption{Summary of the parameters controlling the disc setup and their default values}
+\label{table:disc}
+\end{table}
+
+
+
+
 
 \subsection{Load from external file}
-GANDALF can load two main file formats; simple ASCII column format and SEREN format.  These are described in detail in Section \ref{S:IO}.  In order to read from file, you must set the following parameters : 
+GANDALF can load two main file formats; simple ASCII column format and SEREN format.  These are described in detail in Section \ref{S:IO}.  In order to read from file, you must set the following parameters :
 \begin{itemize}
 \item \var{ic = file} : Tell GANDALF to ignore initial conditions generators and read from file instead
 \item \var{in\_file = ..}$\;$ : The name of the initial conditions file
@@ -1890,12 +1966,14 @@ You might notice that the matplotlib window freezes when you are running a simul
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Dust Dynamics}
 
+\label{sec:dust}
+
 \subsection{Theory}
-The equations of motion for the mutual dynamics of gas and dust coupled by drag forces are 
+The equations of motion for the mutual dynamics of gas and dust coupled by drag forces are
 \begin{align}
-\rho_g \frac{\mathrm{D}_g \vec{v}_g}{\mathrm{D} t} &= -\nabla P  + \rho_g \vec{a}_{g, \mathrm{ext}} 
+\rho_g \frac{\mathrm{D}_g \vec{v}_g}{\mathrm{D} t} &= -\nabla P  + \rho_g \vec{a}_{g, \mathrm{ext}}
                                                      + K (\vec{v}_d - \vec{v}_g),  \\
-\rho_d \frac{\mathrm{D}_d \vec{v}_d}{\mathrm{D} t} &= \rho_d \vec{a}_{d, \mathrm{ext}} 
+\rho_d \frac{\mathrm{D}_d \vec{v}_d}{\mathrm{D} t} &= \rho_d \vec{a}_{d, \mathrm{ext}}
                                                      - K (\vec{v}_d - \vec{v}_g),
 \end{align}
 where $\frac{\mathrm{D}_g}{\mathrm{D} t}$ is the Lagrangian derivative with respect to the gas. The external accelerations are included to take into account additional forces, which may either be the same for both the gas and dust particles (such as gravity) or affect just one species (e.g. viscosity). These equations can be re-written in terms of an equation of motion for the relative and barocentric velocities, $\vec{v} = (\rho_g \vec{v}_g + \rho_d \vec{v}_d)/(\rho_g + \rho_d)$ and $\Delta \vec{v} = \vec{v}_d - \vec{v}_g$, (Youdin \& Goodmann, 2005; Laibe \& Price, 2014; Lor\'en-Aguilar \& Bate, 2015),
@@ -1906,13 +1984,13 @@ where $\frac{\mathrm{D}_g}{\mathrm{D} t}$ is the Lagrangian derivative with resp
 where $t_s = \rho_g \rho_d / K(\rho_g + \rho_d)$. The functions $\vec{F}$ and $\vec{G}$ are
 \begin{align}
 \vec{F} &= \frac{1}{\rho_d + \rho_g} \nabla \cdot \left(\frac{\rho_d \rho_d}{\rho_d + \rho_d} \Delta \vec{v} \Delta \vec{v} \right), \\
-\vec{G} &= \frac{1}{\rho_d + \rho_g} \left[ 
- \rho_g \Delta \vec{v} \cdot \nabla \left(\frac{\rho_g}{\rho_g + \rho_d} \Delta \vec{v} \right) - 
+\vec{G} &= \frac{1}{\rho_d + \rho_g} \left[
+ \rho_g \Delta \vec{v} \cdot \nabla \left(\frac{\rho_g}{\rho_g + \rho_d} \Delta \vec{v} \right) -
  \rho_d \Delta \vec{v} \cdot \nabla \left(\frac{\rho_d}{\rho_g + \rho_d} \Delta \vec{v} \right) \right].
 \end{align}
-These two formulations naturally lead to two different numerical approaches (in the same spirit as Eulerian vs. Lagrangian hydro codes), with equations (1) and (2) naturally represented by two different particle types representing fluid (gas) particles and dust particles. Equations (3) -- (6) are more naturally represented as a single fluid that moves with the barycentric velocity, on top of which the dust fraction is advected relative to the barycentre at velocity $\Delta \vec{v}$ (see Laibe \& Price 2014 for more details). 
+These two formulations naturally lead to two different numerical approaches (in the same spirit as Eulerian vs. Lagrangian hydro codes), with equations (1) and (2) naturally represented by two different particle types representing fluid (gas) particles and dust particles. Equations (3) -- (6) are more naturally represented as a single fluid that moves with the barycentric velocity, on top of which the dust fraction is advected relative to the barycentre at velocity $\Delta \vec{v}$ (see Laibe \& Price 2014 for more details).
 
-In GANDALF we solve directly equations (1) and (2) using a multi-fluid approach, using the semi-implicit time-stepping following Booth, Sijacki \& Clarke (2015) and Lor\'en-Aguilar \& Bate (2015). In these approaches we use of $\langle \Delta \vec{v} \rangle$, the average of the relative velocity in the time-step $\left[ t,t + \Delta t\right]$. This is found by solving equation (4) under the approximation that the densities, accelerations and $t_s$ are constant in both time and space. We find 
+In GANDALF we solve directly equations (1) and (2) using a multi-fluid approach, using the semi-implicit time-stepping following Booth, Sijacki \& Clarke (2015) and Lor\'en-Aguilar \& Bate (2015). In these approaches we use of $\langle \Delta \vec{v} \rangle$, the average of the relative velocity in the time-step $\left[ t,t + \Delta t\right]$. This is found by solving equation (4) under the approximation that the densities, accelerations and $t_s$ are constant in both time and space. We find
 \begin{equation}
 \langle \Delta \vec{v} \rangle \frac{\Delta t}{t_s} = \Delta \vec{v}(t+\Delta t) \left(1 - \exp(-\Delta t/ t_s\right) -
 \left(\vec{a}_{d, \mathrm{ext}} + \frac{\nabla P}{\rho_g}  - \vec{a}_{g, \mathrm{ext}}\right)\left[(\Delta t + t_s)\left(1 - \exp(-\Delta t/ t_s)\right) - \Delta t \right],
@@ -1939,7 +2017,7 @@ The full two-fluid algorithm follows the improved semi-implicit algorithm of Lor
  \vec{a}_{d,\mathrm{drag}} &= - \sum_i^\mathrm{gas} \frac{m_i}{\rho_{g,i}} ( \vec{S}_{id}  \cdot \vec{\hat r}_{id}) \vec{\hat r}_{id} D(\vec{r}_{id}, h_i) \\
  \vec{a}_{g,\mathrm{drag}} &= - \sum_i^\mathrm{dust} \frac{m_i}{\rho_{d,i}} ( \vec{S}_{ig} \cdot \vec{\hat r}_{ig}) \vec{\hat r}_{ig} D(\vec{r}_{ig}, h_g),
 \end{align*}
-where $\vec{\hat r}_{ij} = (\vec{r}_i - \vec{r}_j) / |\vec{r}_i - \vec{r}_j|$ and 
+where $\vec{\hat r}_{ij} = (\vec{r}_i - \vec{r}_j) / |\vec{r}_i - \vec{r}_j|$ and
 \begin{equation}
  \vec{S}_{ij} = \frac{\rho_i}{\rho_i + \rho_j} \frac{\langle \Delta \vec{v}_{ij} \rangle}{t_s}.
 \end{equation}
@@ -1951,13 +2029,13 @@ For the kernel $D$ we use the double hump version of the kernel used for the SPH
 \item \emph{Conservation} -- The full fluid has the advantage that the total energy, momentum and angular momentum
 are conserved explicitly, while in the test-particle limit these are conserved for the gas particles, but not for the dust. In some problems, such as when radial drift is important the explicit conservation can help maintain the correct solution.
 
-\item \emph{Dissipation} -- The full two-fluid system is a dissipative system, with the drag forces converting kinetic energy into thermal energy. If the smoothing length, $h < c_s t_s$, this can lead to massive numerical dissipation especially when $\rho_d \approx \rho_g$. The semi-implicit algorithms help to reduce the dissipation (see Lor\'en-Aguilar \& Bate, 2014), but this can still be an issue. For $\rho_d \ll \rho_g$ the dissipation is weak, with no dissipation occurring in the test particle limit. 
+\item \emph{Dissipation} -- The full two-fluid system is a dissipative system, with the drag forces converting kinetic energy into thermal energy. If the smoothing length, $h < c_s t_s$, this can lead to massive numerical dissipation especially when $\rho_d \approx \rho_g$. The semi-implicit algorithms help to reduce the dissipation (see Lor\'en-Aguilar \& Bate, 2014), but this can still be an issue. For $\rho_d \ll \rho_g$ the dissipation is weak, with no dissipation occurring in the test particle limit.
 
-\item \emph{Force Errors} -- The standard SPH interpolation used in the test-particle implementation is generally accurate to $\sim 0.1$ per cent for the cubic spline, and even more accurate for smoother kernels (e.g. the Quintic spline). However, the projected interpolation is considerably more sensitive to the particle distribution. The double hump kernels help reduce the errors due to the particle distribution, but even for regular particle distributions the error can be $\sim 1$ per cent. When strong density gradients are present (e.g. the vertical structure of discs), the errors can be much larger (c.f the settling test, Lor\'en-Aguilar \& Bate, 2014). For this reason smoother kernels are highly recommended when using the full-two fluid implementation. 
+\item \emph{Force Errors} -- The standard SPH interpolation used in the test-particle implementation is generally accurate to $\sim 0.1$ per cent for the cubic spline, and even more accurate for smoother kernels (e.g. the Quintic spline). However, the projected interpolation is considerably more sensitive to the particle distribution. The double hump kernels help reduce the errors due to the particle distribution, but even for regular particle distributions the error can be $\sim 1$ per cent. When strong density gradients are present (e.g. the vertical structure of discs), the errors can be much larger (c.f the settling test, Lor\'en-Aguilar \& Bate, 2014). For this reason smoother kernels are highly recommended when using the full-two fluid implementation.
 
 \item \emph{Individual particle time-steps} -- Individual particle time-steps are implemented for both dust algorithms, but typically the full-two fluid algorithm should not be used with individual particle time-steps, since the time averaged drag force is only correct once the time-step has been completed. Order unity errors can arise even the simplest dustybox tests when the time-step for the gas and dust differ for this reason, making it clear the exact conservation is necessary for accurate simulations with this algorithm. Development of a robust multi-step scheme for the full two-fluid scheme is being considered. Conversely, individual particle time-steps have been used in Booth, Sijacki \& Clarke (2015) and Booth \& Clarke (2016) with the test-particle limit algorithm and prove to be robust because the predicted velocities are not needed for force calculations. Individual particle time-steps have not been tested extensively in the GANDALF test-particle implementation, but preliminary tests have been successful.
 
-\item \emph{Sinks} -- The sink routines have not been modified to support dust, but in principal should work. However, I would recommend checking this when both dust and sink particles are needed in the same simulation. Accretion using  the `vacuum cleaner' type sinks \emph{should} work properly, but has not been rigourously tested. The smoothed accretion mode is more likely to give issues since it removes mass from the particle closest to the sink only so it is possible that mass would end up being removed from the gas or dust particles only. 
+\item \emph{Sinks} -- The sink routines have not been modified to support dust, but in principal should work. However, I would recommend checking this when both dust and sink particles are needed in the same simulation. Accretion using  the `vacuum cleaner' type sinks \emph{should} work properly, but has not been rigourously tested. The smoothed accretion mode is more likely to give issues since it removes mass from the particle closest to the sink only so it is possible that mass would end up being removed from the gas or dust particles only.
 
 \end{itemize}
 
@@ -1981,7 +2059,7 @@ Some simple two-fluid test problems have been included in the directory tests/du
 none              & = No drag forces \\
 test particle     & = Test particle limit drag regime \\
 full twofluid     & = Full two fluid drag regime
-\end{tabular} 
+\end{tabular}
 
 \item \var{drag\_law} : Select the drag law
 
@@ -1990,7 +2068,7 @@ fixed             & $t_s = 1 / K_D$ \\
 density           & $t_s = 1 / (K_D(\rho_d + \rho_g))$ \\
 epstein           & $t_s = 1 / (K_D(\rho_d + \rho_g)c_s)$ \\
 LB2012            & $t_s = \rho_d \rho_g / (K_D(\rho_d + \rho_g))$ \\
-\end{tabular} 
+\end{tabular}
 
 \item \var{drag\_coeff} : Sets $K_D$
 
@@ -2084,12 +2162,12 @@ where $r, m, t$ are the physical quantities, $r', m', t'$ are the dimensionless 
 
 
 \subsection{Scaling factors for \var{G=1}}
-If we take some equation using \var{G} (e.g. Newton's law of gravity) and then substitute in the scaling factors and rearrange, we obtain : 
+If we take some equation using \var{G} (e.g. Newton's law of gravity) and then substitute in the scaling factors and rearrange, we obtain :
 \begin{eqnarray}
 a = \frac{G\,m}{r^2} \;\;\;\; \Rightarrow \;\;\;\;
 \frac{R_0}{T_0^2}\,a' = \frac{G\,M_0\,m'}{{r'}^2\,R_0^2} \;\;\;\; \Rightarrow \;\;\;\; a' = \underbrace{\left\{\frac{G\,M_0\,T_0^2}{R_0^3} \right\}}_{G'}\,\frac{m'}{{r'}^2}\,.
 \end{eqnarray}
-The final dimensionless equation has the same form as the original equation, with all constants and scaling factors grouped together in the `dimensionless gravitational constant', \var{G'}.  In N-body codes, it is common to adjust one of the scaling factors in order to set this new constant equal to unity.  By convention, it is the time scaling factor that is adjusted : 
+The final dimensionless equation has the same form as the original equation, with all constants and scaling factors grouped together in the `dimensionless gravitational constant', \var{G'}.  In N-body codes, it is common to adjust one of the scaling factors in order to set this new constant equal to unity.  By convention, it is the time scaling factor that is adjusted :
 \begin{eqnarray}
 \frac{G\,M_0\,T_0^2}{R_0^3} = 1 \;\;\;\; \Rightarrow \;\;\;\;T_0 = \left( \frac{R_0^3}{G\,M_0} \right)^{1/2}
 \end{eqnarray}
@@ -2124,7 +2202,7 @@ Converting from physical units to code units (e.g. when setting up initial condi
 \begin{equation}
 X' = \frac{X_{\rm user}}{X_{\rm outscale}}\,.
 \end{equation}
-If the variable (or parameter) is in either SI or cgs units, then they can be converted directly also using the SI or cgs scaling factors.  For example, to convert a cgs quantity to code units, 
+If the variable (or parameter) is in either SI or cgs units, then they can be converted directly also using the SI or cgs scaling factors.  For example, to convert a cgs quantity to code units,
 \begin{equation}
 X' = \frac{X_{\rm user}}{X_{\rm outscale}\,X_{\rm outcgs}}\,.
 \end{equation}
@@ -2194,7 +2272,8 @@ List of possible new features for future versions.
 \section{Command reference for the python functions}
 \label{reference_facade}
 \input{../analysis/_build/latex/GANDALF}
-
+\bibliographystyle{mnras}
+\bibliography{biblio}
 
 \end{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -12,12 +12,42 @@ class DustyBoxTest(unittest.TestCase):
     run_id="DUSTYBOX_SPH"
     expected_l1error_gas = 8e-4
     expected_l1error_dust = 8e-4
+    energy_error = 4.1e-4
     def setUp(self):
         self.sim=newsim("tests/dust_tests/dustybox.dat")
         self.sim.SetParam("run_id",self.run_id)
         for p in self.params:
             self.sim.SetParam(p, self.params[p])
-    
+
+    def check_energy_conservation(self):
+        '''Check the energy error is never too large'''
+        
+        t  = []
+        Ek = []
+        U  = []
+        s = snap(0)
+        while True:
+            t.append(s.t)
+            
+            m = get_data('m', type='sph')
+            U.append((m*get_data('u', type='sph')).sum())
+
+            _E = 0
+            for tp in ['sph', 'dust']:
+                m = get_data('m', type=tp)
+                for j in range(self.sim.simparams.intparams['ndim']):
+                    _E += (0.5*m*get_data('v'+chr(ord('x')+j),type=tp)**2).sum()
+            Ek.append(_E)
+
+            try:
+                s = next()
+            except:
+                break
+        
+        Etot = np.array(Ek) + np.array(U)
+        
+        self.assertLess(max(abs(1 - Etot/Etot[0])), self.energy_error)
+
 
     def test_error(self):
         p=run_async()
@@ -40,6 +70,7 @@ class DustyBoxTest(unittest.TestCase):
         print(errnorm_dust,self.expected_l1error_dust)
         self.assertLess(errnorm_gas,self.expected_l1error_gas)
         self.assertLess(errnorm_dust,self.expected_l1error_dust)
+        self.check_energy_conservation()
 
         
 class DustyBoxTestParticle(DustyBoxTest):
@@ -61,3 +92,4 @@ class DustyBoxTestStrongTS(DustyBoxTest):
     expected_l1error_dust = 1.4e-3
     params = {"drag_coeff" : 100,
               "dust_forces" : "test_particle" }
+    

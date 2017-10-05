@@ -155,8 +155,8 @@ class HllcRiemannSolver
 
 
     // Compute speed of the 3 waves
-    HLLC_State Sl(Wl, n, _gamma) ;
-    HLLC_State Sr(Wr, n, _gamma) ;
+    HLLC_State Sl(Wl, n, _gamma, _isothermal) ;
+    HLLC_State Sr(Wr, n, _gamma, _isothermal) ;
 
     double Smin, Smax, vm ;
     HLL_Speeds(Sl, Sr, Smin, Smax) ;
@@ -183,19 +183,18 @@ class HllcRiemannSolver
     else if (Smin >= 0)
       Hydro_Flux(Sl, n, flux) ;
     else {
-      // Compute the flux on the correct side of the contact wave
+      // Compute the flux on the correct side of the contact wave{
       if (vm > 0) {
-        Hydro_Flux(Sl, n, flux) ;
-        add_RH_flux(Sl, n, Smin, vm, flux) ;
-      }
-      else {
-        Hydro_Flux(Sr, n, flux) ;
-        add_RH_flux(Sr, n, Smax, vm, flux) ;
-      }
+          Hydro_Flux(Sl, n, flux) ;
+          add_RH_flux(Sl, n, Smin, vm, flux) ;
+        }
+        else {
+          Hydro_Flux(Sr, n, flux) ;
+          add_RH_flux(Sr, n, Smax, vm, flux) ;
+        }
     }
 
     if (_zmf) {
-      //assert(fabs(flux[irho]) < 1e-14*(Wl[irho] + Wr[irho])) ;
       flux[irho] = 0 ;
     }
 
@@ -211,18 +210,26 @@ class HllcRiemannSolver
 
   class HLLC_State {
   public:
-    HLLC_State(const FLOAT W[ndim+2], const FLOAT n[ndim], double gamma)
+    HLLC_State(const FLOAT W[ndim+2], const FLOAT n[ndim], double gamma,
+               bool isothermal)
       : rho(W[irho]),
         press(W[ipress]),
-        cs(sqrt(gamma * press / rho)),
         vline(DotProduct(W, n, ndim))
      {
+      if (not isothermal)
+        cs = sqrt(gamma * press / rho) ;
+      else
+        cs = sqrt(        press / rho) ;
+
       e = 0 ;
       for (int i(0); i < ndim; ++i) {
         v[i] = W[i] ;
         e += v[i]*v[i] ;
       }
-      e = 0.5 * rho * e + press / (gamma - 1) ;
+      if (not isothermal)
+        e = 0.5 * rho * e + press / (gamma - 1) ;
+      else
+        e = 0.5 * rho * e + press ;
      }
     FLOAT v[ndim] ;
     FLOAT rho, press, e, cs ;
@@ -299,7 +306,7 @@ class HllcRiemannSolver
     }
     else {
       // The sound speeds should just be the same, but they might differ
-      // slightly (ife.g. locally isothermal equations of state are used). We
+      // slightly (if e.g. a locally isothermal equations of state are used). We
       // use a Roe averaged thermal energy as a sensible guess in this case.
       cs_av = sqrt(fl*cs_l*cs_l + fr*cs_r*cs_r) ;
     }
@@ -320,11 +327,16 @@ class HllcRiemannSolver
       dml = Sl.rho * (vl - Smin),
       dmr = Sr.rho * (vr - Smax);
 
-    double
-      Pl = vl*dml + Sl.press,
-      Pr = vr*dmr + Sr.press;
+    if (not _isothermal) {
+      double
+        Pl = vl*dml + Sl.press,
+        Pr = vr*dmr + Sr.press;
 
-    return (Pr - Pl) / (dmr - dml) ;
+      return (Pr - Pl) / (dmr - dml) ;
+    }
+    else {
+      return (Smax*dml - Smin*dmr) / (dml - dmr) ;
+    }
   }
 
   /* Evaluate the hydrodynamic flux from state s in direction [0] */
@@ -383,4 +395,81 @@ class ShocktubeSolution
 #endif
 
 };
+
+//=================================================================================================
+//  Class ViscousFlux
+/// \brief   Computes the viscous flux at an interface
+/// \details Simple arithmetic average for the interface flux in a diffusion problem. Assumes
+///          a constant kinematic viscosity (shear and bulk). Provides an interface for more
+///          complex viscosities as well
+/// \author  R. A. Booth
+/// \date    17/5/2017
+//=================================================================================================
+template<int ndim>
+class ViscousFlux
+{
+ public:
+
+  ViscousFlux(FLOAT nu_shear, FLOAT nu_bulk=0)
+   : _nu_shear0(nu_shear), _nu_bulk0(nu_bulk)
+ { }
+
+  virtual ~ViscousFlux(){} ;
+
+  void ComputeViscousFlux(const FLOAT Wl[ndim+2], const FLOAT Wr[ndim+2],
+                          const FLOAT gradv_l[][ndim], const FLOAT gradv_r[][ndim],
+                          FLOAT flux[ndim+2][ndim]) const {
+
+    // Compute average face state
+    FLOAT W[ndim+2], gradv[ndim][ndim], div_v(0) ;
+    for (int i=0; i < ndim+2; i++) W[i] = (Wl[i] + Wr[i])/2 ;
+    for (int i=0; i < ndim; i++) {
+      for (int j=0; j < ndim; j++) {
+        gradv[i][j] = (gradv_l[i][j] + gradv_r[i][j])/2 ;
+      }
+      div_v += gradv[i][i];
+    }
+
+    // Face viscosity
+    FLOAT eta_s = eta_shear(W);
+    FLOAT eta_b = eta_bulk(W) ;
+
+
+    FLOAT stress[ndim][ndim];
+    for (int i=0; i < ndim; i++) {
+      for (int j=0; j < ndim; j++) {
+        stress[i][j] = eta_s * (gradv[i][j] + gradv[j][i]);
+      }
+      stress[i][i] += (eta_b - 2*eta_s/3)*div_v;
+    }
+
+    // Add the fluxes
+    for (int i=0; i < ndim; i++) {
+      for (int j=0; j < ndim; j++) {
+        flux[i][j]  -= stress[i][j];
+        flux[iE][j] -= stress[i][j]*W[i];
+      }
+    }
+  }
+
+protected:
+  virtual FLOAT eta_shear(const FLOAT *W) const {
+    return _nu_shear0 * W[irho];
+  }
+  virtual FLOAT eta_bulk(const FLOAT *W) const  {
+    return _nu_bulk0 * W[irho];
+  }
+
+private:
+  FLOAT _nu_shear0, _nu_bulk0 ;
+
+  static const int nvar = ndim + 2;
+  static const int irho   = ndim ;
+  static const int ipress = ndim + 1 ;
+  static const int iE     = ipress ;
+};
+
+
+
+
 #endif

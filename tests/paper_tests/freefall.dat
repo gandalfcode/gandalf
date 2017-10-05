@@ -11,7 +11,7 @@ Simulation run id string                    : run_id = FREEFALL1
 Select SPH simulation                       : sim = gradhsph
 Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nhydro = 8000
+No. of SPH particles                        : Nhydro = 32000
 Local arrangement of particles              : particle_distribution = cubic_lattice
 Mass of sphere                              : mcloud = 1.0
 Radius of sphere                            : radius = 1.0
@@ -33,9 +33,9 @@ RHS boundary type in z-dimension            : boundary_rhs[2] = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.5
+Simulation end time                         : tend = 1.08
 Time for first snapshot                     : tsnapfirst = 0.0
-Regular snapshot output frequency           : dt_snap = 0.05
+Regular snapshot output frequency           : dt_snap = 0.04
 Screen output frequency (in no. of steps)   : noutputstep = 1
 Diagnostic output frequency                 : ndiagstep = 16
 
@@ -66,8 +66,8 @@ Tabulate SPH kernel                         : tabulated_kernel = 1
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-SPH Courant timestep condition multiplier   : courant_mult = 0.1
-SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH Courant timestep condition multiplier   : courant_mult = 0.05
+SPH acceleration condition multiplier       : accel_mult = 0.05
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
 
@@ -76,8 +76,8 @@ No. of block timestep levels                : Nlevels = 1
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = kdtree
-No. of particles in leaf cell               : Nleafmax = 6
-Tree opening angle (squared)                : thetamaxsqd = 0.15
+No. of particles in leaf cell               : Nleafmax = 12
+Tree opening angle (squared)                : thetamaxsqd = 0.1
 Multipole option                            : multipole = fast_monopole
 Tree build frequency                        : ntreebuildstep = 8
 Tree restocking frequency                   : ntreestockstep = 1

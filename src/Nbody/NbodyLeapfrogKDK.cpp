@@ -76,34 +76,41 @@ NbodyLeapfrogKDK<ndim, kernelclass>::~NbodyLeapfrogKDK()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
- (int N,                               ///< Number of stars
-  NbodyParticle<ndim> **star)          ///< Array of stars/systems
+ (int N,                               ///< [in] Number of stars
+  NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                           // Star and dimension counters
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
   FLOAT drdt;                          // Rate of change of distance
-  FLOAT drmag;                         // ..
+  FLOAT drmag;                         // Distance
   FLOAT drsqd;                         // Distance squared
   FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT invdrmag;                      // 1 / drmag
-  FLOAT invhmean;                      // ..
-  FLOAT paux;                          // ..
-  FLOAT wmean;                         // ..
+  FLOAT invhmean;                      // Inverse of mean smoothing length
+  FLOAT paux;                          // Aux. variable to compute grav. force
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
+  FLOAT wmean;                         // Mean kernel value
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectSmoothedGravForces]");
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
+  for (int i=0; i<N; i++) {
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd    = DotProduct(dr,dr,ndim);
       drmag    = sqrt(drsqd) + small_number;
       invdrmag = (FLOAT) 1.0/drmag;
@@ -114,12 +121,19 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
       // Add contribution to main star array
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
-      for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
-      for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
-        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+      for (int k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
+      for (int k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
+        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
+        (FLOAT) 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
+        for (int k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        star[i]->gpot += potperiodic;
+      }
 
     }
-    //---------------------------------------------------------------------------------------------
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -140,15 +154,20 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectHydroForces
   int Ndirect,                         ///< [in] No. of direct sum gas particles
   int *hydrolist,                      ///< [in] List of SPH neib. particles
   int *directlist,                     ///< [in] List of direct cum gas particles
-  Hydrodynamics<ndim> *hydro)          ///< [in] Array of SPH particles
+  Hydrodynamics<ndim> *hydro,          ///< [in] Array of SPH particles
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int j,jj,k;                          // SPH particle and dimension counters
+  int j,jj,k;                          // Star and dimension counters
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
   FLOAT drmag;                         // Distance
   FLOAT drsqd;                         // Distance squared
   FLOAT invhmean;                      // 1 / hmean
   FLOAT invdrmag;                      // 1 / drmag
   FLOAT paux;                          // Aux. force variable
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectHydroForces]");
 
@@ -156,20 +175,29 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectHydroForces
   // Sum grav. contributions from all neighbouring SPH particles
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nhydro; jj++) {
-
     j = hydrolist[jj];
+
     Particle<ndim>& part = hydro->GetParticlePointer(j);
+    assert(!part.flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
-    drsqd    = DotProduct(dr,dr,ndim);
-    drmag    = sqrt(drsqd) + small_number;
-    invdrmag = (FLOAT) 1.0/drmag;
-    invhmean = (FLOAT) 2.0/(star->h + part.h);
-    paux     = part.m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
+    NearestPeriodicVector(simbox, dr, dr_corr);
+    drsqd = DotProduct(dr,dr,ndim);
+    drmag = sqrt(drsqd);
+    invdrmag = 1.0/drmag;
+    invhmean = 2.0/(star->h + part.h);
+    paux = part.m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
     star->gpot += part.m*invhmean*kern.wpot(drmag*invhmean);
+
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(part.m, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+      star->gpot += potperiodic;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -179,22 +207,32 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectHydroForces
   // (i.e. direct summation with Newton's law of gravity)
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
-
     j = directlist[jj];
+
     Particle<ndim>& part = hydro->GetParticlePointer(j);
+    assert(!part.flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
-    drsqd    = DotProduct(dr,dr,ndim);
-    drmag    = sqrt(drsqd) + small_number;
-    invdrmag = (FLOAT) 1.0/drmag;
-    paux     = part.m*pow(invdrmag,3);
+    NearestPeriodicVector(simbox, dr, dr_corr);
+    drsqd = DotProduct(dr,dr,ndim);
+    drmag = sqrt(drsqd);
+    invdrmag = 1.0/drmag;
+    paux = part.m*pow(invdrmag,3);
 
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
     star->gpot += part.m*invdrmag;
 
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(part.m, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+      star->gpot += potperiodic;
+    }
+
   }
   //-----------------------------------------------------------------------------------------------
+
 
 
   return;
@@ -244,8 +282,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
     for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a0[k]*dt;
 
     // If at end of step, set system particle as active
-    if (dn == nstep) star[i]->active = true;
-    else star[i]->active = false;
+    if (dn == nstep) star[i]->flags.set(active);
+    else star[i]->flags.unset(active);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -309,10 +347,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
   FLOAT timestep,                      ///< Smallest timestep value
   NbodyParticle<ndim> **star)          ///< Main star/system array
 {
-  int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  int nstep;                           // Particle (integer) step size
 
   debug2("[NbodyLeapfrogKDK::EndTimestep]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("NBODY_END_TIMESTEP");
@@ -320,19 +356,20 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
   // Loop over all star particles and set values for those at end of step
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
 
-    if (dn == nstep) {
+    if (star[i]->flags.check(end_timestep)) {
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
       for (k=0; k<ndim; k++) star[i]->adot0[k] = star[i]->adot[k];
       for (k=0; k<ndim; k++) star[i]->apert[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) star[i]->adotpert[k] = (FLOAT) 0.0;
-      star[i]->active = false;
       star[i]->nlast = n;
       star[i]->tlast = t;
+      star[i]->dt = star[i]->dt_next ;
+      star[i]->dt_next = 0 ;
+      star[i]->flags.unset(active);
+      star[i]->flags.unset(end_timestep);
     }
   }
   //-----------------------------------------------------------------------------------------------

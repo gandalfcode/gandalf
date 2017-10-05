@@ -153,18 +153,18 @@ int Render<ndim>::CreateColumnRenderingGrid
   cout << "Generating rendered image!" << endl;
 
   // First, verify x, y, m, rho, h and render strings are valid
-  snap.ExtractArray(xstring,typepart,&xvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,typepart,&yvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,typepart,&rendervalues,&idummy,scaling_factor,renderunit);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m",typepart,&mvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho",typepart,&rhovalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h",typepart,&hvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(xstring, typepart, &xvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray(ystring, typepart, &yvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray(renderstring, typepart, &rendervalues, &idummy, scaling_factor, renderunit);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray("m", typepart, &mvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray("rho", typepart, &rhovalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray("h", typepart, &hvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
 
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
@@ -276,7 +276,7 @@ int Render<ndim>::CreateSliceRenderingGrid
   float* values,                       ///< [out] Rendered values for plotting
   const int Ngrid,                     ///< [in] No. of grid points (ixgrid*iygrid)
   SphSnapshotBase &snap,               ///< [inout] Snapshot object reference,
-  const string typepart,                          ///< [in] Type of particles to render
+  const string typepart,               ///< [in] Type of particles to render
   float &scaling_factor)               ///< [in] Rendered quantity scaling factor
 #else
   double* values,                       ///< [out] Rendered values for plotting
@@ -319,20 +319,20 @@ int Render<ndim>::CreateSliceRenderingGrid
       (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y, z, m, rho, h and render strings are valid
-  snap.ExtractArray(xstring,typepart,&xvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,typepart,&yvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(zstring,typepart,&zvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,typepart,&rendervalues,&idummy,scaling_factor,renderunit);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m",typepart,&mvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho",typepart,&rhovalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h",typepart,&hvalues,&idummy,dummyfloat,dummystring);
-  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(xstring, typepart, &xvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray(ystring, typepart, &yvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray(zstring, typepart, &zvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray(renderstring, typepart, &rendervalues, &idummy, scaling_factor, renderunit);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray("m", typepart, &mvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray("rho", typepart, &rhovalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
+  snap.ExtractArray("h", typepart, &hvalues, &idummy, dummyfloat, dummystring);
+  arraycheck = min(idummy, arraycheck);
 
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;

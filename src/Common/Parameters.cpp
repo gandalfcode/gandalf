@@ -240,6 +240,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["courant_mult"] = 0.15;
   floatparams["nbody_mult"] = 0.1;
   floatparams["subsys_mult"] = 0.05;
+  floatparams["visc_mult"] = 0.3 ;
   intparams["Nlevels"] = 1;
   intparams["level_diff_max"] = 1;
   intparams["sph_single_timestep"] = 0;
@@ -249,6 +250,7 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   stringparams["sph_integration"] = "lfkdk";
   stringparams["kernel"] = "m4";
+  intparams["conservative_sph_star_gravity"] = 1;
   intparams["tabulated_kernel"] = 1;
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
@@ -262,8 +264,11 @@ void Parameters::SetDefaultValues(void)
   floatparams["gamma_eos"] = 1.66666666666666;
   floatparams["temp0"] = 1.0;
   floatparams["mu_bar"] = 1.0;
+  floatparams["tempmin"] = 0.01;
+  floatparams["templaw"] = 0.75;
   floatparams["rho_bary"] = 1.0e-14;
   floatparams["eta_eos"] = 1.4;
+  floatparams["Kpoly"] = 1.0;
   stringparams["radws_table"] = "eos.bell.cc.dat";
   floatparams["temp_ambient"] = 5.0;
 
@@ -283,6 +288,8 @@ void Parameters::SetDefaultValues(void)
   intparams["zero_mass_flux"] = 1;
   intparams["static_particles"] = 0;
   stringparams["time_step_limiter"] = "none";
+  floatparams["shear_visc"] = 0;
+  floatparams["bulk_visc"] = 0;
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------
@@ -325,6 +332,7 @@ void Parameters::SetDefaultValues(void)
   intparams["smooth_accretion"] = 0;
   intparams["fixed_sink_mass"] = 0;
   intparams["extra_sink_output"] = 0;
+  intparams["Nsinkfixed"] = -1;
   floatparams["rho_sink"] = 1.e-12;
   floatparams["alpha_ss"] = 0.01;
   floatparams["sink_radius"] = 2.0;
@@ -389,13 +397,14 @@ void Parameters::SetDefaultValues(void)
   // Initial conditions parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["particle_distribution"] = "cubic_lattice";
+  intparams["use_fixed_spacing"] = 0 ;
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
-  intparams["regularise_particle_ics"] = 0;
   intparams["Nreg"] = 1;
   intparams["field_type"] = 1;
   intparams["gridsize"] = 64;
   intparams["Nhydro"] = 0;
+  intparams["Ndust"] = 0;
   intparams["Nhydromax"] = -1;
   intparams["Nstar"] = 0;
   intparams["Nstarmax"] = -1;
@@ -445,7 +454,45 @@ void Parameters::SetDefaultValues(void)
   floatparams["asound"] = 1.0;
   floatparams["zmax"] = 1.0;
   floatparams["thermal_energy"] = 1.0;
-  floatparams["mach"]=2.7;
+  floatparams["mach"] = 2.7;
+  floatparams["DiscIcMass"] = 0.01;
+  floatparams["DiscIcP"] = 1.0;
+  floatparams["DiscIcQ"] = 0.5;
+  floatparams["DiscIcRin"] = 0.4;
+  floatparams["DiscIcRout"] = 2.5;
+  floatparams["DiscIcHr"] = 0.05;
+  intparams["DiscIcPlanet"] = 1;
+  floatparams["DiscIcPlanetRadius"] = 1;
+  floatparams["DiscIcPlanetMass"] = 1e-3;
+  floatparams["DiscIcPlanetAccretionRadiusHill"] = 0.4;
+  floatparams["DiscIcPlanetEccen"]=0.;
+  floatparams["DiscIcPlanetIncl"]=0.;
+  floatparams["DustGasRatio"]=0.01;
+
+  // Regularising initial conditions parameters
+  //-----------------------------------------------------------------------------------------------
+  intparams["regularise_particle_ics"] = 0;
+  intparams["regularise_smooth_density"] = 1;
+  floatparams["alpha_reg"] = 0.1;
+  floatparams["rho_reg"] = 0.8;
+
+  // SILCC initial conditions parameters
+  //-----------------------------------------------------------------------------------------------
+  floatparams["a_midplane"] = 1.0;
+  floatparams["h_midplane"] = 1.0;
+  floatparams["rho_midplane"] = 1.0;
+  floatparams["rho_star"] = 1.0;
+  floatparams["sigma_star"] = 30.0;
+  floatparams["z_d"] = 100.0;
+
+  // Filament ICs
+  //-----------------------------------------------------------------------------------------------
+  floatparams["n0"] = 7.1e4;
+  floatparams["r0"] = 0.027;
+  floatparams["Rfilament"] = 0.075;
+  floatparams["Lfilament"] = 1.6;
+  floatparams["v_cyl_infall"] = 0.0;
+  floatparams["v_rad_infall"] = 0.0;
 
   // Random number generator parameters
   //-----------------------------------------------------------------------------------------------
@@ -462,13 +509,16 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   floatparams["dt_python"] = 8.0;
 
-  // Dust Parameters
+  // Dust parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["dust_forces"] = "none" ;
   stringparams["drag_law"] = "none" ;
   floatparams["drag_coeff"] = 0 ;
   floatparams["dust_mass_factor"] = 1 ;
 
+  // Supernova feedback parameters
+  //-----------------------------------------------------------------------------------------------
+  stringparams["supernova_feedback"] = "none";
 
   return;
 }

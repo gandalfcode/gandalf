@@ -77,49 +77,63 @@ NbodyLeapfrogDKD<ndim, kernelclass>::~NbodyLeapfrogDKD()
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
  (int N,                               ///< [in] Number of stars
-  NbodyParticle<ndim> **star)          ///< [inout] Array of stars/systems
+  NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                           // Star and dimension counters
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
   FLOAT drdt;                          // Rate of change of distance
   FLOAT drmag;                         // Distance
   FLOAT drsqd;                         // Distance squared
   FLOAT dv[ndim];                      // Relative velocity vector
   FLOAT invdrmag;                      // 1 / drmag
-  FLOAT invhmean;                      // 1 / mean smoothing length
-  FLOAT paux;                          // Constant in accel. expression
-  FLOAT wmean;                         // Kernel using mean smoothing length
+  FLOAT invhmean;                      // Inverse of mean smoothing length
+  FLOAT paux;                          // Aux. variable to compute grav. force
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
+  FLOAT wmean;                         // Mean kernel value
 
   debug2("[NbodyLeapfrogDKD::CalculateDirectSmoothedGravForces]");
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
+  for (int i=0; i<N; i++) {
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-      drsqd = DotProduct(dr, dr, ndim);
-      drmag = sqrt(drsqd);
-      invdrmag = (FLOAT) 1.0/sqrt(drsqd);
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
+      drsqd    = DotProduct(dr,dr,ndim);
+      drmag    = sqrt(drsqd) + small_number;
+      invdrmag = (FLOAT) 1.0/drmag;
       invhmean = (FLOAT) 2.0/(star[i]->h + star[j]->h);
-      drdt = DotProduct(dv, dr, ndim)*invdrmag;
-      paux = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
-      wmean = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
+      drdt     = DotProduct(dv,dr,ndim)*invdrmag;
+      paux     = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
+      wmean    = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
 
       // Add contribution to main star array
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
-      for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
-      for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
-        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+      for (int k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
+      for (int k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
+        (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
+        (FLOAT) 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
+        for (int k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        star[i]->gpot += potperiodic;
+      }
 
     }
-    //---------------------------------------------------------------------------------------------
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -141,15 +155,20 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
   int Ndirect,                         ///< [in] No. of distant SPH ptcls.
   int *hydrolist,                      ///< [in] List of neighbour ids
   int *directlist,                     ///< [in] List of distant ptcl ids
-  Hydrodynamics<ndim> *hydro)          ///< [in] Array of SPH particles
+  Hydrodynamics<ndim> *hydro,          ///< [in] Array of SPH particles
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
   int j,jj,k;                          // Star and dimension counters
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
   FLOAT drmag;                         // Distance
   FLOAT drsqd;                         // Distance squared
   FLOAT invhmean;                      // 1 / hmean
   FLOAT invdrmag;                      // 1 / drmag
   FLOAT paux;                          // Aux. force variable
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
 
   debug2("[NbodyLeapfrogDKD::CalculateDirectHydroForces]");
 
@@ -163,15 +182,23 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
     assert(!part.flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    drmag = sqrt(drsqd);
-    invdrmag = 1.0/drmag;
-    invhmean = 2.0/(star->h + part.h);
-    paux = part.m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
+    NearestPeriodicVector(simbox, dr, dr_corr);
+    drsqd    = DotProduct(dr,dr,ndim);
+    drmag    = sqrt(drsqd);
+    invdrmag = (FLOAT) 1.0/drmag;
+    invhmean = (FLOAT) 2.0/(star->h + part.h);
+    paux     = part.m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
     star->gpot += part.m*invhmean*kern.wpot(drmag*invhmean);
+
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(part.m, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+      star->gpot += potperiodic;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -187,14 +214,22 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
     assert(!part.flags.is_dead());
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    drmag = sqrt(drsqd);
-    invdrmag = 1.0/drmag;
-    paux = part.m*pow(invdrmag,3);
+    NearestPeriodicVector(simbox, dr, dr_corr);
+    drsqd    = DotProduct(dr,dr,ndim);
+    drmag    = sqrt(drsqd);
+    invdrmag = (FLOAT) 1.0/drmag;
+    paux     = part.m*pow(invdrmag,3);
 
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
     star->gpot += part.m*invdrmag;
+
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(part.m, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+      star->gpot += potperiodic;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -216,17 +251,17 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
-(int n,                             ///< Integer time
- int N,                             ///< No. of stars/systems
- FLOAT t,                          ///< Current time
- FLOAT timestep,                   ///< Smallest timestep value
- NbodyParticle<ndim> **star)        ///< Main star/system array
+ (int n,                               ///< Integer time
+  int N,                               ///< No. of stars/systems
+  FLOAT t,                             ///< Current time
+  FLOAT timestep,                      ///< Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
-  FLOAT dt;                        // Timestep since start of step
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  int nstep;                           // Particle (integer) step size
+  FLOAT dt;                            // Timestep since start of step
 
   debug2("[NbodyLeapfrogDKD::AdvanceParticles]");
 
@@ -236,9 +271,9 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
 
     // Compute time since beginning of step
     nstep = star[i]->nstep;
-    dn = n - star[i]->nlast;
+    dn    = n - star[i]->nlast;
     //dt = timestep*(FLOAT) dn;
-    dt = t - star[i]->tlast;
+    dt    = t - star[i]->tlast;
 
     // Advance positions and velocities to first order
     if (dn < nstep) {
@@ -252,8 +287,8 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
     }
 
     // If at half-step, set system particle as active
-    if (dn == nstep/2) star[i]->active = true;
-    else star[i]->active = false;
+    if (dn == nstep/2) star[i]->flags.set(active);
+    else star[i]->flags.unset(active);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -269,32 +304,31 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::EndTimestep
-(int n,                             ///< Integer time
- int N,                             ///< No. of stars/systems
- FLOAT t,                          ///< Current time
- FLOAT timestep,                   ///< Smallest timestep value
- NbodyParticle<ndim> **star)        ///< Main star/system array
+ (int n,                               ///< Integer time
+  int N,                               ///< No. of stars/systems
+  FLOAT t,                             ///< Current time
+  FLOAT timestep,                      ///< Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
 
   debug2("[NbodyLeapfrogDKD::EndTimestep]");
 
   // Loop over all star particles and set values for those at end of step
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
 
-    if (dn == nstep) {
+    if (star[i]->flags.check(end_timestep)) {
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
-      star[i]->active = false;
       star[i]->nlast = n;
       star[i]->tlast = t;
+      star[i]->dt = star[i]->dt_next ;
+      star[i]->dt_next = 0 ;
+      star[i]->flags.unset(active);
+      star[i]->flags.unset(end_timestep);
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -312,11 +346,11 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::EndTimestep
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 DOUBLE NbodyLeapfrogDKD<ndim, kernelclass>::Timestep
-(NbodyParticle<ndim> *star)         ///< Reference to SPH particle
+ (NbodyParticle<ndim> *star)           ///< Reference to SPH particle
 {
-  DOUBLE timestep;                  // Minimum value of particle timesteps
-  DOUBLE amag;                      // Magnitude of star acceleration
-  //DOUBLE adotmag;                   // Magnitude of star jerk
+  DOUBLE timestep;                     // Minimum value of particle timesteps
+  DOUBLE amag;                         // Magnitude of star acceleration
+  //DOUBLE adotmag;                    // Magnitude of star jerk
 
   // Acceleration condition
   amag = sqrt(DotProduct(star->a, star->a, ndim));

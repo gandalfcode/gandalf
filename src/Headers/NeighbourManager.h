@@ -18,6 +18,10 @@ using namespace std;
 #include "Particle.h"
 
 
+// Fwd declare
+template<int ndim, class ParticleType> class NeighbourManager;
+
+
 //=================================================================================================
 //  Class NeighbourIterator
 /// \brief   Template class for iterating of neighbour lists.
@@ -157,7 +161,13 @@ public:
     return _neibpart[_idx[i]];
   }
 
+  template <class InParticleType>
+  void VerifyNeighbourList(int i, int Ntot, const InParticleType& partdata,
+                           const string& searchmode) ;
+
 private:
+  template<int ndim, class PartType> friend class NeighbourManager;
+
   std::vector<int>& _idx;
   std::vector<ParticleType>& _neibpart;
 };
@@ -191,6 +201,7 @@ class NeighbourManager : public NeighbourManagerDim<ndim> {
 private:
   int _NPeriodicGhosts;
   int _NCellDirectNeib;
+  int _NNonInteract;
   vector<int> neiblist;
   vector<int> directlist;
   vector<int> neib_idx;
@@ -206,8 +217,15 @@ private:
   const ParticleTypeRegister* _types;
   double _kernrange;
 
-  typedef struct {}        _true_type;
-  typedef struct {char c;} _false_type;
+  template<bool __v>
+  struct __boolean_constant {
+    static const bool value = __v ;
+    typedef bool value_type ;
+    typedef __boolean_constant<__v> type ;
+  };
+
+  typedef __boolean_constant<true>  _true_type ;
+  typedef __boolean_constant<false> _false_type ;
 
 public:
   using NeighbourManagerDim<ndim>::tempneib;
@@ -216,7 +234,7 @@ public:
   using NeighbourManagerDim<ndim>::gravcell;
 
   NeighbourManager(const Hydrodynamics<ndim>* hydro, const DomainBox<ndim>& domain)
-  : _NPeriodicGhosts(0), _NCellDirectNeib(0),
+  : _NPeriodicGhosts(0), _NCellDirectNeib(0), _NNonInteract(0),
     _domain(&domain),
     _types(&(hydro->types)),
     _kernrange(hydro->kernp->kernrange)
@@ -224,7 +242,7 @@ public:
 
   NeighbourManager(const ParticleTypeRegister& types, double kernrange,
       const DomainBox<ndim>& domain)
-  : _NPeriodicGhosts(0), _NCellDirectNeib(0),
+  : _NPeriodicGhosts(0), _NCellDirectNeib(0), _NNonInteract(0),
     _domain(&domain),
     _types(&types),
     _kernrange(kernrange)
@@ -240,8 +258,8 @@ public:
 
   //===============================================================================================
   // EndSearch
-  /// \brief Colelct particle data needed for the neighbours and cull distant particles that do
-  ///        not interact with the cell hydrodyanimcally
+  /// \brief Collect particle data needed for the neighbours and cull distant particles that do
+  ///        not interact with the cell hydrodynamically
   //===============================================================================================
   template<class InParticleType>
   void EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
@@ -325,7 +343,8 @@ public:
    {
     TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true);
 
-    assert((culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
+    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()+_NNonInteract) ==
+                  GetNumAllNeib());
 
 
     typedef typename GravityNeighbourLists<ParticleType>::DirectType DirectType ;
@@ -375,7 +394,7 @@ private:
 
     // Start from direct neighbours
     if (keep_direct) {
-      for (int ii=0; ii< tempdirectneib.size(); ii++) {
+      for (int ii=0; ii<(int) tempdirectneib.size(); ii++) {
         const int i = tempdirectneib[ii];
         const InParticleType& part = partdata[i];
         // Forget immediately: direct particles and particles that do not interact gravitationally
@@ -390,18 +409,18 @@ private:
     }
 
     assert(directlist.size() == neibdata.size() &&
-          neib_idx.size()   == neibdata.size());
+           neib_idx.size()   == neibdata.size());
 
     // Now look at the hydro candidate neighbours
     // First the ones that need ghosts to be created on the fly
     int Nneib = directlist.size();
-    for (int ii=0; ii < tempperneib.size(); ii++) {
+    for (int ii=0; ii<(int) tempperneib.size(); ii++) {
       const int i = tempperneib[ii];
       if (partdata[i].flags.is_dead()) continue;
 
       GhostFinder.ConstructGhostsScatterGather(partdata[i], neibdata);
 
-      while (Nneib < neibdata.size()) {
+      while (Nneib < (int) neibdata.size()) {
         int Nmax = neibdata.size();
         for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
         drsqd = DotProduct(dr, dr, ndim);
@@ -418,8 +437,7 @@ private:
         }
         else if (Nmax > Nneib) {
           Nmax--;
-          if (Nmax > Nneib)
-            neibdata[Nneib] = neibdata[Nmax];
+          if (Nmax > Nneib) neibdata[Nneib] = neibdata[Nmax];
           neibdata.resize(neibdata.size()-1);
         }
       }// Loop over Ghosts
@@ -429,7 +447,7 @@ private:
     _NPeriodicGhosts = neiblist.size();
 
     // Find those particles that do not need ghosts on the fly
-    for (int ii=0; ii<tempneib.size(); ii++) {
+    for (int ii=0; ii<(int) tempneib.size(); ii++) {
       const int i = tempneib[ii];
       if (partdata[i].flags.is_dead()) continue;
 
@@ -478,35 +496,47 @@ private:
     smoothgravlist.clear();
     // Particles that are already in the directlist stay there; we just add the ones that were demoted
     directlist.resize(_NCellDirectNeib);
+    _NNonInteract = 0;
 
     // Go through the hydro neighbour candidates and check the distance. The ones that are not real neighbours
     // are demoted to the direct list
-    for (int jj=0; jj < neiblist.size(); jj++) {
-      int ii = neiblist[jj];
+    for (int j=0; j<(int) neiblist.size(); j++) {
+      int i = neiblist[j];
+      ParticleType& neibpart = neibdata[i] ;
 
       // If do_pair_once is true then only get the neighbour for the first of the two times the
-      if (not _first_appearance(p, neibdata[ii], do_pair_once())) continue;
+      if (not _first_appearance(p, neibpart, do_pair_once())) continue;
 
       // Compute relative position and distance quantities for pair
-      for (int k=0; k<ndim; k++) draux[k] = neibdata[ii].r[k] - rp[k];
-      if (jj < _NPeriodicGhosts && hydromask[neibdata[ii].ptype])
-        GhostFinder.ApplyPeriodicDistanceCorrection(neibdata[ii].r, draux);
+      for (int k=0; k<ndim; k++) draux[k] = neibpart.r[k] - rp[k];
+      if (j < _NPeriodicGhosts && hydromask[neibpart.ptype])
+        GhostFinder.ApplyPeriodicDistanceCorrection(neibpart.r, draux);
 
-      const FLOAT drsqd = DotProduct(draux,draux,ndim) + small_number;
+      const FLOAT drsqd = DotProduct(draux,draux,ndim);
 
       //if (drsqd <= small_number) continue;
 
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
-      if (drsqd > hrangesqdi && drsqd >= neibdata[ii].hrangesqd) {
-        if (keep_grav && gravmask[neibdata[ii].ptype]) directlist.push_back(ii);
+      if (drsqd >= hrangesqdi && drsqd >= neibpart.hrangesqd) {
+        if (keep_grav) {
+          if(gravmask[neibpart.ptype]) {
+            directlist.push_back(i);
+          } else {
+            _NNonInteract++;
+          }
+        }
       }
       else {
-        if (hydromask[neibdata[ii].ptype]){
-          culled_neiblist.push_back(ii);
+        if (hydromask[neibpart.ptype]){
+          culled_neiblist.push_back(i);
         }
-        else if (keep_grav && gravmask[neibdata[ii].ptype]) {
-          smoothgravlist.push_back(ii);
+        else if (keep_grav) {
+          if (gravmask[neibpart.ptype]) {
+            smoothgravlist.push_back(i);
+          } else {
+            _NNonInteract++;
+          }
         }
       }
     }
@@ -543,67 +573,115 @@ public:
   template <class InParticleType>
   void VerifyNeighbourList(int i, int Ntot, const InParticleType& partdata,
                            const string& searchmode) {
-    std::vector<int> truengb ;
-    FLOAT drsqd ;
-    FLOAT dr[ndim];
 
-    const GhostNeighbourFinder<ndim> GhostFinder(*_domain);
+    std::vector<int> reducedngb = neib_idx ;
 
-    if (searchmode == "gather") {
+    Typemask types ;
+    for (int n=0; n<Ntypes; n++) types[n] = true ;
+
+    __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "all") ;
+  }
+
+  //===============================================================================================
+  //  VerifyReducedNeighbourList
+  /// \brief    Verify the list of neighbours is complete.
+  /// \details  Checks whether the list of neighbours held by the passed list object is complete.
+  ///           Currently only works for full scatter/gather neigbours, does not take into account
+  ///           the missing neighbours for flux calculations.
+  //===============================================================================================
+   template <class InParticleType>
+   void VerifyReducedNeighbourList(int i, const NeighbourList<ParticleType>& ngbs,
+                                   int Ntot, const InParticleType& partdata,
+                                   const Typemask& types,
+                                   const string& searchmode) {
+
+     // Get the idx of the reduced neighbour list
+     std::vector<int> reducedngb(ngbs.size());
+     for (int k=0; k<ngbs.size(); k++)
+       reducedngb[k] = neib_idx[ngbs._idx[k]];
+
+     __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "reduced") ;
+   }
+
+   //===============================================================================================
+   //  __VerifyNeighbourList
+   /// \brief    Verify the list of neighbours is complete.
+   /// \details  Compares a list of neighbour indexes (locations in particle array) to the list of
+   ///           neighbours found by a brute-force comparison to check whether any neighbours have
+   ///           been missed.
+   //===============================================================================================
+   template <class InParticleType>
+   void __VerifyNeighbourList(int i, std::vector<int>& reducedngb,
+                              int Ntot, const InParticleType& partdata, const Typemask& types,
+                              const string& searchmode, const string& listtype) {
+     std::vector<int> truengb ;
+     FLOAT drsqd ;
+     FLOAT dr[ndim];
+
+     const GhostNeighbourFinder<ndim> GhostFinder(*_domain);
+
+     // Compute the complete (true) list of neighbours
+     if (searchmode == "gather") {
        for (int j=0; j<Ntot; j++) {
+         if (not types[partdata[i].ptype]) continue ;
+
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
+         if (partdata[j].flags.is_dead()) continue;
          if (drsqd <= partdata[i].hrangesqd) truengb.push_back(j);
        }
      }
      else if (searchmode == "all") {
        for (int j=0; j<Ntot; j++) {
+         if (not types[partdata[i].ptype]) continue ;
+
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
-         if (drsqd < partdata[i].hrangesqd ||
-             drsqd < partdata[j].hrangesqd) truengb.push_back(j);
+         if (partdata[j].flags.is_dead()) continue;
+         if (drsqd <= partdata[i].hrangesqd ||
+             drsqd <= partdata[j].hrangesqd) truengb.push_back(j);
        }
      }
 
-    // Now compare each given neighbour with true neighbour list for validation
-    int invalid_flag = 0, j ;
-    for (j=0; j<truengb.size(); j++) {
-      int count = 0;
-      for (int k=0; k<neib_idx.size(); k++)
-        if (neib_idx[k] == truengb[j])
-          count++;
+     // Now compare each given neighbour with true neighbour list for validation
+     int invalid_flag = 0, j ;
+     for (j=0; j<truengb.size(); j++) {
+       int count = 0;
+       for (int k=0; k<reducedngb.size(); k++)
+         if (reducedngb[k] == truengb[j])
+           count++;
 
-      // If the true neighbour is not in the list, or included multiple times,
-      // then output to screen and terminate program
-      if (count != 1) {
-        for (int k=0; k<ndim; k++) dr[k] = partdata[truengb[j]].r[k] - partdata[i].r[k];
-        drsqd = DotProduct(dr,dr,ndim);
-        cout << "Could not find neighbour " << j << "   " << truengb[j] << "     " << i
-            << "      " << sqrt(drsqd)/sqrt(partdata[i].hrangesqd) << "     "
-            << sqrt(drsqd)/sqrt(partdata[j].hrangesqd) << "    "
-            << partdata[truengb[j]].r[0] << "   type : "
-            << partdata[truengb[j]].ptype << endl;
-        invalid_flag++;
-      }
+       // If the true neighbour is not in the list, or included multiple times,
+       // then output to screen and terminate program
+       if (count != 1) {
+         for (int k=0; k<ndim; k++) dr[k] = partdata[truengb[j]].r[k] - partdata[i].r[k];
+         GhostFinder.NearestPeriodicVector(dr);
+         drsqd = DotProduct(dr,dr,ndim);
+         cout << "Could not find neighbour " << j << "   " << truengb[j] << "     " << i
+             << "      " << sqrt(drsqd)/sqrt(partdata[i].hrangesqd) << "     "
+             << sqrt(drsqd)/sqrt(partdata[j].hrangesqd) << "    "
+             << partdata[truengb[j]].r[0] << "   type : "
+             << partdata[truengb[j]].ptype << endl;
+         invalid_flag++;
+       }
 
-    }
-    // If the true neighbour is not in the list, or included multiple times,
-    // then output to screen and terminate program
-    if (invalid_flag) {
-      cout << "Problem with neighbour lists : " << i << "  " << j << "   "
-          <<  invalid_flag << "    " << partdata[i].r[0] << "   " << partdata[i].h << endl
-          << "Nneib : " << neib_idx.size() << "   Ntrueneib : " << truengb.size()
-          << "    searchmode : " << searchmode << endl;
-      InsertionSort(neib_idx.size(), &neib_idx[0]);
-      PrintArray("neiblist     : ",neib_idx.size(), &neib_idx[0]);
-      PrintArray("trueneiblist : ",truengb.size() , &truengb[0]);
-      string message = "Problem with neighbour lists in tree search";
-      ExceptionHandler::getIstance().raise(message);
-    }
-  }
-
+     }
+     // If the true neighbour is not in the list, or included multiple times,
+     // then output to screen and terminate program
+     if (invalid_flag) {
+       cout << "Problem with neighbour lists (" << listtype << ") : " << i << "  " << j << "   "
+           <<  invalid_flag << "    " << partdata[i].r[0] << "   " << partdata[i].h << endl
+           << "Nneib : " << neib_idx.size() << "   Ntrueneib : " << truengb.size()
+           << "    searchmode : " << searchmode << endl;
+       InsertionSort(reducedngb.size(), &reducedngb[0]);
+       PrintArray("neiblist     : ",reducedngb.size(), &reducedngb[0]);
+       PrintArray("trueneiblist : ",truengb.size() , &truengb[0]);
+       string message = "Problem with neighbour lists in tree search";
+       ExceptionHandler::getIstance().raise(message);
+     }
+   }
 };
 
 

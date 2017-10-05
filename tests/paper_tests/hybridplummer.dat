@@ -1,0 +1,92 @@
+#-------------------------------------------------------------
+# Plummer sphere initial conditions
+#-------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = HYBRIDPLUMMER1
+Select SPH simulation                       : sim = gradhsph
+Select shocktube initial conditions         : ic = plummer
+Dimensionality of cube                      : ndim = 3
+Total mass of Plummer sphere                : mplummer = 1.0
+Radius of Plummer core                      : rplummer = 1.0
+Maximum radius of cloud                     : radius = 10.0
+Softening radius of star                    : rstar = 0.01
+Fraction of mass within stars               : starfrac = 0.5
+Fraction of mass within gas                 : gasfrac = 0.5
+No. of SPH particles                        : Nhydro = 1000
+No. of star particles                       : Nstar = 100
+Perform dimensionless simulation            : dimensionless = 1
+Change to COM frame                         : com_frame = 1
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 98.0
+Time of first snapshot                      : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.2
+Screen output frequency (in no. of steps)   : noutputstep = 4096
+Diagnostic output frequency                 : ndiagstep = 2048
+No. of steps between restart files          : nrestartstep = 8196
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing length iteration tolerance    : h_converge = 0.001
+SPH smoothing kernel choice                 : kernel = m4
+Tabulate SPH kernel                         : tabulated_kernel = 0
+Switch on self-gravity                      : self_gravity = 1
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#-------------------------
+# N-body algorithm options
+#-------------------------
+Star particle integration option            : nbody = hermite4ts
+Use softening?                              : nbody_softening = 1
+Identify and integrate sub-systems?         : sub_systems = 0
+Grav. energy fraction for sub-systems       : gpefrac = 0.02
+No. of P(EC)^n iteration steps              : Npec = 2
+Sub-system integration scheme               : sub_system_integration = hermite4ts
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.2
+SPH acceleration condition multiplier       : accel_mult = 0.4
+SPH energy equation timestep multiplier     : energy_mult = 0.3
+N-body timestep multiplier                  : nbody_mult = 0.15
+Sub-system timestep multiplier              : subsys_mult = 0.1
+Set all SPH particles to same level         : sph_single_timestep = 1
+No. of block timestep levels                : Nlevels = 6
+
+
+#-------------
+# Tree options
+#-------------
+SPH neighbour search algorithm              : neib_search = kdtree
+No. of particles in leaf cell               : Nleafmax = 16
+Tree opening angle (squared)                : thetamaxsqd = 0.1

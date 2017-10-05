@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <vector>
 #include "Precision.h"
 #include "Exception.h"
 #include "SphNeighbourSearch.h"
@@ -85,7 +86,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 {
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;		   // List of active tree cells
-
+  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -93,23 +94,17 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   debug2("[GradhSphTree::UpdateAllSphProperties]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_PROPERTIES");
 
-  int Ntot = sph->Ntot;
-  ParticleType<ndim>* sphdata =
-      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
-
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
 
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata,Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -136,13 +131,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
     int* activelist = activelistbuf[ithread];  // Local array of active particle ids
     int* neiblist = new int[Nneibmax];         // Local array of neighbour particle ids
     int* ptype    = new int[Nneibmax];         // Local array of particle types
-    FLOAT* gpot   = new FLOAT[Nneibmax];       // Local array of particle potentials
-    FLOAT* gpot2  = new FLOAT[Nneibmax];       // Local reduced array of neighbour potentials
-    FLOAT* drsqd  = new FLOAT[Nneibmax];       // Local array of distances (squared)
-    FLOAT* m      = new FLOAT[Nneibmax];       // Local array of particle masses
-    FLOAT* m2     = new FLOAT[Nneibmax];       // Local reduced array of neighbour masses
-    FLOAT* r      = new FLOAT[Nneibmax*ndim];  // Local array of particle positions
+    vector<typename Sph<ndim>::DensityParticle> ngb;           // Local array of neighbour data
+    vector<typename Sph<ndim>::DensityParticle> ngb2;          // Local array of reduced neighbour data
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
+
+    ngb.resize(Nneibmax) ; ngb2.reserve(Nneibmax);
 
 
     // Loop over all active cells
@@ -177,23 +170,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         // If there are too many neighbours so the buffers are filled,
         // reallocate the arrays and recompute the neighbour lists.
         while (Nneib == -1) {
-          delete[] r;
-          delete[] m2;
-          delete[] m;
-          delete[] drsqd;
-          delete[] gpot2;
-          delete[] gpot;
-          delete[] ptype;
           delete[] neiblist;
           Nneibmax = 2*Nneibmax;
           neiblist = new int[Nneibmax];
-          ptype    = new int[Nneibmax];
-          gpot     = new FLOAT[Nneibmax];
-          gpot2    = new FLOAT[Nneibmax];
-          drsqd    = new FLOAT[Nneibmax];
-          m        = new FLOAT[Nneibmax];
-          m2       = new FLOAT[Nneibmax];
-          r        = new FLOAT[Nneibmax*ndim];
+          ngb.resize(Nneibmax);
+
           Nneib = 0;
           Nneib = tree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
           Nneib = ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,Nneibmax,Nneib,neiblist);
@@ -206,10 +187,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j         = neiblist[jj];
-          gpot[jj]  = sphdata[j].gpot;
-          m[jj]     = sphdata[j].m;
-          ptype[jj] = sphdata[j].ptype;
-          for (k=0; k<ndim; k++) r[ndim*jj + k] = sphdata[j].r[k];
+          ngb[jj] = typename Sph<ndim>::DensityParticle(sphdata[j]) ;
         }
 
         // Loop over all active particles in the cell
@@ -220,24 +198,22 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
           // Set gather range as current h multiplied by some tolerance factor
           hrangesqd = kernrangesqd*hmax*hmax;
-          Ngather = 0;
+          ngb2.resize(0);
 
           // Compute distance (squared) to all
           //---------------------------------------------------------------------------------------
           for (jj=0; jj<Nneib; jj++) {
 
             // Only include particles of appropriate types in density calculation
-            if (!sph->types[activepart[j].ptype].hmask[ptype[jj]]) continue ;
+            if (!sph->types[activepart[j].ptype].hmask[ngb[jj].ptype]) continue;
 
-            for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
+
+            for (k=0; k<ndim; k++) draux[k] = ngb[jj].r[k] - rp[k];
             drsqdaux = DotProduct(draux,draux,ndim) + small_number;
 
             // Record distance squared and masses for all potential gather neighbours
             if (drsqdaux <= hrangesqd) {
-              gpot[Ngather]  = gpot[jj];
-              drsqd[Ngather] = drsqdaux;
-              m2[Ngather]    = m[jj];
-              Ngather++;
+              ngb2.push_back(ngb[jj]) ;
             }
 
           }
@@ -249,7 +225,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
-          okflag = sph->ComputeH(i, Ngather, hmax, m2, mu2, drsqd, gpot, activepart[j], nbody);
+          okflag = sph->ComputeH(activepart[j], hmax, ngb2, nbody);
 
           // If h-computation is invalid, then break from loop and recompute
           // larger neighbour lists
@@ -272,13 +248,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
     //=============================================================================================
 
     // Free-up all memory
-    delete[] r;
-    delete[] m2;
-    delete[] m;
-    delete[] drsqd;
-    delete[] gpot2;
-    delete[] gpot;
-    delete[] ptype;
     delete[] neiblist;
 
   }
@@ -288,7 +257,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 #ifdef MPI_PARALLEL
   twork = timing->RunningTime() - twork;
   int Nactivetot=0;
-  tree->AddWorkCost(celllist, twork, Nactivetot) ;
+  tree->AddWorkCost(celllist, twork, Nactivetot);
 #ifdef OUTPUT_ALL
   cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
@@ -314,8 +283,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
 {
   int cactive;                             // No. of active cells
-  vector<TreeCellBase<ndim> > celllist;                // List of active tree cells
-
+  vector<TreeCellBase<ndim> > celllist;    // List of active tree cells
+  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -324,20 +293,16 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_HYDRO_FORCES");
 
   // Make sure we have enough neibmanagers
-  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t)
+  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t) {
     neibmanagerbufhydro.push_back(NeighbourManagerHydro(sph, simbox));
-
-  ParticleType<ndim>* sphdata =
-      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
-
+  }
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
+
 
   // Set-up all OMP threads
   //===============================================================================================
@@ -386,16 +351,19 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
       for (int j=0; j<Nactive; j++) {
-        const int i = activelist[j];
+        bool do_hydro = sph->types[activepart[j].ptype].hydro_forces;
 
-        bool do_hydro = sph->types[activepart[j].ptype].hydro_forces ;
-        if (do_hydro){
+        if (do_hydro) {
           Typemask hydromask  = sph->types[activepart[j].ptype].hydromask;
-
-          const bool do_pair_once=false;
-
+          const bool do_pair_once = false;
           NeighbourList<HydroParticle> neiblist =
               neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
+
+#if defined(VERIFY_ALL)
+          neibmanager.VerifyNeighbourList(activelist[j], sph->Nhydro, sphdata, "all");
+          neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, sph->Nhydro,
+                                                 sphdata, hydromask, "all");
+#endif
 
           // Compute all neighbour contributions to hydro forces
           typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
@@ -407,11 +375,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
       // Update levelneib for neighbours
       const int Nneib_cell = neibmanager.GetNumAllNeib();
       for (int jj=0; jj<Nneib_cell; jj++) {
-    	std::pair<int,HydroParticle*> neighbour=neibmanager.GetNeibI(jj);
-    	const int i=neighbour.first;
-    	HydroParticle& neibpart=*(neighbour.second);
-    	levelneib[i]=max(levelneib[i],neibpart.levelneib);
-       }
+        std::pair<int,HydroParticle*> neighbour=neibmanager.GetNeibI(jj);
+        const int i=neighbour.first;
+        HydroParticle& neibpart=*(neighbour.second);
+        levelneib[i]=max(levelneib[i],neibpart.levelneib);
+      }
 
 
       // Compute all star forces for active particles
@@ -427,7 +395,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
       // Add all active particles contributions to main array
       for (int j=0; j<Nactive; j++) {
         const int i = activelist[j];
-        for (int k=0; k<ndim; k++) sphdata[i].a[k] += activepart[j].a[k];
+        for (int k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].a[k];
+        for (int k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].atree[k];
+        for (int k=0; k<ndim; k++) sphdata[i].atree[k] += activepart[j].atree[k];
         sphdata[i].gpot     += activepart[j].gpot;
         sphdata[i].dudt     += activepart[j].dudt;
         sphdata[i].dalphadt += activepart[j].dalphadt;
@@ -479,7 +449,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 {
   int cactive;                         // No. of active cells
   vector<TreeCellBase<ndim> > celllist;            // List of active cells
-
+  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
 #ifdef MPI_PARALLEL
   double twork = timing->RunningTime();  // Start time (for load balancing)
 #endif
@@ -488,19 +458,15 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_ALL_FORCES");
 
   // Make sure we have enough neibmanagers
-  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t)
+  for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t) {
     neibmanagerbufhydro.push_back(NeighbourManagerHydro(sph, simbox));
-
-  ParticleType<ndim>* sphdata =
-      reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
+  }
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) {
-    return;
-  }
+  if (cactive == 0) return;
 
 
   // Set-up all OMP threads
@@ -559,22 +525,20 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
       for (int j=0; j<Nactive; j++) {
-        const int i = activelist[j];
-
         const bool do_grav  = sph->types[activepart[j].ptype].self_gravity ;
         Typemask hydromask = sph->types[activepart[j].ptype].hydromask ;
-
         GravityNeighbourLists<HydroParticle> neiblists =
             neibmanager.GetParticleNeibGravity(activepart[j],hydromask);
-
 
         // Compute forces between SPH neighbours (hydro and gravity)
         typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
 
-        if (neiblists.neiblist.size() > 0)
+        if (neiblists.neiblist.size() > 0) {
           method->ComputeSphHydroGravForces(activepart[j], neiblists.neiblist);
+        }
 
-        if (do_grav){
+        if (do_grav) {
+
           // Compute soften grav forces between non-SPH neighbours (hydro and gravity)
           method->ComputeSphGravForces(activepart[j], neiblists.smooth_gravlist);
 
@@ -592,13 +556,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
          }
 
           // Add the periodic correction force for SPH and direct-sum neighbours
-          if (simbox.PeriodicGravity){
-            int Ntotneib = neibmanager.GetNumAllNeib() ;
+          if (simbox.PeriodicGravity) {
+            int Ntotneib = neibmanager.GetNumAllNeib();
 
             for (int jj=0; jj< Ntotneib; jj++) {
-
-        	  if (!gravmask[neibmanager[jj].ptype]) continue ;
-
+              if (!gravmask[neibmanager[jj].ptype]) continue;
               FLOAT draux[ndim];
               for (int k=0; k<ndim; k++) draux[k] = neibmanager[jj].r[k] - activepart[j].r[k];
               ewald->CalculatePeriodicCorrection(neibmanager[jj].m, draux, aperiodic, potperiodic);
@@ -634,11 +596,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
       // Compute all star forces for active particles
       if (nbody->Nnbody > 0) {
-		  for (int j=0; j<Nactive; j++) {
-			  if (activelist[j] < sph->Nhydro) {
-				  sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
-			  }
-		  }
+        for (int j=0; j<Nactive; j++) {
+          if (activelist[j] < sph->Nhydro) {
+            sph->ComputeStarGravForces(nbody->Nnbody, nbody->nbodydata, activepart[j]);
+          }
+        }
       }
 
       // Add all active particles contributions to main array
@@ -656,11 +618,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       // Update levelneib for neighbours
       const int Nneib_cell = neibmanager.GetNumAllNeib();
       for (int jj=0; jj<Nneib_cell; jj++) {
-    	std::pair<int,HydroParticle*> neighbour=neibmanager.GetNeibI(jj);
-    	const int i=neighbour.first;
-    	HydroParticle& neibpart=*(neighbour.second);
-    	levelneib[i]=max(levelneib[i],neibpart.levelneib);
-       }
+        std::pair<int,HydroParticle*> neighbour=neibmanager.GetNeibI(jj);
+        const int i=neighbour.first;
+        HydroParticle& neibpart=*(neighbour.second);
+        levelneib[i]=max(levelneib[i],neibpart.levelneib);
+      }
 
     }
     //=============================================================================================
@@ -695,4 +657,3 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 template class GradhSphTree<1,GradhSphParticle>;
 template class GradhSphTree<2,GradhSphParticle>;
 template class GradhSphTree<3,GradhSphParticle>;
-

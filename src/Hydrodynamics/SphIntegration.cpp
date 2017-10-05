@@ -27,9 +27,10 @@
 #include <cstdlib>
 #include <math.h>
 #include <iostream>
+
+#include "../Headers/Integration.h"
 #include "Sph.h"
 #include "SmoothingKernel.h"
-#include "SphIntegration.h"
 #include "Particle.h"
 #include "EOS.h"
 #include "InlineFuncs.h"
@@ -78,13 +79,16 @@ SphIntegration<ndim>::~SphIntegration()
 //=================================================================================================
 template <int ndim>
 DOUBLE SphIntegration<ndim>::Timestep
- (SphParticle<ndim> &part,             ///< [inout] Reference to SPH particle
-  Sph<ndim> *sph)                      ///< [in] Pointer to main SPH object
+ (Particle<ndim> &partaux,                         ///< [inout] Reference to SPH particle
+  Hydrodynamics<ndim> *hydro)                      ///< [in] Pointer to main SPH object
 {
   DOUBLE timestep;                     // Minimum value of particle timesteps
   //DOUBLE adotmag;                      // Magnitude of particle jerk
   DOUBLE amag;                         // Magnitude of particle acceleration
 
+
+  Sph<ndim>* sph = reinterpret_cast<Sph<ndim>*>(hydro) ;
+  SphParticle<ndim>& part= *reinterpret_cast<SphParticle<ndim>*>(&partaux);
 
   // Courant condition.  If hydro forces are not used, compute the
   // timescale using only div_v, i.e. the compression timescale.
@@ -103,125 +107,31 @@ DOUBLE SphIntegration<ndim>::Timestep
     timestep = courant_mult*part.h/(part.h*fabs(part.div_v) + small_number_dp);
   }
 
-  //cout << part.iorig << " " << part.ptype << ", "
-  //		  << part.h << " " <<part.h_dust << " " << part.sound << " " << part.div_v << endl ;
 
-  //cout << timestep << " " ;
   // Acceleration condition
   amag = sqrt(DotProduct(part.a, part.a, ndim));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
 
-  //cout << timestep << " " ;
-
 
   // Explicit energy integration timestep condition
-  if (gas_eos == energy_eqn) {
-	  if (part.ptype == gas_type)
-        timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
+  if (gas_eos == energy_eqn && part.ptype == gas_type) {
+    timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
   }
 
-  //cout << timestep << endl;
-  //cout << "\t" << amag << endl ;
 
-  // If stars are included, calculate the timestep due to the jerk
-  //adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
-  //timestep = min(timestep, accel_mult*amag/(adotmag + small_number_dp));
-
-  if (timestep > 1.0e20) {
+  if (timestep > 1.0e20 || timestep <= 0.0) {
     cout << "Timestep problem : " << timestep << "   " << amag << "   " << part.h << "    "
          << part.sound << "    " << part.h*fabs(part.div_v) << endl;
+    cout << "tcourant : " << courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp)
+         << "    taccel : " << accel_mult*sqrt(part.h/(amag + small_number_dp))
+         << "    tenergy : " << energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)) << endl;
     ExceptionHandler::getIstance().raise("Error : Hydro timestep too large");
   }
 
-  assert(!(isnan(amag)) && !(isinf(amag)));
-  assert(!(isnan(timestep)) && !(isinf(timestep)));
+  assert(isfinite(amag) && isfinite(timestep));
 
   return timestep;
 }
-
-
-
-//=================================================================================================
-//  SphIntegration::CheckBoundaries
-/// Check all particles to see if any have crossed the simulation bounding box.
-/// If so, then move the particles to their new location on the other side of the periodic box.
-//=================================================================================================
-template <int ndim>
-void SphIntegration<ndim>::CheckBoundaries
- (DomainBox<ndim> &simbox,             ///< Domain box object
-  Sph<ndim> *sph)                      ///< Pointer to SPH object
-{
-  debug2("[SphIntegration::CheckBoundaries]");
-
-  // If all boundaries are open, immediately return to main loop
-  if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
-      simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
-      simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary) return;
-
-  // Loop over all particles and check if any lie outside the periodic box.
-  // If so, then re-position with periodic wrapping.
-  //===============================================================================================
-#pragma omp parallel for default(none) shared(simbox,sph)
-  for (int i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-
-    // --------------------------------------------------------------------------------------------
-    for (int k=0; k<ndim; k++) {
-
-      // Check if particle has crossed LHS boundary
-      //-------------------------------------------------------------------------------------------
-      if (part.r[k] < simbox.min[k]) {
-
-        // Check if periodic boundary
-        if (simbox.boundary_lhs[k] == periodicBoundary) {
-          part.r[k]  += simbox.size[k];
-          part.r0[k] += simbox.size[k];
-        }
-
-        // Check if wall or mirror boundary
-        if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
-          part.r[k]  = (FLOAT) 2.0*simbox.min[k] - part.r[k];
-          part.r0[k] = (FLOAT) 2.0*simbox.min[k] - part.r0[k];
-          part.v[k]  = -part.v[k];
-          part.v0[k] = -part.v0[k];
-          part.a[k]  = -part.a[k];
-          part.a0[k] = -part.a0[k];
-        }
-
-      }
-
-      // Check if particle has crossed RHS boundary
-      //-------------------------------------------------------------------------------------------
-      if (part.r[k] > simbox.max[k]) {
-
-        // Check if periodic boundary
-        if (simbox.boundary_rhs[k] == periodicBoundary) {
-          part.r[k]  -= simbox.size[k];
-          part.r0[k] -= simbox.size[k];
-        }
-
-        // Check if wall or mirror boundary
-        if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
-          part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
-          part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
-          part.v[k]  = -part.v[k];
-          part.v0[k] = -part.v0[k];
-          part.a[k]  = -part.a[k];
-          part.a0[k] = -part.a0[k];
-        }
-
-      }
-
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-  }
-  //===============================================================================================
-
-  return;
-}
-
 
 
 // Create instances of SphIntegration templates for all dimensions (1,2 and 3)

@@ -32,9 +32,9 @@
 /// Default constructor for perfect gas EOS.  Passes and sets important thermal physics variables.
 //=================================================================================================
 template <int ndim>
-Adiabatic<ndim>::Adiabatic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux):
-  EOS<ndim> (gamma_aux),
-  mu_bar(mu_bar_aux)
+Adiabatic<ndim>::Adiabatic(Parameters* simparams, SimUnits *units):
+  EOS<ndim>(simparams->floatparams["gamma_eos"], simparams->floatparams["gamma_eos"]),
+  mu_bar(simparams->floatparams["mu_bar"])
 {
 }
 

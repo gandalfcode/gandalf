@@ -75,44 +75,58 @@ NbodyHermite6TS<ndim, kernelclass>::~NbodyHermite6TS()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
-(int N,                             ///< Number of stars
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+ (int N,                               ///< Number of stars
+  NbodyParticle<ndim> **star,          ///< Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                        // Star and dimension counters
-  FLOAT a[ndim];                   // Acceleration
-  FLOAT adot[ndim];                // 1st time derivative of accel (jerk)
-  FLOAT afac,bfac;                 // Aux. summation variables
-  FLOAT da[ndim];                  // Relative acceleration
-  FLOAT dr[ndim];                  // Relative position vector
-  FLOAT drdt;                      // Rate of change of distance
-  FLOAT drsqd;                     // Distance squared
-  FLOAT dv[ndim];                  // Relative velocity vector
-  FLOAT invdrmag;                  // 1 / drmag
-  FLOAT invdrsqd;                  // 1 / drsqd
-  FLOAT dvsqd;                     // Velocity squared
+  FLOAT a[ndim];                       // Acceleration
+  FLOAT adot[ndim];                    // 1st time derivative of accel (jerk)
+  FLOAT afac,bfac;                     // Aux. summation variables
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
+  FLOAT da[ndim];                      // Relative acceleration
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT dvsqd;                         // Velocity squared
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
 
   debug2("[NbodyHermite6TS::CalculateDirectGravForces]");
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd, invdrmag, invdrsqd, potperiodic)
+  for (int i=0; i<N; i++) {
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
       invdrmag = 1.0/sqrt(drsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
       star[i]->gpot += star[j]->m*invdrmag;
-      for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
-      for (k=0; k<ndim; k++) star[i]->adot[k] +=
+      for (int k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
+      for (int k=0; k<ndim; k++) star[i]->adot[k] +=
         star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
+        for (int k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        star[i]->gpot += potperiodic;
+      }
 
     }
     //---------------------------------------------------------------------------------------------
@@ -123,32 +137,34 @@ void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
 
   // Loop over all stars a second time to compute 2nd time derivative
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
-    for (k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(a, adot, afac, aperiodic, bfac, da, dr, dr_corr, drdt, drsqd, dv, dvsqd, invdrmag, invdrsqd, potperiodic)
+  for (int i=0; i<N; i++) {
+    if (not star[i]->flags.check(active)) continue;
+    for (int k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-      for (k=0; k<ndim; k++) da[k] = star[j]->a[k] - star[i]->a[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) da[k] = star[j]->a[k] - star[i]->a[k];
       drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
       dvsqd = DotProduct(dv,dv,ndim);
       invdrsqd = 1.0/drsqd;
       invdrmag = sqrt(invdrsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
-      for (k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
-      for (k=0; k<ndim; k++) adot[k] =
+      for (int k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
+      for (int k=0; k<ndim; k++) adot[k] =
         star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
       // Now compute 2nd and 3rd order derivatives
       afac = DotProduct(dv,dr,ndim)*invdrsqd;
       bfac = dvsqd*invdrsqd + afac*afac + DotProduct(da,dr,ndim)*invdrsqd;
 
-      for (k=0; k<ndim; k++) star[i]->a2dot[k] =
+      for (int k=0; k<ndim; k++) star[i]->a2dot[k] =
         star[j]->m*da[k]*invdrsqd*invdrmag - 6.0*afac*adot[k] - 3.0*bfac*a[k];
 
     }
@@ -169,34 +185,41 @@ void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
-(int N,                             ///< [in] Number of stars
- NbodyParticle<ndim> **star)        ///< [inout] Array of stars/systems
+ (int N,                               ///< [in] Number of stars
+  NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                        // Star and dimension counters
-  FLOAT dr[ndim];                  // Relative position vector
-  FLOAT drdt;                      // Rate of change of distance
-  FLOAT drmag;                     // Distance
-  FLOAT drsqd;                     // Distance squared
-  FLOAT dv[ndim];                  // Relative velocity vector
-  FLOAT invdrmag;                  // 1 / drmag
-  FLOAT invhmean;                  // 1 / mean of star smoothing lengths
-  FLOAT paux;                      // Common force factor
-  FLOAT wmean;                     // Mean-h kernel factor
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT invhmean;                      // 1 / mean of star smoothing lengths
+  FLOAT paux;                          // Common force factor
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
+  FLOAT wmean;                         // Mean-h kernel factor
 
   debug2("[NbodyHermite6TS::CalculateDirectSmoothedGravForces]");
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
+  for (int i=0; i<N; i++) {
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
-    for (j=0; j<N; j++) {
+    for (int j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (int k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (int k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd = DotProduct(dr,dr,ndim);
       drmag = sqrt(drsqd);
       invdrmag = 1.0/sqrt(drsqd);
@@ -207,9 +230,16 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
       // Add contribution to main star array
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
-      for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
-      for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
+      for (int k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
+      for (int k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] -
         3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*star[j]->m*drdt*wmean*invdrmag*dr[k];
+
+      // Add periodic gravity contribution (if activated)
+      if (simbox.PeriodicGravity) {
+        ewald->CalculatePeriodicCorrection(star[j]->m, dr, aperiodic, potperiodic);
+        for (int k=0; k<ndim; k++) star[i]->a[k] += aperiodic[k];
+        star[i]->gpot += potperiodic;
+      }
 
     }
     //---------------------------------------------------------------------------------------------
@@ -233,18 +263,23 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
   int Ndirect,                         ///< [in] ..
   int *hydrolist,                      ///< [in] ..
   int *directlist,                     ///< [in] ..
-  Hydrodynamics<ndim> *hydro)          ///< [in] Hydrodynamics object
+  Hydrodynamics<ndim> *hydro,          ///< [in] Hydrodynamics object
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int j,jj,k;                       // Star and dimension counters
-  FLOAT dr[ndim];                  // Relative position vector
-  FLOAT drmag;                     // Distance
-  FLOAT drsqd;                     // Distance squared
-  FLOAT drdt;                      // Rate of change of distance
-  FLOAT dv[ndim];                  // Relative velocity vector
-  FLOAT invhmean;                  // 1 / hmean
-  FLOAT invdrmag;                  // 1 / drmag
-  FLOAT paux;                      // Aux. force variable
-  FLOAT wkern;                     // SPH kernel value
+  int j,jj,k;                          // Star and dimension counters
+  FLOAT aperiodic[ndim];               // Ewald periodic grav. accel correction
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invhmean;                      // 1 / hmean
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT paux;                          // Aux. force variable
+  FLOAT potperiodic;                   // Periodic correction for grav. potential
+  FLOAT wkern;                         // SPH kernel value
 
   debug2("[NbodyHermite6TS::CalculateDirectHydroForces]");
 
@@ -258,20 +293,27 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    drmag = sqrt(drsqd);
+    NearestPeriodicVector(simbox, dr, dr_corr);
+    drsqd    = DotProduct(dr,dr,ndim);
+    drmag    = sqrt(drsqd);
     invdrmag = 1.0/drmag;
     invhmean = 2.0/(star->h + part.h);
-    drdt = DotProduct(dv,dr,ndim)*invdrmag;
-
-    paux = part.m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
-    wkern = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
+    drdt     = DotProduct(dv,dr,ndim)*invdrmag;
+    paux     = part.m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
+    wkern    = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
 
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
     for (k=0; k<ndim; k++) star->adot[k] += paux*dv[k] -
       3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*part.m*drdt*wkern*invdrmag*dr[k];
     star->gpot += part.m*invhmean*kern.wpot(drmag*invhmean);
+
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(part.m, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+      star->gpot += potperiodic;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -287,6 +329,7 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];
+    NearestPeriodicVector(simbox, dr, dr_corr);
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
@@ -297,6 +340,13 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
     for (k=0; k<ndim; k++) star->adot[k] +=
       part.m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
     star->gpot += part.m*invdrmag;
+
+    // Add periodic gravity contribution (if activated)
+    if (simbox.PeriodicGravity) {
+      ewald->CalculatePeriodicCorrection(part.m, dr, aperiodic, potperiodic);
+      for (k=0; k<ndim; k++) star->a[k] += aperiodic[k];
+      star->gpot += potperiodic;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -314,33 +364,35 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
-(int N,                             ///< Number of stars
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+ (int N,                               ///< Number of stars
+  NbodyParticle<ndim> **star,          ///< Array of stars/systems
+  DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
+  Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
 {
-  int i,j,k;                        // Star and dimension counters
-  FLOAT a[ndim];                   // Acceleration
-  FLOAT adot[ndim];                // 1st time derivative of accel (jerk)
-  FLOAT a2dot[ndim];               // 2nd time deriivative of acceleration
-  FLOAT afac,bfac,cfac;            // Aux. summation variables
-  FLOAT da[ndim];                  // Relative acceleration
-  FLOAT dadot[ndim];               // Relative jerk
-  FLOAT dr[ndim];                  // Relative position vector
-  FLOAT drdt;                      // Rate of change of distance
-  FLOAT drsqd;                     // Distance squared
-  FLOAT dv[ndim];                  // Relative velocity vector
-  FLOAT invdrmag;                  // 1 / drmag
-  FLOAT invdrsqd;                  // 1 / drsqd
-  FLOAT dvsqd;                     // Velocity squared
+  int i,j,k;                           // Star and dimension counters
+  FLOAT a[ndim];                       // Acceleration
+  FLOAT adot[ndim];                    // 1st time derivative of accel (jerk)
+  FLOAT a2dot[ndim];                   // 2nd time deriivative of acceleration
+  FLOAT afac,bfac,cfac;                // Aux. summation variables
+  FLOAT da[ndim];                      // Relative acceleration
+  FLOAT dadot[ndim];                   // Relative jerk
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic corrected position vector
+  FLOAT drdt;                          // Rate of change of distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT dvsqd;                         // Velocity squared
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT invdrsqd;                      // 1 / drsqd
 
-  debug2("[NbodyHermite6TS::CalculateAllStartupQuantities]");
-
+  debug2("[NbodyHermite4::CalculateAllStartupQuantities]");
 
   // Loop over all stars
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
 
-    for (k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
-    for (k=0; k<ndim; k++) star[i]->a3dot[k] = 0.0;
+    for (k=0; k<ndim; k++) star[i]->a2dot[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) star[i]->a3dot[k] = (FLOAT) 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -351,6 +403,7 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
       for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       for (k=0; k<ndim; k++) da[k] = star[j]->a[k] - star[i]->a[k];
       for (k=0; k<ndim; k++) dadot[k] = star[j]->adot[k] - star[i]->adot[k];
+      NearestPeriodicVector(simbox, dr, dr_corr);
       drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
       dvsqd = DotProduct(dv,dv,ndim);
       invdrsqd = 1.0/drsqd;
@@ -377,6 +430,7 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
 
   }
   //-----------------------------------------------------------------------------------------------
+
 
   return;
 }
@@ -415,21 +469,21 @@ void NbodyHermite6TS<ndim, kernelclass>::AdvanceParticles
 
     // Compute time since beginning of step
     nstep = star[i]->nstep;
-    dn = n - star[i]->nlast;
+    dn    = n - star[i]->nlast;
     //dt = timestep*(FLOAT) dn;
-    dt = t - star[i]->tlast;
-    dt2 = dt*dt;
+    dt    = t - star[i]->tlast;
+    dt2   = dt*dt;
 
     // Advance positions to third order and velocities to second order
     for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] + star[i]->v0[k]*dt +
-      0.5*star[i]->a0[k]*dt2 + onesixth_dp*star[i]->adot0[k]*dt2*dt +
-      0.5*onetwelfth_dp*star[i]->a2dot0[k]*dt2*dt2;
+      (FLOAT) 0.5*star[i]->a0[k]*dt2 + onesixth_dp*star[i]->adot0[k]*dt2*dt +
+      (FLOAT) 0.5*onetwelfth_dp*star[i]->a2dot0[k]*dt2*dt2;
     for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a0[k]*dt +
-      0.5*star[i]->adot0[k]*dt2 + onesixth_dp*star[i]->a2dot0[k]*dt2*dt;
+      (FLOAT) 0.5*star[i]->adot0[k]*dt2 + onesixth_dp*star[i]->a2dot0[k]*dt2*dt;
 
     // If at end of step, set system particle as active
-    if (dn == nstep) star[i]->active = true;
-    else star[i]->active = false;
+    if (dn == nstep) star[i]->flags.set(active);
+    else star[i]->flags.unset(active);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -528,21 +582,17 @@ void NbodyHermite6TS<ndim, kernelclass>::EndTimestep
  FLOAT timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
 
   debug2("[NbodyHermite6TS::EndTimestep]");
 
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
 
     // If at end of the current step, set quantites for start of new step
-    if (dn == nstep) {
+    if (star[i]->flags.check(end_timestep)) {
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
@@ -550,9 +600,12 @@ void NbodyHermite6TS<ndim, kernelclass>::EndTimestep
       for (k=0; k<ndim; k++) star[i]->a2dot0[k] = star[i]->a2dot[k];
       for (k=0; k<ndim; k++) star[i]->apert[k] = 0.0;
       for (k=0; k<ndim; k++) star[i]->adotpert[k] = 0.0;
-      star[i]->active = false;
       star[i]->nlast = n;
       star[i]->tlast = t;
+      star[i]->dt = star[i]->dt_next ;
+      star[i]->dt_next = 0 ;
+      star[i]->flags.unset(active);
+      star[i]->flags.unset(end_timestep);
     }
 
   }
