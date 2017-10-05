@@ -563,7 +563,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         };
 
         // Normalise all cell values
-        if (cell.N > 0) {
+        if (cell.m > 0) {
           for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
           for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
           cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;

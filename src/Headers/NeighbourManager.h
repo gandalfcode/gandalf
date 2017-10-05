@@ -201,6 +201,7 @@ class NeighbourManager : public NeighbourManagerDim<ndim> {
 private:
   int _NPeriodicGhosts;
   int _NCellDirectNeib;
+  int _NNonInteract;
   vector<int> neiblist;
   vector<int> directlist;
   vector<int> neib_idx;
@@ -233,7 +234,7 @@ public:
   using NeighbourManagerDim<ndim>::gravcell;
 
   NeighbourManager(const Hydrodynamics<ndim>* hydro, const DomainBox<ndim>& domain)
-  : _NPeriodicGhosts(0), _NCellDirectNeib(0),
+  : _NPeriodicGhosts(0), _NCellDirectNeib(0), _NNonInteract(0),
     _domain(&domain),
     _types(&(hydro->types)),
     _kernrange(hydro->kernp->kernrange)
@@ -241,7 +242,7 @@ public:
 
   NeighbourManager(const ParticleTypeRegister& types, double kernrange,
       const DomainBox<ndim>& domain)
-  : _NPeriodicGhosts(0), _NCellDirectNeib(0),
+  : _NPeriodicGhosts(0), _NCellDirectNeib(0), _NNonInteract(0),
     _domain(&domain),
     _types(&types),
     _kernrange(kernrange)
@@ -370,7 +371,8 @@ public:
    {
     TrimNeighbourLists<InParticleType,_false_type,_false_type>(p, hydromask, p.hrangesqd, true);
 
-    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
+    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()+_NNonInteract) ==
+                  GetNumAllNeib());
 
 
     typedef typename GravityNeighbourLists<ParticleType>::DirectType DirectType ;
@@ -525,6 +527,7 @@ private:
     smoothgravlist.clear();
     // Particles that are already in the directlist stay there; we just add the ones that were demoted
     directlist.resize(_NCellDirectNeib);
+    _NNonInteract = 0;
 
     // Go through the hydro neighbour candidates and check the distance. The ones that are not real neighbours
     // are demoted to the direct list
@@ -547,14 +550,24 @@ private:
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
       if (drsqd >= hrangesqdi && !_scatter_overlap(neibpart, drsqd, 0, gather_only())) {
-        if (keep_grav && gravmask[neibpart.ptype]) directlist.push_back(i);
+        if (keep_grav) {
+          if(gravmask[neibpart.ptype]) {
+            directlist.push_back(i);
+          } else {
+            _NNonInteract++;
+          }
+        }
       }
       else {
         if (hydromask[neibpart.ptype]){
           culled_neiblist.push_back(i);
         }
-        else if (keep_grav && gravmask[neibpart.ptype]) {
-          smoothgravlist.push_back(i);
+        else if (keep_grav) {
+          if (gravmask[neibpart.ptype]) {
+            smoothgravlist.push_back(i);
+          } else {
+            _NNonInteract++;
+          }
         }
       }
     }

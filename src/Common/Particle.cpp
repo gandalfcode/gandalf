@@ -37,6 +37,7 @@ ParticleTypeRegister::ParticleTypeRegister(Parameters* sim_params) {
   }
 
   const bool hydro_forces = sim_params->intparams["hydro_forces"];
+  const bool dust_gravity = sim_params->stringparams["dust_forces"] == "full_twofluid";
 
   // Set flags for gas particle type
   //-----------------------------------------------------------------------------------------------
@@ -65,6 +66,6 @@ ParticleTypeRegister::ParticleTypeRegister(Parameters* sim_params) {
   //----------------------------------------------------------------------------------------------
   gravmask[gas_type]  = true;
   gravmask[cdm_type]  = true;
-  gravmask[dust_type] = true;
+  gravmask[dust_type] = dust_gravity;
 
 }

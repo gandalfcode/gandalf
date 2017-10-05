@@ -212,8 +212,8 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
 
     // Compute mass-loss moments for gravitational correction terms
     for (k=0; k<ndim; k++) {
-      part.rdmdt[k]        += (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim);
-      neibpart[j].rdmdt[k] -= (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim);
+      part.rdmdt[k]        -= (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim) * dt;
+      neibpart[j].rdmdt[k] += (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim) * dt;
     }
   }
   //-----------------------------------------------------------------------------------------------

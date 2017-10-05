@@ -562,21 +562,20 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
     // Add all buffers back to main arrays
 #pragma omp for schedule(static)
-      for (i=0; i<Ntot; i++) {
-	for (int ithread=0; ithread<Nthreads; ithread++) {
+    for (i=0; i<Ntot; i++) {
+      for (int ithread=0; ithread<Nthreads; ithread++) {
         if (mfvdata[i].flags.check(active)) {
-		  for (int k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBufferGlob[ithread][i][k];
-		  for (int k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBufferGlob[ithread][i][k];
-		}
-		for (int k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBufferGlob[ithread][i][k];
-	}
+          for (int k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBufferGlob[ithread][i][k];
+        }
+        for (int k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBufferGlob[ithread][i][k];
+        for (int k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBufferGlob[ithread][i][k];
       }
-
+    }
+    
     delete[] rdmdtBuffer;
     delete[] fluxBuffer;
     delete[] dQBuffer;
-
-
+    
   }
   //===============================================================================================
 

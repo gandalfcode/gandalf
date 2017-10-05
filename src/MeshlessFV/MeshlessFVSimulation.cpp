@@ -191,6 +191,16 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   // Common set-up
   Simulation<ndim>::ProcessParameters();
 
+  if (intparams["self_gravity"] && !intparams["zero_mass_flux"]) {
+    string message = "The meshless scheme only works with self-gravity when MFM is activated";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  if (intparams["sink_particles"] && !intparams["zero_mass_flux"]) {
+    string message = "The meshless scheme only works with sink particles when MFM is activated";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 
 #ifdef MPI_PARALLEL
   if (stringparams["mpi_decomposition"] == "kdtree") {
@@ -399,6 +409,11 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
   debug2("[MeshlessFVSimulation::PostInitialConditionsSetup]");
 
+  if (nbody->Nstar > 0 && !simparams->intparams["zero_mass_flux"]) {
+    string message = "The meshless scheme only works with star particles when MFM is activated";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   // Set iorig
   if (rank == 0) {
     MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
@@ -409,6 +424,13 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       partdata[i].gpot = big_number;
     }
   }
+
+  // Perform initial MPI decomposition
+  //-----------------------------------------------------------------------------------------------
+#ifdef MPI_PARALLEL
+  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams, this->initial_h_provided);
+  this->AllocateParticleMemory();
+#endif
 
   // Copy information from the stars to the sinks
   if (simparams->intparams["sink_particles"]==1) {
@@ -422,12 +444,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
   }
 
-  // Perform initial MPI decomposition
-  //-----------------------------------------------------------------------------------------------
-#ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(mfv, nbody, simparams, this->initial_h_provided);
-  this->AllocateParticleMemory();
-#endif
 
   // Set time variables here (for now)
   nresync = 0;   // DAVID : Need to adapt this for block timesteps

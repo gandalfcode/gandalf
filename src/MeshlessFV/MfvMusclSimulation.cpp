@@ -270,22 +270,15 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       nbody->UpdateStellarProperties();
       //if (extra_sink_output) WriteExtraSinkOutput();
     }
-    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock) {
-      hydro->DeleteDeadParticles();
-      rebuild_tree = true;
-    }
 
-    // Re-build/re-stock tree now particles have moved
-    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
+    // Stock after sink accretion (1, 2 is a hack to force stocking)
+    mfvneib->BuildTree(rebuild_tree, 1, 2, ntreestockstep,timestep, mfv);
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+    mfvneib->BuildGhostTree(rebuild_tree, 1, 2, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
     MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
-    mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+    mfvneib->BuildMpiGhostTree(rebuild_tree, 1, 2, ntreestockstep, timestep, mfv);
 #endif
-
   }
 
 

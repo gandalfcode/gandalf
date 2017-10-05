@@ -838,6 +838,9 @@ FLOAT hmax)                        ///< [in] Maximum smoothing length
 
   int Nneib = ngbs.size();
 
+  if (Nneib == 0)
+    return 0 ;
+  
   // Use a guess to prevent against unknown initial smoothing length
   if (h == 0)
     h = 0.5 * hmax ;

@@ -80,7 +80,7 @@ class DustyWaveSolver(object):
         IC = np.array([self.rho_g*e, self.cs*e, 
                        self.rho_d*e, self.cs*e], dtype='c8')
         integ = ode(f, jac).set_integrator('zvode', method='bdf', 
-                                           rtol=1e-12,atol=1e-12)
+                                           rtol=1e-12,atol=1e-12,nsteps=10000)
         integ.set_initial_value(IC, 0).set_f_params(None).set_jac_params(None)
 
         sol = []

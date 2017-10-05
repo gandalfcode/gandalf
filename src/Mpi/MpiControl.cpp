@@ -414,7 +414,7 @@ template <int ndim>
 void MpiControl<ndim>::UpdateSinksAfterAccretion
  (Sinks<ndim>* sink)                             ///< [inout] Pointer to sinks array
 {
-  const int number_variables = ndim*8 + 11;      // ..
+  const int number_variables = ndim*6 + 14;      // ..
   int local_sinks = 0;                           // ..
   int offset = 0;                                // ..
   Box<ndim> mydomain = this->MyDomain();         // ..
@@ -471,6 +471,7 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
 
     }
   }
+  assert(offset == (number_variables*N_sinks_per_rank[rank]));
   //-----------------------------------------------------------------------------------------------
 
   vector<int> displ(Nmpi);
@@ -549,6 +550,18 @@ namespace MpiReturnParticle {
 
     void update_received(Particle<ndim>& p) const {
       p.m = m ;
+      if (p.m == 0) {
+        p.flags.unset(active);
+        p.flags.set(dead);
+      }
+    }
+
+    void update_received(MeshlessFVParticle<ndim>& p) const {
+      FLOAT dm = p.m - m;
+      p.m -= dm ;
+      p.dQ[MeshlessFV<ndim>::irho] -= dm;
+      for (int k=0; k<ndim; k++) p.dQ[k] -= dm*p.v[k];
+
       if (p.m == 0) {
         p.flags.unset(active);
         p.flags.set(dead);

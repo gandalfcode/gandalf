@@ -39,3 +39,5 @@ If you plan to use the code, it is recommended that you subscribe to the [mailin
 David Hubber [david.hubber@googlemail.com](mailto:david.hubber@googlemail.com)
 
 Giovanni Rosotti [rosotti@ast.cam.ac.uk](mailto:rosotti@ast.cam.ac.uk)
+
+Richard Booth [rab200@ast.cam.ac.uk](mailto:rab200@ast.cam.ac.uk)
