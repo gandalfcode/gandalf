@@ -59,18 +59,17 @@ class SimUnit
   string inunit;                           ///< Input unit string
   string outunit;                          ///< Output unit string
 
-  // Helper functions (to implement)
-  double InputUnits_to_CodeUnits(double input_unit) {};
-  double OutputUnits_to_CodeUnits(double output_unit){};
-  double CodeUnits_to_InputUnits(double code_unit){};
-  double CodeUnits_to_Outputnits(double code_unit){};
 
-  double SI_to_CodeUnits(double SI_unit){};
-  double CGS_to_CodeUnits(double CGS_unit){};
-  double CodeUnits_to_SI(double code_unit){};
-  double CodeUnits_to_CGS(double code_unit){};
+  // Helper functions for converting between code and physical units
+  inline DOUBLE Input_to_CodeUnits(const DOUBLE value) {return (value/inscale);}
+  inline DOUBLE Output_to_CodeUnits(const DOUBLE value) {return (value/outscale);}
+  inline DOUBLE Code_to_InputUnits(const DOUBLE value) {return (value*inscale);}
+  inline DOUBLE Code_to_OutputUnits(const DOUBLE value) {return (value*outscale);}
 
-
+  inline DOUBLE SI_to_CodeUnits(const DOUBLE value) {return (value/(outscale*outSI));}
+  inline DOUBLE CGS_to_CodeUnits(const DOUBLE value) {return (value/(outscale*outcgs));}
+  inline DOUBLE Code_to_SIUnits(const DOUBLE value) {return (value*outscale*outSI);}
+  inline DOUBLE Code_to_CGSUnits(const DOUBLE value) {return (value*outscale*outcgs);}
 
 };
 
