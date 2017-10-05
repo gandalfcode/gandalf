@@ -85,19 +85,6 @@ RadiativeFB<ndim>::~RadiativeFB()
 }
 
 //=================================================================================================
-//  RadiativeFB::Update()
-/// Update any necessary values used for RadiativeFB here. This should be called after the
-/// particle looping calling AmbientTemp().
-//=================================================================================================
-template <int ndim>
-void RadiativeFB<ndim>::Update
-(FLOAT t)
-{
-  if (sink_heating == NULL) return;
-  sink_heating->UpdateSinkAccretion(sinks, t);
-}
-
-//=================================================================================================
 //  RadiativeFB::AmbientTemp()
 /// Combines heating from an external ambient source, a disc enforced temperature profile, and
 /// heating from sinks.
@@ -240,29 +227,6 @@ SinkHeating<ndim>::~SinkHeating()
 }
 
 //=================================================================================================
-//  SinkHeating::UpdateSinkAccretion()
-/// Calculates the accretion onto the sink using the previous mass, current mass and the length
-/// of the timestep.
-//=================================================================================================
-template <int ndim>
-void SinkHeating<ndim>::UpdateSinkAccretion
-(Sinks<ndim> *sinks,
- FLOAT t)
-{
-  FLOAT dt = t - prev_time;
-  if (dt <= 0.0) dt = t;
-
-  for (int i = Ncentral; i < sinks->Nsink; ++i) {
-    SinkParticle<ndim> sink = sinks->sink[i];
-    FLOAT curr_mass = sink.star->m;
-    curr_mdot[i] = (curr_mass - prev_mass[i]) / dt;
-    prev_mass[i] = curr_mass;
-  }
-
-  prev_time = t;
-}
-
-//=================================================================================================
 //  SinkHeating::SinkTemperature()
 /// Returns the sink temperature which is found via it's luminosity, such that:
 /// T = (L / (4 * pi * boltz * R^2))^1/4
@@ -313,7 +277,10 @@ FLOAT SinkHeating<ndim>::AmbientTemp
 
     FLOAT dist      = Distance(part.r, sink.star->r, ndim);
     FLOAT sink_m    = sink.star->m;
-    FLOAT sink_dmdt = curr_mdot[i];
+    // TODO: This is accretion rate onto the sink, not the object at it's center. It may be
+    // better to find accretion rate onto the central object for contributive heating with
+    // smooth accretion turned on.
+    FLOAT sink_dmdt = sink.dmdt;
     FLOAT sink_r    = sink.radius;
 
     // Set source radius and intrinsic luminosity flag depending on sink mass

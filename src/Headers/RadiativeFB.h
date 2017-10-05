@@ -54,7 +54,6 @@ public:
 
   FLOAT AmbientTemp(Particle<ndim> &);
 
-  void Update(FLOAT t);
   void SetSinks(Sinks<ndim> *sinks_aux) { sinks = sinks_aux; }
 
   FLOAT temp_unit;
@@ -118,14 +117,9 @@ public:
   ~SinkHeating();
 
   FLOAT AmbientTemp(Particle<ndim> &, Sinks<ndim> *);
-  void UpdateSinkAccretion(Sinks<ndim> *, FLOAT);
 
   FLOAT SinkTemperature(FLOAT, FLOAT);
   FLOAT SinkLuminosity(FLOAT, FLOAT, FLOAT, FLOAT, int);
-
-  FLOAT prev_time;
-  FLOAT prev_mass[128];
-  FLOAT curr_mdot[128];
 
   int Ncentral;
   FLOAT temp_unit;

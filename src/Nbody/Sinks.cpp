@@ -614,6 +614,9 @@ void Sinks<ndim>::AccreteMassToSinks
       for (k=0; k<ndim; k++) sink[s].star->a[k] *= sink[s].star->m;
       //for (k=0; k<ndim; k++) sink[s].star->adot[k] *= sink[s].star->m;
 
+      // Update sink accretion rate
+      //-------------------------------------------------------------------------------------------
+      sink[s].dmdt = macc / timestep;
 
       // Loop over all neighbouring particles
       //-------------------------------------------------------------------------------------------
