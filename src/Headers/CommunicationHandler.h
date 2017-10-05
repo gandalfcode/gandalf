@@ -71,7 +71,7 @@ class GradhSphCommunicationHandler {
       h_dust = p.h_dust;
       u = p.u;
 
-      pfactor = p.pfactor;
+      pressure = p.pressure;
       alpha = p.alpha;
 
       invomega = p.invomega;
@@ -89,7 +89,7 @@ class GradhSphCommunicationHandler {
     FLOAT h_dust;
     FLOAT u;
 
-    FLOAT pfactor;
+    FLOAT pressure;
     FLOAT alpha;
 
     FLOAT invomega;
@@ -137,7 +137,7 @@ public:
     p2.h_dust = p.h_dust;
     p2.u = p.u;
 
-    p2.pfactor = p.pfactor;
+    p2.pressure = p.pressure;
     p2.alpha = p.alpha;
 
     p2.invomega = p.invomega;
