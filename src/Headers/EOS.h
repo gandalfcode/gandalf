@@ -85,7 +85,6 @@ class EOS
 
   virtual ~EOS() {};
 
-  template<class ParticleType> FLOAT HydroForcesPressure(const ParticleType &part) { return gammam1*part.rho*part.u; }
   virtual FLOAT Pressure(Particle<ndim> &part) { return gammam1*part.rho*part.u; }
   virtual FLOAT EntropicFunction(Particle<ndim> &) = 0;
   virtual FLOAT SoundSpeed(Particle<ndim> &) = 0;

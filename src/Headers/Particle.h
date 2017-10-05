@@ -234,7 +234,7 @@ struct SphParticle : public Particle<ndim>
   using Particle<ndim>::r ;
   using Particle<ndim>::v ;
 
-  FLOAT pfactor;                    ///< Pressure factor in SPH EOM
+  FLOAT pressure;                   ///< Pressure
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
@@ -242,7 +242,7 @@ struct SphParticle : public Particle<ndim>
 
   SphParticle()
   {
-    pfactor  = (FLOAT) 0.0;
+    pressure = (FLOAT) 0.0;
     div_v    = (FLOAT) 0.0;
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
@@ -313,7 +313,7 @@ struct GradhSphParticle : public SphParticle<ndim>
   class HydroForcesParticle {
   public:
 	  HydroForcesParticle(): ptype(gas_type), level(0), levelneib(0), iorig(0), flags(none), r(), v(), a(),
-	  m(0), rho (0), h(0), hrangesqd(0), hfactor(0), pfactor(0), sound(0), u(0), alpha(0), zeta(0)
+	  m(0), rho (0), h(0), hrangesqd(0), hfactor(0), pressure(0), invomega(0), sound(0), u(0), alpha(0), zeta(0)
 	  {};
 
 	  HydroForcesParticle(const GradhSphParticle& p) {
@@ -332,7 +332,8 @@ struct GradhSphParticle : public SphParticle<ndim>
 		  h=p.h;
 		  hrangesqd=p.hrangesqd;
 		  hfactor=p.hfactor;
-		  pfactor=p.pfactor;
+		  pressure=p.pressure;
+      invomega=p.invomega;
 		  sound=p.sound;
 		  u=p.u;
 		  alpha=p.alpha;
@@ -352,7 +353,8 @@ struct GradhSphParticle : public SphParticle<ndim>
 	  FLOAT h;
 	  FLOAT hrangesqd;
 	  FLOAT hfactor;
-	  FLOAT pfactor;
+	  FLOAT pressure;
+    FLOAT invomega;
 	  FLOAT sound;
 	  FLOAT u;
 	  FLOAT alpha;
