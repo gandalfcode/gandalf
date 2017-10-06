@@ -453,7 +453,7 @@ Kernel<ndim>& kern)                                 ///< [in] Kernel
   if (alpha_loc > parti.alpha)
     parti.alpha = alpha_loc ;
 
-  parti.dalphadt = (FLOAT)0.1*parti.sound*(alpha_visc_min - parti.alpha)*invh;
+  parti.dalphadt = (FLOAT)0.1*parti.sound*(max(alpha_visc_min, alpha_loc) - parti.alpha)*invh;
 }
 
 

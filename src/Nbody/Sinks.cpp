@@ -77,9 +77,15 @@ template <int ndim>
 void Sinks<ndim>::AllocateMemory(int N)
 {
   if (N > Nsinkmax) {
-    if (allocated_memory) DeallocateMemory();
+
+     SinkParticle<ndim>* sink_new = new SinkParticle<ndim>[N];
+
+     std::swap(sink, sink_new) ;
+     if (allocated_memory) {
+       std::copy(sink_new,sink_new+Nsinkmax, sink);
+       delete[] sink_new;
+     }
     Nsinkmax = N;
-    sink = new SinkParticle<ndim>[Nsinkmax];
     allocated_memory = true;
   }
 

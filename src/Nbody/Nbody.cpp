@@ -86,13 +86,25 @@ void Nbody<ndim>::AllocateMemory(int N)
   debug2("[Nbody::AllocateMemory]");
 
   if (N > Nstarmax) {
-    if (allocated) DeallocateMemory();
+
+    NbodyParticle<ndim>** nbodydatanew = new NbodyParticle<ndim>*[2*N];
+    StarParticle<ndim>*   stardatanew  = new StarParticle<ndim>[N];
+    SystemParticle<ndim>*  systemnew   = new SystemParticle<ndim>[N];
+
+    std::swap(nbodydatanew, nbodydata);
+    std::swap(stardatanew, stardata);
+    std::swap(systemnew, system);
+    if (allocated)  {
+      std::copy(nbodydatanew, nbodydatanew+Nstarmax, nbodydata);
+      std::copy(stardatanew,  stardatanew+Nstarmax,  stardata);
+      std::copy(systemnew,    systemnew+Nstarmax,    system);
+      delete[] nbodydatanew;
+      delete[] stardatanew;
+      delete[] systemnew;
+    }
     Nstarmax   = N;
     Nsystemmax = N;
     Nnbodymax  = Nstarmax + Nsystemmax;
-    nbodydata  = new NbodyParticle<ndim>*[Nnbodymax];
-    stardata   = new StarParticle<ndim>[Nstarmax];
-    system     = new SystemParticle<ndim>[Nsystemmax];
     allocated  = true;
   }
 
