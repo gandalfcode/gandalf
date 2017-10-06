@@ -593,7 +593,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       }
 
       // Set gpot_hydro (RadWS) before sink contribution
-      // TODO (MERCER): Add gpot contribution from sinks that form
       for (int j=0; j<Nactive; j++) {
         activepart[j].gpot_hydro = activepart[j].gpot;
       }

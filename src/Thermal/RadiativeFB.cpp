@@ -191,12 +191,6 @@ SinkHeating<ndim>::SinkHeating
   denom     = simunits->E.outscale * simunits->E.outSI;
   rad_const = stefboltz * (num * pow(temp_unit, 4.0)) / denom;
 
-  // Calculate gravitational constant in code units
-  num        = pow(simunits->t.outscale * simunits->t.outSI, 2.0) *
-               simunits->m.outscale * simunits->m.outSI;
-  denom      = pow(simunits->r.outscale * simunits->r.outSI, 3.0);
-  grav_const = G_const * (num / denom);
-
   // Calculate L_sun in code units
   denom     = simunits->L.outscale * simunits->L.outSI;
   lsun 	    = L_sun / denom;
@@ -257,7 +251,7 @@ FLOAT SinkHeating<ndim>::SinkLuminosity
  int f_n)
 {
   return f_n * pow(m / msun, 3.0) * lsun +
-         f_acc * ((grav_const * m * mdot) / r) * (1 - (r / (2.0 * rsink)));
+         f_acc * ((m * mdot) / r) * (1 - (r / (2.0 * rsink)));
 }
 
 //=================================================================================================
@@ -280,7 +274,11 @@ FLOAT SinkHeating<ndim>::AmbientTemp
     FLOAT sink_dmdt = sink.dmdt;
     FLOAT sink_r    = sink.radius;
 
-    // Set source radius and intrinsic luminosity flag depending on sink mass
+    // Set source radius and intrinsic luminosity flag (f_n) depending on sink mass. If the sink
+    // is over the hydrogen burning limit, we want to give it some intrinsic luminosity.
+    // Planet masses below 13.0 Mjupiter
+    // Brown dwarf masses between 13.0 and 80.0 Mjupiter
+    // Stellar masses aobe 80.0 Mjupiter
     FLOAT r_source = r_planet;
     int f_n = 0;
     if (sink_m >= 13.0 * mjup) r_source = r_bdwarf;

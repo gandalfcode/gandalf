@@ -123,7 +123,7 @@ public:
 
   int Ncentral;
   FLOAT temp_unit;
-  DOUBLE rad_const, grav_const;
+  DOUBLE rad_const;
   FLOAT mjup, msun, lsun, rsun;
 
   FLOAT r_star;
