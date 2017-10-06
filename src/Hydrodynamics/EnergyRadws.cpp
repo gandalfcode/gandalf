@@ -726,6 +726,7 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetCol2
  (Particle<ndim> &part)
 {
   if (!lombardi) {
+    assert(part.gpot_hydro < part.gpot);
     return fcol2 * part.gpot_hydro * part.rho;
   }
   else {
