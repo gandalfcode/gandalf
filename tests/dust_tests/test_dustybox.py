@@ -13,14 +13,19 @@ class DustyBoxTest(unittest.TestCase):
     expected_l1error_gas = 8e-4
     expected_l1error_dust = 8e-4
     energy_error = 4.1e-4
+    param_file = "tests/dust_tests/dustybox.dat"
     def setUp(self):
-        self.sim=newsim("tests/dust_tests/dustybox.dat")
+        self.sim=newsim(self.param_file)
         self.sim.SetParam("run_id",self.run_id)
         for p in self.params:
             self.sim.SetParam(p, self.params[p])
 
     def check_energy_conservation(self):
         '''Check the energy error is never too large'''
+
+        # Skip for test-particle, which doesn't conserve energy
+        if self.energy_error is None:
+            return
         
         t  = []
         Ek = []
@@ -78,18 +83,58 @@ class DustyBoxTestParticle(DustyBoxTest):
     params = {"dust_forces" : "test_particle"}
     expected_l1error_gas  = 1e-12
     expected_l1error_dust = 9e-4
+    energy_error = None
 
 
 class DustyBoxTestStrong(DustyBoxTest):
     run_id = "DUSTYBOX_SPH_STRONG"
     expected_l1error_gas  = 6e-4
     expected_l1error_dust = 6e-4
+    energy_error = 0.05
     params = {"drag_coeff" : 100 }
 
 class DustyBoxTestStrongTS(DustyBoxTest):
     run_id = "DUSTYBOX_SPH_STRONG2"
     expected_l1error_gas  = 1e-12
     expected_l1error_dust = 1.4e-3
+    energy_error = None
     params = {"drag_coeff" : 100,
               "dust_forces" : "test_particle" }
     
+
+
+
+### Test the meshless
+class DustyBoxMfv(DustyBoxTest):
+    param_file = "tests/dust_tests/dustybox_meshless.dat"
+    run_id = "DUSTYBOX_MFV"
+    expected_l1error_gas  = 5e-4
+    expected_l1error_dust = 5e-4
+    energy_error = 1e-15
+
+
+class DustyBoxMfvTestParticle(DustyBoxTest):
+    param_file = "tests/dust_tests/dustybox_meshless.dat"
+    run_id = "DUSTYBOX_MFV2"
+    expected_l1error_gas  = 1e-10
+    expected_l1error_dust = 1e-13
+    energy_error = None
+    params = {"dust_forces" : "test_particle"}
+
+
+class DustyBoxMfvStrong(DustyBoxTest):
+    param_file = "tests/dust_tests/dustybox_meshless.dat"
+    run_id = "DUSTYBOX_MFV"
+    expected_l1error_gas  = 2e-4
+    expected_l1error_dust = 4e-5
+    energy_error = 1e-15
+    params = {"drag_coeff" : 100}
+
+class DustyBoxMfvTestParticleStrong(DustyBoxTest):
+    param_file = "tests/dust_tests/dustybox_meshless.dat"
+    run_id = "DUSTYBOX_MFV2"
+    expected_l1error_gas  = 3e-10
+    expected_l1error_dust = 3e-11
+    energy_error = None
+    params = {"dust_forces" : "test_particle",
+              "drag_coeff" : 100 }
