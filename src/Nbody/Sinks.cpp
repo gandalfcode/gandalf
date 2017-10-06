@@ -588,6 +588,7 @@ void Sinks<ndim>::AccreteMassToSinks
         }
         dt = (FLOAT) sink[s].star->nstep*timestep;
         macc = sink[s].menc*max((FLOAT) 1.0 - (FLOAT) exp(-dt/sink[s].taccrete), (FLOAT) 0.0);
+        sink[s].dmdt = macc / dt;
 
         /*cout << "efrac : " << efrac << "    taccrete : " << sink[s].taccrete << "   "
              << sink[s].tvisc << "    " << sink[s].trad << "    " << sink[s].trot << endl;
@@ -599,6 +600,7 @@ void Sinks<ndim>::AccreteMassToSinks
       }
       else {
         macc = sink[s].menc;
+        sink[s].dmdt = macc / timestep;
       }
 
 
@@ -613,10 +615,6 @@ void Sinks<ndim>::AccreteMassToSinks
       for (k=0; k<ndim; k++) sink[s].star->v[k] *= sink[s].star->m;
       for (k=0; k<ndim; k++) sink[s].star->a[k] *= sink[s].star->m;
       //for (k=0; k<ndim; k++) sink[s].star->adot[k] *= sink[s].star->m;
-
-      // Update sink accretion rate
-      //-------------------------------------------------------------------------------------------
-      sink[s].dmdt = macc / timestep;
 
       // Loop over all neighbouring particles
       //-------------------------------------------------------------------------------------------

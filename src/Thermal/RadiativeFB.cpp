@@ -277,9 +277,6 @@ FLOAT SinkHeating<ndim>::AmbientTemp
 
     FLOAT dist      = Distance(part.r, sink.star->r, ndim);
     FLOAT sink_m    = sink.star->m;
-    // TODO: This is accretion rate onto the sink, not the object at it's center. It may be
-    // better to find accretion rate onto the central object for contributive heating with
-    // smooth accretion turned on.
     FLOAT sink_dmdt = sink.dmdt;
     FLOAT sink_r    = sink.radius;
 

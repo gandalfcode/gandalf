@@ -89,7 +89,9 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
 
   //-----------------------------------------------------------------------------------------------
   if (file.good()) {
-    getline(file, line);
+    do {
+      getline(file, line);
+    } while (line[0] == '#');
     istringstream istr(line);
     istr >> ndens >> ntemp >> fcol;
 
