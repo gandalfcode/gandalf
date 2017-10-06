@@ -136,6 +136,8 @@ def DustyWave(sim, time):
     # Approximate the epstein drag coefficient
     if simstringparams["drag_law"] == "LP2012":
         K *= csound / (rho_g*rho_g*eps)
+    else:
+        K /= 0.4699928014933126
 
     solver = DustyWaveSolver(rho_g, rho_g*eps, csound, K, delta,
                              wlambda, feedback)
