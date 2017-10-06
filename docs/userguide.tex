@@ -632,6 +632,8 @@ rad\_ws     & = Integrate energy terms using Stamatellos et al. (2007) method
 
 \item \var{temp\_ambient} : Ambient temperature (for rad\_ws method)
 
+\item \var{lombardi\_method} : Use the Lombardi et al. (2015) metric for rad\_ws method
+
 
 %\item \var{Acool} : Simple cooling rate factor
 
@@ -912,6 +914,32 @@ ionisation      &= Multiple source ionising radiation
 
 \end{itemize}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Radiative feedback parameters}
+
+\begin{itemize}
+
+\item \var{rad\_fb} : Turn on radiative feedback
+\item \var{ambient\_heating}   : Add heating from an ambient background defined by \var{temp\_ambient}
+\item \var{disc\_heating} : Add heating from a temperature profile with a central star (1) or binary (2)
+\item \var{sink\_heating} : Add accretion heating from sinks (except central objects from \var{disc\_heating})
+\item \var{sink\_fb} : Type of heating from sinks (except central objects) \\
+\begin{tabular}{ll}
+continuous    &= Heating from accretion as mass is accreted \\
+episodic      &= NOT IMPLEMENTED
+\end{tabular}
+\item \var{r\_smooth} : Smoothing radius for \var{disc\_heating} temperature profile
+\item \var{temp\_q} : Power index for primary in \var{disc\_heating} temperature profile
+\item \var{temp\_q\_secondary} : Power index for secondary in \var{disc\_heating} temperature profile
+\item \var{temp\_au} : Temperature at 1 AU for primary in \var{disc\_heating} temperature profile
+\item \var{temp\_au\_secondary} : Temperature at 1 AU for secondary in \var{disc\_heating} temperature profile
+\item \var{f\_acc} : Fraction of energy converted to heating from accretion (use with \var{sink\_heating})
+\item \var{r\_star} : Radius of star ($M_{sink} > 80~M_{jup}$) in solar radii (use with \var{sink\_heating})
+\item \var{r\_bdwarf} : Radius of brown dwarf ($13 > M_{sink} > 80~M_{jup}$) in solar radii (use with \var{sink\_heating})
+\item \var{r\_planet} : Radius of planet ($M_{sink} < 13~M_{jup}$) in solar radii (use with \var{sink\_heating})
+
+\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
