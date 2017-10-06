@@ -670,6 +670,13 @@ void SimulationBase::SetupSimulation(void)
     GenerateIC();
   }
 
+#ifdef MPI_PARALLEL
+  // We need to broadcast the time info read from the snapshot to other processors
+  if (restart) {
+    this->BroadcastRestartInfo() ;
+  }
+#endif
+
   // Change to COM frame if selected
   if (simparams->intparams["com_frame"] == 1) SetComFrame();
 
@@ -683,6 +690,26 @@ void SimulationBase::SetupSimulation(void)
   return;
 }
 
+//=================================================================================================
+//  Simulation::BroadcastRestartInfo
+/// Broadcasts data read from snapshot file
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::BroadcastRestartInfo() {
+#ifdef MPI_PARALLEL
+  MPI_Bcast(&Noutsnap,     1, MPI_INT, 0, MPI_COMM_WORLD) ;
+  MPI_Bcast(&Nsteps,       1, MPI_INT, 0, MPI_COMM_WORLD) ;
+  MPI_Bcast(&Noutlitesnap, 1, MPI_INT, 0, MPI_COMM_WORLD) ;
+
+  MPI_Bcast(&t,             1, GANDALF_MPI_DOUBLE, 0, MPI_COMM_WORLD) ;
+  MPI_Bcast(&tsnaplast,     1, GANDALF_MPI_DOUBLE, 0, MPI_COMM_WORLD) ;
+  MPI_Bcast(&tsnapnext,     1, GANDALF_MPI_DOUBLE, 0, MPI_COMM_WORLD) ;
+  MPI_Bcast(&tlitesnaplast, 1, GANDALF_MPI_DOUBLE, 0, MPI_COMM_WORLD) ;
+  MPI_Bcast(&tlitesnapnext, 1, GANDALF_MPI_DOUBLE, 0, MPI_COMM_WORLD) ;
+
+  MPI_Bcast(&hydro->mmean , 1, GANDALF_MPI_FLOAT, 0, MPI_COMM_WORLD) ;
+#endif
+}
 
 
 //=================================================================================================
