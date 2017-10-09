@@ -395,12 +395,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
       return;
     }
 
-    if (itemp <= 1) {
-      cout << "Reached itemp = 1, returning" << endl;
-      Tequi = pow(10.0, eos_temp[1]);
-      return;
-    }
-
     Tlow_log  = eos_temp[itemp - 1];
     Tlow      = pow(10.0, Tlow_log);
     Thigh_log = eos_temp[itemp + 1];
@@ -415,10 +409,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
     balanceHigh = ebalance(dudt, temp_ambient ,Thigh, kappaHigh, kappapHigh, col2);
 
     while (balanceLow * balanceHigh > 0.0){
-      if (itemp <= 1) {
-        Tequi = pow(10.0, eos_temp[1]);
-        return;
-      }
+      assert(itemp >= 1);
 
       Thigh       = Tlow;
       kappaHigh   = kappaLow;
@@ -434,10 +425,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
 
     itemphigh = itemplow + 1;
   } else {
-    if (itemp >= ntemp - 2) {
-      Tequi = pow(10.0, eos_temp[ntemp - 2]);
-      return;
-    }
+    assert(itemp <= ntemp - 2);
 
     Tlow_log  = eos_temp[itemp - 1];
     Tlow      = pow(10.0, Tlow_log);
