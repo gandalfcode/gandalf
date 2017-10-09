@@ -1509,7 +1509,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
       for (ii=0; ii<6; ii++) {
         int itmp;
         reader.read_value(itmp);
-        assert(itmp == junk[6]);
+        assert(itmp == junk[ii]);
       }
       if (nbody->Nstar > 0) {
         for (int i=0; i<nbody->Nstar; i++) {
