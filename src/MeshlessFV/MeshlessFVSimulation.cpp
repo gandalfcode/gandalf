@@ -404,7 +404,9 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   if (rank == 0) {
     MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
     for (i=0; i<mfv->Nhydro; i++) {
-      partdata[i].iorig = i;
+      if (not restart) {
+        partdata[i].iorig = i;
+      }
       partdata[i].flags.set(active);
       partdata[i].flags.set(update_density) ;
       partdata[i].gpot = big_number;

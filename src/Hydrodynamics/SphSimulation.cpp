@@ -210,7 +210,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   sph->DeleteDeadParticles();
 
   // Set iorig
-  if (rank == 0) {
+  if (rank == 0 && not restart) {
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).iorig = i;
   }
 
