@@ -64,7 +64,6 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   radfb = radfb_;
 
   int i, j, l;
-  // int ndens, ntemp; defined in EnergyEquation
   DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_, eos_gamma_;
   DOUBLE num, denom, tempunit, fcol;
   string line;
@@ -144,7 +143,10 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
           j = 0;
         }
 
-      } else cout << "Dateifehler" << endl;
+      }
+      else {
+        ExceptionHandler::getIstance().raise("Error: The specified opacity file cannot be read!");
+      }
 
     }
     //---------------------------------------------------------------------------------------------
