@@ -89,6 +89,12 @@ FLOAT DiscLocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
   FLOAT cs = SoundSpeed(part);
   return cs*cs/gammam1;
 }
+template <int ndim>
+FLOAT DiscLocallyIsothermal<ndim>::InternalEnergy(FLOAT, FLOAT u)
+{
+  return sqrt(gammam1*u);
+}
+
 
 
 //=================================================================================================

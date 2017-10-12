@@ -88,6 +88,16 @@ FLOAT Radws<ndim>::SoundSpeed(Particle<ndim> &part)
   FLOAT gamma1 = opacity_table->GetGamma1(part);
   return sqrt(gamma1*(gamma - 1.0)*part.u);
 }
+//=================================================================================================
+//  Radws::SoundSpeed
+/// Returns adiabatic sound speed of particle
+//=================================================================================================
+template <int ndim>
+FLOAT Radws<ndim>::SoundSpeed(FLOAT, FLOAT u)
+{
+  return sqrt(gamma*gammam1*u);
+}
+
 
 
 

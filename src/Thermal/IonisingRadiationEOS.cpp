@@ -90,6 +90,11 @@ FLOAT IonisingRadiation<ndim>::SoundSpeed(Particle<ndim> &part)
   //return sqrt(gammam1*part.u);
   return eos->SoundSpeed(part);
 }
+template <int ndim>
+FLOAT IonisingRadiation<ndim>::SoundSpeed(FLOAT rho, FLOAT u)
+{
+  return eos->SoundSpeed(rho, u);
+}
 
 
 

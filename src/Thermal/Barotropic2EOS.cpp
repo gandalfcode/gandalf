@@ -78,6 +78,12 @@ FLOAT Barotropic2<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   return sqrt(gammam1*part.u);
 }
+template <int ndim>
+FLOAT Barotropic2<ndim>::SoundSpeed(FLOAT, FLOAT u)
+{
+  return sqrt(gammam1*u);
+}
+
 
 
 

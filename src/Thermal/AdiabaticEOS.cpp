@@ -70,6 +70,12 @@ FLOAT Adiabatic<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   return sqrt(gamma*gammam1*part.u);
 }
+template <int ndim>
+FLOAT Adiabatic<ndim>::SoundSpeed(FLOAT, FLOAT u)
+{
+  return sqrt(gamma*gammam1*u);
+}
+
 
 
 
