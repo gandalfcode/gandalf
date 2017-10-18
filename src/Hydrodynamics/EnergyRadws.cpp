@@ -720,19 +720,13 @@ FLOAT EnergyRadws<ndim,ParticleType>::GetCol2
     return fcol2 * part.gpot_hydro * part.rho;
   }
   else {
-    FLOAT mag_da = 0.0, P = 0.0;
-
-    FLOAT tot_a = 0.0, tot_atree = 0.0;
+    FLOAT P = 0.0, ahydro = 0.0;
     for (int k = 0; k < ndim; ++k) {
-      tot_a += part.a[k] * part.a[k];
-      tot_atree += part.atree[k] * part.atree[k];
+      ahydro += pow(part.a[k] - part.atree[k], 2.0);
     }
-    FLOAT mag_a = sqrt(tot_a);
-    FLOAT mag_atree = sqrt(tot_atree);
-    mag_da = mag_a - mag_atree;
     P = (part.gamma - 1.0) * part.rho * part.u;
 
-    return (fcol2 * P * P) / (mag_da * mag_da);
+    return (fcol2 * P * P) / (ahydro + small_number);
   }
 }
 
