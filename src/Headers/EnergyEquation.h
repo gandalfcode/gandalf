@@ -73,7 +73,7 @@ class EnergyRadws : public EnergyEquation<ndim>
 
   using EnergyEquation<ndim>::timing;
 
-  EnergyRadws(DOUBLE, FLOAT, SimUnits *, Radws<ndim> *, RadiativeFB<ndim> *);
+  EnergyRadws(DOUBLE, FLOAT, int, SimUnits *, Radws<ndim> *, RadiativeFB<ndim> *);
   ~EnergyRadws();
 
   //  void ReadTable();
@@ -99,6 +99,7 @@ class EnergyRadws : public EnergyEquation<ndim>
   FLOAT temp_ambient0;
   FLOAT temp_min;
   Radws<ndim> *eos;
+  OpacityTable<ndim> *table;
   RadiativeFB<ndim> *radfb;
 };
 

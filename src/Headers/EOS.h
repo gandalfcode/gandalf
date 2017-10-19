@@ -430,7 +430,7 @@ class Radws : public EOS<ndim>
 
  public:
 
-  Radws(OpacityTable<ndim> *, Parameters*, SimUnits *);
+  Radws(Parameters*, SimUnits *);
   ~Radws();
 
   FLOAT Pressure(Particle<ndim> &);

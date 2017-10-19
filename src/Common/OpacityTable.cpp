@@ -50,15 +50,10 @@ using namespace std;
 template <int ndim>
 OpacityTable<ndim>::OpacityTable
  (string radws_table,
-  int lombardi_,
   SimUnits *simunits)
 {
-  // Set lombardi method flag
-  lombardi = lombardi_;
-
   int i, j, l;
   DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_, eos_gamma_;
-  DOUBLE num, denom, tempunit, fcol;
   string line;
 
   // Check for correct opacity units
@@ -138,13 +133,6 @@ OpacityTable<ndim>::OpacityTable
     file.close();
   }
 
-  // Set fcol2
-  if (lombardi) {
-    fcol2 = fcol * fcol * 4.0 * pi;
-  }
-  else {
-    fcol2 = fcol * fcol;
-  }
 }
 
 
@@ -242,6 +230,12 @@ int OpacityTable<ndim>::GetIEner
   int idens = GetIDens(log10(rho));
   return getClosestIndex(eos_energy[idens], eos_energy[idens] + ntemp , u);
 }
+template <int ndim>
+int OpacityTable<ndim>::GetIEner
+ (const FLOAT u, const int idens)
+{
+  return getClosestIndex(eos_energy[idens], eos_energy[idens] + ntemp , u);
+}
 
 
 //=================================================================================================
@@ -271,7 +265,7 @@ template <int ndim>
 FLOAT OpacityTable<ndim>::GetEnergy(const int idens, const int itemp)
 {
   return eos_energy[idens][itemp];
- }
+}
 
 
 
@@ -284,7 +278,7 @@ FLOAT OpacityTable<ndim>::GetMuBar
  (Particle<ndim> &part)
 {
   int idens = GetIDens(part.rho);
-  int iener = GetIEner(part.u, part.rho);
+  int iener = GetIEner(part.u, idens);
   return eos_mu[idens][iener];
 }
 
@@ -299,7 +293,7 @@ FLOAT OpacityTable<ndim>::GetGamma
  (Particle<ndim> &part)
 {
   int idens = GetIDens(part.rho);
-  int iener = GetIEner(part.u, part.rho);
+  int iener = GetIEner(part.u, idens);
   return eos_gamma[idens][iener];
 }
 

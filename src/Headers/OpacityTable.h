@@ -40,23 +40,22 @@ class OpacityTable
 {
  public:
 
-  OpacityTable(string, int, SimUnits *);
+  OpacityTable(string, SimUnits *);
   ~OpacityTable();
 
   int GetIDens(const FLOAT);
   int GetITemp(const FLOAT);
   int GetIEner(const FLOAT, const FLOAT);
+  int GetIEner(const FLOAT, const int);
   void GetKappa(const int, const int, FLOAT &, FLOAT &, FLOAT &);
   FLOAT GetEnergy(const int, const int);
   FLOAT GetMuBar(Particle<ndim> &part);
   FLOAT GetGamma(Particle<ndim> &part);
-
   //-----------------------------------------------------------------------------------------------
 
-  int lombardi;
   int ndens;
   int ntemp;
-  FLOAT fcol2;
+  FLOAT fcol;
   FLOAT *eos_dens;
   FLOAT *eos_temp ;
   FLOAT **eos_energy;

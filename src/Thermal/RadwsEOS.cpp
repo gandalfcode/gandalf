@@ -32,10 +32,10 @@
 /// Default constructor for the RadWS equation of state which employs the use of an opacity table.
 //=================================================================================================
 template <int ndim>
-Radws<ndim>::Radws(OpacityTable<ndim>* table, Parameters* simparams, SimUnits *units) :
+Radws<ndim>::Radws(Parameters* simparams, SimUnits *units) :
   EOS<ndim>(simparams->floatparams["gamma_eos"])
 {
-  opacity_table = table;
+  opacity_table = new OpacityTable<ndim>(simparams->stringparams["radws_table"], units);
 }
 
 

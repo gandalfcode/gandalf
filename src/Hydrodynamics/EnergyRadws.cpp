@@ -55,6 +55,7 @@ template <int ndim, template <int> class ParticleType>
 EnergyRadws<ndim,ParticleType>::EnergyRadws
  (DOUBLE energy_mult_,
   FLOAT temp_ambient_,
+  int lombardi_,
   SimUnits *simunits,
   Radws<ndim> *eos_,
   RadiativeFB<ndim> *radfb_) :
@@ -62,10 +63,10 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
 {
   radfb = radfb_;
   eos = eos_;
-  fcol2 = eos->opacity_table->fcol2;
-  lombardi = eos->opacity_table->lombardi;
-  ndens = eos->opacity_table->ndens;
-  ntemp = eos->opacity_table->ntemp;
+  lombardi = lombardi_;
+  table = eos->opacity_table;
+  ndens = table->ndens;
+  ntemp = table->ntemp;
 
   // compute rad_const = Stefan-Boltzmann in code units
   FLOAT num = 0.0, denom = 0.0, tempunit = 0.0;
@@ -75,6 +76,15 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   rad_const = stefboltz*(num*pow(tempunit,4.0))/denom;
   temp_ambient0 = temp_ambient_ / tempunit;
   temp_min = 5.0 / tempunit;
+
+  // Set fcol2
+  FLOAT fcol = table->fcol;
+  if (lombardi) {
+    fcol2 = fcol * fcol * 4.0 * pi;
+  }
+  else {
+    fcol2 = fcol * fcol;
+  }
 }
 
 
@@ -207,7 +217,7 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
   FLOAT &dt_thermal)                           ///< [out] ..
 {
   const FLOAT logrho   = log10(rho);           // ..
-  const int idens = eos->opacity_table->GetIDens(logrho);
+  const int idens = table->GetIDens(logrho);
   int itemp;                                   // ..
   FLOAT logtemp;                               // ..
   FLOAT Tequi;                                 // ..
@@ -219,12 +229,12 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
   FLOAT kappap;                                // ..
 
   logtemp = log10(temp);
-  itemp   = eos->opacity_table->GetITemp(logtemp);
+  itemp   = table->GetITemp(logtemp);
 
   assert(idens >= 0 && idens <= ndens - 1);
   assert(itemp >= 0 && itemp <= ntemp - 1);
 
-  eos->opacity_table->GetKappa(idens, itemp, kappa, kappar, kappap);
+  table->GetKappa(idens, itemp, kappa, kappar, kappap);
   dudt_rad = ebalance((FLOAT) 0.0, temp_ambient, temp, kappa, kappap, col2);
 
   // Calculate equilibrium temperature using implicit scheme described in Stamatellos et al. (2007)
@@ -233,9 +243,9 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
 
   // Get ueq_p and dudt_eq from Tequi
   logtemp = log10(Tequi);
-  itemp = eos->opacity_table->GetITemp(logtemp);
-  eos->opacity_table->GetKappa(idens, itemp, kappa, kappar, kappap);
-  ueq_p = eos->opacity_table->GetEnergy(idens, itemp);
+  itemp = table->GetITemp(logtemp);
+  table->GetKappa(idens, itemp, kappa, kappar, kappap);
+  ueq_p = table->GetEnergy(idens, itemp);
   dudt_eq = ebalance((FLOAT) 0.0, temp_ambient, Tequi, kappa, kappap, col2);
 
   // Thermalization time scale
@@ -277,16 +287,16 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   logrho = log10(rho);
 
   logtemp = log10(temp);
-  itemp = eos->opacity_table->GetITemp(logtemp);
+  itemp = table->GetITemp(logtemp);
 
   // Rosseland and Planck opacities at rho_p and temperature temp(p)
-  eos->opacity_table->GetKappa(idens, itemp, kappa, kappar, kappap);
+  table->GetKappa(idens, itemp, kappa, kappar, kappap);
   balance = ebalance((FLOAT) 0.0, temp_ambient, temp, kappa, kappap, col2);
 
   // Get min. kappa and min balance
   logtemp = log10(temp_min);
-  itemp = eos->opacity_table->GetITemp(logtemp);
-  eos->opacity_table->GetKappa(idens, itemp, minkappa, minkappar, minkappap);
+  itemp = table->GetITemp(logtemp);
+  table->GetKappa(idens, itemp, minkappa, minkappar, minkappap);
   minbalance = ebalance((FLOAT) 0.0, temp_ambient, temp_min, minkappa, minkappap, col2);
 
   // Find equilibrium temperature
@@ -297,17 +307,17 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
       return;
     }
 
-    Tlow_log  = eos->opacity_table->eos_temp[itemp - 1];
+    Tlow_log  = table->eos_temp[itemp - 1];
     Tlow      = pow(10.0, Tlow_log);
-    Thigh_log = eos->opacity_table->eos_temp[itemp + 1];
+    Thigh_log = table->eos_temp[itemp + 1];
     Thigh     = pow(10.0, Thigh_log);
     itemplow  = itemp - 1;
 
-    eos->opacity_table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
+    table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
     balanceLow = ebalance(dudt, temp_ambient, Tlow, kappaLow, kappapLow, col2);
 
     itemphigh = itemp;
-    eos->opacity_table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
+    table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
     balanceHigh = ebalance(dudt, temp_ambient ,Thigh, kappaHigh, kappapHigh, col2);
 
     while (balanceLow * balanceHigh > 0.0){
@@ -318,26 +328,26 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
       kappapHigh  = kappapLow;
       balanceHigh = balanceLow;
       itemplow    = itemplow - 1;
-      Tlow_log    = eos->opacity_table->eos_temp[itemplow];
+      Tlow_log    = table->eos_temp[itemplow];
       Tlow        = pow(10.0, Tlow_log);
 
-      eos->opacity_table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
+      table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
       balanceLow = ebalance(dudt, temp_ambient , Tlow, kappaLow, kappapLow, col2);
     }
 
     itemphigh = itemplow + 1;
   } else {
-    Tlow_log  = eos->opacity_table->eos_temp[itemp - 1];
+    Tlow_log  = table->eos_temp[itemp - 1];
     Tlow      = pow(10.0, Tlow_log);
-    Thigh_log = eos->opacity_table->eos_temp[itemp + 1];
+    Thigh_log = table->eos_temp[itemp + 1];
     Thigh     = pow(10.0, Thigh_log);
 
     itemplow = itemp;
-    eos->opacity_table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
+    table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
     balanceLow = ebalance(dudt, temp_ambient, Tlow, kappaLow, kappapLow, col2);
 
     itemphigh = itemp + 1;
-    eos->opacity_table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
+    table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
     balanceHigh = ebalance(dudt, temp_ambient, Thigh, kappaHigh, kappapHigh, col2);
 
     while (balanceLow * balanceHigh > 0.0) {
@@ -348,10 +358,10 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
       kappapLow  = kappapHigh;
       balanceLow = balanceHigh;
       itemphigh  = itemphigh + 1;
-      Thigh_log  = eos->opacity_table->eos_temp[itemphigh];
+      Thigh_log  = table->eos_temp[itemphigh];
       Thigh      = pow(10.0, Thigh_log);
 
-      eos->opacity_table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
+      table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
       balanceHigh = ebalance(dudt, temp_ambient, Thigh, kappaHigh, kappapHigh, col2);
     }
 
@@ -365,7 +375,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
   //-----------------------------------------------------------------------------------------------
   while (dtemp != 0.0 && fabs(2.0 * dtemp / (Thigh + Tlow)) > accuracy) {
     Tequi_log = log10(Tequi);
-    eos->opacity_table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
+    table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
     balance = ebalance(dudt, temp_ambient , Tequi, kappa, kappap, col2);
 
     if (balance == 0.0) {

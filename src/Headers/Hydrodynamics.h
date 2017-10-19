@@ -148,7 +148,6 @@ public:
   ParticleTypeRegister types;          ///< Array of particle types
 
   EOS<ndim> *eos;                      ///< Equation-of-state
-  OpacityTable<ndim> *opacity_table;   ///< Opacity table
   SmoothingKernel<ndim> *kernp;        ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;       ///< Tabulated version of chosen kernel
   ExternalPotential<ndim> *extpot;     ///< Pointer to external potential object
