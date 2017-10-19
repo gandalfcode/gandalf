@@ -53,17 +53,15 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 EnergyRadws<ndim,ParticleType>::EnergyRadws
- (DOUBLE energy_mult_,
-  FLOAT temp_ambient_,
-  int lombardi_,
+ (Parameters* simparams,
   SimUnits *simunits,
   Radws<ndim> *eos_,
   RadiativeFB<ndim> *radfb_) :
-  EnergyEquation<ndim>(energy_mult_)
+  EnergyEquation<ndim>(simparams->floatparams["energy_mult"])
 {
   radfb = radfb_;
   eos = eos_;
-  lombardi = lombardi_;
+  lombardi = simparams->intparams["lombardi_method"];
   table = eos->opacity_table;
   ndens = table->ndens;
   ntemp = table->ntemp;
@@ -74,7 +72,7 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
   denom     = simunits->E.outscale * simunits->E.outSI;
   tempunit  = simunits->temp.outscale * simunits->temp.outSI;
   rad_const = stefboltz*(num*pow(tempunit,4.0))/denom;
-  temp_ambient0 = temp_ambient_ / tempunit;
+  temp_ambient0 = simparams->floatparams["temp_ambient"] / tempunit;
   temp_min = 5.0 / tempunit;
 
   // Set fcol2

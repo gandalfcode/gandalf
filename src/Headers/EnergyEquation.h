@@ -73,7 +73,7 @@ class EnergyRadws : public EnergyEquation<ndim>
 
   using EnergyEquation<ndim>::timing;
 
-  EnergyRadws(DOUBLE, FLOAT, int, SimUnits *, Radws<ndim> *, RadiativeFB<ndim> *);
+  EnergyRadws(Parameters*, SimUnits *, Radws<ndim> *, RadiativeFB<ndim> *);
   ~EnergyRadws();
 
   //  void ReadTable();
