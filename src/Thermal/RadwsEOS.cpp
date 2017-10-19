@@ -29,14 +29,13 @@
 
 //=================================================================================================
 //  Radws::Radws()
-/// Default constructor for perfect gas EOS.  Passes and sets important
-/// thermal physics variables.
+/// Default constructor for the RadWS equation of state which employs the use of an opacity table.
 //=================================================================================================
 template <int ndim>
-Radws<ndim>::Radws(Parameters* simparams, SimUnits *units):
-  EOS<ndim>(simparams->floatparams["gamma_eos"]),
-  temp0(simparams->floatparams["temp0"]/units->temp.outscale)
+Radws<ndim>::Radws(OpacityTable<ndim>* table, Parameters* simparams, SimUnits *units) :
+  EOS<ndim>(simparams->floatparams["gamma_eos"])
 {
+  opacity_table = table;
 }
 
 
@@ -47,6 +46,7 @@ Radws<ndim>::Radws(Parameters* simparams, SimUnits *units):
 template <int ndim>
 Radws<ndim>::~Radws()
 {
+  delete opacity_table;
 }
 
 
@@ -57,7 +57,8 @@ Radws<ndim>::~Radws()
 template <int ndim>
 FLOAT Radws<ndim>::Pressure(Particle<ndim> &part)
 {
-  return (part.gamma - 1.0) * part.rho * part.u;
+  FLOAT gamma = opacity_table->GetGamma(part);
+  return (gamma - 1.0) * part.rho * part.u;
 }
 
 
@@ -70,7 +71,8 @@ FLOAT Radws<ndim>::Pressure(Particle<ndim> &part)
 template <int ndim>
 FLOAT Radws<ndim>::EntropicFunction(Particle<ndim> &part)
 {
-  return (part.gamma - 1.0)*part.u*pow(part.rho, (FLOAT) (1.0 - part.gamma));
+  FLOAT gamma = opacity_table->GetGamma(part);
+  return (gamma - 1.0)*part.u*pow(part.rho, (FLOAT) (1.0 - gamma));
 }
 
 
@@ -82,7 +84,8 @@ FLOAT Radws<ndim>::EntropicFunction(Particle<ndim> &part)
 template <int ndim>
 FLOAT Radws<ndim>::SoundSpeed(Particle<ndim> &part)
 {
-  return sqrt(part.gamma*(part.gamma - 1.0)*part.u);
+  FLOAT gamma = opacity_table->GetGamma(part);
+  return sqrt(gamma*(gamma - 1.0)*part.u);
 }
 
 
@@ -106,7 +109,9 @@ FLOAT Radws<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 template <int ndim>
 FLOAT Radws<ndim>::Temperature(Particle<ndim> &part)
 {
-  return (part.gamma - 1.0)*part.u*part.mu_bar;
+  FLOAT gamma = opacity_table->GetGamma(part);
+  FLOAT mu_bar = opacity_table->GetMuBar(part);
+  return (gamma - 1.0)*part.u*mu_bar;
 }
 
 

@@ -73,7 +73,7 @@ class EnergyRadws : public EnergyEquation<ndim>
 
   using EnergyEquation<ndim>::timing;
 
-  EnergyRadws(DOUBLE, string, FLOAT, int, SimUnits *, EOS<ndim> *, RadiativeFB<ndim> *);
+  EnergyRadws(DOUBLE, FLOAT, SimUnits *, Radws<ndim> *, RadiativeFB<ndim> *);
   ~EnergyRadws();
 
   //  void ReadTable();
@@ -87,33 +87,18 @@ class EnergyRadws : public EnergyEquation<ndim>
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
   FLOAT ebalance(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT);
-  int GetIDens(const FLOAT);
-  int GetITemp(const FLOAT);
-  void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
-  FLOAT GetEnergy(const int, const int, const FLOAT, const FLOAT);
-  FLOAT GetMuBar(const int, const int, const FLOAT, const FLOAT);
-  FLOAT GetTemp(Particle<ndim> &part);
   FLOAT GetCol2(Particle<ndim> &part);
 
 
   //-----------------------------------------------------------------------------------------------
 
+  int ndens, ntemp;
   int lombardi;
-  int ndens;
-  int ntemp;
   FLOAT fcol2;
   FLOAT rad_const;
   FLOAT temp_ambient0;
   FLOAT temp_min;
-  FLOAT *eos_dens;
-  FLOAT *eos_temp ;
-  FLOAT **eos_energy;
-  FLOAT **eos_mu;
-  FLOAT **eos_gamma;
-  FLOAT **kappa_table;
-  FLOAT **kappar_table;
-  FLOAT **kappap_table;
-  EOS<ndim> *eos;
+  Radws<ndim> *eos;
   RadiativeFB<ndim> *radfb;
 };
 

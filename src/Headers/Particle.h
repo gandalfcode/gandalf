@@ -166,10 +166,8 @@ struct Particle
   DOUBLE tlast;                     ///< Time at beginning of current step
   FLOAT ionfrac;                    ///< Ionisation fraction
   FLOAT Xion;                       ///< Ionisation fraciton (from tree)
-  FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
-  FLOAT gamma;                      ///< ratio of heat capacities
   FLOAT vsig_max;                   ///< Maximum signal velocity.
   FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
   int ionstate;                     ///< States current ionisation state of the particle
@@ -209,10 +207,8 @@ struct Particle
     tlast     = (DOUBLE) 0.0;
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
-    mu_bar    = (FLOAT) 1.0;
     ueq       = (FLOAT) 0.0;
     dt_therm  = (FLOAT) 0.0;
-    gamma    = (FLOAT) 1.0;
     vsig_max  = (FLOAT) 0.0;
   }
 

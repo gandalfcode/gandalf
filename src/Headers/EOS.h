@@ -31,6 +31,7 @@
 #include "Constants.h"
 //#include "Nbody.h"
 //#include "Parameters.h"
+#include "OpacityTable.h"
 #include "Particle.h"
 #include "SimUnits.h"
 
@@ -429,7 +430,7 @@ class Radws : public EOS<ndim>
 
  public:
 
-  Radws(Parameters*, SimUnits *);
+  Radws(OpacityTable<ndim> *, Parameters*, SimUnits *);
   ~Radws();
 
   FLOAT Pressure(Particle<ndim> &);
@@ -438,6 +439,6 @@ class Radws : public EOS<ndim>
   FLOAT Temperature(Particle<ndim> &);
   FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
-  FLOAT temp0;
+  OpacityTable<ndim> *opacity_table;
 };
 #endif

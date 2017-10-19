@@ -110,7 +110,10 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
     eos = new Barotropic2<ndim>(params, &units);
   }
   else if (_gas_eos == "rad_ws" || _gas_eos == "radws") {
-    eos = new Radws<ndim>(params, &units);
+    opacity_table = new OpacityTable<ndim>(params->stringparams["radws_table"],
+                                           params->intparams["lombardi_method"],
+                                           &units);
+    eos = new Radws<ndim>(opacity_table, params, &units);
   }
   else {
     string message = "Unrecognised parameter : gas_eos = " + _gas_eos;

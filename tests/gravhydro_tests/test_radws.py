@@ -3,17 +3,17 @@ from gandalf.analysis.compute import L1errornorm
 import unittest
 
 class RadwsTest(unittest.TestCase):
-    rho_c = 7.42119256115e-14
-    U_c   = 92648.4797167
-    tmax  = 114386.624429
+    rho_c = 8.11835118212e-12
+    U_c   = 1624460.35355
+    tmax  = 117188.115816
     tol = 0.1
 
     # Just output a single snapshot
     params = { 'radws_table' : 'eos.bell.cc.dat',
-               'tend' : '18200', 'dt_snap' : '18200' }
+               'tend' : '18650', 'dt_snap' : '18650' }
     def setUp(self):
         self.sim=newsim("tests/gravhydro_tests/radws_test.dat")
- 
+
         for param in self.params:
             self.sim.SetParam(param, self.params[param])
 
@@ -25,11 +25,11 @@ class RadwsTest(unittest.TestCase):
         tmax = snap(-1).t
         rho = get_data('rho')
         U   = get_data('u')
-        
+
         args = rho.argsort()[-10:]
         rho_c = rho[args].mean()
         U_c   = U[args].mean()
-        
+
         #print tmax, rho_c, U_c
 
         # Check we're at least close:
