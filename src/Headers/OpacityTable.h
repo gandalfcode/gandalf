@@ -51,6 +51,7 @@ class OpacityTable
   FLOAT GetEnergy(const int, const int);
   FLOAT GetMuBar(Particle<ndim> &part);
   FLOAT GetGamma(Particle<ndim> &part);
+  FLOAT GetGamma1(Particle<ndim> &part);
   //-----------------------------------------------------------------------------------------------
 
   int ndens;
@@ -60,10 +61,11 @@ class OpacityTable
   FLOAT *eos_temp ;
   FLOAT **eos_energy;
   FLOAT **eos_mu;
-  FLOAT **eos_gamma;
   FLOAT **kappa_table;
   FLOAT **kappar_table;
   FLOAT **kappap_table;
+  FLOAT **eos_gamma;
+  FLOAT **eos_gamma1;   // First adiabatic index
 };
 
 #endif

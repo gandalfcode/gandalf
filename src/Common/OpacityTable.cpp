@@ -53,7 +53,7 @@ OpacityTable<ndim>::OpacityTable
   SimUnits *simunits)
 {
   int i, j, l;
-  DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_, eos_gamma_;
+  DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_, eos_gamma_, eos_gamma1_;
   string line;
 
   // Check for correct opacity units
@@ -79,18 +79,20 @@ OpacityTable<ndim>::OpacityTable
     eos_temp     = new FLOAT[ntemp];
     eos_energy   = new FLOAT*[ndens];
     eos_mu       = new FLOAT*[ndens];
-    eos_gamma    = new FLOAT*[ndens];
     kappa_table  = new FLOAT*[ndens];
     kappar_table = new FLOAT*[ndens];
     kappap_table = new FLOAT*[ndens];
+    eos_gamma    = new FLOAT*[ndens];
+    eos_gamma1   = new FLOAT*[ndens];
 
     for (i = 0; i < ndens; ++i){
       eos_energy[i]   = new FLOAT[ntemp];
       eos_mu[i]       = new FLOAT[ntemp];
-      eos_gamma[i]    = new FLOAT[ntemp];
       kappa_table[i]  = new FLOAT[ntemp];
       kappar_table[i] = new FLOAT[ntemp];
       kappap_table[i] = new FLOAT[ntemp];
+      eos_gamma[i]    = new FLOAT[ntemp];
+      eos_gamma1[i]   = new FLOAT[ntemp];
     }
 
     // read table
@@ -102,14 +104,14 @@ OpacityTable<ndim>::OpacityTable
     while (getline(file, line)) {
       istringstream istr(line);
 
-      if (istr >> eos_dens_ >> eos_temp_ >> eos_energy_ >> eos_mu_>> kappa_ >> kappar_ >> kappap_ >> eos_gamma_) {
-
+      if (istr >> eos_dens_ >> eos_temp_ >> eos_energy_ >> eos_mu_>> kappa_ >> kappar_ >> kappap_ >> eos_gamma_ >> eos_gamma1_) {
         eos_energy[i][j]   = eos_energy_/(simunits->u.outscale * simunits-> u.outcgs);
         eos_mu[i][j]       = eos_mu_;
-        eos_gamma[i][j]    = eos_gamma_;
         kappa_table[i][j]  = kappa_/(simunits->kappa.outscale * simunits-> kappa.outcgs);
         kappar_table[i][j] = kappar_/(simunits->kappa.outscale * simunits-> kappa.outcgs);
         kappap_table[i][j] = kappap_/(simunits->kappa.outscale * simunits-> kappa.outcgs);
+        eos_gamma[i][j]    = eos_gamma_;
+        eos_gamma1[i][j]    = eos_gamma1_;
 
         if (l < ntemp) {
           eos_temp[l] = log10(eos_temp_/(simunits->temp.outscale * simunits->temp.outcgs));
@@ -132,7 +134,6 @@ OpacityTable<ndim>::OpacityTable
     }
     file.close();
   }
-
 }
 
 
@@ -151,6 +152,7 @@ OpacityTable<ndim>::~OpacityTable()
     delete[] kappar_table[i];
     delete[] kappap_table[i];
     delete[] eos_gamma[i];
+    delete[] eos_gamma1[i];
   }
 
   delete[] eos_energy;
@@ -159,6 +161,7 @@ OpacityTable<ndim>::~OpacityTable()
   delete[] kappar_table;
   delete[] kappap_table;
   delete[] eos_gamma;
+  delete[] eos_gamma1;
 }
 
 
@@ -286,7 +289,7 @@ FLOAT OpacityTable<ndim>::GetMuBar
 
 //=================================================================================================
 //  OpacityTable::GetGamma()
-/// GetGamma returns gamma for index of density and u
+/// GetGamma returns ratio of specific heats for index of density and u
 //=================================================================================================
 template <int ndim>
 FLOAT OpacityTable<ndim>::GetGamma
@@ -295,6 +298,22 @@ FLOAT OpacityTable<ndim>::GetGamma
   int idens = GetIDens(part.rho);
   int iener = GetIEner(part.u, idens);
   return eos_gamma[idens][iener];
+}
+
+
+
+
+//=================================================================================================
+//  OpacityTable::GetGamma1()
+/// GetGamma1 returns first adiabatic index for index of density and u
+//=================================================================================================
+template <int ndim>
+FLOAT OpacityTable<ndim>::GetGamma1
+ (Particle<ndim> &part)
+{
+  int idens = GetIDens(part.rho);
+  int iener = GetIEner(part.u, idens);
+  return eos_gamma1[idens][iener];
 }
 
 template class OpacityTable<1>;

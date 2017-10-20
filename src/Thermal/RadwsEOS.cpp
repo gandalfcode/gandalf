@@ -85,7 +85,8 @@ template <int ndim>
 FLOAT Radws<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   FLOAT gamma = opacity_table->GetGamma(part);
-  return sqrt(gamma*(gamma - 1.0)*part.u);
+  FLOAT gamma1 = opacity_table->GetGamma1(part);
+  return sqrt(gamma1*(gamma - 1.0)*part.u);
 }
 
 
