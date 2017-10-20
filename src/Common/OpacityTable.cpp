@@ -289,7 +289,7 @@ FLOAT OpacityTable<ndim>::GetMuBar
 
 //=================================================================================================
 //  OpacityTable::GetGamma()
-/// GetGamma returns ratio of specific heats for index of density and u
+/// GetGamma returns gamma from P = (gamma - 1)*rho*u for index of density and u
 //=================================================================================================
 template <int ndim>
 FLOAT OpacityTable<ndim>::GetGamma
@@ -305,7 +305,8 @@ FLOAT OpacityTable<ndim>::GetGamma
 
 //=================================================================================================
 //  OpacityTable::GetGamma1()
-/// GetGamma1 returns first adiabatic index for index of density and u
+/// GetGamma1 returns the first adiabatic index i.e. dln(P)/dln(rho) at constant entropy for index
+/// of density and u
 //=================================================================================================
 template <int ndim>
 FLOAT OpacityTable<ndim>::GetGamma1
