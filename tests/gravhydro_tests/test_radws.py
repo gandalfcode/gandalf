@@ -3,14 +3,14 @@ from gandalf.analysis.compute import L1errornorm
 import unittest
 
 class RadwsTest(unittest.TestCase):
-    rho_c = 8.11835118212e-12
-    U_c   = 1624460.35355
-    tmax  = 117188.115816
+    rho_c = 8.88283823757e-14
+    U_c   = 148076.49794
+    tmax  = 78931.3355517
     tol = 0.1
 
     # Just output a single snapshot
     params = { 'radws_table' : 'eos.bell.cc.dat',
-               'tend' : '18650', 'dt_snap' : '18650' }
+               'tend' : '12555', 'dt_snap' : '12555' }
     def setUp(self):
         self.sim=newsim("tests/gravhydro_tests/radws_test.dat")
 

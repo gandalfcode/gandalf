@@ -13,7 +13,7 @@ Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
 No. of SPH particles                        : Nhydro = 4096
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
-Mass of sphere                              : mcloud = 1.0
+Mass of sphere                              : mcloud = 2.0
 Radius of sphere                            : radius = 2138
 Fluid pressire                              : press1 = 5e-10
 
@@ -34,7 +34,7 @@ Opacity out unit                            : kappaoutunit = cm2_g
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 18650
+Simulation end time                         : tend = 12555
 Regular snapshot output frequency           : dt_snap = 100
 Time of first snapshot                      : tsnapfirst = 0
 Screen output frequency (in no. of steps)   : noutputstep = 32
