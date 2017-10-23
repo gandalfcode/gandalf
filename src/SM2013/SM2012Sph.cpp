@@ -282,7 +282,7 @@ void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
   part.invq    = (FLOAT) 1.0/part.q;
   part.u       = eos->SpecificInternalEnergy(part);
   part.sound   = eos->SoundSpeed(part);
-  part.pfactor = eos->Pressure(part)*part.invq/part.rho;
+  part.pressure = eos->Pressure(part);
 
   return;
 }
@@ -404,12 +404,12 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
     parti.dudt += 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj)*
-      parti.pfactor;
+      ((parti.pressure*parti.invq)/parti.rho);
 
     // If neighbour is also active, add contribution to force here
     for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
     neibpart[j].dudt += 0.5*parti.m*parti.u*dvdr*(wkerni + wkernj)*
-      neibpart[j].pfactor;
+      ((neibpart[j].pressure*neibpart[j].invq)/neibpart[j].rho);
 
   }
   //-----------------------------------------------------------------------------------------------

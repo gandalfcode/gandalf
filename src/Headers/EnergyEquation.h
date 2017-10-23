@@ -32,6 +32,7 @@
 #include "Hydrodynamics.h"
 #include "Particle.h"
 #include "Precision.h"
+#include "RadiativeFB.h"
 #include "SimUnits.h"
 
 
@@ -72,7 +73,7 @@ class EnergyRadws : public EnergyEquation<ndim>
 
   using EnergyEquation<ndim>::timing;
 
-  EnergyRadws(DOUBLE, string, FLOAT, SimUnits *, EOS<ndim> *);
+  EnergyRadws(Parameters*, SimUnits *, Radws<ndim> *, RadiativeFB<ndim> *);
   ~EnergyRadws();
 
   //  void ReadTable();
@@ -80,33 +81,26 @@ class EnergyRadws : public EnergyEquation<ndim>
   void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
   void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                      const FLOAT, FLOAT &, FLOAT &, FLOAT &);
+                      const FLOAT, const FLOAT, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
-                          const FLOAT, FLOAT &, FLOAT &);
+                          const FLOAT, const FLOAT, FLOAT &);
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
   FLOAT ebalance(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT);
-  int GetIDens(const FLOAT);
-  int GetITemp(const FLOAT);
-  void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
-  FLOAT GetEnergy(const int, const int, const FLOAT, const FLOAT);
-  FLOAT GetMuBar(const int, const int, const FLOAT, const FLOAT);
+  FLOAT GetCol2(Particle<ndim> &part);
 
 
   //-----------------------------------------------------------------------------------------------
-  int ndens;
-  int ntemp;
-  FLOAT rad_const;
-  FLOAT temp_ambient;
-  FLOAT *eos_dens;
-  FLOAT *eos_temp ;
-  FLOAT **eos_energy;
-  FLOAT **eos_mu;
-  FLOAT **kappa_table;
-  FLOAT **kappar_table;
-  FLOAT **kappap_table;
-  EOS<ndim> *eos;
 
+  int ndens, ntemp;
+  int lombardi;
+  FLOAT fcol2;
+  FLOAT rad_const;
+  FLOAT temp_ambient0;
+  FLOAT temp_min;
+  Radws<ndim> *eos;
+  OpacityTable<ndim> *table;
+  RadiativeFB<ndim> *radfb;
 };
 
 

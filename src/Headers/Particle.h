@@ -160,12 +160,12 @@ struct Particle
   FLOAT dudt0;                      ///< dudt at beginning of step
   FLOAT dudt;                       ///< Compressional heating rate
   FLOAT gpot;                       ///< Gravitational potential
+  FLOAT gpot_hydro;                 ///< Gravitaitonal potential w/o star
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dt_next;                   ///< Next time-step timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
   FLOAT ionfrac;                    ///< Ionisation fraction
   FLOAT Xion;                       ///< Ionisation fraciton (from tree)
-  FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
   FLOAT vsig_max;                   ///< Maximum signal velocity.
@@ -201,12 +201,14 @@ struct Particle
     dudt      = (FLOAT) 0.0;
     dudt0     = (FLOAT) 0.0;
     gpot      = (FLOAT) 0.0;
+    gpot_hydro = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
     dt_next   = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
     ionfrac   = (FLOAT) 0.999;
     Xion      = (FLOAT) 0.999;
-    mu_bar    = (FLOAT) 1.0;
+    ueq       = (FLOAT) 0.0;
+    dt_therm  = (FLOAT) 0.0;
     vsig_max  = (FLOAT) 0.0;
   }
 
@@ -228,7 +230,7 @@ struct SphParticle : public Particle<ndim>
   using Particle<ndim>::r ;
   using Particle<ndim>::v ;
 
-  FLOAT pfactor;                    ///< Pressure factor in SPH EOM
+  FLOAT pressure;                   ///< Pressure
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
@@ -236,7 +238,7 @@ struct SphParticle : public Particle<ndim>
 
   SphParticle()
   {
-    pfactor  = (FLOAT) 0.0;
+    pressure = (FLOAT) 0.0;
     div_v    = (FLOAT) 0.0;
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
@@ -307,7 +309,7 @@ struct GradhSphParticle : public SphParticle<ndim>
   class HydroForcesParticle {
   public:
 	  HydroForcesParticle(): ptype(gas_type), level(0), levelneib(0), iorig(0), flags(none), r(), v(), a(),
-	  m(0), rho (0), h(0), hrangesqd(0), hfactor(0), pfactor(0), sound(0), u(0), alpha(0), zeta(0)
+	  m(0), rho (0), h(0), hrangesqd(0), hfactor(0), pressure(0), invomega(0), sound(0), u(0), alpha(0), zeta(0)
 	  {};
 
 	  HydroForcesParticle(const GradhSphParticle& p) {
@@ -326,7 +328,8 @@ struct GradhSphParticle : public SphParticle<ndim>
 		  h=p.h;
 		  hrangesqd=p.hrangesqd;
 		  hfactor=p.hfactor;
-		  pfactor=p.pfactor;
+		  pressure=p.pressure;
+      invomega=p.invomega;
 		  sound=p.sound;
 		  u=p.u;
 		  alpha=p.alpha;
@@ -346,7 +349,8 @@ struct GradhSphParticle : public SphParticle<ndim>
 	  FLOAT h;
 	  FLOAT hrangesqd;
 	  FLOAT hfactor;
-	  FLOAT pfactor;
+	  FLOAT pressure;
+    FLOAT invomega;
 	  FLOAT sound;
 	  FLOAT u;
 	  FLOAT alpha;

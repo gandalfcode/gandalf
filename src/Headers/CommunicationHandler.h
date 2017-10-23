@@ -39,6 +39,7 @@ class GradhSphCommunicationHandler {
         atree[k] = p.atree[k];
       }
       gpot = p.gpot;
+      gpot_hydro = p.gpot_hydro;
       dudt = p.dudt;
       div_v = p.div_v;
       levelneib = p.levelneib;
@@ -48,6 +49,7 @@ class GradhSphCommunicationHandler {
     FLOAT a[ndim];
     FLOAT atree[ndim];
     FLOAT gpot;
+    FLOAT gpot_hydro;
     FLOAT dudt;
     FLOAT div_v;
     int levelneib;
@@ -71,7 +73,7 @@ class GradhSphCommunicationHandler {
       h_dust = p.h_dust;
       u = p.u;
 
-      pfactor = p.pfactor;
+      pressure = p.pressure;
       alpha = p.alpha;
 
       invomega = p.invomega;
@@ -89,7 +91,7 @@ class GradhSphCommunicationHandler {
     FLOAT h_dust;
     FLOAT u;
 
-    FLOAT pfactor;
+    FLOAT pressure;
     FLOAT alpha;
 
     FLOAT invomega;
@@ -111,6 +113,7 @@ public:
     }
 
     p2.gpot += p.gpot;
+    p2.gpot_hydro += p.gpot_hydro;
     p2.dudt += p.dudt;
     p2.div_v += p.div_v;
     p2.levelneib = max(p.levelneib,p2.levelneib);
@@ -137,7 +140,7 @@ public:
     p2.h_dust = p.h_dust;
     p2.u = p.u;
 
-    p2.pfactor = p.pfactor;
+    p2.pressure = p.pressure;
     p2.alpha = p.alpha;
 
     p2.invomega = p.invomega;
@@ -151,6 +154,7 @@ public:
     p2.flags.set(active);
 
     p2.gpot=0;
+    p2.gpot_hydro=0;
     p2.div_v=0;
     p2.dudt = 0;
     p2.levelneib=0;
@@ -223,6 +227,7 @@ class MeshlessCommunicationHandler {
       }
       iorig = p.iorig;
       gpot = p.gpot;
+      gpot_hydro = p.gpot_hydro;
       vsig_max = p.vsig_max;
 
     }
@@ -234,6 +239,7 @@ class MeshlessCommunicationHandler {
     FLOAT a[ndim];
     FLOAT atree[ndim];
     FLOAT gpot;
+    FLOAT gpot_hydro;
     FLOAT vsig_max;
   };
 
@@ -256,6 +262,7 @@ public:
 	    }
 
 	    p2.gpot += p.gpot;
+      p2.gpot_hydro += p.gpot_hydro;
 	    p2.vsig_max = max(p2.vsig_max,p.vsig_max);
   }
 
@@ -291,6 +298,7 @@ public:
   p2.m = p.m;
   p2.ndens = p.ndens;
   p2.gpot = 0.0;
+  p2.gpot_hydro = 0.0;
   p2.vsig_max=p.vsig_max;
   p2.sound=p.sound;
 

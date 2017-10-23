@@ -408,7 +408,7 @@ template <int ndim>
 void MpiControl<ndim>::UpdateSinksAfterAccretion
  (Sinks<ndim>* sink)                             ///< [inout] Pointer to sinks array
 {
-  const int number_variables = ndim*6 + 14;      // ..
+  const int number_variables = ndim*6 + 15;      // ..
   int local_sinks = 0;                           // ..
   int offset = 0;                                // ..
   Box<ndim> mydomain = this->MyDomain();         // ..
@@ -451,6 +451,7 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
       sendbuffer[offset++] = sink->sink[s].taccrete;
       sendbuffer[offset++] = sink->sink[s].trot;
       sendbuffer[offset++] = sink->sink[s].utot;
+      sendbuffer[offset++] = sink->sink[s].dmdt;
       for (int k=0; k<3; k++) sendbuffer[offset++] = sink->sink[s].angmom[k];
 
       StarParticle<ndim>& star = *(sink->sink[s].star);
@@ -501,6 +502,7 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
     sink->sink[s].taccrete = receivebuffer[displ[origin] + offset_rank + offset++];
     sink->sink[s].trot     = receivebuffer[displ[origin] + offset_rank + offset++];
     sink->sink[s].utot     = receivebuffer[displ[origin] + offset_rank + offset++];
+    sink->sink[s].dmdt     = receivebuffer[displ[origin] + offset_rank + offset++];
     for (int k=0; k<3; k++) {
       sink->sink[s].angmom[k] = receivebuffer[displ[origin] + offset_rank + offset++];
     }

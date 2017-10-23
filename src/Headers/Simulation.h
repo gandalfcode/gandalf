@@ -54,6 +54,7 @@
 #include "Precision.h"
 #include "Parameters.h"
 #include "Radiation.h"
+#include "RadiativeFB.h"
 #include "RandomNumber.h"
 #include "SimUnits.h"
 #include "Sinks.h"
@@ -314,6 +315,7 @@ class Simulation : public SimulationBase
   Nbody<ndim> *subsystem;              ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;     ///< N-body tree to create sub-systems
   Radiation<ndim> *radiation;          ///< Radiation field object
+  RadiativeFB<ndim> *radfb;            ///< Radiative feedback object
   RandomNumber *randnumb;              ///< Random number object (pointer)
   Sinks<ndim> *sinks;                  ///< Sink particle object
   TimeIntegration<ndim> *hydroint;     ///< Time Integration scheme for hydro pointer
@@ -413,6 +415,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sphneib;
   using Simulation<ndim>::neib;
   using Simulation<ndim>::radiation;
+  using Simulation<ndim>::radfb;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
@@ -497,6 +500,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::sph;
   using SphSimulation<ndim>::sphneib;
   using SphSimulation<ndim>::neib;
+  using SphSimulation<ndim>::radfb;
   using SphSimulation<ndim>::tmax_wallclock;
   using SphSimulation<ndim>::sphdust ;
 #ifdef MPI_PARALLEL

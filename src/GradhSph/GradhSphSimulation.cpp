@@ -200,6 +200,13 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Radiative feedback object
+  //-----------------------------------------------------------------------------------------------
+  if (intparams["rad_fb"]) {
+    radfb = new RadiativeFB<ndim>(&simunits, simparams);
+ 	} else {
+    radfb = NULL;
+  }
 
   // Energy integration object
   //-----------------------------------------------------------------------------------------------
@@ -207,8 +214,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       stringparams["energy_integration"] == "radws"||
       stringparams["energy_integration"] == "rad_ws") {
     uint = new EnergyRadws<ndim, GradhSphParticle>
-      (floatparams["energy_mult"], stringparams["radws_table"],
-       floatparams["temp_ambient"], &simunits, sph->eos);
+      (simparams, &simunits, (Radws<ndim> *)sph->eos, radfb);
   }
   else if (stringparams["energy_integration"] == "null" ||
            stringparams["energy_integration"] == "none") {

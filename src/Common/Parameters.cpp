@@ -270,6 +270,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["eta_eos"] = 1.4;
   floatparams["Kpoly"] = 1.0;
   stringparams["radws_table"] = "eos.bell.cc.dat";
+  intparams["lombardi_method"] = 0;
   floatparams["temp_ambient"] = 5.0;
 
   // Artificial viscosity parameters
@@ -519,6 +520,23 @@ void Parameters::SetDefaultValues(void)
   // Supernova feedback parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["supernova_feedback"] = "none";
+
+  // Radiative feedback parameters
+  //-----------------------------------------------------------------------------------------------
+  intparams["rad_fb"] = 0;
+  intparams["ambient_heating"] = 0;
+  intparams["disc_heating"] = 0;
+  intparams["sink_heating"] = 0;
+  stringparams["sink_fb"] = "continuous";
+  floatparams["r_smooth"] = 0.01;
+  floatparams["temp_q"] = 0.75;
+  floatparams["temp_q_secondary"] = 0.75;
+  floatparams["temp_au"] = 250;
+  floatparams["temp_au_secondary"] = 250;
+  floatparams["f_acc"] = 0.75;
+  floatparams["r_star"] = 3.0;
+  floatparams["r_bdwarf"] = 0.2;
+  floatparams["r_planet"] = 0.075;
 
   return;
 }
