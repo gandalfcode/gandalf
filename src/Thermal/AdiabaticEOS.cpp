@@ -33,7 +33,7 @@
 //=================================================================================================
 template <int ndim>
 Adiabatic<ndim>::Adiabatic(Parameters* simparams, SimUnits *units):
-  EOS<ndim>(simparams->floatparams["gamma_eos"], simparams->floatparams["gamma_eos"]),
+  EOS<ndim>(simparams->floatparams["gamma_eos"]),
   mu_bar(simparams->floatparams["mu_bar"])
 {
 }
@@ -54,7 +54,7 @@ Adiabatic<ndim>::~Adiabatic()
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::EntropicFunction(Particle<ndim> &part)
+FLOAT Adiabatic<ndim>::EntropicFunction(const EosParticleProxy<ndim>&part)
 {
   return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
@@ -66,16 +66,10 @@ FLOAT Adiabatic<ndim>::EntropicFunction(Particle<ndim> &part)
 /// Returns adiabatic sound speed of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::SoundSpeed(Particle<ndim> &part)
+FLOAT Adiabatic<ndim>::SoundSpeed(const EosParticleProxy<ndim>&part)
 {
   return sqrt(gamma*gammam1*part.u);
 }
-template <int ndim>
-FLOAT Adiabatic<ndim>::SoundSpeed(FLOAT, FLOAT u)
-{
-  return sqrt(gamma*gammam1*u);
-}
-
 
 
 
@@ -84,7 +78,7 @@ FLOAT Adiabatic<ndim>::SoundSpeed(FLOAT, FLOAT u)
 /// Returns specific internal energy of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
+FLOAT Adiabatic<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndim>&part)
 {
   return part.u;
 }
@@ -96,7 +90,7 @@ FLOAT Adiabatic<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 /// Returns temperature of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::Temperature(Particle<ndim> &part)
+FLOAT Adiabatic<ndim>::Temperature(const EosParticleProxy<ndim>&part)
 {
   return gammam1*part.u;
 }

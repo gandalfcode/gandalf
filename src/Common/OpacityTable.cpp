@@ -34,6 +34,7 @@
 #include "../Headers/Integration.h"
 #include "Constants.h"
 #include "Debug.h"
+#include "EOS.h"
 #include "OpacityTable.h"
 #include "Exception.h"
 #include "Parameters.h"
@@ -278,7 +279,7 @@ FLOAT OpacityTable<ndim>::GetEnergy(const int idens, const int itemp)
 //=================================================================================================
 template <int ndim>
 FLOAT OpacityTable<ndim>::GetMuBar
- (Particle<ndim> &part)
+ (const EosParticleProxy<ndim> &part)
 {
   int idens = GetIDens(part.rho);
   int iener = GetIEner(part.u, idens);
@@ -293,7 +294,7 @@ FLOAT OpacityTable<ndim>::GetMuBar
 //=================================================================================================
 template <int ndim>
 FLOAT OpacityTable<ndim>::GetGamma
- (Particle<ndim> &part)
+ (const EosParticleProxy<ndim> &part)
 {
   int idens = GetIDens(part.rho);
   int iener = GetIEner(part.u, idens);
@@ -310,11 +311,51 @@ FLOAT OpacityTable<ndim>::GetGamma
 //=================================================================================================
 template <int ndim>
 FLOAT OpacityTable<ndim>::GetGamma1
- (Particle<ndim> &part)
+ (const EosParticleProxy<ndim> &part)
 {
   int idens = GetIDens(part.rho);
   int iener = GetIEner(part.u, idens);
   return eos_gamma1[idens][iener];
+}
+
+//=================================================================================================
+//  OpacityTable::GetEnergyFromPressure()
+/// GetEnergyFromPressure computes the internal energy starting from the pressure
+//=================================================================================================
+template <int ndim>
+FLOAT OpacityTable<ndim>::GetEnergyFromPressure(const FLOAT rho, const FLOAT P) {
+
+  int idens = GetIDens(rho);
+
+  FLOAT* p_gamma  = eos_gamma[idens];
+  FLOAT* p_energy = eos_energy[idens];
+
+  // Solve for P/rho == u*(gamma-1)
+
+  int l=0, u=ntemp-1;
+
+  if ((p_gamma[u]-1) * rho * p_energy[u] > P) return P / (rho*(p_gamma[u]-1)) ;
+  if ((p_gamma[l]-1) * rho * p_energy[u] < P) return P / (rho*(p_gamma[l]-1)) ;
+
+  // Get the value l that gives a equal or smaller internal energy than the desired value:
+  while (l < u) {
+    int c = (l + c)/2;
+
+    FLOAT Pi = (p_gamma[c]-1) * rho * p_energy[c];
+
+    if (Pi > P)
+      u = c;
+    else
+      l = c;
+  }
+
+  // Check whether the lower or upper bound is closer:
+  if ((l+1 < ntemp) &&
+      ((p_gamma[l+1]-1)*rho*p_energy[l+1] - P) < (P - (p_gamma[l]-1)*rho*p_energy[l]))
+      l++ ;
+
+ return P / (rho*(p_gamma[l]-1)) ;
+
 }
 
 template class OpacityTable<1>;

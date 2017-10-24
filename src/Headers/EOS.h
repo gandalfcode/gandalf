@@ -29,8 +29,6 @@
 
 #include "Precision.h"
 #include "Constants.h"
-//#include "Nbody.h"
-//#include "Parameters.h"
 #include "OpacityTable.h"
 #include "Particle.h"
 #include "SimUnits.h"
@@ -100,8 +98,8 @@ struct StateVector {
     : sound_speed(0)
   { } ;
 
-  PrimitiveVariables Wprim;
-  ConservedVariables Ucons;
+  PrimitiveVariables<ndim> Wprim;
+  ConservedVariables<ndim> Ucons;
 
   FLOAT sound_speed ;
 };
@@ -115,16 +113,16 @@ struct StateVector {
 template<int ndim>
 struct EosParticleProxy {
   EosParticleProxy()
-  : rho(0), u(0), rho(0), p(0), ionfrac(0)
+  : rho(0), u(0), p(0), ionfrac(0), ionstate(0)
   {
     for (int i=0; i < ndim; ++i) r[i] = 0;
     for (int i=0; i < ndim; ++i) v[i] = 0;
   }
   EosParticleProxy(Particle<ndim>& p)
-    : rho(p.rho), u(p.u), rho(p.rho), p(p.p), ionfrac(p.ionfrac)
+    : rho(p.rho), u(p.u), p(p.pressure), ionfrac(p.ionfrac), ionstate(p.ionstate)
   {
     for (int i=0; i < ndim; ++i) r[i] = p.r[i];
-    for (int i=0; i < ndim; ++i) v[i] = v.r[i];
+    for (int i=0; i < ndim; ++i) v[i] = p.v[i];
   }
 
   FLOAT r[ndim];
@@ -133,6 +131,7 @@ struct EosParticleProxy {
   FLOAT u;
   FLOAT p;
   FLOAT ionfrac;
+  int   ionstate;
 };
 
 //=================================================================================================
@@ -148,25 +147,18 @@ class EOS
 {
  public:
 
-  EOS(FLOAT _eta, FLOAT _gamma):
-    eta(_eta),
+  EOS(FLOAT _gamma):
     gamma(_gamma),
     gammam1(_gamma - (FLOAT) 1.0)
    {};
-
-  EOS(FLOAT _gamma):
-    eta(_gamma),
-    gamma(_gamma),
-    gammam1(_gamma - (FLOAT) 1.0),
-    {};
-
   virtual ~EOS() {};
 
-  virtual FLOAT Pressure(Particle<ndim> &part) { return gammam1*part.rho*part.u; }
-  virtual FLOAT EntropicFunction(Particle<ndim> &) = 0;
-  virtual FLOAT SoundSpeed(Particle<ndim> &) = 0;
-  virtual FLOAT Temperature(Particle<ndim> &) = 0;
-  virtual FLOAT SpecificInternalEnergy(Particle<ndim> &) = 0;
+  virtual FLOAT Pressure(const EosParticleProxy<ndim>& part) { return gammam1*part.rho*part.u; }
+  virtual FLOAT EntropicFunction(const EosParticleProxy<ndim>&) = 0;
+  virtual FLOAT SoundSpeed(const EosParticleProxy<ndim>&) = 0;
+  virtual FLOAT Temperature(const EosParticleProxy<ndim>&) = 0;
+  virtual FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&) = 0;
+
   virtual void set_nbody_data(Nbody<ndim> *) { } ;
 
   virtual FLOAT InternalEnergyFromPressure(const EosParticleProxy<ndim>&p){
@@ -189,8 +181,6 @@ class EOS
   }
 
 
-
-  const FLOAT eta;                               ///< Polytropic index
   const FLOAT gamma;                             ///< Ratio of specific heats
   const FLOAT gammam1;                           ///< gamma - 1
 
@@ -217,13 +207,10 @@ protected:
   Isothermal(Parameters*, SimUnits *);
   virtual ~Isothermal();
 
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
- private:
-  FLOAT SoundSpeed(FLOAT density, FLOAT internal_energy);
- public:
+  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
 
   const FLOAT temp0;
   const FLOAT mu_bar;
@@ -242,7 +229,6 @@ protected:
 template <int ndim>
 class Polytropic: public EOS<ndim>
 {
-  using EOS<ndim>::eta;
   using EOS<ndim>::gamma;
   using EOS<ndim>::gammam1;
 
@@ -251,16 +237,14 @@ class Polytropic: public EOS<ndim>
   Polytropic(Parameters*, SimUnits *);
   virtual ~Polytropic();
 
-  FLOAT Pressure(Particle<ndim> &);
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
- private:
-   FLOAT SoundSpeed(FLOAT density, FLOAT internal_energy);
- public:
+  FLOAT Pressure(const EosParticleProxy<ndim>&);
+  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
 
   const FLOAT Kpoly;
+  const FLOAT eta;
 
 };
 
@@ -284,13 +268,11 @@ class Barotropic: public EOS<ndim>
   Barotropic(Parameters*, SimUnits *);
   virtual ~Barotropic();
 
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
- private:
-   FLOAT SoundSpeed(FLOAT density, FLOAT internal_energy);
- public:
+  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
+
   FLOAT temp0;
   FLOAT mu_bar;
   FLOAT rho_bary;
@@ -318,13 +300,10 @@ class Barotropic2: public EOS<ndim>
   Barotropic2(Parameters*, SimUnits *);
   virtual ~Barotropic2();
 
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
- private:
-   FLOAT SoundSpeed(FLOAT density, FLOAT internal_energy);
- public:
+  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
 
   FLOAT temp0;
   FLOAT mu_bar;
@@ -355,13 +334,10 @@ class Adiabatic: public EOS<ndim>
   Adiabatic(Parameters*, SimUnits *);
   virtual ~Adiabatic();
 
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
- private:
-   FLOAT SoundSpeed(FLOAT density, FLOAT internal_energy);
- public:
+  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
 
   const FLOAT mu_bar;
 
@@ -389,11 +365,8 @@ class LocallyIsothermal: public Isothermal<ndim>
   LocallyIsothermal(Parameters*, SimUnits *);
   virtual ~LocallyIsothermal();
 
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
- private:
-   FLOAT SoundSpeed(FLOAT density, FLOAT internal_energy);
- public:
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
 
   virtual void set_nbody_data(Nbody<ndim>* nbody_aux) {
     nbody = nbody_aux;
@@ -427,13 +400,9 @@ class DiscLocallyIsothermal: public Isothermal<ndim>
   DiscLocallyIsothermal(Parameters*, SimUnits *);
   virtual ~DiscLocallyIsothermal();
 
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
- private:
-   FLOAT SoundSpeed(FLOAT density, FLOAT internal_energy);
- public:
-
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
 
   virtual void set_nbody_data(Nbody<ndim>* nbody_aux) {
     nbody = nbody_aux;
@@ -465,12 +434,12 @@ class IonisingRadiation: public EOS<ndim>
  public:
 
   IonisingRadiation(Parameters*, SimUnits *);
-  ~IonisingRadiation();
+  virtual ~IonisingRadiation();
 
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
 
   void set_nbody_data(Nbody<ndim>* nbody) {
     eos->set_nbody_data(nbody);
@@ -500,12 +469,12 @@ class MCRadiationEOS: public EOS<ndim>
  public:
 
   MCRadiationEOS(Parameters*, SimUnits *);
-  ~MCRadiationEOS();
+  virtual ~MCRadiationEOS();
 
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
 
   void set_nbody_data(Nbody<ndim>* nbody) {
     eos->set_nbody_data(nbody);
@@ -535,13 +504,14 @@ class Radws : public EOS<ndim>
  public:
 
   Radws(Parameters*, SimUnits *);
-  ~Radws();
+  virtual ~Radws();
 
-  FLOAT Pressure(Particle<ndim> &);
-  FLOAT EntropicFunction(Particle<ndim> &);
-  FLOAT SoundSpeed(Particle<ndim> &);
-  FLOAT Temperature(Particle<ndim> &);
-  FLOAT SpecificInternalEnergy(Particle<ndim> &);
+  FLOAT Pressure(const EosParticleProxy<ndim>&);
+  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
+  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
+  FLOAT Temperature(const EosParticleProxy<ndim>&);
+  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
+  virtual FLOAT InternalEnergyFromPressure(const EosParticleProxy<ndim>&p);
 
   OpacityTable<ndim> *opacity_table;
 };

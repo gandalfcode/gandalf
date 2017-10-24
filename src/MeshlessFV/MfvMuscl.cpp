@@ -142,8 +142,14 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     for (k=0; k<ndim; k++)
       Aij[k] = volume_i*psitildaj[k] - volume_j*psitildai[k];
 
-    FLOAT Amag = sqrt(DotProduct(Aij, Aij, ndim) + small_number);
-    for (k=0; k<ndim; k++) Aunit[k] = Aij[k] / Amag;
+    FLOAT Amag = sqrt(DotProduct(Aij, Aij, ndim));
+    if (Amag > 0) {
+      for (k=0; k<ndim; k++) Aunit[k] = Aij[k] / Amag;
+    } else {
+      // Skip pair as there is no face area to pass flux across.
+      continue ;
+    }
+
 
     // Calculate position and velocity of the face
     if (staticParticles) {
@@ -162,7 +168,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     for (k=0; k<ndim; k++) Wi[k] -= vface[k];
 
     // Time-integrate LHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wi, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wi, gradW, part.sound, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += part.a[k];
     for (var=0; var<nvar; var++) Wi[var] += (FLOAT) 0.5*Wdot[var]*dt;
 
@@ -173,7 +179,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     for (k=0; k<ndim; k++) Wj[k] -= vface[k];
 
     // Time-integrate RHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wj, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wj, gradW, neibpart[j].sound, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
     for (var=0; var<nvar; var++) Wj[var] += (FLOAT) 0.5*Wdot[var]*dt;
 
@@ -193,7 +199,29 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
       riemannExact.ComputeFluxes(Wi, Wj, Aunit, vface, flux);
     }
     else {
-      riemannHLLC.ComputeFluxes(Wi, Wj, Aunit, vface, flux);
+      // Compute both the primitive and conserved quantities so the HLLC solver doesn't
+      // have to make assumptions about the EOS.
+      EosParticleProxy<ndim> Pi, Pj;
+      for (int k=0; k <ndim; k++) {
+        Pi.r[k] = Pj.r[k] = rface[k];
+        Pi.v[k] = Wi[k];
+        Pj.v[k] = Wj[k];
+      }
+      Pi.rho = Wi[irho];
+      Pj.rho = Wj[irho];
+      Pi.p = Wi[ipress];
+      Pj.p = Wj[ipress];
+
+      // Convert primitive to conserved and construct state object
+      Pi.u = this->eos->InternalEnergyFromPressure(Pi);
+      Pj.u = this->eos->InternalEnergyFromPressure(Pj);
+
+      StateVector<ndim> Si, Sj;
+      this->eos->ConstructStateVector(Pi, Si);
+      this->eos->ConstructStateVector(Pj, Sj);
+
+      //riemannHLLC.ComputeFluxes(Wi, Wj, Aunit, vface, flux);
+      riemannHLLC.ComputeFluxes(Si, Sj, Aunit, vface, flux);
     }
 
     // Add the viscosity

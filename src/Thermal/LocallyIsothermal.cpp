@@ -64,7 +64,7 @@ LocallyIsothermal<ndim>::~LocallyIsothermal()
 /// Set the temperature given distance to nearest star
 //=================================================================================================
 template <int ndim>
-FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
+FLOAT LocallyIsothermal<ndim>::Temperature(const EosParticleProxy<ndim>& part)
 {
   FLOAT stardistmin=1e30;
   StarParticle<ndim>* star = nbody->stardata;
@@ -89,7 +89,7 @@ FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
 /// Set the internal energt given distance to nearest star
 //=================================================================================================
 template <int ndim>
-FLOAT LocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
+FLOAT LocallyIsothermal<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndim>& part)
 {
   FLOAT temp = LocallyIsothermal<ndim>::Temperature(part);
   return temp/gammam1/mu_bar;

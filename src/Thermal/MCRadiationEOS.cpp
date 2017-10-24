@@ -76,7 +76,7 @@ MCRadiationEOS<ndim>::~MCRadiationEOS()
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::EntropicFunction(Particle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::EntropicFunction(const EosParticleProxy<ndim>&part)
 {
   //return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
   return eos->EntropicFunction(part);
@@ -89,7 +89,7 @@ FLOAT MCRadiationEOS<ndim>::EntropicFunction(Particle<ndim> &part)
 /// Returns isothermal sound speed of SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::SoundSpeed(Particle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::SoundSpeed(const EosParticleProxy<ndim>&part)
 {
   //return sqrt(gammam1*part.u);
   return part.ionfrac*sqrt(temp_ion/mu_ion) + (1.0 - part.ionfrac)*eos->SoundSpeed(part);
@@ -102,7 +102,7 @@ FLOAT MCRadiationEOS<ndim>::SoundSpeed(Particle<ndim> &part)
 /// Returns specific internal energy
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndim>&part)
 {
   //cout << "u : " << part.ionfrac << "  " << temp_ion << "   " << gammam1 << "   " << mu_ion << "  "
   //   << (1.0 - part.ionfrac) << "   " <<  eos->SpecificInternalEnergy(part) << endl;
@@ -117,7 +117,7 @@ FLOAT MCRadiationEOS<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 /// Returns temperature of particle.
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::Temperature(Particle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::Temperature(const EosParticleProxy<ndim>&part)
 {
   return part.ionfrac*temp_ion + (1.0 - part.ionfrac)*eos->Temperature(part);
 }

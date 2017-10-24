@@ -36,7 +36,6 @@
 #include "Parameters.h"
 #include "DomainBox.h"
 #include "EOS.h"
-#include "RiemannSolver.h"
 #include "ExternalPotential.h"
 #include "SimUnits.h"
 #if defined _OPENMP

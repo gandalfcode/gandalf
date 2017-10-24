@@ -155,11 +155,11 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 
   part.u     = eos->SpecificInternalEnergy(part);
   part.sound = eos->SoundSpeed(part);
-  part.press = eos->Pressure(part);
+  part.pressure = eos->Pressure(part);
 
   assert(part.u > (FLOAT) 0.0);
   assert(part.sound > (FLOAT) 0.0);
-  assert(part.press > (FLOAT) 0.0);
+  assert(part.pressure > (FLOAT) 0.0);
 
   return;
 }
@@ -186,15 +186,6 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOA
     for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
 
     part.u = (Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
-    part.u = eos->SpecificInternalEnergy(part);
-    part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
-
-    if (part.u < 0)
-      cout << part.iorig << " " << part.ptype << ", " << part.u << " "
-        << Qcons[ietot] << " " << ekin << "\n";
-
-    assert(part.u > 0);
-    assert(part.press > 0);
   }
 
   return;

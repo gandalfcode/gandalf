@@ -23,8 +23,9 @@
 #ifndef _OPACITY_TABLE_H_
 #define _OPACITY_TABLE_H_
 
-#include "Particle.h"
 #include "SimUnits.h"
+
+template<int> class EosParticleProxy;
 
 //=================================================================================================
 //  Class OpacityTable
@@ -49,9 +50,10 @@ class OpacityTable
   int GetIEner(const FLOAT, const int);
   void GetKappa(const int, const int, FLOAT &, FLOAT &, FLOAT &);
   FLOAT GetEnergy(const int, const int);
-  FLOAT GetMuBar(Particle<ndim> &part);
-  FLOAT GetGamma(Particle<ndim> &part);
-  FLOAT GetGamma1(Particle<ndim> &part);
+  FLOAT GetMuBar(const EosParticleProxy<ndim> &part);
+  FLOAT GetGamma(const EosParticleProxy<ndim> &part);
+  FLOAT GetGamma1(const EosParticleProxy<ndim> &part);
+  FLOAT GetEnergyFromPressure(const FLOAT, const FLOAT);
   //-----------------------------------------------------------------------------------------------
 
   int ndens;
