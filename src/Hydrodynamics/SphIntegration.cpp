@@ -48,12 +48,12 @@ SphIntegration<ndim>::SphIntegration
 (DOUBLE accel_mult_aux,             ///< Copy of accel timestep multiplier
  DOUBLE courant_mult_aux,           ///< Copy of Courant timestep multipiler
  DOUBLE energy_mult_aux,            ///< Copy of Energy timestep multipiler
- eosenum gas_eos_aux,
+ bool energy_integration_aux,
  tdaviscenum tdavisc_aux) :
   accel_mult(accel_mult_aux),
   courant_mult(courant_mult_aux),
   energy_mult(energy_mult_aux),
-  gas_eos(gas_eos_aux),
+  energy_integration(energy_integration_aux),
   tdavisc(tdavisc_aux)
 {
 }
@@ -114,7 +114,7 @@ DOUBLE SphIntegration<ndim>::Timestep
 
 
   // Explicit energy integration timestep condition
-  if (gas_eos == energy_eqn && part.ptype == gas_type) {
+  if (energy_integration && part.ptype == gas_type) {
     timestep = min(timestep, this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
   }
 

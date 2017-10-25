@@ -35,7 +35,7 @@ template <int ndim>
 Radws<ndim>::Radws(Parameters* simparams, SimUnits *units) :
   EOS<ndim>(simparams->floatparams["gamma_eos"])
 {
-  opacity_table = new OpacityTable<ndim>(simparams->stringparams["radws_table"], units);
+  opacity_table = new OpacityTable<ndim>(simparams, units);
 }
 
 

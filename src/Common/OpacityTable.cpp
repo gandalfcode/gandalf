@@ -50,7 +50,7 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 OpacityTable<ndim>::OpacityTable
- (string radws_table,
+ (Parameters* simparams,
   SimUnits *simunits)
 {
   int i, j, l;
@@ -58,9 +58,11 @@ OpacityTable<ndim>::OpacityTable
   string line;
 
   // Check for correct opacity units
-  if (simunits->kappa.outunit != "cm2_g") {
+  if (simunits->kappa.outunit != "cm2_g" && simparams->stringparams["energy_integration"] == "radws") {
     ExceptionHandler::getIstance().raise("Error: Wrong units for opacity, use cm2_g");
   }
+
+  string radws_table = simparams->stringparams["radws_table"];
 
   ifstream file;
   file.open(radws_table.c_str(), ios::in);
@@ -334,12 +336,14 @@ FLOAT OpacityTable<ndim>::GetEnergyFromPressure(const FLOAT rho, const FLOAT P) 
 
   int l=0, u=ntemp-1;
 
-  if ((p_gamma[u]-1) * rho * p_energy[u] > P) return P / (rho*(p_gamma[u]-1)) ;
-  if ((p_gamma[l]-1) * rho * p_energy[u] < P) return P / (rho*(p_gamma[l]-1)) ;
+
+  if ((p_gamma[u]-1) * rho * p_energy[u] < P) return P / (rho*(p_gamma[u]-1)) ;
+  if ((p_gamma[l]-1) * rho * p_energy[l] > P) return P / (rho*(p_gamma[l]-1)) ;
+
 
   // Get the value l that gives a equal or smaller internal energy than the desired value:
-  while (l < u) {
-    int c = (l + c)/2;
+  while (l + 1 < u) {
+    int c = (l + u)/2;
 
     FLOAT Pi = (p_gamma[c]-1) * rho * p_energy[c];
 
@@ -349,10 +353,12 @@ FLOAT OpacityTable<ndim>::GetEnergyFromPressure(const FLOAT rho, const FLOAT P) 
       l = c;
   }
 
+  assert(l+1 < ntemp);
+
   // Check whether the lower or upper bound is closer:
-  if ((l+1 < ntemp) &&
-      ((p_gamma[l+1]-1)*rho*p_energy[l+1] - P) < (P - (p_gamma[l]-1)*rho*p_energy[l]))
+  if (((p_gamma[l+1]-1)*rho*p_energy[l+1] - P) < (P - (p_gamma[l]-1)*rho*p_energy[l]))
       l++ ;
+
 
  return P / (rho*(p_gamma[l]-1)) ;
 

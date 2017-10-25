@@ -44,9 +44,10 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 SphLeapfrogDKD<ndim, ParticleType>::SphLeapfrogDKD(DOUBLE accel_mult_aux, DOUBLE courant_mult_aux,
-                                                   DOUBLE energy_mult_aux, eosenum gas_eos_aux,
+                                                   DOUBLE energy_mult_aux, bool energy_integration,
                                                    tdaviscenum tdavisc_aux) :
-  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux, energy_mult_aux, gas_eos_aux, tdavisc_aux)
+  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux, energy_mult_aux, energy_integration,
+                       tdavisc_aux)
 {
 }
 
@@ -119,7 +120,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
     if (tdavisc != notdav) part.alpha += part.dalphadt*timestep;
 
     // Integrate explicit energy equation
-    if (gas_eos == energy_eqn) part.u = part.u0 + part.dudt*dt;
+    if (energy_integration) part.u = part.u0 + part.dudt*dt;
 
     // Set particle as active at end of step
     if (dn == nstep/2) part.flags.set(active);
@@ -195,7 +196,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
 
-      if (gas_eos == energy_eqn) {
+      if (energy_integration) {
         part.u0 = part.u;
       }
 

@@ -41,7 +41,7 @@ class OpacityTable
 {
  public:
 
-  OpacityTable(string, SimUnits *);
+  OpacityTable(Parameters*, SimUnits *);
   ~OpacityTable();
 
   int GetIDens(const FLOAT);

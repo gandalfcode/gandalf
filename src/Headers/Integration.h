@@ -77,7 +77,7 @@ class SphIntegration : public TimeIntegration<ndim>
 
   //SphIntegration(DOUBLE accel_mult_aux, DOUBLE courant_mult_aux):
   //  accel_mult(accel_mult_aux),courant_mult(courant_mult_aux) {}
-  SphIntegration(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
+  SphIntegration(DOUBLE, DOUBLE, DOUBLE, bool, tdaviscenum);
   virtual ~SphIntegration();
 
   void SetActiveParticles(const int, Hydrodynamics<ndim> *) = 0 ;
@@ -91,7 +91,7 @@ class SphIntegration : public TimeIntegration<ndim>
   const DOUBLE accel_mult ;
   const DOUBLE courant_mult ;
   const DOUBLE energy_mult ;
-  const eosenum gas_eos ;
+  const bool energy_integration ;
   const tdaviscenum tdavisc;
 };
 
@@ -110,11 +110,11 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
 {
  public:
 
-  using SphIntegration<ndim>::gas_eos;
+  using SphIntegration<ndim>::energy_integration;
   using SphIntegration<ndim>::tdavisc;
   using SphIntegration<ndim>::timing;
 
-  SphLeapfrogKDK(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
+  SphLeapfrogKDK(DOUBLE, DOUBLE, DOUBLE, bool, tdaviscenum);
   virtual ~SphLeapfrogKDK();
 
   void SetActiveParticles(const int, Hydrodynamics<ndim> *);
@@ -141,11 +141,11 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
 {
  public:
 
-  using SphIntegration<ndim>::gas_eos;
+  using SphIntegration<ndim>::energy_integration;
   using SphIntegration<ndim>::tdavisc;
   using SphIntegration<ndim>::timing;
 
-  SphLeapfrogDKD(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
+  SphLeapfrogDKD(DOUBLE, DOUBLE, DOUBLE, bool, tdaviscenum);
   virtual  ~SphLeapfrogDKD();
 
   void SetActiveParticles(const int, Hydrodynamics<ndim> *);
