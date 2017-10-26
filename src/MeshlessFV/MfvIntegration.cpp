@@ -76,6 +76,9 @@ void MfvIntegration<ndim,ParticleType>::AdvanceParticles
     }
     for (int k=0; k<ndim; k++) Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt;
 
+    // Add any cooling
+    Qcons[MeshlessFV<ndim>::ietot] -= part.cooling*dt;
+
 
     // Some sanity-checking
     //assert(isnormal(Qcons[irho]));

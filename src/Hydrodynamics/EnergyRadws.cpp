@@ -51,8 +51,8 @@ using namespace std;
 //  EnergyRadws::EnergyRadws()
 /// EnergyRadws class constructor
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-EnergyRadws<ndim,ParticleType>::EnergyRadws
+template <int ndim>
+EnergyRadwsBase<ndim>::EnergyRadwsBase
  (Parameters* simparams,
   SimUnits *simunits,
   Radws<ndim> *eos_,
@@ -91,8 +91,8 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
 //  EnergyRadws::~EnergyRadws()
 /// EnergyRadws class destructor
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-EnergyRadws<ndim,ParticleType>::~EnergyRadws()
+template <int ndim>
+EnergyRadwsBase<ndim>::~EnergyRadwsBase()
 {
 
 }
@@ -145,8 +145,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
   return;
 }
 
-
-
 //=================================================================================================
 //  EnergyRadws::EndTimestep
 /// Record all important thermal quantities at the end of the step for start of the new timestep.
@@ -197,14 +195,99 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 }
 
 
+//=================================================================================================
+//  EnergyRadws::EndTimestep
+/// Compute the cooling for the old and new time-steps for the meshless
+//=================================================================================================
+template <int ndim>
+void EnergyRadws<ndim,MeshlessFVParticle>::EndTimestep
+ (const int n,                         ///< [in] Integer time in block time struct
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep,                ///< [in] Base timestep value
+  Hydrodynamics<ndim>* hydro)
+{
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  FLOAT temp;                          // Particle temperature
+  FLOAT temp_amb = temp_ambient0;      // Ambient particle temperature
+  FLOAT col2;                          // RadWS or Lombardi metric
+
+  MeshlessFVParticle<ndim>* partdata = hydro->template GetParticleArray<MeshlessFVParticle>();
+  MeshlessFV<ndim>* mfv = reinterpret_cast<MeshlessFV<ndim>*>(hydro);
+
+  debug2("[EnergyRadws::EndTimestep]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_END_TIMESTEP");
+
+
+  //-----------------------------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(dn, i, temp, col2) shared(partdata, mfv, temp_amb)
+  for (i=0; i<mfv->Nhydro; i++) {
+    MeshlessFVParticle<ndim> &part = partdata[i];
+    if (part.flags.is_dead()) continue;
+
+    if (part.flags.check(end_timestep)) {
+
+      // Compute the primitive variables
+      FLOAT Qcons[MeshlessFV<ndim>::nvar] ;
+      for (int k=0; k<MeshlessFV<ndim>::nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQ[k];
+
+      mfv->UpdateArrayVariables(part, Qcons);
+      mfv->ComputeThermalProperties(part);
+      mfv->UpdatePrimitiveVector(part);
+
+      // Compute an estimate of dudt:
+      FLOAT dudt = part.dQ[MeshlessFV<ndim>::ietot] -
+          0.5*(DotProduct(Qcons,Qcons,ndim)/Qcons[MeshlessFV<ndim>::irho] -
+              DotProduct(part.Qcons0,part.Qcons0,ndim)/part.Qcons0[MeshlessFV<ndim>::irho]);
+      dudt /= part.dt ;
+
+      temp = eos->Temperature(part);
+      if (radfb) temp_amb = radfb->AmbientTemp(part);
+      col2 = GetCol2(part);
+
+      EnergyFindEqui(part.rho, temp, temp_amb, col2, part.u, dudt,
+          part.ueq, part.dt_therm);
+
+
+      // Work out the cooling rate of the previous and new timestep.
+      if (part.dt < 1e-4*part.dt_therm) {
+        FLOAT Xi_old = part.dt / part.dt_therm ;
+        part.dQ[MeshlessFV<ndim>::ietot] +=
+            (part.ueq - part.u) * Xi_old*(1 - Xi_old/2);
+      }
+      else {
+        part.dQ[MeshlessFV<ndim>::ietot] +=
+            (part.ueq - part.u) * (1 - exp( - part.dt / part.dt_therm));
+      }
+
+      FLOAT Xi_new;
+      if (part.dt_next < 1e-4*part.dt_therm) {
+        Xi_new = part.dt_next/part.dt_therm;
+        Xi_new = (1 - Xi_new/2) / part.dt_therm;
+      }
+      else {
+        Xi_new = (1 - exp( - part.dt_next / part.dt_therm)) / part.dt_next ;
+      }
+
+      // Average cooling rate over the next time-step
+      part.cooling = - (part.u - part.ueq)*exp(-part.dt/part.dt_therm)*Xi_new ;
+
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
 
 //=================================================================================================
 //  EnergyRadws::~EnergyFindEqui()
 /// Computes the thermal equilibrium state of the particle (i.e. its equilibrium temperature and
 /// internal energy) including the thermal timescale to reach this equilibrium.
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
+template <int ndim>
+void EnergyRadwsBase<ndim>::EnergyFindEqui
  (const FLOAT rho,                             ///< [in] ..
   const FLOAT temp,                            ///< [in] ..
   const FLOAT temp_ambient,                    ///< [in] ..
@@ -259,8 +342,8 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
 //  EnergyRadws::EnergyFindEquiTemp
 /// EnergyFindEquiTemp returns equilibrium temperature
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
+template <int ndim>
+void EnergyRadwsBase<ndim>::EnergyFindEquiTemp
  (const int idens,                         ///< ..
   const FLOAT rho,                         ///< ..
   const FLOAT temp,                        ///< ..
@@ -412,8 +495,8 @@ void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
 //  Calculates net heating rate due to hydro (i.e. expansion/contraction)
 //  and radiative effects (i.e heating/cooling)
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-FLOAT EnergyRadws<ndim,ParticleType>::ebalance
+template <int ndim>
+FLOAT EnergyRadwsBase<ndim>::ebalance
  (const FLOAT dudt,
   const FLOAT temp_ex,
   const FLOAT temp,
@@ -432,8 +515,8 @@ FLOAT EnergyRadws<ndim,ParticleType>::ebalance
 /// potential and the density of the particle. The Lombardi et al. (2015) method instead
 /// uses the hydrodynamical acceleration of a particle as well as its pressure.
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-FLOAT EnergyRadws<ndim,ParticleType>::GetCol2
+template <int ndim>
+FLOAT EnergyRadwsBase<ndim>::GetCol2
  (Particle<ndim> &part)
 {
   if (!lombardi) {
@@ -457,3 +540,6 @@ template class EnergyRadws<3, GradhSphParticle>;
 template class EnergyRadws<1, SM2012SphParticle>;
 template class EnergyRadws<2, SM2012SphParticle>;
 template class EnergyRadws<3, SM2012SphParticle>;
+template class EnergyRadws<1, MeshlessFVParticle>;
+template class EnergyRadws<2, MeshlessFVParticle>;
+template class EnergyRadws<3, MeshlessFVParticle>;
