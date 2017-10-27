@@ -54,10 +54,12 @@ void MfvIntegration<ndim,ParticleType>::AdvanceParticles
 
   int nvar   = MeshlessFV<ndim>::nvar ;
   int irho   = MeshlessFV<ndim>::irho ;
+  int ietot  = MeshlessFV<ndim>::ietot;
+
 
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(partdata, mfv, nvar, irho, cout)
+#pragma omp parallel for default(none) shared(partdata, mfv, nvar, irho, ietot, cout)
   for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
@@ -74,10 +76,17 @@ void MfvIntegration<ndim,ParticleType>::AdvanceParticles
       part.flags.unset(active);
       for (int k=0; k<nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQdt[k]*dt;
     }
-    for (int k=0; k<ndim; k++) Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt;
+    // Add the acceleration / change in energy due to gravity
+    for (int k=0; k<ndim; k++) {
+      Qcons[ietot] += 0.5 * dt *
+          (part.a0[k]*(part.Qcons0[k] + 0.5*part.Qcons0[irho]*part.a0[k]*part.dt) +
+           part.a0[k]*(Qcons[k]       + 0.5*     Qcons [irho]*part.a0[k]*part.dt));
+
+      Qcons[k] += 0.5*(part.Qcons0[irho] + Qcons[irho])*part.a0[k]*dt;
+    }
 
     // Add any cooling
-    Qcons[MeshlessFV<ndim>::ietot] -= part.cooling*dt;
+    Qcons[ietot] -= part.cooling*dt;
 
 
     // Some sanity-checking
@@ -153,11 +162,14 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
 
       // Further update conserved quantities if computing gravitational/nbody  contributions
       for (k=0; k<ndim; k++) {
+        Qcons[ietot] += 0.5 * part.dt *
+            (part.a0[k]*(part.Qcons0[k] + 0.5*part.Qcons0[irho]*part.a0[k]*part.dt) +
+             part.a [k]*(Qcons[k]       + 0.5*     Qcons [irho]*part.a [k]*part.dt));
+
         Qcons[k] += 0.5 * part.dt * (part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
       }
       Qcons[ietot] += 0.5 *
-        (part.dt * DotProduct(part.Qcons0, part.a0, ndim) + part.dt * DotProduct(Qcons, part.a, ndim) +
-         DotProduct(part.a0, part.rdmdt, ndim) + DotProduct(part.a, part.rdmdt, ndim));
+         (DotProduct(part.a0, part.rdmdt, ndim) + DotProduct(part.a, part.rdmdt, ndim));
 
       // Compute primitive values and update all main array quantities
       mfv->UpdateArrayVariables(part, Qcons);

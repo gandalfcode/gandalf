@@ -81,10 +81,11 @@ class EnergyRadwsBase : public EnergyEquation<ndim>
                       const FLOAT, const FLOAT, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
                           const FLOAT, const FLOAT, FLOAT &);
+  FLOAT ImplicitEnergyUpdate(const FLOAT, const FLOAT, const FLOAT,
+                            const FLOAT, const FLOAT, const FLOAT, const FLOAT);
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
   FLOAT ebalance(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT);
-  FLOAT GetCol2(Particle<ndim> &part);
 
 
   //-----------------------------------------------------------------------------------------------
@@ -112,12 +113,13 @@ class EnergyRadws : public EnergyRadwsBase<ndim>
   using EnergyRadwsBase<ndim>::table;
   using EnergyRadwsBase<ndim>::radfb;
   using EnergyRadwsBase<ndim>::temp_ambient0;
+  using EnergyRadwsBase<ndim>::fcol2;
+  using EnergyRadwsBase<ndim>::lombardi;
 
   using EnergyRadwsBase<ndim>::EnergyFindEqui;
   using EnergyRadwsBase<ndim>::EnergyFindEquiTemp;
   using EnergyRadwsBase<ndim>::Timestep;
   using EnergyRadwsBase<ndim>::ebalance;
-  using EnergyRadwsBase<ndim>::GetCol2;
 
  public:
   using EnergyRadwsBase<ndim>::timing;
@@ -133,6 +135,10 @@ class EnergyRadws : public EnergyRadwsBase<ndim>
   void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
   void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
 
+ private:
+  FLOAT GetCol2(ParticleType<ndim> &part);
+
+
 };
 
 //=================================================================================================
@@ -145,12 +151,12 @@ class EnergyRadws<ndim, MeshlessFVParticle> : public EnergyRadwsBase<ndim> {
   using EnergyRadwsBase<ndim>::table;
   using EnergyRadwsBase<ndim>::radfb;
   using EnergyRadwsBase<ndim>::temp_ambient0;
+  using EnergyRadwsBase<ndim>::fcol2;
+  using EnergyRadwsBase<ndim>::lombardi;
 
-  using EnergyRadwsBase<ndim>::EnergyFindEqui;
-  using EnergyRadwsBase<ndim>::EnergyFindEquiTemp;
+  using EnergyRadwsBase<ndim>::ImplicitEnergyUpdate;
   using EnergyRadwsBase<ndim>::Timestep;
   using EnergyRadwsBase<ndim>::ebalance;
-  using EnergyRadwsBase<ndim>::GetCol2;
 
  public:
   using EnergyRadwsBase<ndim>::timing;
@@ -161,7 +167,14 @@ class EnergyRadws<ndim, MeshlessFVParticle> : public EnergyRadwsBase<ndim> {
   { } ;
   virtual ~EnergyRadws(){};
 
+  void EnergyIntegration(const int,  const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+
+
+ private:
+  FLOAT GetCol2(MeshlessFVParticle<ndim> &part);
+
 } ;
 
 

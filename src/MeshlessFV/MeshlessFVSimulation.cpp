@@ -119,8 +119,8 @@ MeshlessFV<ndim>*  _MeshlessFactorySlopes
 template<int ndim, template<int> class Kernel>
 MeshlessFV<ndim>* _MeshlessTimeIntegFactory
 (Parameters* simparams,
-    SimUnits& simunits)
-    {
+ SimUnits& simunits)
+{
   string sim = simparams->stringparams["sim"];
 
   if (sim == "meshlessfv" || sim == "mfvmuscl") {
@@ -134,7 +134,7 @@ MeshlessFV<ndim>* _MeshlessTimeIntegFactory
   ExceptionHandler::getIstance().raise(message);
 
   return NULL ;
-    }
+}
 
 
 // Create the full Meshless forces object in a type by type way.
@@ -224,6 +224,27 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   // Meshless-time integration object
   hydroint = new MfvIntegration<ndim, MeshlessFVParticle>(simparams);
 
+  // Set-up the cooling / energy integration object
+  //===============================================================================================
+  radfb = NULL ;
+  if (stringparams["energy_integration"] == "radws") {
+    // Radiative feedback object
+    if (intparams["rad_fb"])
+      radfb = new RadiativeFB<ndim>(&simunits, simparams);
+
+    uint = new EnergyRadws<ndim, MeshlessFVParticle>
+        (simparams, &simunits, (Radws<ndim> *)mfv->eos, radfb);
+  }
+  else if (stringparams["energy_integration"] == "null" ||
+      stringparams["energy_integration"] == "none") {
+    uint = new NullEnergy<ndim>(floatparams["energy_mult"]);
+  }
+  else {
+    string message = "Unrecognised parameter : energy_integration = "
+        + simparams->stringparams["energy_integration"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
   string tree_type = stringparams["neib_search"] ;
@@ -275,6 +296,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   // Set eos pointer to nbody
   mfv->eos->set_nbody_data(nbody);
+  if (radfb) radfb->SetSinks(sinks);
+
 
 
   // Set all other hydro parameter variables
@@ -348,6 +371,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   mfvneib->SetTimingObject(timing);
   mfv->timing = timing;
   hydroint->timing = timing;
+  uint->timing = timing;
   //}*/
 
   // Create ghost particle object
@@ -732,6 +756,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Call EndTimestep to set all 'beginning-of-step' variables
+  uint->EndTimestep(n, t, timestep, mfv);
   hydroint->EndTimestep(n, t, timestep, mfv);
   nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
