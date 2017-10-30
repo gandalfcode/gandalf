@@ -38,15 +38,17 @@ class RadwsTest(unittest.TestCase):
         self.assertLess( abs(1 - rho_c/self.rho_c) , self.tol)
         self.assertLess( abs(1 - U_c/self.U_c)     , self.tol)
 
-
+Eerror : 0.356932
+Time: 
+Central density / Specific energy: 
 class Radws_mfm(RadwsTest):
-    rho_c = 1.40022100764e-10
-    U_c   = 9168633.53778
-    tmax  = 76659.4237613
-    tol = 0.1
+    rho_c = 2.02672009908e-13 
+    U_c   = 155461.06611
+    tmax  = 76101.3956448
+
 
     # Just output a single snapshot
     sim = 'meshlessfv'
     params = { 'radws_table' : 'eos.bell.cc.dat', 'courant_mult' : '0.25',
-               'tend' : '12200', 'dt_snap' : '12200' }
+               'tend' : '12100', 'dt_snap' : '12100' }
     
