@@ -9,10 +9,11 @@ class RadwsTest(unittest.TestCase):
     tol = 0.1
 
     # Just output a single snapshot
+    sim = 'gradhsph'
     params = { 'radws_table' : 'eos.bell.cc.dat',
                'tend' : '12555', 'dt_snap' : '12555' }
     def setUp(self):
-        self.sim=newsim("tests/gravhydro_tests/radws_test.dat")
+        self.sim=newsim("tests/gravhydro_tests/radws_test.dat", sim=self.sim)
 
         for param in self.params:
             self.sim.SetParam(param, self.params[param])
@@ -36,3 +37,16 @@ class RadwsTest(unittest.TestCase):
         self.assertLess( abs(1 - tmax/self.tmax)   , self.tol)
         self.assertLess( abs(1 - rho_c/self.rho_c) , self.tol)
         self.assertLess( abs(1 - U_c/self.U_c)     , self.tol)
+
+
+class Radws_mfm(RadwsTest):
+    rho_c = 1.40022100764e-10
+    U_c   = 9168633.53778
+    tmax  = 76659.4237613
+    tol = 0.1
+
+    # Just output a single snapshot
+    sim = 'meshlessfv'
+    params = { 'radws_table' : 'eos.bell.cc.dat', 'courant_mult' : '0.25',
+               'tend' : '12200', 'dt_snap' : '12200' }
+    

@@ -219,7 +219,7 @@ void EnergyRadws<ndim,MeshlessFVParticle>::EndTimestep
   int ietot  = MeshlessFV<ndim>::ietot;
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i, temp, col2) shared(partdata, mfv, temp_amb, cout, irho, ietot)
+#pragma omp parallel for default(none) private(i, temp, col2) shared(partdata, mfv, temp_amb, irho, ietot)
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
@@ -237,36 +237,20 @@ void EnergyRadws<ndim,MeshlessFVParticle>::EndTimestep
         Qcons[k] += 0.5*part.dt * (part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
       }
 
-      Qcons[MeshlessFV<ndim>::ietot] -= part.cooling * part.dt;
-
       mfv->UpdateArrayVariables(part, Qcons);
       mfv->ComputeThermalProperties(part);
       mfv->UpdatePrimitiveVector(part);
-
-
-      // Compute an estimate of the current p dV work (dudt)
-      FLOAT dudt = 0;
-      if (part.dt > 0) {
-
-        FLOAT u0 = part.Qcons0[ietot]
-            - 0.5 * DotProduct(part.Qcons0,part.Qcons0,ndim)/part.Qcons0[irho];
-        u0 /= part.Qcons0[irho];
-
-        FLOAT u1 = Qcons[ietot] + part.cooling * part.dt
-            - 0.5*DotProduct(Qcons,Qcons,ndim)/Qcons[irho];
-        u1 /= Qcons[irho] ;
-
-        dudt = (u1 - u0) / part.dt ;
-      }
 
       temp = eos->Temperature(part);
       if (radfb) temp_amb = radfb->AmbientTemp(part);
       col2 = GetCol2(part);
 
       // Get the cooling rate:
-      FLOAT heating = ImplicitEnergyUpdate(part.rho, part.u, temp, temp_amb, col2, dudt, part.dt);
+      FLOAT heating = ImplicitEnergyUpdate(part.rho, part.u, temp, temp_amb, col2, 0, part.dt);
 
-      part.dQ[ietot] += part.m * heating * part.dt ;
+      // Clip the heating for stability:
+      heating = max(heating, -0.95*part.u/part.dt);
+      part.cooling = - part.m*heating;
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -321,24 +305,12 @@ void EnergyRadws<ndim,MeshlessFVParticle>::EnergyIntegration
       mfv->ComputeThermalProperties(part);
       mfv->UpdatePrimitiveVector(part);
 
-      // Compute an estimate of the current p dV work (dudt)
-      FLOAT dudt = 0;
-      if (part.dt > 0) {
-        FLOAT u0 =
-            part.Qcons0[ietot] - 0.5*DotProduct(part.Qcons0,part.Qcons0,ndim)/part.Qcons0[irho];
-        u0 /= part.Qcons0[irho];
-
-        FLOAT u1 = (Qcons[ietot] - 0.5*DotProduct(Qcons,Qcons,ndim)/Qcons[irho])/Qcons[irho];
-
-        dudt = (u1 - u0) / part.dt ;
-      }
-
       temp = eos->Temperature(part);
       if (radfb) temp_amb = radfb->AmbientTemp(part);
       col2 = GetCol2(part);
 
       // Get the cooling rate:
-      FLOAT heating = ImplicitEnergyUpdate(part.rho, part.u, temp, temp_amb, col2, dudt, part.dt);
+      FLOAT heating = ImplicitEnergyUpdate(part.rho, part.u, temp, temp_amb, col2, 0, part.dt);
 
       part.cooling = - part.m * heating;
     }
@@ -588,7 +560,7 @@ FLOAT EnergyRadwsBase<ndim>::ImplicitEnergyUpdate
   int idens = table->GetIDens(rho);
   int itemp = table->GetITemp(log10(temp));
 
-  FLOAT tolerance = 1e-3;
+  FLOAT tolerance = 1e-12;
 
 
   // First compute the explicit update:
@@ -610,25 +582,28 @@ FLOAT EnergyRadwsBase<ndim>::ImplicitEnergyUpdate
   FLOAT kappaLow, kappaHigh, kappapLow, kappapHigh;
   FLOAT balanceLow, balanceHigh;
   FLOAT gammaLow, gammaHigh, muLow, muHigh;
-  if (heating > 0) {
-    TLow      = temp ;
-    THigh     = pow(10.0, table->eos_temp[itemp + 1]);
 
-    gammaLow  = table->eos_gamma[idens][itemp];
-    gammaHigh = table->eos_gamma[idens][itemp+1];
-    muLow  = table->eos_mu[idens][itemp];
-    muHigh = table->eos_mu[idens][itemp+1];
+  TLow      = pow(10.0, table->eos_temp[itemp]);
+  THigh     = pow(10.0, table->eos_temp[itemp + 1]);
+
+  gammaLow  = table->eos_gamma[idens][itemp];
+  gammaHigh = table->eos_gamma[idens][itemp+1];
+  muLow  = table->eos_mu[idens][itemp];
+  muHigh = table->eos_mu[idens][itemp+1];
 
 
-    table->GetKappa(idens, itemp, kappaLow, _junk_, kappapLow);
-    balanceLow = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
+  table->GetKappa(idens, itemp, kappaLow, _junk_, kappapLow);
+  heating = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
 
-    balanceLow = (TLow / (muLow*(gammaLow-1))) - u - balanceLow*dt;
+  balanceLow = (TLow / (muLow*(gammaLow-1))) - u - heating*dt;
 
-    table->GetKappa(idens, itemp + 1, kappaHigh, _junk_, kappapHigh);
-    balanceHigh = ebalance(dudt, temp_ambient, THigh, kappaHigh, kappapHigh, col2);
+  table->GetKappa(idens, itemp + 1, kappaHigh, _junk_, kappapHigh);
+  balanceHigh = ebalance(dudt, temp_ambient, THigh, kappaHigh, kappapHigh, col2);
 
-    balanceHigh = (THigh / (muHigh*(gammaHigh-1))) - u - balanceHigh*dt;
+  balanceHigh = (THigh / (muHigh*(gammaHigh-1))) - u - balanceHigh*dt;
+
+
+  if (balanceLow < 0) {
 
     while (balanceLow * balanceHigh > 0.0) {
       assert(itemp <= ntemp - 2);
@@ -653,27 +628,8 @@ FLOAT EnergyRadwsBase<ndim>::ImplicitEnergyUpdate
       balanceHigh = (THigh / (muHigh*(gammaHigh-1))) - u - balanceHigh*dt;
     }
   } else {
-    itemp--;
-    THigh    = temp ;
-    TLow     = pow(10.0, table->eos_temp[itemp]);
-
-    gammaLow  = table->eos_gamma[idens][itemp];
-    gammaHigh = table->eos_gamma[idens][itemp+1];
-    muLow  = table->eos_mu[idens][itemp];
-    muHigh = table->eos_mu[idens][itemp+1];
-
-    table->GetKappa(idens, itemp, kappaLow, _junk_, kappapLow);
-    balanceLow = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
-
-    balanceLow = (TLow / (muLow*(gammaLow-1))) - u - balanceLow*dt;
-
-    table->GetKappa(idens, itemp + 1, kappaHigh, _junk_, kappapHigh);
-    balanceHigh = ebalance(dudt, temp_ambient, THigh, kappaHigh, kappapHigh, col2);
-
-    balanceHigh = (THigh / (muHigh*(gammaHigh-1))) - u - balanceHigh*dt;
 
     while (balanceLow * balanceHigh > 0.0) {
-      assert(itemp > 0);
 
       THigh       = TLow;
       kappaHigh   = kappaLow;
@@ -682,28 +638,39 @@ FLOAT EnergyRadwsBase<ndim>::ImplicitEnergyUpdate
       muHigh      = muLow;
       balanceHigh = balanceLow;
 
-      itemp-- ;
+      if (itemp > 0) {
+        itemp-- ;
 
-      TLow      = pow(10.0, table->eos_temp[itemp]);
-      gammaLow  = table->eos_gamma[idens][itemp];
-      muLow     = table->eos_mu[idens][itemp];
+        TLow      = pow(10.0, table->eos_temp[itemp]);
+        gammaLow  = table->eos_gamma[idens][itemp];
+        muLow     = table->eos_mu[idens][itemp];
 
-      table->GetKappa(idens, itemp, kappaLow, _junk_, kappapLow);
-      balanceLow = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
+        table->GetKappa(idens, itemp, kappaLow, _junk_, kappapLow);
+        balanceLow = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
 
-      balanceLow = (TLow / (muLow*(gammaLow-1))) - u - balanceLow*dt;
+        balanceLow = (TLow / (muLow*(gammaLow-1))) - u - balanceLow*dt;
+      }
+      else {
+        TLow = 0 ;
+        balanceLow = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
+
+        balanceLow = (TLow / (muLow*(gammaLow-1))) - u - balanceLow*dt;
+        break;
+      }
     }
   }
 
+  assert(balanceHigh*balanceLow <= 0);
 
   // Refine the search in between THigh and TLow
   //-----------------------------------------------------------------------------------------------
   FLOAT Tc;
   FLOAT balance, u_new;
+  FLOAT T0 = THigh, deltaT = THigh - TLow;
   do  {
     Tc = 0.5*(TLow + THigh);
 
-    FLOAT f = (THigh - Tc) / (THigh - TLow);
+    FLOAT f = (T0 - Tc) / deltaT;
 
     FLOAT kappa = f*kappaHigh + (1-f)*kappaLow;
     FLOAT kappap = f*kappapHigh + (1-f)*kappapLow;
@@ -722,21 +689,12 @@ FLOAT EnergyRadwsBase<ndim>::ImplicitEnergyUpdate
     if (balance*balanceLow < 0) {
       THigh       = Tc;
       balanceHigh = balance;
-      kappaHigh   = kappa;
-      kappapHigh  = kappap;
-      gammaHigh   = gamma;
-      muHigh      = mu;
     }
     else {
       TLow       = Tc;
       balanceLow = balance;
-      kappaLow   = kappa;
-      kappapLow  = kappap;
-      gammaLow   = gamma;
-      muLow      = mu;
     }
-  } while (fabs(balance) > tolerance*u_new);
-
+  } while (fabs(balance) > tolerance*u_new && (THigh-TLow) > tolerance*TLow);
 
   return heating-dudt;
 

@@ -171,6 +171,9 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
       Qcons[ietot] += 0.5 *
          (DotProduct(part.a0, part.rdmdt, ndim) + DotProduct(part.a, part.rdmdt, ndim));
 
+      // Add any cooling:
+      Qcons[ietot] -= part.cooling * part.dt;
+
       // Compute primitive values and update all main array quantities
       mfv->UpdateArrayVariables(part, Qcons);
       mfv->ComputeThermalProperties(part);
@@ -183,6 +186,7 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
       for (k=0; k<ndim; k++) part.rdmdt[k]  = 0.0;
       for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
+      part.cooling = 0;
       part.nlast   = n;
       part.tlast   = t;
       part.dt      = part.dt_next;
