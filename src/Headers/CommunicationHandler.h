@@ -406,7 +406,6 @@ public:
     c.m = 0;
     c.hmax = 0;
     c.maxsound = 0;
-    c.amin = big_number;
     for (int k=0; k<ndim; k++) {
       c.bb.min[k] = big_number;
       c.bb.max[k] = -big_number;
