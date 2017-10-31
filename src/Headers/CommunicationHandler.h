@@ -433,8 +433,6 @@ public:
       c.m += p.m;
       c.hmax = max(c.hmax,p.h);
       c.maxsound = max(c.maxsound,p.sound);
-      c.amin = min(c.amin,
-                   sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
     }
 
     FLOAT dr[ndim];
