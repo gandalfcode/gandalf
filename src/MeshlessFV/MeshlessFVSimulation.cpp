@@ -596,6 +596,23 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   nbody->LoadStellarPropertiesTable(&simunits);
   nbody->UpdateStellarProperties();
 
+  for (i=0; i<mfv->Ntot; i++) {
+    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+    for (k=0; k<ndim; k++) {
+      part.a[k] = (FLOAT) 0.0;
+      part.atree[k] = (FLOAT) 0.0;
+      part.rdmdt[k] = 0.0;
+      part.rdmdt0[k] = 0.0;
+    }
+    for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim+2; k++) part.dQdt[k] = (FLOAT) 0.0;
+    part.level  = 0;
+    part.nstep  = 0;
+    part.nlast  = 0;
+    part.tlast  = t;
+    part.dt     = 0;
+    part.flags.set(active);
+  }
 
   // Compute all initial hydro terms
   // We will need to iterate if we are going to use a relative opening criterion
@@ -608,25 +625,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       mfvneib->SetOpeningCriterion(geometric);
     else
       mfvneib->SetOpeningCriterion(mac_type) ;
-
-    for (i=0; i<mfv->Ntot; i++) {
-      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-      for (k=0; k<ndim; k++) {
-        part.a[k] = (FLOAT) 0.0;
-        part.atree[k] = (FLOAT) 0.0;
-        part.rdmdt[k] = 0.0;
-        part.rdmdt0[k] = 0.0;
-      }
-      for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
-      for (k=0; k<ndim+2; k++) part.dQdt[k] = (FLOAT) 0.0;
-      part.level  = 0;
-      part.nstep  = 0;
-      part.nlast  = 0;
-      part.tlast  = t;
-      part.dt     = 0;
-      part.flags.set(active);
-    }
-    for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set(active);
 
     // Copy all other data from real hydro particles to ghosts
     LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
@@ -660,7 +658,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
-
       mfv->ZeroAccelerations();
 
 #ifdef MPI_PARALLEL
