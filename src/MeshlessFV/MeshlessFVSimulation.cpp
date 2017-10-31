@@ -296,7 +296,6 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   // Set eos pointer to nbody
   mfv->eos->set_nbody_data(nbody);
-  if (radfb) radfb->SetSinks(sinks);
 
 
 
@@ -362,6 +361,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
       + simparams->stringparams["supernova_feedback"];
     ExceptionHandler::getIstance().raise(message);
   }
+
+  if (radfb) radfb->SetSinks(sinks);
 
 
   // Set pointers to timing object
