@@ -35,9 +35,6 @@ template <int ndim>
 DiscIc<ndim>::DiscIc(Simulation<ndim>* _sim, FLOAT _invndim) :
   Ic<ndim>(_sim, _invndim)
 {
-  if (simparams->intparams["dimensionless"] == 0) {
-    ExceptionHandler::getIstance().raise("dimensionless units required");
-  }
   if (simparams->intparams["ndim"] == 1){
     ExceptionHandler::getIstance().raise("The disc IC require at least 2 dimensions!");
   }
@@ -63,11 +60,12 @@ void DiscIc<ndim>::Generate(void)
   // Local copy of important parameters
   const int Npart = simparams->intparams["Nhydro"];
   const FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
-  const FLOAT mass = simparams->floatparams["DiscIcMass"];
+  FLOAT Mstar = simparams->floatparams["DiscIcStarMass"];
+  FLOAT mass = simparams->floatparams["DiscIcMass"];
   const FLOAT p = simparams->floatparams["DiscIcP"];
   const FLOAT q = simparams->floatparams["DiscIcQ"];
-  const FLOAT rin = simparams->floatparams["DiscIcRin"];
-  const FLOAT rout = simparams->floatparams["DiscIcRout"];
+  FLOAT rin = simparams->floatparams["DiscIcRin"];
+  FLOAT rout = simparams->floatparams["DiscIcRout"];
   const FLOAT H_r = simparams->floatparams["DiscIcHr"];
   const bool HaveDust = (simparams->stringparams["dust_forces"] != "none");
   int NDust = 0;
@@ -78,8 +76,15 @@ void DiscIc<ndim>::Generate(void)
   }
   const FLOAT DustGasRatio = simparams->floatparams["DustGasRatio"];
 
-  // Assume units where GM_\ast=1
-  const FLOAT GStar_M = 1;
+  // Convert the units:
+  Mstar = simunits.m.Output_to_CodeUnits(Mstar);
+  mass  = simunits.m.Output_to_CodeUnits(mass);
+
+  rin  = simunits.r.Output_to_CodeUnits(rin);
+  rout = simunits.r.Output_to_CodeUnits(rout);
+
+  // We have units where G = 1:
+  const FLOAT GStar_M = Mstar;
 
 
   // Allocate global and local memory for all particles
@@ -228,7 +233,7 @@ void DiscIc<ndim>::Generate(void)
   StarParticle<ndim>& star = nbody->stardata[0];
   for (int k=0; k<ndim; k++) star.r[k] = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) star.v[k] = (FLOAT) 0.0;
-  star.m = 1;
+  star.m = Mstar;
   star.h = rin/hydro->kernp->kernrange;
 
   // Set up the planet
@@ -238,25 +243,30 @@ void DiscIc<ndim>::Generate(void)
     const FLOAT i = simparams->floatparams["DiscIcPlanetIncl"];
     StarParticle<ndim>& planet = nbody->stardata[1];
 
-    planet.m = simparams->floatparams["DiscIcPlanetMass"];
+    planet.m = simunits.m.Output_to_CodeUnits(simparams->floatparams["DiscIcPlanetMass"]);
     planet.h = simparams->floatparams["DiscIcPlanetAccretionRadiusHill"]*
         rp*pow(simparams->floatparams["DiscIcPlanetMass"]/3.,1./3)/hydro->kernp->kernrange;
 
-    const FLOAT Omega0 = std::sqrt(1 + planet.m/star.m);
+    const FLOAT Omega0 = std::sqrt(star.m + planet.m);
 
     planet.r[0] = rp*(1.+e);
     planet.r[1] = 0.0;
     if (ndim==3) planet.r[2] = 0.0;
     planet.v[0] = 0.0;
-    planet.v[1] = Omega0/std::sqrt(rp)*std::sqrt( (1.0-e)/(1.0+e))* \
+    planet.v[1] = Omega0/std::sqrt(rp)*std::sqrt( (1.0-e)/(1.0+e))*
         std::cos(i*M_PI/180.0);
-    if (ndim==3) planet.v[2] = planet.v[1]*std::sin(i*M_PI/180.0)/  \
-        std::cos(i*M_PI/180.0);
+    if (ndim==3) planet.v[2] = planet.v[1]*std::tan(i*M_PI/180.0);
 
     // Move the planet and star to the centre of mass
-    const FLOAT CoM = star.m * star.r[0] + planet.m * planet.r[0];
-    star.r[0]   -= CoM ;
-    planet.r[0] -= CoM;
+    for (int k=0; k < ndim; k++) {
+      const FLOAT CoM   = (star.m * star.r[k] + planet.m * planet.r[k]) / (star.m + planet.m);
+      star.r[k]   -= CoM;
+      planet.r[k] -= CoM;
+
+      const FLOAT CoMom = (star.m *star.v[k] + planet.m * planet.v[k]) / (star.m + planet.m);
+      star.v[k]   -= CoMom;
+      planet.v[k] -= CoMom;
+    }
   }
 
 
