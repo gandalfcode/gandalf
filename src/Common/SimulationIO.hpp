@@ -368,7 +368,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
     MPI_File_get_position(file, &end_sph_mpi);
     end_sph = end_sph_mpi;
   }
-  MPI_Bcast(&end_sph, 1, MPI_INT, Nmpi-1, MPI_COMM_WORLD);
+  MPI_Bcast(&end_sph, sizeof(end_sph), MPI_BYTE, Nmpi-1, MPI_COMM_WORLD);
 
 
   // Write data for Nbody particles
