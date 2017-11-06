@@ -671,6 +671,9 @@ void SimulationBase::SetupSimulation(void)
   }
 
 #ifdef MPI_PARALLEL
+  // First broadcast restart because GenerateIC might have changed it:
+  MPI_Bcast(&restart, sizeof(restart), MPI_BYTE, 0, MPI_COMM_WORLD) ;
+
   // We need to broadcast the time info read from the snapshot to other processors
   if (restart) {
     this->BroadcastRestartInfo() ;
