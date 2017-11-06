@@ -456,6 +456,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["zmax"] = 1.0;
   floatparams["thermal_energy"] = 1.0;
   floatparams["mach"] = 2.7;
+  floatparams["DiscIcStarMass"] = 1.0;
   floatparams["DiscIcMass"] = 0.01;
   floatparams["DiscIcP"] = 1.0;
   floatparams["DiscIcQ"] = 0.5;
