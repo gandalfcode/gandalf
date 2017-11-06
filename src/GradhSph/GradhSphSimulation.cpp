@@ -55,7 +55,6 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 {
   aviscenum avisc = noav;              // Artificial viscosity enum
   acondenum acond = noac;              // Artificial conductivity enum
-  eosenum eos_type = noeos;            // Gas EOS enum
   tdaviscenum tdavisc = notdav;        // Time-dependent viscosity enum
 
   // Local references to parameter variables for brevity
@@ -108,34 +107,20 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
 
   // Set gas EOS values
-  if (stringparams["gas_eos"] == "isothermal") {
-    eos_type = isothermal;
-  }
-  else if (stringparams["gas_eos"] == "locally_isothermal") {
-    eos_type = locally_isothermal;
-  }
-  else if (stringparams["gas_eos"] == "polytropic") {
-    eos_type = polytropic;
-  }
-  else if (stringparams["gas_eos"] == "barotropic") {
-    eos_type = barotropic;
-  }
-  else if (stringparams["gas_eos"] == "barotropic2") {
-    eos_type = barotropic2;
+  bool energy_integration = true;
+  if (stringparams["gas_eos"] == "isothermal"  || stringparams["gas_eos"] == "locally_isothermal"  ||
+      stringparams["gas_eos"] == "polytropic"  || stringparams["gas_eos"] == "barotropic" ||
+      stringparams["gas_eos"] == "barotropic2" || stringparams["gas_eos"] == "constant_temp" ||
+      stringparams["gas_eos"] == "disc_locally_isothermal") {
+    energy_integration = false;
   }
   else if (stringparams["gas_eos"] == "energy_eqn") {
-    eos_type = energy_eqn;
+    energy_integration = true;
   }
-  else if (stringparams["gas_eos"] == "constant_temp") {
-    eos_type = constant_temp;
-  }
-  else if (stringparams["gas_eos"] == "rad_ws" || stringparams["gas_eos"] == "radws") {
-    eos_type = radws;
-  }
-  else if (stringparams["gas_eos"] == "disc_locally_isothermal") {
-    eos_type = disc_locally_isothermal;
-  }
-  else {
+  else if (stringparams["gas_eos"] == "radws") {
+    energy_integration = (stringparams["energy_integration"] == "null" ||
+                          stringparams["energy_integration"] == "none");
+  } else {
     string message = "Unrecognised eos parameter : gas_eos = " + simparams->stringparams["gas_eos"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -186,12 +171,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["sph_integration"] == "lfkdk") {
     hydroint = new SphLeapfrogKDK<ndim, GradhSphParticle>
       (floatparams["accel_mult"], floatparams["courant_mult"],
-       floatparams["energy_mult"], eos_type, tdavisc);
+       floatparams["energy_mult"], energy_integration, tdavisc);
   }
   else if (stringparams["sph_integration"] == "lfdkd") {
     hydroint = new SphLeapfrogDKD<ndim, GradhSphParticle>
       (floatparams["accel_mult"], floatparams["courant_mult"],
-       floatparams["energy_mult"], eos_type, tdavisc);
+       floatparams["energy_mult"], energy_integration, tdavisc);
     integration_step = max(integration_step,2);
   }
   else {
@@ -210,9 +195,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Energy integration object
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["energy_integration"] == "Radws" ||
-      stringparams["energy_integration"] == "radws"||
-      stringparams["energy_integration"] == "rad_ws") {
+  if (stringparams["energy_integration"] == "radws") {
     uint = new EnergyRadws<ndim, GradhSphParticle>
       (simparams, &simunits, (Radws<ndim> *)sph->eos, radfb);
   }

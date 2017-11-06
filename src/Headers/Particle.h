@@ -155,6 +155,7 @@ struct Particle
   FLOAT hfactor;                    ///< invh^(ndim + 1)
   FLOAT sound;                      ///< Sound speed
   FLOAT rho;                        ///< Density
+  FLOAT pressure;                   ///< Pressure
   FLOAT u;                          ///< Specific internal energy
   FLOAT u0;                         ///< u at beginning of step
   FLOAT dudt0;                      ///< dudt at beginning of step
@@ -195,6 +196,7 @@ struct Particle
     hrangesqd = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;
     rho       = (FLOAT) 0.0;
+    pressure  = (FLOAT) 0.0;
     sound     = (FLOAT) 0.0;
     u         = (FLOAT) 0.0;
     u0        = (FLOAT) 0.0;
@@ -230,7 +232,6 @@ struct SphParticle : public Particle<ndim>
   using Particle<ndim>::r ;
   using Particle<ndim>::v ;
 
-  FLOAT pressure;                   ///< Pressure
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
@@ -238,7 +239,6 @@ struct SphParticle : public Particle<ndim>
 
   SphParticle()
   {
-    pressure = (FLOAT) 0.0;
     div_v    = (FLOAT) 0.0;
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
@@ -329,7 +329,7 @@ struct GradhSphParticle : public SphParticle<ndim>
 		  hrangesqd=p.hrangesqd;
 		  hfactor=p.hfactor;
 		  pressure=p.pressure;
-      invomega=p.invomega;
+		  invomega=p.invomega;
 		  sound=p.sound;
 		  u=p.u;
 		  alpha=p.alpha;
@@ -350,7 +350,7 @@ struct GradhSphParticle : public SphParticle<ndim>
 	  FLOAT hrangesqd;
 	  FLOAT hfactor;
 	  FLOAT pressure;
-    FLOAT invomega;
+      FLOAT invomega;
 	  FLOAT sound;
 	  FLOAT u;
 	  FLOAT alpha;
@@ -414,7 +414,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   using Particle<ndim>::v;
   using Particle<ndim>::a;
 
-  FLOAT press;                         ///< Pressure
   FLOAT invomega;                      ///< ..
   FLOAT div_v;                         ///< Velocity divergence
   FLOAT ndens;                         ///< Particle number density, inverse volume
@@ -434,7 +433,6 @@ struct MeshlessFVParticle : public Particle<ndim>
   MeshlessFVParticle()
   {
     invomega  = (FLOAT) 1.0;
-    press     = (FLOAT) 0.0;
     div_v     = (FLOAT) 0.0;
     ndens     = (FLOAT) 0.0;
     zeta      = (FLOAT) 0.0;
@@ -505,7 +503,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   class FluxParticle {
   public:
 	  FluxParticle (): ptype(gas_type), flags(none), level(0), iorig(0), r(), v(), a(), Wprim(), dQ(),
-	  dQdt(), rdmdt(), h(0), hrangesqd(0), ndens(0), hfactor(0) {
+	  dQdt(), rdmdt(), h(0), hrangesqd(0), ndens(0), hfactor(0), sound(0) {
 		  for (int k=0; k<ndim; k++)
 			  for (int kk=0; kk<ndim; kk++)
 				  B[k][kk]=0;
@@ -537,6 +535,7 @@ struct MeshlessFVParticle : public Particle<ndim>
 		  hrangesqd=p.hrangesqd;
 		  ndens=p.ndens;
 		  hfactor=p.hfactor;
+		  sound=p.sound;
 	  }
 
 	  int ptype;
@@ -557,7 +556,7 @@ struct MeshlessFVParticle : public Particle<ndim>
 	  FLOAT hrangesqd;
 	  FLOAT ndens;
 	  FLOAT hfactor;
-
+	  FLOAT sound;
 
 	  static const int NDIM=ndim;
 

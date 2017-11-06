@@ -1504,7 +1504,6 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
       int sink_data_length = 12 + 2*ndim;  //+ 2*dmdt_range_aux;
       int ii;
       FLOAT sdata[sink_data_length];
-      int idata[50];
       int junk[6] = {2,2,0, sink_data_length, 0,0};
       for (ii=0; ii<6; ii++) {
         int itmp;

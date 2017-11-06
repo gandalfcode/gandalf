@@ -170,29 +170,29 @@ class MeshlessCommunicationHandler {
   struct MeshlessExportParticle {
 
     MeshlessExportParticle (const MeshlessFVParticle<ndim>& p) {
-        iorig = p.iorig;
-        flags = p.flags.get();
-        ptype = p.ptype;
-        level = p.level;
-        nstep = p.nstep;
-    	for (int k=0; k<ndim; k++) {
-    		r[k] = p.r[k];
-    		v[k] = p.v[k];
-    		for (int kk=0; kk<ndim; kk++) {
-    			B[k][kk]=p.B[k][kk];
-    		}
-    	}
-    	for (int ivar=0; ivar<ndim+2; ivar++) {
-    		Wprim[ivar]=p.Wprim[ivar];
-    		alpha_slope[ivar]=p.alpha_slope[ivar];
-    		for (int k=0; k<ndim; k++) {
-        		grad[ivar][k] = p.grad[ivar][k];
-    		}
-    	}
-    	m = p.m;
-    	ndens = p.ndens;
-    	vsig_max = p.vsig_max;
-    	sound = p.sound;
+      iorig = p.iorig;
+      flags = p.flags.get();
+      ptype = p.ptype;
+      level = p.level;
+      nstep = p.nstep;
+      for (int k=0; k<ndim; k++) {
+        r[k] = p.r[k];
+        v[k] = p.v[k];
+        for (int kk=0; kk<ndim; kk++) {
+          B[k][kk]=p.B[k][kk];
+        }
+      }
+      for (int ivar=0; ivar<ndim+2; ivar++) {
+        Wprim[ivar]=p.Wprim[ivar];
+        alpha_slope[ivar]=p.alpha_slope[ivar];
+        for (int k=0; k<ndim; k++) {
+          grad[ivar][k] = p.grad[ivar][k];
+        }
+      }
+      m = p.m;
+      ndens = p.ndens;
+      vsig_max = p.vsig_max;
+      sound = p.sound;
     }
 
     int iorig;
@@ -217,13 +217,13 @@ class MeshlessCommunicationHandler {
     MeshlessForcesParticle (const MeshlessFVParticle<ndim>& p) {
 
       for (int k=0; k<ndim; k++) {
-    	  rdmdt[k]=p.rdmdt[k];
-    	  a[k]=p.a[k];
-    	  atree[k]=p.atree[k];
+        rdmdt[k]=p.rdmdt[k];
+        a[k]=p.a[k];
+        atree[k]=p.atree[k];
       }
       for (int ivar=0; ivar<ndim+2; ivar++) {
-    	  dQ[ivar]=p.dQ[ivar];
-    	  dQdt[ivar]=p.dQdt[ivar];
+        dQ[ivar]=p.dQ[ivar];
+        dQdt[ivar]=p.dQdt[ivar];
       }
       iorig = p.iorig;
       gpot = p.gpot;
@@ -248,22 +248,22 @@ public:
   typedef MeshlessForcesParticle ReturnDataType;
 
   void ReceiveParticleAccelerations (const ReturnDataType* pointer, MeshlessFVParticle<ndim>& p2) {
-	    const ReturnDataType& p = *pointer;
+    const ReturnDataType& p = *pointer;
 
-	    for (int k=0; k<ndim; k++) {
-	      p2.rdmdt[k] += p.rdmdt[k];
-	      p2.a[k] += p.a[k];
-	      p2.atree[k] += p.atree[k];
-	    }
+    for (int k=0; k<ndim; k++) {
+      p2.rdmdt[k] += p.rdmdt[k];
+      p2.a[k] += p.a[k];
+      p2.atree[k] += p.atree[k];
+    }
 
-	    for (int ivar=0; ivar<ndim+2; ivar++) {
-	    	  p2.dQ[ivar]+=p.dQ[ivar];
-	    	  p2.dQdt[ivar]+=p.dQdt[ivar];
-	    }
+    for (int ivar=0; ivar<ndim+2; ivar++) {
+      p2.dQ[ivar]+=p.dQ[ivar];
+      p2.dQdt[ivar]+=p.dQdt[ivar];
+    }
 
-	    p2.gpot += p.gpot;
-      p2.gpot_hydro += p.gpot_hydro;
-	    p2.vsig_max = max(p2.vsig_max,p.vsig_max);
+    p2.gpot += p.gpot;
+    p2.gpot_hydro += p.gpot_hydro;
+    p2.vsig_max = max(p2.vsig_max,p.vsig_max);
   }
 
   void ReceiveParticle (const void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
@@ -279,34 +279,34 @@ public:
       p2.v[k]=p.v[k];
       p2.a[k]=0.0;
       p2.atree[k]=0;
-	  for (int kk=0; kk<ndim; kk++) {
-			p2.B[k][kk]=p.B[k][kk];
-	  }
-	  p2.rdmdt[k]=0.0;
-  }
+      for (int kk=0; kk<ndim; kk++) {
+        p2.B[k][kk]=p.B[k][kk];
+      }
+      p2.rdmdt[k]=0.0;
+    }
 
-	for (int ivar=0; ivar<ndim+2; ivar++) {
-		p2.Wprim[ivar]=p.Wprim[ivar];
-		p2.alpha_slope[ivar]=p.alpha_slope[ivar];
-		for (int k=0; k<ndim; k++) {
-			p2.grad[ivar][k] = p.grad[ivar][k];
-		}
-		p2.dQ[ivar]=0.0;
-		p2.dQdt[ivar]=0.0;
-}
+    for (int ivar=0; ivar<ndim+2; ivar++) {
+      p2.Wprim[ivar]=p.Wprim[ivar];
+      p2.alpha_slope[ivar]=p.alpha_slope[ivar];
+      for (int k=0; k<ndim; k++) {
+        p2.grad[ivar][k] = p.grad[ivar][k];
+      }
+      p2.dQ[ivar]=0.0;
+      p2.dQdt[ivar]=0.0;
+    }
 
-  p2.m = p.m;
-  p2.ndens = p.ndens;
-  p2.gpot = 0.0;
-  p2.gpot_hydro = 0.0;
-  p2.vsig_max=p.vsig_max;
-  p2.sound=p.sound;
+    p2.m = p.m;
+    p2.ndens = p.ndens;
+    p2.gpot = 0.0;
+    p2.gpot_hydro = 0.0;
+    p2.vsig_max=p.vsig_max;
+    p2.sound=p.sound;
 
-  //Recompute h dependent stuff
-  p2.rho = p2.ndens*p2.m;
-  p2.h = hydro->h_fac*pow(1/p2.ndens, (FLOAT)(1.)/ndim);
-  p2.hfactor = pow(1/p2.h, ndim+1);
-  p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
+    //Recompute h dependent stuff
+    p2.rho = p2.ndens*p2.m;
+    p2.h = hydro->h_fac*pow(1/p2.ndens, (FLOAT)(1.)/ndim);
+    p2.hfactor = pow(1/p2.h, ndim+1);
+    p2.hrangesqd = hydro->kernrange*hydro->kernrange*p2.h*p2.h;
   }
 
 };
@@ -368,11 +368,11 @@ class TreeCommunicationHandler {
 
     TreeCellStreamlined (const TreeCellBase<ndim>& c, int Nactive, int exported_particles) {
 
-        ifirst = exported_particles;
-        ilast = exported_particles+Nactive-1;
-        N = Nactive;
-        amin = c.amin;
-      }
+      ifirst = exported_particles;
+      ilast = exported_particles+Nactive-1;
+      N = Nactive;
+      amin = c.amin;
+    }
 
 
     FLOAT amin ;
@@ -380,7 +380,7 @@ class TreeCommunicationHandler {
     int ilast;
     int N;
 
-    };
+  };
 
 public:
 

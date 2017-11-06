@@ -46,7 +46,7 @@ Diagnostic output frequency                 : ndiagstep = 32
 #------------------------
 Hydro force calculate                       : hydro_forces = 1
 Gas equation of state                       : gas_eos = radws
-Energy integration                          : energy_integration = rad_ws
+Energy integration                          : energy_integration = radws
 EOS look-up file                            : radws_table = ../../eos.bell.cc.dat
 Ambient temperature                         : temp_ambient = 10.0
 

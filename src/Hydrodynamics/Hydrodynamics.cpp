@@ -109,7 +109,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   else if (_gas_eos == "barotropic2") {
     eos = new Barotropic2<ndim>(params, &units);
   }
-  else if (_gas_eos == "rad_ws" || _gas_eos == "radws") {
+  else if ( _gas_eos == "radws") {
     eos = new Radws<ndim>(params, &units);
   }
   else {

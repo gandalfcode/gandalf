@@ -179,12 +179,12 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     }
 
     // Time-integrate LHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, part.sound, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += part.a[k];
     for (var=0; var<nvar; var++) Wleft[var] += (FLOAT) Wdot[var]*dt;
 
     // Time-integrate RHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wright, gradW, neibpart[j].sound, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
     for (var=0; var<nvar; var++) Wright[var] += (FLOAT) Wdot[var]*dt;
 

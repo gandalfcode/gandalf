@@ -402,7 +402,6 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
   typedef typename Interpolant::DataType InterpData;
 
   ParticleType<ndim>* sphdata = hydro->template GetParticleArray<ParticleType>();
-  int Nhydro = hydro->Nhydro ;
 
   int cactive;                             // No. of active tree cells
   vector<TreeCellBase<ndim> > celllist;    // List of active cells
@@ -421,7 +420,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,sphdata, mask, Interp, Nhydro)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,sphdata, mask, Interp)
  {
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
