@@ -813,6 +813,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
         }
       } // End of self-gravity for this cell
 
+      // Save the hydro potential (radws cooling)
+      for (int j=0; j<Nactive; j++) {
+        activepart[j].gpot_hydro = activepart[j].gpot;
+      }
+
       // Compute all star forces for active particles
       for (int j=0; j<Nactive; j++) {
         if (activelist[j] < mfv->Nhydro) {
@@ -825,7 +830,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
         const int i = activelist[j];
         for (int k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].atree[k];
         for (int k=0; k<ndim; k++) partdata[i].atree[k] += activepart[j].atree[k];
-        partdata[i].gpot  += activepart[j].gpot;
+        partdata[i].gpot        += activepart[j].gpot;
+        partdata[i].gpot_hydro  += activepart[j].gpot_hydro;
       }
 
     }

@@ -664,6 +664,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::neib;
+  using Simulation<ndim>::radfb;
   using Simulation<ndim>::radiation;
   using Simulation<ndim>::snDriver;
 #ifdef MPI_PARALLEL

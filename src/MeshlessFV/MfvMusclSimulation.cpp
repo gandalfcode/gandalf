@@ -302,6 +302,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // End-step terms for all hydro particles
+  uint->EndTimestep(n, t, timestep, mfv);
   hydroint->EndTimestep(n, t, timestep, mfv);
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 

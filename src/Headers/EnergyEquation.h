@@ -63,35 +63,34 @@ class EnergyEquation
 
 
 //=================================================================================================
-//  EnergyRadws
-/// Energy equation class using Stamatellos et al. (2007) radiation cooling scheme.
+//  EnergyRadwsBase
+/// \brief   Energy equation class using Stamatellos et al. (2007) radiation cooling scheme.
+/// \details This class does the hard work of actually computing the heating / cooling rates.
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-class EnergyRadws : public EnergyEquation<ndim>
+template <int ndim>
+class EnergyRadwsBase : public EnergyEquation<ndim>
 {
  public:
 
   using EnergyEquation<ndim>::timing;
 
-  EnergyRadws(Parameters*, SimUnits *, Radws<ndim> *, RadiativeFB<ndim> *);
-  ~EnergyRadws();
+  EnergyRadwsBase(Parameters*, SimUnits *, Radws<ndim> *, RadiativeFB<ndim> *);
+  virtual ~EnergyRadwsBase();
 
-  //  void ReadTable();
-  void EnergyIntegration(const int,  const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
-  void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
-  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                       const FLOAT, const FLOAT, FLOAT &, FLOAT &);
   void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
                           const FLOAT, const FLOAT, FLOAT &);
+  FLOAT ImplicitEnergyUpdate(const FLOAT, const FLOAT, const FLOAT,
+                            const FLOAT, const FLOAT, const FLOAT, const FLOAT);
   DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
   FLOAT ebalance(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT);
-  FLOAT GetCol2(Particle<ndim> &part);
 
 
   //-----------------------------------------------------------------------------------------------
 
+ protected:
   int ndens, ntemp;
   int lombardi;
   FLOAT fcol2;
@@ -102,6 +101,81 @@ class EnergyRadws : public EnergyEquation<ndim>
   OpacityTable<ndim> *table;
   RadiativeFB<ndim> *radfb;
 };
+
+//=================================================================================================
+//  EnergyRadws
+/// Energy equation class using Stamatellos et al. (2007) radiation cooling scheme.
+//=================================================================================================
+template <int ndim, template <int> class ParticleType>
+class EnergyRadws : public EnergyRadwsBase<ndim>
+{
+  using EnergyRadwsBase<ndim>::eos;
+  using EnergyRadwsBase<ndim>::table;
+  using EnergyRadwsBase<ndim>::radfb;
+  using EnergyRadwsBase<ndim>::temp_ambient0;
+  using EnergyRadwsBase<ndim>::fcol2;
+  using EnergyRadwsBase<ndim>::lombardi;
+
+  using EnergyRadwsBase<ndim>::EnergyFindEqui;
+  using EnergyRadwsBase<ndim>::EnergyFindEquiTemp;
+  using EnergyRadwsBase<ndim>::Timestep;
+  using EnergyRadwsBase<ndim>::ebalance;
+
+ public:
+  using EnergyRadwsBase<ndim>::timing;
+
+
+  EnergyRadws(Parameters* params, SimUnits* units, Radws<ndim> *eos, RadiativeFB<ndim> *radfb)
+   : EnergyRadwsBase<ndim>(params, units, eos, radfb)
+  { } ;
+  virtual ~EnergyRadws(){};
+
+
+  void EnergyIntegration(const int,  const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) {};
+  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+
+ private:
+  FLOAT GetCol2(ParticleType<ndim> &part);
+
+
+};
+
+//=================================================================================================
+//  EnergyRadws
+/// Specialization for the meshless
+//=================================================================================================
+template <int ndim>
+class EnergyRadws<ndim, MeshlessFVParticle> : public EnergyRadwsBase<ndim> {
+  using EnergyRadwsBase<ndim>::eos;
+  using EnergyRadwsBase<ndim>::table;
+  using EnergyRadwsBase<ndim>::radfb;
+  using EnergyRadwsBase<ndim>::temp_ambient0;
+  using EnergyRadwsBase<ndim>::fcol2;
+  using EnergyRadwsBase<ndim>::lombardi;
+
+  using EnergyRadwsBase<ndim>::ImplicitEnergyUpdate;
+  using EnergyRadwsBase<ndim>::Timestep;
+  using EnergyRadwsBase<ndim>::ebalance;
+
+ public:
+  using EnergyRadwsBase<ndim>::timing;
+
+
+  EnergyRadws(Parameters* params, SimUnits* units, Radws<ndim> *eos, RadiativeFB<ndim> *radfb)
+   : EnergyRadwsBase<ndim>(params, units, eos, radfb)
+  { } ;
+  virtual ~EnergyRadws(){};
+
+  void EnergyIntegration(const int,  const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+
+
+ private:
+  FLOAT GetCol2(MeshlessFVParticle<ndim> &part);
+
+} ;
 
 
 

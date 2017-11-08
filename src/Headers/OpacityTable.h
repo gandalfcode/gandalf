@@ -23,6 +23,7 @@
 #ifndef _OPACITY_TABLE_H_
 #define _OPACITY_TABLE_H_
 
+#include "InlineFuncs.h"
 #include "SimUnits.h"
 
 template<int> class EosParticleProxy;
@@ -69,5 +70,127 @@ class OpacityTable
   FLOAT **eos_gamma;
   FLOAT **eos_gamma1;   // First adiabatic index
 };
+
+
+//=================================================================================================
+//  OpacityTable::GetIDens()
+/// GetIDens returns table index for density
+//=================================================================================================
+template <int ndim>
+inline int OpacityTable<ndim>::GetIDens
+ (const FLOAT rho)
+{
+  return getClosestIndex(eos_dens, eos_dens + ndens, rho);
+}
+
+
+
+//=================================================================================================
+//  OpacityTable::GetITemp()
+/// GetITemp returns table index for temperature
+//=================================================================================================
+template <int ndim>
+inline int OpacityTable<ndim>::GetITemp
+ (const FLOAT log_temp)
+{
+  return getClosestIndex(eos_temp, eos_temp + ntemp , log_temp);
+}
+
+
+
+//=================================================================================================
+//  OpacityTable::GetIEner()
+/// GetIEner returns table index for specific internal energy
+//=================================================================================================
+template <int ndim>
+inline int OpacityTable<ndim>::GetIEner
+ (const FLOAT u, const FLOAT rho)
+{
+  int idens = GetIDens(log10(rho));
+  return getClosestIndex(eos_energy[idens], eos_energy[idens] + ntemp , u);
+}
+template <int ndim>
+inline int OpacityTable<ndim>::GetIEner
+ (const FLOAT u, const int idens)
+{
+  return getClosestIndex(eos_energy[idens], eos_energy[idens] + ntemp , u);
+}
+
+
+//=================================================================================================
+//  OpacityTable::GetKappa()
+/// GetKappa returns Kappa  for index of density and temp
+//=================================================================================================
+template <int ndim>
+inline void OpacityTable<ndim>::GetKappa
+ (const int idens,
+  const int itemp,
+  FLOAT &kappa,
+  FLOAT &kappar,
+  FLOAT &kappap)
+{
+  kappa = kappa_table[idens][itemp];
+  kappap = kappap_table[idens][itemp];
+  kappar = kappap;
+}
+
+
+//=================================================================================================
+//  OpacityTable::GetEnergy()
+/// GetEnergy returns Energy for index of density and temp
+//=================================================================================================
+
+template <int ndim>
+inline FLOAT OpacityTable<ndim>::GetEnergy(const int idens, const int itemp)
+{
+  return eos_energy[idens][itemp];
+}
+
+
+
+//=================================================================================================
+//  OpacityTable::GetMuBar()
+/// GetMuBar returns MuBar for index of density and temp
+//=================================================================================================
+template <int ndim>
+inline FLOAT OpacityTable<ndim>::GetMuBar
+ (const EosParticleProxy<ndim> &part)
+{
+  int idens = GetIDens(part.rho);
+  int iener = GetIEner(part.u, idens);
+  return eos_mu[idens][iener];
+}
+
+
+
+//=================================================================================================
+//  OpacityTable::GetGamma()
+/// GetGamma returns gamma from P = (gamma - 1)*rho*u for index of density and u
+//=================================================================================================
+template <int ndim>
+inline FLOAT OpacityTable<ndim>::GetGamma
+ (const EosParticleProxy<ndim> &part)
+{
+  int idens = GetIDens(part.rho);
+  int iener = GetIEner(part.u, idens);
+  return eos_gamma[idens][iener];
+}
+
+
+
+
+//=================================================================================================
+//  OpacityTable::GetGamma1()
+/// GetGamma1 returns the first adiabatic index i.e. dln(P)/dln(rho) at constant entropy for index
+/// of density and u
+//=================================================================================================
+template <int ndim>
+inline FLOAT OpacityTable<ndim>::GetGamma1
+ (const EosParticleProxy<ndim> &part)
+{
+  int idens = GetIDens(part.rho);
+  int iener = GetIEner(part.u, idens);
+  return eos_gamma1[idens][iener];
+}
 
 #endif

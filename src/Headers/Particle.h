@@ -166,9 +166,12 @@ struct Particle
   DOUBLE dt_next;                   ///< Next time-step timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
   FLOAT ionfrac;                    ///< Ionisation fraction
-  FLOAT Xion;                       ///< Ionisation fraciton (from tree)
+  FLOAT Xion;                       ///< Ionisation fraction (from tree)
   FLOAT ueq;                        ///< equilibrium internal energy
-  FLOAT dt_therm;                   ///< thermalization time scale
+  union {
+    FLOAT dt_therm;                 ///< Thermalization time scale
+    FLOAT cooling;                  ///< Cooling rate, (-dudt_cool)
+  };
   FLOAT vsig_max;                   ///< Maximum signal velocity.
   FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
   int ionstate;                     ///< States current ionisation state of the particle
@@ -212,6 +215,7 @@ struct Particle
     ueq       = (FLOAT) 0.0;
     dt_therm  = (FLOAT) 0.0;
     vsig_max  = (FLOAT) 0.0;
+    ionstate  = 0;
   }
 
   static const int NDIM = ndim ;

@@ -305,6 +305,7 @@ void MeshlessFV<ndim>::ZeroAccelerations()
       for (int k=0; k<ndim; k++) part.a[k] = 0;
       for (int k=0; k<ndim; k++) part.atree[k] = 0;
       part.gpot = 0 ;
+      part.gpot_hydro = 0;
     }
   }
 }
