@@ -1,6 +1,6 @@
 #------------------------------------------------------------------
 # Sound wave test
-# Generates and propagates a small linear density perturbation as a 
+# Generates and propagates a small linear density perturbation as a
 # sound-wave along a uniform density gas.
 #------------------------------------------------------------------
 
@@ -15,17 +15,30 @@ Select shocktube initial conditions         : ic = soundwave
 Pressure of LHS fluid                       : press1 = 1.0
 Density of LHS fluid                        : rhofluid1 = 1.0
 Sound wave amplitude                        : amp = 0.001
-No. of particles in wave                    : Nhydro = 256
+No. of x-particles in fluid 1               : Nlattice1[0] = 32
+No. of y-particles in fluid 1               : Nlattice1[1] = 32
+No. of y-particles in fluid 1               : Nlattice1[2] = 32
+Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Use dimensionless units                     : dimensionless = 1
+com_frame = 0
 
 
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = 0.0
-RHS position of boundary in x-dimension     : boxmax[0] = 1.0
+LHS position of boundary in x-dimension     : boxmin[0] = -0.5
+RHS position of boundary in x-dimension     : boxmax[0] = 0.5
+LHS position of boundary in y-dimension     : boxmin[1] = -0.433
+RHS position of boundary in y-dimension     : boxmax[1] = 0.433
+LHS position of boundary in z-dimension     : boxmin[2] = -0.4082
+RHS position of boundary in z-dimension     : boxmax[2] = 0.4082
 LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
 RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+LHS boundary type in z-dimension            : boundary_lhs[2] = periodic
+RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
+
 
 
 #--------------------------
@@ -41,7 +54,7 @@ Screen output frequency (in no. of steps)   : noutputstep = 1024
 # Thermal physics options
 #------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
-Main gas thermal physics treatment          : gas_eos = isothermal
+Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
@@ -49,7 +62,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
-SPH smoothing kernel choice                 : kernel = gaussian
+SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.000000001
 
 
@@ -58,8 +71,8 @@ SPH smoothing length iteration tolerance    : h_converge = 0.000000001
 #---------------------------------
 Artificial viscosity choice                 : avisc = none
 Artificial conductivity choice              : acond = none
-Artificial viscosity alpha value            : alpha_visc = 0.01
-Artificial viscosity beta value             : beta_visc = 0.02
+Artificial viscosity alpha value            : alpha_visc = 0.001
+Artificial viscosity beta value             : beta_visc = 0.002
 Riemann solver                              : riemann_solver = exact
 Order of Riemann solver                     : riemann_order = 2
 Slope limiter                               : slope_limiter = gizmo
@@ -69,8 +82,8 @@ Slope limiter                               : slope_limiter = gizmo
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-SPH Courant timestep condition multiplier   : courant_mult = 0.025
-SPH acceleration condition multiplier       : accel_mult = 0.05
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.1
 No. of block timestep levels                : Nlevels = 1
 
 
