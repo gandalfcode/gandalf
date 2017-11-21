@@ -32,15 +32,15 @@ using namespace std;
 
 //=================================================================================================
 //  ContactDiscontinuityIc::ContactDiscontinuityIc
-/// Set-up SILCC-type simulation initial conditions.
+/// Set-up square pressure-equilibrium test of contact discontinuities.
 //=================================================================================================
 template <int ndim>
 ContactDiscontinuityIc<ndim>::ContactDiscontinuityIc(Simulation<ndim>* _sim, FLOAT _invndim) :
   Ic<ndim>(_sim, _invndim)
 {
   // Some sanity checking to ensure correct dimensionality is used
-  if (simparams->intparams["ndim"] == 3) {
-    ExceptionHandler::getIstance().raise("Contact discontinuity test only runs in 1d and 2d");
+  if (simparams->intparams["ndim"] != 2) {
+    ExceptionHandler::getIstance().raise("Contact discontinuity test only runs in 2d");
   }
   if (simparams->intparams["dimensionless"] == 0) {
     ExceptionHandler::getIstance().raise("dimensionless units required");
@@ -58,94 +58,52 @@ void ContactDiscontinuityIc<ndim>::Generate(void)
 {
   int i;                               // Particle counter
   int j;                               // Aux. particle counter
-  int Nbox1;                           // No. of particles in LHS box
-  int Nbox2;                           // No. of particles in RHS box
-  int Nlattice1[3];                    // Particles per dimension for LHS lattice
-  int Nlattice2[3];                    // Particles per dimension for RHS lattice
+  int Nbox;                            // No. of particles in LHS box
+  int Nlattice[3];                     // Particles per dimension for LHS lattice
   FLOAT volume;                        // Volume of box
   FLOAT *r;                            // Position vectors
-  DomainBox<ndim> box1;                // LHS box
-  DomainBox<ndim> box2;                // RHS box
+  DomainBox<ndim> domainBox;           // LHS box
 
   // Create local copies of all parameters required to set-up problem
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
   FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
-  FLOAT press1    = simparams->floatparams["press1"];
-  FLOAT press2    = simparams->floatparams["press2"];
-  FLOAT temp0     = simparams->floatparams["temp0"];
-  FLOAT mu_bar    = simparams->floatparams["mu_bar"];
+  FLOAT press     = simparams->floatparams["press1"];
   FLOAT gammaone  = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
-  Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
-  Nlattice1[1]    = simparams->intparams["Nlattice1[1]"];
-  Nlattice2[0]    = simparams->intparams["Nlattice2[0]"];
-  Nlattice2[1]    = simparams->intparams["Nlattice2[1]"];
+  Nlattice[0]     = simparams->intparams["Nlattice1[0]"];
+  Nlattice[1]     = simparams->intparams["Nlattice1[1]"];
 
   debug2("[ContactDiscontinuityIc::Generate]");
 
   // 1D simulation
   //===============================================================================================
-  if (ndim == 1) {
-    box1.min[0] = icBox.min[0];
-    box1.max[0] = (FLOAT) 0.8*icBox.max[0];
-    box2.min[0] = (FLOAT) 0.8*icBox.max[0];
-    box2.max[0] = icBox.max[0];
-    volume = box1.max[0] - box1.min[0];
-    Nbox1 = Nlattice1[0];
-    Nbox2 = Nlattice2[0];
+  if (ndim == 2) {
+    volume = icBox.size[0]*icBox.size[1];
+    Nbox = Nlattice[0]*Nlattice[1];
+    std::cout << "Volume : " << volume << "   Nbox : " << Nbox << std::endl;
 
     // Allocate local and main particle memory
-    hydro->Nhydro = Nbox1 + Nbox2;
+    hydro->Nhydro = Nbox;
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
 
-    //---------------------------------------------------------------------------------------------
-    if (Nbox1 > 0) {
-      Ic<ndim>::AddCubicLattice(Nbox1, Nlattice1, box1, false, r);
-      volume = box1.max[0] - box1.min[0];
-      for (i=0; i<Nbox1; i++) {
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        part.r[0] = r[i] - (FLOAT) 0.4*icBox.size[0];
-        if (part.r[0] < icBox.min[0]) part.r[0] += icBox.size[0];
-        part.v[0] = (FLOAT) 0.0;
-        part.m = rhofluid1*volume/(FLOAT) Nbox1;
-        part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
-        if (hydro->gas_eos == "isothermal") {
-          part.u = temp0/gammaone/mu_bar;
-        }
-        else {
-          part.u = press1/rhofluid1/gammaone;
-        }
-      }
-    }
-
-    //---------------------------------------------------------------------------------------------
-    if (Nbox2 > 0) {
-      Ic<ndim>::AddCubicLattice(Nbox2, Nlattice2, box2, false, r);
-      volume = box2.max[0] - box2.min[0];
-      for (j=0; j<Nbox2; j++) {
-        i = Nbox1 + j;
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        part.r[0] = r[j] - (FLOAT) 0.4*icBox.size[0];
-        if (part.r[0] < icBox.min[0]) part.r[0] += icBox.size[0];
-        part.v[0] = (FLOAT) 0.0;
-        part.m = rhofluid2*volume/(FLOAT) Nbox2;
+    Ic<ndim>::AddCubicLattice(Nbox, Nlattice, icBox, false, r);
+    for (i=0; i<Nbox; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      for (int k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+      for (int k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+      if (fabs(part.r[0]) <= 0.25 && fabs(part.r[1]) <= 0.25) {
+        part.m = rhofluid2*volume/(FLOAT) Nbox;
+        part.u = press/rhofluid2/gammaone;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
-        if (hydro->gas_eos == "isothermal") {
-          part.u = temp0/gammaone/mu_bar;
-        }
-        else {
-          part.u = press2/rhofluid2/gammaone;
-        }
+      }
+      else {
+        part.m = rhofluid1*volume/(FLOAT) Nbox;
+        part.u = press/rhofluid1/gammaone;
+        part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
       }
     }
 
     delete[] r;
-
-  }
-  //===============================================================================================
-  else if (ndim == 2) {
-
-
 
   }
   //===============================================================================================

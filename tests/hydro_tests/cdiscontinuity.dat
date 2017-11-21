@@ -6,27 +6,27 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = CDISC1
-Select SPH simulation                       : sim = sph
+Simulation run id string                    : run_id = DISCONTINUITY-2D-MFV
+Select SPH simulation                       : sim = mfvmuscl
 Select Kelvin-Helmholtz initial conditions  : ic = cdiscontinuity
-1D shocktube test                           : ndim = 1
+1D shocktube test                           : ndim = 2
 x-velocity of LHS fluid                     : vfluid1[0] = 0.0
 x-velocity of RHS fluid                     : vfluid2[0] = 0.0
-Pressure of LHS fluid                       : press1 = 10.0
-Pressure of RHS fluid                       : press2 = 10.0
-Density of LHS fluid                        : rhofluid1 = 1.0
-Density of RHS fluid                        : rhofluid2 = 10.0
-No. of particles in LHS fluid               : Nlattice1[0] = 240
-No. of particles in RHS fluid               : Nlattice2[0] = 600
+Pressure of LHS fluid                       : press1 = 3.75
+Density of LHS fluid                        : rhofluid1 = 1.75
+Density of RHS fluid                        : rhofluid2 = 4.0
+No. of particles in LHS fluid               : Nlattice1[0] = 128
+No. of particles in RHS fluid               : Nlattice1[1] = 128
+Dimensionless units                         : dimensionless = 1
 
 
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = 0.0
-RHS position of boundary in x-dimension     : boxmax[0] = 1.0
-LHS position of boundary in y-dimension     : boxmin[1] = 0.0
-RHS position of boundary in y-dimension     : boxmax[1] = 1.0
+LHS position of boundary in x-dimension     : boxmin[0] = -0.5
+RHS position of boundary in x-dimension     : boxmax[0] = 0.5
+LHS position of boundary in y-dimension     : boxmin[1] = -0.5
+RHS position of boundary in y-dimension     : boxmax[1] = 0.5
 LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
 RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
 LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
@@ -36,9 +36,10 @@ RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 20.0
-Regular snapshot output frequency           : dt_snap = 1.0
+Simulation end time                         : tend = 3.0
+Regular snapshot output frequency           : dt_snap = 0.2
 Screen output frequency (in no. of steps)   : noutputstep = 128
+Output snapshot format                      : out_file_form = su
 
 
 #------------------------
@@ -52,7 +53,6 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
-SPH algorithm choice                        : sph = sm2012
 SPH smoothing kernel choice                 : kernel = quintic
 SPH smoothing length iteration tolerance    : h_converge = 0.01
 
@@ -62,8 +62,10 @@ SPH smoothing length iteration tolerance    : h_converge = 0.01
 #---------------------------------
 Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
-Artificial viscosity alpha value            : alpha_visc = 1.0
-Artificial viscosity beta value             : beta_visc = 2.0
+Artificial viscosity alpha value            : alpha_visc = 0.1
+Artificial viscosity beta value             : beta_visc = 0.2
+Riemann solver                              : riemann_solver = exact
+Slope limiter                               : slope_limiter = gizmo
 
 
 #-------------------------
@@ -76,10 +78,12 @@ SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
 
 
-#--------------------
+#-------------
 # Tree options
-#--------------------
+#-------------
 SPH neighbour search algorithm              : neib_search = kdtree
+No. of particles in leaf cell               : Nleafmax = 12
+Tree stock frequency                        : ntreestockstep = 1
 
 
 #--------------
