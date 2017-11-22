@@ -727,7 +727,7 @@ void Ic<ndim>::AddHexagonalLattice
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
-      r[i] = box.min[0] + (FLOAT) 0.5*rad[0] + (FLOAT) 2.0*(FLOAT)ii*rad[0];
+      r[ndim*i] = box.min[0] + rad[0] + (FLOAT) 2.0*(FLOAT) ii*rad[0];
     }
   }
 
@@ -737,7 +737,7 @@ void Ic<ndim>::AddHexagonalLattice
       for (ii=0; ii<Nlattice[0]; ii++) {
         i = jj*Nlattice[0] + ii;
         r[ndim*i] = box.min[0] +
-          (FLOAT) 0.5*rad[0] + ((FLOAT) 2.0*(FLOAT)ii + (FLOAT)(jj%2))*rad[0];
+          rad[0] + ((FLOAT) 2.0*(FLOAT)ii + (FLOAT)(jj%2))*rad[0];
         r[ndim*i + 1] = box.min[1] +
           (FLOAT) 0.5*sqrt((FLOAT) 3.0)*rad[1] + (FLOAT)jj*sqrt(3.0)*rad[1];
       }
@@ -751,7 +751,7 @@ void Ic<ndim>::AddHexagonalLattice
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
           i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-          r[ndim*i] = box.min[0] + (FLOAT) 0.5*rad[0] +
+          r[ndim*i] = box.min[0] + rad[0] +
             ((FLOAT) 2.0*(FLOAT) ii + (FLOAT) (jj%2) + (FLOAT) ((kk+1)%2))*rad[0];
           r[ndim*i + 1] = box.min[1] + (FLOAT) 0.5*sqrt((FLOAT) 3.0)*rad[1] +
             (FLOAT) jj*sqrt((FLOAT) 3.0)*rad[1] + (FLOAT) (kk%2)*rad[1]/sqrt((FLOAT) 3.0);

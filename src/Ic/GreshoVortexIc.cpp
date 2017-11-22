@@ -31,8 +31,8 @@ using namespace std;
 
 
 //=================================================================================================
-//  Khi::Khi
-/// Set-up Khi-type simulation initial conditions.
+//  GreshoVortexIc::GreshoVortexIc
+/// Constructor for generating Gresho-Chan vortex initial conditions.
 //=================================================================================================
 template <int ndim>
 GreshoVortexIc<ndim>::GreshoVortexIc(Simulation<ndim>* _sim, FLOAT _invndim) :
@@ -50,8 +50,8 @@ GreshoVortexIc<ndim>::GreshoVortexIc(Simulation<ndim>* _sim, FLOAT _invndim) :
 
 
 //=================================================================================================
-//  Khi::Generate
-/// Set-up Khi-type simulation initial conditions.
+//  GreshoVortexIc::Generate
+/// Generate all particles for Gresho-Chan vortex simulation initial conditions.
 //=================================================================================================
 template <int ndim>
 void GreshoVortexIc<ndim>::Generate(void)
@@ -131,30 +131,15 @@ void GreshoVortexIc<ndim>::Generate(void)
 
 
 //=================================================================================================
-//  GreshoVortexIc::GetValue
+//  GreshoVortexIc::GetDensity
 /// Returns the value of the requested quantity at the given position.
 //=================================================================================================
 template <int ndim>
-FLOAT GreshoVortexIc<ndim>::GetValue
- (const std::string var,
-  const FLOAT r[ndim])
+FLOAT GreshoVortexIc<ndim>::GetDensity
+ (const FLOAT r[ndim],
+  const int ptype) const
 {
-  if (var == "x") {
-    return r[0];
-  }
-  else if (ndim > 1 && var == "y") {
-    return r[1];
-  }
-  else if (ndim > 2 && var == "z") {
-    return r[2];
-  }
-  else if (var == "rho") {
-    return (FLOAT) 1.0;
-  }
-  else {
-    std::cout << "Invalid string variable for GreshoVortexIc::GetValue" << std::endl;
-    return 0.0;
-  }
+  return (FLOAT) 1.0;
 }
 
 
