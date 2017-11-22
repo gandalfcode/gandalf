@@ -19,7 +19,7 @@ No. of particles in wave (used in 1D test)  : Nhydro = 256
 No. of x-particles in fluid 1               : Nlattice1[0] = 32
 No. of y-particles in fluid 1               : Nlattice1[1] = 32
 No. of z-particles in fluid 1               : Nlattice1[2] = 32
-Local arrangement of particles              : particle_distribution = hexagonal_lattice
+Local arrangement of particles              : particle_distribution = cubic_lattice
 Use dimensionless units                     : dimensionless = 1
 com_frame = 0
 
@@ -27,8 +27,8 @@ com_frame = 0
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = -0.5
-RHS position of boundary in x-dimension     : boxmax[0] = 0.5
+LHS position of boundary in x-dimension     : boxmin[0] = 0.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
 LHS position of boundary in y-dimension     : boxmin[1] = -0.433
 RHS position of boundary in y-dimension     : boxmax[1] = 0.433
 LHS position of boundary in z-dimension     : boxmin[2] = -0.4082
