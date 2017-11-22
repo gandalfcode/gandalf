@@ -9,15 +9,16 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = SOUNDWAVE1
-Select SPH simulation                       : sim = sph
+Select SPH simulation                       : sim = gradhsph
 Select shocktube initial conditions         : ic = soundwave
 1D shocktube test                           : ndim = 1
 Pressure of LHS fluid                       : press1 = 1.0
 Density of LHS fluid                        : rhofluid1 = 1.0
 Sound wave amplitude                        : amp = 0.001
+No. of particles in wave (used in 1D test)  : Nhydro = 256
 No. of x-particles in fluid 1               : Nlattice1[0] = 32
 No. of y-particles in fluid 1               : Nlattice1[1] = 32
-No. of y-particles in fluid 1               : Nlattice1[2] = 32
+No. of z-particles in fluid 1               : Nlattice1[2] = 32
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Use dimensionless units                     : dimensionless = 1
 com_frame = 0
@@ -74,7 +75,6 @@ Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 0.001
 Artificial viscosity beta value             : beta_visc = 0.002
 Riemann solver                              : riemann_solver = exact
-Order of Riemann solver                     : riemann_order = 2
 Slope limiter                               : slope_limiter = gizmo
 
 

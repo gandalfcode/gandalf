@@ -32,7 +32,7 @@ using namespace std;
 
 //=================================================================================================
 //  SoundwaveIc::SoundwaveIc
-/// Set-up SILCC-type simulation initial conditions.
+/// Set-up simple soundwave simulation initial conditions.
 //=================================================================================================
 template <int ndim>
 SoundwaveIc<ndim>::SoundwaveIc(Simulation<ndim>* _sim, FLOAT _invndim) :
@@ -47,23 +47,22 @@ SoundwaveIc<ndim>::SoundwaveIc(Simulation<ndim>* _sim, FLOAT _invndim) :
 
 //=================================================================================================
 //  Silcc::Generate
-/// Set-up SILCC-type simulation initial conditions.
+/// Generate particles for simple soundwave simulation initial conditions.
 //=================================================================================================
 template <int ndim>
 void SoundwaveIc<ndim>::Generate(void)
 {
-  int i,k;                          // Particle and dimension counters
-  int Nlattice[ndim];              // Lattice size
-  FLOAT csound;                     // (Isothermal) sound speed
-  FLOAT lambda;                     // Wavelength of perturbation
-  FLOAT kwave;                      // Wave number of perturbing sound wave
-  //FLOAT omegawave;                  // Angular frequency of sound wave
-  FLOAT ugas;                       // Internal energy of gas
-  FLOAT volume;
-  FLOAT *r;                         // Particle positions
+  int i,k;                                       // Particle and dimension counters
+  int Nlattice[ndim];                            // Lattice size
+  int Npart;                                     // No. of particles
+  FLOAT csound;                                  // Sound speed
+  FLOAT lambda;                                  // Wavelength of perturbation
+  FLOAT kwave;                                   // Wave number of perturbing sound wave
+  FLOAT ugas;                                    // Internal energy of gas
+  FLOAT volume;                                  // Volume of simulation box
+  FLOAT *r;                                      // Particle positions
 
   // Make local copies of parameters for setting up problem
-  int Npart       = simparams->intparams["Nhydro"];
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
   FLOAT press1    = simparams->floatparams["press1"];
   FLOAT gamma     = simparams->floatparams["gamma_eos"];
@@ -72,7 +71,6 @@ void SoundwaveIc<ndim>::Generate(void)
   FLOAT temp0     = simparams->floatparams["temp0"];
   FLOAT mu_bar    = simparams->floatparams["mu_bar"];
   std::string particle_dist = simparams->stringparams["particle_distribution"];
-  //Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
 
   debug2("[SoundwaveIc::Generate]");
 
@@ -88,18 +86,16 @@ void SoundwaveIc<ndim>::Generate(void)
 
   lambda = icBox.max[0] - icBox.min[0];
   kwave = twopi/lambda;
-  //omegawave = twopi*csound/lambda;
 
   // Allocate local and main particle memory
-  //for (k=0; k<ndim; k++) Nlattice1[k] = 1;
-  Nlattice[0]    = simparams->intparams["Nlattice1[0]"];
-  Nlattice[1]    = simparams->intparams["Nlattice1[1]"];
-  Nlattice[2]    = simparams->intparams["Nlattice1[2]"];
-  //Nlattice1[0] = Npart;
+  Nlattice[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice[1] = simparams->intparams["Nlattice1[1]"];
+  Nlattice[2] = simparams->intparams["Nlattice1[2]"];
 
   if (ndim == 1) {
     volume = icBox.max[0] - icBox.min[0];
-    Npart = Nlattice[0];
+    Npart  = simparams->intparams["Nhydro"];
+    Nlattice[0] = Npart;
   }
   else if (ndim == 2) {
     volume = (icBox.max[0] - icBox.min[0])*(icBox.max[1] - icBox.min[1]);
@@ -112,7 +108,7 @@ void SoundwaveIc<ndim>::Generate(void)
   }
 
   hydro->Nhydro = Npart;
-  bool dusty_wave = simparams->stringparams["dust_forces"] != "none" ;
+  bool dusty_wave = simparams->stringparams["dust_forces"] != "none";
   if (dusty_wave) hydro->Nhydro *= 2;
 
   sim->AllocateParticleMemory();
@@ -137,9 +133,8 @@ void SoundwaveIc<ndim>::Generate(void)
   // Add sinusoidal density perturbation to particle distribution
   Ic<ndim>::AddSinusoidalDensityPerturbation(Npart, amp, lambda, r);
 
-
   // Set all other particle quantities
-  //----------------------------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
 
@@ -151,10 +146,6 @@ void SoundwaveIc<ndim>::Generate(void)
     part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
     part.u = ugas; //*((FLOAT) 1.0 + amp*sin(kwave*r[ndim*i]));
     part.rho = rhofluid1*(1.0 + amp*sin(twopi*part.r[0]/lambda));
-#ifdef GADGET_SPH
-    part.Aent = gammaone*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
-#endif
-
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -167,15 +158,13 @@ void SoundwaveIc<ndim>::Generate(void)
       Pd.m *= d2g ;
       Pd.h_dust = Pd.h ;
       Pd.u = 0 ;
-
       Pg.ptype = gas_type ;
       Pd.ptype = dust_type ;
     }
-
     sim->initial_h_provided = true;
-    delete[] r;
-
   }
+
+  delete[] r;
 
   return;
 }
