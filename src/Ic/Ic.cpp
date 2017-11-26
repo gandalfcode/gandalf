@@ -226,6 +226,11 @@ void Ic<ndim>::CheckInitialConditions(void)
 
       // If flag indicates a problem, print error and quit
       if (!okflag) {
+        cout << "Invalid particle : " << i << "   m : " << part.m << "   u : " << part.u << "    r : ";
+        for (k=0; k<ndim; k++) cout << part.r[k] << "  ";
+        cout << "    v : ";
+        for (k=0; k<ndim; k++) cout << part.v[k] << "  ";
+        cout << std::endl;
         ExceptionHandler::getIstance().raise("Error : Invalid floating point values for particles");
       }
       if (!boxflag) {
@@ -238,7 +243,6 @@ void Ic<ndim>::CheckInitialConditions(void)
       valid_ic = valid_ic && okflag;
 
     }
-    //-----------------------------------------------------------------------------------------------
 
     // Check particles are sorted in type order
     int ptype =  -1 ;
@@ -250,6 +254,7 @@ void Ic<ndim>::CheckInitialConditions(void)
       ptype = part.ptype;
     }
   }
+  //-----------------------------------------------------------------------------------------------
 
   if (!valid_ic) {
     string message = "Invalid initial conditions for SPH particles";
