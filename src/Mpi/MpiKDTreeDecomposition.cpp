@@ -98,7 +98,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     this->AllocateMemory(mpitree->Ntotmax);
 
     // Get pointer to hydro particles and cast it to the right type
-    ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+    ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
     // Compute the size of all tree-related arrays now we know number of points
     mpitree->ComputeTreeSize();
@@ -127,11 +127,11 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
 #endif
 
     // Broadcast MPI tree to all other nodes
-    MPI_Bcast(&mpitree->Nhydro, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&mpitree->Ntot, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&mpitree->Ntotmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Nhydro, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Ntot, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Ntotmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(mpitree->tree, mpitree->Ncell*sizeof(MpiTreeCell<ndim>),
-              MPI_CHAR, 0, MPI_COMM_WORLD);
+              MPI_BYTE, 0, MPI_COMM_WORLD);
 
 
     // Update all MPI node bounding boxes
@@ -195,9 +195,9 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
   else {
 
     // Receive all broadcasts of MPI tree
-    MPI_Bcast(&mpitree->Nhydro, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&mpitree->Ntot, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&mpitree->Ntotmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Nhydro, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Ntot, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Ntotmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     // Allocate all memory and prepare important variables for tree
     this->AllocateMemory(mpitree->Ntotmax);
@@ -233,7 +233,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
     mpinode[rank].Nhydro = hydro->Nhydro;
 
     // Get pointer to hydro particles and cast it to the right type
-    ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+    ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
 
     // Update all MPI node bounding boxes
@@ -305,7 +305,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MPI_LOAD_BALANCING");
 
   //Get pointer to sph particles and cast it to the right type
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   // Sum-up total work on all MPI nodes
   for (inode=0; inode<Nmpi; inode++) worktot += 0.0;
@@ -445,7 +445,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 #endif
         if (hydro->Nhydro + N_to_receive > hydro->Nhydromax) {
         	hydro->AllocateMemory(hydro->Nhydro + N_to_receive);
-        	partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+        	partdata = hydro->template GetParticleArray<ParticleType>();
         }
         MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode,
                  tag_bal, MPI_COMM_WORLD, &status);
@@ -468,7 +468,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
   // Remove transferred particles
   for (unsigned int i=0; i<all_particles_to_export.size(); i++) {
-    partdata[all_particles_to_export[i]].flags.set_flag(dead);
+    partdata[all_particles_to_export[i]].flags.set(dead);
   }
   hydro->DeleteDeadParticles();
 

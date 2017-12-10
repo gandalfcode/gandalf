@@ -201,6 +201,7 @@ class NeighbourManager : public NeighbourManagerDim<ndim> {
 private:
   int _NPeriodicGhosts;
   int _NCellDirectNeib;
+  int _NNonInteract;
   vector<int> neiblist;
   vector<int> directlist;
   vector<int> neib_idx;
@@ -233,7 +234,7 @@ public:
   using NeighbourManagerDim<ndim>::gravcell;
 
   NeighbourManager(const Hydrodynamics<ndim>* hydro, const DomainBox<ndim>& domain)
-  : _NPeriodicGhosts(0), _NCellDirectNeib(0),
+  : _NPeriodicGhosts(0), _NCellDirectNeib(0), _NNonInteract(0),
     _domain(&domain),
     _types(&(hydro->types)),
     _kernrange(hydro->kernp->kernrange)
@@ -241,7 +242,7 @@ public:
 
   NeighbourManager(const ParticleTypeRegister& types, double kernrange,
       const DomainBox<ndim>& domain)
-  : _NPeriodicGhosts(0), _NCellDirectNeib(0),
+  : _NPeriodicGhosts(0), _NCellDirectNeib(0), _NNonInteract(0),
     _domain(&domain),
     _types(&types),
     _kernrange(kernrange)
@@ -342,7 +343,8 @@ public:
    {
     TrimNeighbourLists<InParticleType,_false_type>(p, hydromask, true);
 
-    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()) == GetNumAllNeib());
+    assert((int) (culled_neiblist.size()+directlist.size()+smoothgravlist.size()+_NNonInteract) ==
+                  GetNumAllNeib());
 
 
     typedef typename GravityNeighbourLists<ParticleType>::DirectType DirectType ;
@@ -494,6 +496,7 @@ private:
     smoothgravlist.clear();
     // Particles that are already in the directlist stay there; we just add the ones that were demoted
     directlist.resize(_NCellDirectNeib);
+    _NNonInteract = 0;
 
     // Go through the hydro neighbour candidates and check the distance. The ones that are not real neighbours
     // are demoted to the direct list
@@ -516,14 +519,24 @@ private:
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
       if (drsqd >= hrangesqdi && drsqd >= neibpart.hrangesqd) {
-        if (keep_grav && gravmask[neibpart.ptype]) directlist.push_back(i);
+        if (keep_grav) {
+          if(gravmask[neibpart.ptype]) {
+            directlist.push_back(i);
+          } else {
+            _NNonInteract++;
+          }
+        }
       }
       else {
         if (hydromask[neibpart.ptype]){
           culled_neiblist.push_back(i);
         }
-        else if (keep_grav && gravmask[neibpart.ptype]) {
-          smoothgravlist.push_back(i);
+        else if (keep_grav) {
+          if (gravmask[neibpart.ptype]) {
+            smoothgravlist.push_back(i);
+          } else {
+            _NNonInteract++;
+          }
         }
       }
     }
@@ -562,7 +575,11 @@ public:
                            const string& searchmode) {
 
     std::vector<int> reducedngb = neib_idx ;
-    __VerifyNeighbourList(i, reducedngb, Ntot, partdata, searchmode, "all") ;
+
+    Typemask types ;
+    for (int n=0; n<Ntypes; n++) types[n] = true ;
+
+    __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "all") ;
   }
 
   //===============================================================================================
@@ -575,6 +592,7 @@ public:
    template <class InParticleType>
    void VerifyReducedNeighbourList(int i, const NeighbourList<ParticleType>& ngbs,
                                    int Ntot, const InParticleType& partdata,
+                                   const Typemask& types,
                                    const string& searchmode) {
 
      // Get the idx of the reduced neighbour list
@@ -582,7 +600,7 @@ public:
      for (int k=0; k<ngbs.size(); k++)
        reducedngb[k] = neib_idx[ngbs._idx[k]];
 
-     __VerifyNeighbourList(i, reducedngb, Ntot, partdata, searchmode, "reduced") ;
+     __VerifyNeighbourList(i, reducedngb, Ntot, partdata, types, searchmode, "reduced") ;
    }
 
    //===============================================================================================
@@ -594,7 +612,7 @@ public:
    //===============================================================================================
    template <class InParticleType>
    void __VerifyNeighbourList(int i, std::vector<int>& reducedngb,
-                              int Ntot, const InParticleType& partdata,
+                              int Ntot, const InParticleType& partdata, const Typemask& types,
                               const string& searchmode, const string& listtype) {
      std::vector<int> truengb ;
      FLOAT drsqd ;
@@ -605,17 +623,23 @@ public:
      // Compute the complete (true) list of neighbours
      if (searchmode == "gather") {
        for (int j=0; j<Ntot; j++) {
+         if (not types[partdata[i].ptype]) continue ;
+
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
+         if (partdata[j].flags.is_dead()) continue;
          if (drsqd <= partdata[i].hrangesqd) truengb.push_back(j);
        }
      }
      else if (searchmode == "all") {
        for (int j=0; j<Ntot; j++) {
+         if (not types[partdata[i].ptype]) continue ;
+
          for (int k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
+         if (partdata[j].flags.is_dead()) continue;
          if (drsqd <= partdata[i].hrangesqd ||
              drsqd <= partdata[j].hrangesqd) truengb.push_back(j);
        }

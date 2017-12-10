@@ -59,6 +59,18 @@ class SimUnit
   string inunit;                           ///< Input unit string
   string outunit;                          ///< Output unit string
 
+
+  // Helper functions for converting between code and physical units
+  inline DOUBLE Input_to_CodeUnits(const DOUBLE value)  const {return (value/inscale);}
+  inline DOUBLE Output_to_CodeUnits(const DOUBLE value) const {return (value/outscale);}
+  inline DOUBLE Code_to_InputUnits(const DOUBLE value)  const {return (value*inscale);}
+  inline DOUBLE Code_to_OutputUnits(const DOUBLE value) const {return (value*outscale);}
+
+  inline DOUBLE SI_to_CodeUnits(const DOUBLE value)  const {return (value/(outscale*outSI));}
+  inline DOUBLE CGS_to_CodeUnits(const DOUBLE value) const {return (value/(outscale*outcgs));}
+  inline DOUBLE Code_to_SIUnits(const DOUBLE value)  const {return (value*outscale*outSI);}
+  inline DOUBLE Code_to_CGSUnits(const DOUBLE value) const {return (value*outscale*outcgs);}
+
 };
 
 

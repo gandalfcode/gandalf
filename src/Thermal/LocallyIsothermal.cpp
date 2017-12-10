@@ -23,12 +23,13 @@
  
  
 #include <math.h>
+
+#include "../Headers/Integration.h"
 #include "Debug.h"
 #include "Constants.h"
 #include "EOS.h"
 #include "Hydrodynamics.h"
 #include "Sinks.h"
-#include "SphIntegration.h"
 #include "Parameters.h"
 using namespace std;
  
@@ -63,15 +64,15 @@ LocallyIsothermal<ndim>::~LocallyIsothermal()
 /// Set the temperature given distance to nearest star
 //=================================================================================================
 template <int ndim>
-FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
+FLOAT LocallyIsothermal<ndim>::Temperature(const EosParticleProxy<ndim>& part)
 {
   FLOAT stardistmin=1e30;
-  NbodyParticle<ndim>** star = nbody->nbodydata;
+  StarParticle<ndim>* star = nbody->stardata;
 
   // Compute distance to closest star
-  for(int i=0; i<nbody->Nnbody; i++){
+  for(int i=0; i<nbody->Nstar; i++){
     FLOAT dr[ndim] ;
-    for (int j=0; j<ndim;j++) dr[j] = part.r[j]-star[i]->r[j];
+    for (int j=0; j<ndim;j++) dr[j] = part.r[j]-star[i].r[j];
     FLOAT stardist = DotProduct(dr,dr,ndim);
 
     stardistmin = std::min(stardist, stardistmin) ;
@@ -88,7 +89,7 @@ FLOAT LocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
 /// Set the internal energt given distance to nearest star
 //=================================================================================================
 template <int ndim>
-FLOAT LocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
+FLOAT LocallyIsothermal<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndim>& part)
 {
   FLOAT temp = LocallyIsothermal<ndim>::Temperature(part);
   return temp/gammam1/mu_bar;

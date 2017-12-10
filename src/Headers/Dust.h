@@ -30,9 +30,10 @@
 #include "Constants.h"
 #include "CodeTiming.h"
 #include "InlineFuncs.h"
+#include "SimUnits.h"
 #include "Tree.h"
 
-
+template<int ndim> class MpiControl;
 
 //=================================================================================================
 //  Class DustBase
@@ -45,11 +46,20 @@ template<int ndim>
 class DustBase
 {
 protected:
-	DustBase() { } ;
+  DustBase() { } ;
 public:
-	virtual ~DustBase() {} ;
-	virtual void UpdateAllDragForces(int , int, Particle<ndim> *) = 0 ;
-	CodeTiming * timing;
+  virtual ~DustBase() {} ;
+  virtual void UpdateAllDragForces(Hydrodynamics<ndim>*) = 0 ;
+  CodeTiming * timing;
+
+#if defined MPI_PARALLEL
+  void SetMpiControl(MpiControl<ndim>* mpicontrol_aux) {mpicontrol=mpicontrol_aux;};
+#endif
+
+protected:
+#if defined MPI_PARALLEL
+  MpiControl<ndim>* mpicontrol;
+#endif
 };
 
 //=================================================================================================
@@ -63,8 +73,9 @@ template<int ndim, template<int> class ParticleType>
 class DustFactory
 {
 public:
-  static DustBase<ndim>* ProcessParameters(Parameters* params, CodeTiming* timing,
+  static DustBase<ndim>* ProcessParameters(Parameters* params, CodeTiming* timing, SimUnits& units,
 		  	  	  	  	  	  	  	  	   ParticleTypeRegister& types,
+		  	  	  	  	  	  	  	  	   DomainBox<ndim>& simbox,
 							               TreeBase<ndim>* t, TreeBase<ndim>* ghost,
 							               TreeBase<ndim>* mpi_tree)  ;
 } ;

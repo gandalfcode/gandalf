@@ -103,7 +103,7 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
 
     // Compute psi-tilda values using integral / sph gradients.
-    if (not part.flags.check_flag(bad_gradients)) {
+    if (not part.flags.check(bad_gradients)) {
       for (k=0; k<ndim; k++) {
         psitildaj[k] = 0;
         for (int kk=0; kk<ndim; kk++)
@@ -117,7 +117,7 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
       for (k=0; k<ndim; k++)  psitildaj[k] = - (draux[k]/dr) * w;
     }
 
-    if (not neibpart[j].flags.check_flag(bad_gradients)) {
+    if (not neibpart[j].flags.check(bad_gradients)) {
       for (k=0; k<ndim; k++) {
       psitildai[k] = 0;
       for (int kk=0; kk<ndim; kk++)
@@ -179,12 +179,12 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     }
 
     // Time-integrate LHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, part.sound, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += part.a[k];
     for (var=0; var<nvar; var++) Wleft[var] += (FLOAT) Wdot[var]*dt;
 
     // Time-integrate RHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wright, gradW, neibpart[j].sound, Wdot);
     for (k=0; k<ndim; k++) Wdot[k] += neibpart[j].a[k];
     for (var=0; var<nvar; var++) Wright[var] += (FLOAT) Wdot[var]*dt;
 

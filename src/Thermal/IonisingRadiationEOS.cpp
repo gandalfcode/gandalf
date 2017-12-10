@@ -33,7 +33,7 @@
 //=================================================================================================
 template <int ndim>
 IonisingRadiation<ndim>::IonisingRadiation(Parameters* simparams, SimUnits *units):
- EOS<ndim>(simparams->floatparams["gamma_eos"], simparams->floatparams["gamma_eos"]),
+ EOS<ndim>(simparams->floatparams["gamma_eos"]),
  temp0(simparams->floatparams["temp0"]/units->temp.outscale),
  mu_bar(simparams->floatparams["mu_bar"])
 {
@@ -72,7 +72,7 @@ IonisingRadiation<ndim>::~IonisingRadiation()
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::EntropicFunction(Particle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::EntropicFunction(const EosParticleProxy<ndim>&part)
 {
   // Checks if particle's internal energy has been changed by the ionisation routine
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
@@ -91,7 +91,7 @@ FLOAT IonisingRadiation<ndim>::EntropicFunction(Particle<ndim> &part)
 /// Returns isothermal sound speed of SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::SoundSpeed(Particle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::SoundSpeed(const EosParticleProxy<ndim>&part)
 {
   // Checks if particle's internal energy has been changed by the ionisation routine
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
@@ -104,13 +104,12 @@ FLOAT IonisingRadiation<ndim>::SoundSpeed(Particle<ndim> &part)
 }
 
 
-
 //=================================================================================================
 //  IonisingRadiation::SpecificInternalEnergy
 /// Returns specific internal energy
 //=================================================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndim>&part)
 {
   // Checks if particle's internal energy has been changed by the ionisation routine
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
@@ -129,7 +128,7 @@ FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 /// Returns temperature of particle.
 //=================================================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::Temperature(Particle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::Temperature(const EosParticleProxy<ndim>&part)
 {
   // Checks if particle's internal energy has been changed by the ionisation routine
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.

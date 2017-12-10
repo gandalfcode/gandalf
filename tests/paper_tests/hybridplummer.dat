@@ -75,13 +75,13 @@ Sub-system integration scheme               : sub_system_integration = hermite4t
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-SPH Courant timestep condition multiplier   : courant_mult = 0.1
-SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH Courant timestep condition multiplier   : courant_mult = 0.2
+SPH acceleration condition multiplier       : accel_mult = 0.4
 SPH energy equation timestep multiplier     : energy_mult = 0.3
-N-body timestep multiplier                  : nbody_mult = 0.075
+N-body timestep multiplier                  : nbody_mult = 0.15
 Sub-system timestep multiplier              : subsys_mult = 0.1
 Set all SPH particles to same level         : sph_single_timestep = 1
-No. of block timestep levels                : Nlevels = 5
+No. of block timestep levels                : Nlevels = 6
 
 
 #-------------

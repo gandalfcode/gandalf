@@ -23,6 +23,7 @@
 from gandalf.analysis.facade import *
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 class DriftVelocitySolution(object):
     def __init__(self, K, vg, vd, eps=None):
@@ -70,12 +71,13 @@ def DriftVelocitySolutionFactory():
     
 if __name__=="__main__":
     # Load the sim
-    loadsim('DUSTYBOX')
-    
+    if len(sys.argv) > 1:
+        sim = loadsim(sys.argv[1])
+    else:
+        sim = loadsim('DUSTYBOX')
+
     # Set up the analytical solution
-    sol=DriftVelocitySolutionFactory()
-    
-    
+    sol=DriftVelocitySolutionFactory()   
     
     # Find the maximum time
     tmax = snap(-1).t
@@ -91,5 +93,44 @@ if __name__=="__main__":
     
     plt.xlim(0, t[-1])
     limit('vx',min(sol.vd(t).min(), sol.vg(t).min()), max(sol.vd(t).max(), sol.vg(t).max()), window='all')
-    plt.show()
+
+    # Check energy conservation
+    t  = []
+    Ek = []
+    U  = []
+    s = snap(0)
+    while True:
+        t.append(s.t)
+
+        m = get_data('m', type='sph')
+        U.append((m*get_data('u', type='sph')).sum())
+
+        _E = 0
+        for tp in ['sph', 'dust']:
+            m = get_data('m', type=tp)
+            for j in range(sim.simparams.intparams['ndim']):
+                _E += (0.5*m*get_data('v' + chr(ord('x')+j),type=tp)**2).sum()
+        Ek.append(_E)
+
+        try:
+            s = next()
+        except:
+            break
+
+
+    Etot = np.array(Ek) + np.array(U)
     
+    plt.figure()
+    plt.subplot(211)
+    plt.plot(t, 1 - Etot/Etot[0])
+    plt.xlabel('t')
+    plt.ylabel('$\Delta E/E$')
+
+    plt.subplot(212)
+    plt.plot(t, Ek-Ek[0], label='$E_k$')
+    plt.plot(t, U[0] - U,  label='$-U$')
+    plt.xlabel('t')
+    plt.ylabel('$\Delta E$')
+    plt.legend(loc='best')
+
+    plt.show()

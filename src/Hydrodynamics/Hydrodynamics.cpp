@@ -72,7 +72,9 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   NImportedParticles = 0;
   Nmpighost          = 0;
   NPeriodicGhost     = 0;
+  rho_sink           = params->floatparams["rho_sink"]/(units.rho.outscale*units.rho.outcgs);
   create_sinks       = params->intparams["create_sinks"];
+  sink_particles     = params->intparams["sink_particles"];
 
   // Select and construct equation of state object from given parameters
   //-----------------------------------------------------------------------------------------------
@@ -95,6 +97,9 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   else if(_gas_eos == "locally_isothermal") {
     eos = new LocallyIsothermal<ndim>(params, &units);
   }
+  else if (_gas_eos == "disc_locally_isothermal") {
+    eos = new DiscLocallyIsothermal<ndim>(params, &units);
+  }
   else if (_gas_eos == "polytropic") {
     eos = new Polytropic<ndim>(params, &units);
   }
@@ -104,7 +109,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   else if (_gas_eos == "barotropic2") {
     eos = new Barotropic2<ndim>(params, &units);
   }
-  else if (_gas_eos == "rad_ws" || _gas_eos == "radws") {
+  else if ( _gas_eos == "radws") {
     eos = new Radws<ndim>(params, &units);
   }
   else {
@@ -168,7 +173,7 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
 
   // Set particle flag to active to ensure force is computed asap
   part.flags = none;
-  part.flags.set_flag(active);
+  part.flags.set(active);
 
   return part;
 }
@@ -272,8 +277,8 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart        = origpart;
   ghostpart.r[k]   = rk;
   ghostpart.v[k]   = vk;
-  ghostpart.flags.unset_flag(active);
-  ghostpart.flags.set_flag(ghosttype); // Allow ghost to have multiple ghost flags
+  ghostpart.flags.unset(active);
+  ghostpart.flags.set(ghosttype); // Allow ghost to have multiple ghost flags
   ghostpart.iorig  = i;
   Nghost++;
 

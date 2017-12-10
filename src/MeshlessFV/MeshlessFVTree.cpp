@@ -153,7 +153,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
 
       // Skip particles that have an up-to-date density estimate
       for (j=0; j<Nactive; j++) {
-        if (mfvdata[activelist[j]].flags.check_flag(update_density)) {
+        if (mfvdata[activelist[j]].flags.check(update_density)) {
           activepart[j] = mfvdata[activelist[j]];
         }
         else {
@@ -272,7 +272,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllProperties
       // Once cell is finished, copy all active particles back to main memory and record that we
       // have done a density update
       for (j=0; j<Nactive; j++) {
-        activepart[j].flags.unset_flag(update_density) ;
+        activepart[j].flags.unset(update_density) ;
         mfvdata[activelist[j]] = activepart[j];
       }
 
@@ -410,7 +410,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 
 #if defined(VERIFY_ALL)
         neibmanager.VerifyNeighbourList(i, mfv->Nhydro, mfvdata, "all");
-        neibmanager.VerifyReducedNeighbourList(i, neiblist, mfv->Nhydro, mfvdata, "all");
+        neibmanager.VerifyReducedNeighbourList(i, neiblist, mfv->Nhydro, mfvdata, hmask, "all");
 #endif
         // Compute all neighbour contributions to gradients
         mfv->ComputeGradients(activepart[j], neiblist);
@@ -436,6 +436,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
         }
         for (int var=0; var<ndim+2; var++) {
           for (k=0; k<ndim; k++) mfvdata[i].grad[var][k] = activepart[j].grad[var][k];
+          mfvdata[i].alpha_slope[var] = activepart[j].alpha_slope[var];
         }
         mfvdata[i].vsig_max = activepart[j].vsig_max;
         mfvdata[i].levelneib = activepart[j].levelneib;
@@ -515,7 +516,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -578,7 +579,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
             neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
 
 #if defined(VERIFY_ALL)
-        neibmanager.VerifyNeighbourList(i, Nhydro, mfvdata, "all");
+        neibmanager.VerifyNeighbourList(i, mfv->Nhydro, mfvdata, "all");
 #endif
 
         // Compute all neighbour contributions to hydro fluxes
@@ -594,7 +595,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     	const int i=neighbour.first;
     	FluxParticle& neibpart=*(neighbour.second);
         if (!neibpart.flags.is_mirror()) {
-	        if (neibpart.flags.check_flag(active))
+	        if (neibpart.flags.check(active))
 	          for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += neibpart.dQdt[k];
           for (k=0; k<ndim+2; k++) dQBuffer[i][k] += neibpart.dQ[k];
           for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += neibpart.rdmdt[k];
@@ -617,10 +618,10 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 #pragma omp critical
     {
       for (i=0; i<Ntot; i++) {
-        if (mfvdata[i].flags.check_flag(active)) {
-          for (int k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
+        if (mfvdata[i].flags.check(active)) {
           for (int k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
         }
+        for (int k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
         for (int k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBuffer[i][k];
       }
     }
@@ -812,6 +813,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
         }
       } // End of self-gravity for this cell
 
+      // Save the hydro potential (radws cooling)
+      for (int j=0; j<Nactive; j++) {
+        activepart[j].gpot_hydro = activepart[j].gpot;
+      }
+
       // Compute all star forces for active particles
       for (int j=0; j<Nactive; j++) {
         if (activelist[j] < mfv->Nhydro) {
@@ -824,7 +830,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateAllGravForces
         const int i = activelist[j];
         for (int k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].atree[k];
         for (int k=0; k<ndim; k++) partdata[i].atree[k] += activepart[j].atree[k];
-        partdata[i].gpot  += activepart[j].gpot;
+        partdata[i].gpot        += activepart[j].gpot;
+        partdata[i].gpot_hydro  += activepart[j].gpot_hydro;
       }
 
     }

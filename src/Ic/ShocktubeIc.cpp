@@ -43,7 +43,7 @@ ShocktubeIc<ndim>::ShocktubeIc(Simulation<ndim>* _sim, FLOAT _invndim) :
     ExceptionHandler::getIstance().raise("Currently can only set-up 1D shocktubes");
   }
   if (simparams->intparams["dimensionless"] != 1) {
-    ExceptionHandler::getIstance().raise("dimensionless units not used");
+  //  ExceptionHandler::getIstance().raise("dimensionless units not used");
   }
 }
 
@@ -88,6 +88,33 @@ void ShocktubeIc<ndim>::Generate(void)
     vfluid1[0]      = simparams->floatparams["vfluid1[0]"];
     vfluid2[0]      = simparams->floatparams["vfluid2[0]"];
 
+    if (simparams->intparams["dimensionless"] == 0) {
+
+      rhofluid1 /= simunits.rho.outscale;
+      rhofluid2 /= simunits.rho.outscale;
+      press1 /= simunits.press.outscale;
+      press2 /= simunits.press.outscale;
+
+      temp0 /= simunits.temp.outscale;
+
+      vfluid1[0] /= simunits.v.outscale;
+      vfluid2[0] /= simunits.v.outscale;
+    }
+
+    FLOAT u1, u2;
+    if (hydro->gas_eos == "isothermal") {
+      u1 = u2 = temp0/gammaone/mu_bar;
+    } else {
+      EosParticleProxy<ndim> p;
+
+      p.p = press1; p.rho = rhofluid1;
+      u1 = hydro->eos->InternalEnergyFromPressure(p);
+
+      p.p = press2; p.rho = rhofluid2;
+      u2 = hydro->eos->InternalEnergyFromPressure(p);
+    }
+
+
     debug2("[ShocktubeIc::Generate]");
 
     // Compute size and range of fluid bounding boxes
@@ -122,7 +149,7 @@ void ShocktubeIc<ndim>::Generate(void)
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
         if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
-        else part.u = press1/rhofluid1/gammaone;
+        else part.u = u1;
       }
     }
 
@@ -142,7 +169,7 @@ void ShocktubeIc<ndim>::Generate(void)
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
         part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
         if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
-        else part.u = press2/rhofluid2/gammaone;
+        else part.u = u2;
       }
     }
 

@@ -148,311 +148,26 @@ template <int ndim>
 void MeshlessFV<ndim>::ComputeThermalProperties
  (MeshlessFVParticle<ndim> &part)          ///< [inout] Particle i data
 {
+  // Skip non hydro particles
+  if (!types[part.ptype].hydro_forces)
+    return ;
+
+
   part.u     = eos->SpecificInternalEnergy(part);
   part.sound = eos->SoundSpeed(part);
-  part.press = eos->Pressure(part);
+  part.pressure = eos->Pressure(part);
 
   assert(part.u > (FLOAT) 0.0);
   assert(part.sound > (FLOAT) 0.0);
-  assert(part.press > (FLOAT) 0.0);
+  assert(part.pressure > (FLOAT) 0.0);
 
   return;
 }
 
 
 
-//=================================================================================================
-//  MeshlessFV<ndim>::Timestep
-/// Compute timestep for particle based on Courant and acceleration conditions.
-//=================================================================================================
-template <int ndim>
-FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
-{
-  const FLOAT dt_cfl = 2*courant_mult*part.h/part.vsig_max;
-  const FLOAT dt_grav = accel_mult*
-    sqrtf(part.h/sqrt(DotProduct(part.a0, part.a0, ndim) + small_number));
 
-  if (hydro_forces) return min(dt_cfl, dt_grav);
-  else if (self_gravity) return dt_grav;
-  else return big_number;
-}
-
-
-
-//=================================================================================================
-//  MeshlessFV<ndim>::IntegrateParticles
-/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
-//=================================================================================================
-template <int ndim>
-void MeshlessFV<ndim>::IntegrateParticles
- (const int n,                         ///< [in] Integer time in block time struct
-  const int Npart,                     ///< [in] Number of particles
-  const FLOAT t,                       ///< [in] Current simulation time
-  const FLOAT timestep,                ///< [in] Base timestep value
-  const DomainBox<ndim> &simbox,       ///< [in] Simulation box
-  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
-{
-  debug2("[MeshlessFV::IntegrateParticles]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_INTEGRATE_PARTICLES");
-
-  // Integrate all conserved variables to end of timestep
-  //-----------------------------------------------------------------------------------------------
-  for (int i=0; i<Nhydro; i++) {
-    MeshlessFVParticle<ndim> &part = partdata[i];
-    if (part.flags.is_dead()) continue;
-
-    const int dn = n - part.nlast;
-    const FLOAT dt = timestep*(FLOAT) dn;
-    FLOAT Qcons[nvar];
-
-    if (dn == part.nstep) {
-      part.flags.set_flag(active);
-      for (int k=0; k<nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQ[k];
-    }
-    else {
-      part.flags.unset_flag(active);
-      for (int k=0; k<nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQdt[k]*dt;
-    }
-    for (int k=0; k<ndim; k++) Qcons[k] += part.Qcons0[irho]*part.a0[k]*dt;
-
-
-    // Some sanity-checking
-    assert(isnormal(Qcons[irho]));
-    assert(isnormal(Qcons[ipress]));
-
-
-    // Compute primitive values and update all main array quantities
-    this->UpdateArrayVariables(part, Qcons);
-    this->ComputeThermalProperties(part);
-    this->UpdatePrimitiveVector(part);
-
-    //---------------------------------------------------------------------------------------------
-    if (!staticParticles) {
-      part.flags.set_flag(update_density);
-
-      //-------------------------------------------------------------------------------------------
-      for (int k=0; k<ndim; k++) {
-        part.r[k] = part.r0[k] + (FLOAT) 0.5*(part.v0[k] + part.v[k])*dt;
-
-
-        // Check if particle has crossed LHS boundary
-        //-----------------------------------------------------------------------------------------
-        if (part.r[k] < simbox.min[k]) {
-
-          // Check if periodic boundary
-          if (simbox.boundary_lhs[k] == periodicBoundary) {
-            part.r[k]  += simbox.size[k];
-            part.r0[k] += simbox.size[k];
-          }
-
-          // Check if wall or mirror boundary
-          if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
-            part.r[k]  = (FLOAT) 2.0*simbox.min[k] - part.r[k];
-            part.r0[k] = (FLOAT) 2.0*simbox.min[k] - part.r0[k];
-            part.v[k]  = -part.v[k];
-            part.v0[k] = -part.v0[k];
-            part.a[k]  = -part.a[k];
-            part.a0[k] = -part.a0[k];
-          }
-        }
-
-        // Check if particle has crossed RHS boundary
-        //-----------------------------------------------------------------------------------------
-        if (part.r[k] > simbox.max[k]) {
-
-          // Check if periodic boundary
-          if (simbox.boundary_rhs[k] == periodicBoundary) {
-            part.r[k]  -= simbox.size[k];
-            part.r0[k] -= simbox.size[k];
-          }
-
-          // Check if wall or mirror boundary
-          if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
-            part.r[k]  = (FLOAT) 2.0*simbox.max[k] - part.r[k];
-            part.r0[k] = (FLOAT) 2.0*simbox.max[k] - part.r0[k];
-            part.v[k]  = -part.v[k];
-            part.v0[k] = -part.v0[k];
-            part.a[k]  = -part.a[k];
-            part.a0[k] = -part.a0[k];
-          }
-
-        }
-        //-----------------------------------------------------------------------------------------
-
-      }
-    }
-    //---------------------------------------------------------------------------------------------
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  MeshlessFV<ndim>::EndTimestep
-/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
-//=================================================================================================
-template <int ndim>
-void MeshlessFV<ndim>::EndTimestep
- (const int n,                         ///< [in] Integer time in block time struct
-  const int Npart,                     ///< [in] Number of particles
-  const FLOAT t,                       ///< [in] Current simulation time
-  const FLOAT timestep,                ///< [in] Base timestep value
-  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
-{
-  debug2("[MeshlessFV::EndTimestep]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_END_TIMESTEP");
-
-
-  //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(partdata)
-  for (int i=0; i<Npart; i++) {
-    MeshlessFVParticle<ndim> &part = partdata[i];    // Local reference to particle
-    if (part.flags.is_dead()) continue;
-
-    int dn = n - part.nlast;                         // Integer time since beginning of step
-    int k;                                           // Dimension counter
-    int nstep = part.nstep;                          // Particle (integer) step size
-
-
-    // If particle is at the end of its timestep
-    //---------------------------------------------------------------------------------------------
-    if (dn == nstep) {
-
-      // Integrate all conserved quantities to end of the step (adding sums from neighbours)
-      FLOAT Qcons[nvar] ;
-      for (int var=0; var<nvar; var++) {
-        Qcons[var] = part.Qcons0[var] + part.dQ[var];
-        part.dQ[var]    = (FLOAT) 0.0;
-        part.dQdt[var]  = (FLOAT) 0.0;
-      }
-
-      // Further update conserved quantities if computing gravitational/nbody  contributions
-      for (k=0; k<ndim; k++) {
-    	Qcons[k] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-    			(part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
-        part.v[k] = Qcons[k] / Qcons[irho] ;
-      }
-      Qcons[ietot] += (FLOAT) 0.5*(FLOAT) dn*timestep*
-    	(part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
-    	   Qcons[irho]*DotProduct(part.v, part.a, ndim) +
-         DotProduct(part.a0, part.rdmdt0, ndim) +
-         DotProduct(part.a, part.rdmdt, ndim));
-
-      // Compute primitive values and update all main array quantities
-      this->UpdateArrayVariables(part, Qcons);
-      this->ComputeThermalProperties(part);
-      this->UpdatePrimitiveVector(part) ;
-
-      // Update all values to the beginning of the next step
-      part.nlast  = n;
-      part.tlast  = t;
-      part.flags.set_flag(active);
-      for (k=0; k<ndim; k++) part.r0[k]     = part.r[k];
-      for (k=0; k<ndim; k++) part.v0[k]     = part.v[k];
-      for (k=0; k<ndim; k++) part.a0[k]     = part.a[k];
-      for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
-      for (k=0; k<ndim; k++) part.rdmdt[k] = 0.0;
-      for (k=0; k<nvar; k++) part.Qcons0[k] = Qcons[k];
-      //for (k=0; k<ndim; k++) part.a[k] = 0.0;
-      //part.gpot=0.0;
-
-      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
-
-      for (k=0; k<ndim; k++) part.rdmdt[k] = (FLOAT) 0.0;
-
-    }
-    //---------------------------------------------------------------------------------------------
-    else {
-      part.flags.unset_flag(active);
-    }
-    //---------------------------------------------------------------------------------------------
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  //timing->EndTimingSection("MFV_END_TIMESTEP");
-
-  return;
-}
-
-//=================================================================================================
-//  MeshlessFV<ndim>::EndTimestep
-/// Calculate or reset all quantities for all particles that reach the end of their timesteps.
-//=================================================================================================
-template <int ndim>
-int MeshlessFV<ndim>::CheckTimesteps
-(const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
- const int level_step,                ///< [in] Level of base timestep
- const int n,                         ///< [in] Integer time in block time struct
- double timestep,                     ///< [in] Timestep
- int mode_)
- {
-  int dn;                              // Integer time since beginning of step
-  int level_new;                       // New timestep level
-  int nnewstep;                        // New integer timestep
-  int activecount = 0;                 // No. of newly active particles
-  int i;                               // Particle counter
-
-
-  MeshlessFVParticle<ndim> *mfvdata = GetMeshlessFVParticleArray() ;
-
-  debug2("[MeshlessFV::CheckTimesteps]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("MESHLESS_CHECK_TIMESTEPS");
-
-  const int mode = mode_ ;
-  if (mode == 1 && (timestep_limiter != "simple")) return 0 ;
-
-  const double tstep = timestep ;
-  //-----------------------------------------------------------------------------------------------
-  #pragma omp parallel for default(none) private(dn,i,level_new,nnewstep) \
-    shared(mfvdata,cout) reduction(+:activecount)
-  for (i=0; i<Nhydro; i++) {
-    MeshlessFVParticle<ndim>& part = mfvdata[i];
-    if (part.flags.is_dead()) continue;
-
-    dn = n - part.nlast;
-
-    // Check if neighbour timesteps are too small.  If so, then reduce timestep if possible
-    if (part.levelneib - part.level > level_diff_max) {
-      level_new = part.levelneib - level_diff_max;
-      nnewstep  = pow(2,level_step - level_new);
-
-      // Force recalculation of fluxes for particles at the end of their step
-      if (mode == 0) {
-        if(dn == 0) {
-          part.nstep = nnewstep ;
-          part.level = level_new;
-          part.flags.set_flag(active);
-          activecount++;
-        }
-      }
-      // Saitoh & Makino type reactive limiting
-      //   Note: The current timestep ends at dn+1
-      else if (mode == 1) {
-        if(dn%nnewstep == 0 && dn != part.nstep) {
-          part.nstep = dn;
-          part.level = level_new;
-          double dt = part.nstep * tstep ;
-
-          // Use current predicted value for dQ
-          for (int var=0; var<nvar; var++)
-            part.dQ[var] = dt * part.dQdt[var];
-
-          part.flags.set_flag(active);
-        }
-      }
-    }
-  }
-    //-----------------------------------------------------------------------------------------------
-
-  return activecount;
- }
-
+//
 //=================================================================================================
 //  MeshlessFV::UpdateArrayVariables
 /// Updates all particle quantities based on the primitive/conserved variables.
@@ -460,24 +175,18 @@ int MeshlessFV<ndim>::CheckTimesteps
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOAT Qcons[nvar])
 {
-  // TODO: Check all callers.
-  //   This now uses the currently predicted value of Qcons, no need to add dQ.
+
   part.m = Qcons[irho] ;
   part.rho = part.m*part.ndens;
   for (int k=0; k<ndim; k++) part.v[k] = Qcons[k]/part.m;
-
-  FLOAT ekin = (FLOAT) 0.0;
-  for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.u = (Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
-  part.u = eos->SpecificInternalEnergy(part);
-  part.press = (gamma_eos - (FLOAT) 1.0)*part.rho*part.u;
-
   assert(isnormal(part.m));
-  assert(isnormal(part.u));
-  assert(isnormal(part.press));
-  /*assert(part.m > (FLOAT) 0.0);
-  assert(part.u > (FLOAT) 0.0);
-  assert(part.press > (FLOAT) 0.0);*/
+
+  if (types[part.ptype].hydro_forces) {
+    FLOAT ekin = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
+
+    part.u = (Qcons[ietot] - (FLOAT) 0.5*part.m*ekin)/part.m;
+  }
 
   return;
 }
@@ -592,10 +301,11 @@ void MeshlessFV<ndim>::ZeroAccelerations()
 {
   for (int i=0; i<Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = GetMeshlessFVParticlePointer(i);
-    if (part.flags.check_flag(active)) {
+    if (part.flags.check(active)) {
       for (int k=0; k<ndim; k++) part.a[k] = 0;
       for (int k=0; k<ndim; k++) part.atree[k] = 0;
       part.gpot = 0 ;
+      part.gpot_hydro = 0;
     }
   }
 }

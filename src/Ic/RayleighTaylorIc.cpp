@@ -164,7 +164,7 @@ void RayleighTaylorIc<ndim>::Generate(void)
     //---------------------------------------------------------------------------------------------
     hydro->Nghost = 0;
     hydro->Ntot = hydro->Nhydro;
-    for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set_flag(active);
+    for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set(active);
 
     sim->initial_h_provided = true;
 

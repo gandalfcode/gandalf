@@ -101,7 +101,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 #pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
   for (int i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -282,8 +282,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
     for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a0[k]*dt;
 
     // If at end of step, set system particle as active
-    if (dn == nstep) star[i]->active = true;
-    else star[i]->active = false;
+    if (dn == nstep) star[i]->flags.set(active);
+    else star[i]->flags.unset(active);
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -347,10 +347,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
   FLOAT timestep,                      ///< Smallest timestep value
   NbodyParticle<ndim> **star)          ///< Main star/system array
 {
-  int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  int nstep;                           // Particle (integer) step size
 
   debug2("[NbodyLeapfrogKDK::EndTimestep]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("NBODY_END_TIMESTEP");
@@ -358,19 +356,20 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
   // Loop over all star particles and set values for those at end of step
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
 
-    if (dn == nstep) {
+    if (star[i]->flags.check(end_timestep)) {
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
       for (k=0; k<ndim; k++) star[i]->adot0[k] = star[i]->adot[k];
       for (k=0; k<ndim; k++) star[i]->apert[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) star[i]->adotpert[k] = (FLOAT) 0.0;
-      star[i]->active = false;
       star[i]->nlast = n;
       star[i]->tlast = t;
+      star[i]->dt = star[i]->dt_next ;
+      star[i]->dt_next = 0 ;
+      star[i]->flags.unset(active);
+      star[i]->flags.unset(end_timestep);
     }
   }
   //-----------------------------------------------------------------------------------------------

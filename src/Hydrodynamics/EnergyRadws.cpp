@@ -30,6 +30,8 @@
 #include <string>
 #include <vector>
 #include <math.h>
+
+#include "../Headers/Integration.h"
 #include "Constants.h"
 #include "Debug.h"
 #include "EnergyEquation.h"
@@ -38,9 +40,9 @@
 #include "Hydrodynamics.h"
 #include "Parameters.h"
 #include "Particle.h"
+#include "RadiativeFB.h"
 #include "SimUnits.h"
 #include "SmoothingKernel.h"
-#include "SphIntegration.h"
 using namespace std;
 
 
@@ -49,127 +51,38 @@ using namespace std;
 //  EnergyRadws::EnergyRadws()
 /// EnergyRadws class constructor
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-EnergyRadws<ndim,ParticleType>::EnergyRadws
- (DOUBLE energy_mult_, string radws_table, FLOAT temp_ambient_,
-  SimUnits *simunits, EOS<ndim> *eos_) :
-  EnergyEquation<ndim>(energy_mult_)
+template <int ndim>
+EnergyRadwsBase<ndim>::EnergyRadwsBase
+ (Parameters* simparams,
+  SimUnits *simunits,
+  Radws<ndim> *eos_,
+  RadiativeFB<ndim> *radfb_) :
+  EnergyEquation<ndim>(simparams->floatparams["energy_mult"])
 {
-  int i, j, l;
-  // int ndens, ntemp; defined in EnergyEquation
-  DOUBLE eos_dens_, eos_temp_, eos_energy_, eos_mu_, kappa_, kappar_, kappap_;
-  DOUBLE num, denom, tempunit;
-  string line;
-
+  radfb = radfb_;
   eos = eos_;
+  lombardi = simparams->intparams["lombardi_method"];
+  table = eos->opacity_table;
+  ndens = table->ndens;
+  ntemp = table->ntemp;
 
   // compute rad_const = Stefan-Boltzmann in code units
+  FLOAT num = 0.0, denom = 0.0, tempunit = 0.0;
   num       = pow(simunits->r.outscale*simunits->r.outSI,2)*simunits->t.outscale*simunits->t.outSI;
   denom     = simunits->E.outscale * simunits->E.outSI;
   tempunit  = simunits->temp.outscale * simunits->temp.outSI;
   rad_const = stefboltz*(num*pow(tempunit,4.0))/denom;
+  temp_ambient0 = simparams->floatparams["temp_ambient"] / tempunit;
+  temp_min = 5.0 / tempunit;
 
-  temp_ambient = temp_ambient_ / tempunit;
-  cout << "Temp_ambient : " << temp_ambient << endl;
-  cout << "units     : " << num << " "<< denom << " " << tempunit << endl;
-  cout << "u_unit    : " << simunits->u.outscale * simunits->u.outcgs << endl;
-  cout << "time_unit : " << simunits->t.outscale * simunits->t.outcgs << endl;
-  cout << "rad_const : " << rad_const << endl;
-  cout << "stefboltz : " << stefboltz << endl;
-  cout << "rad_constscaled : " << rad_const*(simunits->E.outscale*simunits->E.outSI/
-    (pow(simunits->r.outscale*simunits->r.outSI,2)*simunits->t.outscale*simunits->t.outSI*
-     pow(simunits->temp.outscale*simunits->temp.outSI,4))) << endl;
-
-  // check that user wants cm2_g for opacity units
-  if (simunits ->kappa.outunit != "cm2_g") {
-    cout << "ERROR! Selected wrong unit for opacity. Use cm2_g" <<endl;
-    cout << simunits->kappa.outunit << endl;
-    ExceptionHandler::getIstance().raise("Error : Wrong units for opacity.  Use cm2_g");
+  // Set fcol2
+  FLOAT fcol = table->fcol;
+  if (lombardi) {
+    fcol2 = fcol * fcol * 4.0 * pi;
   }
-
-  ifstream file;
-  file.open(radws_table.c_str(), ios::in);
-  // allocate table entries
-
-
-  cout << "EnergyRadws : " << radws_table << "  "<< file.good() << endl;
-
-  //-----------------------------------------------------------------------------------------------
-  if (file.good()) {
-    getline(file, line);
-    cout << line << endl;
-    istringstream istr(line);
-    istr >> ndens >> ntemp ;
-
-    cout << "ndens, ntemp = " << ndens << "  " << ntemp << endl;
-
-    eos_dens     = new FLOAT[ndens];
-    eos_temp     = new FLOAT[ntemp];
-    eos_energy   = new FLOAT*[ndens];
-    eos_mu       = new FLOAT*[ndens];
-    kappa_table  = new FLOAT*[ndens];
-    kappar_table = new FLOAT*[ndens];
-    kappap_table = new FLOAT*[ndens];
-
-    for (i=0; i<ndens; i++){
-      eos_energy[i]   = new FLOAT[ntemp];
-      eos_mu[i]       = new FLOAT[ntemp];
-      kappa_table[i]  = new FLOAT[ntemp];
-      kappar_table[i] = new FLOAT[ntemp];
-      kappap_table[i] = new FLOAT[ntemp];
-    }
-
-    // read table
-    i = 0;
-    l = 0;
-    j = 0;
-
-    //---------------------------------------------------------------------------------------------
-    while (getline(file, line)) {
-      istringstream istr(line);
-
-      if (istr >> eos_dens_ >> eos_temp_ >> eos_energy_ >> eos_mu_>> kappa_ >> kappar_ >> kappap_) {
-
-        eos_energy[i][j]   = eos_energy_/(simunits->u.outscale * simunits-> u.outcgs);
-        eos_mu[i][j]       = eos_mu_;
-        kappa_table[i][j]  = kappa_/(simunits->kappa.outscale * simunits-> kappa.outcgs);
-        kappar_table[i][j] = kappar_/(simunits->kappa.outscale * simunits-> kappa.outcgs);
-        kappap_table[i][j] = kappap_/(simunits->kappa.outscale * simunits-> kappa.outcgs);
-
-        if (l < ntemp) {
-          eos_temp[l] = log10(eos_temp_/(simunits->temp.outscale * simunits->temp.outcgs));
-        };
-
-        l += 1;
-        j += 1;
-
-        if (l % ntemp == 0) {
-          eos_dens[i] = log10(eos_dens_/(simunits->rho.outscale * simunits-> rho.outcgs));
-          i += 1;
-          j = 0;
-        };
-
-      } else cout << "Dateifehler" << endl;
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-    file.close();
+  else {
+    fcol2 = fcol * fcol;
   }
-  //-----------------------------------------------------------------------------------------------
-
-
-  //cout << getPosition_dens(test_dens) << endl;
-  //cout << getPosition_temp(test_temp) << endl;
-  //cout << kappap[getPosition_dens(test_dens)][getPosition_temp(test_temp)] << endl;
-
-  //////////////////// SAVE eos_dens and eos_temp in log10 ////////
-  //  eos_dens = log10(eos_dens);
-  // eos_temp = log10(eos_temp);
-
-  cout << "eos_dens=" <<eos_dens[0] << "  "<<eos_dens[ndens-1] <<endl ;
-  cout << "eos_temp="<< eos_temp[0]<< "  "<<eos_temp[ntemp-1] <<endl;
-
 }
 
 
@@ -178,22 +91,9 @@ EnergyRadws<ndim,ParticleType>::EnergyRadws
 //  EnergyRadws::~EnergyRadws()
 /// EnergyRadws class destructor
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-EnergyRadws<ndim,ParticleType>::~EnergyRadws()
+template <int ndim>
+EnergyRadwsBase<ndim>::~EnergyRadwsBase()
 {
-  for (int i=0; i<ndens; i++){
-    delete[] eos_energy[i];
-    delete[] eos_mu[i];
-    delete[] kappa_table[i];
-    delete[] kappar_table[i];
-    delete[] kappap_table[i];
-  }
-
-  delete[] eos_energy;
-  delete[] eos_mu;
-  delete[] kappa_table;
-  delete[] kappar_table;
-  delete[] kappap_table;
 
 }
 
@@ -207,22 +107,21 @@ EnergyRadws<ndim,ParticleType>::~EnergyRadws()
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EnergyIntegration
  (const int n,                         ///< [in] Integer time in block time struct
-  const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  Particle<ndim>* part_gen)            ///< [inout] Pointer to SPH particle array
+  Hydrodynamics<ndim>* hydro)
 {
   int i;                               // Particle counter
   FLOAT dt;                            // Timestep since start of step
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[EnergyRadws::EnergyIntegration]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_INTEGRATION");
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,i) shared(partdata)
-  for (i=0; i<Npart; i++) {
+#pragma omp parallel for default(none) private(dt,i) shared(partdata, hydro)
+  for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim>& part = partdata[i];
     if (part.flags.is_dead()) continue;
 
@@ -230,24 +129,21 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
     dt = t - part.tlast;
 
     if (part.dt_therm <= small_number) {
-      part.u = part.ueq;
-      //part.u = part.u0;
+      part.u = part.u0;
     }
-    else if (dt < (FLOAT) 40.0*part.dt_therm) {
-      part.u = part.u0*exp(-dt/part.dt_therm) + part.ueq*((FLOAT) 1.0 - exp(-dt/part.dt_therm));
+    else if (dt < (FLOAT) 40.0 * part.dt_therm) {
+      part.u = part.u0 * exp(-dt / part.dt_therm)
+             + part.ueq * ((FLOAT) 1.0 - exp(-dt / part.dt_therm));
     }
-    else if (dt >= (FLOAT) 40.0*part.dt_therm) {
+    else if (dt >= (FLOAT) 40.0 * part.dt_therm) {
       part.u = part.ueq;
     }
 
   }
   //-----------------------------------------------------------------------------------------------
 
-
   return;
 }
-
-
 
 //=================================================================================================
 //  EnergyRadws::EndTimestep
@@ -256,43 +152,190 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EndTimestep
  (const int n,                         ///< [in] Integer time in block time struct
-  const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  Particle<ndim>* part_gen)            ///< [inout] Pointer to SPH particle array
+  Hydrodynamics<ndim>* hydro)
 {
-  int dn;                              // Integer time since beginning of step
   int i;                               // Particle counter
-  FLOAT temp;                          // ..
-  //FLOAT dt_therm;                      // ..
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  FLOAT temp;                          // Particle temperature
+  FLOAT temp_amb = temp_ambient0;      // Ambient particle temperature
+  FLOAT col2;                          // RadWS or Lombardi metric
+
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[EnergyRadws::EndTimestep]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,temp) shared(partdata)
-  for (i=0; i<Npart; i++) {
+#pragma omp parallel for default(none) private(i, temp, col2) shared(partdata, hydro, temp_amb)
+  for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
-    dn = n - part.nlast;
 
-    if (dn == part.nstep) {
+    if (part.flags.check(end_timestep)) {
+
       temp = eos->Temperature(part);
+      if (radfb) temp_amb = radfb->AmbientTemp(part);
+      col2 = GetCol2(part);
 
-      // Get new ueq and dt_therm
-      EnergyFindEqui(part.rho, temp, part.gpot, part.u, part.dudt,
-                     part.ueq, part.dt_therm, part.mu_bar);
+      EnergyFindEqui(part.rho, temp, temp_amb, col2, part.u, part.dudt,
+                     part.ueq, part.dt_therm);
+
+
       part.u0 = part.u;
-      //part.dudt0 = part.dudt;
+      part.dudt0 = part.dudt;
     }
-
   }
   //-----------------------------------------------------------------------------------------------
 
   return;
 }
+
+
+//=================================================================================================
+//  EnergyRadws::EndTimestep
+/// Compute the cooling for the old and new time-steps for the meshless
+//=================================================================================================
+template <int ndim>
+void EnergyRadws<ndim,MeshlessFVParticle>::EndTimestep
+ (const int n,                         ///< [in] Integer time in block time struct
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep,                ///< [in] Base timestep value
+  Hydrodynamics<ndim>* hydro)
+{
+  int i;                               // Particle counter
+  FLOAT temp;                          // Particle temperature
+  FLOAT temp_amb = temp_ambient0;      // Ambient particle temperature
+  FLOAT col2;                          // RadWS or Lombardi metric
+
+  MeshlessFVParticle<ndim>* partdata = hydro->template GetParticleArray<MeshlessFVParticle>();
+  MeshlessFV<ndim>* mfv = reinterpret_cast<MeshlessFV<ndim>*>(hydro);
+
+  debug2("[EnergyRadws::EndTimestep]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_END_TIMESTEP");
+
+  int irho   = MeshlessFV<ndim>::irho ;
+  int ietot  = MeshlessFV<ndim>::ietot;
+
+  //-----------------------------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(i, temp, col2) shared(partdata, mfv, temp_amb, irho, ietot)
+  for (i=0; i<mfv->Nhydro; i++) {
+    MeshlessFVParticle<ndim> &part = partdata[i];
+    if (part.flags.is_dead()) continue;
+
+    if (part.flags.check(end_timestep)) {
+
+      // Compute the primitive variables
+      FLOAT Qcons[MeshlessFV<ndim>::nvar] ;
+      for (int k=0; k<MeshlessFV<ndim>::nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQ[k];
+      for (int k=0; k<ndim; k++) {
+        Qcons[ietot] += 0.5*part.dt*
+            (part.a0[k]*(part.Qcons0[k] + 0.5*part.Qcons0[irho]*part.a0[k]*part.dt) +
+             part.a [k]*(Qcons[k]       + 0.5*     Qcons [irho]*part.a [k]*part.dt));
+
+        Qcons[k] += 0.5*part.dt * (part.Qcons0[irho]*part.a0[k] + Qcons[irho]*part.a[k]);
+      }
+
+      mfv->UpdateArrayVariables(part, Qcons);
+      mfv->ComputeThermalProperties(part);
+      mfv->UpdatePrimitiveVector(part);
+
+      temp = eos->Temperature(part);
+      if (radfb) temp_amb = radfb->AmbientTemp(part);
+      col2 = GetCol2(part);
+
+      // Get the cooling rate:
+      FLOAT heating = ImplicitEnergyUpdate(part.rho, part.u, temp, temp_amb, col2, 0, part.dt);
+
+      // Clip the heating for stability:
+      heating = max(heating, -0.95*part.u/part.dt);
+      part.cooling = - part.m*heating;
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+//=================================================================================================
+//  EnergyRadws::Compute the cooling rate for the new time-step
+/// Prevent the use of this
+//=================================================================================================
+template <int ndim>
+void EnergyRadws<ndim,MeshlessFVParticle>::EnergyIntegration
+ (const int n,                         ///< [in] Integer time in block time struct
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep,                ///< [in] Base timestep value
+  Hydrodynamics<ndim>* hydro)
+  {
+  int i;                               // Particle counter
+  FLOAT temp;                          // Particle temperature
+  FLOAT temp_amb = temp_ambient0;      // Ambient particle temperature
+  FLOAT col2;                          // RadWS or Lombardi metric
+
+  MeshlessFVParticle<ndim>* partdata = hydro->template GetParticleArray<MeshlessFVParticle>();
+  MeshlessFV<ndim>* mfv = reinterpret_cast<MeshlessFV<ndim>*>(hydro);
+
+  debug2("[EnergyRadws::EnergyIntegration]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("ENERGY_RADWS_ENERGY_INTEGRATION");
+
+  int irho   = MeshlessFV<ndim>::irho ;
+  int ietot  = MeshlessFV<ndim>::ietot;
+
+  //-----------------------------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(i, temp, col2) shared(partdata, mfv, temp_amb, cout, irho, ietot)
+  for (i=0; i<mfv->Nhydro; i++) {
+    MeshlessFVParticle<ndim> &part = partdata[i];
+    if (part.flags.is_dead()) continue;
+
+    if (n == part.nlast) {
+
+      FLOAT Qcons[MeshlessFV<ndim>::nvar] ;
+      for (int k=0; k<MeshlessFV<ndim>::nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQdt[k]*part.dt;
+      for (int k=0; k<ndim; k++) {
+        Qcons[ietot] += 0.5*part.dt*
+            (part.a0[k]*(part.Qcons0[k] + 0.5*part.Qcons0[irho]*part.a0[k]*part.dt) +
+             part.a [k]*(Qcons[k]       + 0.5*     Qcons [irho]*part.a0[k]*part.dt));
+
+        Qcons[k] += part.dt * part.Qcons0[irho];
+      }
+      mfv->UpdateArrayVariables(part, Qcons);
+      mfv->ComputeThermalProperties(part);
+      mfv->UpdatePrimitiveVector(part);
+
+      temp = eos->Temperature(part);
+      if (radfb) temp_amb = radfb->AmbientTemp(part);
+      col2 = GetCol2(part);
+
+      // Get the cooling rate:
+      FLOAT heating = ImplicitEnergyUpdate(part.rho, part.u, temp, temp_amb, col2, 0, part.dt);
+
+      part.cooling = - part.m * heating;
+    }
+  }
+  //-----------------------------------------------------------------------------------------------
+
+}
+
+
+//=================================================================================================
+//  EnergyRadws::EnergyCorrectionTerms
+/// Prevent the use of this
+//=================================================================================================
+template <int ndim>
+void EnergyRadws<ndim,MeshlessFVParticle>::EnergyCorrectionTerms
+ (const int n,                         ///< [in] Integer time in block time struct
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep,                ///< [in] Base timestep value
+  Hydrodynamics<ndim>* hydro)
+{
+  ExceptionHandler::getIstance().raise("EnergyRadws::EnergyCorrectionTerms: should not be used "
+        "with the meshless");
+}
+
+
 
 
 
@@ -301,66 +344,51 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 /// Computes the thermal equilibrium state of the particle (i.e. its equilibrium temperature and
 /// internal energy) including the thermal timescale to reach this equilibrium.
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
+template <int ndim>
+void EnergyRadwsBase<ndim>::EnergyFindEqui
  (const FLOAT rho,                             ///< [in] ..
   const FLOAT temp,                            ///< [in] ..
-  const FLOAT gpot,                            ///< [in] ..
+  const FLOAT temp_ambient,                    ///< [in] ..
+  const FLOAT col2,                            ///< [in] ..
   const FLOAT u,                               ///< [in] ..
   const FLOAT dudt,                            ///< [in] ..
   FLOAT &ueq_p,                                ///< [out] ..
-  FLOAT &dt_thermal,                           ///< [out] ..
-  FLOAT &mu_bar_equi)                          ///< [out] ..
+  FLOAT &dt_thermal)                           ///< [out] ..
 {
-  const FLOAT fcolumn2 = 0.010816;             // ..
-  const FLOAT col2     = fcolumn2*gpot*rho;    // ..
   const FLOAT logrho   = log10(rho);           // ..
-  const int idens      = GetIDens(logrho);     // ..
+  const int idens = table->GetIDens(logrho);
   int itemp;                                   // ..
   FLOAT logtemp;                               // ..
   FLOAT Tequi;                                 // ..
   FLOAT dudt_eq;                               // ..
   FLOAT dudt_rad;                              // ..
-  FLOAT dudt_tot;                              // ..
   FLOAT kappa;                                 // ..
   FLOAT kappar;                                // ..
   FLOAT kappap;                                // ..
 
   logtemp = log10(temp);
-  itemp   = GetITemp(logtemp);
+  itemp   = table->GetITemp(logtemp);
 
   assert(idens >= 0 && idens <= ndens - 1);
   assert(itemp >= 0 && itemp <= ntemp - 1);
 
-  GetKappa(idens, itemp, logrho, logtemp, kappa, kappar, kappap);
+  table->GetKappa(idens, itemp, kappa, kappar, kappap);
   dudt_rad = ebalance((FLOAT) 0.0, temp_ambient, temp, kappa, kappap, col2);
 
   // Calculate equilibrium temperature using implicit scheme described in Stamatellos et al. (2007)
-  EnergyFindEquiTemp(idens, rho, temp, col2, dudt, Tequi, mu_bar_equi);
-  //assert(Tequi >= temp_ambient);
+  EnergyFindEquiTemp(idens, rho, temp, temp_ambient, col2, dudt, Tequi);
+  assert(Tequi >= temp_min);
 
+  // Get ueq_p and dudt_eq from Tequi
   logtemp = log10(Tequi);
-  itemp = GetITemp(logtemp);
+  itemp = table->GetITemp(logtemp);
+  table->GetKappa(idens, itemp, kappa, kappar, kappap);
+  ueq_p = table->GetEnergy(idens, itemp);
+  dudt_eq = ebalance((FLOAT) 0.0, temp_ambient, Tequi, kappa, kappap, col2);
 
-
-  GetKappa(idens, itemp, logrho, logtemp, kappa, kappar, kappap);
-  //ueq_p = GetEnergy(idens, itemp, logrho, logtemp);
-
-  ueq_p = Tequi / (0.66666666666666 * mu_bar_equi);
-  dudt_eq = ebalance((FLOAT) 0.0 ,temp_ambient ,Tequi, kappa, kappap, col2);
-
-  //// GET CHANGE IN DUDT
-  dudt_tot = -(dudt_eq - dudt_rad);
-
-  /// Thermalization time scale
-  if (dudt_tot == 0.0){
-    dt_thermal = 1.e30;
-    cout << "Achtung dudt_tot == 0.0" << endl;
-  }
-  else {
-    dt_thermal = (ueq_p - u)/(dudt + dudt_rad);
-    //dt_thermal = (ueq_p - u)/(dudt + dudt_tot);
-  }
+  // Thermalization time scale
+  dt_thermal = (ueq_p - u) / (dudt + dudt_rad);
+  if (dudt_eq == dudt_rad) dt_thermal = 1E30;
 
   return;
 }
@@ -371,315 +399,314 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEqui
 //  EnergyRadws::EnergyFindEquiTemp
 /// EnergyFindEquiTemp returns equilibrium temperature
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-void EnergyRadws<ndim,ParticleType>::EnergyFindEquiTemp
+template <int ndim>
+void EnergyRadwsBase<ndim>::EnergyFindEquiTemp
  (const int idens,                         ///< ..
   const FLOAT rho,                         ///< ..
   const FLOAT temp,                        ///< ..
+  const FLOAT temp_ambient,                ///< ..
   const FLOAT col2,                        ///< ..
   const FLOAT dudt,                        ///< ..
-  FLOAT &Tequi,                            ///< ..
-  FLOAT &mu_bar_equi)                      ///< ..
+  FLOAT &Tequi)
 {
   int itemp;
   int itemplow, itemphigh;
 
-  FLOAT accuracy = 0.001; // not shure what is a good accuracy (Paul)
-  FLOAT balance; //minbalance ;
+  FLOAT accuracy = 0.001;
+  FLOAT balance, minbalance;
   FLOAT balanceLow, balanceHigh ;
   FLOAT kappa, kappar, kappap;
+  FLOAT minkappa, minkappar, minkappap;
   FLOAT kappaLow, kappaHigh, kappapLow, kappapHigh;
-  FLOAT logtemp, logrho;
-  FLOAT Tlow, Thigh, Tlow_log, Thigh_log, Tequi_log;
-  //FLOAT mu_bar_high, mu_bar_low;
+  FLOAT logtemp;
+  FLOAT Tlow, Thigh, Tlow_log, Thigh_log;
   FLOAT dtemp;
 
-  logrho = log10(rho);
   logtemp = log10(temp);
-
-  itemp = GetITemp(logtemp);
+  itemp = table->GetITemp(logtemp);
 
   // Rosseland and Planck opacities at rho_p and temperature temp(p)
-  GetKappa(idens, itemp, logrho, logtemp, kappa, kappar, kappap);
-
-  // calculate radiative heating/cooling rate
+  table->GetKappa(idens, itemp, kappa, kappar, kappap);
   balance = ebalance((FLOAT) 0.0, temp_ambient, temp, kappa, kappap, col2);
 
-
-  // Rosseland and Planck opacities at rho_p and mintemperature 5K
-  //  tempmin = max(5.0,temp_ambient);
-  //logtemp = log10(tempmin);
-  //GetKappa(idens,  itemp,  logrho,  logtemp, kappa,  kappar, kappap);
-  // calculate minradiative heating/cooling rate
-  //minbalance = ebalance((FLOAT)0.0, temp_ambient , tempmin, kappa, kappap, col2);
+  // Get min. kappa and min balance
+  logtemp = log10(temp_min);
+  itemp = table->GetITemp(logtemp);
+  table->GetKappa(idens, itemp, minkappa, minkappar, minkappap);
+  minbalance = ebalance((FLOAT) 0.0, temp_ambient, temp_min, minkappa, minkappap, col2);
 
   // Find equilibrium temperature
   // ------------------------------------------------------------------------------------------------
-  if (dudt < -balance){                   // <=
-
-      //if (dudt <= -minbalance){
-    //if (dudt <= 0.0){
-      //Tequi = temp_ambient;
-      //return;
-    //}
-
-    //cout << "Cooling down" << endl;
-    if (itemp <= 1) {
-      cout << "Leaving immediately!" << endl;
-      Tequi = pow(10.0, eos_temp[1]);
+  if (dudt <= -balance) {
+    if (dudt <= -minbalance) {
+      Tequi = temp_min;
       return;
     }
-    Tlow_log  = eos_temp[itemp-1];
-    Tlow      = pow(10.0, Tlow_log);
-    Thigh_log = eos_temp[itemp+1];
-    Thigh     = pow(10.0, Thigh_log);
-    itemplow  = itemp-1;
 
-    GetKappa(idens, itemplow, logrho, Tlow_log, kappaLow, kappar, kappapLow);
+    Tlow_log  = table->eos_temp[itemp - 1];
+    Tlow      = pow(10.0, Tlow_log);
+    Thigh_log = table->eos_temp[itemp + 1];
+    Thigh     = pow(10.0, Thigh_log);
+    itemplow  = itemp - 1;
+
+    table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
     balanceLow = ebalance(dudt, temp_ambient, Tlow, kappaLow, kappapLow, col2);
 
     itemphigh = itemp;
-    GetKappa(idens, itemphigh, logrho, Thigh_log, kappaHigh, kappar, kappapHigh);
+    table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
     balanceHigh = ebalance(dudt, temp_ambient ,Thigh, kappaHigh, kappapHigh, col2);
 
+    while (balanceLow * balanceHigh > 0.0){
+      assert(itemp >= 1);
 
-    while (balanceLow*balanceHigh > 0.0){
-      if (itemp <= 1) {
-        cout << "Reached itemp=1, returning" << endl;
-        Tequi = pow(10.0, eos_temp[1]);
-        return;
-      }
-
-      Thigh       = Tlow ;
+      Thigh       = Tlow;
       kappaHigh   = kappaLow;
       kappapHigh  = kappapLow;
       balanceHigh = balanceLow;
-      itemplow    = itemplow -1;
-      Tlow_log    = eos_temp[itemplow];
+      itemplow    = itemplow - 1;
+      Tlow_log    = table->eos_temp[itemplow];
       Tlow        = pow(10.0, Tlow_log);
 
-      GetKappa(idens, itemplow, logrho, Tlow_log, kappaLow, kappar, kappapLow);
+      table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
       balanceLow = ebalance(dudt, temp_ambient , Tlow, kappaLow, kappapLow, col2);
-
-      //GetKappa(idens,  itemphigh,  logrho,  Thigh_log, kappaHigh,  kappar, kappapHigh);
-      //balanceHigh = ebalance(dudt, temp_ambient , Thigh, kappaHigh, kappapHigh, col2);
-
     }
 
     itemphigh = itemplow + 1;
-    dtemp = Thigh - Tlow;
-  }
-  else {
-    // dudt > -balance; search higher temperatures
-    //    cout << "Heating up" << endl;
-    if (itemp >= ntemp-2) {
-      Tequi = pow(10.0, eos_temp[ntemp-2]);
-      return;
-    }
-    Tlow_log  = eos_temp[itemp-1];
+  } else {
+    Tlow_log  = table->eos_temp[itemp - 1];
     Tlow      = pow(10.0, Tlow_log);
-    Thigh_log = eos_temp[itemp+1];
+    Thigh_log = table->eos_temp[itemp + 1];
     Thigh     = pow(10.0, Thigh_log);
 
     itemplow = itemp;
-    GetKappa(idens, itemplow, logrho, Tlow_log, kappaLow, kappar, kappapLow);
+    table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
     balanceLow = ebalance(dudt, temp_ambient, Tlow, kappaLow, kappapLow, col2);
 
     itemphigh = itemp + 1;
-    GetKappa(idens, itemphigh ,logrho, Thigh_log, kappaHigh, kappar, kappapHigh);
+    table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
     balanceHigh = ebalance(dudt, temp_ambient, Thigh, kappaHigh, kappapHigh, col2);
 
-    while (balanceLow*balanceHigh > 0.0) {
-      if (itemp >= ntemp - 2) {
-        Tequi = pow(10.0, eos_temp[ntemp - 2]);
-        return;
-      }
+    while (balanceLow * balanceHigh > 0.0) {
+      assert(itemp <= ntemp - 2);
 
-      Tlow       = Thigh ;
+      Tlow       = Thigh;
       kappaLow   = kappaHigh;
       kappapLow  = kappapHigh;
       balanceLow = balanceHigh;
-      itemphigh  = itemphigh +1;
-      Thigh_log  = eos_temp[itemphigh];
+      itemphigh  = itemphigh + 1;
+      Thigh_log  = table->eos_temp[itemphigh];
       Thigh      = pow(10.0, Thigh_log);
 
-	  //GetKappa(idens,  itemplow,  logrho,  Tlow_log, kappaLow,  kappar, kappapLow);
-	  //balanceLow = ebalance(dudt, temp_ambient , Tlow, kappaLow, kappapLow, col2);
-
-      GetKappa(idens, itemphigh, logrho, Thigh_log, kappaHigh, kappar, kappapHigh);
+      table->GetKappa(idens, itemphigh, kappaHigh, kappar, kappapHigh);
       balanceHigh = ebalance(dudt, temp_ambient, Thigh, kappaHigh, kappapHigh, col2);
-
     }
+
     itemplow = itemphigh - 1;
-    dtemp = Thigh - Tlow;
-
   }
-  //-----------------------------------------------------------------------------------------------
 
-
-  Tequi = 0.5*(Tlow + Thigh);
-  //dtemp = Thigh-Tlow;
-  //GetKappa(idens,  itemphigh,  logrho,  Thigh_log, kappaHigh,  kappar, kappapHigh);
-  //kappa = (kappaHigh + kappaLow)/2;
-  //kappap = (kappapHigh + kappapLow)/2;
-
+  Tequi = 0.5 * (Tlow + Thigh);
+  dtemp = Thigh - Tlow;
 
   // Refine the search in between Thigh and Tlow
   //-----------------------------------------------------------------------------------------------
-  while(fabs(2.*dtemp/(Thigh + Tlow)) > accuracy){
-
-    GetKappa(idens, itemplow, logrho, Tlow_log, kappaLow, kappar, kappapLow);
+  while (dtemp != 0.0 && fabs(2.0 * dtemp / (Thigh + Tlow)) > accuracy) {
+    table->GetKappa(idens, itemplow, kappaLow, kappar, kappapLow);
     balance = ebalance(dudt, temp_ambient , Tequi, kappa, kappap, col2);
 
     if (balance == 0.0) {
-      // LEAVE ROUTINE
-      Tequi = 0.5*(Thigh + Tlow);
+      Tequi = 0.5 * (Thigh + Tlow);
       return;
     }
 
-    if (balanceLow*balance < 0.0){
-      //cout <<  "cool " << endl;
+    if (balanceLow * balance < 0.0){
       Thigh       = Tequi;
       balanceHigh = balance;
       kappaHigh   = kappa;
       kappapHigh  = kappap;
-
     }
-    else{
-      //cout <<  "heat " << endl;
+    else {
       Tlow       = Tequi;
       balanceLow = balance;
       kappaLow   = kappa;
       kappapLow  = kappap;
     }
 
-    Tequi = 0.5*(Thigh + Tlow);
+    Tequi = 0.5 * (Thigh + Tlow);
+    kappa = (kappaHigh + kappaLow) / 2;
+    kappap = (kappapHigh + kappapLow) / 2;
     dtemp = Thigh - Tlow;
-   // mu_bar_equi = (mu_bar_high + mu_bar_low)/2;
-    kappa = (kappaHigh + kappaLow)/2;
-    kappap = (kappapHigh + kappapLow)/2;
   }
-  //----------------------------------------------------------------------------------------------
 
-  Tequi       = 0.5*(Thigh + Tlow);
-  Tequi_log   = log10(Tequi);
-  mu_bar_equi = GetMuBar(idens, itemplow, logrho, Tequi_log);
+  if (Tequi < temp_ambient) Tequi = temp_ambient;
 
   return;
 }
 
-
-
-// ------------------------------------------------------------------------------------------//
-//			find  closest index in list for value: level
-// ------------------------------------------------------------------------------------------//
-
-template <typename BidirectionalIterator, typename T>
-BidirectionalIterator getClosest(BidirectionalIterator first,
-                                 BidirectionalIterator last,
-                                 const T &value)
-{
-  BidirectionalIterator before = std::lower_bound(first, last, value);
-
-  if (before == first) return first;
-  if (before == last)  return --last; // iterator must be bidirectional
-
-  BidirectionalIterator after = before;
-  --before;
-
-  return (*after - value) < (value - *before) ? after : before;
-}
-
-
-template <typename BidirectionalIterator, typename T>
-std::size_t getClosestIndex(BidirectionalIterator first,
-                            BidirectionalIterator last,
-                            const T &value)
-{
-  return std::distance(first, getClosest(first, last, value));
-}
-
-
-
 //=================================================================================================
-//  EnergyRadws::GetIDens()
-/// GetIDens returns table index for density
+//  EnergyRadws::ImplicitEnergyUpdate
+/// ImplicitEnergyUpdate solves for the cooling rate implicitly:
+///    u_n+1 = u_n + dt * (dudt  + heating(u_n+1))
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-int EnergyRadws<ndim,ParticleType>::GetIDens
- (const FLOAT rho)
+template <int ndim>
+FLOAT EnergyRadwsBase<ndim>::ImplicitEnergyUpdate
+ (const FLOAT rho,                         ///< ..
+  const FLOAT u,                           ///< ..
+  const FLOAT temp,                        ///< ..
+  const FLOAT temp_ambient,                ///< ..
+  const FLOAT col2,                        ///< ..
+  const FLOAT dudt,                        ///< ..
+  const FLOAT dt)
 {
-  int idens = getClosestIndex(eos_dens, eos_dens + ndens, rho);
+  int idens = table->GetIDens(rho);
+  int itemp = table->GetITemp(log10(temp));
 
-  if (rho < eos_dens[idens]) {
-    idens = max(idens - 1, 0);
+  FLOAT tolerance = 1e-12;
+
+
+  // First compute the explicit update:
+  FLOAT heating;
+  FLOAT _junk_ ;
+  FLOAT kappa, kappap;
+
+  // Rosseland and Planck opacities at rho_p and temperature
+  table->GetKappa(idens, itemp, kappa, _junk_, kappap);
+  heating = ebalance(dudt, temp_ambient, temp, kappa, kappap, col2);
+
+  // Settle for the explicit update if the change is small enough
+  if (fabs(heating*dt) < tolerance*u)
+    return heating;
+
+
+  // Bracket final temperature
+  FLOAT THigh, TLow;
+  FLOAT kappaLow, kappaHigh, kappapLow, kappapHigh;
+  FLOAT balanceLow, balanceHigh;
+  FLOAT gammaLow, gammaHigh, muLow, muHigh;
+
+  TLow      = pow(10.0, table->eos_temp[itemp]);
+  THigh     = pow(10.0, table->eos_temp[itemp + 1]);
+
+  gammaLow  = table->eos_gamma[idens][itemp];
+  gammaHigh = table->eos_gamma[idens][itemp+1];
+  muLow  = table->eos_mu[idens][itemp];
+  muHigh = table->eos_mu[idens][itemp+1];
+
+
+  table->GetKappa(idens, itemp, kappaLow, _junk_, kappapLow);
+  heating = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
+
+  balanceLow = (TLow / (muLow*(gammaLow-1))) - u - heating*dt;
+
+  table->GetKappa(idens, itemp + 1, kappaHigh, _junk_, kappapHigh);
+  balanceHigh = ebalance(dudt, temp_ambient, THigh, kappaHigh, kappapHigh, col2);
+
+  balanceHigh = (THigh / (muHigh*(gammaHigh-1))) - u - balanceHigh*dt;
+
+
+  if (balanceLow < 0) {
+
+    while (balanceLow * balanceHigh > 0.0) {
+      assert(itemp <= ntemp - 2);
+
+      TLow       = THigh;
+      kappaLow   = kappaHigh;
+      kappapLow  = kappapHigh;
+      gammaLow   = gammaHigh;
+      muLow      = muHigh;
+      balanceLow = balanceHigh;
+
+      itemp++ ;
+
+      THigh      = pow(10.0, table->eos_temp[itemp+1]);
+      gammaHigh  = table->eos_gamma[idens][itemp+1];
+      muHigh     = table->eos_mu[idens][itemp+1];
+
+
+      table->GetKappa(idens, itemp + 1, kappaHigh, _junk_, kappapHigh);
+      balanceHigh = ebalance(dudt, temp_ambient, THigh, kappaHigh, kappapHigh, col2);
+
+      balanceHigh = (THigh / (muHigh*(gammaHigh-1))) - u - balanceHigh*dt;
+    }
+  } else {
+
+    while (balanceLow * balanceHigh > 0.0) {
+
+      THigh       = TLow;
+      kappaHigh   = kappaLow;
+      kappapHigh  = kappapLow;
+      gammaHigh   = gammaLow;
+      muHigh      = muLow;
+      balanceHigh = balanceLow;
+
+      if (itemp > 0) {
+        itemp-- ;
+
+        TLow      = pow(10.0, table->eos_temp[itemp]);
+        gammaLow  = table->eos_gamma[idens][itemp];
+        muLow     = table->eos_mu[idens][itemp];
+
+        table->GetKappa(idens, itemp, kappaLow, _junk_, kappapLow);
+        balanceLow = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
+
+        balanceLow = (TLow / (muLow*(gammaLow-1))) - u - balanceLow*dt;
+      }
+      else {
+        TLow = 0 ;
+        balanceLow = ebalance(dudt, temp_ambient, TLow, kappaLow, kappapLow, col2);
+
+        balanceLow = (TLow / (muLow*(gammaLow-1))) - u - balanceLow*dt;
+        break;
+      }
+    }
   }
-  return idens;
+
+  assert(balanceHigh*balanceLow <= 0);
+
+  // Refine the search in between THigh and TLow
+  //-----------------------------------------------------------------------------------------------
+  FLOAT Tc;
+  FLOAT balance, u_new;
+  FLOAT T0 = THigh, deltaT = THigh - TLow;
+  do  {
+    Tc = 0.5*(TLow + THigh);
+
+    FLOAT f = (T0 - Tc) / deltaT;
+
+    FLOAT kappa = f*kappaHigh + (1-f)*kappaLow;
+    FLOAT kappap = f*kappapHigh + (1-f)*kappapLow;
+
+    FLOAT gamma = f*gammaHigh + (1-f)*gammaLow;
+    FLOAT mu = f*muHigh + (1-f)*muLow;
+
+    heating = ebalance(dudt, temp_ambient , Tc, kappa, kappap, col2);
+
+
+    u_new = Tc / (mu*(gamma-1));
+    balance = u_new - u - heating*dt;
+
+    if (balance == 0) break ;
+
+    if (balance*balanceLow < 0) {
+      THigh       = Tc;
+      balanceHigh = balance;
+    }
+    else {
+      TLow       = Tc;
+      balanceLow = balance;
+    }
+  } while (fabs(balance) > tolerance*u_new && (THigh-TLow) > tolerance*TLow);
+
+  return heating-dudt;
+
 }
-
-
-
-//=================================================================================================
-//  EnergyRadws::GetITemp()
-/// GetITemp returns table index for temperature
-//=================================================================================================
-template <int ndim, template <int> class ParticleType>
-int EnergyRadws<ndim,ParticleType>::GetITemp
- (const FLOAT temp)
-{
-  int itemp = getClosestIndex(eos_temp, eos_temp + ntemp , temp);
-
-  if (temp <= eos_temp[itemp]) {
-    itemp = max(itemp - 1, 0);
-  }
-
-  return itemp;
-}
-
-
-
-//=================================================================================================
-//  EnergyRadws::GetKappa()
-/// GetKappa returns Kappa  for index of density and temp
-//=================================================================================================
-template <int ndim, template <int> class ParticleType>
-void EnergyRadws<ndim,ParticleType>::GetKappa
- (const int idens,
-  const int itemp,
-  const FLOAT logrho,
-  const FLOAT logtemp,
-  FLOAT &kappa,
-  FLOAT &kappar,
-  FLOAT &kappap)
-{
-  const FLOAT epsilon = (logtemp - eos_temp[itemp])/(eos_temp[itemp+1]-eos_temp[itemp]);
-  const FLOAT delta = (logrho - eos_dens[idens])/(eos_dens[idens+1]-eos_dens[idens]);
-
-  kappa = kappa_table[idens+1][itemp+1]*epsilon*delta +
-    kappa_table[idens+1][itemp]*(1-epsilon)*delta +
-    kappa_table[idens][itemp+1]*epsilon*(1-delta) +
-    kappa_table[idens][itemp]*(1-epsilon)*(1-delta);
-
-  //  kappar_loc = kappar[idens+1,itemp+1]*epsilon*delta + kappar[idens+1,itemp]*(1-epsilon)*delta +
-  //  kappar[idens,itemp+1]*epsilon*(1-delta) +kappar[idens,itemp]*(1-epsilon)*(1-delta);
-
-  kappap = kappap_table[idens+1][itemp+1]*epsilon*delta +
-    kappap_table[idens+1][itemp]*(1-epsilon)*delta +
-    kappap_table[idens][itemp+1]*epsilon*(1-delta) +
-    kappap_table[idens][itemp]*(1-epsilon)*(1-delta);
-
-  return;
-}
-
-
 
 //=================================================================================================
 //  EnergyRadws::eBalance()
 //  Calculates net heating rate due to hydro (i.e. expansion/contraction)
 //  and radiative effects (i.e heating/cooling)
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
-FLOAT EnergyRadws<ndim,ParticleType>::ebalance
+template <int ndim>
+FLOAT EnergyRadwsBase<ndim>::ebalance
  (const FLOAT dudt,
   const FLOAT temp_ex,
   const FLOAT temp,
@@ -692,53 +719,66 @@ FLOAT EnergyRadws<ndim,ParticleType>::ebalance
 
 
 //=================================================================================================
-//  EnergyRadws::GetEnergy()
-/// GetEnergy returns Energy  for index of density and temp
-//=================================================================================================
-
-/*template <int ndim, template <int> class ParticleType>
-FLOAT EnergyRadws<ndim,ParticleType>:: GetEnergy(int idens, int itemp, FLOAT logrho, FLOAT logtemp)
-{
-  FLOAT epsilon;
-  FLOAT delta;
-
-
- epsilon = (logtemp - eos_temp[itemp])/(eos_temp[itemp+1]-eos_temp[itemp]);         //log temp?
-  delta = (logrho - eos_dens[idens])/(eos_dens[idens+1]-eos_dens[idens]);
-
-
-  return eos_energy[idens+1][itemp+1]*epsilon*delta + eos_energy[idens+1][itemp]*(1-epsilon)*delta +
-    eos_energy[idens][itemp+1]*epsilon*(1-delta) +eos_energy[idens][itemp]*(1-epsilon)*(1-delta);
-
- }*/
-
-
-
-//=================================================================================================
-//  EnergyRadws::GetMuBar()
-/// GetMuBar returns MuBar  for index of density and temp
+//  EnergyRadws::GetCol2()
+/// GetTemp returns the square of the mass-weighted column density average of a particle
+/// pseudocloud. The standard RadWS (Stamatellos et al. 2007) method uses the gravitational
+/// potential and the density of the particle. The Lombardi et al. (2015) method instead
+/// uses the hydrodynamical acceleration of a particle as well as its pressure.
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
-FLOAT EnergyRadws<ndim,ParticleType>::GetMuBar
- (const int idens,
-  const int itemp,
-  const FLOAT logrho,
-  const FLOAT logtemp)
+FLOAT EnergyRadws<ndim,ParticleType>::GetCol2
+ (ParticleType<ndim> &part)
 {
-  const FLOAT epsilon = (logtemp - eos_temp[itemp])/(eos_temp[itemp+1] - eos_temp[itemp]);
-  const FLOAT delta = (logrho - eos_dens[idens])/(eos_dens[idens+1] - eos_dens[idens]);
+  if (!lombardi) {
+    assert(part.gpot_hydro <= part.gpot);
+    return fcol2 * part.gpot_hydro * part.rho;
+  }
+  else {
+    FLOAT P = 0.0, ahydro = 0.0;
+    for (int k = 0; k < ndim; ++k) {
+      ahydro += pow(part.a[k] - part.atree[k], 2.0);
+    }
+    P = eos->Pressure(part);
 
-  return eos_mu[idens+1][itemp+1]*epsilon*delta +
-    eos_mu[idens+1][itemp]*(1 - epsilon)*delta +
-    eos_mu[idens][itemp+1]*epsilon*(1 - delta) +
-    eos_mu[idens][itemp]*(1 - epsilon)*(1 - delta);
+    return (fcol2 * P * P) / (ahydro + small_number);
+  }
+}
+
+template <int ndim>
+FLOAT EnergyRadws<ndim,MeshlessFVParticle>::GetCol2
+ (MeshlessFVParticle<ndim> &part)
+{
+  if (!lombardi) {
+    assert(part.gpot_hydro <= part.gpot);
+    return fcol2 * part.gpot_hydro * part.rho;
+  }
+  else {
+    FLOAT P = 0.0, ahydro = 0.0;
+    for (int k = 0; k < ndim; ++k) {
+      if (part.flags.check(end_timestep) && part.dt > 0) {
+        FLOAT m = part.Qcons0[MeshlessFV<ndim>::irho] + part.dQ[MeshlessFV<ndim>::irho];
+
+        ahydro += pow(part.dQ[k]/(m*part.dt), 2.0);
+      }
+      else
+        ahydro += pow(part.dQdt[k]/part.Qcons0[MeshlessFV<ndim>::irho], 2.0);
+    }
+    P = eos->Pressure(part);
+
+    return (fcol2 * P * P) / (ahydro + small_number);
+  }
 }
 
 
-
+template class EnergyRadwsBase<1>;
+template class EnergyRadwsBase<2>;
+template class EnergyRadwsBase<3>;
 template class EnergyRadws<1, GradhSphParticle>;
 template class EnergyRadws<2, GradhSphParticle>;
 template class EnergyRadws<3, GradhSphParticle>;
 template class EnergyRadws<1, SM2012SphParticle>;
 template class EnergyRadws<2, SM2012SphParticle>;
 template class EnergyRadws<3, SM2012SphParticle>;
+template class EnergyRadws<1, MeshlessFVParticle>;
+template class EnergyRadws<2, MeshlessFVParticle>;
+template class EnergyRadws<3, MeshlessFVParticle>;

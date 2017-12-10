@@ -163,6 +163,48 @@ public:
 
 
 //=================================================================================================
+//  Class BasicIc
+/// \brief   ...
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    19/11/2016
+//=================================================================================================
+template <int ndim>
+class BasicIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+  FLOAT rho;
+  FLOAT lambda;
+  FLOAT amp;
+
+
+public:
+
+  BasicIc(Simulation<ndim>* _sim, FLOAT _invndim);
+  ~BasicIc() {};
+
+  virtual void Generate();
+  virtual FLOAT GetDensity(const FLOAT *, const int) const;
+  virtual void SetParticleProperties();
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
+
+
+};
+
+
+
+
+//=================================================================================================
 //  Class BinaryAccretionIc
 /// \brief   Binary accretion simulation IC class.
 /// \details Binary accretion simulation IC class.
@@ -788,6 +830,38 @@ public:
 
 
 //=================================================================================================
+//  Class Shock2D
+/// \brief   Class to generate 2D-shock tube initial conditions.
+/// \details Class to generate 2D-shock tube initial conditions.
+/// \author  R.A. Booth
+/// \date    6/4/2017
+//=================================================================================================
+template <int ndim>
+class Shock2DIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  Shock2DIc(Simulation<ndim>* _sim, FLOAT _invndim);
+  virtual ~Shock2DIc() {};
+
+  virtual void Generate(void);
+
+};
+
+
+//=================================================================================================
 //  Class SedovBlastwaveIc
 /// \brief   Class to generate Sedov-Taylor blastwave initial conditions.
 /// \details Class to generate Sedov-Taylor blastwave initial conditions.
@@ -817,6 +891,8 @@ public:
   virtual void Generate(void);
 
 };
+
+
 
 
 
@@ -1066,6 +1142,37 @@ public:
 
 };
 
+
+//=================================================================================================
+//  Class DiscIc
+/// \brief
+/// \details
+/// \author  G. P. Rosotti
+/// \date    03/05/2017
+//=================================================================================================
+template <int ndim>
+class DiscIc : public Ic<ndim>
+{
+protected:
+
+  using Ic<ndim>::hydro;
+  using Ic<ndim>::icBox;
+  using Ic<ndim>::invndim;
+  using Ic<ndim>::randnumb;
+  using Ic<ndim>::sim;
+  using Ic<ndim>::simbox;
+  using Ic<ndim>::simparams;
+  using Ic<ndim>::simunits;
+
+
+public:
+
+  DiscIc(Simulation<ndim>* _sim, FLOAT _invndim);
+  virtual ~DiscIc() {};
+
+  virtual void Generate(void);
+
+};
 
 
 namespace Regularization {

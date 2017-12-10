@@ -131,15 +131,10 @@ void SM2012Sph<ndim, kernelclass>::DeallocateMemory(void)
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 int SM2012Sph<ndim, kernelclass >::ComputeH
-(const int i,                             ///< [in] id of particle
- const int Nneib,                         ///< [in] No. of potential neighbours
- const FLOAT hmax,                        ///< [in] Max. h permitted by neib list
- FLOAT *m,                          ///< [in] Array of neib. masses
- FLOAT *mu,                         ///< [in] Array of m*u
- FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
- FLOAT *gpot,                       ///< [in] Array of neib. grav. potentials
- SphParticle<ndim> &part,          ///< [inout] Particle i data
- Nbody<ndim> *nbody)                ///< [in] Main N-body object
+ (SphParticle<ndim> &part,                                ///< [inout] Particle i data
+  FLOAT hmax,                                             ///< [in] Maximum smoothing length
+  const vector<DensityParticle> &ngbs,                    ///< [in] Neighbour properties
+  Nbody<ndim> *nbody)                                     ///< [in] Main N-body object
 {
   int j;                            // Neighbour id
   int k;                            // Dimension counter
@@ -149,11 +144,13 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   FLOAT h_lower_bound = 0.0;        // Lower bound on h
   FLOAT h_upper_bound = hmax;       // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2
-  FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
+  FLOAT w;                          // Kernel parameter squared, (r/h)^2
 
   SM2012SphParticle<ndim>& parti = static_cast<SM2012SphParticle<ndim>& > (part);
 
   FLOAT invh ;
+  int Nneib = ngbs.size();
+
   // Main smoothing length iteration loop
   //===============================================================================================
   do {
@@ -171,9 +168,11 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     // density.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
-      ssqd = drsqd[j]*invhsqd;
-      parti.rho += m[j]*kern.w0_s2(ssqd);
-      parti.q += mu[j]*kern.w0_s2(ssqd);
+      const DensityParticle &ngb = ngbs[j];
+      for (k=0; k<ndim; k++) dr[k] = ngb.r[k] - parti.r[k];
+      w          = kern.w0_s2(invhsqd*DotProduct(dr, dr, ndim));
+      parti.rho += ngb.m*w;
+      parti.q   += ngb.m*ngb.u*w;
     }
     //---------------------------------------------------------------------------------------------
 
@@ -235,10 +234,14 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   // Calculate the minimum neighbour potential
   // (used later to identify new sinks)
   if (create_sinks == 1) {
-    parti.flags.set_flag(potmin);
-    for (j=0; j<Nneib; j++)
-      if (gpot[j] > 1.000000001*parti.gpot &&
-          drsqd[j]*invhsqd < kern.kernrangesqd) parti.flags.unset_flag(potmin);
+    parti.flags.set(potmin);
+    for (j=0; j<Nneib; j++) {
+      const DensityParticle &ngb = ngbs[j];
+      for (k=0; k<ndim; k++) dr[k] = ngb.r[k] - parti.r[k];
+      FLOAT drsqd = DotProduct(dr,dr,ndim);
+      if (ngb.gpot > 1.000000001*parti.gpot &&
+          drsqd*invhsqd < kern.kernrangesqd) parti.flags.unset(potmin);
+    }
   }
 
   // If there are star particles, compute N-body chi correction term
@@ -247,14 +250,14 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     for (j=0; j<nbody->Nstar; j++) {
       invhsqd = pow(2.0 / (parti.h + nbody->stardata[j].h),2);
       for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
-      ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+      //ssqd = DotProduct(dr,dr,ndim)*invhsqd;
     }
   }
   else {
     invhsqd = 4.0*invh*invh;
     for (j=0; j<nbody->Nstar; j++) {
       for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
-      ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+     // ssqd = DotProduct(dr,dr,ndim)*invhsqd;
     }
   }
 
@@ -279,7 +282,7 @@ void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
   part.invq    = (FLOAT) 1.0/part.q;
   part.u       = eos->SpecificInternalEnergy(part);
   part.sound   = eos->SoundSpeed(part);
-  part.pfactor = eos->Pressure(part)*part.invq/part.rho;
+  part.pressure = eos->Pressure(part);
 
   return;
 }
@@ -401,12 +404,12 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
     parti.dudt += 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj)*
-      parti.pfactor;
+      ((parti.pressure*parti.invq)/parti.rho);
 
     // If neighbour is also active, add contribution to force here
     for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
     neibpart[j].dudt += 0.5*parti.m*parti.u*dvdr*(wkerni + wkernj)*
-      neibpart[j].pfactor;
+      ((neibpart[j].pressure*neibpart[j].invq)/neibpart[j].rho);
 
   }
   //-----------------------------------------------------------------------------------------------

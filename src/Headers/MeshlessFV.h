@@ -81,8 +81,7 @@ public:
   using Hydrodynamics<ndim>::Ntot;
   using Hydrodynamics<ndim>::self_gravity;
   using Hydrodynamics<ndim>::size_hydro_part;
-  using FV<ndim>::gamma_eos;
-  using FV<ndim>::gammam1;
+  using Hydrodynamics<ndim>::types;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -107,8 +106,8 @@ public:
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void) {
-    this->template DoDeleteDeadParticles<MeshlessFVParticle>() ;
+  virtual int DeleteDeadParticles(void) {
+    return this->template DoDeleteDeadParticles<MeshlessFVParticle>() ;
   }
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {
     MeshlessFVParticle<ndim>& mfvpart = static_cast<MeshlessFVParticle<ndim>& > (part);
@@ -137,13 +136,7 @@ public:
   // Other functions.
   //-----------------------------------------------------------------------------------------------
   void ComputeThermalProperties(MeshlessFVParticle<ndim> &);
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, MeshlessFVParticle<ndim> *);
   void InitialSmoothingLengthGuess(void);
-  void IntegrateParticles(const int, const int, const FLOAT, const FLOAT,
-                          const DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
-  int CheckTimesteps(const int, const int, const int, double, int);
-
-  FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &, FLOAT [nvar]);
 
@@ -155,7 +148,6 @@ public:
     return *((MeshlessFVParticle<ndim>*)((unsigned char*) hydrodata_unsafe + numBytes));
   }
   MeshlessFVParticle<ndim>* GetMeshlessFVParticleArray() {return hydrodata;}
-  virtual Particle<ndim>* GetParticleArray() {return hydrodata;};
 
 
   // Const variables (read in from parameters file)
@@ -163,8 +155,6 @@ public:
   const bool staticParticles;          ///< ..
   const FLOAT accel_mult;              ///< ..
   const FLOAT courant_mult;            ///< ..
-  //const FLOAT gamma_eos;               ///< ..
-  //const FLOAT gammam1;                 ///< ..
   const FLOAT h_converge;              ///< h-rho iteration tolerance
 
 
@@ -199,8 +189,6 @@ class MfvCommon : public MeshlessFV<ndim>
  public:
 
   using MeshlessFV<ndim>::allocated;
-  using MeshlessFV<ndim>::gamma_eos;
-  using MeshlessFV<ndim>::gammam1;
   using MeshlessFV<ndim>::h_converge;
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
@@ -221,6 +209,7 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::staticParticles;
   using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::hmin_sink;
+  using Hydrodynamics<ndim>::types;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -258,7 +247,8 @@ class MfvCommon : public MeshlessFV<ndim>
   ExactRiemannSolver<ndim> riemannExact ;
   HllcRiemannSolver<ndim> riemannHLLC ;
   int RiemannSolverType ;
-
+  ViscousFlux<ndim> viscosity;
+  bool need_viscosity;
 
 
 };
@@ -281,8 +271,6 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::hmin_sink;
   using MeshlessFV<ndim>::allocated;
-  using MeshlessFV<ndim>::gamma_eos;
-  using MeshlessFV<ndim>::gammam1;
   using MeshlessFV<ndim>::h_converge;
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
@@ -306,6 +294,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::viscosity;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::need_viscosity;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -355,8 +345,6 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::hmin_sink;
   using MeshlessFV<ndim>::allocated;
-  using MeshlessFV<ndim>::gamma_eos;
-  using MeshlessFV<ndim>::gammam1;
   using MeshlessFV<ndim>::h_converge;
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
@@ -380,6 +368,8 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::viscosity;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::need_viscosity;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -420,7 +410,7 @@ inline void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &pa
 {
   for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
   part.Wprim[irho] = part.rho;
-  part.Wprim[ipress] = part.press;
+  part.Wprim[ipress] = part.pressure;
 }
 
 

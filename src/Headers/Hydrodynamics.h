@@ -36,7 +36,6 @@
 #include "Parameters.h"
 #include "DomainBox.h"
 #include "EOS.h"
-#include "RiemannSolver.h"
 #include "ExternalPotential.h"
 #include "SimUnits.h"
 #if defined _OPENMP
@@ -81,9 +80,9 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual void AllocateMemory(int) = 0;
   virtual void DeallocateMemory(void) = 0;
-  virtual void DeleteDeadParticles(void) = 0;
+  virtual int DeleteDeadParticles(void) = 0;
 protected:
-  template<template <int> class ParticleType> void DoDeleteDeadParticles() ;
+  template<template <int> class ParticleType> int DoDeleteDeadParticles() ;
 public:
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) = 0;
   virtual void ZeroAccelerations() = 0;
@@ -101,7 +100,15 @@ public:
     long int numBytes = (long int) i * (long int) size_hydro_part;
     return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + numBytes));
   };
-  virtual Particle<ndim>* GetParticleArray() = 0;
+
+  Particle<ndim>* GetParticleArrayUnsafe() {
+    return reinterpret_cast<Particle<ndim>*>(hydrodata_unsafe);
+  }
+
+  template<template <int> class ParticleType> ParticleType<ndim>* GetParticleArray() {
+    assert(sizeof(ParticleType<ndim>) == size_hydro_part) ;
+    return reinterpret_cast<ParticleType<ndim>*>(hydrodata_unsafe) ;
+  }
 
 #if defined MPI_PARALLEL
   virtual void FinishReturnExport() {};
@@ -120,8 +127,10 @@ public:
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
   bool allocated;                      ///< Is memory allocated?
-  int create_sinks;                    ///< Create new sink particles?
   bool newParticles;                   ///< Have new ptcls been added? If so, flag to rebuild tree
+  int create_sinks;                    ///< Create new sink particles?
+  int sink_particles;                  ///< Are using sink particles?
+  
   int Ngather;                         ///< No. of gather neighbours
   int Nghost;                          ///< No. of ghost particles (total among all kinds of ghosts)
   int NImportedParticles;              ///< No. of imported particles
@@ -134,6 +143,7 @@ public:
   FLOAT hmin_sink;                     ///< Minimum smoothing length for sinks
   FLOAT kernrange;                     ///< Kernel range
   FLOAT mmean;                         ///< Mean SPH particle mass
+  FLOAT rho_sink;                      ///< Sink formation density
   ParticleTypeRegister types;          ///< Array of particle types
 
   EOS<ndim> *eos;                      ///< Equation-of-state
@@ -145,7 +155,7 @@ public:
 
 template<int ndim>
 template<template<int> class ParticleType>
-void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
+int Hydrodynamics<ndim>::DoDeleteDeadParticles() {
   int i;                               // Particle counter
   int itype;                           // Current particle type
   int Ndead = 0;                       // No. of 'dead' particles
@@ -153,7 +163,7 @@ void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
 
   debug2("[Hydrodynamics::DeleteDeadParticles]");
 
-  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(GetParticleArray());
+  ParticleType<ndim>* partdata = GetParticleArray<ParticleType>();
 
 
   // Determine new order of particles in arrays.
@@ -165,7 +175,7 @@ void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
       ilast--;
       if (i < ilast) {
         partdata[i] = partdata[ilast];
-        partdata[ilast].flags.set_flag(dead);
+        partdata[ilast].flags.set(dead);
         partdata[ilast].m = (FLOAT) 0.0;
       }
       else break;
@@ -175,7 +185,7 @@ void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
   }
 
   // Reorder all arrays following with new order, with dead particles at end
-  if (Ndead == 0) return;
+  if (Ndead == 0) return Ndead;
 
   // Reduce hydro particle counters once dead particles have been removed and reset all
   // other particle counters since a ghost and tree rebuild is required.
@@ -189,7 +199,7 @@ void Hydrodynamics<ndim>::DoDeleteDeadParticles() {
     assert(!partdata[i].flags.is_dead());
   }
 
-  return;
+  return Ndead;
 
 }
 
@@ -210,11 +220,9 @@ class NullHydrodynamics : public Hydrodynamics<ndim>
     Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux, gas_eos_aux, KernelName,
                         size_hydro_part, units, params) {};
 
-  virtual Particle<ndim>* GetParticleArray() {return NULL;};
-
   virtual void AllocateMemory(int) {};
   virtual void DeallocateMemory(void) {};
-  virtual void DeleteDeadParticles(void) {};
+  virtual int DeleteDeadParticles(void) {return 0;};
   virtual void AccreteMassFromParticle(const FLOAT dm, Particle<ndim> &part) {};
   virtual void ZeroAccelerations() {} ;
 

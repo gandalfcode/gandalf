@@ -149,6 +149,7 @@ class Sinks
   //-----------------------------------------------------------------------------------------------
   bool allocated_memory;               ///< Has sink memory been allocated?
   int Nsink;                           ///< No. of sink particles
+  int Nsinkfixed;                      ///< Fixed maximum no. of sinks for testing purposes
   int Nsinkmax;                        ///< Max. no. of sink particles
   int sink_particles;                  ///< Using sink particles?
   int create_sinks;                    ///< Create new sink particles?

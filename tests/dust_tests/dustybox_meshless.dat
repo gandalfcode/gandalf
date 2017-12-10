@@ -1,0 +1,110 @@
+#--------------------------------------------------------------
+# DUSTYBOX Test
+# Creates Dusty Box Test initial setup
+#--------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = DUSTYBOX_mfv
+Select SPH simulation                       : sim = mfvmuscl
+Select shocktube initial conditions         : ic = dustybox
+Dimensionality of cube                      : ndim = 3
+Pressure of fluid 1                         : press1 = 1.0
+Density of fluid 1                          : rhofluid1 = 1.0
+Gas  Velocity	 			    : vfluid1[0] = -0.5
+Dust Velocity	 			    : vfluid2[0] =  0.5
+No. of x-particles in fluid 1               : Nlattice1[0] = 16
+No. of y-particles in fluid 1               : Nlattice1[1] = 16
+No. of y-particles in fluid 1               : Nlattice1[2] = 16
+Local arrangement of particles              : particle_distribution = cubic_lattice
+Use dimensionless units                     : dimensionless = 1
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = -0.5
+RHS position of boundary in x-dimension     : boxmax[0] =  0.5
+LHS position of boundary in y-dimension     : boxmin[1] = -0.5
+RHS position of boundary in y-dimension     : boxmax[1] =  0.5
+LHS position of boundary in z-dimension     : boxmin[2] = -0.5
+RHS position of boundary in z-dimension     : boxmax[2] =  0.5
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+LHS boundary type in z-dimension            : boundary_lhs[2] = periodic
+RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 2.0
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.05
+Screen output frequency (in no. of steps)   : noutputstep = 32
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = quintic
+SPH smoothing length iteration tolerance    : h_converge = 0.001
+    	      	     	       		    : h_fac = 1.0
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+	   	     	  		    : riemann_solver = hllc
+					    : slope_limiter = gizmo
+					    : zero_mass_flux = 1
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.3
+No. of block timestep levels                : Nlevels = 1
+Maximum timestep level difference           : level_diff_max = 1
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 1
+SPH neighbour search algorithm              : neib_search = kdtree
+No. of particles per leaf cell              : Nleafmax = 6
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0
+
+
+#--------------
+# Misc. options
+#--------------
+Dust force type                             : dust_forces = full_twofluid
+Drag force law                              : drag_law = fixed
+Drag coefficient                            : drag_coeff = 3.0
+Dust to gas ratio                           : dust_mass_factor = 1

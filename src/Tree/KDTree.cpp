@@ -878,7 +878,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     while (i != -1) {
       if (!partdata[i].flags.is_dead()) {
         cell.N++;
-        if (partdata[i].flags.check_flag(active)) cell.Nactive++;
+        if (partdata[i].flags.check(active)) cell.Nactive++;
         cell.hmax = max(cell.hmax,partdata[i].h);
         cell.maxsound = max(cell.maxsound, partdata[i].sound);
         if (gravmask[partdata[i].ptype]) {
@@ -890,9 +890,9 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
          if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
          if (partdata[i].r[k] > cell.bb.max[k]) cell.bb.max[k] = partdata[i].r[k];
          if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k])
-         cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+           cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
          if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
-          cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+           cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
          if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
          if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
         }
@@ -907,9 +907,11 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     };
 
     // Normalise all cell values
-    if (cell.N > 0) {
+    if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
+    }
+    if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
@@ -976,7 +978,6 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child2.vbox.max[k],cell.vbox.max[k]);
       cell.hmax = max(cell.hmax,child2.hmax);
       cell.maxsound = max(cell.maxsound,child2.maxsound);
-      cell.amin = min(cell.amin, child2.amin);
       if (gravity_mac == gadget2)
         cell.amin = min(cell.amin, child2.amin);
       else if (gravity_mac == eigenmac)
@@ -985,10 +986,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
     cell.N = child1.N + child2.N;
     cell.Nactive = child1.Nactive + child2.Nactive;
-    if (cell.N > 0) {
-      cell.m = child1.m + child2.m;
+    cell.m = child1.m + child2.m;
+    if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
       for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
+    }
+    if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
@@ -999,7 +1002,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     // Now add individual quadrupole moment terms
-    if (need_quadrupole_moments && child1.N > 0) {
+    if (need_quadrupole_moments && child1.m > 0) {
       mi = child1.m;
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -1023,7 +1026,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       }
     }
 
-    if (need_quadrupole_moments && child2.N > 0) {
+    if (need_quadrupole_moments && child2.m > 0) {
       mi = child2.m;
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -1053,14 +1056,23 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
   // Calculate eigenvalue MAC criteria
   if (gravity_mac == eigenmac) {
-    if (ndim == 3)
+    if (ndim == 3) {
       p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
-        cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
-    if (p >= (FLOAT) 0.0) cell.mac = (FLOAT) 0.0;
-    else {
-      lambda = (FLOAT) 2.0*sqrt(-p/(FLOAT) 3.0);
-      cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
+          cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
+      if (p >= (FLOAT) 0.0) {
+        lambda = 0;
+      } else {
+        lambda = (FLOAT) 2.0*sqrt(-p/(FLOAT) 3.0);
+      }
+    } else if (ndim == 2) {
+      p = (cell.q[0]-cell.q[2])*(cell.q[0]-cell.q[2]) + 4*cell.q[1]*cell.q[1];
+      lambda = 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), 0.);
+    } else {
+      lambda = fabs(cell.q[0]) ;
     }
+
+    cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
+
   }
   else {
     cell.mac = (FLOAT) 0.0;
@@ -1227,7 +1239,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
     // Else walk through linked list to obtain list and number of active ptcls.
     while (i != -1) {
-      if (i < Ntot && partdata[i].flags.check_flag(active) && !partdata[i].flags.is_dead())
+      if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
         celldata[c].Nactive++;
       if (i == ilast) break;
       i = inext[i];
@@ -1423,8 +1435,8 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
         pcount[i]++;
         leafcount++;
         Ncount++;
-        if (partdata[i].flags.check_flag(active)) activecount++;
-        if (partdata[i].flags.check_flag(active)) Nactivecount++;
+        if (partdata[i].flags.check(active)) activecount++;
+        if (partdata[i].flags.check(active)) Nactivecount++;
         if (partdata[i].h > cell.hmax) {
           cout << "hmax flag error : " << c << "    "
                << partdata[i].h << "   " << cell.hmax << endl;

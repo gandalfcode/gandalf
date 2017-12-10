@@ -381,7 +381,7 @@ void MpiControl<ndim>::ComputeTotalStarGasForces
   MPI_Allreduce(MPI_IN_PLACE,buffer,number_doubles,GANDALF_MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
   for (int i=0; i<nbody->Nnbody; i++) {
-    if (!star[i]->active) continue;
+    if (!star[i]->flags.check(active)) continue;
     star[i]->gpot = buffer[i*(2*ndim+1) + 0];
     for (int k=0; k<ndim; k++) star[i]->a[k] = buffer[i*(2*ndim+1) +1 +k];
     for (int k=0; k<ndim; k++) star[i]->adot[k] = buffer[i*(2*ndim+1) +1 +ndim +k];
@@ -408,7 +408,7 @@ template <int ndim>
 void MpiControl<ndim>::UpdateSinksAfterAccretion
  (Sinks<ndim>* sink)                             ///< [inout] Pointer to sinks array
 {
-  const int number_variables = ndim*8 + 11;      // ..
+  const int number_variables = ndim*6 + 15;      // ..
   int local_sinks = 0;                           // ..
   int offset = 0;                                // ..
   Box<ndim> mydomain = this->MyDomain();         // ..
@@ -451,6 +451,7 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
       sendbuffer[offset++] = sink->sink[s].taccrete;
       sendbuffer[offset++] = sink->sink[s].trot;
       sendbuffer[offset++] = sink->sink[s].utot;
+      sendbuffer[offset++] = sink->sink[s].dmdt;
       for (int k=0; k<3; k++) sendbuffer[offset++] = sink->sink[s].angmom[k];
 
       StarParticle<ndim>& star = *(sink->sink[s].star);
@@ -465,6 +466,7 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
 
     }
   }
+  assert(offset == (number_variables*N_sinks_per_rank[rank]));
   //-----------------------------------------------------------------------------------------------
 
   vector<int> displ(Nmpi);
@@ -500,6 +502,7 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
     sink->sink[s].taccrete = receivebuffer[displ[origin] + offset_rank + offset++];
     sink->sink[s].trot     = receivebuffer[displ[origin] + offset_rank + offset++];
     sink->sink[s].utot     = receivebuffer[displ[origin] + offset_rank + offset++];
+    sink->sink[s].dmdt     = receivebuffer[displ[origin] + offset_rank + offset++];
     for (int k=0; k<3; k++) {
       sink->sink[s].angmom[k] = receivebuffer[displ[origin] + offset_rank + offset++];
     }
@@ -525,18 +528,107 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion
 
 
 //=================================================================================================
+// namespace MpiReturnParticle
+/// Contains classes for returning data computed for ghosts to their original processes.
+//=================================================================================================
+
+namespace MpiReturnParticle {
+  //===============================================================================================
+  // Sink
+  /// Return mass for particles that have been partially accreted and flag fully accreted ones as
+  /// dead.
+  //===============================================================================================
+  template<int ndim>
+  class ReturnSink {
+  public:
+    ReturnSink() : iorig(-1), m(0) {} ;
+    ReturnSink(const Particle<ndim>& p) : iorig(p.iorig), m(p.m) {} ;
+
+    void update_received(Particle<ndim>& p) const {
+      p.m = m ;
+      if (p.m == 0) {
+        p.flags.unset(active);
+        p.flags.set(dead);
+      }
+    }
+
+    void update_received(MeshlessFVParticle<ndim>& p) const {
+      FLOAT dm = p.m - m;
+      p.m -= dm ;
+      p.dQ[MeshlessFV<ndim>::irho] -= dm;
+      for (int k=0; k<ndim; k++) p.dQ[k] -= dm*p.v[k];
+
+      if (p.m == 0) {
+        p.flags.unset(active);
+        p.flags.set(dead);
+      }
+    }
+
+    int iorig ;
+  private:
+    double m ;
+  };
+
+  //===============================================================================================
+  // ReturnDust
+  /// Return the temperature update from drag forces
+  //===============================================================================================
+  template<int ndim>
+  class ReturnDust {
+  public:
+    ReturnDust() : iorig(-1), dudt(0) {} ;
+    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {};
+
+    void update_received(Particle<ndim>& p) const {
+      assert(p.ptype == gas_type) ;
+      p.dudt += dudt ;
+    }
+
+    int iorig;
+  private:
+    double dudt;
+  };
+
+  //===============================================================================================
+  // CreateMPIDataType
+  /// Creates the MPI data type for a given return type
+  //===============================================================================================
+  template<class DataType>
+  MPI_Datatype& CreateMPIDataType() {
+    static bool first = true ;
+    static MPI_Datatype MpiReturnType ;
+    if (first) {
+      MPI_Datatype types[1] = {MPI_BYTE};
+      MPI_Aint offsets[1] = {0};
+      int blocklen[1] = {sizeof(DataType)};
+
+      MPI_Type_create_struct(1,blocklen,offsets,types, &MpiReturnType);
+      MPI_Type_commit(&MpiReturnType);
+      first = false;
+    }
+    return MpiReturnType ;
+  }
+
+} // namespace MpiReturnParticle
+
+
+
+
+
+
+//=================================================================================================
 //  MpiControl::UpdateMpiGhostParents
 /// If the MPI ghosts have been modified locally (e.g. because of accretion), need to propagate
 /// the changes to their owner process (where the particles are "real")
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
+template <class ReturnDataType>
+void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
  (list<int>& ids_ghosts,
   Hydrodynamics<ndim>* hydro)
 {
-  vector<vector<FLOAT> > buffer_proc(Nmpi);
-  vector<vector<int> > buffer_proc_iorig(Nmpi);
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  vector<vector<ReturnDataType> > buffer_proc_data(Nmpi) ;
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   // Work out how many ghosts we need to update per each processor
   vector<int> N_updates_per_proc(Nmpi);
@@ -544,28 +636,32 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
   // This vector holds for each processor where its ghosts start in the main hydro array
   vector<int> i_start_ghost(Nmpi);
 
+  assert(Nreceive_per_node[rank] == 0);
   std::partial_sum(Nreceive_per_node.begin(), Nreceive_per_node.end(), i_start_ghost.begin());
+
 
   for (vector<int>::iterator it = i_start_ghost.begin(); it != i_start_ghost.end(); it++) {
     *it += hydro->Nhydro+hydro->NPeriodicGhost;
   }
 
-
   for (list<int>::iterator it = ids_ghosts.begin(); it != ids_ghosts.end(); it++) {
     const int index = *it;
+    assert(index >= hydro->Nhydro + hydro->NPeriodicGhost);
+    assert(index <  hydro->Nhydro + hydro->Nghost);
 
     // Find to which processor we should send the particle
     const int proc = std::upper_bound(i_start_ghost.begin(),
                                       i_start_ghost.end(), index) - i_start_ghost.begin();
+
+
     N_updates_per_proc[proc]++;
     assert(N_updates_per_proc[proc]<=Nreceive_per_node[proc]);
-    buffer_proc[proc].push_back(partdata[index].m);
-    buffer_proc_iorig[proc].push_back(partdata[index].iorig);
+
+    buffer_proc_data[proc].push_back(ReturnDataType(partdata[index])) ;
   }
 
   // Now that we know how many ghosts we need to send to each processor, can fill the buffer
-  vector<FLOAT> buffer(ids_ghosts.size());
-  vector<int> buffer_iorig(ids_ghosts.size());
+  vector<ReturnDataType> buffer(ids_ghosts.size());
 
   // Partial sum of the numbers
   vector<int> displs_ghosts(Nmpi);
@@ -573,10 +669,8 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
 
   // Copy from the buffer of each processor to the total buffer
   for (int iproc=0; iproc<Nmpi; iproc++) {
-    std::copy(buffer_proc[iproc].begin(), buffer_proc[iproc].end(),
+    std::copy(buffer_proc_data[iproc].begin(), buffer_proc_data[iproc].end(),
               buffer.begin() + displs_ghosts[iproc]);
-    std::copy(buffer_proc_iorig[iproc].begin(), buffer_proc_iorig[iproc].end(),
-              buffer_iorig.begin() + displs_ghosts[iproc]);
   }
 
   // Tell everybody how many ghosts we have to update remotely
@@ -589,35 +683,59 @@ void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
 
   const int total_ghost_receive = std::accumulate(N_updates_from_proc.begin(),
                                                   N_updates_from_proc.end(), 0);
-  vector<FLOAT> buffer_receive(total_ghost_receive);
-  vector<int> buffer_receive_iorig(total_ghost_receive);
 
-  // Send the updated masses and the iorigs (to retrieve the parent particles)
-  MPI_Alltoallv(&buffer[0], &N_updates_per_proc[0], &displs_ghosts[0], GANDALF_MPI_FLOAT,
+  vector<ReturnDataType> buffer_receive(total_ghost_receive);
+
+  MPI_Datatype& MpiReturnType =
+      MpiReturnParticle::CreateMPIDataType<ReturnDataType>();
+
+  MPI_Alltoallv(&buffer[0], &N_updates_per_proc[0], &displs_ghosts[0], MpiReturnType,
                 &buffer_receive[0], &N_updates_from_proc[0], &displs_ghosts_receive[0],
-                GANDALF_MPI_FLOAT, MPI_COMM_WORLD);
-
-  MPI_Alltoallv(&buffer_iorig[0], &N_updates_per_proc[0], &displs_ghosts[0], MPI_INT,
-                &buffer_receive_iorig[0], &N_updates_from_proc[0], &displs_ghosts_receive[0],
-                MPI_INT, MPI_COMM_WORLD);
-
+                MpiReturnType, MPI_COMM_WORLD);
 
   // Update the real particles from the received data
   for (int i=0; i< total_ghost_receive; i++) {
-    const int iorig_ghost = buffer_receive_iorig[i];
-    assert(iorig_ghost < hydro->Nhydro + hydro->NPeriodicGhost);
-    const FLOAT received_mass = buffer_receive[i];
-    partdata[iorig_ghost].m = received_mass ;
-    if (received_mass == 0.0) {
-      partdata[iorig_ghost].flags.unset_flag(active);
-      partdata[iorig_ghost].flags.set_flag(dead);
+    const ReturnDataType& received = buffer_receive[i] ;
+
+    assert(received.iorig != -1 &&  received.iorig < hydro->Nhydro + hydro->NPeriodicGhost) ;
+
+    // Find the real particle that the ghost corresponds to
+    int j = received.iorig ;
+    while (j >= hydro->Nhydro) {
+      assert(partdata[j].flags.check(any_boundary)) ;
+      j = partdata[j].iorig ;
     }
+    assert(j >= 0 && j < hydro->Nhydro);
+    received.update_received(partdata[j]) ;
   }
 
   return;
 }
 
+//=================================================================================================
+//  MpiControl::UpdateMpiGhostParents
+/// If the MPI ghosts have been modified locally (e.g. because of accretion), need to propagate
+/// the changes to their owner process (where the particles are "real")
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+void MpiControlType<ndim, ParticleType>::UpdateMpiGhostParents
+ (list<int>& ids_ghosts,
+  Hydrodynamics<ndim>* hydro,
+  MPI_ghost_update_type update_type)
+{
+  using namespace MpiReturnParticle ;
 
+  switch(update_type) {
+    case update_sink_parents:
+      this->DoUpdateMpiGhostParents<ReturnSink<ndim> >(ids_ghosts, hydro) ;
+      break;
+    case update_dust_parents:
+      this->DoUpdateMpiGhostParents<ReturnDust<ndim> >(ids_ghosts, hydro) ;
+      break;
+    default:
+      ExceptionHandler::getIstance().raise("Requested MpiGhost update not recognised");
+  }
+}
 
 //=================================================================================================
 //  MpiControlType::ExportParticlesBeforeForceLoop
@@ -699,8 +817,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
     if (iproc == rank) continue;
 
     // Pack the information to send
-   neibsearch->GetExportInfo(iproc, hydro, send_buffer[j],
-                                                      mpinode[iproc], rank, Nmpi);
+   neibsearch->GetExportInfo(iproc, hydro, send_buffer[j], mpinode[iproc], rank, Nmpi);
 
     // Post the send now that we know what to transmit
     MPI_Isend(&send_buffer[j][0],send_buffer[j].size(),MPI_CHAR,iproc,5,MPI_COMM_WORLD,&send_req[j]);
@@ -896,7 +1013,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   unsigned int inode;                  // MPI node index
   vector<int> overlapping_nodes;       // List of nodes that overlap this domain
   vector<int> ghost_export_list;       // List of particles ids to be exported
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
+  ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   if (rank == 0) debug2("[MpiControl::SendReceiveGhosts]");
 
@@ -1024,6 +1141,7 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
     vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
     for (ipart=0; ipart<particles_on_this_node.size(); ipart++) {
       particles_to_export[index] = partdata[particles_on_this_node[ipart]];
+      particles_to_export[index].iorig = particles_on_this_node[ipart];
       index++;
     }
   }

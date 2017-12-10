@@ -240,6 +240,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["courant_mult"] = 0.15;
   floatparams["nbody_mult"] = 0.1;
   floatparams["subsys_mult"] = 0.05;
+  floatparams["visc_mult"] = 0.3 ;
   intparams["Nlevels"] = 1;
   intparams["level_diff_max"] = 1;
   intparams["sph_single_timestep"] = 0;
@@ -249,6 +250,7 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   stringparams["sph_integration"] = "lfkdk";
   stringparams["kernel"] = "m4";
+  intparams["conservative_sph_star_gravity"] = 1;
   intparams["tabulated_kernel"] = 1;
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
@@ -268,6 +270,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["eta_eos"] = 1.4;
   floatparams["Kpoly"] = 1.0;
   stringparams["radws_table"] = "eos.bell.cc.dat";
+  intparams["lombardi_method"] = 0;
   floatparams["temp_ambient"] = 5.0;
   floatparams["X_comp"] = 1;
   floatparams["Y_comp"] = 0;
@@ -288,6 +291,8 @@ void Parameters::SetDefaultValues(void)
   intparams["zero_mass_flux"] = 1;
   intparams["static_particles"] = 0;
   stringparams["time_step_limiter"] = "none";
+  floatparams["shear_visc"] = 0;
+  floatparams["bulk_visc"] = 0;
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------
@@ -330,6 +335,7 @@ void Parameters::SetDefaultValues(void)
   intparams["smooth_accretion"] = 0;
   intparams["fixed_sink_mass"] = 0;
   intparams["extra_sink_output"] = 0;
+  intparams["Nsinkfixed"] = -1;
   floatparams["rho_sink"] = 1.e-12;
   floatparams["alpha_ss"] = 0.01;
   floatparams["sink_radius"] = 2.0;
@@ -394,12 +400,14 @@ void Parameters::SetDefaultValues(void)
   // Initial conditions parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["particle_distribution"] = "cubic_lattice";
+  intparams["use_fixed_spacing"] = 0 ;
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
   intparams["Nreg"] = 1;
   intparams["field_type"] = 1;
   intparams["gridsize"] = 64;
   intparams["Nhydro"] = 0;
+  intparams["Ndust"] = 0;
   intparams["Nhydromax"] = -1;
   intparams["Nstar"] = 0;
   intparams["Nstarmax"] = -1;
@@ -450,6 +458,20 @@ void Parameters::SetDefaultValues(void)
   floatparams["zmax"] = 1.0;
   floatparams["thermal_energy"] = 1.0;
   floatparams["mach"] = 2.7;
+  floatparams["DiscIcStarMass"] = 1.0;
+  floatparams["DiscIcMass"] = 0.01;
+  floatparams["DiscIcP"] = 1.0;
+  floatparams["DiscIcQ"] = 0.5;
+  floatparams["DiscIcRin"] = 0.4;
+  floatparams["DiscIcRout"] = 2.5;
+  floatparams["DiscIcHr"] = 0.05;
+  intparams["DiscIcPlanet"] = 1;
+  floatparams["DiscIcPlanetRadius"] = 1;
+  floatparams["DiscIcPlanetMass"] = 1e-3;
+  floatparams["DiscIcPlanetAccretionRadiusHill"] = 0.4;
+  floatparams["DiscIcPlanetEccen"]=0.;
+  floatparams["DiscIcPlanetIncl"]=0.;
+  floatparams["DustGasRatio"]=0.01;
 
   // Regularising initial conditions parameters
   //-----------------------------------------------------------------------------------------------
@@ -501,6 +523,23 @@ void Parameters::SetDefaultValues(void)
   // Supernova feedback parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["supernova_feedback"] = "none";
+
+  // Radiative feedback parameters
+  //-----------------------------------------------------------------------------------------------
+  intparams["rad_fb"] = 0;
+  intparams["ambient_heating"] = 0;
+  intparams["disc_heating"] = 0;
+  intparams["sink_heating"] = 0;
+  stringparams["sink_fb"] = "continuous";
+  floatparams["r_smooth"] = 0.01;
+  floatparams["temp_q"] = 0.75;
+  floatparams["temp_q_secondary"] = 0.75;
+  floatparams["temp_au"] = 250;
+  floatparams["temp_au_secondary"] = 250;
+  floatparams["f_acc"] = 0.75;
+  floatparams["r_star"] = 3.0;
+  floatparams["r_bdwarf"] = 0.2;
+  floatparams["r_planet"] = 0.075;
 
   return;
 }

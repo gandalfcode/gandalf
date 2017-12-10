@@ -38,30 +38,30 @@ class DustyWaveSolver(object):
         self.cs = cs
         self.K = K
         self.delta = delta
-        self.wavelength=1
+        self.wavelength=wavelength
         self.feedback=feedback
 
     def _solve_system(self, times):
         '''Solve the dusty-wave problem up to specified times'''
         k = 2*np.pi / self.wavelength
         cs2 = self.cs**2
+
+        ts_inv = self.K * self.cs * self.rho_g
         if self.feedback:
-            ts_inv = self.K * self.cs * (self.rho_d + self.rho_g)
             Kg = (self.rho_d/self.rho_g) * ts_inv
             Kd = ts_inv
         else:
-            ts_inv = self.K * self.cs * (0 + self.rho_g)
             Kg = 0
             Kd = ts_inv
 
         def f(t, y,_=None):
-            rho_g, v_g = y[:2]
-            rho_d, v_d = y[2:]
+            drho_g, v_g = y[:2]
+            drho_d, v_d = y[2:]
             
             dydt = np.empty([4], dtype='c8')
             dydt[0] = - 1j*k*self.rho_g * v_g
             dydt[2] = - 1j*k*self.rho_d * v_d
-            dydt[1] = - Kg*(v_g - v_d) - 1j*k*rho_g * cs2
+            dydt[1] = - Kg*(v_g - v_d) - 1j*k*drho_g * cs2
             dydt[3] =   Kd*(v_g - v_d)
             
             return dydt
@@ -74,21 +74,23 @@ class DustyWaveSolver(object):
         def jac(t, y,_=None):
             return _jac
 
+        # Do the right going part of the wave (we can get the left going wave
+        # for free by taking the real part).
         e = -1j * self.delta
         IC = np.array([self.rho_g*e, self.cs*e, 
                        self.rho_d*e, self.cs*e], dtype='c8')
-        integ = ode(f, jac).set_integrator('zvode', method='bdf')
+        integ = ode(f, jac).set_integrator('zvode', method='bdf', 
+                                           rtol=1e-12,atol=1e-12,nsteps=10000)
         integ.set_initial_value(IC, 0).set_f_params(None).set_jac_params(None)
 
         sol = []
-        if times[0] == 0:
-            sol.append(IC.copy())
-            times.pop(0)
         for ti in times:
-            sol.append(integ.integrate(ti))
+            if ti > integ.t: integ.integrate(ti)
+            sol.append(integ.y)
             if not integ.successful(): raise RuntimeError('Integ failed')
-        
+
         return np.array(sol)
+    
 
     def __call__(self, time):
         '''Solve the dustwave problem at a given time or list of times'''
@@ -97,9 +99,8 @@ class DustyWaveSolver(object):
         except TypeError:
             time = [time,]
         time = sorted(time)
+        sol = self._solve_system(list(time))
 
-        sol = self._solve_system(time)
-        
         def _create_solution(t, drho_g, v_g, drho_d, v_d):
             return _DustyWaveSolution(t, 2*np.pi/self.wavelength,
                                       self.rho_g, self.rho_d,
@@ -129,8 +130,14 @@ def DustyWave(sim, time):
     eps = simfloatparams["dust_mass_factor"]
     K   = simfloatparams["drag_coeff"]
     feedback = simstringparams["dust_forces"] == "full_twofluid"
-    assert(simstringparams["drag_law"] == "epstein")
-
+    assert(simstringparams["drag_law"] == "epstein" or
+           simstringparams["drag_law"] == "LP2012")
+    
+    # Approximate the epstein drag coefficient
+    if simstringparams["drag_law"] == "LP2012":
+        K *= csound / (rho_g*rho_g*eps)
+    else:
+        K /= 0.4699928014933126
 
     solver = DustyWaveSolver(rho_g, rho_g*eps, csound, K, delta,
                              wlambda, feedback)

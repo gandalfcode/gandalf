@@ -85,22 +85,6 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   //mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
   LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
 
-  if (time_step_limiter_type == "conservative") {
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
-#ifdef MPI_PARALLEL
-    mpicontrol->ExportParticlesBeforeForceLoop(mfv);
-    mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
-    mpicontrol->GetExportedParticlesAccelerations(mfv);
-#endif
-  }
-
-  // Compute timesteps for all particles
-  if (Nlevels == 1) {
-    this->ComputeGlobalTimestep();
-  }
-  else {
-    this->ComputeBlockTimesteps();
-  }
 
 #ifdef MPI_PARALLEL
 
@@ -139,13 +123,15 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // Integrate positions of particles
-  mfv->IntegrateParticles(n, mfv->Nhydro, t, timestep, simbox, mfv->GetMeshlessFVParticleArray());
-
-  // Advance N-body particle positions
+  hydroint->AdvanceParticles(n, t, timestep, mfv);
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
+  // Check all boundary conditions
+  // (DAVID : create an analagous of this function for N-body)
+  hydroint->CheckBoundaries(simbox,mfv);
+
   // Apply Saitoh & Makino type time-step limiter
-  mfv->CheckTimesteps(level_diff_max, level_step, n, timestep, 1);
+  hydroint->CheckTimesteps(level_diff_max, level_step, n, timestep, mfv);
 
   // Reset rebuild tree flag in preparation for next timestep
   //rebuild_tree = false;
@@ -164,13 +150,13 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 	if (Nstepsaux%2==0) Nstepsaux++;
 	mfvneib->BuildTree(rebuild_tree,Nstepsaux,2, ntreestockstep,timestep,mfv);
 	if (rebuild_tree) {
-		  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
+	  mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
 	}
 	else {
-		mfvneib->StockPrunedTree(rank, mfv);
+	  mfvneib->StockPrunedTree(rank, mfv);
 	}
 	mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro, mfv, mfv->kernp);
-    mpicontrol->LoadBalancing(mfv, nbody);
+	mpicontrol->LoadBalancing(mfv, nbody);
   }
 #endif
 
@@ -181,58 +167,20 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->InitialiseCellWorkCounters();
 #endif
 
-	//tghost = timestep*(FLOAT) (ntreebuildstep - 1);
-	tghost = 0;
-	mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-	mfvneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
-	#ifdef MPI_PARALLEL
-	mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
-	MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
-	  mfvneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,  timestep, mfv);
-	#endif
-
-
-  // Search for new sink particles (if activated) and accrete to existing sinks
-  if (sink_particles == 1) {
-    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
-      sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
-    }
-    if (sinks->Nsink > 0) {
-      mfv->mmean = (FLOAT) 0.0;
-      for (i=0; i<mfv->Nhydro; i++) mfv->mmean += mfv->GetMeshlessFVParticlePointer(i).m;
-      mfv->mmean /= (FLOAT) mfv->Nhydro;
-      mfv->hmin_sink = big_number;
-      for (i=0; i<sinks->Nsink; i++) {
-        mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
-      }
-      sinks->AccreteMassToSinks(n, timestep, mfv, nbody);
-      nbody->UpdateStellarProperties();
-      //if (extra_sink_output) WriteExtraSinkOutput();
-    }
-    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
-    if ((t >= tsnapnext && sinks->Nsink > 0) || n == nresync || kill_simulation ||
-         timing->RunningTime()  > (FLOAT) 0.99*tmax_wallclock) {
-      hydro->DeleteDeadParticles();
-      rebuild_tree = true;
-    }
-
-    // Re-build/re-stock tree now particles have moved
-    mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
-    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
-    mfvneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+  tghost = 0;
+  mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
+  mfvneib->BuildGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,timestep, mfv);
 #ifdef MPI_PARALLEL
-	MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
-    mfvneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
+  mpicontrol->UpdateAllBoundingBoxes(mfv->Nhydro + mfv->NPeriodicGhost, mfv, mfv->kernp);
+  MpiGhosts->SearchGhostParticles(tghost, simbox, mfv);
+  mfvneib->BuildMpiGhostTree(true, Nsteps, ntreebuildstep, ntreestockstep,  timestep, mfv);
 #endif
 
-  }
-
-
+  // Zero gravitational / drag accelerations
+  mfv->ZeroAccelerations() ;
 
   // Calculate terms due to self-gravity / stars
   if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
-
-    mfv->ZeroAccelerations() ;
 
     // Update the density to get the correct softening & grad-h terms.
     mfvneib->UpdateAllProperties(mfv, nbody);
@@ -240,10 +188,10 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
       if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    	     mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
-    	}
+        mfvneib->BuildPrunedTree(rank, simbox, mpicontrol->mpinode, mfv);
+      }
       else {
-    		 mfvneib->StockPrunedTree(rank, mfv);
+        mfvneib->StockPrunedTree(rank, mfv);
       }
       mfvneib->UpdateGravityExportList(rank, mfv, nbody, simbox, ewald);
       mpicontrol->ExportParticlesBeforeForceLoop(mfv);
@@ -253,10 +201,31 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     mfvneib->UpdateAllGravForces(mfv, nbody, simbox, ewald);
 #ifdef MPI_PARALLEL
     if (mfv->self_gravity ==1 ) {
-    mpicontrol->GetExportedParticlesAccelerations(mfv);
+      mpicontrol->GetExportedParticlesAccelerations(mfv);
     }
 #endif
   }
+
+  // Compute the dust forces if present.
+  if (mfvdust != NULL) {
+
+    // Make sure the density is up to date
+    if (not (mfv->self_gravity == 1 || nbody->Nnbody > 0))
+      mfvneib->UpdateAllProperties(mfv, nbody);
+
+    // Copy properties from original particles to ghost particles
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
+#endif
+    mfvdust->UpdateAllDragForces(mfv) ;
+
+    for (i=0; i<mfv->Nhydro; i++) {
+      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i) ;
+      if (part.flags.check(active)) part.flags.set(update_density) ;
+    }
+  }
+
 
   // Compute N-body forces
   //-----------------------------------------------------------------------------------------------
@@ -264,7 +233,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
     // Zero all acceleration terms
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k]     = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k]  = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = (FLOAT) 0.0;
@@ -293,7 +262,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     }
 
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
+      if (nbody->nbodydata[i]->flags.check(active)) {
         nbody->extpot->AddExternalPotential(nbody->nbodydata[i]->r, nbody->nbodydata[i]->v,
                                             nbody->nbodydata[i]->a, nbody->nbodydata[i]->adot,
                                             nbody->nbodydata[i]->gpot);
@@ -306,9 +275,57 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   }
   //-----------------------------------------------------------------------------------------------
 
+  // Search for new sink particles (if activated) and accrete to existing sinks
+  if (sink_particles == 1) {
+    if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
+      sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
+    }
+    if (sinks->Nsink > 0) {
+      mfv->mmean = (FLOAT) 0.0;
+      for (i=0; i<mfv->Nhydro; i++) mfv->mmean += mfv->GetMeshlessFVParticlePointer(i).m;
+      mfv->mmean /= (FLOAT) mfv->Nhydro;
+      mfv->hmin_sink = big_number;
+      for (i=0; i<sinks->Nsink; i++) {
+        mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
+      }
+      sinks->AccreteMassToSinks(n, timestep, mfv, nbody);
+      nbody->UpdateStellarProperties();
+      //if (extra_sink_output) WriteExtraSinkOutput();
+    }
+
+    // Stock after sink accretion (1, 2 is a hack to force stocking)
+    mfvneib->BuildTree(rebuild_tree, 1, 2, ntreestockstep,timestep, mfv);
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
+    mfvneib->BuildGhostTree(rebuild_tree, 1, 2, ntreestockstep, timestep, mfv);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+    mfvneib->BuildMpiGhostTree(rebuild_tree, 1, 2, ntreestockstep, timestep, mfv);
+#endif
+  }
+
+
+  // Compute timesteps for all particles
+  if (Nlevels == 1) {
+    this->ComputeGlobalTimestep();
+  }
+  else {
+    if (time_step_limiter_type == "conservative") {
+      mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,false);
+#ifdef MPI_PARALLEL
+      mpicontrol->ExportParticlesBeforeForceLoop(mfv);
+      mfvneib->UpdateTimestepsLimitsFromDistantParticles(mfv,true);
+      mpicontrol->GetExportedParticlesAccelerations(mfv);
+#endif
+    }
+
+    this->ComputeBlockTimesteps();
+  }
+
+
 
   // End-step terms for all hydro particles
-  mfv->EndTimestep(n, mfv->Nhydro, t, timestep, mfv->GetMeshlessFVParticleArray());
+  uint->EndTimestep(n, t, timestep, mfv);
+  hydroint->EndTimestep(n, t, timestep, mfv);
   nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Update all active cell counters in the tree

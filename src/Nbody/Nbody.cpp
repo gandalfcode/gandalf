@@ -86,13 +86,25 @@ void Nbody<ndim>::AllocateMemory(int N)
   debug2("[Nbody::AllocateMemory]");
 
   if (N > Nstarmax) {
-    if (allocated) DeallocateMemory();
+
+    NbodyParticle<ndim>** nbodydatanew = new NbodyParticle<ndim>*[2*N];
+    StarParticle<ndim>*   stardatanew  = new StarParticle<ndim>[N];
+    SystemParticle<ndim>*  systemnew   = new SystemParticle<ndim>[N];
+
+    std::swap(nbodydatanew, nbodydata);
+    std::swap(stardatanew, stardata);
+    std::swap(systemnew, system);
+    if (allocated)  {
+      std::copy(nbodydatanew, nbodydatanew+Nstarmax, nbodydata);
+      std::copy(stardatanew,  stardatanew+Nstarmax,  stardata);
+      std::copy(systemnew,    systemnew+Nstarmax,    system);
+      delete[] nbodydatanew;
+      delete[] stardatanew;
+      delete[] systemnew;
+    }
     Nstarmax   = N;
     Nsystemmax = N;
     Nnbodymax  = Nstarmax + Nsystemmax;
-    nbodydata  = new NbodyParticle<ndim>*[Nnbodymax];
-    stardata   = new StarParticle<ndim>[Nstarmax];
-    system     = new SystemParticle<ndim>[Nsystemmax];
     allocated  = true;
   }
 
@@ -240,7 +252,7 @@ void Nbody<ndim>::CalculateDirectGravForces
 #pragma omp parallel for if (N > maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drsqd, dv, invdrmag, potperiodic)
   for (int i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     //---------------------------------------------------------------------------------------------
@@ -422,7 +434,7 @@ void Nbody<ndim>::CalculatePerturberForces
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+    if (not star[i]->flags.check(active)) continue;
 
     // Sum grav. contributions for all perturbing stars.
     //---------------------------------------------------------------------------------------------
@@ -561,7 +573,7 @@ void Nbody<ndim>::IntegrateInternalMotion
     children[i]->gpe          = (FLOAT) 0.0;
     children[i]->gpe_pert     = (FLOAT) 0.0;
     children[i]->gpe_internal = (FLOAT) 0.0;
-    children[i]->active       = true;
+    children[i]->flags.set(active);
   }
 
   if (perturbers == 1 && Npert > 0) {
@@ -631,7 +643,7 @@ void Nbody<ndim>::IntegrateInternalMotion
 
       // Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
-        children[i]->active   = true;
+        children[i]->flags.set(active);
         children[i]->gpot     = gpotext;
         children[i]->gpe_pert = children[i]->m*gpotext;
         for (k=0; k<ndim; k++) children[i]->a[k]        = aext[k];

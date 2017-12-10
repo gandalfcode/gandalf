@@ -62,6 +62,7 @@ Sph<ndim>::Sph(int _hydro_forces, int _self_gravity, FLOAT _alpha_visc, FLOAT _b
 {
   Ngather = 0;
   hmin_sink = big_number;
+  conservative_sph_star_gravity = params->intparams["conservative_sph_star_gravity"];
 }
 
 
@@ -126,12 +127,12 @@ void Sph<ndim>::ZeroAccelerations()
 {
   for (int i=0; i< Nhydro; i++) {
     SphParticle<ndim>& part = GetSphParticlePointer(i);
-    if (part.flags.check_flag(active)) {
+    if (part.flags.check(active)) {
       part.levelneib = 0;
-      part.dalphadt  = (FLOAT) 0.0;
       part.div_v     = (FLOAT) 0.0;
       part.dudt      = (FLOAT) 0.0;
       part.gpot      = (FLOAT) 0.0;
+      part.gpot_hydro= (FLOAT) 0.0;
       for (int k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
       for (int k=0; k<ndim; k++) part.atree[k] = (FLOAT) 0.0;
     }

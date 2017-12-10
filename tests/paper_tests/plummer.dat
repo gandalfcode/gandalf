@@ -17,7 +17,7 @@ Softening radius of star                    : rstar = 0.05
 Fraction of mass within stars               : starfrac = 1.0
 Fraction of mass within gas                 : gasfrac = 0.0
 No. of SPH particles                        : Nhydro = 0
-No. of star particles                       : Nstar = 500
+No. of star particles                       : Nstar = 200
 Perform dimensionless simulation            : dimensionless = 1
 Change to COM frame                         : com_frame = 1
 
@@ -61,4 +61,4 @@ Sub-system integration scheme               : sub_system_integration = hermite4t
 #-------------------------
 N-body timestep multiplier                  : nbody_mult = 0.1
 Sub-system timestep multiplier              : subsys_mult = 0.05
-No. of block timestep levels                : Nlevels = 5
+No. of block timestep levels                : Nlevels = 1

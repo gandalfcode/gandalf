@@ -53,6 +53,21 @@ inline T DotProduct(T *v1, T *v2, int ndim)
     return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
 }
 
+//=================================================================================================
+//  Distance
+//  Calculates the distance product between two points, x1 and x2,
+//  of given length 'ndim'
+//=================================================================================================
+template <typename T>
+inline T Distance(T *x1, T *x2, int ndim)
+{
+  FLOAT         dx2  = (x2[0] - x1[0])*(x2[0] - x1[0]) ;
+  if (ndim > 1) dx2 += (x2[1] - x1[1])*(x2[1] - x1[1]) ;
+  if (ndim > 2) dx2 += (x2[2] - x1[2])*(x2[2] - x1[2]) ;
+
+  return sqrt(dx2) ;
+}
+
 
 
 //=================================================================================================
@@ -565,7 +580,6 @@ inline void __matrixInverter<1>::invert(const FLOAT A[1][1], FLOAT B[1][1]) {
 }
 template<>
 inline void __matrixInverter<2>::invert(const FLOAT A[2][2], FLOAT B[2][2]) {
-
   const FLOAT invdet = (FLOAT) 1.0/(A[0][0]*A[1][1] - A[0][1]*A[1][0]);
 
   B[0][0] =  invdet*A[1][1];
@@ -579,15 +593,15 @@ inline void __matrixInverter<3>::invert(const FLOAT A[3][3], FLOAT B[3][3]) {
                                     A[0][1]*(A[1][0]*A[2][2] - A[1][2]*A[2][0]) +
                                     A[0][2]*(A[1][0]*A[2][1] - A[1][1]*A[2][0]));
 
-      B[0][0] = (A[1][1]*A[2][2] - A[2][1]*A[1][2])*invdet;
-      B[0][1] = (A[0][2]*A[2][1] - A[0][1]*A[2][2])*invdet;
-      B[0][2] = (A[0][1]*A[1][2] - A[0][2]*A[1][1])*invdet;
-      B[1][0] = (A[1][2]*A[2][0] - A[1][0]*A[2][2])*invdet;
-      B[1][1] = (A[0][0]*A[2][2] - A[0][2]*A[2][0])*invdet;
-      B[1][2] = (A[1][0]*A[0][2] - A[0][0]*A[1][2])*invdet;
-      B[2][0] = (A[1][0]*A[2][1] - A[2][0]*A[1][1])*invdet;
-      B[2][1] = (A[2][0]*A[0][1] - A[0][0]*A[2][1])*invdet;
-      B[2][2] = (A[0][0]*A[1][1] - A[1][0]*A[0][1])*invdet;
+  B[0][0] = (A[1][1]*A[2][2] - A[2][1]*A[1][2])*invdet;
+  B[0][1] = (A[0][2]*A[2][1] - A[0][1]*A[2][2])*invdet;
+  B[0][2] = (A[0][1]*A[1][2] - A[0][2]*A[1][1])*invdet;
+  B[1][0] = (A[1][2]*A[2][0] - A[1][0]*A[2][2])*invdet;
+  B[1][1] = (A[0][0]*A[2][2] - A[0][2]*A[2][0])*invdet;
+  B[1][2] = (A[1][0]*A[0][2] - A[0][0]*A[1][2])*invdet;
+  B[2][0] = (A[1][0]*A[2][1] - A[2][0]*A[1][1])*invdet;
+  B[2][1] = (A[2][0]*A[0][1] - A[0][0]*A[2][1])*invdet;
+  B[2][2] = (A[0][0]*A[1][1] - A[1][0]*A[0][1])*invdet;
 }
 
 
@@ -627,4 +641,43 @@ inline int unpack_bytes(T* element, std::vector<char>::const_iterator& it) {
 static inline FLOAT sech(FLOAT arg) {
   return (FLOAT) 2.0 / (exp(arg) + exp(-arg));
 }
+
+
+//=================================================================================================
+//  getClosest
+/// Returns an iterator pointing to the closest value
+//=================================================================================================
+template <typename BidirectionalIterator, typename T>
+BidirectionalIterator getClosest
+ (BidirectionalIterator first,
+  BidirectionalIterator last,
+  const T &value)
+{
+  BidirectionalIterator before = std::lower_bound(first, last, value);
+
+  if (before == first) return first;
+  if (before == last)  return --last;
+
+  BidirectionalIterator after = before;
+  --before;
+
+  return (*after - value) < (value - *before) ? after : before;
+}
+
+
+//=================================================================================================
+//  getClosestIndex
+/// Returns the index of the closest value
+//=================================================================================================
+template <typename BidirectionalIterator, typename T>
+std::size_t getClosestIndex(BidirectionalIterator first,
+                            BidirectionalIterator last,
+                            const T &value)
+{
+  return std::distance(first, getClosest(first, last, value));
+}
+
+
+
+
 #endif
