@@ -17,6 +17,9 @@
 *.so
 *.ascii.*
 *.column.*
+*.pdf
+*.gcda
+*.gcno
 Parameters.py
 SimUnits.py
 Sph.py
