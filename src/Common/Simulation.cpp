@@ -554,6 +554,7 @@ string SimulationBase::Output(void)
     filename = run_id + '.' + out_file_form + '.' + nostring;
     ss.str(std::string());
     WriteSnapshotFile(filename,out_file_form);
+    OutputTestDiagnostics();
 
     // Now write name and format of snapshot to file (for restarts)
     if (rank == 0) {

@@ -213,8 +213,8 @@ class TreeRay : public Radiation<ndim>
           DomainBox<ndim> &, SimUnits *, Parameters *, NeighbourSearch<ndim> *);
   ~TreeRay();
 
-  void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
-                            NbodyParticle<ndim> **, SinkParticle<ndim> *);
+  virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
+                                    NbodyParticle<ndim> **, SinkParticle<ndim> *);
 
   void AddRadiationPointSource(SinkParticle<ndim> &);
   void CalculateCellRadiationProperties(TreeCell<ndim> &);

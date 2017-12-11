@@ -176,7 +176,6 @@ endif
 #endif
 
 
-
 # Object files to be compiled
 # -------------------------------------------------------------------------------------------------
 SWIG_HEADERS = Simulation.i

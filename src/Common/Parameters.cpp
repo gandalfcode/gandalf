@@ -272,6 +272,8 @@ void Parameters::SetDefaultValues(void)
   stringparams["radws_table"] = "eos.bell.cc.dat";
   intparams["lombardi_method"] = 0;
   floatparams["temp_ambient"] = 5.0;
+  floatparams["X_comp"] = 1;
+  floatparams["Y_comp"] = 0;
 
   // Artificial viscosity parameters
   //-----------------------------------------------------------------------------------------------
@@ -351,7 +353,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["mu_ion"] = 0.678;
   floatparams["temp_ion"] = 1e4;
   floatparams["arecomb"] = 2.7e-13;
-  floatparams["Ndotmin"] = 1e47;
+  floatparams["NLyCmin"] = 1e47;
   floatparams["NLyC"] = 1e47;
 
   // TreeRay algorithm parameters

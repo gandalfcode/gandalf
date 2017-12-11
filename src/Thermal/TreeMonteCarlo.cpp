@@ -70,26 +70,24 @@ TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::~TreeMonteCarlo()
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
-(int Nhydro,                          ///< No. of SPH particle
- int Nnbody,                        ///< No. of N-body particles
- int Nsink,                         ///< No. of sink particles
- SphParticle<ndim> *sph_gen,        ///< Generic SPH particle data array
- NbodyParticle<ndim> **nbodydata,   ///< N-body data array
- SinkParticle<ndim> *sinkdata)      ///< Sink data array
+(int Nhydro,                           ///< No. of hydro particle
+ int Nnbody,                           ///< No. of N-body particles
+ int Nsink,                            ///< No. of sink particles
+ Particle<ndim> *part_gen,             ///< Generic hydro particle data array
+ NbodyParticle<ndim> **nbodydata,      ///< N-body data array
+ SinkParticle<ndim> *sinkdata)         ///< Sink data array
 {
-  int c;                            // Cell counter
-  int k;                            // Dimension counter
-  int level;                        // Level to walk tree on
-  RadiationSource<ndim> source;     // Current radiation source
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* >(sph_gen);
-
+  int c;                               // Cell counter
+  int k;                               // Dimension counter
+  int level;                           // Level to walk tree on
+  RadiationSource<ndim> source;        // Current radiation source
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* >(part_gen);
 
   debug2("[TreeMonteCarlo::UpdateRadiationField]");
 
-
   // Re-build radiation tree from scratch
   CodeTiming::BlockTimer timer1 = timing->StartNewTimer("RADTREE_BUILD");
-  radtree->BuildTree(Nhydro,Nhydro,sphdata);
+  radtree->BuildTree(Nhydro,Nhydro,partdata);
   timer1.EndTiming();
 
   // Compute maximum radius of cell extent from co-ordinate centre, in order
@@ -104,9 +102,8 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
   // Perform single iteration step on computing radiation field
   CodeTiming::BlockTimer timer2 = timing->StartNewTimer("RADTREE_MONTE_CARLO");
   level = radtree->ltot;
-  IterateRadiationField(level,Nhydro,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
+  IterateRadiationField(level, Nhydro, Nnbody,Nsink, part_gen, nbodydata, sinkdata);
   timer2.EndTiming();
-
 
   // Update the radiation field on all higher cells
   radtree->SumRadiationField(level,radtree->radcell[0]);
@@ -120,7 +117,6 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
   // Output info to file for plotting
   for (int l=0; l<level; l++) {
-
     ofstream outfile;
     string filename;
     string nostring;
@@ -158,10 +154,10 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 (int level,                         ///< Level to walk tree on
- int Nhydro,                          ///< No. of SPH particle
+ int Nhydro,                          ///< No. of hydro particle
  int Nnbody,                        ///< No. of N-body particles
  int Nsink,                         ///< No. of sink particles
- SphParticle<ndim> *sph_gen,        ///< Generic SPH particle data array
+ Particle<ndim> *part_gen,        ///< Generic hydro particle data array
  NbodyParticle<ndim> **nbodydata,   ///< N-body data array
  SinkParticle<ndim> *sinkdata)      ///< Sink data array
 {

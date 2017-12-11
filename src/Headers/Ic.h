@@ -139,7 +139,6 @@ public:
   static void AddRandomSphere(const int, const FLOAT *, const FLOAT, FLOAT *, RandomNumber *);
   static int CutSphere(const int, const int, const DomainBox<ndim> &, const bool, FLOAT *);
 
-
 };
 
 

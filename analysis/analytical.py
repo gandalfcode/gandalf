@@ -336,6 +336,43 @@ class soundwave (AnalyticalSolution):
             raise KeyError("There were errors in the quantity you requested")
 
 
+#------------------------------------------------------------------------------
+class spitzer (AnalyticalSolution):
+    '''Analytical solution for the 3D Spitzer expansion.'''
+
+    def __init__(self, sim, time):
+        AnalyticalSolution.__init__(self)
+        self.time = time
+
+        # Extract the parameters
+        simfloatparams = sim.simparams.floatparams
+        self.mass       = simfloatparams["mcloud"]
+        self.radius     = simfloatparams["radius"]
+        self.tempion    = simfloatparams["tempion"]
+        self.temp0      = simfloatparams["temp0"]
+        self.mu_ion     = simfloatparams["mu_ion"]
+        self.NLyC       = simfloatparams["NLyC"]
+        self.arecomb    = simfloatparams["arecomb"]
+        self.cion       = np.sqrt(self.tempion/self.mu_ion)
+        self.rho        = 3.0*self.mass/4.0/math.pi/math.pow(self.radius, 3)
+        self.m_hydrogen = 1.66054E-27;
+        self.Rstromgren = np.pow(0.75*self.m_hydrogen*self.m_hydrogen*NLyC/
+                                 (math.pi*self.arecomb*self.rho*self.rho),onethird);
+        self.time       = time
+        self.iMAX       = 1000
+
+    def compute(self, ix, iy):
+        r   = np.arange(0.0,self.radius,1.0/self.iMAX)
+        rho = np.zeros(self.iMAX)
+        rho = self.rho
+        if ix == "r" and iy == "rho":
+            return r,rho
+        else:
+            raise KeyError("There were errors in the quantity you requested")
+
+
+
+
 #-------------------------------------------------------------------------------
 class SedovSolution(object):
     """Class for simple approximations to the Sedov (1959) solution

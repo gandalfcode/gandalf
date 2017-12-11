@@ -299,6 +299,26 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 
 
+  // Radiation transport object
+  //-----------------------------------------------------------------------------------------------
+  if (gas_radiation == "ionisation" && ndim == 3) {
+    radiation = new MultipleSourceIonisation<ndim,MeshlessFVParticle>
+      (mfvneib, floatparams["mu_bar"], floatparams["X_comp"], floatparams["mu_ion"], floatparams["temp0"],
+       floatparams["temp_ion"], floatparams["NLyCmin"], floatparams["gamma_eos"],floatparams["arecomb"],
+       pow(simunits.r.outscale*simunits.r.outcgs, 3.)/
+       pow(simunits.m.outscale*simunits.m.outcgs, 2.),
+       simunits.temp.outscale, pow(simunits.r.outscale*simunits.r.outcgs,-4)*
+       pow(simunits.t.outscale*simunits.t.outcgs,+2)/simunits.m.outscale*simunits.m.outcgs);
+  }
+  else if (gas_radiation == "none") {
+    radiation = new NullRadiation<ndim>();
+  }
+  else {
+    string message = "Unrecognised parameter : radiation = " + gas_radiation;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
   // Set all other hydro parameter variables
   mfv->Nhydromax       = intparams["Nhydromax"];
   mfv->create_sinks    = intparams["create_sinks"];
@@ -641,6 +661,26 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     MpiGhosts->SearchGhostParticles((FLOAT) 0.0, simbox, mfv);
     mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #endif
+
+    // ..
+    for (i=0; i<mfv->Nhydro; i++) {
+      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+      for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+      part.flags.set(active);
+    }
+
+
+    mfvneib->UpdateAllProperties(mfv, nbody);
+    LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
+
+    radiation->UpdateRadiationField(mfv->Nhydro, nbody->Nnbody, sinks->Nsink,
+     				                        mfv->GetMeshlessFVParticleArray(), nbody->nbodydata, sinks->sink);
+
+    //mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
+    LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
+
 
     if (iter == 0) {
       mfvneib->UpdateAllProperties(mfv, nbody);
