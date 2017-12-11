@@ -834,7 +834,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration
 
     // Work out corrected inverted mean gas particle mass to calculate the internal energy
     invmu=(((ionisedpart[ii].t - tn)/mu_ion) + ((ti - ionisedpart[ii].t)/mu_bar))/(ti - tn);
-    partdata[ii].mu_bar = 1/invmu;
+    //partdata[ii].mu_bar = 1/invmu;
     ionisedpart[ii].u=ionisedpart[ii].t/tempscale/gammam1*invmu;
 
     // Set particle ionisation state

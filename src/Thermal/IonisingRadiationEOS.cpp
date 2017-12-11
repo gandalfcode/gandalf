@@ -134,7 +134,7 @@ FLOAT IonisingRadiation<ndim>::Temperature(const EosParticleProxy<ndim>&part)
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
   if (part.ionstate != 0) {
     FLOAT non_ionised = eos->SpecificInternalEnergy(part);
-    if (part.u > non_ionised) return part.u*gammam1/(1/part.mu_bar);
+    if (part.u > non_ionised) return part.u*gammam1/mu_bar;
     else return eos->Temperature(part);
   }
   else return eos->Temperature(part);

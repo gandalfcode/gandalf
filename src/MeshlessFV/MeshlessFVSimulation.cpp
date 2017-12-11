@@ -299,7 +299,6 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
 
 
-<<<<<<< HEAD
   // Radiation transport object
   //-----------------------------------------------------------------------------------------------
   if (gas_radiation == "ionisation" && ndim == 3) {
@@ -320,8 +319,6 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   }
 
 
-=======
->>>>>>> master
   // Set all other hydro parameter variables
   mfv->Nhydromax       = intparams["Nhydromax"];
   mfv->create_sinks    = intparams["create_sinks"];
@@ -665,14 +662,13 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->BuildMpiGhostTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #endif
 
-<<<<<<< HEAD
     // ..
     for (i=0; i<mfv->Nhydro; i++) {
       MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
       for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
-      part.flags.set_flag(active);
+      part.flags.set(active);
     }
 
 
@@ -685,12 +681,11 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     //mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
     LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
 
-=======
+
     if (iter == 0) {
       mfvneib->UpdateAllProperties(mfv, nbody);
 
       LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
->>>>>>> master
 #ifdef MPI_PARALLEL
       MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
 #endif
