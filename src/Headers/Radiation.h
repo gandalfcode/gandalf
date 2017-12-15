@@ -325,6 +325,60 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
 
 //=================================================================================================
+//  Class PlaneParallelRadiation
+/// \brief   ...
+/// \author  D. A. Hubber
+/// \date    11/12/2017
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class PlaneParallelRadiation : public Radiation<ndim>
+{
+private:
+
+  //===============================================================================================
+  /// Radiation photon packet data structure
+  //===============================================================================================
+  struct PlanarRay
+  {
+    FLOAT rayIntegral;                   ///< ..
+    FLOAT r[ndim];                       ///< Current position of ray
+
+    PlanarRay()
+    {
+      rayIntegral = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
+    }
+  };
+
+  FLOAT arecomb;
+  FLOAT NLyC;
+  FLOAT xmin;
+  FLOAT maxIntegral;
+  FLOAT uion;
+
+  SmoothingKernel<ndim> *kern;
+  NeighbourSearch<ndim> *neib;
+  //OctTree<ndim> *tree;
+
+
+public:
+
+  // Constructor and destructor
+  //-----------------------------------------------------------------------------------------------
+  PlaneParallelRadiation(Parameters *, SmoothingKernel<ndim> *, NeighbourSearch<ndim> *);
+  ~PlaneParallelRadiation();
+
+
+  // Function prototypes
+  //-----------------------------------------------------------------------------------------------
+  virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
+                                    NbodyParticle<ndim> **, SinkParticle<ndim> *);
+
+};
+
+
+
+//=================================================================================================
 //  Class NullRadiation
 /// \brief   Empty radiation class when no radiation object is selected
 /// \details Empty radiation class when no radiation object is selected

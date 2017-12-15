@@ -206,6 +206,7 @@ OBJ += MultipleSourceIonisation.o
 OBJ += KDRadiationTree.o TreeMonteCarlo.o
 OBJ += MonochromaticIonisationMonteCarlo.o
 OBJ += chealpix.o TreeRay.o TreeRayOnTheSpot.o
+OBJ += PlaneParallelRadiation.o
 OBJ += EnergyEquation.o EnergyRadws.o OpacityTable.o
 OBJ += Nbody.o NbodyLeapfrogKDK.o NbodyLeapfrogDKD.o
 OBJ += NbodyHermite4.o NbodyHermite4TS.o NbodyHermite6TS.o

@@ -115,6 +115,7 @@ FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndi
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
   if (part.ionstate != 0) {
     FLOAT non_ionised = eos->SpecificInternalEnergy(part);
+    //std::cout << "WTF?? : " << non_ionised << "  " << part.u << std::endl;
     if (part.u > non_ionised) return part.u;
     else return non_ionised;
   }

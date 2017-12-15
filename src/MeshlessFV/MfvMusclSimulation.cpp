@@ -67,17 +67,18 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   //mfvneib->UpdateActiveParticleCounters(mfv->GetMeshlessFVParticleArray(), mfv);
   mfvneib->UpdateActiveParticleCounters(mfv);
 
+  // Update the radiation field
+  //if (Nsteps%nradstep == 0 || recomputeRadiation) {
+    radiation->UpdateRadiationField(mfv->Nhydro, nbody->Nnbody, sinks->Nsink,
+  				                          mfv->GetMeshlessFVParticleArray(), nbody->nbodydata, sinks->sink);
+  //}
+
   // Calculate all properties (and copy updated data to ghost particles)
   //mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, mfv->GetMeshlessFVParticleArray(), mfv, nbody);
   mfvneib->UpdateAllProperties(mfv, nbody);
   //mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
   LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
 
-  // Update the radiation field
-  //if (Nsteps%nradstep == 0 || recomputeRadiation) {
-    radiation->UpdateRadiationField(mfv->Nhydro, nbody->Nnbody, sinks->Nsink,
-  				                          mfv->GetMeshlessFVParticleArray(), nbody->nbodydata, sinks->sink);
-  //}
 
   // Calculate all matrices and gradients (and copy updated data to ghost particles)
   //mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, mfv->GetMeshlessFVParticleArray(), mfv, nbody);

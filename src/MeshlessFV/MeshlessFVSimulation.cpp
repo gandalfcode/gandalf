@@ -310,6 +310,9 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
        simunits.temp.outscale, pow(simunits.r.outscale*simunits.r.outcgs,-4)*
        pow(simunits.t.outscale*simunits.t.outcgs,+2)/simunits.m.outscale*simunits.m.outcgs);
   }
+  else if (gas_radiation == "plane_parallel") {
+    radiation = new PlaneParallelRadiation<ndim,MeshlessFVParticle>(simparams, hydro->kernp, mfvneib);
+  }
   else if (gas_radiation == "none") {
     radiation = new NullRadiation<ndim>();
   }
@@ -671,12 +674,12 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       part.flags.set(active);
     }
 
+    radiation->UpdateRadiationField(mfv->Nhydro, nbody->Nnbody, sinks->Nsink,
+     				                        mfv->GetMeshlessFVParticleArray(), nbody->nbodydata, sinks->sink);
+
 
     mfvneib->UpdateAllProperties(mfv, nbody);
     LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
-
-    radiation->UpdateRadiationField(mfv->Nhydro, nbody->Nnbody, sinks->Nsink,
-     				                        mfv->GetMeshlessFVParticleArray(), nbody->nbodydata, sinks->sink);
 
     //mfv->CopyDataToGhosts(simbox, mfv->GetMeshlessFVParticleArray());
     LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);

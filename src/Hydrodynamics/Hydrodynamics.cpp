@@ -80,7 +80,7 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
   //-----------------------------------------------------------------------------------------------
   if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" || _gas_eos == "isothermal" ||
        _gas_eos == "polytropic" || _gas_eos == "barotropic" || _gas_eos == "barotropic2") &&
-      gas_radiation == "ionisation") {
+      (gas_radiation == "ionisation" || gas_radiation == "plane_parallel")) {
     eos = new IonisingRadiation<ndim>(params, &units);
   }
   else if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" || _gas_eos == "isothermal" ||

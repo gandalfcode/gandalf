@@ -15,10 +15,10 @@ x-velocity of RHS fluid                     : vfluid2[0] = 0.0
 Pressure of LHS fluid                       : press1 = 10.0
 Pressure of RHS fluid                       : press2 = 10.0
 Density of LHS fluid                        : rhofluid1 = 1.0
-Density of RHS fluid                        : rhofluid2 = 10.0
+Density of RHS fluid                        : rhofluid2 = 1000.0
 No. of particles in LHS fluid               : Nlattice1[0] = 240
 No. of particles in RHS fluid               : Nlattice2[0] = 600
-
+dimensionless = 1
 
 #------------------------------
 # Simulation boundary variables

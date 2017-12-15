@@ -20,15 +20,16 @@
 #==================================================================================================
 
 
-CPP                = 
-PYTHON             = python
-COMPILER_MODE      = FAST
+CPP                = g++-5
+PYTHON             = python2.7
+COMPILER_MODE      = DEBUG
 PRECISION          = DOUBLE
 OPENMP             = 1
 PYSNAP_PRECISION   = DOUBLE
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 1
-BUILD_DEPENDENCIES = 1
+BUILD_DEPENDENCIES = 0
+
 
 # FFTW libary flags and paths.  If paths are empty, tries standard default linux paths.
 #--------------------------------------------------------------------------------------------------
