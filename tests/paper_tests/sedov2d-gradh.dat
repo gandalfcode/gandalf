@@ -19,7 +19,7 @@ No. of y-particles in fluid 1               : Nlattice1[2] = 64
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Smooth explosion                            : smooth_ic = 1
 Use dimensionless units                     : dimensionless = 1
-out_file_form = column
+out_file_form = sf
 
 
 
