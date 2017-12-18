@@ -529,7 +529,7 @@ int Ic<ndim>::AddLatticeSphere
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
-  for (k=0; k<ndim; k++) Nlattice[k] = (int) (3.0*powf((FLOAT) Npart, (FLOAT)1/ndim));
+  for (k=0; k<ndim; k++) Nlattice[k] = (int) (4.0*powf((FLOAT) Npart, (FLOAT)1/ndim));
   for (k=0; k<ndim; k++) box1.min[k] = -2.0;
   for (k=0; k<ndim; k++) box1.max[k] = 2.0;
   Naux = Nlattice[0]*Nlattice[1]*Nlattice[2];
@@ -755,7 +755,7 @@ void Ic<ndim>::AddHexagonalLattice
           r[ndim*i]     = box.min[0] + spacing[0]*
             ((FLOAT) ii + (FLOAT) 0.5*(FLOAT) (jj%2) + (FLOAT) 0.5*(FLOAT) (kk%2) + (FLOAT) 0.5);
           r[ndim*i + 1] = box.min[1] + spacing[1]*
-            ((FLOAT) jj*(FLOAT) 0.5 + (FLOAT) 0.5*(FLOAT) (kk%2) + (FLOAT) 0.5);
+            ((FLOAT) jj + (FLOAT) 0.5*(FLOAT) (kk%2) + (FLOAT) 0.5);
           r[ndim*i + 2] = box.min[2] + spacing[2]*((FLOAT) kk + (FLOAT) 0.5);
         }
       }
