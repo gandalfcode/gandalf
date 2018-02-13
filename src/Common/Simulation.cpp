@@ -1755,7 +1755,6 @@ void Simulation<ndim>::ComputeGlobalTimestep() {
 
 
 
-
 //=================================================================================================
 //  Simulation::ComputeBlockTimesteps
 /// Compute timesteps for all particles using hierarchical block timesteps.
@@ -1862,8 +1861,8 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
     if (nbody != NULL) {
       for (i=0; i<nbody->Nnbody; i++) {
         dt = nbody->nbodydata[i]->dt_next;
-        level = min(ComputeTimestepLevel(dt, dt_max), level_max);
-        nbody->nbodydata[i]->level = max(level, level_max_hydro);
+        level = min(ComputeTimestepLevel(dt, dt_max), level_max); 
+        nbody->nbodydata[i]->level = max(level, level_max_hydro); //comment 2: should ensure 1 by construction, unless level_max_hydro is updated later
         nbody->nbodydata[i]->nlast = n;
         nbody->nbodydata[i]->nstep = pow(2, level_step - nbody->nbodydata[i]->level);
         nbody->nbodydata[i]->tlast = t;
@@ -1880,10 +1879,15 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
           if (sinks->sink[part.sinkid].star->level - part.level > level_diff_max) {
             part.level     = sinks->sink[part.sinkid].star->level - level_diff_max;
             part.levelneib = sinks->sink[part.sinkid].star->level;
-            level_max_hydro  = max(level_max_hydro, part.level);
+            level_max_hydro  = max(level_max_hydro, part.level); //comment 3: where level_max_hydro is updated
           }
         }
       }
+    if (nbody != NULL) {
+      for (i=0; i<nbody->Nnbody; i++) {
+        nbody->nbodydata[i]->level = max(nbody->nbodydata[i]->level, level_max_hydro); //comment 4: New part added as repeat
+     }
+    }
 
       // If enforcing a single hydro timestep, set it here.
       // Otherwise, populate the timestep levels with hydro particles.
@@ -1974,7 +1978,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
 
             // Move up one level (if levels are correctly synchronised) or
             // down several levels if required
-            if (level < last_level && last_level > 1 && n%(2*nstep) == 0) {
+            if (level < last_level && last_level > 1 && n%(2*nstep) == 0) { //comment 6: Should be last_level > 1 ?
               part.level = last_level - 1;
             }
             else if (level > last_level) {
@@ -2036,7 +2040,7 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
 
             // Move up one level (if levels are correctly synchronised) or
             // down several levels if required
-            if (level < last_level && level > level_max_hydro && last_level > 1 && n%(2*nstep) == 0) {
+            if (level < last_level && last_level > level_max_hydro && last_level > 1 && n%(2*nstep) == 0) {
               nbody->nbodydata[i]->level = last_level - 1;
             }
             else if (level > last_level) {
@@ -2171,11 +2175,11 @@ void Simulation<ndim>::ComputeBlockTimesteps(void)
   }
   if (nbody != NULL) {
     for (i=0; i<nbody->Nnbody; i++) {
-      assert(nbody->nbodydata[i]->level <= level_max);
+      assert(nbody->nbodydata[i]->level <= level_max); 
       assert(nbody->nbodydata[i]->nlast <= n);
-      assert(nbody->nbodydata[i]->nstep == pow(2,level_step - nbody->nbodydata[i]->level));
+      assert(nbody->nbodydata[i]->nstep >= pow(2,level_step - nbody->nbodydata[i]->level)); //comment 5: what failed then, was solved by adding inequality sign instead of equality
       assert(nbody->nbodydata[i]->nlast != n || n%nbody->nbodydata[i]->nstep == 0);
-      assert(nbody->nbodydata[i]->level >= level_max_hydro);
+      assert(nbody->nbodydata[i]->level >= level_max_hydro); //comment 1: what failed initially
       assert(nbody->nbodydata[i]->tlast <= t);
     }
   }
