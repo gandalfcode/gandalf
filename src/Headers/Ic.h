@@ -882,13 +882,22 @@ protected:
   using Ic<ndim>::simparams;
   using Ic<ndim>::simunits;
 
+  bool dusty_shock;
+  bool smooth_ic;
+  FLOAT kefrac;
+  FLOAT rhofluid;
+  FLOAT r_hot;
+
 
 public:
 
   SedovBlastwaveIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~SedovBlastwaveIc() {};
 
+  virtual FLOAT GetDensity(const FLOAT *, const int) const;
   virtual void Generate(void);
+  virtual void SetParticleProperties();
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
 
 };
 
