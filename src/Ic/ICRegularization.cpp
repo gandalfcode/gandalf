@@ -60,7 +60,10 @@ void ParticleRegularizer<ndim>::operator()
   for (int ireg=0; ireg<Nreg; ireg++) {
 
     // Buid/re-build tree, create ghosts and update particle properties
-    for (int i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).flags.set(active);
+    for (int i=0; i<hydro->Nhydro; i++) {
+      hydro->GetParticlePointer(i).flags.set(active);
+      hydro->GetParticlePointer(i).flags.set(update_density) ;
+    }
     neib->BuildTree(true, 0, 1, 1, 0.0, hydro);
     neib->SearchBoundaryGhostParticles(0, localBox, hydro);
     neib->BuildGhostTree(true, 0, 1, 1, 0.0, hydro);
@@ -86,7 +89,6 @@ void ParticleRegularizer<ndim>::operator()
                                                  hydro->GetParticleArrayUnsafe(), hydro->Ntot,
                                                  hydro->Nhydromax, &(neiblist[0]));
 
-
         // Loop over all neighbours and calculate position correction for regularisation
         //-----------------------------------------------------------------------------------------
         for (int jj=0; jj<Nneib; jj++) {
@@ -97,9 +99,9 @@ void ParticleRegularizer<ndim>::operator()
           drsqd = DotProduct(dr, dr, ndim);
           if (drsqd >= part.hrangesqd) continue;
 
+          FLOAT regFactor = regularizer(part, neibpart);
           for (int k=0; k<ndim; k++) {
-            rreg[ndim*i + k] -=
-              dr[k]*hydro->kernp->w0_s2(drsqd*invhsqd)*regularizer(part, neibpart);
+            rreg[ndim*i + k] -= dr[k]*hydro->kernp->w0_s2(drsqd*invhsqd)*regFactor;
           }
 
         }
