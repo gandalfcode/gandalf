@@ -119,8 +119,8 @@ void ShocktubeIc<ndim>::Generate(void)
 
     // Compute size and range of fluid bounding boxes
     box1.min[0]   = icBox.min[0];
-    box1.max[0]   = (FLOAT) 0.0;
-    box2.min[0]   = (FLOAT) 0.0;
+    box1.max[0]   = (FLOAT) 0.5*(icBox.min[0] + icBox.max[0]);
+    box2.min[0]   = (FLOAT) 0.5*(icBox.min[0] + icBox.max[0]);
     box2.max[0]   = icBox.max[0];
     Nbox1         = Nlattice1[0];
     Nbox2         = Nlattice2[0];

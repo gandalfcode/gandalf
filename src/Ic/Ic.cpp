@@ -226,6 +226,11 @@ void Ic<ndim>::CheckInitialConditions(void)
 
       // If flag indicates a problem, print error and quit
       if (!okflag) {
+        cout << "Invalid particle : " << i << "   m : " << part.m << "   u : " << part.u << "    r : ";
+        for (k=0; k<ndim; k++) cout << part.r[k] << "  ";
+        cout << "    v : ";
+        for (k=0; k<ndim; k++) cout << part.v[k] << "  ";
+        cout << std::endl;
         ExceptionHandler::getIstance().raise("Error : Invalid floating point values for particles");
       }
       if (!boxflag) {
@@ -238,7 +243,6 @@ void Ic<ndim>::CheckInitialConditions(void)
       valid_ic = valid_ic && okflag;
 
     }
-    //-----------------------------------------------------------------------------------------------
 
     // Check particles are sorted in type order
     int ptype =  -1 ;
@@ -250,6 +254,7 @@ void Ic<ndim>::CheckInitialConditions(void)
       ptype = part.ptype;
     }
   }
+  //-----------------------------------------------------------------------------------------------
 
   if (!valid_ic) {
     string message = "Invalid initial conditions for SPH particles";
@@ -524,7 +529,7 @@ int Ic<ndim>::AddLatticeSphere
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
-  for (k=0; k<ndim; k++) Nlattice[k] = (int) (3.0*powf((FLOAT) Npart, (FLOAT)1/ndim));
+  for (k=0; k<ndim; k++) Nlattice[k] = (int) (4.0*powf((FLOAT) Npart, (FLOAT)1/ndim));
   for (k=0; k<ndim; k++) box1.min[k] = -2.0;
   for (k=0; k<ndim; k++) box1.max[k] = 2.0;
   Naux = Nlattice[0]*Nlattice[1]*Nlattice[2];
@@ -630,7 +635,7 @@ void Ic<ndim>::AddCubicLattice
  (const int Npart,                     ///< [in] No. of particles in lattice
   const int Nlattice[ndim],            ///< [in] Ptcls per dimension in lattice
   const DomainBox<ndim> &box,          ///< [in] Bounding box of particles
-  const bool normalise,                ///< [in] Normalise lattice shape and size
+  const bool equalSpacing,             ///< [in] ..
   FLOAT *r)                            ///< [out] Positions of particles
 {
   int i,k;                             // Particle and dimension counters
@@ -640,19 +645,14 @@ void Ic<ndim>::AddCubicLattice
   debug2("[Ic::AddCubicLattice]");
   assert(r);
 
-  // If normalised, ensure equal spacing between all lattice layers.
-  // Otherwise set spacing to fit bounding box
-  if (normalise) {
-    for (k=0; k<ndim; k++) {
-      spacing[k] = (box.max[0] - box.min[0])/(FLOAT) Nlattice[0];
-    }
+  // Set spacing between particle layers to be equally spaced (using x-direction to normalise)
+  if (equalSpacing) {
+    for (k=0; k<ndim; k++) spacing[k] = (box.max[k] - box.min[k])/(FLOAT) Nlattice[0];
   }
+  // Set spacing between particle layers to fit bounding box
   else {
-    for (k=0; k<ndim; k++) {
-      spacing[k] = (box.max[k] - box.min[k])/(FLOAT) Nlattice[k];
-    }
+    for (k=0; k<ndim; k++) spacing[k] = (box.max[k] - box.min[k])/(FLOAT) Nlattice[k];
   }
-
 
   // Create lattice depending on dimensionality
   //-----------------------------------------------------------------------------------------------
@@ -694,40 +694,42 @@ void Ic<ndim>::AddCubicLattice
 
 //=================================================================================================
 //  Ic::AddHexagonalLattice
-/// Create simple hexagonal-packed lattice using A-B-A-B pattern in z-direction
-/// N.B. the box is scaled to fit to the x-boxsize.
+/// Create simple hexagonal-packed lattice using A-B-A-B pattern in z-direction.
+/// To create a lattice with equally spaced particles, the lattice spacings should be in the
+/// ratio - 1:sqrt(3)/2:sqrt(6)/3 = 1:0.866025404:0.816496581
 //=================================================================================================
 template <int ndim>
 void Ic<ndim>::AddHexagonalLattice
  (const int Npart,                     ///< [in] No. of particles in lattice
   const int Nlattice[3],               ///< [in] Ptcls per dimension in lattice
   const DomainBox<ndim> &box,          ///< [in] Bounding box of particles
-  const bool normalise,                ///< [in] Normalise lattice shape and size
+  const bool equalSpacing,             ///< [in] ..
   FLOAT *r)                            ///< [out] Positions of particles
 {
   int i,k;                             // Particle and dimension counters
   int ii,jj,kk;                        // Aux. lattice counters
-  FLOAT rad[ndim];                     // 'Radius' of particle in lattice
+  FLOAT spacing[ndim];                 // Spacing between particle layers in lattice
 
   debug2("[Ic::AddHexagonalLattice]");
   assert(r);
 
-  // If normalised, ensure equal spacing between all particles.
-  // Otherwise set spacing to fit bounding box.
-  if (normalise) {
-    for (k=0; k<ndim; k++) rad[k] = (FLOAT) 0.5*(box.max[0] - box.min[0])/(FLOAT) Nlattice[0];
-  }
-  else {
-    for (k=0; k<ndim; k++) rad[k] = (FLOAT) 0.5*(box.max[k] - box.min[k])/(FLOAT) Nlattice[k];
-  }
 
+  // Set spacing between particle layers to be equally spaced (using x-direction to normalise)
+  if (equalSpacing) {
+    FLOAT normFactor[3] = {1.0, 0.5*sqrt(3), onethird*sqrt(6)};
+    for (k=0; k<ndim; k++) spacing[k] = normFactor[k]*(box.max[0] - box.min[0])/(FLOAT) Nlattice[0];
+  }
+  // Set spacing between particle layers to fit bounding box
+  else {
+    for (k=0; k<ndim; k++) spacing[k] = (box.max[k] - box.min[k])/(FLOAT) Nlattice[k];
+  }
 
   // Create lattice depending on dimensionality
   //-----------------------------------------------------------------------------------------------
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
-      r[i] = box.min[0] + rad[0] + (FLOAT) 2.0*(FLOAT)ii*rad[0];
+      r[i] = box.min[0] + spacing[0]*((FLOAT)ii + (FLOAT) 0.5);
     }
   }
 
@@ -736,27 +738,25 @@ void Ic<ndim>::AddHexagonalLattice
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
         i = jj*Nlattice[0] + ii;
-        r[ndim*i] = box.min[0] +
-          rad[0] + ((FLOAT) 2.0*(FLOAT)ii + (FLOAT)(jj%2))*rad[0];
-        r[ndim*i + 1] = box.min[1] +
-          (FLOAT) 0.5*sqrt((FLOAT) 3.0)*rad[1] + (FLOAT)jj*sqrt(3.0)*rad[1];
+        r[ndim*i]     = box.min[0] + spacing[0]*
+          ((FLOAT) ii + (FLOAT) 0.5*(FLOAT) (jj%2) + (FLOAT) 0.5);
+        r[ndim*i + 1] = box.min[1] + spacing[1]*((FLOAT)jj + (FLOAT) 0.5);
       }
     }
   }
 
   //-----------------------------------------------------------------------------------------------
   else if (ndim == 3) {
-#pragma omp parallel for default(none) shared(box,Nlattice,r,rad) private(i,ii,jj,kk)
+#pragma omp parallel for default(none) shared(box,Nlattice,r,spacing) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
           i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-          r[ndim*i] = box.min[0] + rad[0] +
-            ((FLOAT) 2.0*(FLOAT) ii + (FLOAT) (jj%2) + (FLOAT) ((kk+1)%2))*rad[0];
-          r[ndim*i + 1] = box.min[1] + (FLOAT) 0.5*sqrt((FLOAT) 3.0)*rad[1] +
-            (FLOAT) jj*sqrt((FLOAT) 3.0)*rad[1] + (FLOAT) (kk%2)*rad[1]/sqrt((FLOAT) 3.0);
-          r[ndim*i + 2] = box.min[2] + sqrt((FLOAT) 6.0)*rad[2]/(FLOAT) 3.0 +
-            (FLOAT) kk*(FLOAT) 2.0*sqrt((FLOAT) 6.0)*rad[2]/(FLOAT) 3.0;
+          r[ndim*i]     = box.min[0] + spacing[0]*
+            ((FLOAT) ii + (FLOAT) 0.5*(FLOAT) (jj%2) - (FLOAT) 0.5*(FLOAT) (kk%2) + (FLOAT) 0.5);
+          r[ndim*i + 1] = box.min[1] + spacing[1]*
+            ((FLOAT) jj + (FLOAT) 0.5*(FLOAT) (kk%2) + (FLOAT) 0.5);
+          r[ndim*i + 2] = box.min[2] + spacing[2]*((FLOAT) kk + (FLOAT) 0.5);
         }
       }
     }

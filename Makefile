@@ -20,15 +20,27 @@
 #==================================================================================================
 
 
+<<<<<<< HEAD
 CPP                = g++-5
 PYTHON             = python2.7
 COMPILER_MODE      = DEBUG
+=======
+CPP                =
+PYTHON             = python
+COMPILER_MODE      = FAST
+>>>>>>> improve_ics3
 PRECISION          = DOUBLE
 OPENMP             = 1
 PYSNAP_PRECISION   = DOUBLE
 OUTPUT_LEVEL       = 1
+<<<<<<< HEAD
 DEBUG_LEVEL        = 1
 BUILD_DEPENDENCIES = 0
+
+=======
+DEBUG_LEVEL        = 0
+BUILD_DEPENDENCIES = 1
+>>>>>>> improve_ics3
 
 
 # FFTW libary flags and paths.  If paths are empty, tries standard default linux paths.
@@ -40,7 +52,7 @@ FFTW_LIBRARY       =
 
 # GNU Scientific library flags and paths.  If paths are empty, tries standard default linux paths.
 #--------------------------------------------------------------------------------------------------
-GSL                =
+GSL                = 0
 GSL_INCLUDE        =
 GSL_LIBRARY        =
 

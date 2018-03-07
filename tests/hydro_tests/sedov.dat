@@ -7,17 +7,18 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = SEDOV1
+Simulation run id string                    : run_id = SEDOV-3D
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sedov
-Dimensionality of cube                      : ndim = 2
+Dimensionality of cube                      : ndim = 3
 Pressure of fluid 1                         : press1 = 1.0
 Density of fluid 1                          : rhofluid1 = 1.0
-No. of x-particles in fluid 1               : Nlattice1[0] = 128
-No. of y-particles in fluid 1               : Nlattice1[1] = 128
+No. of x-particles in fluid 1               : Nlattice1[0] = 64
+No. of y-particles in fluid 1               : Nlattice1[1] = 64
 No. of y-particles in fluid 1               : Nlattice1[2] = 64
-Local arrangement of particles              : particle_distribution = cubic_lattice
+Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Use dimensionless units                     : dimensionless = 1
+out_file_form = sf
 
 
 #------------------------------
@@ -25,10 +26,10 @@ Use dimensionless units                     : dimensionless = 1
 #------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = -1.0
 RHS position of boundary in x-dimension     : boxmax[0] = 1.0
-LHS position of boundary in y-dimension     : boxmin[1] = -1.0
-RHS position of boundary in y-dimension     : boxmax[1] = 1.0
-LHS position of boundary in z-dimension     : boxmin[2] = -1.0
-RHS position of boundary in z-dimension     : boxmax[2] = 1.0
+LHS position of boundary in y-dimension     : boxmin[1] = -0.866025404
+RHS position of boundary in y-dimension     : boxmax[1] = 0.866025404
+LHS position of boundary in z-dimension     : boxmin[2] = -0.816496581
+RHS position of boundary in z-dimension     : boxmax[2] = 0.816496581
 LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
 RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
 LHS boundary type in y-dimension            : boundary_lhs[1] = periodic

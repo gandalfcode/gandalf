@@ -56,27 +56,23 @@ void SedovBlastwaveIc<ndim>::Generate(void)
   int i;                                   // Particle counter
   int k;                                   // Dimension counter
   int Nbox;                                // No. of particles in box
-  int Ncold;                               // No. of cold particles
-  int Nhot;                                // No. of hot particles
   int Nlattice[3];                         // Lattice size
-  int *hotlist;                            // List of 'hot' particles
   FLOAT drmag;                             // Distance
   FLOAT drsqd;                             // Distance squared
   FLOAT mbox;                              // Total mass inside simulation box
-  FLOAT r_hot;                             // Size of 'hot' region
-  FLOAT ufrac;                             // Internal energy fraction
   FLOAT umax;                              // Maximum u of all particles
   FLOAT utot;                              // Total internal energy
   FLOAT volume;                            // Volume of box
   FLOAT *r;                                // Positions of all particles
 
   // Create local copies of initial conditions parameters
-  Nlattice[0]    = simparams->intparams["Nlattice1[0]"];
-  Nlattice[1]    = simparams->intparams["Nlattice1[1]"];
-  Nlattice[2]    = simparams->intparams["Nlattice1[2]"];
-  int smooth_ic  = simparams->intparams["smooth_ic"];
-  FLOAT rhofluid = simparams->floatparams["rhofluid1"];
-  FLOAT kefrac   = simparams->floatparams["kefrac"];
+  Nlattice[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice[1] = simparams->intparams["Nlattice1[1]"];
+  Nlattice[2] = simparams->intparams["Nlattice1[2]"];
+  dusty_shock = simparams->stringparams["dust_forces"] != "none";
+  smooth_ic   = simparams->intparams["smooth_ic"];
+  rhofluid    = simparams->floatparams["rhofluid1"];
+  kefrac      = simparams->floatparams["kefrac"];
   string particle_dist = simparams->stringparams["particle_distribution"];
 
   debug2("[SedovBlastwaveIc::Generate]");
@@ -98,22 +94,17 @@ void SedovBlastwaveIc<ndim>::Generate(void)
     Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
   }
   mbox  = volume*rhofluid;
-  ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);
-  Ncold = 0;
-  Nhot  = 0;
   r_hot = hydro->h_fac*hydro->kernrange*icBox.size[0]/Nlattice[0];
-
+  std::cout << "r_hot : " << r_hot << std::endl;
+  //exit(0);
 
   // Allocate local and main particle memory
   hydro->Nhydro = Nbox;
-
-  bool dusty_shock = simparams->stringparams["dust_forces"] != "none";
   if (dusty_shock) hydro->Nhydro *= 2;
 
 
   sim->AllocateParticleMemory();
   r = new FLOAT[ndim*Nbox];
-  hotlist = new int[Nbox];
 
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
@@ -135,7 +126,7 @@ void SedovBlastwaveIc<ndim>::Generate(void)
   for (i=0; i<Nbox; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
-    for (k=0; k<ndim; k++) part.v[k] = 0.0;
+    for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
     part.m = mbox/(FLOAT) Nbox;
     part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
     part.u = small_number;
@@ -152,10 +143,36 @@ void SedovBlastwaveIc<ndim>::Generate(void)
   sim->rebuild_tree = true;
 
 
+  delete[] r;
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Silcc::SetParticleProperties
+/// Sets the properties of all particles once their positions have been allocated.
+//=================================================================================================
+template <int ndim>
+void SedovBlastwaveIc<ndim>::SetParticleProperties()
+{
+  int i;                                   // Particle counter
+  int k;                                   // Dimension counter
+  int Nbox = hydro->Nhydro;                 // No. of particles in box
+  int Ncold = 0;                               // No. of cold particles
+  int Nhot = 0;                                // No. of hot particles
+  FLOAT drmag;                             // Distance
+  FLOAT drsqd;                             // Distance squared
+  FLOAT umax = (FLOAT) 0.0;                // Maximum u of all particles
+  FLOAT utot = (FLOAT) 0.0;                // Total internal energy
+  FLOAT ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);  // Internal energy fraction
+  int *hotlist = new int[Nbox];            // List of 'hot' particles
+
+  std::cout << "r_hot : " << r_hot << std::endl;
+
   // Now calculate which particles are hot
   //-----------------------------------------------------------------------------------------------
-  umax = (FLOAT) 0.0;
-  utot = (FLOAT) 0.0;
   for (i=0; i<Nbox; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     drsqd = DotProduct(part.r,part.r,ndim);
@@ -183,14 +200,11 @@ void SedovBlastwaveIc<ndim>::Generate(void)
     if (hotlist[i] == 1) {
       drmag = sqrt(DotProduct(part.r,part.r,ndim));
       part.u = part.u/utot/part.m;
-      //,1.0e-6*umax/part.m);
       for (k=0; k<ndim; k++) part.v[k] = sqrt(2.0*kefrac*part.u)*part.r[k]/(drmag + small_number);
       part.u = ufrac*part.u;
-      //,1.0e-6*umax/part.m);
     }
     else {
       part.u = 1.0e-6/part.m;
-      //for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
     }
   }
 
@@ -214,11 +228,33 @@ void SedovBlastwaveIc<ndim>::Generate(void)
   sim->initial_h_provided = true;
 
   delete[] hotlist;
-  delete[] r;
-
-  return;
 }
 
+
+
+//=================================================================================================
+//  SedovBlastwaveIc::GetDensity
+/// Returns the value of the density at the given position.
+//=================================================================================================
+template <int ndim>
+FLOAT SedovBlastwaveIc<ndim>::GetDensity
+ (const FLOAT r[ndim],
+  const int ptype) const
+{
+  return rhofluid;
+}
+
+
+
+//=================================================================================================
+//  Silcc::GetParticleRegularizer
+/// Return the regularizer based upon the density.
+//=================================================================================================
+template <int ndim>
+Regularization::RegularizerFunction<ndim>* SedovBlastwaveIc<ndim>::GetParticleRegularizer() const {
+  using Regularization::DefaultRegularizerFunction;
+  return new DefaultRegularizerFunction<ndim,SedovBlastwaveIc<ndim> >(hydro->kernp, simparams, this);
+}
 
 
 template class SedovBlastwaveIc<1>;

@@ -583,7 +583,7 @@ public:
   virtual ~GreshoVortexIc() {};
 
   virtual void Generate(void);
-  virtual FLOAT GetValue(const std::string, const FLOAT *);
+  virtual FLOAT GetDensity(const FLOAT *, const int) const;
 
 };
 
@@ -787,7 +787,6 @@ public:
   virtual ~PolytropeIc();
 
   virtual void Generate(void);
-  virtual FLOAT GetValue(const std::string, const FLOAT *);
   static void ComputeIsothermalLaneEmdenSolution(const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   static void ComputeLaneEmdenSolution(const int, const FLOAT, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
 
@@ -882,13 +881,22 @@ protected:
   using Ic<ndim>::simparams;
   using Ic<ndim>::simunits;
 
+  bool dusty_shock;
+  bool smooth_ic;
+  FLOAT kefrac;
+  FLOAT rhofluid;
+  FLOAT r_hot;
+
 
 public:
 
   SedovBlastwaveIc(Simulation<ndim>* _sim, FLOAT _invndim);
   virtual ~SedovBlastwaveIc() {};
 
+  virtual FLOAT GetDensity(const FLOAT *, const int) const;
   virtual void Generate(void);
+  virtual void SetParticleProperties();
+  virtual Regularization::RegularizerFunction<ndim>* GetParticleRegularizer() const;
 
 };
 

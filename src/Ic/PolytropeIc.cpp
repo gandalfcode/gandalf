@@ -134,35 +134,6 @@ void PolytropeIc<ndim>::Generate(void)
 
 
 //=================================================================================================
-//  PolytropeIc::GetValue
-/// ...
-//=================================================================================================
-template <int ndim>
-FLOAT PolytropeIc<ndim>::GetValue
- (const std::string var,
-  const FLOAT r[ndim])
-{
-  if (var == "x") {
-    return r[0];
-  }
-  else if (ndim > 1 && var == "y") {
-    return r[1];
-  }
-  else if (ndim > 2 && var == "z") {
-    return r[2];
-  }
-  else if (var == "rho") {
-    return (FLOAT) 0.0;
-  }
-  else {
-    std::cout << "Invalid string variable for PolytropeIc::GetValue" << std::endl;
-    return 0.0;
-  }
-}
-
-
-
-//=================================================================================================
 //  PolytropeIc::ComputeIsothermalLaneEmdenEquation
 /// Create initial conditions for binary accretion simulation.
 //=================================================================================================
