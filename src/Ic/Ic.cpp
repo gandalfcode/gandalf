@@ -647,7 +647,7 @@ void Ic<ndim>::AddCubicLattice
 
   // Set spacing between particle layers to be equally spaced (using x-direction to normalise)
   if (equalSpacing) {
-    for (k=0; k<ndim; k++) spacing[k] = (box.max[k] - box.min[k])/(FLOAT) Nlattice[0];
+    for (k=0; k<ndim; k++) spacing[k] = (box.max[0] - box.min[0])/(FLOAT) Nlattice[0];
   }
   // Set spacing between particle layers to fit bounding box
   else {

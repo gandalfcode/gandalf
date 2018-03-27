@@ -103,7 +103,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
   CreateRootRay(rootCell, rootCellSize, rootRay);
 
   // Add small offset to ensure ray in inside computational domain
-  for (int k=0; k<ndim; k++) rootRay.r[k] += 0.001*leafCellSize*dir[k];
+  for (int k=0; k<ndim; k++) rootRay.r[k] += 0.00001*leafCellSize*dir[k];
 
   //std::cout << "RAY : " << rootRay.dir[0] << "  " << radiationDirection << "   r : " << rootRay.r[0] << std::endl;
 
@@ -111,7 +111,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
   // ionisation integral value) or leave the computational domain.
   //-----------------------------------------------------------------------------------------------
   while (Nrays > 0) {
-    PlanarRay<ndim> &ray = rayStack[--Nrays];
+    PlanarRay<ndim> ray = rayStack[--Nrays];
     bool terminateRay = false;
 
     // Integrate current ray while (i) the integral is less than the limit which defines the
@@ -122,16 +122,19 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
 
       const int cc = tree->FindLeafCell(ray.r);
       const OctTreeCell<ndim> &cell = tree->celldata[cc];
-      const FLOAT cellSize = rootCellSize / pow(2, cell.level);
+
       //std::cout << "Investigating cell : " << cc << "  " << cell.rcell[0] << "  " <<  cell.cellBox.min[0] << "  " << cell.cellBox.max[0] << "  N : " << cell.N << std::endl;
+      //std::cout << "level : " << cell.level << std::endl;
 
       // If leaf cell level is deeper than ray (i.e. so cell/particle size is much smaller than
       // the ray beam width), then split ray into 2^(ndim - 1) child rays
       if (cell.level > ray.level) {
-        SplitRay(ray, cellSize, Nrays, rayStack);
+        const FLOAT rayWidth = rootCellSize / pow(2, ray.level);
+        SplitRay(ray, rayWidth, Nrays, rayStack);
         terminateRay = true;
       }
       else {
+        const FLOAT cellSize = rootCellSize / pow(2, cell.level);
         terminateRay = CellRayIntegration(cell, cellSize, ray, partdata);
         //std::cout << "ray;  level : " << ray.level << "   rayIntegral : " << ray.rayIntegral << "  " << maxIntegral << std::endl;
       }
@@ -356,7 +359,7 @@ bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
 template <int ndim, template<int> class ParticleType>
 void PlaneParallelRadiation<ndim,ParticleType>::SplitRay
  (const PlanarRay<ndim> &ray,                    ///< [in] ..
-  const FLOAT cellSize,                          ///< [in] ..
+  const FLOAT rayWidth,                          ///< [in] ..
   int &Nrays,                                    ///< [inout] ..
   PlanarRay<ndim> *rayStack)                     ///< [inout] ..
 {
@@ -368,40 +371,46 @@ void PlaneParallelRadiation<ndim,ParticleType>::SplitRay
   }
   // In 2d, split ray into 2 child rays separated by cell size
   else if (ndim == 2) {
+    //std::cout << "Ray pos : " << ray.r[0] << "  " << ray.r[1] << std::endl;
     PlanarRay<ndim> &childRay1 = rayStack[Nrays++];
     childRay1 = ray;
     childRay1.level++;
-    childRay1.r[ky] += (FLOAT) 0.5*cellSize;
-
+    //std::cout << "Child1 pos : " << childRay1.r[0] << "  " << childRay1.r[1] << std::endl;
+    childRay1.r[ky] += (FLOAT) 0.25*rayWidth;
+    //std::cout << "Ray pos (again) : " << ray.r[0] << "  " << ray.r[1] << std::endl;
     PlanarRay<ndim> &childRay2 = rayStack[Nrays++];
     childRay2 = ray;
     childRay2.level++;
-    childRay2.r[ky] -= (FLOAT) 0.5*cellSize;
+    //std::cout << "Child2 pos : " << childRay2.r[0] << "  " << childRay2.r[1] << std::endl;
+    childRay2.r[ky] -= (FLOAT) 0.25*rayWidth;
+    //std::cout << "Splitting ray; level : " << ray.level << "  rayWidth : " << rayWidth << "   ry : " << ray.r[ky] << "   child r : " << childRay1.r[ky] << "  " << childRay2.r[ky] << std::endl;
+    //int k;
+    //cin >> k;
   }
   else if (ndim == 3) {
     PlanarRay<ndim> &childRay1 = rayStack[Nrays++];
     childRay1 = ray;
     childRay1.level++;
-    childRay1.r[ky] += (FLOAT) 0.5*cellSize;
-    childRay1.r[kz] += (FLOAT) 0.5*cellSize;
+    childRay1.r[ky] += (FLOAT) 0.25*rayWidth;
+    childRay1.r[kz] += (FLOAT) 0.25*rayWidth;
 
     PlanarRay<ndim> &childRay2 = rayStack[Nrays++];
     childRay2 = ray;
     childRay2.level++;
-    childRay2.r[ky] -= (FLOAT) 0.5*cellSize;
-    childRay2.r[kz] += (FLOAT) 0.5*cellSize;
+    childRay2.r[ky] -= (FLOAT) 0.25*rayWidth;
+    childRay2.r[kz] += (FLOAT) 0.25*rayWidth;
 
     PlanarRay<ndim> &childRay3 = rayStack[Nrays++];
     childRay3 = ray;
     childRay3.level++;
-    childRay3.r[ky] += (FLOAT) 0.5*cellSize;
-    childRay3.r[kz] -= (FLOAT) 0.5*cellSize;
+    childRay3.r[ky] += (FLOAT) 0.25*rayWidth;
+    childRay3.r[kz] -= (FLOAT) 0.25*rayWidth;
 
     PlanarRay<ndim> &childRay4 = rayStack[Nrays++];
     childRay4 = ray;
     childRay4.level++;
-    childRay4.r[ky] -= (FLOAT) 0.5*cellSize;
-    childRay4.r[kz] -= (FLOAT) 0.5*cellSize;
+    childRay4.r[ky] -= (FLOAT) 0.25*rayWidth;
+    childRay4.r[kz] -= (FLOAT) 0.25*rayWidth;
   }
 
   return;
