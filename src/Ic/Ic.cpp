@@ -739,7 +739,7 @@ void Ic<ndim>::AddHexagonalLattice
       for (ii=0; ii<Nlattice[0]; ii++) {
         i = jj*Nlattice[0] + ii;
         r[ndim*i]     = box.min[0] + spacing[0]*
-          ((FLOAT) ii + (FLOAT) 0.5*(FLOAT) (jj%2) + (FLOAT) 0.5);
+          ((FLOAT) ii + (FLOAT) 0.5*(FLOAT) (jj%2) + (FLOAT) 0.25);
         r[ndim*i + 1] = box.min[1] + spacing[1]*((FLOAT)jj + (FLOAT) 0.5);
       }
     }

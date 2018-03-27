@@ -298,7 +298,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::CreateRootRay
 /// ...
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
+bool PlaneParallelRadiation<ndim,ParticleType>::SimpleCellRayIntegration
  (const OctTreeCell<ndim> &cell,                 ///< ..
   const FLOAT cellSize,                          ///< ..
   PlanarRay<ndim> &ray,                          ///< ..
@@ -308,6 +308,74 @@ bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
   if (cell.N > 0) {
     const FLOAT rho = cell.m / pow(cellSize, ndim);
     const FLOAT dIntegral = (FLOAT) 0.5*rho*cellSize;
+    if (ray.rayIntegral + dIntegral > maxIntegral) {
+      const FLOAT frac = (maxIntegral - ray.rayIntegral) / dIntegral;
+      for (int k=0; k<ndim; k++) ray.r[k] += frac*cellSize*ray.dir[k];
+      int i = cell.ifirst;
+      while (i != -1) {
+        FLOAT dr[ndim];
+        for (int k=0; k<ndim; k++) dr[k] = ray.r[k] - partdata[i].r[k];
+        const FLOAT dot = DotProduct(dr, ray.dir, ndim);
+        if (dot > (FLOAT) 0.0) {
+          partdata[i].ionstate = 1;
+          partdata[i].u = uion;
+          //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << std::endl;
+          numIonised++;
+        }
+        if (i == cell.ilast) break;
+        i = tree->inext[i];
+      };
+      //std::cout << "FRONT : " << ray.r[0] << "    numIonised : " << numIonised << std::endl;
+      return true;
+    }
+    else {
+      ray.rayIntegral += dIntegral;
+      for (int k=0; k<ndim; k++) ray.r[k] += cellSize*ray.dir[k];
+      //std::cout << "MOVING RAY : " << ray.r[0] << "   dir : " << ray.dir[0] << std::endl;
+      int i = cell.ifirst;
+      while (i != -1) {
+        partdata[i].ionstate = 1;
+        partdata[i].u = uion;
+        numIonised++;
+        //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << std::endl;
+        if (i == cell.ilast) break;
+        i = tree->inext[i];
+      };
+      return false;
+    }
+  }
+  else {
+    for (int k=0; k<ndim; k++) ray.r[k] += cellSize*ray.dir[k];
+    return false;
+  }
+}
+
+
+
+//=================================================================================================
+//  PlaneParallelRadiation::CellRayIntegration
+/// ...
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
+ (const OctTreeCell<ndim> &cell,                 ///< ..
+  const FLOAT cellSize,                          ///< ..
+  PlanarRay<ndim> &ray,                          ///< ..
+  ParticleType<ndim> *partdata)                  ///< ..
+{
+  // If leaf-cell is not empty, then compute mean density and compute integral contribution
+  if (cell.N > 0) {
+    FLOAT rho = (FLOAT) 0.0;
+
+    int i = cell.ifirst;
+    while (i != -1) {
+      rho += partdata[i].rho;
+      if (i == cell.ilast) break;
+      i = tree->inext[i];
+    };
+    rho /= (FLOAT) cell.N;
+    const FLOAT dIntegral = (FLOAT) 0.5*rho*cellSize;
+
     if (ray.rayIntegral + dIntegral > maxIntegral) {
       const FLOAT frac = (maxIntegral - ray.rayIntegral) / dIntegral;
       for (int k=0; k<ndim; k++) ray.r[k] += frac*cellSize*ray.dir[k];

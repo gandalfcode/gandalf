@@ -407,6 +407,7 @@ public:
 
   bool CellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &, ParticleType<ndim> *);
   void CreateRootRay(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &);
+  bool SimpleCellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &, ParticleType<ndim> *);
   void SplitRay(const PlanarRay<ndim> &, const FLOAT, int &, PlanarRay<ndim> *);
 
 };
