@@ -346,6 +346,8 @@ void Parameters::SetDefaultValues(void)
   // Radiation algortihm parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["radiation"] = "none";
+  intparams["min_ray_divisions"] = 1;
+  intparams["radiation_direction"] = 0;
   intparams["Nraditerations"] = 2;
   intparams["Nradlevels"] = 1;
   intparams["nradstep"] = 1;

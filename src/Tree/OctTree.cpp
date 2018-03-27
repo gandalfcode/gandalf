@@ -268,7 +268,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     ilast  = -1;
   }
 
-
   // Set properties for root cell before constructing tree
   Ncell  = 1;
   ltot   = 0;
@@ -277,16 +276,22 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].ilast  = _ilast;
   celldata[0].level  = 0;
   celldata[0].copen  = -1;
-  celldata[0].hmax = 0;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
+    celldata[0].bb.min[k] = bbmin[k];
+    celldata[0].bb.max[k] = bbmax[k];
     celldata[0].rcentre[k] = (FLOAT) 0.5*(celldata[0].bb.min[k] + celldata[0].bb.max[k]);
     cellSize = max(cellSize, celldata[0].bb.max[k] - celldata[0].rcentre[k]);
+    celldata[0].bb.min[k] = celldata[0].rcentre[k] - cellSize;
+    celldata[0].bb.max[k] = celldata[0].rcentre[k] + cellSize;
+    celldata[0].cellBox.min[k] = celldata[0].rcentre[k] - cellSize;
+    celldata[0].cellBox.max[k] = celldata[0].rcentre[k] + cellSize;
   }
   rootCellSize = (FLOAT) 2.0*cellSize;
 
+//std::cout << "ROOT BB : " << celldata[0].bb.min[0] << "  " << celldata[0].bb.max[0] << std::endl;
 
   // Build tree if there are any particles
   //-----------------------------------------------------------------------------------------------
@@ -303,7 +308,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     //---------------------------------------------------------------------------------------------
     while (!allDone) {
       cellSize *= (FLOAT) 0.5;
-
 
       // Loop over all unfinished cells to find new child cell occupancy
       //-------------------------------------------------------------------------------------------
@@ -352,6 +356,11 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
             }
           }
 
+          // Create cell volume boxes
+          for (kk=0; kk<ndim; kk++) celldata[cnew].cellBox.min[kk] = celldata[cnew].bb.min[kk];  //cell.rcentre[k] - 0.5*cellSize;
+          for (kk=0; kk<ndim; kk++) celldata[cnew].cellBox.max[kk] = celldata[cnew].bb.max[kk];  //cell.rcentre[kk] + 0.5*cellSize;
+          //std::cout << "CREATING CHILD WITH CELLBOX : " << cnew << "  " << celldata[cnew].cellBox.min[0] << "  " << celldata[cnew].cellBox.max[0] << std::endl;
+
         }
         //-----------------------------------------------------------------------------------------
 
@@ -391,7 +400,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
         //-----------------------------------------------------------------------------------------
 
 
-        // Set up linked lists from parent to children cells (avoiding empty cells)
+        // Set up linked lists from parent to children cells (including empty cells)
         cell.copen = Ncell + cc*Noctchild;
         for (k=0; k<Noctchild; k++) {
           cnew = Ncell + cc*Noctchild + k;
@@ -489,6 +498,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       cell.N        = 0;
       cell.m        = (FLOAT) 0.0;
       cell.hmax     = (FLOAT) 0.0;
+      cell.hmin     = big_number;
       cell.rmax     = (FLOAT) 0.0;
       cell.dhmaxdt  = (FLOAT) 0.0;
       cell.drmaxdt  = (FLOAT) 0.0;
@@ -539,6 +549,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             cell.N++;
             if (partdata[i].flags.check(active)) cell.Nactive++;
             cell.hmax = max(cell.hmax, partdata[i].h);
+            cell.hmin = min(cell.hmin, partdata[i].h);
             cell.maxsound = max(cell.maxsound, partdata[i].sound);
             if (gravmask[partdata[i].ptype]) {
               cell.m += partdata[i].m;
@@ -627,6 +638,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             for (k=0; k<ndim; k++) cell.r[k] += child.m*child.r[k];
             for (k=0; k<ndim; k++) cell.v[k] += child.m*child.v[k];
             cell.hmax = max(child.hmax, cell.hmax);
+            cell.hmin = min(child.hmin, cell.hmin);
             cell.maxsound = max(cell.maxsound,child.maxsound);
             if (gravity_mac == gadget2)
               cell.amin = min(cell.amin, child.amin);
@@ -756,6 +768,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 
       // Zero all summation variables for all cells
       cell.hmax = 0.0;
+      cell.hmin = big_number;
       for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
       for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
 
@@ -767,6 +780,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
         // Loop over all particles in cell summing their contributions
         while (i != -1) {
           cell.hmax = max(cell.hmax,partdata[i].h);
+          cell.hmin = min(cell.hmin,partdata[i].h);
           for (k=0; k<ndim; k++) {
             if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
               cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
@@ -797,6 +811,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
             for (k=0; k<ndim; k++) cell.hbox.min[k] = min(child.hbox.min[k],cell.hbox.min[k]);
             for (k=0; k<ndim; k++) cell.hbox.max[k] = max(child.hbox.max[k],cell.hbox.max[k]);
             cell.hmax = max(child.hmax,cell.hmax);
+            cell.hmin = max(child.hmin,cell.hmin);
           }
 
           cc = child.cnext;
@@ -814,6 +829,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 
   return;
 }
+
 
 
 //=================================================================================================
@@ -1001,6 +1017,11 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
           cout << "hmax flag error : " << c << "    "
                << partdata[i].h << "   " << cell.hmax << endl;
           ExceptionHandler::getIstance().raise("hmax flag error in OctTree");
+        }
+        if (partdata[i].h < cell.hmin) {
+          cout << "hmin flag error : " << c << "    "
+               << partdata[i].h << "   " << cell.hmin << endl;
+          ExceptionHandler::getIstance().raise("hmin flag error in OctTree");
         }
         for (k=0; k<ndim; k++) {
           if (partdata[i].r[k] < cell.bb.min[k] || partdata[i].r[k] > cell.bb.max[k]) {

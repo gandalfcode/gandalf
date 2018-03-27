@@ -1046,7 +1046,7 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
- (const FLOAT rp[ndim])
+ (const FLOAT rp[ndim])                          ///< [in] Position to find leaf cell
 {
   int cc = 0;                          // Cell counter (start at root cell)
 
@@ -1054,28 +1054,23 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
   //===============================================================================================
   while (cc < Ncell) {
 
-    // Check if bounding boxes overlap with each other
+    // Check if point is inside the cell under consideration
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(rp, rp, celldata[cc].bb.min, celldata[cc].bb.max)) {
+    if (PointInBox(rp, celldata[cc].cellBox)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
       }
 
-      // Ignore any empty cells
-      else if (celldata[cc].N == 0) {
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, add particles to list
+      // If leaf-cell, return cell array id
       else if (celldata[cc].copen == -1) {
         return cc;
       }
 
     }
 
-    // If not in range, then open next cell
+    // If point is not inside the cell, then open the next cell in the list
     //---------------------------------------------------------------------------------------------
     else {
       cc = celldata[cc].cnext;
@@ -1084,10 +1079,15 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
   };
   //===============================================================================================
 
+std::cout << "NOOO! : " << rp[0] << "  " << celldata[0].cellBox.min[0] << "  " << rp[0] - celldata[0].cellBox.min[0] << std::endl;
+exit(0);
   // If we've somehow not found a leaf cell (e.g. if particle is outside tree domain), then
   // return error code, -1
   return -1;
 }
+
+
+
 //=================================================================================================
 // Tree::GenerateBoundaryGhostParticles
 /// Creates the ghost particles by walking the tree. It checks whether the cell's smoothing
@@ -1097,7 +1097,7 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void Tree<ndim,ParticleType,TreeCell>::GenerateBoundaryGhostParticles
 (const FLOAT tghost,                              ///< [in] Ghost update time
- const FLOAT ghost_range,                         ///< [in] Smoothing range of ghosts to include
+ const FLOAT ghost_range,                         ///< [in] Smoothing range of ghosts  to include
  const int j,                                     ///< [in] Direction that we are searching for ghosts
  const DomainBox<ndim>& simbox,                   ///< [in] Simulation box domain.
  Hydrodynamics<ndim>* hydro)

@@ -482,6 +482,21 @@ inline bool ParticleInBox (const Particle<ndim>& part,const Box<ndim>& box)
 
 
 //=================================================================================================
+//  ParticleInBox
+//  ..
+//=================================================================================================
+template <int ndim>
+inline bool PointInBox (const FLOAT r[ndim], const Box<ndim>& box)
+{
+  for (int k=0; k<ndim; k++) {
+    if (r[k] < box.min[k] || r[k] >= box.max[k]) return false;
+  }
+  return true;
+}
+
+
+
+//=================================================================================================
 //  compute_displs
 /// Given a vector of counts, compute the displacement of the elements and save it
 /// in displs

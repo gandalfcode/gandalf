@@ -311,7 +311,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
        pow(simunits.t.outscale*simunits.t.outcgs,+2)/simunits.m.outscale*simunits.m.outcgs);
   }
   else if (gas_radiation == "plane_parallel") {
-    radiation = new PlaneParallelRadiation<ndim,MeshlessFVParticle>(simparams, hydro->kernp, mfvneib);
+    radiation = new PlaneParallelRadiation<ndim,MeshlessFVParticle>
+      (simparams, hydro->kernp, &simunits, mfvneib, timing);
   }
   else if (gas_radiation == "none") {
     radiation = new NullRadiation<ndim>();

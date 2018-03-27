@@ -270,8 +270,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
        floatparams["rayRadRes"], floatparams["relErr"], stringparams["errControl"],
        simbox, &simunits, simparams, sphneib);
   }
-  else if (gas_radiation == "plane_parallel") {
-    radiation = new PlaneParallelRadiation<ndim,GradhSphParticle>(simparams, sph->kernp, sphneib);
+  else if (gas_radiation == "plane_parallel" && tree_type == "octtree") {
+    radiation = new PlaneParallelRadiation<ndim,GradhSphParticle>
+      (simparams, sph->kernp, &simunits, sphneib, timing);
   }
   else if (gas_radiation == "ionisation" && ndim == 3) {
     radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>

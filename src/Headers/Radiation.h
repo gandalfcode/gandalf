@@ -38,6 +38,7 @@
 #include "DomainBox.h"
 #include "KDRadiationTree.h"
 #include "Nbody.h"
+#include "OctTree.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "RandomNumber.h"
@@ -45,6 +46,7 @@
 #include "Sinks.h"
 #include "SmoothingKernel.h"
 #include "SphNeighbourSearch.h"
+#include "Tree.h"
 #include "Particle.h"
 #include "NbodyParticle.h"
 using namespace std;
@@ -324,6 +326,42 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
 
 
+//===============================================================================================
+//  Class PlaneParallelRadiation
+/// \brief   Radiation photon packet data structure
+/// \author  D. A. Hubber
+/// \date    11/12/2017
+//===============================================================================================
+template <int ndim>
+class PlanarRay
+{
+public:
+
+  int level;                                   ///< Level of ray (with respect to OctTree level)
+  FLOAT rayIntegral;                           ///< Ionisation integral
+  FLOAT r[ndim];                               ///< Current position of ray
+  FLOAT dir[ndim];                             ///< Radiation propogation direction
+
+  PlanarRay()
+  {
+    level = 0;
+    rayIntegral = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) dir[k] = (FLOAT) 0.0;
+  }
+
+  inline void operator= (const PlanarRay<ndim> &other)
+  {
+    level = other.level;
+    rayIntegral = other.rayIntegral;
+    for (int k=0; k<ndim; k++) r[k] = other.r[k];
+    for (int k=0; k<ndim; k++) dir[k] = other.dir[k];
+  }
+
+};
+
+
+
 //=================================================================================================
 //  Class PlaneParallelRadiation
 /// \brief   ...
@@ -335,37 +373,30 @@ class PlaneParallelRadiation : public Radiation<ndim>
 {
 private:
 
-  //===============================================================================================
-  /// Radiation photon packet data structure
-  //===============================================================================================
-  struct PlanarRay
-  {
-    FLOAT rayIntegral;                   ///< ..
-    FLOAT r[ndim];                       ///< Current position of ray
-
-    PlanarRay()
-    {
-      rayIntegral = (FLOAT) 0.0;
-      for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
-    }
-  };
-
+  int kx, ky, kz;
+  int minRayDivisions;
+  int numIonised;
+  int radiationDirection;
   FLOAT arecomb;
   FLOAT NLyC;
-  FLOAT xmin;
   FLOAT maxIntegral;
   FLOAT uion;
 
+  CodeTiming *timing;
+  SimUnits *units;
   SmoothingKernel<ndim> *kern;
   NeighbourSearch<ndim> *neib;
-  //OctTree<ndim> *tree;
+  OctTree<ndim,ParticleType,OctTreeCell> *tree;
+
+  int DivideRay(PlanarRay<ndim> &, PlanarRay<ndim> *);
 
 
 public:
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  PlaneParallelRadiation(Parameters *, SmoothingKernel<ndim> *, NeighbourSearch<ndim> *);
+  PlaneParallelRadiation(Parameters *, SmoothingKernel<ndim> *, SimUnits*,
+                         NeighbourSearch<ndim> *, CodeTiming *);
   ~PlaneParallelRadiation();
 
 
@@ -373,6 +404,10 @@ public:
   //-----------------------------------------------------------------------------------------------
   virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *);
+
+  bool CellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &, ParticleType<ndim> *);
+  void CreateRootRay(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &);
+  void SplitRay(const PlanarRay<ndim> &, const FLOAT, int &, PlanarRay<ndim> *);
 
 };
 
