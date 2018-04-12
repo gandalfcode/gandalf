@@ -52,6 +52,10 @@ IonisingRadiation<ndim>::IonisingRadiation(Parameters* simparams, SimUnits *unit
     string message = "Unrecognised parameter : gas_eos = " + gas_eos;
     ExceptionHandler::getIstance().raise(message);
   }
+  mu_ion   = simparams->floatparams["mu_ion"];
+  temp_ion = simparams->floatparams["temp_ion"]/units->temp.outscale;
+  uion     = temp_ion/gammam1/mu_ion;
+  std::cout << "UION : " << uion << "  " << temp_ion << std::endl;
 }
 
 
@@ -78,7 +82,8 @@ FLOAT IonisingRadiation<ndim>::EntropicFunction(const EosParticleProxy<ndim>&par
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
   if (part.ionstate != 0) {
     FLOAT non_ionised = eos->SpecificInternalEnergy(part);
-    if (part.u > non_ionised) return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
+    //if (part.u > non_ionised) return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
+    if (uion > non_ionised) return gammam1*uion*pow(part.rho,(FLOAT) 1.0 - gamma);
     else return eos->EntropicFunction(part);
   }
   else return eos->EntropicFunction(part);
@@ -97,7 +102,8 @@ FLOAT IonisingRadiation<ndim>::SoundSpeed(const EosParticleProxy<ndim>&part)
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
   if (part.ionstate != 0) {
     FLOAT non_ionised = eos->SpecificInternalEnergy(part);
-    if (part.u > non_ionised) return sqrt(gammam1*part.u);
+    //if (part.u > non_ionised) return sqrt(gammam1*part.u);
+    if (uion > non_ionised) return sqrt(gammam1*uion);
     else return eos->SoundSpeed(part);;
   }
   else return eos->SoundSpeed(part);
@@ -115,11 +121,15 @@ FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndi
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
   if (part.ionstate != 0) {
     FLOAT non_ionised = eos->SpecificInternalEnergy(part);
-    //std::cout << "WTF?? : " << non_ionised << "  " << part.u << std::endl;
-    if (part.u > non_ionised) return part.u;
+    //std::cout << "IONISED? : " << non_ionised << "  " << uion << "  " << std::endl;
+    //if (part.u > non_ionised) return part.u;
+    if (uion > non_ionised) return uion;
     else return non_ionised;
   }
-  else return eos->SpecificInternalEnergy(part);
+  else {
+    //std::cout << "NOT IONISED? : " << eos->SpecificInternalEnergy(part) << std::endl;
+    return eos->SpecificInternalEnergy(part);
+  }
 }
 
 
@@ -135,7 +145,8 @@ FLOAT IonisingRadiation<ndim>::Temperature(const EosParticleProxy<ndim>&part)
   // If it has it compares this new internal energy to that of the EOS and chooses the largest.
   if (part.ionstate != 0) {
     FLOAT non_ionised = eos->SpecificInternalEnergy(part);
-    if (part.u > non_ionised) return part.u*gammam1/mu_bar;
+    //if (part.u > non_ionised) return part.u*gammam1/mu_bar;
+    if (uion > non_ionised) return uion*gammam1/mu_bar;
     else return eos->Temperature(part);
   }
   else return eos->Temperature(part);

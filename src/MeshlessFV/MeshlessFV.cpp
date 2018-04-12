@@ -97,25 +97,22 @@ void MeshlessFV<ndim>::AllocateMemory(int N)
 
   if (N > Nhydromax || !allocated) {
 
-    MeshlessFVParticle<ndim>* newhydrodata =
-        new struct MeshlessFVParticle<ndim>[N];
+    MeshlessFVParticle<ndim>* newhydrodata = new struct MeshlessFVParticle<ndim>[N];
 
     // Swap so that hydrodata points to the new memory
-    std::swap(newhydrodata, hydrodata) ;
+    std::swap(newhydrodata, hydrodata);
     if (allocated) {
       // Copy back particle data
       std::copy(newhydrodata,newhydrodata+Nhydromax,hydrodata);
       delete[] newhydrodata;
     }
 
-
-    Nhydromax=N;
+    Nhydromax        = N;
     allocated        = true;
     hydrodata_unsafe = hydrodata;
   }
   assert(Nhydromax >= Nhydro);
   assert(hydrodata);
-
 
   return;
 }
@@ -149,12 +146,10 @@ void MeshlessFV<ndim>::ComputeThermalProperties
  (MeshlessFVParticle<ndim> &part)          ///< [inout] Particle i data
 {
   // Skip non hydro particles
-  if (!types[part.ptype].hydro_forces)
-    return ;
+  if (!types[part.ptype].hydro_forces) return;
 
-
-  part.u     = eos->SpecificInternalEnergy(part);
-  part.sound = eos->SoundSpeed(part);
+  part.u        = eos->SpecificInternalEnergy(part);
+  part.sound    = eos->SoundSpeed(part);
   part.pressure = eos->Pressure(part);
 
   assert(part.u > (FLOAT) 0.0);
@@ -175,7 +170,6 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part, FLOAT Qcons[nvar])
 {
-
   part.m = Qcons[irho] ;
   part.rho = part.m*part.ndens;
   for (int k=0; k<ndim; k++) part.v[k] = Qcons[k]/part.m;

@@ -447,6 +447,9 @@ class IonisingRadiation: public EOS<ndim>
 
   FLOAT temp0;
   FLOAT mu_bar;
+  FLOAT mu_ion;
+  FLOAT temp_ion;
+  FLOAT uion;
   EOS<ndim> *eos;
 
 };

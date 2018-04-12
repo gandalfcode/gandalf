@@ -51,6 +51,8 @@ PlaneParallelRadiation<ndim,ParticleType>::PlaneParallelRadiation
   uion               = temp_ion/gammam1/mu_ion;
   maxIntegral        = NLyC / arecomb;
 
+  std::cout << "UION : " << uion << std::endl;
+
   tree = static_cast<OctTree<ndim,ParticleType,OctTreeCell>* > (neib->GetTree());
 }
 
@@ -92,6 +94,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
 
   // Set all particles to neutral before computing radiation properties
   for (int i=0; i<Nhydro; i++) partdata[i].ionstate = 0;
+    for (int i=0; i<Nhydro; i++) partdata[i].u = uion;
   numIonised = 0;
 
   // Start by creating rays from the root cell
@@ -228,7 +231,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
 
 
 //=================================================================================================
-//  PlaneParallelRadiation::CellRayIntegration
+//  PlaneParallelRadiation::CreateRootRay
 /// ...
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
