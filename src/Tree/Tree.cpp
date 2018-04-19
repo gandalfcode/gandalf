@@ -224,6 +224,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   assert(partdata != NULL);
   assert(neiblist != NULL);
 
+  // Exit immediately if we have overflowed the neighbour list buffer
+  if (Nneib == -1) return -1;
+
 
   //===============================================================================================
   while (cc < Ncell) {

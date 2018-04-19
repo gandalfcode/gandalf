@@ -380,7 +380,10 @@ private:
   FLOAT arecomb;
   FLOAT NLyC;
   FLOAT maxIntegral;
+  FLOAT rayStepMult;
   FLOAT uion;
+  FLOAT h_fac;
+  FLOAT invndim;
 
   CodeTiming *timing;
   SimUnits *units;
@@ -405,9 +408,11 @@ public:
   virtual void UpdateRadiationField(int, int, int, Particle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *);
 
-  bool CellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &, ParticleType<ndim> *);
+  FLOAT CalculateDensity(const int, ParticleType<ndim> *, FLOAT *, FLOAT &, FLOAT &);
+  bool CellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, const int, FLOAT &, PlanarRay<ndim> &, ParticleType<ndim> *);
   void CreateRootRay(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &);
-  bool SimpleCellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &, ParticleType<ndim> *);
+  bool ExpensiveCellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, const int, FLOAT &, PlanarRay<ndim> &, ParticleType<ndim> *);
+  bool SimpleCellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, const int, FLOAT &, PlanarRay<ndim> &, ParticleType<ndim> *);
   void SplitRay(const PlanarRay<ndim> &, const FLOAT, int &, PlanarRay<ndim> *);
 
 };

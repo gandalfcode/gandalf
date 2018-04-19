@@ -43,14 +43,16 @@ PlaneParallelRadiation<ndim,ParticleType>::PlaneParallelRadiation
   units              = _units;
   minRayDivisions    = params->intparams["min_ray_divisions"];
   radiationDirection = params->intparams["radiation_direction"];
+  rayStepMult        = params->floatparams["ray_step_mult"];
   NLyC               = params->floatparams["NLyC"];
   arecomb            = params->floatparams["arecomb"];
+  h_fac              = params->floatparams["h_fac"];
   FLOAT gammam1      = params->floatparams["gamma_eos"] - 1.0;
   FLOAT mu_ion       = params->floatparams["mu_ion"];
   FLOAT temp_ion     = params->floatparams["temp_ion"];
   uion               = temp_ion/gammam1/mu_ion;
   maxIntegral        = NLyC / arecomb;
-
+invndim = (FLOAT) 1.0 / (FLOAT) ndim;
   std::cout << "UION : " << uion << std::endl;
 
   tree = static_cast<OctTree<ndim,ParticleType,OctTreeCell>* > (neib->GetTree());
@@ -94,7 +96,6 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
 
   // Set all particles to neutral before computing radiation properties
   for (int i=0; i<Nhydro; i++) partdata[i].ionstate = 0;
-    for (int i=0; i<Nhydro; i++) partdata[i].u = uion;
   numIonised = 0;
 
   // Start by creating rays from the root cell
@@ -116,6 +117,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
   while (Nrays > 0) {
     PlanarRay<ndim> ray = rayStack[--Nrays];
     bool terminateRay = false;
+    FLOAT h = (FLOAT) 0.0;
 
     // Integrate current ray while (i) the integral is less than the limit which defines the
     // location of the ionisation front, (ii) the ray is still inside the computational domain,
@@ -138,7 +140,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
       }
       else {
         const FLOAT cellSize = rootCellSize / pow(2, cell.level);
-        terminateRay = CellRayIntegration(cell, cellSize, ray, partdata);
+        terminateRay = ExpensiveCellRayIntegration(cell, cellSize, Nhydro, h, ray, partdata);
         //std::cout << "ray;  level : " << ray.level << "   rayIntegral : " << ray.rayIntegral << "  " << maxIntegral << std::endl;
       }
 
@@ -148,80 +150,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
   }
   //-----------------------------------------------------------------------------------------------
 
-  //int k;
-  //cin >> k;
-
-  // Find initial position of ray based on the size of the tree root cell
-  /*for (int k=0; k<ndim; k++) ray.r[k] = (FLOAT) 0.5;
-  ray.r[0] = xmin;
-
-  // Initial ray points in positive x-direction
-  for (int k=0; k<ndim; k++) dir[k] = (FLOAT) 0.0;
-  dir[0] = (FLOAT) 1.0;
-
-  // For now, use minimum smoothing length of particles as constant step-size
-  FLOAT hmin = big_number;
-  FLOAT hmax = big_number;
-  for (int i=0; i<Nhydro; i++) {
-    hmin = min(hmin, partdata[i].h);
-    hmax = max(hmax, partdata[i].h);
-  }
-  FLOAT step = (FLOAT) 0.2*hmin;
-  FLOAT invhmaxsqd = (FLOAT) 1.0 / hmax / hmax;
-  FLOAT hfactor = pow((FLOAT) 1.0 / hmax, ndim);
-
-  // Compute density at initial place
-  FLOAT rho0 = (FLOAT) 0.0;
-  for (int i=0; i<Nhydro; i++) {
-    FLOAT dr[ndim];
-    for (int k=0; k<ndim; k++) dr[k] = ray.r[k] - partdata[i].r[k];
-    FLOAT drsqd = DotProduct(dr, dr, ndim);
-    FLOAT ssqd  = drsqd*invhmaxsqd;
-    rho0       += partdata[i].m*kern->w0_s2(ssqd);
-  }
-  rho0 *= hfactor;
-
-  // Ray-trace through the computational domain computing the ionisation integral
-  //-----------------------------------------------------------------------------------------------
-  do {
-
-    for (int k=0; k<ndim; k++) ray.r[k] += step*dir[k];
-
-    // Compute density at new point
-    FLOAT rho1 = (FLOAT) 0.0;
-    for (int i=0; i<Nhydro; i++) {
-      FLOAT dr[ndim];
-      for (int k=0; k<ndim; k++) dr[k] = ray.r[k] - partdata[i].r[k];
-      FLOAT drsqd = DotProduct(dr, dr, ndim);
-      FLOAT ssqd  = drsqd*invhmaxsqd;
-      rho1       += partdata[i].m*kern->w0_s2(ssqd);
-    }
-    rho1 *= hfactor;
-
-    FLOAT dIntegral = (FLOAT) 0.5*(rho0*rho0 + rho1*rho1)*step;
-    ray.rayIntegral += dIntegral;
-    numSteps++;
-    rho0 = rho1;
-
-  } while (ray.rayIntegral < maxIntegral && ray.r[0] < xmax);
-  //-----------------------------------------------------------------------------------------------
-
-  // Set ionisation fractions of particles based on position relative to ionisation front
-  for (int i=0; i<Nhydro; i++) {
-    if (partdata[i].r[0] > ray.r[0]) {
-      partdata[i].ionstate = 0;
-    }
-    else {
-      partdata[i].ionstate = 1;
-      partdata[i].u = uion;
-      numIonised++;
-      //std::cout << "FOUND IONISED PARTICLE : " << i << "  " << partdata[i].r[0] << std::endl;
-    }
-  }
-
-  std::cout << "NO. OF STEPS : " << numSteps << "  " << ray.rayIntegral << "   " << maxIntegral << std::endl;
-  std::cout << "NO. IONISED  : " << numIonised << "    r : " << ray.r[0] << std::endl;
-  */
+std::cout << "numIonised : " << numIonised << std::endl;
 
   delete[] rayStack;
 
@@ -304,6 +233,8 @@ template <int ndim, template<int> class ParticleType>
 bool PlaneParallelRadiation<ndim,ParticleType>::SimpleCellRayIntegration
  (const OctTreeCell<ndim> &cell,                 ///< ..
   const FLOAT cellSize,                          ///< ..
+  const int Nhydro,                              ///< ..
+  FLOAT &h,                                      ///< ..
   PlanarRay<ndim> &ray,                          ///< ..
   ParticleType<ndim> *partdata)                  ///< ..
 {
@@ -360,9 +291,103 @@ bool PlaneParallelRadiation<ndim,ParticleType>::SimpleCellRayIntegration
 /// ...
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
+bool PlaneParallelRadiation<ndim,ParticleType>::ExpensiveCellRayIntegration
+ (const OctTreeCell<ndim> &cell,                 ///< ..
+  const FLOAT cellSize,                          ///< ..
+  const int Nhydro,                              ///< ..
+  FLOAT &h,                                      ///< ..
+  PlanarRay<ndim> &ray,                          ///< ..
+  ParticleType<ndim> *partdata)                  ///< ..
+{
+  FLOAT rOrig[ndim];
+  for (int k=0; k<ndim; k++) rOrig[k] = ray.r[k];
+  assert(PointInBox(rOrig, cell.cellBox));
+
+  FLOAT nDens, rho0;
+  if (h < small_number) {
+    h = cellSize;
+  }
+  //std::cout << "Initial h : " << h << "  " << cellSize << "  " << cell.hmin << "  " << cell.N << "  " << ray.r[0] << "  id : " << cell.id << std::endl;
+  FLOAT xInt = (FLOAT) 0.0;
+  FLOAT rho1 = CalculateDensity(Nhydro, partdata, ray.r, h, nDens);
+  h = clamp(h, cell.hmin, cellSize);
+
+  //-----------------------------------------------------------------------------------------------
+  do {
+    FLOAT rnew[ndim];
+    FLOAT dxInt = std::min(rayStepMult*h, 1.000001*(cellSize - xInt));
+    for (int k=0; k<ndim; k++) rnew[k] = rOrig[k] + (xInt + dxInt)*ray.dir[k];
+
+    rho0 = rho1;
+    FLOAT rho1 = CalculateDensity(Nhydro, partdata, rnew, h, nDens);
+    h = clamp(h, cell.hmin, cellSize);
+    const FLOAT dIntegral = (FLOAT) 0.5*(rho0*rho0 + rho1*rho1)*dxInt;
+
+    //---------------------------------------------------------------------------------------------
+    if (ray.rayIntegral + dIntegral > maxIntegral) {
+      const FLOAT frac = (maxIntegral - ray.rayIntegral) / dIntegral;
+      xInt += frac*dxInt;
+      for (int k=0; k<ndim; k++) ray.r[k] = rOrig[k] + xInt*ray.dir[k];
+
+      //std::cout << "ION POS : " << xInt/cellSize << "  " << ray.r[0] << "  " << dIntegral << "  " << frac << std::endl;
+
+      // Set the ionisation states of all particles in the cell until the ionisation front
+      int i = cell.ifirst;
+      while (i != -1) {
+        FLOAT dr[ndim];
+        for (int k=0; k<ndim; k++) dr[k] = ray.r[k] - partdata[i].r[k];
+        const FLOAT dot = DotProduct(dr, ray.dir, ndim);
+        if (dot > (FLOAT) 0.0) {
+          partdata[i].ionstate = 1;
+          partdata[i].u = uion;
+          //std::cout << "IONISING FRONT : " << i << "   r : " << partdata[i].r[0] << "  " << ray.r[0] << std::endl;
+          numIonised++;
+        }
+        if (i == cell.ilast) break;
+        i = tree->inext[i];
+      };
+      //std::cout << "FRONT : " << ray.r[0] << "    numIonised : " << numIonised << std::endl;
+      //cin >> i;
+      return true;
+    }
+    //---------------------------------------------------------------------------------------------
+    else {
+      ray.rayIntegral += dIntegral;
+      xInt += dxInt;
+      for (int k=0; k<ndim; k++) ray.r[k] = rOrig[k] +  xInt*ray.dir[k];
+    }
+    //---------------------------------------------------------------------------------------------
+
+  } while (xInt < cellSize);
+  //-----------------------------------------------------------------------------------------------
+
+  // If ray has completely traversed the cell, then set all particles in the cell to ionised
+  int i = cell.ifirst;
+  while (i != -1) {
+    partdata[i].ionstate = 1;
+    partdata[i].u = uion;
+    numIonised++;
+    //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << "  " << ray.r[0] << std::endl;
+    if (i == cell.ilast) break;
+    i = tree->inext[i];
+  };
+  assert(!PointInBox(ray.r, cell.cellBox));
+
+  return false;
+}
+
+
+
+//=================================================================================================
+//  PlaneParallelRadiation::CellRayIntegration
+/// ...
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
 bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
  (const OctTreeCell<ndim> &cell,                 ///< ..
   const FLOAT cellSize,                          ///< ..
+  const int Nhydro,                              ///< ..
+  FLOAT &h,                                      ///< ..
   PlanarRay<ndim> &ray,                          ///< ..
   ParticleType<ndim> *partdata)                  ///< ..
 {
@@ -419,6 +444,64 @@ bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
     for (int k=0; k<ndim; k++) ray.r[k] += cellSize*ray.dir[k];
     return false;
   }
+}
+
+
+
+//=================================================================================================
+//  PlaneParallelRadiation::CalculateDensity
+/// Calculate the density at position 'r' using the smoothing legnthtr
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+FLOAT PlaneParallelRadiation<ndim,ParticleType>::CalculateDensity
+ (const int Nhydro,
+  ParticleType<ndim> *partdata,
+  FLOAT r[ndim],
+  FLOAT &h,
+  FLOAT &nDens)
+{
+  const FLOAT invh = (FLOAT) 1.0/h;
+  const FLOAT invhsqd = invh*invh;
+  const FLOAT hfactor = pow(invh, ndim);
+  FLOAT rsearch = kern->kernrange*h;
+  int Nneib = 0;
+  int Nneibmax = 128;
+  int *neiblist = new int[Nneibmax];
+  FLOAT rho = (FLOAT) 0.0;
+  nDens = (FLOAT) 0.0;
+
+
+  // Perform neighbour search (repeat if memory reallocation is needed)
+  //-----------------------------------------------------------------------------------------------
+  do {
+    Nneib = neib->GetGatherNeighbourList(r, rsearch, partdata, Nhydro, Nneibmax, neiblist);
+
+    if (Nneib == -1) {
+      delete[] neiblist;
+      Nneibmax = 2*Nneibmax;
+      neiblist = new int[Nneibmax];
+    }
+
+  } while (Nneib == -1);
+  //-----------------------------------------------------------------------------------------------
+
+  for (int j=0; j<Nneib; j++) {
+    int i = neiblist[j];
+    FLOAT dr[ndim];
+    for (int k=0; k<ndim; k++) dr[k] = r[k] - partdata[i].r[k];
+    FLOAT drsqd = DotProduct(dr, dr, ndim);
+    FLOAT ssqd  = drsqd*invhsqd;
+    rho        += partdata[i].m*kern->w0_s2(ssqd);
+    nDens      += kern->w0_s2(ssqd);
+  }
+  rho   *= hfactor;
+  nDens *= hfactor;
+  h     = h_fac*pow((FLOAT) 1.0/nDens, invndim);
+
+  //std::cout << "DENSITY : " << rho << "  " << nDens << "  " << h << "  " << invh << "   r : " << r[0] << std::endl;
+  delete[] neiblist;
+
+  return rho;
 }
 
 

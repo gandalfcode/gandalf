@@ -357,6 +357,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["arecomb"] = 2.7e-13;
   floatparams["NLyCmin"] = 1e47;
   floatparams["NLyC"] = 1e47;
+  floatparams["ray_step_mult"] = 0.5;
 
   // TreeRay algorithm parameters
   //-----------------------------------------------------------------------------------------------
