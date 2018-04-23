@@ -50,10 +50,13 @@ PlaneParallelRadiation<ndim,ParticleType>::PlaneParallelRadiation
   FLOAT gammam1      = params->floatparams["gamma_eos"] - 1.0;
   FLOAT mu_ion       = params->floatparams["mu_ion"];
   FLOAT temp_ion     = params->floatparams["temp_ion"];
+
+  // (TO-DO) Convert constants to dimensionless units
+
+  // Compute important quantities
   uion               = temp_ion/gammam1/mu_ion;
   maxIntegral        = NLyC / arecomb;
-invndim = (FLOAT) 1.0 / (FLOAT) ndim;
-  std::cout << "UION : " << uion << std::endl;
+  invndim = (FLOAT) 1.0 / (FLOAT) ndim;
 
   tree = static_cast<OctTree<ndim,ParticleType,OctTreeCell>* > (neib->GetTree());
 }
@@ -140,7 +143,7 @@ void PlaneParallelRadiation<ndim,ParticleType>::UpdateRadiationField
       }
       else {
         const FLOAT cellSize = rootCellSize / pow(2, cell.level);
-        terminateRay = ExpensiveCellRayIntegration(cell, cellSize, Nhydro, h, ray, partdata);
+        terminateRay = CellRayIntegration(cell, cellSize, Nhydro, h, ray, partdata);
         //std::cout << "ray;  level : " << ray.level << "   rayIntegral : " << ray.rayIntegral << "  " << maxIntegral << std::endl;
       }
 
@@ -227,10 +230,12 @@ void PlaneParallelRadiation<ndim,ParticleType>::CreateRootRay
 
 //=================================================================================================
 //  PlaneParallelRadiation::CellRayIntegration
-/// ...
+/// Calculates the radiation properties of a cell, using the cheap/fast method or
+/// slow/expensive method depending on the particle properties of the cell.
+/// (For now, uses cheap method for cells with particles, expensive method for empty cells).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-bool PlaneParallelRadiation<ndim,ParticleType>::SimpleCellRayIntegration
+bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
  (const OctTreeCell<ndim> &cell,                 ///< ..
   const FLOAT cellSize,                          ///< ..
   const int Nhydro,                              ///< ..
@@ -238,50 +243,12 @@ bool PlaneParallelRadiation<ndim,ParticleType>::SimpleCellRayIntegration
   PlanarRay<ndim> &ray,                          ///< ..
   ParticleType<ndim> *partdata)                  ///< ..
 {
-  // If leaf-cell is not empty, then compute mean density and compute integral contribution
-  if (cell.N > 0) {
-    const FLOAT rho = cell.m / pow(cellSize, ndim);
-    const FLOAT dIntegral = (FLOAT) 0.5*rho*cellSize;
-    if (ray.rayIntegral + dIntegral > maxIntegral) {
-      const FLOAT frac = (maxIntegral - ray.rayIntegral) / dIntegral;
-      for (int k=0; k<ndim; k++) ray.r[k] += frac*cellSize*ray.dir[k];
-      int i = cell.ifirst;
-      while (i != -1) {
-        FLOAT dr[ndim];
-        for (int k=0; k<ndim; k++) dr[k] = ray.r[k] - partdata[i].r[k];
-        const FLOAT dot = DotProduct(dr, ray.dir, ndim);
-        if (dot > (FLOAT) 0.0) {
-          partdata[i].ionstate = 1;
-          partdata[i].u = uion;
-          //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << std::endl;
-          numIonised++;
-        }
-        if (i == cell.ilast) break;
-        i = tree->inext[i];
-      };
-      //std::cout << "FRONT : " << ray.r[0] << "    numIonised : " << numIonised << std::endl;
-      return true;
-    }
-    else {
-      ray.rayIntegral += dIntegral;
-      for (int k=0; k<ndim; k++) ray.r[k] += cellSize*ray.dir[k];
-      //std::cout << "MOVING RAY : " << ray.r[0] << "   dir : " << ray.dir[0] << std::endl;
-      int i = cell.ifirst;
-      while (i != -1) {
-        partdata[i].ionstate = 1;
-        partdata[i].u = uion;
-        numIonised++;
-        //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << std::endl;
-        if (i == cell.ilast) break;
-        i = tree->inext[i];
-      };
-      return false;
-    }
-  }
-  else {
-    for (int k=0; k<ndim; k++) ray.r[k] += cellSize*ray.dir[k];
-    return false;
-  }
+  //if (cell.N > 0) {
+  //  CheapCellRayIntegration(cell, cellSize, Nhydro, h, ray, partdata);
+  //}
+  //else {
+    ExpensiveCellRayIntegration(cell, cellSize, Nhydro, h, ray, partdata);
+  //}
 }
 
 
@@ -383,7 +350,7 @@ bool PlaneParallelRadiation<ndim,ParticleType>::ExpensiveCellRayIntegration
 /// ...
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
+bool PlaneParallelRadiation<ndim,ParticleType>::CheapCellRayIntegration
  (const OctTreeCell<ndim> &cell,                 ///< ..
   const FLOAT cellSize,                          ///< ..
   const int Nhydro,                              ///< ..
@@ -391,59 +358,57 @@ bool PlaneParallelRadiation<ndim,ParticleType>::CellRayIntegration
   PlanarRay<ndim> &ray,                          ///< ..
   ParticleType<ndim> *partdata)                  ///< ..
 {
-  // If leaf-cell is not empty, then compute mean density and compute integral contribution
-  if (cell.N > 0) {
-    FLOAT rho = (FLOAT) 0.0;
+  assert(cell.N > 0);
+  assert(PointInBox(ray.r, cell.cellBox));
 
+  // Compute average density of particles inside cell and use for integral.
+  FLOAT rho = (FLOAT) 0.0;
+  int i = cell.ifirst;
+  while (i != -1) {
+    rho += partdata[i].rho;
+    if (i == cell.ilast) break;
+    i = tree->inext[i];
+  };
+  rho /= (FLOAT) cell.N;
+  const FLOAT dIntegral = rho*rho*cellSize;
+
+  if (ray.rayIntegral + dIntegral > maxIntegral) {
+    const FLOAT frac = (maxIntegral - ray.rayIntegral) / dIntegral;
+    for (int k=0; k<ndim; k++) ray.r[k] += frac*cellSize*ray.dir[k];
     int i = cell.ifirst;
     while (i != -1) {
-      rho += partdata[i].rho;
+      FLOAT dr[ndim];
+      for (int k=0; k<ndim; k++) dr[k] = ray.r[k] - partdata[i].r[k];
+      const FLOAT dot = DotProduct(dr, ray.dir, ndim);
+      if (dot > (FLOAT) 0.0) {
+        partdata[i].ionstate = 1;
+        partdata[i].u = uion;
+        //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << std::endl;
+        numIonised++;
+      }
       if (i == cell.ilast) break;
       i = tree->inext[i];
     };
-    rho /= (FLOAT) cell.N;
-    const FLOAT dIntegral = (FLOAT) 0.5*rho*cellSize;
-
-    if (ray.rayIntegral + dIntegral > maxIntegral) {
-      const FLOAT frac = (maxIntegral - ray.rayIntegral) / dIntegral;
-      for (int k=0; k<ndim; k++) ray.r[k] += frac*cellSize*ray.dir[k];
-      int i = cell.ifirst;
-      while (i != -1) {
-        FLOAT dr[ndim];
-        for (int k=0; k<ndim; k++) dr[k] = ray.r[k] - partdata[i].r[k];
-        const FLOAT dot = DotProduct(dr, ray.dir, ndim);
-        if (dot > (FLOAT) 0.0) {
-          partdata[i].ionstate = 1;
-          partdata[i].u = uion;
-          //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << std::endl;
-          numIonised++;
-        }
-        if (i == cell.ilast) break;
-        i = tree->inext[i];
-      };
-      //std::cout << "FRONT : " << ray.r[0] << "    numIonised : " << numIonised << std::endl;
-      return true;
-    }
-    else {
-      ray.rayIntegral += dIntegral;
-      for (int k=0; k<ndim; k++) ray.r[k] += cellSize*ray.dir[k];
-      //std::cout << "MOVING RAY : " << ray.r[0] << "   dir : " << ray.dir[0] << std::endl;
-      int i = cell.ifirst;
-      while (i != -1) {
-        partdata[i].ionstate = 1;
-        partdata[i].u = uion;
-        numIonised++;
-        //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << std::endl;
-        if (i == cell.ilast) break;
-        i = tree->inext[i];
-      };
-      return false;
-    }
+    //std::cout << "FRONT : " << ray.r[0] << "    numIonised : " << numIonised << std::endl;
+    return true;
   }
   else {
+    ray.rayIntegral += dIntegral;
     for (int k=0; k<ndim; k++) ray.r[k] += cellSize*ray.dir[k];
+    assert(!PointInBox(ray.r, cell.cellBox));
+    //std::cout << "MOVING RAY : " << ray.r[0] << "   dir : " << ray.dir[0] << std::endl;
+    int i = cell.ifirst;
+    while (i != -1) {
+      partdata[i].ionstate = 1;
+      partdata[i].u = uion;
+      numIonised++;
+      //std::cout << "IONISING : " << i << "   r : " << partdata[i].r[0] << std::endl;
+      if (i == cell.ilast) break;
+      i = tree->inext[i];
+    };
     return false;
   }
+
 }
 
 

@@ -410,9 +410,9 @@ public:
 
   FLOAT CalculateDensity(const int, ParticleType<ndim> *, FLOAT *, FLOAT &, FLOAT &);
   bool CellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, const int, FLOAT &, PlanarRay<ndim> &, ParticleType<ndim> *);
+  bool CheapCellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, const int, FLOAT &, PlanarRay<ndim> &, ParticleType<ndim> *);
   void CreateRootRay(const OctTreeCell<ndim> &, const FLOAT, PlanarRay<ndim> &);
   bool ExpensiveCellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, const int, FLOAT &, PlanarRay<ndim> &, ParticleType<ndim> *);
-  bool SimpleCellRayIntegration(const OctTreeCell<ndim> &, const FLOAT, const int, FLOAT &, PlanarRay<ndim> &, ParticleType<ndim> *);
   void SplitRay(const PlanarRay<ndim> &, const FLOAT, int &, PlanarRay<ndim> *);
 
 };
