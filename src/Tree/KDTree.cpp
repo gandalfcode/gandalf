@@ -1077,7 +1077,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   else {
     cell.mac = (FLOAT) 0.0;
   }
-  
+
 
   return;
 }

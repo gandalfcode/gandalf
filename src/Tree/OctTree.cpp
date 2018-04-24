@@ -441,14 +441,13 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
 
     delete[] celllist;
 
+    StockTree(celldata[0],partdata,true);
+#if defined(VERIFY_ALL)
+    ValidateTree(partdata);
+#endif
+
   }
   //-----------------------------------------------------------------------------------------------
-
-
-  StockTree(celldata[0],partdata,true);
-#if defined(VERIFY_ALL)
-  ValidateTree(partdata);
-#endif
 
   return;
 }

@@ -96,7 +96,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
-  assert(cactive <= tree->gtot);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) return;
