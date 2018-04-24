@@ -44,20 +44,27 @@ PlaneParallelRadiation<ndim,ParticleType>::PlaneParallelRadiation
   minRayDivisions    = params->intparams["min_ray_divisions"];
   radiationDirection = params->intparams["radiation_direction"];
   rayStepMult        = params->floatparams["ray_step_mult"];
-  NLyC               = params->floatparams["NLyC"];
+  FLyC               = params->floatparams["FLyC"];
   arecomb            = params->floatparams["arecomb"];
   h_fac              = params->floatparams["h_fac"];
   FLOAT gammam1      = params->floatparams["gamma_eos"] - 1.0;
   FLOAT mu_ion       = params->floatparams["mu_ion"];
   FLOAT temp_ion     = params->floatparams["temp_ion"];
 
-  // (TO-DO) Convert constants to dimensionless units
+  // Compute internal energy if ionised particles in dimensionless units
+  if (params->intparams["dimensionless"] == 1) {
+    uion        = temp_ion/gammam1/mu_ion;
+    maxIntegral = FLyC / arecomb;
+  }
+  else if (params->intparams["dimensionless"] == 0) {
+    temp_ion    /= (units->temp.inscale*units->temp.outSI);
+    uion         = temp_ion/gammam1/mu_ion;
+    maxIntegral  = FLyC *m_hydrogen*m_hydrogen / arecomb;
+    maxIntegral *= pow(units->r.inscale*units->r.outcgs, 5) /
+      pow(units->m.inscale*units->m.outcgs, 2);
+  }
 
-  // Compute important quantities
-  uion               = temp_ion/gammam1/mu_ion;
-  maxIntegral        = NLyC / arecomb;
   invndim = (FLOAT) 1.0 / (FLOAT) ndim;
-
   tree = static_cast<OctTree<ndim,ParticleType,OctTreeCell>* > (neib->GetTree());
 }
 

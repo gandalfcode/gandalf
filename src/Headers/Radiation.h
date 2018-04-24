@@ -378,7 +378,7 @@ private:
   int numIonised;
   int radiationDirection;
   FLOAT arecomb;
-  FLOAT NLyC;
+  FLOAT FLyC;
   FLOAT maxIntegral;
   FLOAT rayStepMult;
   FLOAT uion;
