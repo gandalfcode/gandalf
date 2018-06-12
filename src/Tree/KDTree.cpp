@@ -798,7 +798,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
         {
           // Lock the parent cell while we decide whether we can to do work on it yet.
           KDCellLock& work = worklist[parent];
-          OmpGuard(work.get_lock());
+          OmpGuard guard(work.get_lock());
           work.finished_child() ;
 
           if (work.ready())
