@@ -32,7 +32,7 @@
 #include "OpacityTable.h"
 #include "Particle.h"
 #include "SimUnits.h"
-
+#include "Flags.h"
 
 // Forward declaration of Hydrodynamics to break circular dependency
 template <int ndim>
@@ -119,7 +119,7 @@ struct EosParticleProxy {
     for (int i=0; i < ndim; ++i) v[i] = 0;
   }
   EosParticleProxy(Particle<ndim>& p)
-    : rho(p.rho), u(p.u), p(p.pressure), ionstate(p.ionstate)
+  : rho(p.rho), u(p.u), p(p.pressure), ionstate(p.flags.check(ionised))
   {
     for (int i=0; i < ndim; ++i) r[i] = p.r[i];
     for (int i=0; i < ndim; ++i) v[i] = p.v[i];

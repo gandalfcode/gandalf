@@ -831,14 +831,15 @@ FLOAT hmax)                        ///< [in] Maximum smoothing length
   typedef typename DustInterpolant<ndim, ParticleType,StoppingTime,Kernel>::DataType DataType;
 
   // Some basic sanity-checking in case of invalid input into routine
-  if (Nneib == 0)
-    return 0 ;
   assert(hmax > (FLOAT) 0.0);
   assert(!parti.flags.is_dead());
 
   FLOAT h = parti.h_dust ;
 
   int Nneib = ngbs.size();
+
+  if (Nneib == 0)
+    return 0 ;
 
   // Use a guess to prevent against unknown initial smoothing length
   if (h == 0)
@@ -1216,7 +1217,7 @@ class _DustFactoryStop
 {
 public:
 
-  DustBase<ndim>* ProcessParameters(Parameters * simparams, ParticleTypeRegister& types,
+  DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeRegister& types, SimUnits& units,
 				    TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
   {
     map<string, int> &intparams = simparams->intparams;
@@ -1225,26 +1226,26 @@ public:
 
     if (intparams["tabulated_kernel"] == 1) {
       _DustFactoryKern<ndim, ParticleType, StoppingTime, TabulatedKernel<ndim> > DF;
-      return DF.ProcessParameters(simparams, types, t, ghost, mpi_tree);
+      return DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree);
     }
 
     else if (intparams["tabulated_kernel"] == 0) {
       // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
-        _DustFactoryKern<ndim, ParticleType, StoppingTime, M4Kernel<ndim> > DF;
-        return DF.ProcessParameters(simparams, types, t, ghost, mpi_tree);
+	_DustFactoryKern<ndim, ParticleType, StoppingTime, M4Kernel<ndim> > DF;
+	return DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree);
       }
       else if (KernelName == "quintic") {
-        _DustFactoryKern<ndim, ParticleType, StoppingTime, QuinticKernel<ndim> > DF;
-        return DF.ProcessParameters(simparams, types, t, ghost, mpi_tree);
+	_DustFactoryKern<ndim, ParticleType, StoppingTime, QuinticKernel<ndim> > DF;
+	return DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree);
       }
       else if (KernelName == "gaussian") {
-        _DustFactoryKern<ndim, ParticleType, StoppingTime, GaussianKernel<ndim> > DF;
-        return DF.ProcessParameters(simparams, types, t, ghost, mpi_tree);
+	_DustFactoryKern<ndim, ParticleType, StoppingTime, GaussianKernel<ndim> > DF;
+	return DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree);
       }
       else {
-        string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
-        ExceptionHandler::getIstance().raise(message);
+	string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
       }
     }
 

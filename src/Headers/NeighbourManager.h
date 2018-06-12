@@ -549,7 +549,7 @@ private:
 
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
-      if (drsqd >= hrangesqdi && drsqd >= neibpart.hrangesqd) {
+      if (drsqd >= hrangesqdi && !_scatter_overlap(neibpart, drsqd, 0, gather_only())) {
         if (keep_grav) {
           if(gravmask[neibpart.ptype]) {
             directlist.push_back(i);

@@ -624,7 +624,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     part.level  = 0;
     part.nstep  = 0;
     part.nlast  = 0;
-    part.tlast  = t;
     part.dt     = 0;
     part.flags.set(active);
   }
