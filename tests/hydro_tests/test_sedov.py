@@ -17,7 +17,7 @@ class SedovTest(unittest.TestCase):
         errnorm=L1errornorm("sedov","R","press",xmin=0.4,xmax=1)
         self.assertLess(errnorm,self.expected_l1error)
 
-class SedovMeshlessTest(SedovTest):
+class _SedovMeshlessTest(SedovTest):
     def setUp(self):
         self.sim=newsim(paramfile="tests/hydro_tests/sedov.dat",sim='meshlessfv')
         self.run_id="SEDOV_MESHLESS"

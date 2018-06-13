@@ -778,6 +778,8 @@ template class EnergyRadws<3, GradhSphParticle>;
 template class EnergyRadws<1, SM2012SphParticle>;
 template class EnergyRadws<2, SM2012SphParticle>;
 template class EnergyRadws<3, SM2012SphParticle>;
+/*
 template class EnergyRadws<1, MeshlessFVParticle>;
 template class EnergyRadws<2, MeshlessFVParticle>;
 template class EnergyRadws<3, MeshlessFVParticle>;
+*/

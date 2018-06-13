@@ -98,6 +98,7 @@ SimulationBase* SimulationBase::SimulationFactory
     if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<1>(params);
     }
+    /*
     else if (simtype == "sm2012sph") {
       return new SM2012SphSimulation<1>(params);
     }
@@ -107,6 +108,7 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<1>(params);
     }
+    */
     else if (simtype == "nbody") {
       return new NbodySimulation<1>(params);
     }
@@ -115,6 +117,7 @@ SimulationBase* SimulationBase::SimulationFactory
     if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<2>(params);
     }
+    /*
     else if (simtype == "sm2012sph") {
       return new SM2012SphSimulation<2>(params);
     }
@@ -124,6 +127,7 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<2>(params);
     }
+    */
     else if (simtype == "nbody") {
       return new NbodySimulation<2>(params);
     }
@@ -132,6 +136,7 @@ SimulationBase* SimulationBase::SimulationFactory
     if (simtype == "gradhsph" || simtype == "sph") {
       return new GradhSphSimulation<3>(params);
     }
+    /*
     else if (simtype == "sm2012sph") {
       return new SM2012SphSimulation<3>(params);
     }
@@ -141,6 +146,7 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "mfvrk") {
       return new MfvRungeKuttaSimulation<3>(params);
     }
+    */
     else if (simtype == "nbody") {
       return new NbodySimulation<3>(params);
     }

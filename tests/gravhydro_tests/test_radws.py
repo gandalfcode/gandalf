@@ -2,7 +2,7 @@ from gandalf.analysis.facade import *
 from gandalf.analysis.compute import L1errornorm
 import unittest
 
-class RadwsTest(unittest.TestCase):
+class _RadwsTest(unittest.TestCase):
     rho_c = 8.88283823757e-14
     U_c   = 148076.49794
     tmax  = 78931.3355517
@@ -38,7 +38,7 @@ class RadwsTest(unittest.TestCase):
         self.assertLess( abs(1 - rho_c/self.rho_c) , self.tol)
         self.assertLess( abs(1 - U_c/self.U_c)     , self.tol)
 
-class Radws_mfm(RadwsTest):
+class _Radws_mfm(_RadwsTest):
     rho_c = 2.02672009908e-13 
     U_c   = 155461.06611
     tmax  = 76101.3956448

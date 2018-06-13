@@ -36,7 +36,7 @@ class JeansTest_SPHRelative(JeansTest):
 #    params = { 'gravity_mac' : 'eigenmac' }
 
 
-class JeansTest_Meshless(JeansTest):
+class _JeansTest_Meshless(JeansTest):
     sim = 'mfvmuscl'
     run_id = "JEANS_MFM"
     expected_l1error = 7e-3
