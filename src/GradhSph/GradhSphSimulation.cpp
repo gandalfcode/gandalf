@@ -115,10 +115,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       stringparams["gas_eos"] == "disc_locally_isothermal") {
     energy_integration = false;
   }
-  else if (stringparams["gas_eos"] == "energy_eqn") {
-    energy_integration = true;
-  }
-  else if (stringparams["gas_eos"] == "radws") {
+  else if (stringparams["gas_eos"] == "energy_eqn" || stringparams["gas_eos"] == "radws") {
     energy_integration = (stringparams["energy_integration"] == "null" ||
                           stringparams["energy_integration"] == "none");
   } else {
@@ -199,6 +196,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["energy_integration"] == "radws") {
     uint = new EnergyRadws<ndim, GradhSphParticle>
       (simparams, &simunits, (Radws<ndim> *)sph->eos, radfb);
+  }
+  else if (stringparams["energy_integration"] == "beta_cooling"){
+      uint = new BetaCooling<ndim, GradhSphParticle>(simparams, &simunits);
   }
   else if (stringparams["energy_integration"] == "null" ||
            stringparams["energy_integration"] == "none") {

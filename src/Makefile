@@ -202,6 +202,7 @@ OBJ += SM2012SphTree.o
 OBJ += Ewald.o
 OBJ += AdiabaticEOS.o BarotropicEOS.o Barotropic2EOS.o
 OBJ += PolytropicEOS.o IsothermalEOS.o RadwsEOS.o LocallyIsothermal.o DiscLocallyIsothermal.o RadiativeFB.o
+OBJ += BetaCooling.o
 OBJ += IonisingRadiationEOS.o
 OBJ += MultipleSourceIonisation.o
 OBJ += KDRadiationTree.o

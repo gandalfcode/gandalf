@@ -272,6 +272,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["radws_table"] = "eos.bell.cc.dat";
   intparams["lombardi_method"] = 0;
   floatparams["temp_ambient"] = 5.0;
+  floatparams["BetaCoolingParam"] = 10.0;
 
   // Artificial viscosity parameters
   //-----------------------------------------------------------------------------------------------

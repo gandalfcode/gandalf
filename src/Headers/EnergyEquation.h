@@ -30,6 +30,7 @@
 #include "CodeTiming.h"
 #include "EOS.h"
 #include "Hydrodynamics.h"
+#include "Nbody.h"
 #include "Particle.h"
 #include "Precision.h"
 #include "RadiativeFB.h"
@@ -53,7 +54,7 @@ class EnergyEquation
   virtual void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual DOUBLE Timestep(Particle<ndim> &) = 0;
-
+  virtual void SetNbody(Nbody<ndim>*) {} ;
 
   const DOUBLE energy_mult;            ///< Explicit integration timestep multiplier
   CodeTiming *timing;                  ///< Pointer to code timing object
@@ -178,6 +179,32 @@ class EnergyRadws<ndim, MeshlessFVParticle> : public EnergyRadwsBase<ndim> {
 } ;
 
 
+//=================================================================================================
+//  BetaCooling
+/// Simple cooling time model for discs
+//=================================================================================================
+template<int ndim, template <int> class ParticleType>
+class BetaCooling
+: public EnergyEquation<ndim>
+{
+  using EnergyEquation<ndim>::timing;
+public:
+  BetaCooling(Parameters* params, SimUnits* units);
+  virtual ~BetaCooling(){};
+
+  void EnergyIntegration(const int,  const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void EnergyCorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *){};
+  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
+
+  void SetNbody(Nbody<ndim>* nbody_) {
+    nbody = nbody_ ;
+  }
+private:
+
+  FLOAT Beta ;
+  Nbody<ndim>* nbody;
+};
 
 //=================================================================================================
 //  NullEnergy

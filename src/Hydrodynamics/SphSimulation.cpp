@@ -175,6 +175,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // Set radative feedback pointer to sinks
   if (radfb) radfb->SetSinks(sinks);
 
+  if (uint) uint->SetNbody(nbody);
+
   // Set pointers to timing object
   nbody->timing   = timing;
   if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph") {

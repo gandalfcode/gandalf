@@ -1,0 +1,90 @@
+#----------------------------------------
+# Creates a disc setup for GI
+#----------------------------------------
+
+
+#-----------------------------
+# Simulation type variables
+#-----------------------------
+Simulation run id string                    : run_id = GI_DISC
+Select SPH simulation                       : sim = gradhsph
+Ndim                          		    : ndim = 3
+Number of particles			    : Nhydro = 1000000
+
+#-----------------------------
+# Units variables
+#-----------------------------
+
+Dimensionsless					: dimensionless = 1
+
+
+#-----------------------------
+# Initial conditions
+#-----------------------------
+Select shocktube initial conditions         : ic = disc
+Disc mass	 	 		    : DiscIcMass = 0.1
+Disc inner edge				    : DiscIcRin  = 5.0
+Disc outer edge				    : DiscIcRout = 100.0
+     	   				    : DiscIcPlanet = 0
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 6.2832e5
+Regular snapshot output frequency           : dt_snap = 628.32
+Time for first snapshot                     : tsnapfirst = 0.0
+Screen output frequency (in no. of steps)   : noutputstep = 32
+Output file format                          : out_file_form = su
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces            : hydro_forces = 1
+Main gas thermal physics treatment         : gas_eos = energy_eqn
+Use bet cooling 	 		   : energy_integration = beta_cooling
+Beta cooling param			   : BetaCoolingParam = 10.
+
+Ratio of specific heats of gas (not used)  : gamma_eos = 1.666666667
+
+#----------------------------------------
+# Kernel options
+#----------------------------------------
+Tabulate SPH kernel                         : tabulated_kernel = 1
+Smoothing kernel choice			    : kernel = quintic
+Smoothing length iteration tolerance        : h_converge = 0.01
+    	      	     	       		    : h_fac = 1.2
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH Courant timestep condition multiplier   : courant_mult = 0.2
+SPH acceleration condition multiplier       : accel_mult = 0.1
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 10
+
+
+#---------------------
+# Optimisation options
+#---------------------
+SPH neighbour search algorithm              : neib_search = kdtree
+Build tree every step                       : ntreebuildstep = 8
+Stock tree every step                       : ntreestockstep = 1
+
+#--------------
+# Tree / Gravity
+#--------------
+Include self-gravity of gas              : self_gravity = 1
+Use quadrupole for accuracy		 : multipole = quadrupole
+Use a reasonable value for safety	 : thetamaxsqd = 0.49
+Use the gadget_mac for accuracy		 : gravity_mac = gadget2
+Use a reasonable mac-error estimate	 : macerror = 0.0001
+      		 	   		 : Nleafmax = 8
+
+#--------------
+# Nbody options
+#--------------
+Use a sink particle for the star	: sink_particles = 1
+No sink creation    	    		: create_sinks = 0
+Standard sink integration		: nbody = lfkdk
