@@ -4,7 +4,7 @@ from dustywave_sol import DustyWave
 import numpy as np
 import matplotlib.pyplot as plt
 
-
+"""
 class DustyWaveTest(unittest.TestCase):
     def setUp(self):
         self.sim=newsim("tests/dust_tests/dustywave.dat")
@@ -45,7 +45,7 @@ class DustyWaveTestParticleTest(DustyWaveTest):
         self.expected_l1error_gas  = 2.4e-6
         self.expected_l1error_dust = 5.4e-7
 
-"""
+
 class DustyWaveTestMeshless(DustyWaveTest):
     def setUp(self):
         self.sim=newsim("tests/dust_tests/dustywave_meshless.dat")
