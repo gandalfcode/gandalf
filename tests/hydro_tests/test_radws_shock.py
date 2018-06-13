@@ -4,7 +4,8 @@ import unittest
 
 ## For this test there is no analytical solution, so we will just compare
 ## the meshless to SPH...
-class _RadWS_Shock(unittest.TestCase):
+"""
+class RadWS_Shock(unittest.TestCase):
     def setUp(self):
         self.expected_l1error_1 = 3e-3
         self.expected_l1error_2 = 3e-3
@@ -40,3 +41,4 @@ class _RadWS_Shock(unittest.TestCase):
 
         self.assertLess(L1_1, self.expected_l1error_1)
         self.assertLess(L1_2, self.expected_l1error_2)
+"""

@@ -18,7 +18,8 @@ class SoundWaveTest(unittest.TestCase):
         errnorm=L1errornorm("soundwave","x","rho",0.01,0.99)
         self.assertLess(errnorm,self.expected_l1error)
 
-class _SoundWaveMeshlessTest(SoundWaveTest):
+"""
+class SoundWaveMeshlessTest(SoundWaveTest):
     def setUp(self):
         self.sim=newsim(paramfile="tests/hydro_tests/soundwave.dat",sim='meshlessfv',ndim=1)
         self.sim.SetParam("Nhydro",64)
@@ -27,3 +28,4 @@ class _SoundWaveMeshlessTest(SoundWaveTest):
         self.run_id="SOUNDWAVE_MESHLESS"
         self.sim.SetParam("run_id",self.run_id)
         self.expected_l1error = 2e-3
+"""
