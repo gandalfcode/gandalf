@@ -38,7 +38,6 @@
 #include "Parameters.h"
 #include "Particle.h"
 #include "Precision.h"
-#include "RiemannSolver.h"
 #include "SlopeLimiter.h"
 #include "SmoothingKernel.h"
 #if defined _OPENMP
@@ -86,10 +85,6 @@ public:
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
-  const FLOAT eta_eos;                           ///< Polytropic index
-  const FLOAT gamma_eos;                         ///< gamma, ratio of specific heats
-  const FLOAT gammam1;                           ///< gamma - 1
-
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
@@ -106,11 +101,8 @@ public:
 
   // Other functions
   //-----------------------------------------------------------------------------------------------
-  void CalculateFluxVectorFromPrimitive(const FLOAT Wprim[nvar], FLOAT flux[nvar][ndim]);
-  void CalculatePrimitiveTimeDerivative(const FLOAT Wprim[nvar], const FLOAT gradW[nvar][ndim], FLOAT Wdot[nvar]);
-  void ConvertConservedToPrimitive(const FLOAT, const FLOAT Qcons[nvar], FLOAT Wprim[nvar]);
-  void ConvertPrimitiveToConserved(const FLOAT, const FLOAT Wprim[nvar], FLOAT Qcons[nvar]);
-
+  void CalculatePrimitiveTimeDerivative(const FLOAT Wprim[nvar], const FLOAT gradW[nvar][ndim],
+                                        const FLOAT c_s, FLOAT Wdot[nvar]);
 
 };
 #endif

@@ -32,7 +32,8 @@
 //=================================================================================================
 template <int ndim>
 Polytropic<ndim>::Polytropic(Parameters* simparams, SimUnits *units):
-  EOS<ndim>(simparams->floatparams["eta_eos"], simparams->floatparams["gamma_eos"]),
+  EOS<ndim>(simparams->floatparams["eta_eos"]),
+  eta(simparams->floatparams["gamma_eos"]),
   Kpoly(simparams->floatparams["Kpoly"])
 {
 }
@@ -55,7 +56,7 @@ Polytropic<ndim>::~Polytropic()
 /// Calculates and returns thermal pressure of referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Polytropic<ndim>::Pressure(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::Pressure(const EosParticleProxy<ndim>&part)
 {
   return Kpoly*pow(part.rho, eta);
 }
@@ -67,7 +68,7 @@ FLOAT Polytropic<ndim>::Pressure(Particle<ndim> &part)
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Polytropic<ndim>::EntropicFunction(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::EntropicFunction(const EosParticleProxy<ndim>&part)
 {
   return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
@@ -79,7 +80,7 @@ FLOAT Polytropic<ndim>::EntropicFunction(Particle<ndim> &part)
 /// Returns Polytropic sound speed of referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Polytropic<ndim>::SoundSpeed(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::SoundSpeed(const EosParticleProxy<ndim>&part)
 {
   return sqrt(gammam1*part.u);
 }
@@ -91,7 +92,7 @@ FLOAT Polytropic<ndim>::SoundSpeed(Particle<ndim> &part)
 /// Returns specific internal energy of referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Polytropic<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndim>&part)
 {
   return Kpoly*pow(part.rho, gammam1)/gammam1;
 }
@@ -103,7 +104,7 @@ FLOAT Polytropic<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 /// Return Polytropic temperature, temp0, for referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Polytropic<ndim>::Temperature(Particle<ndim> &part)
+FLOAT Polytropic<ndim>::Temperature(const EosParticleProxy<ndim>&part)
 {
   return gammam1*part.u;
 }

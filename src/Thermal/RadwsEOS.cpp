@@ -29,26 +29,38 @@
 
 //=================================================================================================
 //  Radws::Radws()
-/// Default constructor for perfect gas EOS.  Passes and sets important
-/// thermal physics variables.
+/// Default constructor for the RadWS equation of state which employs the use of an opacity table.
 //=================================================================================================
 template <int ndim>
-Radws<ndim>::Radws(Parameters* simparams, SimUnits *units):
-  EOS<ndim>(simparams->floatparams["gamma_eos"]),
-  temp0(simparams->floatparams["temp0"]/units->temp.outscale),
-  mu_bar(simparams->floatparams["mu_bar"])
+Radws<ndim>::Radws(Parameters* simparams, SimUnits *units) :
+  EOS<ndim>(simparams->floatparams["gamma_eos"])
 {
+  opacity_table = new OpacityTable<ndim>(simparams, units);
 }
 
 
 
 //=================================================================================================
-//  Radws::Radws()
+//  Radws::~Radws()
 //=================================================================================================
 template <int ndim>
 Radws<ndim>::~Radws()
 {
+  delete opacity_table;
 }
+
+
+//=================================================================================================
+//  Radws::Pressure
+/// Returns pressure of a particle based on a variable gamma
+//=================================================================================================
+template <int ndim>
+FLOAT Radws<ndim>::Pressure(const EosParticleProxy<ndim>&part)
+{
+  FLOAT gamma = opacity_table->GetGamma(part);
+  return (gamma - 1.0) * part.rho * part.u;
+}
+
 
 
 //=================================================================================================
@@ -57,9 +69,10 @@ Radws<ndim>::~Radws()
 /// referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Radws<ndim>::EntropicFunction(Particle<ndim> &part)
+FLOAT Radws<ndim>::EntropicFunction(const EosParticleProxy<ndim>&part)
 {
-  return gammam1*part.u*pow(part.rho, (FLOAT) 1.0 - gamma);
+  FLOAT gamma = opacity_table->GetGamma(part);
+  return (gamma - 1.0)*part.u*pow(part.rho, (FLOAT) (1.0 - gamma));
 }
 
 
@@ -69,9 +82,11 @@ FLOAT Radws<ndim>::EntropicFunction(Particle<ndim> &part)
 /// Returns adiabatic sound speed of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Radws<ndim>::SoundSpeed(Particle<ndim> &part)
+FLOAT Radws<ndim>::SoundSpeed(const EosParticleProxy<ndim>&part)
 {
-  return sqrt(gamma*gammam1*part.u);
+  FLOAT gamma = opacity_table->GetGamma(part);
+  FLOAT gamma1 = opacity_table->GetGamma1(part);
+  return sqrt(gamma1*(gamma - 1.0)*part.u);
 }
 
 
@@ -81,7 +96,7 @@ FLOAT Radws<ndim>::SoundSpeed(Particle<ndim> &part)
 /// Returns specific internal energy of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Radws<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
+FLOAT Radws<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndim>&part)
 {
   return part.u;
 }
@@ -93,11 +108,21 @@ FLOAT Radws<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 /// Returns temperature of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Radws<ndim>::Temperature(Particle<ndim> &part)
+FLOAT Radws<ndim>::Temperature(const EosParticleProxy<ndim>&part)
 {
-  return gammam1*part.u*part.mu_bar;
+  FLOAT gamma = opacity_table->GetGamma(part);
+  FLOAT mu_bar = opacity_table->GetMuBar(part);
+  return (gamma - 1.0)*part.u*mu_bar;
 }
 
+//=================================================================================================
+//  Radws::InternalEnergyFromPressure
+/// Invert pressure to get internal energy
+//==============================================================================================
+template <int ndim>
+FLOAT Radws<ndim>::InternalEnergyFromPressure(const EosParticleProxy<ndim>&p){
+  return opacity_table->GetEnergyFromPressure(p.rho, p.p);
+}
 
 
 template class Radws<1>;

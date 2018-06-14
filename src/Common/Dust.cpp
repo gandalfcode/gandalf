@@ -840,7 +840,7 @@ FLOAT hmax)                        ///< [in] Maximum smoothing length
 
   if (Nneib == 0)
     return 0 ;
-  
+
   // Use a guess to prevent against unknown initial smoothing length
   if (h == 0)
     h = 0.5 * hmax ;
@@ -1148,16 +1148,22 @@ template<int ndim, template<int> class ParticleType, class StoppingTime, class K
 class _DustFactoryKern
 {
 public:
-  DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeRegister& types,
-      TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
-      {
-    map<string, double> &floatparams = simparams->floatparams;
-    map<string, string> &stringparams = simparams->stringparams;
+DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeRegister& types, SimUnits& units,
+							      TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
+{
+	map<string, double> &floatparams = simparams->floatparams;
+	map<string, string> &stringparams = simparams->stringparams;
     map<string, int> &intparams = simparams->intparams;
-    string KernelName = stringparams["kernel"];
-    string DustForces = stringparams["dust_forces"];
+	string KernelName = stringparams["kernel"];
+	string DustForces = stringparams["dust_forces"];
+    string DragLaw = stringparams["drag_law"];
 
-    double K_D  = floatparams["drag_coeff"] ;
+
+	double K_D  = floatparams["drag_coeff"] ;
+	if (intparams["dimensionless"] == 0 && DragLaw == "epstein") {
+	  // sigma is mass / area, K_D is area / mass
+	  K_D = 1 / units.sigma.CGS_to_CodeUnits(1 / K_D);
+	}
 
     if (DustForces == "test_particle")
     {
@@ -1211,45 +1217,45 @@ class _DustFactoryStop
 {
 public:
 
-  DustBase<ndim>* ProcessParameters(Parameters * simparams, ParticleTypeRegister& types,
-      TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
-      {
-    map<string, int> &intparams = simparams->intparams;
-    map<string, string> &stringparams = simparams->stringparams;
-    string KernelName = stringparams["kernel"];
+DustBase<ndim>* ProcessParameters(Parameters* simparams, ParticleTypeRegister& types, SimUnits& units,
+							      TreeBase<ndim>* t, TreeBase<ndim>* ghost, TreeBase<ndim>* mpi_tree)
+{
+	map<string, int> &intparams = simparams->intparams;
+	map<string, string> &stringparams = simparams->stringparams;
+	string KernelName = stringparams["kernel"];
 
-    if (intparams["tabulated_kernel"] == 1) {
-      _DustFactoryKern<ndim, ParticleType, StoppingTime, TabulatedKernel<ndim> > DF;
-      return DF.ProcessParameters(simparams, types, t, ghost, mpi_tree);
-    }
+	if (intparams["tabulated_kernel"] == 1) {
+		_DustFactoryKern<ndim, ParticleType, StoppingTime, TabulatedKernel<ndim> > DF;
+		return DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree);
+	  }
 
-    else if (intparams["tabulated_kernel"] == 0) {
-      // Depending on the kernel, instantiate a different GradSph object
-      if (KernelName == "m4") {
-        _DustFactoryKern<ndim, ParticleType, StoppingTime, M4Kernel<ndim> > DF;
-        return DF.ProcessParameters(simparams, types, t, ghost, mpi_tree);
-      }
-      else if (KernelName == "quintic") {
-        _DustFactoryKern<ndim, ParticleType, StoppingTime, QuinticKernel<ndim> > DF;
-        return DF.ProcessParameters(simparams, types, t, ghost, mpi_tree);
-      }
-      else if (KernelName == "gaussian") {
-        _DustFactoryKern<ndim, ParticleType, StoppingTime, GaussianKernel<ndim> > DF;
-        return DF.ProcessParameters(simparams, types, t, ghost, mpi_tree);
-      }
-      else {
-        string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
-        ExceptionHandler::getIstance().raise(message);
-      }
-    }
+	  else if (intparams["tabulated_kernel"] == 0) {
+	    // Depending on the kernel, instantiate a different GradSph object
+	    if (KernelName == "m4") {
+			_DustFactoryKern<ndim, ParticleType, StoppingTime, M4Kernel<ndim> > DF;
+			return DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree);
+	    }
+	    else if (KernelName == "quintic") {
+			_DustFactoryKern<ndim, ParticleType, StoppingTime, QuinticKernel<ndim> > DF;
+			return DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree);
+	    }
+	    else if (KernelName == "gaussian") {
+			_DustFactoryKern<ndim, ParticleType, StoppingTime, GaussianKernel<ndim> > DF;
+			return DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree);
+	    }
+	    else {
+	      string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
+	      ExceptionHandler::getIstance().raise(message);
+	    }
+	  }
 
-    else {
-      string message = "Invalid option for the tabulated_kernel parameter: " +
-          stringparams["tabulated_kernel"];
-      ExceptionHandler::getIstance().raise(message);
-    }
-    return NULL ;
-      }
+	  else {
+	    string message = "Invalid option for the tabulated_kernel parameter: " +
+	      stringparams["tabulated_kernel"];
+	    ExceptionHandler::getIstance().raise(message);
+	  }
+	return NULL ;
+}
 };
 
 
@@ -1263,59 +1269,60 @@ public:
 template<int ndim, template<int> class ParticleType>
 DustBase<ndim>* DustFactory<ndim, ParticleType>::ProcessParameters
 (Parameters * simparams,
-    CodeTiming * timing,
-    ParticleTypeRegister& types,
-    DomainBox<ndim>& simbox,
-    TreeBase<ndim>* t,
-    TreeBase<ndim>* ghost,
-    TreeBase<ndim>* mpi_tree)
-    {
-  map<string, int> &intparams = simparams->intparams;
-  map<string, string> &stringparams = simparams->stringparams;
-  string DragLaw = stringparams["drag_law"];
+CodeTiming * timing,
+SimUnits& units,
+ParticleTypeRegister& types,
+DomainBox<ndim>& simbox,
+TreeBase<ndim>* t,
+TreeBase<ndim>* ghost,
+TreeBase<ndim>* mpi_tree)
+{
+	map<string, int> &intparams = simparams->intparams;
+	map<string, string> &stringparams = simparams->stringparams;
+	string DragLaw = stringparams["drag_law"];
 
-  if (stringparams["dust_forces"] == "none")
-    return NULL ;
+	if (stringparams["dust_forces"] == "none")
+		return NULL ;
 
-  if (IsAnyBoundaryReflecting(simbox)) {
-    ExceptionHandler::getIstance().raise(
-        "Error: Dust does not work with reflecting boundaries");
-  }
+	if (IsAnyBoundaryReflecting(simbox)) {
+	  ExceptionHandler::getIstance().raise(
+	      "Error: Dust does not work with reflecting boundaries");
+	}
 
 
-  if (intparams["dimensionless"] == 0){
-    ExceptionHandler::getIstance().raise("Error: Non-dimensionless simulations with dust are "
-        "not currently supported") ;
-  }
+	if (intparams["dimensionless"] == 0 && DragLaw != "epstein"){
+	  ExceptionHandler::getIstance().raise("Error: Non-dimensionless simulations with dust are "
+			  	  	  	  	  	  	  	   "only supported with epstein drag") ;
+	}
 
-  DustBase<ndim> * dust_forces ;
+	DustBase<ndim> * dust_forces ;
 
-  // Depending on the kernel, instantiate a different GradSph object
-  if (DragLaw == "fixed") {
-    _DustFactoryStop<ndim, ParticleType, FixedDrag> DF ;
-    dust_forces = DF.ProcessParameters(simparams, types, t, ghost, mpi_tree) ;
-  }
-  else if (DragLaw == "density") {
-    _DustFactoryStop<ndim, ParticleType, DensityDrag> DF ;
-    dust_forces = DF.ProcessParameters(simparams, types, t, ghost, mpi_tree) ;
-  }
-  else if (DragLaw == "epstein") {
-    _DustFactoryStop<ndim, ParticleType, EpsteinDrag> DF ;
-    dust_forces = DF.ProcessParameters(simparams, types, t, ghost, mpi_tree) ;
-  }
-  else if (DragLaw == "LP2012") {
-    _DustFactoryStop<ndim, ParticleType, LP12_Drag> DF ;
-    dust_forces = DF.ProcessParameters(simparams, types, t, ghost, mpi_tree) ;
-  }
-  else {
-    string message = "Unrecognised parameter : drag_law = " + simparams->stringparams["drag_law"];
-    ExceptionHandler::getIstance().raise(message);
-    return NULL ;
-  }
+	// Depending on the kernel, instantiate a different GradSph object
+	if (DragLaw == "fixed") {
+		_DustFactoryStop<ndim, ParticleType, FixedDrag> DF ;
+		dust_forces = DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree) ;
+	}
+	else if (DragLaw == "density") {
+		_DustFactoryStop<ndim, ParticleType, DensityDrag> DF ;
+		dust_forces = DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree) ;
+	}
+	else if (DragLaw == "epstein") {
+		_DustFactoryStop<ndim, ParticleType, EpsteinDrag> DF ;
+		dust_forces = DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree) ;
+	}
+	else if (DragLaw == "LP2012") {
+	    _DustFactoryStop<ndim, ParticleType, LP12_Drag> DF ;
+	    dust_forces = DF.ProcessParameters(simparams, types, units, t, ghost, mpi_tree) ;
+	}
+	else {
+		string message = "Unrecognised parameter : drag_law = " + simparams->stringparams["drag_law"];
+		ExceptionHandler::getIstance().raise(message);
+		return NULL ;
+	}
 
-  dust_forces->timing = timing ;
-  return dust_forces ;
-    }
+	dust_forces->timing = timing ;
+	return dust_forces ;
+}
 
 template class DustFactory<1, GradhSphParticle> ;
 template class DustFactory<2, GradhSphParticle> ;

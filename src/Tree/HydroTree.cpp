@@ -909,6 +909,7 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
         for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].atree[k];
         for (k=0; k<ndim; k++) partdata[i].atree[k] += activepart[j].atree[k];
         partdata[i].gpot += activepart[j].gpot;
+        partdata[i].gpot_hydro += activepart[j].gpot;
       }
 
     }

@@ -119,8 +119,8 @@ MeshlessFV<ndim>*  _MeshlessFactorySlopes
 template<int ndim, template<int> class Kernel>
 MeshlessFV<ndim>* _MeshlessTimeIntegFactory
 (Parameters* simparams,
-    SimUnits& simunits)
-    {
+ SimUnits& simunits)
+{
   string sim = simparams->stringparams["sim"];
 
   if (sim == "meshlessfv" || sim == "mfvmuscl") {
@@ -134,7 +134,7 @@ MeshlessFV<ndim>* _MeshlessTimeIntegFactory
   ExceptionHandler::getIstance().raise(message);
 
   return NULL ;
-    }
+}
 
 
 // Create the full Meshless forces object in a type by type way.
@@ -224,6 +224,27 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   // Meshless-time integration object
   hydroint = new MfvIntegration<ndim, MeshlessFVParticle>(simparams);
 
+  // Set-up the cooling / energy integration object
+  //===============================================================================================
+  radfb = NULL ;
+  if (stringparams["energy_integration"] == "radws") {
+    // Radiative feedback object
+    if (intparams["rad_fb"])
+      radfb = new RadiativeFB<ndim>(&simunits, simparams);
+
+    uint = new EnergyRadws<ndim, MeshlessFVParticle>
+        (simparams, &simunits, (Radws<ndim> *)mfv->eos, radfb);
+  }
+  else if (stringparams["energy_integration"] == "null" ||
+      stringparams["energy_integration"] == "none") {
+    uint = new NullEnergy<ndim>(floatparams["energy_mult"]);
+  }
+  else {
+    string message = "Unrecognised parameter : energy_integration = "
+        + simparams->stringparams["energy_integration"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
   string tree_type = stringparams["neib_search"] ;
@@ -258,8 +279,9 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 #endif
 
   // Setup the dust
-  mfvdust = DustFactory<ndim, MeshlessFVParticle>::ProcessParameters(simparams, timing, mfv->types,
-                                                                     simbox, t, gt, mpit) ;
+  mfvdust = DustFactory<ndim, MeshlessFVParticle>::ProcessParameters(simparams, timing, simunits,
+                                                                     mfv->types, simbox,
+                                                                     t, gt, mpit) ;
 
 #if defined MPI_PARALLEL
  if (mfvdust != NULL) mfvdust->SetMpiControl(mpicontrol);
@@ -288,6 +310,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   // Set eos pointer to nbody
   mfv->eos->set_nbody_data(nbody);
+
 
 
   // Set all other hydro parameter variables
@@ -353,6 +376,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  if (radfb) radfb->SetSinks(sinks);
+
 
   // Set pointers to timing object
   nbody->timing    = timing;
@@ -361,7 +386,7 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   mfv->timing      = timing;
   hydro->timing    = timing;
   hydroint->timing = timing;
-  mfvneib->SetTimingObject(timing);
+  uint->timing = timing;
   //}*/
 
   // Create ghost particle object
@@ -418,7 +443,9 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   if (rank == 0) {
     MeshlessFVParticle<ndim> *partdata = mfv->GetMeshlessFVParticleArray();
     for (i=0; i<mfv->Nhydro; i++) {
-      partdata[i].iorig = i;
+      if (not restart) {
+        partdata[i].iorig = i;
+      }
       partdata[i].flags.set(active);
       partdata[i].flags.set(update_density) ;
       partdata[i].gpot = big_number;
@@ -583,6 +610,22 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   nbody->LoadStellarPropertiesTable(&simunits);
   nbody->UpdateStellarProperties();
 
+  for (i=0; i<mfv->Ntot; i++) {
+    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+    for (k=0; k<ndim; k++) {
+      part.a[k] = (FLOAT) 0.0;
+      part.atree[k] = (FLOAT) 0.0;
+      part.rdmdt[k] = 0.0;
+      part.rdmdt0[k] = 0.0;
+    }
+    for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim+2; k++) part.dQdt[k] = (FLOAT) 0.0;
+    part.level  = 0;
+    part.nstep  = 0;
+    part.nlast  = 0;
+    part.dt     = 0;
+    part.flags.set(active);
+  }
 
   // Compute all initial hydro terms
   // We will need to iterate if we are going to use a relative opening criterion
@@ -596,22 +639,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     else
       mfvneib->SetOpeningCriterion(mac_type) ;
 
-    for (i=0; i<mfv->Ntot; i++) {
-      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-      for (k=0; k<ndim; k++) {
-        part.a[k] = (FLOAT) 0.0;
-        part.atree[k] = (FLOAT) 0.0;
-        part.rdmdt[k] = 0.0;
-        part.rdmdt0[k] = 0.0;
-      }
-      for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
-      for (k=0; k<ndim+2; k++) part.dQdt[k] = (FLOAT) 0.0;
-      part.level  = 0;
-      part.nstep  = 0;
-      part.nlast  = 0;
-      part.flags.set(active);
-    }
-    for (i=0; i<mfv->Nhydro; i++) mfv->GetMeshlessFVParticlePointer(i).flags.set(active);
+    // Copy all other data from real hydro particles to ghosts
+    LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
 
     mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, timestep, mfv);
 #ifdef MPI_PARALLEL
@@ -642,7 +671,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     if (mfv->self_gravity == 1 || nbody->Nnbody > 0) {
-
       mfv->ZeroAccelerations();
 
 #ifdef MPI_PARALLEL
@@ -739,6 +767,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Call EndTimestep to set all 'beginning-of-step' variables
+  uint->EndTimestep(n, t, timestep, mfv);
   hydroint->EndTimestep(n, t, timestep, mfv);
   nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
 

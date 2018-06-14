@@ -39,7 +39,6 @@
 #include "NeighbourManager.h"
 #include "Parameters.h"
 #include "Precision.h"
-#include "RiemannSolver.h"
 #include "SimUnits.h"
 #include "SmoothingKernel.h"
 #if defined _OPENMP

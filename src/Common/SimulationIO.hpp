@@ -368,7 +368,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
     MPI_File_get_position(file, &end_sph_mpi);
     end_sph = end_sph_mpi;
   }
-  MPI_Bcast(&end_sph, 1, MPI_INT, Nmpi-1, MPI_COMM_WORLD);
+  MPI_Bcast(&end_sph, sizeof(end_sph), MPI_BYTE, Nmpi-1, MPI_COMM_WORLD);
 
 
   // Write data for Nbody particles
@@ -847,14 +847,19 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
       sink_data_length = 12 + 2*ndim;  //+ 2*dmdt_range_aux;
       int ii;
       FLOAT sdata[sink_data_length];
-      for (ii=0; ii<6; ii++) infile >> idata[ii];
+      int junk[6] = { 2, 2, 0, sink_data_length, 0, 0} ;
+      for (ii=0; ii<6; ii++) {
+        int itmp;
+        infile >> itmp;
+        assert(itmp == junk[ii]);
+      }
       if (nbody->Nstar > 0) {
         for (i=0; i<nbody->Nstar; i++) {
           for (ii=0; ii<2; ii++) {
             char boolean;
             infile >> boolean;
           }
-          for (ii=0; ii<2; ii++) infile >> idata[ii];
+          for (ii=0; ii<2; ii++) infile >> junk[ii];
           for (ii=0; ii<sink_data_length; ii++) infile >> sdata[ii];
           for (k=0; k<ndim; k++) nbody->stardata[i].r[k] = sdata[k+1];
           for (k=0; k<ndim; k++) nbody->stardata[i].v[k] = sdata[k+1+ndim];
@@ -1499,8 +1504,12 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
       int sink_data_length = 12 + 2*ndim;  //+ 2*dmdt_range_aux;
       int ii;
       FLOAT sdata[sink_data_length];
-      int idata[50];
-      for (ii=0; ii<6; ii++) reader.read_value(idata[ii]);
+      int junk[6] = {2,2,0, sink_data_length, 0,0};
+      for (ii=0; ii<6; ii++) {
+        int itmp;
+        reader.read_value(itmp);
+        assert(itmp == junk[ii]);
+      }
       if (nbody->Nstar > 0) {
         for (int i=0; i<nbody->Nstar; i++) {
           //Logical flags
@@ -1508,7 +1517,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
             int boolean;
             reader.read_value(boolean);
           }
-          for (ii=0; ii<2; ii++) reader.read_value(idata[ii]);
+          for (ii=0; ii<2; ii++) reader.read_value(junk[ii]);
           for (ii=0; ii<sink_data_length; ii++) reader.read_value(sdata[ii]);
           for (int k=0; k<ndim; k++) nbody->stardata[i].r[k] = sdata[k+1];
           for (int k=0; k<ndim; k++) nbody->stardata[i].v[k] = sdata[k+1+ndim];

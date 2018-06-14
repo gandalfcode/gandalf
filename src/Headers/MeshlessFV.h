@@ -82,8 +82,6 @@ public:
   using Hydrodynamics<ndim>::self_gravity;
   using Hydrodynamics<ndim>::size_hydro_part;
   using Hydrodynamics<ndim>::types;
-  using FV<ndim>::gamma_eos;
-  using FV<ndim>::gammam1;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -192,8 +190,6 @@ class MfvCommon : public MeshlessFV<ndim>
  public:
 
   using MeshlessFV<ndim>::allocated;
-  using MeshlessFV<ndim>::gamma_eos;
-  using MeshlessFV<ndim>::gammam1;
   using MeshlessFV<ndim>::h_converge;
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
@@ -276,8 +272,6 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::hmin_sink;
   using MeshlessFV<ndim>::allocated;
-  using MeshlessFV<ndim>::gamma_eos;
-  using MeshlessFV<ndim>::gammam1;
   using MeshlessFV<ndim>::h_converge;
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
@@ -352,8 +346,6 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using Hydrodynamics<ndim>::create_sinks;
   using Hydrodynamics<ndim>::hmin_sink;
   using MeshlessFV<ndim>::allocated;
-  using MeshlessFV<ndim>::gamma_eos;
-  using MeshlessFV<ndim>::gammam1;
   using MeshlessFV<ndim>::h_converge;
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
@@ -419,7 +411,7 @@ inline void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &pa
 {
   for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
   part.Wprim[irho] = part.rho;
-  part.Wprim[ipress] = part.press;
+  part.Wprim[ipress] = part.pressure;
 }
 
 

@@ -54,9 +54,11 @@ if __name__=="__main__":
 
     # Plot the numerical and analytical solutions
     plt.plot(x_gas, vx_gas,           'k.')
+    x_gas.sort()
     plt.plot(x_gas, sol.v_gas(x_gas), 'k' )
 
     plt.plot(x_dust, vx_dust,            'r.')
+    x_dust.sort()
     plt.plot(x_dust, sol.v_dust(x_dust), 'r' )
     
     plt.xlabel('x')

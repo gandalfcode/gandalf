@@ -30,6 +30,7 @@
 #include "Constants.h"
 #include "CodeTiming.h"
 #include "InlineFuncs.h"
+#include "SimUnits.h"
 #include "Tree.h"
 
 template<int ndim> class MpiControl;
@@ -72,7 +73,7 @@ template<int ndim, template<int> class ParticleType>
 class DustFactory
 {
 public:
-  static DustBase<ndim>* ProcessParameters(Parameters* params, CodeTiming* timing,
+  static DustBase<ndim>* ProcessParameters(Parameters* params, CodeTiming* timing, SimUnits& units,
 		  	  	  	  	  	  	  	  	   ParticleTypeRegister& types,
 		  	  	  	  	  	  	  	  	   DomainBox<ndim>& simbox,
 							               TreeBase<ndim>* t, TreeBase<ndim>* ghost,

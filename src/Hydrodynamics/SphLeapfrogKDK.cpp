@@ -45,8 +45,8 @@ using namespace std;
 template <int ndim, template <int> class ParticleType>
 SphLeapfrogKDK<ndim, ParticleType>::SphLeapfrogKDK
  (DOUBLE _accel_mult, DOUBLE _courant_mult, DOUBLE _energy_mult,
-  eosenum _gas_eos, tdaviscenum _tdavisc) :
-  SphIntegration<ndim>(_accel_mult, _courant_mult, _energy_mult, _gas_eos, _tdavisc)
+  bool _energy_integration, tdaviscenum _tdavisc) :
+  SphIntegration<ndim>(_accel_mult, _courant_mult, _energy_mult, _energy_integration, _tdavisc)
 {
 }
 
@@ -109,7 +109,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
     if (tdavisc != notdav) part.alpha += part.dalphadt*timestep;
 
     // Integrate explicit energy equation
-    if (gas_eos == energy_eqn) part.u = part.u0 + part.dudt0*dt;
+    if (energy_integration) part.u = part.u0 + part.dudt0*dt;
 
     // Set particle as active at end of step
     if (dn == nstep) part.flags.set(active);
@@ -161,7 +161,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
     if (dn == nstep) {
       for (k=0; k<ndim; k++) part.v[k] += 0.5 * part.dt * (part.a[k] - part.a0[k]);
 
-      if (gas_eos == energy_eqn) {
+      if (energy_integration) {
         part.u     += 0.5*(part.dudt - part.dudt0) * part.dt; //timestep*(FLOAT) nstep;
 
         // In spurious cases where correction term can lead to negative energies, simply use
@@ -251,7 +251,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
 
       // If using an adiabatic energy equation, then explictly integrate the internal energy
-      if (gas_eos == energy_eqn) {
+      if (energy_integration) {
         part.u     += 0.5*(part.dudt - part.dudt0) * part.dt; //timestep*(FLOAT) nstep;
 
         // In spurious cases where correction term can lead to negative energies, simply use

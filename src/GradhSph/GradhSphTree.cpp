@@ -549,7 +549,10 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         neibmanager.ComputeFastMultipoleForces(Nactive, activepart, sph->types) ;
       }
 
-
+      // Set gpot_hydro (RadWS) before sink contribution
+      for (int j=0; j<Nactive; j++) {
+        activepart[j].gpot_hydro = activepart[j].gpot;
+      }
 
       // Compute all star forces for active particles
       if (nbody->Nnbody > 0) {
@@ -567,6 +570,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         for (int k=0; k<ndim; k++) sphdata[i].a[k]     += activepart[j].atree[k];
         for (int k=0; k<ndim; k++) sphdata[i].atree[k] += activepart[j].atree[k];
         sphdata[i].gpot  += activepart[j].gpot;
+        sphdata[i].gpot_hydro += activepart[j].gpot_hydro;
         sphdata[i].dudt  += activepart[j].dudt;
         sphdata[i].div_v += activepart[j].div_v;
         levelneib[i]      = max(levelneib[i],activepart[j].levelneib);

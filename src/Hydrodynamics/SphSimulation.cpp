@@ -172,6 +172,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Set radative feedback pointer to sinks
+  if (radfb) radfb->SetSinks(sinks);
 
   // Set pointers to timing object
   nbody->timing   = timing;
@@ -212,7 +214,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   sph->DeleteDeadParticles();
 
   // Set iorig
-  if (rank == 0) {
+  if (rank == 0 && not restart) {
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).iorig = i;
   }
 
@@ -411,7 +413,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       part.div_v     = (FLOAT) 0.0;
       part.dudt      = (FLOAT) 0.0;
       part.gpot      = (FLOAT) 0.0;
-      part.mu_bar    = (FLOAT) simparams->floatparams["mu_bar"];
       for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) part.atree[k] = (FLOAT) 0.0;
     }
@@ -588,6 +589,8 @@ void SphSimulation<ndim>::MainLoop(void)
   hydroint->AdvanceParticles(n, (FLOAT) t, (FLOAT) timestep, sph);
   nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
+  // Update radiative feedback object with sink data
+  if (radfb) radfb->SetSinks(sinks);
 
   // Add any new particles into the simulation here (e.g. Supernova, wind feedback, etc..).
   //-----------------------------------------------------------------------------------------------

@@ -38,9 +38,6 @@ template <int ndim>
 UniformIc<ndim>::UniformIc(Simulation<ndim>* _sim, FLOAT _invndim) :
   Ic<ndim>(_sim, _invndim)
 {
-  if (simparams->intparams["dimensionless"] == 0) {
-    ExceptionHandler::getIstance().raise("dimensionless units required");
-  }
 }
 
 
@@ -58,6 +55,9 @@ void UniformIc<ndim>::Generate(void)
 
   //-----------------------------------------------------------------------------------------------
   if (ic == "box") {
+    if (simparams->intparams["dimensionless"] == 0) {
+      ExceptionHandler::getIstance().raise("dimensionless units required");
+    }
     int i,k;                          // Particle and dimension counters
     int Nbox;                         // No. of particles in box
     int Nlattice[3];                  // Particles per dimension for LHS lattice

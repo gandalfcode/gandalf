@@ -333,7 +333,7 @@ void GradhSph<ndim, kernelclass>::ComputeThermalProperties
   if (part.ptype != dust_type) {
     part.u       = eos->SpecificInternalEnergy(part);
     part.sound   = eos->SoundSpeed(part);
-    part.pfactor = eos->Pressure(part)*part.invomega/(part.rho*part.rho);
+    part.pressure = eos->Pressure(part);
   }
 
   return;
@@ -394,7 +394,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     parti.div_v -= neibpart[j].m*dvdr*wkerni;
 
     // Main SPH pressure force term
-    paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
+    paux = ((parti.pressure*parti.invomega)/(parti.rho*parti.rho))*wkerni +
+      ((neibpart[j].pressure*neibpart[j].invomega)/(neibpart[j].rho*neibpart[j].rho))*wkernj;
 
     // Add dissipation terms (for approaching particle pairs)
     //---------------------------------------------------------------------------------------------
@@ -423,7 +424,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
       else if (acond == price2008) {
         parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
           winvrho*(invrho_i + invrho_j)*
-          sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
+          sqrt(fabs(parti.pressure - neibpart[j].pressure));
       }
 
     }
@@ -507,7 +508,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     wkernj = neibpart[j].hfactor*kern.w1(drmag*invh_j);
 
     // Main SPH pressure force term
-    paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
+    paux = ((parti.pressure*parti.invomega)/(parti.rho*parti.rho))*wkerni +
+      ((neibpart[j].pressure*neibpart[j].invomega)/(neibpart[j].rho*neibpart[j].rho))*wkernj;
 
     // Add dissipation terms (for approaching particle pairs)
     //---------------------------------------------------------------------------------------------
@@ -536,7 +538,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
       else if (acond == price2008) {
         parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
           winvrho*(invrho_i + invrho_j)*
-          sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
+          sqrt(fabs(parti.pressure - neibpart[j].pressure));
       }
 
     }

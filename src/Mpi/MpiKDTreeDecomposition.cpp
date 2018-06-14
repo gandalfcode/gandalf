@@ -127,11 +127,11 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
 #endif
 
     // Broadcast MPI tree to all other nodes
-    MPI_Bcast(&mpitree->Nhydro, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&mpitree->Ntot, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&mpitree->Ntotmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Nhydro, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Ntot, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Ntotmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(mpitree->tree, mpitree->Ncell*sizeof(MpiTreeCell<ndim>),
-              MPI_CHAR, 0, MPI_COMM_WORLD);
+              MPI_BYTE, 0, MPI_COMM_WORLD);
 
 
     // Update all MPI node bounding boxes
@@ -195,9 +195,9 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
   else {
 
     // Receive all broadcasts of MPI tree
-    MPI_Bcast(&mpitree->Nhydro, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&mpitree->Ntot, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&mpitree->Ntotmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Nhydro, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Ntot, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mpitree->Ntotmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     // Allocate all memory and prepare important variables for tree
     this->AllocateMemory(mpitree->Ntotmax);

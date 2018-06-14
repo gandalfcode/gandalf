@@ -133,6 +133,7 @@ void Sph<ndim>::ZeroAccelerations()
       part.div_v     = (FLOAT) 0.0;
       part.dudt      = (FLOAT) 0.0;
       part.gpot      = (FLOAT) 0.0;
+      part.gpot_hydro= (FLOAT) 0.0;
       for (int k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
       for (int k=0; k<ndim; k++) part.atree[k] = (FLOAT) 0.0;
     }

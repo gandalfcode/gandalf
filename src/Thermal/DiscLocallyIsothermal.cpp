@@ -64,7 +64,7 @@ DiscLocallyIsothermal<ndim>::~DiscLocallyIsothermal()
 /// Set the sound speed given distance to the star
 //=================================================================================================
 template <int ndim>
-FLOAT DiscLocallyIsothermal<ndim>::SoundSpeed(Particle<ndim> & part)
+FLOAT DiscLocallyIsothermal<ndim>::SoundSpeed(const EosParticleProxy<ndim>& part)
 {
   StarParticle<ndim>* star = nbody->stardata;
 
@@ -84,7 +84,7 @@ FLOAT DiscLocallyIsothermal<ndim>::SoundSpeed(Particle<ndim> & part)
 /// Set the internal energy given the position of the particle
 //=================================================================================================
 template <int ndim>
-FLOAT DiscLocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
+FLOAT DiscLocallyIsothermal<ndim>::SpecificInternalEnergy(const EosParticleProxy<ndim>& part)
 {
   FLOAT cs = SoundSpeed(part);
   return cs*cs/gammam1;
@@ -96,7 +96,7 @@ FLOAT DiscLocallyIsothermal<ndim>::SpecificInternalEnergy(Particle<ndim> & part)
 /// Set the temperature given the position of the particle
 //=================================================================================================
 template <int ndim>
-FLOAT DiscLocallyIsothermal<ndim>::Temperature(Particle<ndim> & part)
+FLOAT DiscLocallyIsothermal<ndim>::Temperature(const EosParticleProxy<ndim>& part)
 {
   FLOAT cs = SoundSpeed(part);
   return mu_bar*cs*cs;

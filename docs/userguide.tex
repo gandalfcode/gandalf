@@ -632,6 +632,8 @@ rad\_ws     & = Integrate energy terms using Stamatellos et al. (2007) method
 
 \item \var{temp\_ambient} : Ambient temperature (for rad\_ws method)
 
+\item \var{lombardi\_method} : Use the Lombardi et al. (2015) metric for rad\_ws method
+
 
 %\item \var{Acool} : Simple cooling rate factor
 
@@ -912,6 +914,32 @@ ionisation      &= Multiple source ionising radiation
 
 \end{itemize}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Radiative feedback parameters}
+
+\begin{itemize}
+
+\item \var{rad\_fb} : Turn on radiative feedback for supported specific internal energy integration methods.
+\item \var{ambient\_heating}   : Add heating from an ambient background defined by \var{temp\_ambient}
+\item \var{disc\_heating} : Add heating from a temperature profile with a central star (1) or binary (2)
+\item \var{sink\_heating} : Add accretion heating from sinks (except central objects from \var{disc\_heating})
+\item \var{sink\_fb} : Type of heating from sinks (except central objects) \\
+\begin{tabular}{ll}
+continuous    &= Heating from accretion as mass is accreted \\
+episodic      &= NOT IMPLEMENTED
+\end{tabular}
+\item \var{r\_smooth} : Smoothing radius for \var{disc\_heating} temperature profile
+\item \var{temp\_q} : Power index for primary in \var{disc\_heating} temperature profile
+\item \var{temp\_q\_secondary} : Power index for secondary in \var{disc\_heating} temperature profile
+\item \var{temp\_au} : Temperature at 1 AU for primary in \var{disc\_heating} temperature profile
+\item \var{temp\_au\_secondary} : Temperature at 1 AU for secondary in \var{disc\_heating} temperature profile
+\item \var{f\_acc} : Fraction of energy converted to heating from accretion (use with \var{sink\_heating})
+\item \var{r\_star} : Radius of star ($M_{sink} > 80~M_{jup}$) in solar radii (use with \var{sink\_heating})
+\item \var{r\_bdwarf} : Radius of brown dwarf ($13 > M_{sink} > 80~M_{jup}$) in solar radii (use with \var{sink\_heating})
+\item \var{r\_planet} : Radius of planet ($M_{sink} < 13~M_{jup}$) in solar radii (use with \var{sink\_heating})
+
+\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2040,7 +2068,12 @@ are conserved explicitly, while in the test-particle limit these are conserved f
 \end{itemize}
 
 \subsection{Drag Laws}
-Several drag laws have been implemented in via functions form of $t_s \equiv t_s (\rho_g , \rho_d , c_s)$. The different functional forms currently available can be chosen via the parameter options and are described below. The drag laws are defined in src/Headers/DragLaws.h. Currently only dimensionless units are supported when setting the stopping time.
+Several drag laws have been implemented in via functions form of $t_s \equiv t_s (\rho_g , \rho_d , c_s)$. The different functional forms currently available can be chosen via the parameter options and are described below and are defined in src/Headers/DragLaws.h. Most of these drag laws are phenomelogical in form, and only work with dimensionionless form. The one exception is the Epstein drag law, in which the stopping time is given by:
+\begin{equation}
+t_s = \frac{3}{4} \sqrt{\frac{\pi}{8}} \frac{m}{A(\rho_g + \rho_d)c_s},
+\end{equation}
+where $m$ is the grain mass and $A$ is its grain area ($\pi a^2$ for spherical grains). In the code, absorb the area-to-mass ratio into a single coefficient.
+
 
 \subsection{IO and initial conditions}
 Dust particles are currently supported only in the SEREN formats (both formatted and unformatted), with the dust particles following the gas particles on the disc. The number of dust particles is stored in the header, as described in section \ref{Sec:SerenForm}. The column format is \emph{not} formally supported, but if used it will currently still contain the dust particles after the gas particles as long as MPI is not used. However, the number of dust particles is not currently saved in the column format.
@@ -2066,7 +2099,7 @@ full twofluid     & = Full two fluid drag regime
 \begin{tabular}{ll}
 fixed             & $t_s = 1 / K_D$ \\
 density           & $t_s = 1 / (K_D(\rho_d + \rho_g))$ \\
-epstein           & $t_s = 1 / (K_D(\rho_d + \rho_g)c_s)$ \\
+epstein           & $t_s = \frac{(3/4) \sqrt{\pi/8}}{K_D(\rho_d + \rho_g)c_s}$, where $K_D$ is the area-to-mass ratio \\
 LB2012            & $t_s = \rho_d \rho_g / (K_D(\rho_d + \rho_g))$ \\
 \end{tabular}
 
@@ -2075,6 +2108,8 @@ LB2012            & $t_s = \rho_d \rho_g / (K_D(\rho_d + \rho_g))$ \\
 \item \var{dust\_mass\_factor} : Sets the dust-to-gas mass ratio for the test problems
 
 \end{itemize}
+
+Including additional drag forces is straight forward. First add a new class to src/Headers/DragLaws.h. The new drag law can then be added to DustFactory::ProcessParameters (at the bottom of src/Common/Dust.cpp), which is responsible for selecting the desired drag law.
 
 \newpage
 

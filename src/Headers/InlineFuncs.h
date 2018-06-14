@@ -656,4 +656,43 @@ inline int unpack_bytes(T* element, std::vector<char>::const_iterator& it) {
 static inline FLOAT sech(FLOAT arg) {
   return (FLOAT) 2.0 / (exp(arg) + exp(-arg));
 }
+
+
+//=================================================================================================
+//  getClosest
+/// Returns an iterator pointing to the closest value
+//=================================================================================================
+template <typename BidirectionalIterator, typename T>
+BidirectionalIterator getClosest
+ (BidirectionalIterator first,
+  BidirectionalIterator last,
+  const T &value)
+{
+  BidirectionalIterator before = std::lower_bound(first, last, value);
+
+  if (before == first) return first;
+  if (before == last)  return --last;
+
+  BidirectionalIterator after = before;
+  --before;
+
+  return (*after - value) < (value - *before) ? after : before;
+}
+
+
+//=================================================================================================
+//  getClosestIndex
+/// Returns the index of the closest value
+//=================================================================================================
+template <typename BidirectionalIterator, typename T>
+std::size_t getClosestIndex(BidirectionalIterator first,
+                            BidirectionalIterator last,
+                            const T &value)
+{
+  return std::distance(first, getClosest(first, last, value));
+}
+
+
+
+
 #endif
