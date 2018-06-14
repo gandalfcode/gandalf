@@ -263,7 +263,7 @@ public:
 
     p2.gpot += p.gpot;
     p2.gpot_hydro += p.gpot_hydro;
-    p2.vsig_max = max(p2.vsig_max,p.vsig_max);
+    p2.vsig_max = max((FLOAT) p2.vsig_max, p.vsig_max);
   }
 
   void ReceiveParticle (const void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
