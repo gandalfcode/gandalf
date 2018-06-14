@@ -83,10 +83,11 @@ class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(Hydrodynamics<ndim>* hydro, Nbody<ndim>* nbody) {
-    UpdateAllSphProperties(static_cast<Sph<ndim>*>(hydro), nbody) ;
+  virtual void UpdateAllProperties(Hydrodynamics<ndim>* hydro, Nbody<ndim>* nbody,
+                                   DomainBox<ndim> &simbox) {
+    UpdateAllSphProperties(static_cast<Sph<ndim>*>(hydro), nbody, simbox) ;
   }
-  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *,DomainBox<ndim> &) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *) = 0;
@@ -113,7 +114,6 @@ protected:
   using HydroTree<ndim,ParticleType>::activepartbuf;
   using HydroTree<ndim,ParticleType>::allocated_buffer;
   using HydroTree<ndim,ParticleType>::box;
-  using HydroTree<ndim,ParticleType>::cellbuf;
   using HydroTree<ndim,ParticleType>::gravity_mac;
   using HydroTree<ndim,ParticleType>::kernp;
   using HydroTree<ndim,ParticleType>::kernrange;
@@ -121,7 +121,7 @@ protected:
   using HydroTree<ndim,ParticleType>::levelneibbuf;
   using HydroTree<ndim,ParticleType>::multipole;
   using HydroTree<ndim,ParticleType>::neibcheck;
-  using HydroTree<ndim,ParticleType>::neibpartbuf;
+  //using HydroTree<ndim,ParticleType>::neibpartbuf;
   using HydroTree<ndim,ParticleType>::Ngravcellmaxbuf;
   using HydroTree<ndim,ParticleType>::Nleafmax;
   using HydroTree<ndim,ParticleType>::Nneibmaxbuf;
@@ -144,7 +144,7 @@ protected:
   //-----------------------------------------------------------------------------------------------
   SphTree(string tree_t, int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
           FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-          string _gravity_mac, string _multipole,
+          string _gravity_mac, multipole_method _multipole,
           DomainBox<ndim> *_box, SmoothingKernel<ndim> *_kern, CodeTiming *_timing,
           ParticleTypeRegister& types) :
     HydroTree<ndim,ParticleType>(tree_t, _Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
@@ -154,7 +154,7 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *) = 0;
@@ -177,13 +177,16 @@ private:
 	  typedef typename ParticleType<ndim>::HydroForcesParticle HydroParticle;
 	  typedef NeighbourManager<ndim, HydroParticle > NeighbourManagerHydro;
 	  vector<NeighbourManagerHydro> neibmanagerbufhydro;
+
+	  typedef typename ParticleType<ndim>::DensityParticle DensityParticle;
+	  typedef NeighbourManager<ndim, DensityParticle > NeighbourManagerDensity;
+	  vector<NeighbourManagerDensity> neibmanagerbufdens;
  public:
 
   using SphTree<ndim,ParticleType>::activelistbuf;
   using SphTree<ndim,ParticleType>::activepartbuf;
   using SphTree<ndim,ParticleType>::allocated_buffer;
   using SphTree<ndim,ParticleType>::box;
-  using SphTree<ndim,ParticleType>::cellbuf;
   using SphTree<ndim,ParticleType>::gravity_mac;
   using SphTree<ndim,ParticleType>::kernp;
   using SphTree<ndim,ParticleType>::kernrange;
@@ -191,7 +194,7 @@ private:
   using SphTree<ndim,ParticleType>::levelneibbuf;
   using SphTree<ndim,ParticleType>::multipole;
   using SphTree<ndim,ParticleType>::neibcheck;
-  using SphTree<ndim,ParticleType>::neibpartbuf;
+  //using SphTree<ndim,ParticleType>::neibpartbuf;
   using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
   using SphTree<ndim,ParticleType>::Nleafmax;
   using SphTree<ndim,ParticleType>::Nneibmaxbuf;
@@ -203,6 +206,8 @@ private:
   using SphTree<ndim,ParticleType>::timing;
   using SphTree<ndim,ParticleType>::tree;
   using SphTree<ndim,ParticleType>::ghosttree;
+  using HydroTree<ndim,ParticleType>::neiblistbuf;
+  using HydroTree<ndim,ParticleType>::ptypebuf;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType>::mpighosttree;
   using SphTree<ndim,ParticleType>::Nmpi;
@@ -212,14 +217,14 @@ private:
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
+  GradhSphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, multipole_method,
                DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,
                ParticleTypeRegister& types);
   virtual ~GradhSphTree();
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *);
@@ -242,7 +247,6 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
   using SphTree<ndim,ParticleType>::activepartbuf;
   using SphTree<ndim,ParticleType>::allocated_buffer;
   using SphTree<ndim,ParticleType>::box;
-  using SphTree<ndim,ParticleType>::cellbuf;
   using SphTree<ndim,ParticleType>::gravity_mac;
   using SphTree<ndim,ParticleType>::kernp;
   using SphTree<ndim,ParticleType>::kernrange;
@@ -250,7 +254,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
   using SphTree<ndim,ParticleType>::levelneibbuf;
   using SphTree<ndim,ParticleType>::multipole;
   using SphTree<ndim,ParticleType>::neibcheck;
-  using SphTree<ndim,ParticleType>::neibpartbuf;
+  //using SphTree<ndim,ParticleType>::neibpartbuf;
   using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
   using SphTree<ndim,ParticleType>::Nleafmax;
   using SphTree<ndim,ParticleType>::Nneibmaxbuf;
@@ -270,13 +274,13 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SM2012SphTree(string, int, int, int, int, FLOAT, FLOAT, FLOAT, string, multipole_method,
                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *,
                 ParticleTypeRegister&);
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *){};
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *){};

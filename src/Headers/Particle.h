@@ -136,10 +136,7 @@ struct Particle
   type_flag flags;                  ///< Particle flags (eg boundary/dead)
   int ptype;                        ///< Particle type (gas/cdm/dust)
   int iorig;                        ///< Original particle i.d.
-  int sinkid;                       ///< i.d. of sink particle
   int levelneib;                    ///< Min. timestep level of neighbours
-  int nstep;                        ///< Integer step-size of particle
-  int nlast;                        ///< Integer time at beginning of step
   int level;                        ///< Current timestep level of particle
   FLOAT r[ndim];                    ///< Position
   FLOAT v[ndim];                    ///< Velocity
@@ -153,7 +150,6 @@ struct Particle
   FLOAT h_dust ;                    ///< Gas Smoothing length for dust
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
   FLOAT hfactor;                    ///< invh^(ndim + 1)
-  FLOAT sound;                      ///< Sound speed
   FLOAT rho;                        ///< Density
   FLOAT pressure;                   ///< Pressure
   FLOAT u;                          ///< Specific internal energy
@@ -161,21 +157,30 @@ struct Particle
   FLOAT dudt0;                      ///< dudt at beginning of step
   FLOAT dudt;                       ///< Compressional heating rate
   FLOAT gpot;                       ///< Gravitational potential
+  FLOAT dt_next;                    ///< Next time-step timestep
   FLOAT gpot_hydro;                 ///< Gravitaitonal potential w/o star
-  DOUBLE dt;                        ///< Particle timestep
-  DOUBLE dt_next;                   ///< Next time-step timestep
-  DOUBLE tlast;                     ///< Time at beginning of current step
-  FLOAT ionfrac;                    ///< Ionisation fraction
-  FLOAT Xion;                       ///< Ionisation fraction (from tree)
   FLOAT ueq;                        ///< equilibrium internal energy
   union {
     FLOAT dt_therm;                 ///< Thermalization time scale
     FLOAT cooling;                  ///< Cooling rate, (-dudt_cool)
   };
-  FLOAT vsig_max;                   ///< Maximum signal velocity.
-  FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
-  int ionstate;                     ///< States current ionisation state of the particle
-                                    ///< (0 is neutral, 1 is smoothed and 2 is ionised)
+
+  // Physical variables which only take a small dynamic range of values.
+  // Can be stored in single precision to save space/memory
+  //-----------------------------------------------------------------------------------------------
+  float mu_bar;                     ///< mean molecular weight
+  float sound;                      ///< Sound speed
+  float vsig_max;                   ///< Maximum signal velocity.
+
+  // To be deleted
+  int nstep;                        ///< Integer step-size of particle
+  int nlast;                        ///< Integer time at beginning of step
+  //int sinkid;                       ///< i.d. of sink particle
+  FLOAT dt;                         ///< Particle timestep
+  //DOUBLE tlast;                     ///< Time at beginning of current step
+  //FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
+  //int ionstate;                     ///< States current ionisation state of the particle
+  //                                  ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
   Particle() {
     flags     = none;
@@ -183,9 +188,6 @@ struct Particle
     iorig     = -1;
     levelneib = 0;
     level     = 0;
-    nstep     = 0;
-    nlast     = 0;
-    sinkid    = -1;
     for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a[k] = (FLOAT) 0.0;
@@ -199,23 +201,26 @@ struct Particle
     hrangesqd = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;
     rho       = (FLOAT) 0.0;
-    pressure  = (FLOAT) 0.0;
-    sound     = (FLOAT) 0.0;
     u         = (FLOAT) 0.0;
     u0        = (FLOAT) 0.0;
     dudt      = (FLOAT) 0.0;
     dudt0     = (FLOAT) 0.0;
     gpot      = (FLOAT) 0.0;
-    gpot_hydro = (FLOAT) 0.0;
-    dt        = (DOUBLE) 0.0;
     dt_next   = (DOUBLE) 0.0;
-    tlast     = (DOUBLE) 0.0;
-    ionfrac   = (FLOAT) 0.999;
-    Xion      = (FLOAT) 0.999;
+    gpot_hydro = (FLOAT) 0.0;
     ueq       = (FLOAT) 0.0;
     dt_therm  = (FLOAT) 0.0;
-    vsig_max  = (FLOAT) 0.0;
-    ionstate  = 0;
+
+    mu_bar    = 1.0f;
+    sound     = 0.0f;
+    vsig_max  = 0.0f;
+
+    //sinkid    = -1;
+    nstep     = 0;
+    nlast     = 0;
+    dt        = (DOUBLE) 0.0;
+    //tlast     = (DOUBLE) 0.0;
+
   }
 
   static const int NDIM = ndim ;
@@ -261,6 +266,7 @@ struct SphParticle : public Particle<ndim>
       u = p.u;
       gpot=p.gpot;
       ptype=p.ptype;
+      flags=p.flags;
     }
 
     FLOAT r[ndim];
@@ -270,6 +276,9 @@ struct SphParticle : public Particle<ndim>
     FLOAT u;
     FLOAT gpot;
     int ptype;
+    type_flag flags;
+
+    static const int NDIM=ndim;
   };
 
 };
@@ -464,6 +473,26 @@ struct MeshlessFVParticle : public Particle<ndim>
   typedef MeshlessCommunicationHandler<ndim> HandlerType;
 #endif
 
+  class DensityParticle {
+  public:
+    DensityParticle() : m(0), ptype(0) {} ;
+    DensityParticle(const MeshlessFVParticle<ndim>&p) {
+      for (int i=0; i<ndim; i++)
+        r[i] = p.r[i];
+
+      m = p.m;
+      ptype=p.ptype;
+      flags=p.flags;
+    }
+
+    FLOAT r[ndim];
+    FLOAT m;
+    int ptype;
+    type_flag flags;
+
+    static const int NDIM=ndim;
+  };
+
   class GradientParticle {
   public:
 	  GradientParticle (): level(0), ptype(gas_type), iorig(0), levelneib(0), flags(none), r(), v(), Wprim(), sound(0),
@@ -607,11 +636,19 @@ inline void reflect(Particle<ndim>& part, int k, double x_mirror) {
 }
 
 template<int ndim>
+inline void reflect(typename GradhSphParticle<ndim>::DensityParticle& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
+   part.v[k]*= -1 ;
+   part.a[k] *= -1 ;
+}
+
+template<int ndim>
 inline void reflect(typename GradhSphParticle<ndim>::HydroForcesParticle& part, int k, double x_mirror) {
    part.r[k] = 2*x_mirror - part.r[k] ;
    part.v[k]*= -1 ;
    part.a[k] *= -1 ;
 }
+
 
 template<int ndim>
 inline void reflect(MeshlessFVParticle<ndim>& part, int k, double x_mirror) {
@@ -651,6 +688,11 @@ inline void reflect(typename MeshlessFVParticle<ndim>::FluxParticle& part, int k
      part.B[j][k] *= -1 ;
      part.B[k][j] *= -1 ;
    }
+}
+
+template<int ndim>
+inline void reflect(typename MeshlessFVParticle<ndim>::DensityParticle& part, int k, double x_mirror) {
+   part.r[k] = 2*x_mirror - part.r[k] ;
 }
 
 template<int ndim>

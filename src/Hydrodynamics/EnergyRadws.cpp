@@ -112,7 +112,6 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
   Hydrodynamics<ndim>* hydro)
 {
   int i;                               // Particle counter
-  FLOAT dt;                            // Timestep since start of step
   ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[EnergyRadws::EnergyIntegration]");
@@ -120,13 +119,14 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,i) shared(partdata, hydro)
+#pragma omp parallel for default(none) private(i) shared(partdata, hydro)
   for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim>& part = partdata[i];
     if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step
-    dt = t - part.tlast;
+    FLOAT dn = n - part.nlast;
+    FLOAT dt = timestep*(FLOAT) dn;
 
     if (part.dt_therm <= small_number) {
       part.u = part.u0;

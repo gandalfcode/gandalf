@@ -23,6 +23,7 @@
 //=================================================================================================
 
 
+#include <algorithm>
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
@@ -36,10 +37,101 @@
 #include "Particle.h"
 #include "Sph.h"
 #include "KDTree.h"
+
 #if defined _OPENMP
 #include <omp.h>
+#else
+// Define dummy functions / types for the lock
+#define omp_lock_t char
+
+#define omp_init_lock(lock)
+#define omp_destroy_lock(lock)
+
+#define omp_set_lock(lock)
+#define omp_unset_lock(lock)
 #endif
+
+
 using namespace std;
+
+//=================================================================================================
+//  OmpGuard
+/// A scoped guard for an OpenMP lock, adapted from the book "Pattern-Oriented Software
+/// Architecture".
+//=================================================================================================
+class OmpGuard {
+public:
+  /// Acquire the lock and store a pointer to it
+  OmpGuard(omp_lock_t *lock) : _lock (lock), _owner (false) {
+    acquire();
+  }
+  /// Set the lock explicitly
+  void acquire() {
+    omp_set_lock(_lock);
+    _owner = true;
+  }
+  /// Release the lock explicitly (owner thread only!)
+  void release() {
+    if (_owner) {
+      _owner = false;
+      omp_unset_lock(_lock);
+    }
+  }
+  ~OmpGuard() {
+    release();
+  }
+private:
+  omp_lock_t *_lock;
+  bool _owner;
+
+  // Disallow copies or assignment
+  OmpGuard(const OmpGuard &);
+  void operator=(const OmpGuard &);
+};
+
+//=================================================================================================
+// KDCellLock
+/// A class for handling whether an OpenMP thread has finished doing the work required for the
+/// children of a KDTree cell. Used for stocking the tree
+//=================================================================================================
+class KDCellLock {
+public:
+  KDCellLock() : _lock() {
+    omp_init_lock(&_lock);
+
+    reset();
+  } ;
+
+  bool ready() {
+    return _count == 2;
+  }
+
+  void finished_child() {
+    assert(_count < 2);
+    _count++ ;
+  }
+
+  void reset() {
+    _count = 0;
+  }
+
+  omp_lock_t* get_lock() {
+    return &_lock ;
+  }
+
+  ~KDCellLock() {
+    omp_destroy_lock(&_lock);
+  }
+
+private:
+  omp_lock_t _lock;
+  int _count ;
+
+  // Disallow copies or assignment
+  KDCellLock(const KDCellLock &);
+  void operator=(const KDCellLock &);
+};
+
 
 
 
@@ -50,7 +142,7 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                            FLOAT kernrangeaux, FLOAT macerroraux,
-                                           string gravity_mac_aux, string multipole_aux,
+                                           string gravity_mac_aux, multipole_method multipole_aux,
                                            const DomainBox<ndim>& domain,
                                   		   const ParticleTypeRegister& reg,
 										   const bool IAmPruned):
@@ -114,9 +206,8 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(int Nparticles, int 
     Nparticles = max(Nparticles,Ntotmax);
 
     g2c      = new int[gmax];
-    ids      = new int[Nparticles];
-    inext    = new int[Nparticles];
     celldata = new struct TreeCell<ndim>[Ncells];
+    worklist = new KDCellLock[Ncells];
 
     allocated_tree = true;
 
@@ -151,24 +242,10 @@ void KDTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int Nc
 
 
   if (Nparticles > Ntotmax ) {
-
-	  int* idsold = ids;
-	  int* inextold = inext;
-
-	  ids = new int[Nparticles];
-	  inext    = new int[Nparticles];
-
-	  std::copy(idsold,idsold+Ntotmax,ids);
-	  std::copy(inextold,inextold+Ntotmax,inext);
-
-	  delete[] idsold;
-	  delete[] inextold;
-
 	  Ntotmax = Nparticles;
   }
 
   if (Ncells > Ncellmax) {
-
 
     TreeCell<ndim>* celldataold = celldata;
 
@@ -178,9 +255,10 @@ void KDTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int Nc
 
     delete[] celldataold;
 
+    delete[] worklist ;
+    worklist = new KDCellLock[Ncells];
+
 	Ncellmax=Ncells;
-
-
   }
 
 
@@ -199,9 +277,8 @@ void KDTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 
   if (allocated_tree) {
     delete[] celldata;
-    delete[] inext;
-    delete[] ids;
     delete[] g2c;
+    delete[] worklist;
     allocated_tree = false;
   }
 
@@ -265,6 +342,7 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   CreateTreeStructure();
   //if (ltot != ltot_old) CreateTreeStructure();
 
+
   // Create bounding box of SPH particles
   for (k=0; k<ndim; k++) bbmin[k] = big_number;
   for (k=0; k<ndim; k++) bbmax[k] = -big_number;
@@ -278,9 +356,6 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
         bbmin[k] = min(bbmin[k], partdata[i].r[k] - kernrange*partdata[i].h);
       }
     }
-    for (i=ifirst; i<=ilast; i++) ids[i] = i;
-    for (i=ifirst; i<ilast; i++) inext[i] = i+1;
-    inext[ilast] = -1;
   }
   else {
     ifirst = -1;
@@ -296,9 +371,6 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].hmax = 0;
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
-  for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
-  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
 
   // If there are particles in the tree, recursively build tree from root node down
@@ -342,10 +414,13 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
 
   // Optional output (for debugging)
 #if defined(VERIFY_ALL)
+  /*
   cout << "No. of ptcls in tree  : " << Ntot << "   " << Ntotmax << endl;
   cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
   cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
   cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl;
+  cout << "Max No part in leaf cell: " << Nleafmax << "\n";
+  */
 #endif
 
   return;
@@ -383,7 +458,6 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   // Zero tree cell variables
   for (g=0; g<gmax; g++) g2c[g] = 0;
   for (c=0; c<Ncell; c++) {
-    celldata[c].c2g     = 0;
     celldata[c].copen   = -1;
     celldata[c].cnext   = -1;
     celldata[c].c1      = -1;
@@ -395,6 +469,7 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   }
   g = 0;
   celldata[0].level = 0;
+  celldata[0].parent = -1;
 
 
   // Loop over all cells and set all other pointers
@@ -404,7 +479,6 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
 
     if (celldata[c].level == ltot) {                           // If on leaf level
       celldata[c].cnext = c + 1;                               // id of next cell
-      celldata[c].c2g = g;                                     // Record leaf id
       assert (g<gmax);
       g2c[g++] = c;                                            // Record inverse id
     }
@@ -415,6 +489,9 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
       celldata[c].c2                 = c + c2L[celldata[c].level];   // id of 2nd child
       celldata[celldata[c].c2].level = celldata[c].level + 1;        // Level of 2nd child
       celldata[c].cnext              = c + cNL[celldata[c].level];   // Next cell id
+
+      celldata[c+1].parent = c ;
+      celldata[celldata[c].c2].parent = c ;
     }
 
 
@@ -446,7 +523,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   TreeCell<ndim> &cell)                ///< Cell to be divided
 {
   int i;                               // Aux. child cell counter
-  int j;                               // Aux. particle counter
   int k;                               // Dimension counter
   int k_divide = 0;                    // Division dimension
   FLOAT rkmax = 0.0;                   // Max. box size of all dimensions
@@ -458,33 +534,28 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 #ifdef MPI_PARALLEL
     cell.worktot = 0.0;
 #endif
-    if (cell.N > 0) {
-      assert(cell.ilast - cell.ifirst == cell.N - 1);
-      for (j=cell.ifirst; j<cell.ilast; j++) inext[ids[j]] = ids[j+1];
-      cell.ifirst = ids[cell.ifirst];
-      cell.ilast = ids[cell.ilast];
-    }
-    else {
-      cell.ifirst = -1;
-      cell.ilast = -1;
-    }
+
+    assert(cell.N > 0);
+    assert(cell.ifirst != -1);
+
     StockCellProperties(cell,partdata,true);
     return;
   }
 
 #if defined(MPI_PARALLEL)
+  /*
   i = cell.ifirst;
   for (k=0; k< ndim; k++) {
     cell.bb.min[k] = +big_number;
     cell.bb.max[k] = -big_number;
   }
   for (i=cell.ifirst; i<=cell.ilast; i++) {
-    int j = ids[i];
     for (k=0; k<ndim; k++) {
-      if (cell.bb.min[k] > partdata[j].r[k]) cell.bb.min[k] = partdata[j].r[k];
-      if (cell.bb.max[k] < partdata[j].r[k]) cell.bb.max[k] = partdata[j].r[k];
+      if (cell.bb.min[k] > partdata[i].r[k]) cell.bb.min[k] = partdata[i].r[k];
+      if (cell.bb.max[k] < partdata[i].r[k]) cell.bb.max[k] = partdata[i].r[k];
     }
   }
+  */
 #endif
 
   // Determine dimension to split the cell along.
@@ -507,10 +578,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   // Set properties of first child cell
   for (k=0; k<ndim; k++) celldata[cell.c1].bb.min[k] = cell.bb.min[k];
   for (k=0; k<ndim; k++) celldata[cell.c1].bb.max[k] = cell.bb.max[k];
-  for (k=0; k<ndim; k++) celldata[cell.c1].cexit[0][k] = cell.cexit[0][k];
-  for (k=0; k<ndim; k++) celldata[cell.c1].cexit[1][k] = cell.cexit[1][k];
   celldata[cell.c1].bb.max[k_divide] = rdivide;
-  celldata[cell.c1].cexit[1][k_divide] = cell.c2;
   celldata[cell.c1].N = cell.N/2;
   if (celldata[cell.c1].N != 0) {
     celldata[cell.c1].ifirst = ifirst;
@@ -521,10 +589,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   // Set properties of second child cell
   for (k=0; k<ndim; k++) celldata[cell.c2].bb.min[k] = cell.bb.min[k];
   for (k=0; k<ndim; k++) celldata[cell.c2].bb.max[k] = cell.bb.max[k];
-  for (k=0; k<ndim; k++) celldata[cell.c2].cexit[0][k] = cell.cexit[0][k];
-  for (k=0; k<ndim; k++) celldata[cell.c2].cexit[1][k] = cell.cexit[1][k];
   celldata[cell.c2].bb.min[k_divide] = rdivide;
-  celldata[cell.c2].cexit[0][k_divide] = cell.c1;
   celldata[cell.c2].N = cell.N - celldata[cell.c1].N;
   if (celldata[cell.c2].N != 0) {
     celldata[cell.c2].ifirst = ifirst + cell.N/2;
@@ -532,18 +597,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
     assert(celldata[cell.c2].ilast - celldata[cell.c2].ifirst == celldata[cell.c2].N - 1);
   }
   assert(cell.N == celldata[cell.c1].N + celldata[cell.c2].N);
-
-  // MAYBE NEED TO ADD THESE LINES ??
-  // Set new cell boundaries depending on number of particles in cells
-  /*if (radcell[cell.c1].N > 0 && radcell[cell.c2].N > 0) {
-    radcell[cell.c1].bb.max[k_divide] = rdivide;
-    radcell[cell.c2].bb.min[k_divide] = rdivide;
-    radcell[cell.c1].cexit[1][k_divide] = cell.c2;
-    radcell[cell.c2].cexit[0][k_divide] = cell.c1;
-  }
-  else if (radcell[cell.c2].N > 0) {
-    radcell[cell.c1].bb.max[k_divide] = -big_number;
-  }*/
 
 
   // Now divide the new child cells as a recursive function
@@ -556,7 +609,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
         if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,partdata,celldata[cell.c1]);
         else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,partdata,celldata[cell.c2]);
       }
-#pragma omp barrier
     }
   }
   else {
@@ -575,16 +627,6 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 
   // Re-set the cell first and last particles now that child cells have been
   // re-ordered by the QuickSelect algorithm
-  if (celldata[cell.c1].N > 0) {
-    cell.ifirst = celldata[cell.c1].ifirst;
-    inext[celldata[cell.c1].ilast] = celldata[cell.c2].ifirst;
-  }
-  else {
-    cell.ifirst = celldata[cell.c2].ifirst;
-  }
-  cell.ilast = celldata[cell.c2].ilast;
-
-
   assert(cell.N == celldata[cell.c1].N + celldata[cell.c2].N);
   assert(!(cell.ifirst == -1 && cell.ilast == -1));
 
@@ -672,6 +714,22 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelectSort
 }
 
 
+// Predicate for comparing particles and sorting particles
+template<class ParticleType>
+class ParticleSorter {
+
+public:
+  ParticleSorter(int jdir)
+    : _j(jdir) { } ;
+
+  bool operator()(const ParticleType& l, const ParticleType& r) const {
+    return l.r[_j] < r.r[_j] ;
+  }
+private:
+  int _j ;
+};
+
+
 
 //=================================================================================================
 //  KDTree::QuickSelect
@@ -686,67 +744,9 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
   int k,                               ///< Dimension of sort
   ParticleType<ndim> *partdata)        ///< Pointer to main SPH object
 {
-  int j;                               // ..
-  int jguess;                          // ..
-  int jtemp;                           // ..
-  FLOAT rpivot;                        // ..
-
-
-  // Place all particles left or right of chosen pivot point.
-  // Iterate until correct median pivot has been identified.
-  //-----------------------------------------------------------------------------------------------
-  do {
-
-    // Make a guess of pivot value
-    jguess = (left + right)/2;
-    rpivot = partdata[ids[jguess]].r[k];
-
-    // ..
-    jtemp       = ids[jguess];
-    ids[jguess] = ids[right];
-    ids[right]  = jtemp;
-
-    // ..
-    jguess = left;
-
-    //---------------------------------------------------------------------------------------------
-    for (j=left; j<right; j++) {
-      //assert(j < Ntot);
-      if (partdata[ids[j]].r[k] <= rpivot) {
-        jtemp       = ids[j];
-        ids[j]      = ids[jguess];
-        ids[jguess] = jtemp;
-        jguess++;
-      }
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-
-    // Move ?? particle from end of array to index i
-    jtemp       = ids[right];
-    ids[right]  = ids[jguess];
-    ids[jguess] = jtemp;
-
-    //assert(left < Ntot);
-    //assert(right < Ntot);
-    //assert(jguess < Ntot);
-    //assert(jpivot < Ntot);
-
-
-    // jguess is lower than jpivot.
-    // Only need to search between jguess+1 and right
-    if (jguess < jpivot) left = jguess + 1;
-
-    // jguess is higher than jpivot.
-    // Only need to search between left and jguess-1
-    else if (jguess > jpivot) right = jguess - 1;
-
-  } while (jguess != jpivot);
-  //-----------------------------------------------------------------------------------------------
-
-
-  return rpivot;
+  ParticleSorter<ParticleType<ndim> > pred(k) ;
+  std::nth_element(partdata+left, partdata+jpivot, partdata+right+1, pred);
+  return partdata[jpivot].r[k];
 }
 
 
@@ -758,41 +758,78 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockTree
-(TreeCell<ndim> &cell,                ///< Reference to cell to be stocked
- ParticleType<ndim> *partdata,        ///< SPH particle data array
+(Particle<ndim> *part_gen,            ///< SPH particle data array
  bool stock_leaf)					  ///< Whether to stock leaf cells
 {
-  int i;                               // Aux. child cell counter
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
-  // If cell is not leaf, stock child cells
-  if (cell.copen != -1) {
-	  TreeCell<ndim>& child1 = celldata[cell.copen];
-	  TreeCell<ndim>& child2 = celldata[child1.cnext];
-#if defined _OPENMP
-    if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,partdata, stock_leaf,child1,child2) num_threads(2)
-      for (i=0; i<2; i++) {
-        if (i == 0) StockTree(child1,partdata, stock_leaf);
-        else if (i == 1) StockTree(child2,partdata, stock_leaf);
-      }
-#pragma omp barrier
-    }
-    else {
-      for (i=0; i<2; i++) {
-        if (i == 0) StockTree(child1,partdata, stock_leaf);
-        else if (i == 1) StockTree(child2,partdata, stock_leaf);
-      }
-    }
-#else
-    for (i=0; i<2; i++) {
-      if (i == 0) StockTree(child1,partdata, stock_leaf);
-      else if (i == 1) StockTree(child2,partdata, stock_leaf);
+#ifdef VERIFY_ALL
+  // Check the tree structure is ok:
+  for (int i=0; i < Ncell; i++)
+    if (celldata[i].copen != -1) {
+      assert(celldata[celldata[i].c1].parent == i);
+      assert(celldata[celldata[i].c2].parent == i);
     }
 #endif
+
+#pragma omp parallel default(none) shared(partdata, stock_leaf)
+  {
+    //  Initialize the worklist
+# pragma omp for
+    for (int i=0; i < Ncell; i++)
+      worklist[i].reset() ;
+
+    // Loop over the leaf cells. Once a parent cell is ready to be computed, do it immediately
+#pragma omp for
+    for (int i=0; i < Ncell; i++) {
+
+      TreeCell<ndim>* c = &celldata[i];
+
+      // Skip non-leaves, handle them below.
+      if (c->copen != -1) continue ;
+
+      StockCellProperties(*c, partdata, stock_leaf) ;
+
+      // Flag that we've done a child cell for the parent, and update the cell (recursively)
+      int l = c->level ;
+      while (l > 0) {
+
+        int parent = c->parent;
+        {
+          // Lock the parent cell while we decide whether we can to do work on it yet.
+          KDCellLock& work = worklist[parent];
+          OmpGuard(work.get_lock());
+          work.finished_child() ;
+
+          if (work.ready())
+            c = &celldata[parent];
+          else
+            c = NULL ;
+        }
+
+        if (c == NULL) break ;
+
+        StockCellProperties(*c, partdata, stock_leaf) ;
+
+        l-- ;
+      }
+    }
   }
 
-  // Stock node once all children are stocked
-  StockCellProperties(cell,partdata,stock_leaf);
+#ifdef VERIFY_ALL
+  // Check that we did the work for all non-child cells
+  bool invalid = false;
+  for (int i=0; i < Ncell; i++)
+    if (celldata[i].copen != -1)
+      if (not worklist[i].ready()) {
+        cout << "Stock failed for cell: " << i << " level: " << celldata[i].level
+            << "\n\tchildren: " << celldata[i].c1 << ", " <<  celldata[i].c2
+            <<"\n";
+        invalid = true ;
+      }
+  if (invalid) cout << "Number of tree levels: " << ltot << "\n" ;
+  assert(!invalid) ;
+#endif
 
   return;
 }
@@ -806,43 +843,38 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
- (TreeCell<ndim> &cell,                ///< Reference to current tree cell
+ (TreeCell<ndim> &origCell,            ///< Reference to current tree cell
   ParticleType<ndim> *partdata,        ///< Particle data array
   bool stock_leaf)					   ///< Whether to stock leaf cells
 {
+  const FLOAT invthetamaxsqd = (FLOAT) 1.0/thetamaxsqd;
   int i;                               // Particle counter
-  int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT mi;                            // Mass of particle i
   FLOAT p = (FLOAT) 0.0;               // ..
   FLOAT lambda = (FLOAT) 0.0;          // ..
+  TreeCell<ndim> cell = origCell;      // Local copy of tree-cell for cache-efficiency
 
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
+      multipole == quadrupole || multipole == fast_quadrupole || gravity_mac == eigenmac ;
 
   // Zero all summation variables for all cells
-  if ((cell.level==ltot&&stock_leaf) || cell.copen != -1 ) {
+  if ((cell.level==ltot && stock_leaf) || cell.copen != -1 ) {
 	  cell.Nactive  = 0;
 	  cell.N        = 0;
+	  cell.maxsound = 0.0f;
 	  cell.m        = (FLOAT) 0.0;
 	  cell.hmax     = (FLOAT) 0.0;
 	  cell.rmax     = (FLOAT) 0.0;
-	  cell.dhmaxdt  = (FLOAT) 0.0;
-	  cell.drmaxdt  = (FLOAT) 0.0;
 	  cell.mac      = (FLOAT) 0.0;
 	  cell.cdistsqd = big_number;
-	  cell.maxsound = (FLOAT) 0.0;
       if (gravity_mac == gadget2)
         cell.amin = big_number ;
       else if (gravity_mac == eigenmac)
         cell.macfactor = 0 ;
       for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
-	  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-	  for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
 	  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
 	  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
 	  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
@@ -851,82 +883,61 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 	  for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
   }
 
+
   // If this is a leaf cell, sum over all particles
   //-----------------------------------------------------------------------------------------------
   if (cell.level == ltot && stock_leaf) {
 
-    // First, check if any particles have been accreted and remove them
-    // from the linked list.  If cell no longer contains any live particles,
-    // then set N = 0 to ensure cell is not included in future tree-walks.
-    i = cell.ifirst;
-    cell.ifirst = -1;
-    iaux = -1;
-    while (i != -1) {
-      if (!partdata[i].flags.is_dead()) {
-        if (iaux == -1) cell.ifirst = i;
-        else inext[iaux] = i;
-        iaux = i;
-      }
-      if (i == cell.ilast) break;
-      i = inext[i];
-    };
-    cell.ilast = iaux;
-
+    if (cell.ifirst == -1) return ;
 
     // Loop over all particles in cell summing their contributions
-    i = cell.ifirst;
-    while (i != -1) {
-      if (!partdata[i].flags.is_dead()) {
+    for (i = cell.ifirst; i <= cell.ilast; ++i) {
+      const ParticleType<ndim>& part = partdata[i] ;
+      if (!part.flags.is_dead()) {
         cell.N++;
-        if (partdata[i].flags.check(active)) cell.Nactive++;
-        cell.hmax = max(cell.hmax,partdata[i].h);
-        cell.maxsound = max(cell.maxsound, partdata[i].sound);
-        if (gravmask[partdata[i].ptype]) {
-          cell.m += partdata[i].m;
-          for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-          for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
+        if (part.flags.check(active)) cell.Nactive++;
+        cell.hmax = max(cell.hmax,part.h);
+        cell.maxsound = max(cell.maxsound, part.sound);
+        if (gravmask[part.ptype]) {
+          cell.m += part.m;
+          for (k=0; k<ndim; k++) cell.r[k] += part.m*part.r[k];
         }
-        for (k=0; k<ndim; k++) {
-         if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
-         if (partdata[i].r[k] > cell.bb.max[k]) cell.bb.max[k] = partdata[i].r[k];
-         if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k])
-           cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-         if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
-           cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
-         if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
-         if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
+        for (k=0; k<ndim; k++) cell.bb.min[k] = min(cell.bb.min[k], part.r[k]);
+        for (k=0; k<ndim; k++) cell.bb.max[k] = max(cell.bb.max[k], part.r[k]);
+        for (k=0; k<ndim; k++) cell.hbox.min[k] = min(cell.hbox.min[k], part.r[k] - kernrange*part.h);
+        for (k=0; k<ndim; k++) cell.hbox.max[k] = max(cell.hbox.min[k], part.r[k] + kernrange*part.h);
+        for (k=0; k<ndim; k++) cell.vbox.min[k] = min(cell.vbox.min[k], part.v[k]);
+        for (k=0; k<ndim; k++) cell.vbox.max[k] = max(cell.vbox.max[k], part.v[k]);
+
+        if (gravity_mac == gadget2) {
+          cell.amin = min(cell.amin, DotProduct(part.atree, part.atree, ndim));
         }
-        if (gravity_mac == gadget2)
-          cell.amin = min(cell.amin,
-                          sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
-        else if (gravity_mac == eigenmac)
-          cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
+        else if (gravity_mac == eigenmac) {
+          cell.macfactor = max(cell.macfactor, pow(part.gpot, -twothirds));
+        }
       }
-      if (i == cell.ilast) break;
-      i = inext[i];
-    };
+    }
 
     // Normalise all cell values
     if (cell.m > 0) {
-      for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
-      for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
+      const FLOAT invm = (FLOAT) 1.0/cell.m;
+      for (k=0; k<ndim; k++) cell.r[k] *= invm;
     }
     if (cell.N > 0) {
-      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
-      cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
-      cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+      const FLOAT drsqd = DotProduct(dr, dr, ndim);
+      cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;
+      cell.rmax = sqrt(drsqd);
     }
 
     // Compute quadrupole moment terms if selected
     if (need_quadrupole_moments) {
-      i = cell.ifirst;
 
-      while (i != -1) {
+      for (i = cell.ifirst; i <= cell.ilast; ++i) {
         if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
-          mi = partdata[i].m;
+          FLOAT mi = partdata[i].m;
           for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
-          drsqd = DotProduct(dr,dr,ndim);
+          const FLOAT drsqd = DotProduct(dr,dr,ndim);
           if (ndim == 3) {
             cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
             cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
@@ -938,12 +949,11 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
             cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
             cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
             cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
-          } else if (ndim == 1) {
+          }
+          else if (ndim == 1) {
             cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
           }
         }
-        if (i == cell.ilast) break;
-        i = inext[i];
       }
     }
 
@@ -952,8 +962,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   //-----------------------------------------------------------------------------------------------
   else if (cell.copen != -1) {
 
-	  TreeCell<ndim> &child1 = celldata[cell.copen];
-	  TreeCell<ndim> &child2 = celldata[child1.cnext];
+    const TreeCell<ndim> &child1 = celldata[cell.copen];
+    const TreeCell<ndim> &child2 = celldata[child1.cnext];
 
     if (child1.N > 0) {
       for (k=0; k<ndim; k++) cell.bb.min[k] = min(child1.bb.min[k],cell.bb.min[k]);
@@ -989,13 +999,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     cell.m = child1.m + child2.m;
     if (cell.m > 0) {
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
-      for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
     }
     if (cell.N > 0) {
-      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
       for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
-      cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
-      cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+      const FLOAT drsqd = DotProduct(dr, dr, ndim);
+      cell.cdistsqd = max(drsqd, cell.hmax*cell.hmax)*invthetamaxsqd;
+      cell.rmax = sqrt(drsqd);
 #ifdef MPI_PARALLEL
       cell.worktot = child1.worktot + child2.worktot;
 #endif
@@ -1003,9 +1012,9 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
     // Now add individual quadrupole moment terms
     if (need_quadrupole_moments && child1.m > 0) {
-      mi = child1.m;
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
-      drsqd = DotProduct(dr,dr,ndim);
+      const FLOAT mi = child1.m;
+      const FLOAT drsqd = DotProduct(dr, dr, ndim);
       if (ndim == 3) {
         for (k=0; k<5; k++) cell.q[k] += child1.q[k] ;
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
@@ -1027,9 +1036,9 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
     if (need_quadrupole_moments && child2.m > 0) {
-      mi = child2.m;
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
-      drsqd = DotProduct(dr,dr,ndim);
+      const FLOAT mi = child2.m;
+      const FLOAT drsqd = DotProduct(dr, dr, ndim);
       if (ndim == 3) {
         for (k=0; k<5; k++) cell.q[k] += child2.q[k] ;
         cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
@@ -1054,8 +1063,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   //-----------------------------------------------------------------------------------------------
 
 
-  // Calculate eigenvalue MAC criteria
-  if (gravity_mac == eigenmac) {
+  // Normalise Gadget2 MAC or calculate eigenvalue MAC criteria
+  if (gravity_mac == gadget2) {
+    cell.amin = sqrt(cell.amin);
+    cell.mac = (FLOAT) 0.0;
+  }
+  else if (gravity_mac == eigenmac) {
     if (ndim == 3) {
       p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
           cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
@@ -1066,53 +1079,17 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       }
     } else if (ndim == 2) {
       p = (cell.q[0]-cell.q[2])*(cell.q[0]-cell.q[2]) + 4*cell.q[1]*cell.q[1];
-      lambda = 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), 0.);
+      lambda = (FLOAT) 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), (FLOAT) 0.0);
     } else {
       lambda = fabs(cell.q[0]) ;
     }
-
     cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
-
   }
   else {
     cell.mac = (FLOAT) 0.0;
   }
-  
 
-  return;
-}
-
-
-
-//=================================================================================================
-//  KDTree::ExtrapolateCellProperties
-/// Extrapolate important physical properties of all cells in the tree.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
- (const FLOAT dt)                            ///< Smallest timestep size
-{
-  int c;                               // Cell counter
-  int k;                               // Dimension counter
-
-  debug2("[KDTree::ExtrapolateCellProperties]");
-
-
-  // ..
-  //-----------------------------------------------------------------------------------------------
-  for (c=0; c<Ncell; c++) {
-
-    for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bb.min[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
-    //celldata[c].rmax += celldata[c].drmaxdt*dt;
-    //celldata[c].hmax += celldata[c].dhmaxdt*dt;
-
-  }
-  //-----------------------------------------------------------------------------------------------
+  origCell = cell;
 
   return;
 }
@@ -1125,84 +1102,118 @@ void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
 /// opening-distance, etc..) of all cells in the tree.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
- (TreeCell<ndim> &cell,                ///< KD-tree cell
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
+void KDTree<ndim,ParticleType,TreeCell>::UpdateAllHmaxValues
+ (Particle<ndim> *part_gen,        ///< [in] SPH particle data array
+  bool stock_leaf)                 ///< [in] Whether to stock the leaf cell
 {
-  int cc,ccc;                          // Cell counters
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
 
-  // If cell is not leaf, stock child cells
-  if (cell.level != ltot) {
-#if defined _OPENMP
-    if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
-      for (i=0; i<2; i++) {
-        if (i == 0) UpdateHmaxValues(celldata[cell.c1],partdata);
-        else if (i == 1) UpdateHmaxValues(celldata[cell.c2],partdata);
-      }
-    }
-    else {
-      for (i=0; i<2; i++) {
-        if (i == 0) UpdateHmaxValues(celldata[cell.c1],partdata);
-        else if (i == 1) UpdateHmaxValues(celldata[cell.c2],partdata);
-      }
-    }
-#else
-    for (i=0; i<2; i++) {
-      if (i == 0) UpdateHmaxValues(celldata[cell.c1],partdata);
-      else if (i == 1) UpdateHmaxValues(celldata[cell.c2],partdata);
+#ifdef VERIFY_ALL
+  // Check the tree structure is ok:
+  for (int i=0; i < Ncell; i++)
+    if (celldata[i].copen != -1) {
+      assert(celldata[celldata[i].c1].parent == i);
+      assert(celldata[celldata[i].c2].parent == i);
     }
 #endif
-  }
 
 
-  // Zero all summation variables for all cells
-  cell.hmax = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
-  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
+#pragma omp parallel default(none) shared(partdata, stock_leaf)
+  {
+    //  Initialize the worklist
+# pragma omp for
+    for (int i=0; i < Ncell; i++)
+      worklist[i].reset() ;
 
+    // Loop over the leaf cells. Once a parent cell is ready to be computed, do it immediately
+#pragma omp for
+    for (int i=0; i < Ncell; i++) {
 
-  // If this is a leaf cell, sum over all particles
-  //-----------------------------------------------------------------------------------------------
-  if (cell.level == ltot) {
-    i = cell.ifirst;
+      TreeCell<ndim>* c = &celldata[i];
 
-    // Loop over all particles in cell summing their contributions
-    while (i != -1) {
-      cell.hmax = max(cell.hmax,partdata[i].h);
-      for (k=0; k<ndim; k++) {
-        if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
-          cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-        }
-        if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k]) {
-          cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+      // Skip non-leaves, handle them below.
+      if (c->copen != -1) continue ;
+
+      // Stock the leaf cell
+      if (stock_leaf) {
+        c->hmax = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) c->hbox.min[k] =  big_number;
+        for (int k=0; k<ndim; k++) c->hbox.max[k] = -big_number;
+
+        // Loop over all particles in cell summing their contributions
+        if (c->ifirst != -1) {
+          for (int j = c->ifirst; j <= c->ilast; ++j) {
+            const ParticleType<ndim> &part = partdata[j];
+            if (part.flags.is_dead()) continue ;
+
+            c->hmax = max(c->hmax,part.h);
+            for (int k=0; k<ndim; k++) {
+              c->hbox.min[k] = min(c->hbox.min[k], part.r[k] - kernrange*part.h);
+              c->hbox.max[k] = max(c->hbox.max[k], part.r[k] + kernrange*part.h);
+            }
+          }
         }
       }
-      if (i == cell.ilast) break;
-      i = inext[i];
-    };
 
-  }
-  // For non-leaf cells, sum together two children cells
-  //-----------------------------------------------------------------------------------------------
-  else {
-    cc = cell.c1;
-    ccc = cell.c2;
-    if (celldata[cc].N > 0) {
-      cell.hmax = max(cell.hmax,celldata[cc].hmax);
-      for (k=0; k<ndim; k++) cell.hbox.min[k] = min(celldata[cc].hbox.min[k],cell.hbox.min[k]);
-      for (k=0; k<ndim; k++) cell.hbox.max[k] = max(celldata[cc].hbox.max[k],cell.hbox.max[k]);
-    }
-    if (celldata[ccc].N > 0) {
-      cell.hmax = max(cell.hmax,celldata[ccc].hmax);
-      for (k=0; k<ndim; k++) cell.hbox.min[k] = min(celldata[ccc].hbox.min[k],cell.hbox.min[k]);
-      for (k=0; k<ndim; k++) cell.hbox.max[k] = max(celldata[ccc].hbox.max[k],cell.hbox.max[k]);
-    }
+      // Flag that we've done a child cell for the parent, and update the cell (recursively)
+      int l = c->level ;
+      while (l > 0) {
 
+        // Use a heuristic to find the parent cell.
+        int parent = c->parent;
+        {
+          // Lock the parent cell while we decide whether we can to do work on it yet.
+          KDCellLock& work = worklist[parent];
+          OmpGuard(work.get_lock());
+          work.finished_child() ;
+
+          if (work.ready())
+            c = &celldata[parent];
+          else
+            c = NULL ;
+        }
+
+        if (c == NULL) break ;
+
+        // Stock the parent
+        c->hmax = (FLOAT) 0.0;
+        for (int k=0; k<ndim; k++) c->hbox.min[k] =  big_number;
+        for (int k=0; k<ndim; k++) c->hbox.max[k] = -big_number;
+
+        int c1 = c->c1;
+        int c2 = c->c2;
+        if (celldata[c1].N > 0) {
+          c->hmax = max(c->hmax,celldata[c1].hmax);
+          for (int k=0; k<ndim; k++) c->hbox.min[k] = min(celldata[c1].hbox.min[k],c->hbox.min[k]);
+          for (int k=0; k<ndim; k++) c->hbox.max[k] = max(celldata[c1].hbox.max[k],c->hbox.max[k]);
+        }
+        if (celldata[c2].N > 0) {
+          c->hmax = max(c->hmax,celldata[c2].hmax);
+          for (int k=0; k<ndim; k++) c->hbox.min[k] = min(celldata[c2].hbox.min[k],c->hbox.min[k]);
+          for (int k=0; k<ndim; k++) c->hbox.max[k] = max(celldata[c2].hbox.max[k],c->hbox.max[k]);
+        }
+
+        l-- ;
+      }
+    }
   }
-  //-----------------------------------------------------------------------------------------------
+
+  //-------------------------------------------------------------------------------------------
+
+#ifdef VERIFY_ALL
+  // Check that we did the work for all non-child cells
+  bool invalid = false;
+  for (int i=0; i < Ncell; i++)
+    if (celldata[i].copen != -1)
+      if (not worklist[i].ready()) {
+        cout << "UpdateHmax failed for cell: " << i << " level: " << celldata[i].level
+            << "\n\tchildren: " << celldata[i].c1 << ", " <<  celldata[i].c2
+            <<"\n";
+        invalid = true ;
+      }
+  if (invalid) cout << "Number of tree levels: " << ltot << "\n" ;
+  assert(!invalid) ;
+#endif
 
   return;
 }
@@ -1238,11 +1249,9 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
     ilast = celldata[c].ilast;
 
     // Else walk through linked list to obtain list and number of active ptcls.
-    while (i != -1) {
+    for (; i <= ilast; ++i) {
       if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
         celldata[c].Nactive++;
-      if (i == ilast) break;
-      i = inext[i];
     };
 
   }
@@ -1372,18 +1381,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
     }
   }
 
-  // Check inext linked list values and ids array are all valid
-  for (i=ifirst; i<=ilast; i++) {
-    if (!(ids[i] >= ifirst && ids[i] <= ilast)) {
-      cout << "Problem with ids array : " << i << "   " << ids[i] << endl;
-      ExceptionHandler::getIstance().raise("Error with ids array in KDTree");
-    }
-    if (!(inext[i] >= -1)) {
-      cout << "Problem with inext linked lists : " << i << "   " << inext[i] << endl;
-      ExceptionHandler::getIstance().raise("Error with inext linked lists in KDTree");
-    }
-  }
-
 
   // Verify linked lists are valid for all levels of tree
   //-----------------------------------------------------------------------------------------------
@@ -1395,13 +1392,9 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 
       // Check that particles are not in linked lists more than once
       if (cell.level == l) {
-        i = cell.ifirst;
-        while (i != -1) {
+        for (i = cell.ifirst; i <= cell.ilast; ++i) {
           pcount[i]++;
-          if (i == cell.ilast) break;
-          i = inext[i];
         }
-
       }
     }
 
@@ -1430,8 +1423,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 
     // Check that particles are not in linked lists more than once
     if (cell.level == ltot) {
-      i = cell.ifirst;
-      while (i != -1) {
+      for (i = cell.ifirst; i <= cell.ilast; ++i) {
         pcount[i]++;
         leafcount++;
         Ncount++;
@@ -1442,8 +1434,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
                << partdata[i].h << "   " << cell.hmax << endl;
           ExceptionHandler::getIstance().raise("hmax flag error in KDTree");
         }
-        if (i == cell.ilast) break;
-        i = inext[i];
       }
       if (leafcount > Nleafmax) {
         ExceptionHandler::getIstance().raise("Error : leaf particle error in KDTree");

@@ -262,7 +262,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType>::CreateInitialDomainDecompositio
 
 
   // Update all bounding boxes
-  this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp);
+  this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp,false,false);
 
   // Share the stars with all other domains
   MPI_Bcast(&(nbody->Nstar), 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -382,7 +382,7 @@ void MpiKDTreeDecomposition<ndim, ParticleType >::LoadBalancing
 
 
   // Update all node bounding boxes now domains have been reset
-  this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp);
+  //this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp, true, false);
 
 
   // Prepare lists of particles that now occupy other processor domains that need to be transfered

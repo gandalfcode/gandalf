@@ -76,10 +76,11 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(Hydrodynamics<ndim>* hydro, Nbody<ndim>* nbody) {
-    UpdateAllProperties(static_cast<MeshlessFV<ndim>*>(hydro), nbody) ;
+  virtual void UpdateAllProperties(Hydrodynamics<ndim>* hydro, Nbody<ndim>* nbody,
+                                   DomainBox<ndim>& simbox) {
+    UpdateAllProperties(static_cast<MeshlessFV<ndim>*>(hydro), nbody, simbox) ;
   }
-  virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *,DomainBox<ndim> &) = 0;
   virtual void UpdateGradientMatrices(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateGodunovFluxes(FLOAT, MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateAllGravForces(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &,
@@ -100,9 +101,15 @@ class MeshlessFVTree: public MeshlessFVNeighbourSearch<ndim>, public HydroTree<n
 	  typedef typename ParticleType<ndim>::FluxParticle FluxParticle;
 	  typedef NeighbourManager<ndim, FluxParticle > NeighbourManagerFlux;
 	  vector<NeighbourManagerFlux> neibmanagerbufflux;
+
 	  typedef typename ParticleType<ndim>::GradientParticle GradientParticle;
 	  typedef NeighbourManager<ndim, GradientParticle > NeighbourManagerGradient;
 	  vector<NeighbourManagerGradient> neibmanagerbufgradient;
+
+	  typedef typename ParticleType<ndim>::DensityParticle DensityParticle;
+	  typedef NeighbourManager<ndim, DensityParticle > NeighbourManagerDensity;
+	  vector<NeighbourManagerDensity> neibmanagerbufdens;
+
 	  typedef typename ParticleType<ndim>::GravParticle GravParticle;
 	  typedef NeighbourManager<ndim, GravParticle> NeighbourManagerGrav;
 	  vector<NeighbourManagerGrav> neibmanagerbufgrav;
@@ -115,7 +122,6 @@ protected:
   using HydroTree<ndim,ParticleType>::activepartbuf;
   using HydroTree<ndim,ParticleType>::allocated_buffer;
   using HydroTree<ndim,ParticleType>::box;
-  using HydroTree<ndim,ParticleType>::cellbuf;
   using HydroTree<ndim,ParticleType>::gravity_mac;
   using HydroTree<ndim,ParticleType>::kernp;
   using HydroTree<ndim,ParticleType>::kernrange;
@@ -123,7 +129,7 @@ protected:
   using HydroTree<ndim,ParticleType>::levelneibbuf;
   using HydroTree<ndim,ParticleType>::multipole;
   using HydroTree<ndim,ParticleType>::neibcheck;
-  using HydroTree<ndim,ParticleType>::neibpartbuf;
+  //using HydroTree<ndim,ParticleType>::neibpartbuf;
   using HydroTree<ndim,ParticleType>::Ngravcellmaxbuf;
   using HydroTree<ndim,ParticleType>::Nleafmax;
   using HydroTree<ndim,ParticleType>::Nneibmaxbuf;
@@ -147,13 +153,13 @@ protected:
   MeshlessFVTree(string tree_type,
                  int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
                  FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-                 string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
+                 string _gravity_mac, multipole_method _multipole, DomainBox<ndim> *_box,
                  SmoothingKernel<ndim> *_kern, CodeTiming *_timing, ParticleTypeRegister&);
   virtual ~MeshlessFVTree();
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *,DomainBox<ndim> &);
   virtual void UpdateGradientMatrices(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateGodunovFluxes(FLOAT, MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllGravForces(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &,

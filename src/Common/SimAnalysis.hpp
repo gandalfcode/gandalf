@@ -332,7 +332,7 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       FLOAT temp = hydro->eos->Temperature(part);
-      m_ion += part.ionfrac*part.m;
+      if (temp > 0.5*temp_ion) m_ion += part.m;
       if (temp > 0.05*temp_ion && temp < 0.95*temp_ion) {
         m_if += part.m;
         radius_ion += part.m*sqrt(DotProduct(part.r, part.r, ndim));

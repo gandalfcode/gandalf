@@ -51,17 +51,16 @@ template <int ndim>
 struct KDTreeCell : public TreeCellBase<ndim> {
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
-  int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int k_divide;                     ///< Dimension along which cell is split
 
 #ifdef MPI_PARALLEL
   typedef TreeCommunicationHandler<ndim> HandlerType;
 #endif
 
-
 };
 
 
+// Forward Declare
+class KDCellLock ;
 
 //=================================================================================================
 //  Class KDTree
@@ -83,10 +82,8 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::gtot;
   using Tree<ndim,ParticleType,TreeCell>::g2c;
   using Tree<ndim,ParticleType,TreeCell>::hmax;
-  using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
-  using Tree<ndim,ParticleType,TreeCell>::inext;
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::kernrange;
   using Tree<ndim,ParticleType,TreeCell>::lmax;
@@ -110,7 +107,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  KDTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
+  KDTree(int, FLOAT, FLOAT, FLOAT, string, multipole_method, const DomainBox<ndim>&,
 		 const ParticleTypeRegister&, const bool);
   ~KDTree();
 
@@ -123,20 +120,12 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, TreeCell<ndim> &);
-  void ExtrapolateCellProperties(const FLOAT);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   FLOAT QuickSelectSort(int, int, int, int, ParticleType<ndim> *);
-  void StockTree(Particle<ndim> *part_gen, bool stock_leaf) {
-    ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-    StockTree(celldata[0], partdata, stock_leaf) ;
-  }
-  void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool);
+  void StockTree(Particle<ndim> *part_gen, bool stock_leaf) ;
+  //void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool);
   void StockCellProperties(TreeCell<ndim> &, ParticleType<ndim> *,bool);
-  void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
-    ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-    UpdateHmaxValues(celldata[0], partdata) ;
-  }
-  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *);
+  void UpdateAllHmaxValues(Particle<ndim> *part_gen, bool stock_leaf);
   void UpdateActiveParticleCounters(Particle<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters() {
@@ -148,6 +137,9 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);
 #endif
+
+ private:
+  KDCellLock* worklist;
 
 };
 #endif

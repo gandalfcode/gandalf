@@ -66,6 +66,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   string gas_radiation = stringparams["radiation"];
 
   debug2("[GradhSphSimulation::ProcessSphParameters]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GRADH_PROCESS_PARAMETERS");
 
 
   // Set the enum for artificial viscosity
@@ -240,10 +241,25 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     }
   }
 
+  multipole_method multipole = monopole ;
+  if (stringparams["multipole"] == "monopole")
+    multipole = monopole ;
+  else if (stringparams["multipole"] == "quadrupole")
+    multipole = quadrupole ;
+  else if (stringparams["multipole"] == "fast_monopole")
+    multipole = fast_monopole ;
+  else if (stringparams["multipole"] == "fast_quadrupole")
+    multipole = fast_quadrupole ;
+  else {
+    string message = "Multipole type not recognised.";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
   sphneib = new GradhSphTree<ndim,GradhSphParticle>
     (tree_type, intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
-     stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing, sph->types);
+     stringparams["gravity_mac"], multipole, &simbox, sph->kernp, timing, sph->types);
 
   // Here I do a horrible hack to get at the underlying tree, needed for the dust.
   TreeBase<ndim> * t = NULL, * gt = NULL, *mpit = NULL ;
@@ -278,12 +294,6 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
        pow(simunits.m.outscale*simunits.m.outcgs, 2.),
        simunits.temp.outscale, pow(simunits.r.outscale*simunits.r.outcgs,-4)*
        pow(simunits.t.outscale*simunits.t.outcgs,+2)/simunits.m.outscale*simunits.m.outcgs);
-  }
-  else if (gas_radiation == "monoionisation") {
-    radiation = new MonochromaticIonisationMonteCarlo<ndim,1,GradhSphParticle,MonoIonTreeCell>
-      (intparams["Nleafmax"], intparams["Nraditerations"], intparams["Nradlevels"],
-       floatparams["Nphotonratio"], floatparams["temp_ion"], floatparams["arecomb"],
-       floatparams["NLyC"], stringparams["rand_algorithm"], &simunits, sph->eos);
   }
   else if (gas_radiation == "none") {
     radiation = new NullRadiation<ndim>();

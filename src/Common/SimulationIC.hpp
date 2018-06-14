@@ -57,6 +57,7 @@ void Simulation<ndim>::GenerateIC(void)
   string ic = simparams->stringparams["ic"];   // Local copy of initial conditions string
 
   debug2("[Simulation::GenerateIC]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GENERATE_IC");
 
 
   // First, check special case of restarting a simulation, in which case
@@ -205,7 +206,7 @@ void Simulation<ndim>::GenerateIC(void)
 
       // Regularise the particle distribution using the density function providing in the IC class
       RegularizerFunction<ndim> *reg_func = icGenerator->GetParticleRegularizer();
-      ParticleRegularizer<ndim>(simparams, icBox)(hydro, neib, nbody, *reg_func);
+      ParticleRegularizer<ndim>(simparams, icBox, simbox)(hydro, neib, nbody, *reg_func);
 
       // Once regularisation step has finished, (re)set all particle properties
       icGenerator->SetParticleProperties();

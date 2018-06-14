@@ -98,10 +98,8 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::celldata;
   using Tree<ndim,ParticleType,TreeCell>::gravity_mac;
   using Tree<ndim,ParticleType,TreeCell>::gtot;
-  using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
-  using Tree<ndim,ParticleType,TreeCell>::inext;
   using Tree<ndim,ParticleType,TreeCell>::lmax;
   using Tree<ndim,ParticleType,TreeCell>::ltot;
   using Tree<ndim,ParticleType,TreeCell>::ltot_old;
@@ -126,7 +124,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  OctTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
+  OctTree(int, FLOAT, FLOAT, FLOAT, string, multipole_method, const DomainBox<ndim>&,
 		  const ParticleTypeRegister&, const bool);
   ~OctTree();
 
@@ -136,16 +134,17 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void AllocateTreeMemory(int,int,bool);
   void ReallocateMemory(int,int);
   void DeallocateTreeMemory(void);
+  void DivideCell(int, int, int, int, ParticleType<ndim>*, int) ;
   void StockTree(Particle<ndim> *part_gen, bool stock_leaf) {
     ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
     StockTree(celldata[0], partdata, stock_leaf) ;
   }
   void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool);
-  void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
+  void UpdateAllHmaxValues(Particle<ndim> *part_gen, bool stock_leaf) {
       ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-      UpdateHmaxValues(celldata[0], partdata) ;
+      UpdateHmaxValues(celldata[0], partdata, stock_leaf) ;
     }
-  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *);
+  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *, bool);
   void UpdateActiveParticleCounters(Particle<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters() {

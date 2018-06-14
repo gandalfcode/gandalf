@@ -9,7 +9,9 @@
 #define SRC_HEADERS_NEIGHBOURMANAGERBASE_H_
 
 #include <vector>
+#include <deque>
 #include "TreeCell.h"
+#include "Multipole.h"
 
 
 //=================================================================================================
@@ -23,24 +25,35 @@
 //=================================================================================================
 class NeighbourManagerBase {
 protected:
-	vector<int> tempneib;
-	vector<int> tempperneib;
-	vector<int> tempdirectneib;
+    struct range {
+      int begin, end ;
+    };
+	std::deque<range> tempneib;
+	std::deque<range> tempperneib;
+	std::deque<range> tempdirectneib;
 
 public:
-	/* Add a neighbour that does not need automatic ghost generation */
-    void AddNeib(const int i) {
-        tempneib.push_back(i);
+    /* Add a range of neighbours */
+	template<int ndim>
+    void AddNeibs(const TreeCellBase<ndim>& cell) {
+      range r = {cell.ifirst, cell.ilast+1} ;
+      tempneib.push_back(r);
     }
-    /* Add a neighbour that we need ghosts of */
-	void AddPeriodicNeib(const int i) {
-		tempperneib.push_back(i);
-	}
-	/* Add a distant particle for gravity force */
-	void AddDirectNeib(const int i) {
-		tempdirectneib.push_back(i);
-	}
+    /* Add a neighbours that we need ghosts of */
+    template<int ndim>
+    void AddPeriodicNeibs(const TreeCellBase<ndim>& cell) {
+      range r = {cell.ifirst, cell.ilast+1} ;
+      tempperneib.push_back(r);
+    }
+    /* Add a distant particles for gravity force */
+    template<int ndim>
+    void AddDirectNeibs(const TreeCellBase<ndim>& cell) {
+      range r = {cell.ifirst, cell.ilast+1} ;
+      tempdirectneib.push_back(r);
+    }
 
+
+protected:
 	void clear() {
 	  tempneib.clear();
 	  tempperneib.clear();
@@ -58,13 +71,29 @@ template <int ndim>
 class NeighbourManagerDim : public NeighbourManagerBase {
 protected:
 	vector<MultipoleMoment<ndim> > gravcell;
+	FastMultipoleForces<ndim> multipole ;
 	using NeighbourManagerBase::tempneib;
     using NeighbourManagerBase::tempperneib;
     using NeighbourManagerBase::tempdirectneib;
 public:
+    NeighbourManagerDim() : multipole_type(monopole) { } ;
+
     /* Add the multipole moments of a gravity cell */
 	void AddGravCell(const MultipoleMoment<ndim>& moment) {
-		gravcell.push_back(moment);
+
+      gravcell.push_back(moment);
+
+	  switch (multipole_type) {
+	  case monopole:
+	  case quadrupole:
+		break;
+	  case fast_monopole:
+	    multipole.AddMonopoleContribution(moment);
+	    break ;
+	  case fast_quadrupole:
+        multipole.AddQuadrupoleContribution(moment);
+        break ;
+	  }
 	}
 
 	//===============================================================================================
@@ -72,14 +101,43 @@ public:
 	/// \brief Get the number of multipole moments stored, and return a pointer to them.
 	//===============================================================================================
 	int GetGravCell (MultipoleMoment<ndim>** gravcell_p) {
-	  *gravcell_p = &gravcell[0];
-	  return gravcell.size();
+
+	  int NgravCell = gravcell.size();
+
+	  if (NgravCell > 0)
+	    *gravcell_p = &gravcell[0];
+	  else
+	    *gravcell_p = NULL ;
+
+	  return NgravCell ;
 	}
 
-    void clear() {
+    //===============================================================================================
+    //  ComputeFastMultipoleForces
+    /// \brief Compute the fast multipole forces the given particles.
+    //==============================================================================================
+	template<template <int> class ParticleType>
+	void ComputeFastMultipoleForces(int Nactive, ParticleType<ndim>* activepart,
+	                                const ParticleTypeRegister& types) {
+	  for (int j=0; j<Nactive; j++)
+	    if (types[activepart[j].ptype].self_gravity)
+	      multipole.ApplyForcesTaylor(activepart[j].r, activepart[j].atree, activepart[j].gpot) ;
+	}
+
+
+    void set_target_cell(const TreeCellBase<ndim>& cell) {
       NeighbourManagerBase::clear();
       gravcell.clear();
+
+      multipole.set_target_cell(cell.r);
     }
+
+    void set_multipole_type(multipole_method multipole) {
+      multipole_type = multipole ;
+    }
+
+private:
+    multipole_method multipole_type ;
 };
 
 

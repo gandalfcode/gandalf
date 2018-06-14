@@ -113,13 +113,13 @@ struct StateVector {
 template<int ndim>
 struct EosParticleProxy {
   EosParticleProxy()
-  : rho(0), u(0), p(0), ionfrac(0), ionstate(0)
+  : rho(0), u(0), p(0), flags(0)
   {
     for (int i=0; i < ndim; ++i) r[i] = 0;
     for (int i=0; i < ndim; ++i) v[i] = 0;
   }
   EosParticleProxy(Particle<ndim>& p)
-    : rho(p.rho), u(p.u), p(p.pressure), ionfrac(p.ionfrac), ionstate(p.ionstate)
+    : rho(p.rho), u(p.u), p(p.pressure), flags(p.flags)
   {
     for (int i=0; i < ndim; ++i) r[i] = p.r[i];
     for (int i=0; i < ndim; ++i) v[i] = p.v[i];
@@ -130,8 +130,7 @@ struct EosParticleProxy {
   FLOAT rho;
   FLOAT u;
   FLOAT p;
-  FLOAT ionfrac;
-  int   ionstate;
+  type_flag flags;
 };
 
 //=================================================================================================
@@ -447,43 +446,6 @@ class IonisingRadiation: public EOS<ndim>
 
   FLOAT temp0;
   FLOAT mu_bar;
-  EOS<ndim> *eos;
-
-};
-
-
-
-//=================================================================================================
-//  Class MCRadiationEOS
-/// \brief   Ionising radiation from stars/sinks including general EOS
-/// \details Ionising radiation from stars/sinks including general EOS
-/// \author  S. Balfour, D. A. Hubber
-/// \date    24/04/2014
-//=================================================================================================
-template <int ndim>
-class MCRadiationEOS: public EOS<ndim>
-{
-  using EOS<ndim>::gamma;
-  using EOS<ndim>::gammam1;
-
- public:
-
-  MCRadiationEOS(Parameters*, SimUnits *);
-  virtual ~MCRadiationEOS();
-
-  FLOAT EntropicFunction(const EosParticleProxy<ndim>&);
-  FLOAT SoundSpeed(const EosParticleProxy<ndim>&);
-  FLOAT Temperature(const EosParticleProxy<ndim>&);
-  FLOAT SpecificInternalEnergy(const EosParticleProxy<ndim>&);
-
-  void set_nbody_data(Nbody<ndim>* nbody) {
-    eos->set_nbody_data(nbody);
-  }
-
-  FLOAT mu_bar;
-  FLOAT mu_ion;
-  FLOAT temp0;
-  FLOAT temp_ion;
   EOS<ndim> *eos;
 
 };

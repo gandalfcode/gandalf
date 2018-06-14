@@ -58,7 +58,7 @@ GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 ICCOPT   += -O3 -fast -fPIC -fno-exceptions
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
-GCCOPT   += -Og -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
+GCCOPT   += -Og -g -pg -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
 ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
 CLANGOPT += -O3 -g -pg -Wall
 else ifeq ($(COMPILER_MODE),STANDARD)
@@ -69,7 +69,7 @@ endif
 
 ifeq ($(OPENMP),1)
 GCCOPT   += -fopenmp
-ICCOPT   += -openmp
+ICCOPT   += -qopenmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
 
@@ -202,10 +202,9 @@ OBJ += SM2012SphTree.o
 OBJ += Ewald.o
 OBJ += AdiabaticEOS.o BarotropicEOS.o Barotropic2EOS.o
 OBJ += PolytropicEOS.o IsothermalEOS.o RadwsEOS.o LocallyIsothermal.o DiscLocallyIsothermal.o RadiativeFB.o
-OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
+OBJ += IonisingRadiationEOS.o
 OBJ += MultipleSourceIonisation.o
-OBJ += KDRadiationTree.o TreeMonteCarlo.o
-OBJ += MonochromaticIonisationMonteCarlo.o
+OBJ += KDRadiationTree.o
 OBJ += chealpix.o TreeRay.o TreeRayOnTheSpot.o
 OBJ += EnergyEquation.o EnergyRadws.o OpacityTable.o
 OBJ += Nbody.o NbodyLeapfrogKDK.o NbodyLeapfrogDKD.o

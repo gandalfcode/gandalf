@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <string>
+#include "CodeTiming.h"
 #include "Debug.h"
 #include "Precision.h"
 #include "Constants.h"
@@ -89,7 +90,7 @@ public:
 
   void ComputeBoundingBox(FLOAT *, FLOAT *, const int);
   void CheckBoundaryGhostParticle(const int, const int, const FLOAT, const DomainBox<ndim> &);
-  void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
+  void CreateBoundaryGhostParticle(int, int, int, FLOAT, FLOAT);
   Particle<ndim>& CreateNewParticle(const int, const FLOAT, const FLOAT,
                                     const FLOAT*, const FLOAT*, SimulationBase*);
 
@@ -130,7 +131,7 @@ public:
   bool newParticles;                   ///< Have new ptcls been added? If so, flag to rebuild tree
   int create_sinks;                    ///< Create new sink particles?
   int sink_particles;                  ///< Are using sink particles?
-  
+
   int Ngather;                         ///< No. of gather neighbours
   int Nghost;                          ///< No. of ghost particles (total among all kinds of ghosts)
   int NImportedParticles;              ///< No. of imported particles
@@ -146,6 +147,7 @@ public:
   FLOAT rho_sink;                      ///< Sink formation density
   ParticleTypeRegister types;          ///< Array of particle types
 
+  CodeTiming *timing;                  ///< Pointer to timing object
   EOS<ndim> *eos;                      ///< Equation-of-state
   SmoothingKernel<ndim> *kernp;        ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;       ///< Tabulated version of chosen kernel
@@ -162,6 +164,7 @@ int Hydrodynamics<ndim>::DoDeleteDeadParticles() {
   int ilast = Nhydro;                  // Aux. counter of last free slot
 
   debug2("[Hydrodynamics::DeleteDeadParticles]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("DELETE_DEAD_PARTICLES");
 
   ParticleType<ndim>* partdata = GetParticleArray<ParticleType>();
 

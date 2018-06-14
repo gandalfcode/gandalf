@@ -52,7 +52,8 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 BruteForceTree<ndim,ParticleType,TreeCell>::BruteForceTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                            	   	   	   	   FLOAT kernrangeaux, FLOAT macerroraux,
-                                           	   	   	   	   string gravity_mac_aux, string multipole_aux,
+                                           	   	   	   	   string gravity_mac_aux,
+                                           	   	   	   	   multipole_method multipole_aux,
                                            	   	   	   	   const DomainBox<ndim>& domain,
                                            	   	   	   	   const ParticleTypeRegister& reg,
 														   const bool IAmPruned):
@@ -112,8 +113,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(int Nparticl
     Ncells		   = max(Ncells, Ncellmax);
 
     g2c      = new int[gmax];
-    ids      = new int[Nparticles];
-    inext    = new int[Nparticles];
     celldata = new struct TreeCell<ndim>[Ncells];
 
     allocated_tree = true;
@@ -145,22 +144,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles
 
 
   if (Nparticles > Ntotmax ) {
-
-	  int* idsold = ids;
-	  int* inextold = inext;
-
-	  ids = new int[Nparticles];
-	  inext    = new int[Nparticles];
-
-	  std::copy(idsold,idsold+Ntotmax,ids);
-	  std::copy(inextold,inextold+Ntotmax,inext);
-
-	  delete[] idsold;
-	  delete[] inextold;
-
 	  Ntotmax = Ntot;
-
-
   }
 
   if (Ncells > Ncellmax) {
@@ -196,8 +180,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 
   if (allocated_tree) {
     delete[] celldata;
-    delete[] inext;
-    delete[] ids;
     delete[] g2c;
     allocated_tree = false;
   }
@@ -265,11 +247,9 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].id     = 0;
   celldata[0].level  = 0;
   celldata[0].hmax = 0;
+  celldata[0].parent = -1;
   for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
   for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
-  for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
-  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
 
   // Now do the leaf cells
   if (Npart > 0) {
@@ -282,19 +262,15 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::BuildTree
       celldata[c].copen  = -1;
       celldata[c].id     = c;
       celldata[c].level  = 1;
+      celldata[c].parent = 0;
       for (k=0; k<ndim; k++) celldata[c].bb.min[k] = partdata[i].r[k] - kernrange*partdata[i].h ;
       for (k=0; k<ndim; k++) celldata[c].bb.max[k] = partdata[i].r[k] + kernrange*partdata[i].h ;
-      for (k=0; k<ndim; k++) celldata[c].cexit[0][k] = -1; // TODO: Check this
-      for (k=0; k<ndim; k++) celldata[c].cexit[1][k] = -1;
 #ifdef MPI_PARALLEL
       celldata[c].worktot = 0.0;
 #endif
       g2c[c-1] = c;
-      ids[i]   = i;
-      inext[i] = i+1;
       i++ ;
     }
-    inext[ilast] = -1;
     ltot = 1;
     if (Ntot > 0) StockTree(celldata[0], partdata, true);
     else ltot = 0;
@@ -312,28 +288,30 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 void BruteForceTree<ndim,ParticleType,TreeCell>::StockTree
  (TreeCell<ndim> &cell,                ///< Reference to current tree cell
   ParticleType<ndim> *partdata,		   ///< Pointer to particle array
-  bool stock_leaf)					   ///< Wheter to stock also leaf cells
-  {
-
-  if (stock_leaf) StockTreeProperties(cell, partdata) ;
-
+  bool stock_leaf)					   ///< Whether to stock also leaf cells
+{
   int c = cell.copen ;
-  if (c == -1) c = cell.cnext ;
-  for (; c < Ncell; c++)
-    if (stock_leaf) StockTreeProperties(celldata[c], partdata) ;
-}
 
+  // Stock children first
+  if (c != -1) {
+    for (; c < cell.cnext; c++)
+      if (stock_leaf) StockTreeProperties(celldata[c], partdata, stock_leaf) ;
+  }
+
+  StockTreeProperties(cell, partdata, stock_leaf) ;
+  return ;
+}
 //=================================================================================================
 //  BruteForceTree::StockTreeProperties
 /// Stock cell in BruteForce-tree.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
- (TreeCell<ndim> &cell,                ///< Reference to current tree cell
-  ParticleType<ndim> *partdata)		   ///< Particle data array
-{
+(TreeCell<ndim> &cell,                ///< Reference to current tree cell
+ ParticleType<ndim> *partdata,		  ///< Particle data array
+ bool stock_leaf)                     ///< Whether to stock also leaf cells
+ {
   int i;                               // Particle counter
-  int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
@@ -343,124 +321,215 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
 
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
+      multipole == quadrupole || multipole == fast_quadrupole || gravity_mac == eigenmac ;
 
-  // Zero all summation variables for all cells
-  cell.Nactive  = 0;
-  cell.N        = 0;
-  cell.m        = (FLOAT) 0.0;
-  cell.hmax     = (FLOAT) 0.0;
-  cell.rmax     = (FLOAT) 0.0;
-  cell.dhmaxdt  = (FLOAT) 0.0;
-  cell.drmaxdt  = (FLOAT) 0.0;
-  cell.mac      = (FLOAT) 0.0;
-  cell.cdistsqd = big_number;
-  cell.maxsound = (FLOAT) 0.0;
-  if (gravity_mac == gadget2)
-    cell.amin = big_number ;
-  else if (gravity_mac == eigenmac)
-    cell.macfactor = 0 ;
-  for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
-  for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
-  for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
-  for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
-  for (k=0; k<ndim; k++) cell.vbox.min[k] = big_number;
-  for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
+  if (stock_leaf || cell.copen != -1) {
+    // Zero all summation variables for all cells
+    cell.Nactive  = 0;
+    cell.N        = 0;
+    cell.maxsound = 0.0f;
+    cell.m        = (FLOAT) 0.0;
+    cell.hmax     = (FLOAT) 0.0;
+    cell.rmax     = (FLOAT) 0.0;
+    cell.mac      = (FLOAT) 0.0;
+    cell.cdistsqd = big_number;
+    if (gravity_mac == gadget2)
+      cell.amin = big_number ;
+    else if (gravity_mac == eigenmac)
+      cell.macfactor = 0 ;
+    for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
+    for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
+    for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
+    for (k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
+    for (k=0; k<ndim; k++) cell.vbox.min[k] = big_number;
+    for (k=0; k<ndim; k++) cell.vbox.max[k] = -big_number;
+  }
 
+  if (cell.copen == -1) {
+    if (not stock_leaf) return ;
 
-  // First, check if any particles have been accreted and remove them
-  // from the linked list.  If cell no longer contains any live particles,
-  // then set N = 0 to ensure cell is not included in future tree-walks.
-  i = cell.ifirst;
-  cell.ifirst = -1;
-  iaux = -1;
-  while (i != -1) {
-    if (!partdata[i].flags.is_dead()) {
-      if (iaux == -1) cell.ifirst = i;
-      else inext[iaux] = i;
-      iaux = i;
+    // Loop over all particles in cell summing their contributions
+    i = cell.ifirst;
+    int ilast = cell.ilast ;
+    for(; i <= ilast; ++i) {
+      if (!partdata[i].flags.is_dead()) {
+        cell.N++;
+        if (partdata[i].flags.check(active)) cell.Nactive++;
+        cell.hmax = max(cell.hmax,partdata[i].h);
+        cell.maxsound = max(cell.maxsound, partdata[i].sound);
+        if (gravmask[partdata[i].ptype]) {
+          cell.m += partdata[i].m;
+          for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
+        }
+        for (k=0; k<ndim; k++) {
+          if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
+          if (partdata[i].r[k] > cell.bb.max[k]) cell.bb.max[k] = partdata[i].r[k];
+          if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k])
+            cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+          if 	(partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
+            cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+          if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
+          if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
+        }
+        if (gravity_mac == gadget2)
+          cell.amin = min(cell.amin,
+              sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
+        else if (gravity_mac == eigenmac)
+          cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
+      }
     }
-    if (i == cell.ilast) break;
-    i = inext[i];
-  };
-  cell.ilast = iaux;
 
-  // Loop over all particles in cell summing their contributions
-  i = cell.ifirst;
-  while (i != -1) {
-	if (!partdata[i].flags.is_dead()) {
-	  cell.N++;
-	  if (partdata[i].flags.check(active)) cell.Nactive++;
-	  cell.hmax = max(cell.hmax,partdata[i].h);
-	  cell.maxsound = max(cell.maxsound, partdata[i].sound);
-	  if (gravmask[partdata[i].ptype]) {
-		cell.m += partdata[i].m;
-		for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-		for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
-	  }
-	  for (k=0; k<ndim; k++) {
-		if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
-		if (partdata[i].r[k] > cell.bb.max[k]) cell.bb.max[k] = partdata[i].r[k];
-		if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k])
-			cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-		if 	(partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k])
-			cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
-		if (partdata[i].v[k] > cell.vbox.max[k]) cell.vbox.max[k] = partdata[i].v[k];
-		if (partdata[i].v[k] < cell.vbox.min[k]) cell.vbox.min[k] = partdata[i].v[k];
-	  }
-      if (gravity_mac == gadget2)
-        cell.amin = min(cell.amin,
-                        sqrt(DotProduct(partdata[i].atree,partdata[i].atree,ndim)));
-      else if (gravity_mac == eigenmac)
-        cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
-	}
-	if (i == cell.ilast) break;
-	i = inext[i];
-  }
+    // Normalise all cell values
+    if (cell.m > 0) {
+      for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
+    }
+    if (cell.N > 0) {
+      for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
+      cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
+      cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+    }
 
-  // Normalise all cell values
-  if (cell.m > 0) {
-    for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
-    for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
+
+    // Compute quadrupole moment terms if selected
+    if (need_quadrupole_moments) {
+      i = cell.ifirst;
+
+      int ilast = cell.ilast ;
+      for(; i <= ilast; ++i) {
+        if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
+          mi = partdata[i].m;
+          for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
+          drsqd = DotProduct(dr,dr,ndim);
+          if (ndim == 3) {
+            cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+            cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+            cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+            cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
+            cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
+          }
+          else if (ndim == 2) {
+            cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+            cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+            cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+          }
+        }
+      }
+    }
+
+    // Calculate eigenvalue MAC criteria
+    if (gravity_mac == eigenmac) {
+      if (ndim == 3) {
+        p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
+            cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
+        if (p >= (FLOAT) 0.0) {
+          lambda = 0;
+        } else {
+          lambda = (FLOAT) 2.0*sqrt(-p/(FLOAT) 3.0);
+        }
+      } else if (ndim == 2) {
+        p = (cell.q[0]-cell.q[2])*(cell.q[0]-cell.q[2]) + 4*cell.q[1]*cell.q[1];
+        lambda = (FLOAT) 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), (FLOAT) 0.0);
+      } else {
+        lambda = fabs(cell.q[0]) ;
+      }
+
+      cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
+
+    }
+    else {
+      cell.mac = (FLOAT) 0.0;
+    }
   }
-  if (cell.N > 0) {
-    for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
+  // For non-leaf cells, sum over all child cells
+  //-------------------------------------------------------------------------------------------
+  else if (cell.copen != -1) {
+
+    // Set limits for children
+    int cc   = cell.copen;
+    int cend = cell.cnext;
+
+    assert(cend == Ncell);
+
+#ifdef MPI_PARALLEL
+    cell.worktot = 0 ;
+#endif
+
+    while (cc != cend) {
+      TreeCell<ndim> &child = celldata[cc];
+
+      if (child.N > 0) {
+        for (k=0; k<ndim; k++) cell.bb.min[k]   = min(child.bb.min[k], cell.bb.min[k]);
+        for (k=0; k<ndim; k++) cell.bb.max[k]   = max(child.bb.max[k], cell.bb.max[k]);
+        for (k=0; k<ndim; k++) cell.hbox.min[k] = min(child.hbox.min[k], cell.hbox.min[k]);
+        for (k=0; k<ndim; k++) cell.hbox.max[k] = max(child.hbox.max[k], cell.hbox.max[k]);
+        for (k=0; k<ndim; k++) cell.vbox.min[k] = min(child.vbox.min[k],cell.vbox.min[k]);
+        for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child.vbox.max[k],cell.vbox.max[k]);
+        for (k=0; k<ndim; k++) cell.r[k] += child.m*child.r[k];
+        cell.hmax = max(child.hmax, cell.hmax);
+        cell.maxsound = max(cell.maxsound, child.maxsound);
+        if (gravity_mac == gadget2)
+          cell.amin = min(cell.amin, child.amin);
+        else if (gravity_mac == eigenmac)
+          cell.macfactor = max(cell.macfactor, child.macfactor) ;
+        cell.m += child.m;
+        cell.N += child.N;
+      }
+
+#ifdef MPI_PARALLEL
+    cell.worktot += child.worktot ;
+#endif
+
+      cc = child.cnext;
+    };
+
+    if (cell.m > 0.0) {
+      for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
+    }
+
     for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
-    cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
-    cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+    cell.cdistsqd = max(DotProduct(dr, dr, ndim),cell.hmax*cell.hmax)/thetamaxsqd;
+
+    cell.rmax = sqrt(DotProduct(dr, dr, ndim));
+
+    // Set limits for children
+    cc   = cell.copen;
+    cend = cell.cnext;
+
+    while (cc != cend) {
+      TreeCell<ndim> &child = celldata[cc];
+
+      // Now add individual quadrupole moment terms
+      if (need_quadrupole_moments && child.N > 0) {
+        mi = child.m;
+        for (k=0; k<ndim; k++) dr[k] = child.r[k] - cell.r[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        if (ndim == 3) {
+          for (k=0; k<5; k++) cell.q[k] += child.q[k] ;
+          cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+          cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+          cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+          cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
+          cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
+        }
+        else if (ndim == 2) {
+          for (k=0; k<3; k++) cell.q[k] += child.q[k] ;
+          cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+          cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+          cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+        }
+        else if (ndim == 1) {
+          cell.q[0] += child.q[0] ;
+          cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+        }
+      }
+
+      cc = child.cnext;
+    }
+
   }
-
-
-  // Compute quadrupole moment terms if selected
-  if (need_quadrupole_moments) {
-	i = cell.ifirst;
-
-	while (i != -1) {
-	  if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
-		mi = partdata[i].m;
-		for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
-		drsqd = DotProduct(dr,dr,ndim);
-		if (ndim == 3) {
-		  cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
-		  cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
-		  cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
-		  cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
-		  cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
-		}
-		else if (ndim == 2) {
-		  cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
-		  cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
-		  cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
-		}
-	  }
-	  if (i == cell.ilast) break;
-	  i = inext[i];
-	}
-  }
+  //-------------------------------------------------------------------------------------------
 
   // Calculate eigenvalue MAC criteria
   if (gravity_mac == eigenmac) {
@@ -474,7 +543,7 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::StockTreeProperties
       }
     } else if (ndim == 2) {
       p = (cell.q[0]-cell.q[2])*(cell.q[0]-cell.q[2]) + 4*cell.q[1]*cell.q[1];
-      lambda = 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), 0.);
+      lambda = (FLOAT) 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), (FLOAT) 0.0);
     } else {
       lambda = fabs(cell.q[0]) ;
     }
@@ -515,11 +584,9 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
     ilast = celldata[c].ilast;
 
     // Else walk through linked list to obtain list and number of active ptcls.
-    while (i != -1) {
+    for(; i <= ilast; ++i) {
       if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
         celldata[c].Nactive++;
-      if (i == ilast) break;
-      i = inext[i];
     };
 
   }
@@ -536,14 +603,15 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
  (TreeCell<ndim> &cell,                ///< BruteForce-tree cell
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
-{
-  UpdateHmaxValuesCell(cell, partdata) ;
+  ParticleType<ndim> *partdata,        ///< SPH particle data array
+  bool stock_leaf)                     ///< Whether to stock the leaf cells.
+  {
+  UpdateHmaxValuesCell(cell, partdata, stock_leaf) ;
 
   int c = cell.copen ;
   if (c == -1) c = cell.cnext ;
   for (; c < Ncell; c++)
-	UpdateHmaxValuesCell(celldata[c], partdata) ;
+	UpdateHmaxValuesCell(celldata[c], partdata, stock_leaf) ;
 }
 //=================================================================================================
 //  BruteForceTree::UpdateHmaxValuesCell
@@ -553,10 +621,13 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
  (TreeCell<ndim> &cell,                ///< BruteForce-tree cell
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
+  ParticleType<ndim> *partdata,        ///< SPH particle data array
+  bool stock_leaf)                     ///< Whether to stock the leaf cells.
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
+
+  if (cell.copen == -1 && not stock_leaf) return ;
 
   // Zero all summation variables for all cells
   cell.hmax = (FLOAT) 0.0;
@@ -569,7 +640,8 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
   i = cell.ifirst;
 
   // Loop over all particles in cell summing their contributions
-  while (i != -1) {
+  int ilast = cell.ilast ;
+  for(; i <= ilast; ++i) {
     cell.hmax = max(cell.hmax,partdata[i].h);
     for (k=0; k<ndim; k++) {
       if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
@@ -579,8 +651,6 @@ void BruteForceTree<ndim,ParticleType,TreeCell>::UpdateHmaxValuesCell
     	cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
       }
     }
-    if (i == cell.ilast) break;
-    i = inext[i];
   }
 
   return;

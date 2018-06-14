@@ -318,12 +318,18 @@ template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
  (int Npart,                           ///< [in] No. of hydro particles
   Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to Hydrodynamics object
-  SmoothingKernel<ndim> *kernptr)      ///< [in] Pointer to smoothing kernel object
+  SmoothingKernel<ndim> *kernptr,      ///< [in] Pointer to smoothing kernel object
+  const bool UseGhosts,          ///< [in] Wheter or not the bounding box should take periodic ghosts into account
+  const bool UseTree)      ///< [in] Wheter or not we should use the tree to compute the bounding box rather than explicitly looping
 {
   if (rank == 0) debug2("[MpiControl::UpdateAllBoundingBoxes]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("UPDATEBOUNDINGBOXES");
 
   // Update local bounding boxes
-  mpinode[rank].UpdateBoundingBoxData(Npart, hydro, kernptr);
+  if (UseTree)
+    neibsearch->UpdateBoundingBoxData(mpinode[rank],UseGhosts);
+  else
+    mpinode[rank].UpdateBoundingBoxData(Npart,hydro,kernptr);
 
   // Do an all_gather to receive the new array
   MPI_Allgather(&(mpinode[rank].hbox), 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
@@ -577,7 +583,9 @@ namespace MpiReturnParticle {
   class ReturnDust {
   public:
     ReturnDust() : iorig(-1), dudt(0) {} ;
-    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {};
+    ReturnDust(const Particle<ndim>& p) : iorig(p.iorig), dudt(p.dudt) {
+      assert(p.ptype == gas_type);
+    };
 
     void update_received(Particle<ndim>& p) const {
       assert(p.ptype == gas_type) ;
@@ -639,25 +647,29 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
   assert(Nreceive_per_node[rank] == 0);
   std::partial_sum(Nreceive_per_node.begin(), Nreceive_per_node.end(), i_start_ghost.begin());
 
-
-  for (vector<int>::iterator it = i_start_ghost.begin(); it != i_start_ghost.end(); it++) {
-    *it += hydro->Nhydro+hydro->NPeriodicGhost;
-  }
-
   for (list<int>::iterator it = ids_ghosts.begin(); it != ids_ghosts.end(); it++) {
     const int index = *it;
     assert(index >= hydro->Nhydro + hydro->NPeriodicGhost);
     assert(index <  hydro->Nhydro + hydro->Nghost);
 
+    // Create the return type
+    ReturnDataType temp(partdata[index]) ;
+
+
     // Find to which processor we should send the particle
     const int proc = std::upper_bound(i_start_ghost.begin(),
-                                      i_start_ghost.end(), index) - i_start_ghost.begin();
-
+                                      i_start_ghost.end(), temp.iorig) - i_start_ghost.begin();
 
     N_updates_per_proc[proc]++;
     assert(N_updates_per_proc[proc]<=Nreceive_per_node[proc]);
 
-    buffer_proc_data[proc].push_back(ReturnDataType(partdata[index])) ;
+    // Check that iorig/ptype hasn't changed
+    assert(temp.iorig == particles_receive[temp.iorig].iorig);
+    assert(particles_receive[temp.iorig].ptype == partdata[index].ptype);
+
+    // Tell the target proc where the particle belongs
+    temp.iorig = particle_ids_receive[temp.iorig] ;
+    buffer_proc_data[proc].push_back(temp) ;
   }
 
   // Now that we know how many ghosts we need to send to each processor, can fill the buffer
@@ -701,11 +713,12 @@ void MpiControlType<ndim, ParticleType>::DoUpdateMpiGhostParents
 
     // Find the real particle that the ghost corresponds to
     int j = received.iorig ;
-    while (j >= hydro->Nhydro) {
-      assert(partdata[j].flags.check(any_boundary)) ;
+    while (partdata[j].flags.check(any_boundary)) {
+      assert(j >= hydro->Nhydro);
       j = partdata[j].iorig ;
     }
     assert(j >= 0 && j < hydro->Nhydro);
+
     received.update_received(partdata[j]) ;
   }
 
@@ -745,6 +758,7 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
  (Hydrodynamics<ndim>* hydro)              ///< Pointer to hydrodynamics object
 {
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("EXPORT_PARTICLES");
   vector<vector <char> > send_buffer(Nmpi-1);
   vector<vector <char> > receive_buffer(Nmpi-1);
   vector<vector <char> > header_receive(Nmpi-1);
@@ -910,6 +924,7 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
  (Hydrodynamics<ndim>* hydro)              ///< Pointer to main hydrodynamics object
 {
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("GET_EXPORTED");
   vector<vector<char> > send_buffer(Nmpi-1);                // ..
   vector<vector<char> > receive_buffer(Nmpi-1);
 
@@ -1087,12 +1102,14 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 
   // Create vector containing all particles to export
   particles_to_export.resize(Nexport);
+  particle_ids_send.resize(Nexport);
 
   for (int inode=0; inode<Nmpi; inode++) {
     vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
 
     for (unsigned int iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
       particles_to_export[index] = partdata[particles_on_this_node[iparticle]];
+      particle_ids_send[index] = particles_to_export[index].iorig;
 
       // Record in iorig the location in memory of the particle
       particles_to_export[index].iorig = particles_on_this_node[iparticle];
@@ -1113,6 +1130,14 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   MPI_Alltoallv(&particles_to_export[0], &Nexport_per_node[0], &displacements_send[0],
                 particle_type, &particles_receive[0], &Nreceive_per_node[0],
                 &displacements_receive[0], particle_type, MPI_COMM_WORLD);
+
+  // Now that we've received the particles, set their iorig to the location in the
+  // received array and store the 'original' iorig
+  particle_ids_receive.resize(Nreceive_tot);
+  for (int i=0; i < Nreceive_tot; i++) {
+    particle_ids_receive[i] = particles_receive[i].iorig ;
+    particles_receive[i].iorig = i ;
+  }
 
   *array = &particles_receive[0];
 
@@ -1140,7 +1165,11 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
   for (inode=0; inode<Nmpi; inode++) {
     vector<int >& particles_on_this_node = particles_to_export_per_node[inode];
     for (ipart=0; ipart<particles_on_this_node.size(); ipart++) {
-      particles_to_export[index] = partdata[particles_on_this_node[ipart]];
+      const ParticleType<ndim>& part = partdata[particles_on_this_node[ipart]];
+      // Check nobody has swapped the particles
+      assert(particle_ids_send[index] == part.iorig);
+
+      particles_to_export[index] = part;
       particles_to_export[index].iorig = particles_on_this_node[ipart];
       index++;
     }
@@ -1150,6 +1179,13 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
   MPI_Alltoallv(&particles_to_export[0], &Nexport_per_node[0], &displacements_send[0],
                 particle_type, &particles_receive[0], &Nreceive_per_node[0],
                 &displacements_receive[0], particle_type, MPI_COMM_WORLD);
+
+
+  for (int i=0; i < Nreceive_tot; i++) {
+    // Check that we received a particle with the expected origin
+    assert(particles_receive[i].iorig == particle_ids_receive[i]);
+    particles_receive[i].iorig = i ;
+  }
 
   *array = &particles_receive[0];
 

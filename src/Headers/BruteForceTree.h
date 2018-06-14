@@ -73,10 +73,8 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::gtot;
   using Tree<ndim,ParticleType,TreeCell>::g2c;
   using Tree<ndim,ParticleType,TreeCell>::hmax;
-  using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
-  using Tree<ndim,ParticleType,TreeCell>::inext;
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::kernrange;
   using Tree<ndim,ParticleType,TreeCell>::lmax;
@@ -99,7 +97,7 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  BruteForceTree(int, FLOAT, FLOAT, FLOAT, string, string, const DomainBox<ndim>&,
+  BruteForceTree(int, FLOAT, FLOAT, FLOAT, string, multipole_method, const DomainBox<ndim>&,
 		  	  	 const ParticleTypeRegister& reg, const bool);
   ~BruteForceTree() ;
 
@@ -114,13 +112,13 @@ class BruteForceTree : public Tree<ndim,ParticleType,TreeCell>
     StockTree(celldata[0], partdata, stock_leaf) ;
   }
   void StockTree(TreeCell<ndim>&, ParticleType<ndim> *, bool stock_leaf);
-  void StockTreeProperties(TreeCell<ndim> &, ParticleType<ndim> *);
-  void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
+  void StockTreeProperties(TreeCell<ndim> &, ParticleType<ndim> *, bool);
+  void UpdateAllHmaxValues(Particle<ndim> *part_gen, bool stock_leaf) {
     ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen) ;
-    UpdateHmaxValues(celldata[0], partdata) ;
+    UpdateHmaxValues(celldata[0], partdata, stock_leaf) ;
   }
-  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *);
-  void UpdateHmaxValuesCell(TreeCell<ndim> &, ParticleType<ndim> *);
+  void UpdateHmaxValues(TreeCell<ndim>&, ParticleType<ndim> *, bool);
+  void UpdateHmaxValuesCell(TreeCell<ndim> &, ParticleType<ndim> *, bool);
 
   void UpdateActiveParticleCounters(Particle<ndim> *);
 #ifdef MPI_PARALLEL

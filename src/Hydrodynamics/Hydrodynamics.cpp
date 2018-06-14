@@ -83,11 +83,6 @@ Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, F
       gas_radiation == "ionisation") {
     eos = new IonisingRadiation<ndim>(params, &units);
   }
-  else if ((_gas_eos == "energy_eqn" || _gas_eos == "constant_temp" || _gas_eos == "isothermal" ||
-            _gas_eos == "polytropic" || _gas_eos == "barotropic" || _gas_eos == "barotropic2") &&
-           gas_radiation == "monoionisation") {
-    eos = new MCRadiationEOS<ndim>(params, &units);
-  }
   else if (_gas_eos == "energy_eqn" || _gas_eos == "constant_temp") {
     eos = new Adiabatic<ndim>(params, &units);
   }
@@ -157,7 +152,6 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   part.levelneib = sim->level_max;
   part.nstep     = pow(2,sim->level_step - part.level);
   part.nlast     = sim->n - part.nstep;
-  part.tlast     = sim->t;
   part.m         = m;
   part.h         = (FLOAT) 1.0;
   part.u         = u;
@@ -257,11 +251,11 @@ void Hydrodynamics<ndim>::CheckBoundaryGhostParticle
 //=================================================================================================
 template <int ndim>
 void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
- (const int i,                         ///< [in] i.d. of original particle
-  const int k,                         ///< [in] Boundary dimension for new ghost
-  const int ghosttype,                 ///< [in] Type of ghost particle (periodic, mirror, etc..)
-  const FLOAT rk,                      ///< [in] k-position of original particle
-  const FLOAT vk)                      ///< [in] k-velocity of original particle
+ (int i,                         ///< [in] i.d. of original particle
+  int k,                         ///< [in] Boundary dimension for new ghost
+  int ghosttype,                 ///< [in] Type of ghost particle (periodic, mirror, etc..)
+  FLOAT rk,                      ///< [in] k-position of original particle
+  FLOAT vk)                      ///< [in] k-velocity of original particle
 {
   // Reallocate memory if necessary
   if (Nhydro+Nghost >= Nhydromax) {
@@ -279,7 +273,12 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   ghostpart.v[k]   = vk;
   ghostpart.flags.unset(active);
   ghostpart.flags.set(ghosttype); // Allow ghost to have multiple ghost flags
+
+  // Make sure the ghost points back to a real particle
+  if (i >= Nhydro) i = origpart.iorig;
+  assert(i < Nhydro);
   ghostpart.iorig  = i;
+
   Nghost++;
 
   // Some sanity-checking since dead ghosts should not ever be CreateBoundaryGhostParticle

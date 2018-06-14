@@ -103,15 +103,10 @@ MfvCommon<ndim, kernelclass,SlopeLimiter>::~MfvCommon()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of potential neighbours
-  const FLOAT hmax,                    ///< [in] Max. h permitted by neib list
-  FLOAT *m,                            ///< [in] Array of neib. masses
-  FLOAT *mu,                           ///< [in] Array of m*u (not needed here)
-  FLOAT *drsqd,                        ///< [in] Array of neib. distances squared
-  FLOAT *gpot,                         ///< [in] Array of neib. grav. potentials
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  Nbody<ndim> *nbody)                  ///< [in] Main N-body object
+ (MeshlessFVParticle<ndim> &part,        ///< [inout] Particle i data
+  FLOAT hmax,                            ///< [in] Maximum allowable smoothing length
+  const NeighbourList<DensNeib>& ngbs,   ///< [in] List of neighbours
+  Nbody<ndim> *nbody)                    ///< [in] Main N-body object
 {
   int j;                               // Neighbour id
   int iteration = 0;                   // h-rho iteration counter
@@ -120,23 +115,23 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   FLOAT h_upper_bound = hmax;          // Upper bound on h
   FLOAT invhsqd;                       // (1 / h)^2
   FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
-
+  FLOAT dr[ndim];
 
   // If there are sink particles present, check if the particle is inside one.
   // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
-  if (part.sinkid != -1) {
+  if (part.flags.check(inside_sink)) {
     h_lower_bound = hmin_sink;
-    //h_lower_bound = nbody->stardata[part.sinkid].h;  //hmin_sink;
     if (hmax < hmin_sink) return -1;
   }
 
   // Some basic sanity-checking in case of invalid input into routine
-  assert(Nneib > 0);
   assert(hmax > (FLOAT) 0.0);
   assert(!part.flags.is_dead());
   assert(part.m > (FLOAT) 0.0);
 
   FLOAT ndens, rho, volume, invomega, zeta, h, invh, hfactor ;
+
+  int Nneib = ngbs.size();
 
   h = part.h ;
   // Main smoothing length iteration loop
@@ -155,10 +150,12 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
     // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
-      ssqd      = drsqd[j]*invhsqd;
+      const DensNeib &ngb = ngbs[j];
+      for (int k=0; k<ndim; k++) dr[k] = ngb.r[k] - part.r[k];
+      ssqd = DotProduct(dr,dr,ndim)*invhsqd;
       ndens    += kern.w0_s2(ssqd);
       invomega += invh*kern.womega_s2(ssqd);
-      zeta     += m[j]*kern.wzeta_s2(ssqd);
+      zeta     += ngb.m*kern.wzeta_s2(ssqd);
     }
     //---------------------------------------------------------------------------------------------
 
@@ -220,7 +217,7 @@ int MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeH
   part.invomega  = (FLOAT) 1.0 + (FLOAT) MeshlessFV<ndim>::invndim*part.h*part.invomega/part.ndens;
   part.invomega  = (FLOAT) 1.0/part.invomega;
   part.zeta      = -(FLOAT) MeshlessFV<ndim>::invndim*part.m*part.h*part.zeta*part.invomega/part.ndens;
-  
+
 
   // Set important thermal variables here
   this->ComputeThermalProperties(part);
@@ -294,7 +291,7 @@ void MfvCommon<ndim, kernelclass,SlopeLimiter>::ComputeGradients
     }
 
     // Calculate maximum signal velocity
-    part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
+    part.vsig_max = max((FLOAT) part.vsig_max, part.sound + neibpart[j].sound -
         min((FLOAT) 0.0, dvdr/(sqrtf(drsqd) + small_number)));
     part.levelneib = max(part.levelneib, neibpart[j].level) ;
     neibpart[j].levelneib = max(neibpart[j].levelneib, part.level);
@@ -580,4 +577,3 @@ template class MfvCommon<3, QuinticKernel, GizmoLimiter<3> >;
 template class MfvCommon<1, TabulatedKernel, GizmoLimiter<1> >;
 template class MfvCommon<2, TabulatedKernel, GizmoLimiter<2> >;
 template class MfvCommon<3, TabulatedKernel, GizmoLimiter<3> >;
-

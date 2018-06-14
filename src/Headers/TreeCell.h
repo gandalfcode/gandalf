@@ -18,26 +18,22 @@ struct TreeCellBase {
   int cnext;                           ///< i.d. of next cell if not opened
   int copen;                           ///< i.d. of first child cell
   int id;                              ///< Cell id
+  int parent;                          ///< Id of the cell's parent
   int level;                           ///< Level of cell on tree
   int ifirst;                          ///< i.d. of first particle in cell
   int ilast;                           ///< i.d. of last particle in cell
   int N;                               ///< No. of particles in cell
   int Nactive;                         ///< No. of active particles in cell
-  int cexit[2][ndim];                  ///< Left and right exit cells (per dim)
+  float maxsound;                      ///< Maximum sound speed inside the cell
   FLOAT cdistsqd;                      ///< Minimum distance to use COM values
   FLOAT mac;                           ///< Multipole-opening criterion value
   Box<ndim> bb ;                       ///< Bounding box
   Box<ndim> hbox;                      ///< Bounding box for smoothing volume
   Box<ndim> vbox ;                     ///< Velocity space bounding box
-  FLOAT rcell[ndim];                   ///< Geometric centre of cell bounding box
   FLOAT r[ndim];                       ///< Position of cell COM
-  FLOAT v[ndim];                       ///< Velocity of cell COM
   FLOAT m;                             ///< Mass contained in cell
   FLOAT rmax;                          ///< Radius of bounding sphere
   FLOAT hmax;                          ///< Maximum smoothing length inside cell
-  FLOAT maxsound;                      ///< Maximum sound speed inside the cell
-  FLOAT drmaxdt;                       ///< Rate of change of bounding sphere
-  FLOAT dhmaxdt;                       ///< Rate of change of maximum h
   FLOAT q[5];                          ///< Quadrupole moment tensor
   union {
     FLOAT amin;                        ///< Minimum grav accel of particles in the cell
@@ -46,6 +42,16 @@ struct TreeCellBase {
 #ifdef MPI_PARALLEL
   double worktot;                      ///< Total work in cell
 #endif
+
+  void ComputeCellCentre(FLOAT rc[ndim]) const {
+    for (int k=0; k<ndim; k++) rc[k] = rcell(k);
+  }
+
+  FLOAT rcell(int k) const {
+    return  (FLOAT) 0.5*(bb.min[k] + bb.max[k]);
+  }
+
+
 };
 
 //=================================================================================================

@@ -55,7 +55,7 @@ template <int ndim, template <int> class ParticleType>
 HydroTree<ndim,ParticleType>::HydroTree
  (string tree_type,
   int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
-  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, multipole_method _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
   ParticleTypeRegister& types):
   neibcheck(true),
@@ -152,7 +152,7 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
 (string tree_type,
  int Nleafmax, FLOAT thetamaxsqd,
  FLOAT kernrange, FLOAT macerror,
- string gravity_mac, string multipole,
+ string gravity_mac, multipole_method multipole,
  const DomainBox<ndim>& domain,
  const ParticleTypeRegister& reg,
  const bool IAmPruned
@@ -228,18 +228,18 @@ void HydroTree<ndim,ParticleType>::AllocateMemory
     Ngravcellmaxbuf = new int[Nthreads];
     activelistbuf   = new int*[Nthreads];
     levelneibbuf    = new int*[Nthreads];
+    neiblistbuf     = new int*[Nthreads];
+    ptypebuf        = new int*[Nthreads];
     activepartbuf   = new ParticleType<ndim>*[Nthreads];
-    neibpartbuf     = new ParticleType<ndim>*[Nthreads];
-    cellbuf         = new MultipoleMoment<ndim>*[Nthreads];
 
     for (int ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread]     = max(1, 8*Ngather);
       Ngravcellmaxbuf[ithread] = max(1, 16*Ngather);
       activelistbuf[ithread]   = new int[Nleafmax];
       levelneibbuf[ithread]    = new int[Ntotmax];
+      neiblistbuf[ithread]     = new int[Nneibmaxbuf[ithread]];
+      ptypebuf[ithread]        = new int[Nneibmaxbuf[ithread]];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
-      neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
-      cellbuf[ithread]         = new MultipoleMoment<ndim>[Ngravcellmaxbuf[ithread]];
     }
     allocated_buffer = true;
 
@@ -281,20 +281,18 @@ void HydroTree<ndim,ParticleType>::DeallocateMemory(void)
   if (allocated_buffer) {
 
     for (ithread=0; ithread<Nthreads; ithread++) {
-      delete[] cellbuf[ithread];
       delete[] levelneibbuf[ithread];
-      delete[] neibpartbuf[ithread];
       delete[] activepartbuf[ithread];
+      delete[] ptypebuf[ithread];
+      delete[] neiblistbuf[ithread];
+      delete[] levelneibbuf[ithread];
       delete[] activelistbuf[ithread];
     }
-    delete[] cellbuf;
     delete[] levelneibbuf;
-    delete[] neibpartbuf;
     delete[] activepartbuf;
     delete[] activelistbuf;
     delete[] Ngravcellmaxbuf;
     delete[] Nneibmaxbuf;
-
   }
 
   return;
@@ -349,17 +347,9 @@ void HydroTree<ndim,ParticleType>::BuildTree
 
   // Else stock the tree
   //-----------------------------------------------------------------------------------------------
-  else if (n%ntreestockstep == 0) {
-
-    tree->StockTree(partdata,true);
-
-  }
-
-  // Otherwise simply extrapolate tree cell properties
-  //-----------------------------------------------------------------------------------------------
   else {
-
-    tree->ExtrapolateCellProperties(timestep);
+    
+    tree->StockTree(partdata,true);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -418,17 +408,9 @@ void HydroTree<ndim,ParticleType>::BuildGhostTree
 
   // Else stock the tree
   //-----------------------------------------------------------------------------------------------
-  else if (n%ntreestockstep == 0) {
-
-    ghosttree->StockTree(partdata,true);
-
-  }
-
-  // Otherwise simply extrapolate tree cell properties
-  //-----------------------------------------------------------------------------------------------
   else {
 
-    ghosttree->ExtrapolateCellProperties(timestep);
+    ghosttree->StockTree(partdata,true);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -480,6 +462,9 @@ template <int ndim, template <int> class ParticleType>
 void HydroTree<ndim,ParticleType>::UpdateActiveParticleCounters
  (Hydrodynamics<ndim> *hydro)          ///< [in] Pointer to hydrodynamics object
 {
+  debug2("[HydroTree::UpdateActiveParticleCounters]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("HYDRO_TREE_UPDATE_ACTIVE_COUNTERS");
+
   ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
   tree->UpdateActiveParticleCounters(partdata);
 }
@@ -514,19 +499,22 @@ void HydroTree<ndim,ParticleType>::SearchBoundaryGhostParticles
 
 
   debug2("[HydroTree::SearchBoundaryGhostParticles]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_BOUNDARY_GHOSTS");
 
 
-  // Create ghost particles in x-dimension
-  //===============================================================================================
-  for (int j = 0; j < ndim; j++) {
-    if ((simbox.boundary_lhs[j] != openBoundary || simbox.boundary_rhs[j] != openBoundary)) {
+  // Loop over all dimensions and create ghost particles
+  for (int k=0; k<ndim; k++) {
+    if ((simbox.boundary_lhs[k] != openBoundary || simbox.boundary_rhs[k] != openBoundary)) {
 
       // Do the real particles using the tree
-      tree->GenerateBoundaryGhostParticles(tghost, grange, j, simbox, hydro) ;
+      tree->GenerateBoundaryGhostParticles(tghost, grange, k, simbox, hydro) ;
 
       // Include ghosts-of-ghosts by doing ghosts explicitly.
-      if (j > 0) for (i=hydro->Nhydro; i<hydro->Ntot; i++)
-        hydro->CheckBoundaryGhostParticle(i, j, tghost,simbox);
+      if (k > 0) {
+        for (i=hydro->Nhydro; i<hydro->Ntot; i++) {
+          hydro->CheckBoundaryGhostParticle(i, k, tghost,simbox);
+        }
+      }
 
       hydro->Ntot = hydro->Nhydro + hydro->Nghost;
     }
@@ -628,10 +616,10 @@ void HydroTree<ndim,ParticleType>::UpdateAllStarGasForces
       nbody->CalculateDirectHydroForces(star, Nneib, Ndirect, neiblist, directlist, hydro, simbox, ewald);
 
       // Compute gravitational force due to distant cells
-      if (multipole == "monopole" || multipole == "fast_monopole") {
+      if (multipole == monopole || multipole == fast_monopole) {
         ComputeCellMonopoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
-      else if (multipole == "quadrupole" || multipole == "fast_quadrupole") {
+      else if (multipole == quadrupole || multipole == fast_quadrupole) {
         ComputeCellQuadrupoleForces(star->gpot, star->a, star->r, Ngravcell, gravcell);
       }
 
@@ -874,11 +862,11 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
       //-------------------------------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
 
-        if (multipole == "monopole") {
+        if (multipole == monopole) {
           ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].atree, activepart[j].r,
                                     gravcelllist.size(), &gravcelllist[0]);
         }
-        else if (multipole == "quadrupole") {
+        else if (multipole == quadrupole) {
           ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].atree, activepart[j].r,
                                       gravcelllist.size(), &gravcelllist[0]);
         }
@@ -905,11 +893,11 @@ void HydroTree<ndim,ParticleType>::UpdateGravityExportList
 
 
       // Compute 'fast' multipole terms here
-      if (multipole == "fast_monopole") {
+      if (multipole == fast_monopole) {
         ComputeFastMonopoleForces(Nactive, gravcelllist.size(), &gravcelllist[0], cell,
                                  activepart, hydro->types);
       }
-      if (multipole == "fast_quadrupole") {
+      if (multipole == fast_quadrupole) {
         ComputeFastQuadrupoleForces(Nactive, gravcelllist.size(), &gravcelllist[0], cell,
                                     activepart, hydro->types);
       }
@@ -997,7 +985,7 @@ void HydroTree<ndim,ParticleType>::UpdateHydroExportList
 
         overlapflag = prunedtree[j]->ComputeHydroTreeCellOverlap(cellptr, simbox);
 
-        // If pruned tree is too close (flagged by -1), then record cell id
+        // If pruned tree is too close, then record cell id
         // for exporting to other MPI processes
         if (overlapflag) {
 
@@ -1402,17 +1390,9 @@ void HydroTree<ndim,ParticleType>::BuildMpiGhostTree
 
   // Else stock the tree
   //-----------------------------------------------------------------------------------------------
-  else if (n%ntreestockstep == 0) {
-
-    mpighosttree->StockTree(partdata,true);
-
-  }
-
-  // Otherwise simply extrapolate tree cell properties
-  //-----------------------------------------------------------------------------------------------
   else {
 
-    mpighosttree->ExtrapolateCellProperties(timestep);
+    mpighosttree->StockTree(partdata,true);
 
   }
   //-----------------------------------------------------------------------------------------------

@@ -263,7 +263,7 @@ public:
 
     p2.gpot += p.gpot;
     p2.gpot_hydro += p.gpot_hydro;
-    p2.vsig_max = max(p2.vsig_max,p.vsig_max);
+    p2.vsig_max = max((FLOAT) p2.vsig_max, p.vsig_max);
   }
 
   void ReceiveParticle (const void* pointer, MeshlessFVParticle<ndim>& p2, Hydrodynamics<ndim>* hydro) {
@@ -438,7 +438,7 @@ public:
     FLOAT dr[ndim];
     for (int k=0; k<ndim; k++) {
       c.r[k] /= c.m;
-      c.rcell[k] = (FLOAT) 0.5*(c.bb.min[k] + c.bb.max[k]);
+      //c.rcell[k] = (FLOAT) 0.5*(c.bb.min[k] + c.bb.max[k]);
       dr[k] = (FLOAT) 0.5*(c.bb.max[k] - c.bb.min[k]);
     }
     c.rmax = sqrt(DotProduct(dr,dr,ndim));

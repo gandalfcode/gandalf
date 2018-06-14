@@ -371,10 +371,12 @@ void Sinks<ndim>::AccreteMassToSinks
   debug2("[Sinks::AccreteMassToSinks]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SINK_ACCRETE_MASS");
 
+  int *sinkid = new int[hydro->Ntot];
   Particle<ndim> *partdata = hydro->GetParticleArrayUnsafe();
 
   // Allocate local memory and initialise values
-  for (int i=0; i<hydro->Ntot; i++) hydro->GetParticlePointer(i).sinkid = -1;
+  for (int i=0; i<hydro->Ntot; i++) sinkid[i] = -1;
+  for (int i=0; i<hydro->Ntot; i++) hydro->GetParticlePointer(i).flags.unset(inside_sink);
   for (int s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
 
 #ifdef MPI_PARALLEL
@@ -386,9 +388,9 @@ void Sinks<ndim>::AccreteMassToSinks
   // Set-up all parallel threads for computing sink accretion
   //===============================================================================================
 #if defined MPI_PARALLEL
-#pragma omp parallel default(none) shared(ghosts_accreted,hydro,mydomain,nbody,partdata)
+#pragma omp parallel default(none) shared(ghosts_accreted,hydro,mydomain,nbody,partdata,sinkid)
 #else
-#pragma omp parallel default(none) shared(hydro,nbody,partdata)
+#pragma omp parallel default(none) shared(hydro,nbody,partdata,sinkid)
 #endif
   {
     int i,j,k;                               // Particle and dimension counters
@@ -396,7 +398,6 @@ void Sinks<ndim>::AccreteMassToSinks
     int Nneib;                               // No. of particles inside sink
     int Nneibmax = 128;                      // Max. no. of particles inside sink
     int s;                                   // Sink counter
-    //  int saux;                                // Aux. sink i.d.
     FLOAT asqd;                              // Acceleration squared
     FLOAT dr[ndim];                          // Relative position vector
     FLOAT drmag;                             // Distance
@@ -409,7 +410,6 @@ void Sinks<ndim>::AccreteMassToSinks
     FLOAT macc_temp;                         // Temp. accreted mass variable
     FLOAT mold;                              // Old mass
     FLOAT mtemp;                             // Aux. mass variable
-    //FLOAT rsqdmin;                           // Distance (sqd) to closest sink
     FLOAT rold[ndim];                        // Old sink position
     FLOAT vold[ndim];                        // Old sink velocity
     FLOAT wnorm;                             // Kernel normalisation factor
@@ -418,16 +418,104 @@ void Sinks<ndim>::AccreteMassToSinks
     FLOAT *rsqdlist= new FLOAT[Nneibmax];    // Array of particle-sink distances
 
 
-    // Determine which sink each SPH particle accretes to.  If none, flag -1
-    // (note we should really use the tree to compute this)
     //---------------------------------------------------------------------------------------------
+#pragma omp master
+    {
+      int Ninsink = 0;
+      int *plist = new int[hydro->Ntot];
+
+      // Flag any gas particles which are inside sink particles.
+      for (s=0; s<Nsink; s++) {
+
+        // For MPI simulations, only consider sink particles owned by this domain
+#if defined MPI_PARALLEL
+        if (!ParticleInBox(*(sink[s].star), mydomain)) continue;
+#endif
+
+        // Find the list of particles inside
+        do {
+          Nlist = neibsearch->GetGatherNeighbourList
+           (sink[s].star->r, sink[s].radius, partdata, hydro->Nhydro, Nneibmax, neiblist);
+
+          // If there are too many neighbours so the buffers are filled,
+          // reallocate the arrays and recompute the neighbour lists.
+          if (Nlist == -1) {
+            delete[] rsqdlist;
+            delete[] neiblist;
+            delete[] ilist;
+            Nneibmax *= 2;
+            ilist = new int[Nneibmax];
+            neiblist = new int[Nneibmax];
+            rsqdlist = new FLOAT[Nneibmax];
+          };
+
+        } while (Nlist == -1);
+
+        // Loop over all potential sink neighbours
+        for (j=0; j<Nlist; j++) {
+          i = neiblist[j];
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
+          if (part.flags.is_dead()) continue;
+          for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
+          drsqd = DotProduct(dr, dr, ndim);
+
+          // If inside a sink, then flag and list i.d. for next step
+          if (drsqd <= sink[s].radius*sink[s].radius) {
+            if (!part.flags.check(inside_sink)) {
+              plist[Ninsink++] = i;
+              part.flags.set(inside_sink);
+            }
+          }
+        }
+      }
+
+      // Determine the closest sinks to all particles that are listed as being inside sinks
+      for (int j=0; j<Ninsink; j++) {
+        i = plist[j];
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
+        FLOAT drsqdmin = big_number;
+
+        for (int s=0; s<Nsink; s++) {
+          for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
+          drsqd = DotProduct(dr, dr, ndim);
+          if (drsqd <= sink[s].radius*sink[s].radius && drsqd < drsqdmin) {
+            drsqdmin = drsqd;
+            part.flags.set(inside_sink);
+            sinkid[i] = s;
+            sink[s].Ngas++;
+          }
+        }
+      }
+
+      delete[] plist;
+    }
+    //---------------------------------------------------------------------------------------------
+
+
+    // Calculate the accretion timescale and the total mass accreted from all ptcls for each sink.
+    //---------------------------------------------------------------------------------------------
+#pragma omp barrier
 #pragma omp for schedule(dynamic,1)
     for (s=0; s<Nsink; s++) {
 
-      // For MPI simulations, only consider sink particles owned by this domain
+      // Only accrete from local sinks
 #if defined MPI_PARALLEL
       if (!ParticleInBox(*(sink[s].star), mydomain)) continue;
 #endif
+
+      // Skip sink if it contains no gas, or unless it's at the beginning of its current step.
+      if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
+
+
+      // Initialise all variables for current sink
+      Nneib = 0;
+      wnorm = (FLOAT) 0.0;
+      sink[s].menc     = (FLOAT) 0.0;
+      sink[s].trad     = (FLOAT) 0.0;
+      sink[s].tvisc    = (FLOAT) 1.0;
+      sink[s].ketot    = (FLOAT) 0.0;
+      sink[s].rotketot = (FLOAT) 0.0;
+      sink[s].gpetot   = (FLOAT) 0.0;
 
       // Find the list of particles inside
       do {
@@ -454,66 +542,7 @@ void Sinks<ndim>::AccreteMassToSinks
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         if (part.flags.is_dead()) continue;
 
-        for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
-        drsqd = DotProduct(dr, dr, ndim);
-
-        if (drsqd <= sink[s].radius*sink[s].radius) {
-#pragma omp critical
-          part.sinkid = s;
-          sink[s].Ngas++;
-        }
-
-      }
-
-    }
-    //---------------------------------------------------------------------------------------------
-
-
-    // Calculate the accretion timescale and the total mass accreted from all ptcls for each sink.
-    //---------------------------------------------------------------------------------------------
-#pragma omp for schedule(dynamic,1)
-    for (s=0; s<Nsink; s++) {
-
-      // Only accrete from local sinks
-#if defined MPI_PARALLEL
-      if (!ParticleInBox(*(sink[s].star), mydomain)) continue;
-#endif
-
-      /*cout << "Accreting?? : " << s << "   " << Nsink << "   " << sink[s].Ngas << "    " << n
-           << "    " << sink[s].star->nlast << endl;
-      cout << "r0 : " << sink[s].star->r[0] << "    " << sink[s].star->r[1] << "    " << sink[s].star->r[2] << endl;
-      cout << "v0 : " << sink[s].star->v[0] << "    " << sink[s].star->v[1] << "    " << sink[s].star->v[2] << endl;
-      cout << "a0 : " << sink[s].star->a[0] << "    " << sink[s].star->a[1] << "    " << sink[s].star->a[2] << endl;
-  */
-      // Skip sink if it contains no gas, or unless it's at the beginning of its current step.
-      //if (sink[s].Ngas == 0 || !sink[s].star->flags.check(active)) continue;
-      //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
-      //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != sink[s].star->nstep/2) continue;
-
-      //if (sink[s].Ngas == 0 || sink[s].star->nlast != n) continue;
-      if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
-
-
-      // Initialise all variables for current sink
-      Nneib = 0;
-      wnorm = (FLOAT) 0.0;
-      sink[s].menc     = (FLOAT) 0.0;
-      sink[s].trad     = (FLOAT) 0.0;
-      sink[s].tvisc    = (FLOAT) 1.0;
-      sink[s].ketot    = (FLOAT) 0.0;
-      sink[s].rotketot = (FLOAT) 0.0;
-      sink[s].gpetot   = (FLOAT) 0.0;
-
-      Nlist = neibsearch->GetGatherNeighbourList
-       (sink[s].star->r, sink[s].radius, partdata, hydro->Nhydro, Nneibmax, neiblist);
-
-      // Loop over all potential sink neighbours
-      for (j=0; j<Nlist; j++) {
-        i = neiblist[j];
-        Particle<ndim>& part = hydro->GetParticlePointer(i);
-        if (part.flags.is_dead()) continue;
-
-        if (part.sinkid == s) {
+        if (sinkid[i] == s) {
           for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
           drsqd = DotProduct(dr, dr, ndim);
           if (drsqd > sink[s].radius*sink[s].radius) continue;
@@ -596,13 +625,6 @@ void Sinks<ndim>::AccreteMassToSinks
         macc = sink[s].menc*max((FLOAT) 1.0 - (FLOAT) exp(-dt/sink[s].taccrete), (FLOAT) 0.0);
         sink[s].dmdt = macc / dt;
 
-        /*cout << "efrac : " << efrac << "    taccrete : " << sink[s].taccrete << "   "
-             << sink[s].tvisc << "    " << sink[s].trad << "    " << sink[s].trot << endl;
-        cout << "energy : " << sink[s].ketot << "   " << sink[s].rotketot << "    " << sink[s].gpetot << endl;
-        cout << "macc : " << macc << "     macc/mmean : " << macc/hydro->mmean
-             << "    " << sink[s].menc << "    mmax : " << sink[s].mmax
-             << "    mmax/mmean : " << sink[s].mmax/hydro->mmean << "     dmdt : " << macc/dt << endl;
-        */
       }
       else {
         macc = sink[s].menc;
@@ -759,11 +781,13 @@ void Sinks<ndim>::AccreteMassToSinks
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (!(part.flags.is_dead() || part.m > 0.0)) {
       cout << "Accretion problem? : " << i << "   " << part.flags.get() << "   " << part.m
-           << "   " << part.h << "   " << part.sinkid << "   " << hydro->mmean << endl;
+           << "   " << part.h << "   " << sinkid[i] << "   " << hydro->mmean << endl;
       ExceptionHandler::getIstance().raise("Error : sink accreting dead or zero-mass particles");
     }
     assert(part.flags.is_dead() || part.m > 0.0);
   }
+
+  delete[] sinkid;
 
   return;
 }

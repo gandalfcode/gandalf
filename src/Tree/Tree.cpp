@@ -68,11 +68,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
   int Nactive = 0;                     // No. of active particles in cell
 
   // Walk through linked list to obtain list and number of active ptcls.
-  while (i != -1) {
+  for ( ; i <= ilast; ++i) {
     if (i < Ntot && partdata[i].flags.check(active) && !partdata[i].flags.is_dead())
       activelist[Nactive++] = i;
-    if (i == ilast) break;
-    i = inext[i];
     assert(i < Ntot);
   };
 
@@ -164,38 +162,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
 }
 
 
-//=================================================================================================
-//  Tree::ExtrapolateCellProperties
-/// Extrapolate important physical properties of all cells in the tree.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void Tree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
- (const FLOAT dt)                      ///< [in] Smallest timestep size
-{
-  int c;                               // Cell counter
-  int k;                               // Dimension counter
-
-  debug2("[Tree::ExtrapolateCellProperties]");
-
-
-  // Loop over all cells and extrapolate all properties
-  //-----------------------------------------------------------------------------------------------
-  for (c=0; c<Ncell; c++) {
-
-    for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].rcell[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bb.min[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].bb.max[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hbox.min[k] += celldata[c].v[k]*dt;
-    for (k=0; k<ndim; k++) celldata[c].hbox.max[k] += celldata[c].v[k]*dt;
-    //celldata[c].rmax += celldata[c].drmaxdt*dt;
-    //celldata[c].hmax += celldata[c].dhmaxdt*dt;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
 
 
 //=================================================================================================
@@ -228,7 +194,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rp[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rp[k];  //celldata[cc].rcell[k] - rp[k];
     drsqd = DotProduct(dr, dr, ndim);
 
 
@@ -249,12 +217,11 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax < Nneibmax) {
         i = celldata[cc].ifirst;
-        while (i != -1) {
+        int ilast = celldata[cc].ilast;
+        for (; i <= ilast; ++i) {
           for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rp[k];
           drsqd = DotProduct(dr,dr,ndim);
           if (drsqd < rsearchsqd && !partdata[i].flags.is_dead()) neiblist[Nneib++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
         };
         cc = celldata[cc].cnext;
       }
@@ -288,36 +255,24 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 /// plus all particles contained in adjacent cells (including diagonal cells).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
+void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
  (const TreeCellBase<ndim> &cell,      ///< [in] Pointer to current cell
   const Particle<ndim> *part_gen,      ///< [in] Particle data array
   const FLOAT hmax,                    ///< [in] Maximum smoothing length
-  const int Nneibmax,                  ///< [in] Max. no. of neighbours
-  int &Nneib,                          ///< [inout] No. of neighbours
-  int *neiblist)                       ///< [out] List of neighbour i.d.s
+  NeighbourManagerBase& neibmanager)   ///< [inout] NeighbourManager object
 {
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
 
   int cc = 0;                          // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int k;                               // Neighbour counter
-  int Ntemp = Nneib;                   // Temporary neighbour counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
   FLOAT gatherboxmin[ndim];            // Minimum gather neighbour box
   FLOAT gatherboxmax[ndim];            // Maximum gather neighbour box
-  FLOAT rc[ndim];                      // Position of cell
-  const FLOAT hrangemaxsqd = pow(cell.rmax + kernrange*hmax,2);
-  assert(neiblist != NULL);
   assert(partdata != NULL);
 
-  // Exit immediately if we have overflowed the neighbour list buffer
-  if (Nneib == -1) return -1;
 
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
-  for (k=0; k<ndim; k++) gatherboxmin[k] = cell.bb.min[k] - kernrange*hmax;
-  for (k=0; k<ndim; k++) gatherboxmax[k] = cell.bb.max[k] + kernrange*hmax;
+  FLOAT rc[ndim];
+  cell.ComputeCellCentre(rc);
+  for (int k=0; k<ndim; k++) gatherboxmin[k] = cell.bb.min[k] - kernrange*hmax;
+  for (int k=0; k<ndim; k++) gatherboxmax[k] = cell.bb.max[k] + kernrange*hmax;
 
 
   //===============================================================================================
@@ -338,21 +293,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
 
       // If leaf-cell, add particles to list
-      else if (celldata[cc].copen == -1 && Ntemp + Nleafmax < Nneibmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          neiblist[Ntemp++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
+      else if (celldata[cc].copen == -1) {
+        neibmanager.AddNeibs(celldata[cc]);
         cc = celldata[cc].cnext;
       }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Ntemp + Nleafmax >= Nneibmax) {
-        return -1;
-      }
-
     }
 
     // If not in range, then open next cell
@@ -363,21 +307,6 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
   };
   //===============================================================================================
-
-
-  // Now, trim the list to remove particles that are definitely not neighbours
-  assert(Ntemp <= Nneibmax);
-  for (j=Nneib; j<Ntemp; j++) {
-    i = neiblist[j];
-    if (partdata[i].flags.is_dead()) continue;
-    for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-    drsqd = DotProduct(dr, dr, ndim);
-    //cout << "Checking neighbour : " << j << "   " << Nneib << "   " << drsqd << "   " << hrangemaxsqd << endl;
-    if (drsqd < hrangemaxsqd) neiblist[Nneib++] = i;
-  }
-
-  assert(Nneib <= Nneibmax);
-  return Nneib;
 }
 
 
@@ -415,7 +344,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   assert(neibpart != NULL);
   assert(partdata != NULL);
 
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  //for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  cell.ComputeCellCentre(rc);
 
   // Exit immediately if we have overflowed the neighbour list buffer
   if (Nneib == -1) return -1;
@@ -424,7 +354,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k];  //celldata[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
     // Check if bounding boxes overlap with each other
@@ -445,10 +377,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Ntemp + Nleafmax < Nneibmax) {
         i = celldata[cc].ifirst;
-        while (i != -1) {
+        int ilast = celldata[cc].ilast;
+        for (; i <= ilast; ++i) {
           neiblist[Ntemp++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
         };
         cc = celldata[cc].cnext;
       }
@@ -502,11 +433,10 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
  (const TreeCellBase<ndim> &cell,      ///< [in] Cell pointer
-	NeighbourManagerBase& neibmanager)            ///< [inout] NeighbourManager object
+  NeighbourManagerBase& neibmanager)   ///< [inout] NeighbourManager object
 {
 
   int cc = 0;                          // Cell counter
-  int i;
 
   //===============================================================================================
   while (cc < Ncell) {
@@ -528,12 +458,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          neibmanager.AddNeib(i);
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
+        neibmanager.AddNeibs(celldata[cc]) ;
         cc = celldata[cc].cnext;
       }
 
@@ -591,13 +516,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-        int i = celldata[cc].ifirst;
-        while (i != -1) {
-          neibmanager.AddPeriodicNeib(i) ;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        }
-       cc = celldata[cc].cnext;
+        neibmanager.AddPeriodicNeibs(celldata[cc]) ;
+        cc = celldata[cc].cnext;
       }
 
     }
@@ -640,7 +560,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   const FLOAT rmax      = cell.rmax;
   const FLOAT amin      = cell.amin;
   const FLOAT macfactor = cell.macfactor;
-  for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  cell.ComputeCellCentre(rc);
+  //for (int k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Start with root cell and walk through entire tree
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -648,7 +569,9 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   while (cc < Ncell) {
 
     // Calculate closest periodic replica of cell
-    for (int k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (int k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k];  //celldata[cc].rcell[k] - rc[k];
     GhostFinder.NearestPeriodicVector(dr);
     const FLOAT drsqd = DotProduct(dr, dr, ndim);
 
@@ -669,14 +592,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-
-        int i = celldata[cc].ifirst;
-        while (i != -1) {
-          neibmanager.AddPeriodicNeib(i);
-
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
+        neibmanager.AddPeriodicNeibs(celldata[cc]);
         cc = celldata[cc].cnext;
       }
 
@@ -697,7 +613,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (celldata[cc].copen == -1 && celldata[cc].N == 1) {
-        neibmanager.AddDirectNeib(celldata[cc].ifirst);
+        neibmanager.AddDirectNeibs(celldata[cc]);
       }
       else {
     	neibmanager.AddGravCell(MultipoleMoment<ndim>(celldata[cc]));
@@ -717,13 +633,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
 
       // If leaf-cell, add particles to list
       else {
-        int i = celldata[cc].ifirst;
-        while (i != -1) {
-          neibmanager.AddDirectNeib(i);
-
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        }
+        neibmanager.AddDirectNeibs(celldata[cc]) ;
         cc = celldata[cc].cnext;
       }
     }
@@ -786,7 +696,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   //===============================================================================================
   while (cc < Ncell) {
 
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rs[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rs[k];  //celldata[cc].rcell[k] - rs[k];
     drsqd = DotProduct(dr, dr, ndim);
 
 
@@ -803,10 +715,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
         i = celldata[cc].ifirst;
-        while (i != -1) {
+        int ilast = celldata[cc].ilast;
+        for (; i <= ilast; ++i) {
           if (!partdata[i].flags.is_dead()) neiblist[Nneib++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
         };
         cc = celldata[cc].cnext;
       }
@@ -852,10 +763,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Ndirect + Nleafmax <= Ndirectmax) {
         i = celldata[cc].ifirst;
-        while (i != -1) {
+        int ilast = celldata[cc].ilast;
+        for (; i <= ilast; ++i) {
           if (!partdata[i].flags.is_dead()) directlist[Ndirect++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
         };
         cc = celldata[cc].cnext;
       }
@@ -992,7 +902,8 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
 
       // Leaf cell so update vsig_max for each particle
       int i = celldata[cc].ifirst;
-      while (i != -1) {
+      int ilast = celldata[cc].ilast;
+      for (; i <= ilast; ++i) {
         std::vector<ParticleType<ndim> > neibpart(MaxNumGhosts) ;
         int NumGhosts = GhostFinder.ConstructAllGhosts(partdata[i], &(neibpart[0]));
 
@@ -1000,10 +911,10 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
           ParticleType<ndim>& part = activepart[j] ;
 
           for (int l=0; l<NumGhosts; l++) {
-            double dvdr = 0 ;
-            double dr = 0 ;
+            FLOAT dvdr = 0 ;
+            FLOAT dr = 0 ;
             for (k=0; k<ndim; k++)  {
-              double drk = part.r[k] - neibpart[l].r[k] ;
+              FLOAT drk = part.r[k] - neibpart[l].r[k] ;
               dvdr += drk * (part.v[k] - neibpart[l].v[k]);
               dr += drk*drk ;
             }
@@ -1013,13 +924,11 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeSignalVelocityFromDistantInteracti
               dr = max(dr, part.h);
 
               FLOAT vsig = part.sound + neibpart[l].sound - dvdr ;
-              part.vsig_max = max(part.vsig_max, vsig*part.h/dr) ;
+              part.vsig_max = max((FLOAT) part.vsig_max, vsig*part.h/dr) ;
               assert(part.vsig_max >= 0) ;
             }
           }
         }
-        if (i == celldata[cc].ilast) break;
-        i = inext[i];
       }
 
       // Construct the new guess for dt_min
@@ -1088,6 +997,45 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
   // return error code, -1
   return -1;
 }
+
+
+//=================================================================================================
+// Tree::UpdateHmaxLeaf
+/// Update the Hmax Values for a leaf cell only. This function updates the Tree's copy of the
+/// leaf cell ONLY.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::UpdateHmaxLeaf
+(TreeCellBase<ndim>& cellbase,          ///< [in] Cell to update hmax for
+Particle<ndim>* part_gen)               ///< [in] Particle array
+{
+  ParticleType<ndim>* partdata = reinterpret_cast<ParticleType<ndim>*>(part_gen);
+
+  TreeCell<ndim>& cell = celldata[cellbase.id] ;
+
+  assert(cell.id == cellbase.id);
+
+  cell.hmax = (FLOAT) 0.0;
+  for (int k=0; k<ndim; k++) cell.hbox.min[k] =  big_number;
+  for (int k=0; k<ndim; k++) cell.hbox.max[k] = -big_number;
+
+  // Loop over all particles in cell summing their contributions
+  if (cell.ifirst != -1) {
+    for (int j = cell.ifirst; j <= cell.ilast; ++j) {
+      const ParticleType<ndim> &part = partdata[j];
+      if (part.flags.is_dead()) continue ;
+
+      cell.hmax = max(cell.hmax,part.h);
+      for (int k=0; k<ndim; k++) {
+        cell.hbox.min[k] = min(cell.hbox.min[k], part.r[k] - kernrange*part.h);
+        cell.hbox.max[k] = max(cell.hbox.max[k], part.r[k] + kernrange*part.h);
+      }
+    }
+  }
+}
+
+
+
 //=================================================================================================
 // Tree::GenerateBoundaryGhostParticles
 /// Creates the ghost particles by walking the tree. It checks whether the cell's smoothing
@@ -1111,9 +1059,9 @@ void Tree<ndim,ParticleType,TreeCell>::GenerateBoundaryGhostParticles
 
     // If x-bounding box overlaps edge of x-domain, open cell
     //-------------------------------------------------------------------------------------------
-    if (cellptr->bb.min[j] + min((FLOAT) 0.0,cellptr->v[j]*tghost) <
+    if (cellptr->bb.min[j] + cellptr->vbox.min[j]*tghost <
         simbox.min[j] + ghost_range*cellptr->hmax ||
-        cellptr->bb.max[j] + max((FLOAT) 0.0,cellptr->v[j]*tghost) >
+        cellptr->bb.max[j] + cellptr->vbox.max[j]*tghost >
         simbox.max[j] - ghost_range*cellptr->hmax) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -1127,10 +1075,9 @@ void Tree<ndim,ParticleType,TreeCell>::GenerateBoundaryGhostParticles
       // If leaf-cell, check through particles in turn to find ghosts
       else if (cellptr->copen == -1) {
        int i = cellptr->ifirst;
-        while (i != -1) {
-          hydro->CheckBoundaryGhostParticle(i,j,tghost,simbox);
-          if (i == cellptr->ilast) break;
-          i = inext[i];
+       int ilast = cellptr->ilast;
+       for (; i <= ilast; ++i) {
+         hydro->CheckBoundaryGhostParticle(i,j,tghost,simbox);
         };
         c = cellptr->cnext;
       }
@@ -1211,7 +1158,9 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
 
 
     // Calculate closest periodic replica of cell
-    for (k=0; k<ndim; k++) dr[k] = celldata[c].rcell[k] - rnode[k];
+    FLOAT rc[ndim];
+    celldata[c].ComputeCellCentre(rc);
+    for (k=0; k<ndim; k++) dr[k] = rc[k] - rnode[k];  //celldata[c].rcell[k] - rnode[k];
     NearestPeriodicVector(simbox, dr, dr_corr);
 
     // Find vector to nearest edge of the node box
@@ -1280,6 +1229,8 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   for (c=0; c<Nprunedcell; c++) {
     if (prunedcells[c].copen != -1) prunedcells[c].copen = newCellIds[prunedcells[c].copen];
     prunedcells[c].cnext = newCellIds[prunedcells[c].cnext];
+    if (c > 0) prunedcells[c].parent = newCellIds[prunedcells[c].parent];
+
     if (prunedcells[c].cnext <= 0 || prunedcells[c].copen >= prunedcells[c].cnext) {
       cout << "Problem with new pointers : " << c << "    " << Nprunedcell << "   "
            << "    " << Nprunedcellmax << "    copen : " << prunedcells[c].copen
@@ -1288,6 +1239,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     }
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
+    assert(prunedcells[c].parent < c);
   }
 
 #ifndef NDEBUG
@@ -1326,11 +1278,13 @@ void Tree<ndim,ParticleType,TreeCell>::UpdateLeafCells
 		const int ileaf = Nleaf_indices[i];
 		//Copy a few things that we need to "roll back"
 		TreeCell<ndim>& cell = celldata[ileaf];
-		const int copen = cell.copen;
-		const int cnext = cell.cnext;
+		const int copen  = cell.copen;
+		const int cnext  = cell.cnext;
+		const int parent = cell.parent;
 		cell = localcells[ilocal];
-		cell.copen = copen;
-		cell.cnext = cnext;
+		cell.copen  = copen;
+		cell.cnext  = cnext;
+		cell.parent = parent;
 	}
  }
 
@@ -1399,7 +1353,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   FLOAT rmax;                          // Radius of sphere containing particles
 
   // Make local copies of important cell properties
-  for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  //for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
+  cell.ComputeCellCentre(rc);
   hrangemax = cell.rmax + kernrange*cell.hmax;
   rmax = cell.rmax;
   const FLOAT amin = cell.amin ;
@@ -1412,7 +1367,9 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   while (cc < Ncell) {
 
     // Calculate closest periodic replica of cell
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    FLOAT rcc[ndim];
+    celldata[cc].ComputeCellCentre(rcc);
+    for (k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k]; //celldata[cc].rcell[k] - rc[k];
     NearestPeriodicVector(simbox, dr, dr_corr);
     drsqd = DotProduct(dr, dr, ndim);
 
@@ -1493,29 +1450,17 @@ bool Tree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
   const DomainBox<ndim> &simbox)       ///< [in] Simulation domain box object
 {
   int cc = 0;                          // Cell counter
-  int k;                               // Neighbour counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT dr_corr[ndim];                 // Periodic correction vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT rc[ndim];                      // Position of cell
 
-  // Make local copies of important cell properties
-  for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
-
+  const GhostNeighbourFinder<ndim> GhostFinder(_domain) ;
 
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
 
-    // Calculate closest periodic replica of cell
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    NearestPeriodicVector(simbox, dr, dr_corr);
-    drsqd = DotProduct(dr, dr, ndim);
-
-    // Check if bounding spheres overlap with each other (for potential SPH neibs)
+    // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (drsqd <= pow(celldata[cc].rmax + cellptr->rmax + kernrange*cellptr->hmax,2) ||
-        drsqd <= pow(cellptr->rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
+    if (GhostFinder.PeriodicBoxOverlap(celldata[cc].bb, cellptr->hbox) ||
+        GhostFinder.PeriodicBoxOverlap(celldata[cc].hbox, cellptr->bb)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1585,12 +1530,11 @@ const Particle<ndim> *part_gen)                ///< [in] List of particle data
       // add to list to be exported
       else if (cellptr->copen == -1) {
         i = cellptr->ifirst;
-        while (i != -1) {
+        int ilast = cellptr->ilast;
+        for (; i <= ilast; ++i) {
           if (ParticleInBox(partdata[i], nodebox)) {
             part_ids.push_back(i);
           }
-          if (i == cellptr->ilast) break;
-          i = inext[i];
         };
         c = cellptr->cnext;
       }
@@ -1632,10 +1576,8 @@ int Tree<ndim,ParticleType,TreeCell>::FindBoxGhostParticles
 
     // Construct maximum cell bounding box depending on particle velocities
     for (int k=0; k<ndim; k++) {
-      scattermin[k] = cellptr->bb.min[k] +
-          min((FLOAT) 0.0, cellptr->v[k]*tghost) - ghost_range*cellptr->hmax;
-      scattermax[k] = cellptr->bb.max[k] +
-          max((FLOAT) 0.0, cellptr->v[k]*tghost) + ghost_range*cellptr->hmax;
+      scattermin[k] = cellptr->bb.min[k] + cellptr->vbox.min[k]*tghost - ghost_range*cellptr->hmax;
+      scattermax[k] = cellptr->bb.max[k] + cellptr->vbox.max[k]*tghost + ghost_range*cellptr->hmax;
     }
 
 
@@ -1656,11 +1598,10 @@ int Tree<ndim,ParticleType,TreeCell>::FindBoxGhostParticles
       // add to list to be exported
       else if (cellptr->copen == -1) {
         int i = cellptr->ifirst;
-        while (i != -1) {
+        int ilast = cellptr->ilast;
+        for (; i <= ilast; ++i) {
           export_list.push_back(i);
           Nexport++;
-          if (i == cellptr->ilast) break;
-          i = inext[i];
         };
         c = cellptr->cnext;
       }
@@ -1868,7 +1809,6 @@ void Tree<ndim,ParticleType,TreeCell>::UnpackParticlesAndCellsFromMPITransfer
     for (int iparticle=0; iparticle<dest_cell.Nactive; iparticle++) {
 
       handler.ReceiveParticle(&(*iter),partdata[particle_index],hydro);
-      inext[particle_index] = particle_index + 1;
 
       particle_index++;
       part_count++ ;

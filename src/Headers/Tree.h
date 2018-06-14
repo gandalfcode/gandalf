@@ -35,6 +35,7 @@
 #include "DomainBox.h"
 #include "Hydrodynamics.h"
 #include "InlineFuncs.h"
+#include "Multipole.h"
 #include "Nbody.h"
 #include "Parameters.h"
 #include "Particle.h"
@@ -94,11 +95,10 @@ protected:
 	                       const FLOAT, Particle<ndim> *) = 0;
 	virtual void StockTree(Particle<ndim> *, bool) = 0 ;
 	virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
-	virtual void ExtrapolateCellProperties(const FLOAT) = 0 ;
 
 
-    virtual MAC_Type GetMacType() const  = 0;
-    virtual void SetMacType(MAC_Type) = 0;
+  virtual MAC_Type GetMacType() const  = 0;
+  virtual void SetMacType(MAC_Type) = 0;
 
 
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
@@ -106,8 +106,8 @@ protected:
 	virtual int ComputeActiveCellList(vector<TreeCellBase<ndim> >& ) = 0 ;
 	virtual int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
 	                                       const FLOAT, const int, int &, int *) = 0 ;
-	virtual int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-			                               const FLOAT, const int, int &, int *) = 0 ;
+	virtual void ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+			                                const FLOAT,NeighbourManagerBase& neibmanager) = 0 ;
 	virtual int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
 	                                 const int, int &, int *, Particle<ndim> *) = 0 ;
 	virtual void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager)=0;
@@ -129,6 +129,7 @@ protected:
 	virtual void UpdateLeafCells(TreeBase<ndim>*)=0;
 	enum direction { to_buffer, from_buffer };
 	virtual void CopyLeafCells(vector<char>& buffer, direction)=0;
+        virtual void UpdateBoundingBoxData(MpiNode<ndim>& node) = 0;
 #endif
 
 	virtual bool ComputeSignalVelocityFromDistantInteractions(const TreeCellBase<ndim>& cell,
@@ -142,7 +143,12 @@ protected:
 	//                        const FLOAT, ParticleType<ndim> *) = 0;
 	virtual void AllocateTreeMemory(int,int,bool) = 0;
 	virtual void DeallocateTreeMemory(void) = 0;
-	virtual void UpdateAllHmaxValues(Particle<ndim> *) = 0;
+	virtual void UpdateAllHmaxValues(Particle<ndim> *, bool stock_leaf) = 0;
+	void UpdateAllHmaxValues(Particle<ndim> *part_gen) {
+      UpdateAllHmaxValues(part_gen, true);
+    }
+
+	virtual void UpdateHmaxLeaf(TreeCellBase<ndim>&, Particle<ndim> *) = 0;
 	virtual double GetMaximumSmoothingLength() const = 0 ;
 	//virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
 
@@ -233,7 +239,7 @@ protected:
  public:
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-       string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
+       string _gravity_mac, multipole_method _multipole, const DomainBox<ndim>& domain,
        const ParticleTypeRegister& pt_reg, const bool _IAmPruned) :
     	   TreeBase<ndim>(domain),
     gravity_mac(geometric), multipole(_multipole), Nleafmax(_Nleafmax),
@@ -262,7 +268,6 @@ protected:
   virtual int MaxNumCells() const
   { return gtot ; }
 
-  virtual void ExtrapolateCellProperties(const FLOAT);
   bool BoxOverlap(const FLOAT box1min[ndim], const FLOAT box1max[ndim],
 		          const FLOAT box2min[ndim], const FLOAT box2max[ndim])
   {
@@ -283,8 +288,8 @@ protected:
   int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
   int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int &, int *);
-  int ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
-                                 const FLOAT, const int, int &, int *);
+  void ComputeGatherNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
+                                  const FLOAT,NeighbourManagerBase& neibmanager);
   int ComputeNeighbourList(const TreeCellBase<ndim> &, const Particle<ndim> *,
                            const int, int &, int *, Particle<ndim> *);
   void ComputeNeighbourList(const TreeCellBase<ndim> &cell,NeighbourManagerBase& neibmanager);
@@ -308,6 +313,12 @@ protected:
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
   virtual void UpdateLeafCells(TreeBase<ndim>*);
   virtual void CopyLeafCells(vector<char>& buffer, enum TreeBase<ndim>::direction);
+  virtual void UpdateBoundingBoxData(MpiNode<ndim>& node) {
+	for (int k=0; k<ndim; k++) node.rbox.min[k] = min(node.rbox.min[k],celldata[0].bb.min[k]);
+	for (int k=0; k<ndim; k++) node.rbox.max[k] = max(node.rbox.max[k],celldata[0].bb.max[k]);
+	for (int k=0; k<ndim; k++) node.hbox.min[k] = min(node.hbox.min[k],celldata[0].hbox.min[k]);
+	for (int k=0; k<ndim; k++) node.hbox.max[k] = max(node.hbox.max[k],celldata[0].hbox.max[k]);
+  }
 #endif
 
 
@@ -315,7 +326,8 @@ protected:
 
   virtual void BuildTree(const int, const int, const int, const int,
                          const FLOAT, Particle<ndim> *) = 0;
-  void UpdateAllHmaxValues(Particle<ndim>* sph_gen) = 0;
+  virtual void UpdateAllHmaxValues(Particle<ndim> *, bool stock_leaf) = 0;
+  virtual void UpdateHmaxLeaf(TreeCellBase<ndim>&, Particle<ndim> *);
   virtual void StockTree(Particle<ndim> *, bool) = 0 ;
   virtual void UpdateActiveParticleCounters(Particle<ndim> *) = 0;
   virtual double GetMaximumSmoothingLength() const {
@@ -372,8 +384,8 @@ protected:
 
   // Const variables for tree class
   //-----------------------------------------------------------------------------------------------
-  MAC_Type gravity_mac;                  ///< Multipole-acceptance criteria for tree
-  const string multipole;              ///< Multipole-order for cell gravity
+  MAC_Type gravity_mac;                ///< Multipole-acceptance criteria for tree
+  const multipole_method multipole;    ///< Multipole-order for cell gravity
   const int Nleafmax;                  ///< Max. number of particles per leaf cell
   const FLOAT invthetamaxsqd;          ///< 1 / thetamaxsqd
   const FLOAT kernrange;               ///< Extent of employed kernel
@@ -404,8 +416,6 @@ protected:
   int Nthreads;                        ///< No. of OpenMP threads
   FLOAT hmax;                          ///< Store hmax in the tree
   int *g2c;                            ///< i.d. of leaf(grid) cells
-  int *ids;                            ///< Particle ids
-  int *inext;                          ///< Linked list for grid search
   TreeCell<ndim> *celldata;            ///< Main tree cell data array
   Typemask gravmask ;                  ///< Particle types that contribute to gravity
 

@@ -77,7 +77,7 @@ errormin     = 3.3333e-8
 errormax     = 6.6666e-2
 errorsize    = errormax - errormin
 timemin      = 3.3333e-3
-timemax      = 2.0
+timemax      = 0.8 #2.0
 timesize     = timemax - timemin
 sim_no       = 0
 thetamac     = 0.6
@@ -474,6 +474,12 @@ for i in range(numSimMax):
 
 
 
+print "THETA     : ",theta_values
+print "MONOERROR : ",monopole_geo_error_values
+print "QUADERROR : ",quadrupole_geo_error_values
+print "MONOTIMES : ",monopole_geo_runtimes
+print "QUADTIMES : ",quadrupole_geo_runtimes
+
 # Create matplotlib figure object with shared x-axis
 #--------------------------------------------------------------------------------------------------
 fig, axarr = plt.subplots(1, 3, sharey='col', figsize=(14,5))
@@ -556,7 +562,7 @@ axarr[0].scatter(theta_values, fast_monopole_geo_error_values, color="blue")
 axarr[0].scatter(theta_values, quadrupole_geo_error_values, color="black")
 axarr[0].scatter(theta_values, fast_quadrupole_geo_error_values, color="green")
 axarr[0].text(xtheta, yerror, '(a) Geometric MAC', color='black', size=14)
-legend0 = axarr[0].legend(loc='lower right', fontsize=12)
+legend0 = axarr[0].legend(loc='lower right', fontsize=16)
 
 axarr[1].set_xscale("log")
 axarr[1].set_yscale("log")
@@ -572,7 +578,7 @@ axarr[1].scatter(macerror_values, monopole_gadget_error_values, color="red")
 axarr[1].scatter(macerror_values, fast_monopole_gadget_error_values, color="blue")
 axarr[1].scatter(macerror_values, quadrupole_gadget_error_values, color="black")
 axarr[1].scatter(macerror_values, fast_quadrupole_gadget_error_values, color="green")
-axarr[1].text(xmacerror, yerror, '(b) GADGET-MAC', color='black', size=14)
+axarr[1].text(xmacerror, yerror, '(b) GADGET-MAC', color='black', size=16)
 axarr[1].set_yticks([])
 #legend1 = axarr[1].legend(loc='lower right', fontsize=12)
 
@@ -586,7 +592,7 @@ axarr[2].plot(macerror_values, quadrupole_eigen_error_values, color="black", lin
 axarr[2].plot(macerror_values, fast_quadrupole_eigen_error_values, color="green", linestyle='-.', label='Cell quadrupole')
 axarr[2].scatter(macerror_values, quadrupole_eigen_error_values, color="black")
 axarr[2].scatter(macerror_values, fast_quadrupole_eigen_error_values, color="green")
-axarr[2].text(xmacerror, yerror, '(c) Eigen-MAC', color='black', size=14)
+axarr[2].text(xmacerror, yerror, '(c) Eigen-MAC', color='black', size=16)
 axarr[2].set_yticks([])
 #legend1 = axarr[2].legend(loc='lower right', fontsize=12)
 

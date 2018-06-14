@@ -22,6 +22,7 @@
 //=================================================================================================
 
 
+#include <algorithm>
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
@@ -48,7 +49,7 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                              FLOAT kernrangeaux, FLOAT macerroraux,
-                                             string gravity_mac_aux, string multipole_aux,
+                                             string gravity_mac_aux, multipole_method multipole_aux,
                                              const DomainBox<ndim>& domain,
                                     		 const ParticleTypeRegister& reg,
 											 const bool IAmPruned):
@@ -113,8 +114,6 @@ void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(int Nparticles, int
 
     firstCell = new int[lmax];
     lastCell  = new int[lmax];
-    ids       = new int[Nparticles];
-    inext     = new int[Nparticles];
     celldata  = new struct TreeCell<ndim>[Ncells];
 
     allocated_tree = true;
@@ -143,18 +142,6 @@ void OctTree<ndim,ParticleType,TreeCell>::ReallocateMemory(int Nparticles, int N
 
 
   if (Nparticles > Ntotmax ) {
-
-	  int* idsold = ids;
-	  int* inextold = inext;
-
-	  ids = new int[Nparticles];
-	  inext    = new int[Nparticles];
-
-	  std::copy(idsold,idsold+Ntotmax,ids);
-	  std::copy(inextold,inextold+Ntotmax,inext);
-
-	  delete[] idsold;
-	  delete[] inextold;
 
 	  Ntotmax = Nparticles;
 
@@ -190,8 +177,6 @@ void OctTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 
   if (allocated_tree) {
     delete[] celldata;
-    delete[] inext;
-    delete[] ids;
     delete[] lastCell;
     delete[] firstCell;
     allocated_tree = false;
@@ -200,6 +185,78 @@ void OctTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
   return;
 }
 
+
+// Predicate for comparing particles and sorting particles
+template<class ParticleType>
+class ParticleSorter {
+
+public:
+  ParticleSorter(int jdir, FLOAT r)
+    : _j(jdir), _r(r) { } ;
+
+  bool operator()(const ParticleType& p) const {
+    return p.r[_j] < _r ;
+  }
+private:
+  int _j ;
+  FLOAT _r ;
+};
+
+
+
+//=================================================================================================
+//  OctTree::DivideCell
+/// Sort the particles into the two sub-cells in the given direction.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void OctTree<ndim,ParticleType,TreeCell>::DivideCell
+(int c,                                      ///< [in] Cell to Divide
+ int first,                                  ///< [in] Id of first particle
+ int last,                                   ///< [in[ ID of last particle
+ int cchild,                                 ///< [in] Location of children in the cell array
+ ParticleType<ndim>* partdata,               ///< [in] Particle data array
+ int jdir)                                   ///< [in] Direction to split
+ {
+  // First Sort the particles across the range.
+  ParticleSorter<ParticleType<ndim> > pred(jdir, celldata[c].rcentre[jdir]) ;
+  ParticleType<ndim>* join = std::partition(partdata+first, partdata+last+1, pred);
+  int njoin = std::distance(partdata+first, join) ;
+
+
+  //  Work out where to place the children
+  int child1 = cchild;
+  int child2 = cchild + (1 << jdir);
+
+  // Split the sub-ranges, or set the particle ranges
+  if (jdir > 0) {
+    DivideCell(c, first, first+njoin-1, child1, partdata, jdir-1) ;
+    DivideCell(c, first+njoin, last,    child2, partdata, jdir-1) ;
+  } else {
+
+    if (njoin > 0) {
+      celldata[child1].ifirst = first ;
+      celldata[child1].ilast  = first + njoin - 1;
+      celldata[child1].N      = njoin ;
+    }
+    else {
+      celldata[child1].ifirst = -1 ;
+      celldata[child1].ilast  = -1 ;
+      celldata[child1].N      = 0;
+    }
+
+    if (first + njoin <= last) {
+      celldata[child2].ifirst = first + njoin ;
+      celldata[child2].ilast  = last ;
+      celldata[child2].N      = last+1 - (first+njoin);
+    }
+    else {
+      celldata[child1].ifirst = -1;
+      celldata[child1].ilast  = -1;
+      celldata[child1].N      = 0;
+    }
+  }
+
+ }
 
 
 //=================================================================================================
@@ -218,7 +275,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   bool allDone = false;                // Are all cell divisions completed?
   int c;                               // Cell counter
   int cc;                              // Child cell counter
-  int ckid;                            // i.d. fo child cell
   int cnew;                            // i.d. of newly created cell
   int ilast;                           // i.d. of last particle in cell
   int i;                               // Particle counter
@@ -259,9 +315,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
         bbmin[k] = min(bbmin[k], partdata[i].r[k] - kernrange*partdata[i].h);
       }
     }
-    for (i=ifirst; i<=ilast; i++) ids[i] = i;
-    for (i=ifirst; i<ilast; i++) inext[i] = i+1;
-    inext[ilast] = -1;
   }
   else {
     ifirst = -1;
@@ -272,15 +325,15 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   // Set properties for root cell before constructing tree
   Ncell  = 1;
   ltot   = 0;
-  celldata[0].N      = Ntot;
+  celldata[0].N      = _ilast - _ifirst + 1;
   celldata[0].ifirst = _ifirst;
   celldata[0].ilast  = _ilast;
   celldata[0].level  = 0;
   celldata[0].copen  = -1;
   celldata[0].hmax = 0;
-  for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
-  for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
-  for (k=0; k<ndim; k++) celldata[0].v[k]= (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) celldata[0].bb.max[k] = bbmax[k];
+  for (k=0; k<ndim; k++) celldata[0].bb.min[k] = bbmin[k];
+  celldata[0].parent = -1;
   for (k=0; k<ndim; k++) {
     celldata[0].rcentre[k] = (FLOAT) 0.5*(celldata[0].bb.min[k] + celldata[0].bb.max[k]);
     cellSize = max(cellSize, celldata[0].bb.max[k] - celldata[0].rcentre[k]);
@@ -319,6 +372,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
           assert(cnew < Ncellmax);
 
           celldata[cnew].level  = ltot + 1;
+          celldata[cnew].parent = cc;
           for (kk=0; kk<ndim; kk++) celldata[cnew].bb.min[kk] = cell.bb.min[kk];
           for (kk=0; kk<ndim; kk++) celldata[cnew].bb.max[kk] = cell.bb.max[kk];
 
@@ -355,39 +409,8 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
         }
         //-----------------------------------------------------------------------------------------
 
-
-        i = cell.ifirst;
-        ilast = cell.ilast;
-
-        // Walk through linked list of all particles to find new child cells
-        //-----------------------------------------------------------------------------------------
-        while (i != -1) {
-          ckid = 0;
-
-          // Find child cell i.d. (depending on dimensionality)
-          if (partdata[i].r[0] > cell.rcentre[0]) ckid += 1;
-          if (ndim > 1) {
-            if (partdata[i].r[1] > cell.rcentre[1]) ckid += 2;
-          }
-          if (ndim == 3) {
-            if (partdata[i].r[2] > cell.rcentre[2]) ckid += 4;
-          }
-          assert(ckid >= 0 && ckid < Noctchild);
-
-          cnew = Ncell + cc*Noctchild + ckid;
-
-          // Walk through linked list of all particles to find new child cells
-          if (celldata[cnew].ifirst == -1) {
-            celldata[cnew].ifirst = i;
-          }
-          else {
-            inext[celldata[cnew].ilast] = i;
-          }
-          celldata[cnew].ilast = i;
-          celldata[cnew].N++;
-          if (i == ilast) break;
-          i = inext[i];
-        };
+        // Divide the particles across the cells
+        DivideCell(c, cell.ifirst, cell.ilast, Ncell + cc*Noctchild, partdata, ndim-1);
         //-----------------------------------------------------------------------------------------
 
 
@@ -460,7 +483,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   int c,cc;                            // Cell counters
   int cend;                            // Last particle in cell
   int i;                               // Particle counter
-  int iaux;                            // Aux. particle i.d. variable
   int k;                               // Dimension counter
   int l;                               // Level counter
   FLOAT dr[ndim];                      // Relative position vector
@@ -472,7 +494,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   debug2("[OctTree::StockTree]");
 
   const bool need_quadrupole_moments =
-      multipole == "quadrupole" || multipole == "fast_quadrupole" || gravity_mac == eigenmac ;
+      multipole == quadrupole || multipole == fast_quadrupole || gravity_mac == eigenmac ;
 
   // Loop over all levels in tree starting from lowest up to the top root cell level.
   //===============================================================================================
@@ -487,21 +509,17 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       // Zero all summation variables for all cells
       cell.Nactive  = 0;
       cell.N        = 0;
+      cell.maxsound = 0.0f;
       cell.m        = (FLOAT) 0.0;
       cell.hmax     = (FLOAT) 0.0;
       cell.rmax     = (FLOAT) 0.0;
-      cell.dhmaxdt  = (FLOAT) 0.0;
-      cell.drmaxdt  = (FLOAT) 0.0;
       cell.mac      = (FLOAT) 0.0;
       cell.cdistsqd = big_number;
-      cell.maxsound = (FLOAT) 0.0;
       if (gravity_mac == gadget2)
         cell.amin = big_number ;
       else if (gravity_mac == eigenmac)
         cell.macfactor = 0 ;
-      for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) cell.r[k]        = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.bb.min[k]   = big_number;
       for (k=0; k<ndim; k++) cell.bb.max[k]   = -big_number;
       for (k=0; k<ndim; k++) cell.hbox.min[k] = big_number;
@@ -513,28 +531,10 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       //-------------------------------------------------------------------------------------------
       if (cell.copen == -1 && stock_leaf) {
 
-        // First, check if any particles have been accreted and remove them
-        // from the linked list.  If cell no longer contains any live particles,
-        // then set N = 0 to ensure cell is not included in future tree-walks.
-        i           = cell.ifirst;
-        iaux        = -1;
-        cell.ifirst = -1;
-        cell.N      = 0;
-        while (i != -1) {
-          if (!partdata[i].flags.is_dead()) {
-            if (iaux == -1) cell.ifirst = i;
-            else inext[iaux] = i;
-            iaux = i;
-          }
-          if (i == cell.ilast) break;
-          i = inext[i];
-        };
-        cell.ilast = iaux;
-
-
         // Loop over all particles in cell summing their contributions
-        i = cell.ifirst;
-        while (i != -1) {
+        for (i = cell.ifirst; i <= cell.ilast; ++i) {
+          if (i == -1) break ;
+
           if (!partdata[i].flags.is_dead()) {
             cell.N++;
             if (partdata[i].flags.check(active)) cell.Nactive++;
@@ -543,7 +543,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             if (gravmask[partdata[i].ptype]) {
               cell.m += partdata[i].m;
               for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-              for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
             }
             for (k=0; k<ndim; k++) {
               if (partdata[i].r[k] < cell.bb.min[k]) cell.bb.min[k] = partdata[i].r[k];
@@ -561,15 +560,11 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             else if (gravity_mac == eigenmac)
               cell.macfactor = max(cell.macfactor,pow(partdata[i].gpot,-twothirds));
           }
-          if (i == cell.ilast) break;
-          i = inext[i];
         };
 
         // Normalise all cell values
         if (cell.m > 0) {
           for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
-          for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-          for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
           for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
           cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
           cell.rmax = sqrt(DotProduct(dr,dr,ndim));
@@ -577,9 +572,9 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
         // Compute quadrupole moment terms if selected
         if (need_quadrupole_moments) {
-          i = cell.ifirst;
+          for (i = cell.ifirst; i <= cell.ilast; ++i) {
+            if (i == -1) break ;
 
-          while (i != -1) {
             if (!partdata[i].flags.is_dead() && gravmask[partdata[i].ptype]) {
               mi = partdata[i].m;
               for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
@@ -600,8 +595,6 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
                 cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
               }
             }
-            if (i == cell.ilast) break;
-            i = inext[i];
           }
         }
 
@@ -625,9 +618,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             for (k=0; k<ndim; k++) cell.vbox.min[k] = min(child.vbox.min[k],cell.vbox.min[k]);
             for (k=0; k<ndim; k++) cell.vbox.max[k] = max(child.vbox.max[k],cell.vbox.max[k]);
             for (k=0; k<ndim; k++) cell.r[k] += child.m*child.r[k];
-            for (k=0; k<ndim; k++) cell.v[k] += child.m*child.v[k];
             cell.hmax = max(child.hmax, cell.hmax);
-            cell.maxsound = max(cell.maxsound,child.maxsound);
+            cell.maxsound = max(cell.maxsound, child.maxsound);
             if (gravity_mac == gadget2)
               cell.amin = min(cell.amin, child.amin);
             else if (gravity_mac == eigenmac)
@@ -641,9 +633,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
         if (cell.m > 0.0) {
           for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
-          for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
         }
-        for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
+        //for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bb.min[k] + cell.bb.max[k]);
         for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bb.max[k] - cell.bb.min[k]);
         cell.cdistsqd = max(DotProduct(dr, dr, ndim),cell.hmax*cell.hmax)/thetamaxsqd;
         cell.rmax = sqrt(DotProduct(dr, dr, ndim));
@@ -703,7 +694,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           }
         } else if (ndim == 2) {
           p = (cell.q[0]-cell.q[2])*(cell.q[0]-cell.q[2]) + 4*cell.q[1]*cell.q[1];
-          lambda = 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), 0.);
+          lambda = (FLOAT) 0.5*max(cell.q[0] + cell.q[2] + sqrt(p), (FLOAT) 0.0);
         } else {
           lambda = fabs(cell.q[0]) ;
         }
@@ -735,7 +726,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
  (TreeCell<ndim> &rootcell,            ///< KD-tree cell
-  ParticleType<ndim> *partdata)        ///< SPH particle data array
+  ParticleType<ndim> *partdata,        ///< SPH particle data array
+  bool stock_leaf)                     ///< Whether to stock the leaf
 {
   int c,cc;                            // Cell counters
   int cfirst,cend;                     // ..
@@ -762,24 +754,19 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
       // If this is a leaf cell, sum over all particles
       //-------------------------------------------------------------------------------------------
       if (cell.copen == -1) {
-        i = cell.ifirst;
-
-        // Loop over all particles in cell summing their contributions
-        while (i != -1) {
-          cell.hmax = max(cell.hmax,partdata[i].h);
-          for (k=0; k<ndim; k++) {
-            if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
-              cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-            }
-            if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k]) {
-              cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+        if (stock_leaf && cell.ifirst != -1) {
+          for (i = cell.ifirst; i <= cell.ilast; ++i) {
+            cell.hmax = max(cell.hmax,partdata[i].h);
+            for (k=0; k<ndim; k++) {
+              if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hbox.min[k]) {
+                cell.hbox.min[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+              }
+              if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hbox.max[k]) {
+                cell.hbox.max[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+              }
             }
           }
-          if (i == cell.ilast) break;
-          i = inext[i];
-        };
-
-
+        }
       }
       // For non-leaf cells, sum over all child cells
       //-------------------------------------------------------------------------------------------
@@ -844,10 +831,8 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
     ilast = celldata[c].ilast;
 
     // Else walk through linked list to obtain list and number of active ptcls.
-    while (i != -1) {
+    for (i = ifirst; i <= ilast; ++i) {
       if (partdata[i].flags.check(active)) celldata[c].Nactive++;
-      if (i == ilast) break;
-      i = inext[i];
     };
 
   }
@@ -972,15 +957,6 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
     }
   }
 
-  // Check inext linked list values and ids array are all valid
-  for (i=ifirst; i<=ilast; i++) {
-    if (!(inext[i] >= -1)) {
-      cout << "Problem with inext linked lists : " << i << "   " << inext[i] << endl;
-      ExceptionHandler::getIstance().raise("Error with inext linked lists in OctTree");
-    }
-  }
-
-
   // Loop over all cells in tree
   //-----------------------------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
@@ -990,8 +966,8 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
 
     // Check that particles are not in linked lists more than once
     if (cell.copen == -1) {
-      i = cell.ifirst;
-      while (i != -1) {
+      if (cell.N == 0) continue ;
+      for (i = cell.ifirst; i <= cell.ilast; ++i) {
         pcount[i]++;
         leafcount++;
         Ncount++;
@@ -1009,8 +985,6 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
             ExceptionHandler::getIstance().raise("Bounding box error in OctTree");
           }
         }
-        if (i == cell.ilast) break;
-        i = inext[i];
       }
       if (leafcount > Nleafmax) {
         cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
@@ -1035,13 +1009,13 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
 
   // Check all particles accounted for
   if (Ncount != Ntot) {
-    cout << "Ncount problem with KD-tree : " << Ncount << "   " << Ntot << endl;
+    cout << "Ncount problem with Oct-tree : " << Ncount << "   " << Ntot << endl;
     kill_flag = true;
   }
 
   // Check active particles don't exceed total number of particles
   if (Nactivecount > Ntot) {
-    cout << "Nactivecount problem with KD-tree : " << Nactivecount << "   " << Ntot << endl;
+    cout << "Nactivecount problem with Oct-tree : " << Nactivecount << "   " << Ntot << endl;
     kill_flag = true;
   }
 
