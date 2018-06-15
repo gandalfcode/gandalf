@@ -728,8 +728,11 @@ void Ic<ndim>::AddHexagonalLattice
   //-----------------------------------------------------------------------------------------------
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
+      FLOAT rnew[ndim];
       i = ii;
-      r[i] = box.min[0] + spacing[0]*((FLOAT)ii + (FLOAT) 0.5);
+      rnew[0] = box.min[0] + spacing[0]*((FLOAT)ii + (FLOAT) 0.5);
+      WrapPeriodicPosition(box, rnew);
+      for (int k=0; k<ndim; k++) r[ndim*i + k] = rnew[k];
     }
   }
 
@@ -737,10 +740,13 @@ void Ic<ndim>::AddHexagonalLattice
   else if (ndim == 2) {
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
+        FLOAT rnew[ndim];
         i = jj*Nlattice[0] + ii;
-        r[ndim*i]     = box.min[0] + spacing[0]*
+        rnew[0] = box.min[0] + spacing[0]*
           ((FLOAT) ii + (FLOAT) 0.5*(FLOAT) (jj%2) + (FLOAT) 0.5);
-        r[ndim*i + 1] = box.min[1] + spacing[1]*((FLOAT)jj + (FLOAT) 0.5);
+        rnew[1] = box.min[1] + spacing[1]*((FLOAT)jj + (FLOAT) 0.5);
+        WrapPeriodicPosition(box, rnew);
+        for (int k=0; k<ndim; k++) r[ndim*i + k] = rnew[k];
       }
     }
   }
@@ -751,12 +757,15 @@ void Ic<ndim>::AddHexagonalLattice
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
         for (ii=0; ii<Nlattice[0]; ii++) {
+          FLOAT rnew[ndim];
           i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-          r[ndim*i]     = box.min[0] + spacing[0]*
+          rnew[0] = box.min[0] + spacing[0]*
             ((FLOAT) ii + (FLOAT) 0.5*(FLOAT) (jj%2) - (FLOAT) 0.5*(FLOAT) (kk%2) + (FLOAT) 0.5);
-          r[ndim*i + 1] = box.min[1] + spacing[1]*
+          rnew[1] = box.min[1] + spacing[1]*
             ((FLOAT) jj + (FLOAT) 0.5*(FLOAT) (kk%2) + (FLOAT) 0.5);
-          r[ndim*i + 2] = box.min[2] + spacing[2]*((FLOAT) kk + (FLOAT) 0.5);
+          rnew[2] = box.min[2] + spacing[2]*((FLOAT) kk + (FLOAT) 0.5);
+          WrapPeriodicPosition(box, rnew);
+          for (int k=0; k<ndim; k++) r[ndim*i + k] = rnew[k];
         }
       }
     }
