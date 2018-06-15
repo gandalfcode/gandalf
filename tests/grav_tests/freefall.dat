@@ -18,7 +18,6 @@ Radius of sphere                            : radius = 1.0
 Use dimensionless units                     : dimensionless = 1
 
 
-
 #------------------------------
 # Simulation boundary variables
 #------------------------------
@@ -38,7 +37,7 @@ Time for first snapshot                     : tsnapfirst = 0.0
 Regular snapshot output frequency           : dt_snap = 0.05
 Screen output frequency (in no. of steps)   : noutputstep = 1
 Diagnostic output frequency                 : ndiagstep = 16
-out_file_form = sf
+
 
 #------------------------
 # Thermal physics options
