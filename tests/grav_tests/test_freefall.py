@@ -12,13 +12,13 @@ class FreeFallTest(unittest.TestCase):
         self.run_id="FREEFALL_SPH"
         self.sim.SetParam("run_id",self.run_id)
         self.expected_l1error = 9e-3
-    
+
 
     def test_error(self):
         p=run_async()
+        p.wait()
         fetcher_5=CreateTimeData('lr',lagrangian_radii,mfrac=0.5)
         fetcher_t=CreateTimeData('tr',timeratiofreefall)
-        p.wait()
         time=fetcher_t.fetch()[1]
         lr_5=fetcher_5.fetch()[1]
         analytical_r=np.empty_like(lr_5)

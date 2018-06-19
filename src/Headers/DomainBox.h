@@ -213,10 +213,9 @@ inline bool BoxesOverlap (const Box<ndim>& A, const Box<ndim>& B)
 
 
 //=================================================================================================
-/// \brief  Helper function to find if two boxes overlap
+/// \brief  Helper function to wrap a relative position vector to find the nearest periodic replica
 /// \author D. A. Hubber, G. Rosotti
 /// \date   12/11/2013
-/// \return A boolean saying whether the boxes overlap
 //=================================================================================================
 template <int ndim>
 inline void NearestPeriodicVector
@@ -233,6 +232,27 @@ inline void NearestPeriodicVector
   }
   for (int k=0; k<ndim; k++) dr[k] += dr_corr[k];
 
+  return;
+}
+
+
+
+//=================================================================================================
+/// \brief  Helper function to wrap a position if it falls outside a periodic domain
+/// \author D. A. Hubber
+/// \date   14/06/2018
+//=================================================================================================
+template <int ndim>
+inline void WrapPeriodicPosition
+ (const DomainBox<ndim> &box,
+  FLOAT dr[ndim])
+{
+  for (int k=0; k<ndim; k++) {
+    if (box.boundary_lhs[k] == periodicBoundary && box.boundary_rhs[k] == periodicBoundary) {
+      if (dr[k] > box.max[k]) dr[k] -= box.size[k];
+      else if (dr[k] < box.min[k]) dr[k] += box.size[k];
+    }
+  }
   return;
 }
 

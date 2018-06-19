@@ -162,8 +162,8 @@ void BossBodenheimerIc<ndim>::Generate(void)
 
 
 //=================================================================================================
-//  BossBodenheimer::GetValue
-/// Returns the value of the requested quantity at the given position.
+//  BossBodenheimer::GetDensity
+/// Returns the density at the given position.
 //=================================================================================================
 template <int ndim>
 FLOAT BossBodenheimerIc<ndim>::GetDensity
