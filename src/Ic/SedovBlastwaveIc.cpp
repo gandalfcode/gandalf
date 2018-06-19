@@ -142,6 +142,7 @@ void SedovBlastwaveIc<ndim>::Generate(void)
   sim->initial_h_provided = true;
   sim->rebuild_tree = true;
 
+  SetParticleProperties();
 
   delete[] r;
 
