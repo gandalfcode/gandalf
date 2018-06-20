@@ -24,6 +24,7 @@
 #include <math.h>
 #include "Constants.h"
 #include "Parameters.h"
+#include "Particle.h"
 #include "RandomNumber.h"
 #include "Sph.h"
 #include "KDTree.h"
@@ -37,8 +38,8 @@ class TreeTest : public testing::Test
 {
 public:
 
-  void SetUp(void);
-  void TearDown(void);
+  void SetUp();
+  void TearDown();
 
   static const int Npart = 1000;
   static const unsigned long rseed = 1000;
@@ -49,9 +50,10 @@ public:
   string gravity_mac = "geometric";
   string multipole = "monopole";
 
-  SphParticle<3> *partdata;
+  GradhSphParticle<3> *partdata;
   Parameters params;
-  KDTree<3,SphParticle,KDTreeCell> *kdtree;
+  ParticleTypeRegister *types;
+  KDTree<3,GradhSphParticle,KDTreeCell> *kdtree;
   RandomNumber *randnumb;
   DomainBox<3> simbox;
 
@@ -62,13 +64,12 @@ public:
 //=================================================================================================
 //  TreeTest::Setup
 //=================================================================================================
-void TreeTest::SetUp(void)
+void TreeTest::SetUp()
 {
   // Create all objects for test
-  partdata = new SphParticle<3>[Npart];
+  partdata = new GradhSphParticle<3>[Npart];
   randnumb = new XorshiftRand(rseed);
-  kdtree = new KDTree<3,SphParticle,KDTreeCell>(Nleafmax, thetamaxsqd, kernrange,
-                                                macerror, gravity_mac, multipole);
+  types = new ParticleTypeRegister(&params);
 
   // Create some simple particle configuration (random population of a cube)
   for (int i=0; i<Npart; i++) {
@@ -77,20 +78,22 @@ void TreeTest::SetUp(void)
     partdata[i].h = 0.2*randnumb->floatrand();
   }
   for (int k=0; k<3; k++) {
-    simbox.boxmin[k] = -1.0;
-    simbox.boxmax[k] = 1.0;
-    simbox.boxsize[k] = 2.0;
-    simbox.boxhalf[k] = 1.0;
+    simbox.min[k] = -1.0;
+    simbox.max[k] = 1.0;
+    simbox.size[k] = 2.0;
+    simbox.half[k] = 1.0;
   }
 
   // Now build the tree using the particle configuration
+  kdtree = new KDTree<3,GradhSphParticle,KDTreeCell>(Nleafmax, thetamaxsqd, kernrange,
+                                                macerror, gravity_mac, multipole,
+                                                simbox, (*types), false);
   kdtree->Ntot       = Npart;
-  kdtree->Ntotmaxold = 0;
   kdtree->Ntotmax    = Npart;
   kdtree->ifirst     = 0;
   kdtree->ilast      = Npart - 1;
-  kdtree->BuildTree(0, Npart-1, Npart, Npart, partdata, 0.0);
-  kdtree->StockTree(kdtree->celldata[0], partdata);
+  kdtree->BuildTree(0, Npart-1, Npart, Npart, 0.0, partdata);
+  kdtree->StockTree(partdata, true); //(kdtree->celldata[0], partdata);
 
   return;
 }
@@ -205,27 +208,27 @@ TEST_F(TreeTest, StructureTest)
         if (partdata[i].flags.check(active)) activecount++;
         if (partdata[i].flags.check(active)) Nactivecount++;
         ASSERT_LE(partdata[i].h, cell.hmax);
-        for (k=0; k<3; k++) ASSERT_LE(partdata[i].r[k], cell.bbmax[k]);
-        for (k=0; k<3; k++) ASSERT_GE(partdata[i].r[k], cell.bbmin[k]);
+        for (k=0; k<3; k++) ASSERT_LE(partdata[i].r[k], cell.bb.max[k]);
+        for (k=0; k<3; k++) ASSERT_GE(partdata[i].r[k], cell.bb.min[k]);
         if (i == cell.ilast) break;
         i = kdtree->inext[i];
       }
       //ASSERT_LE(leafcount,Nleafmax);
       ASSERT_LE(activecount, leafcount);
-      for (k=0; k<3; k++) ASSERT_LE(cell.rcell[k], cell.bbmax[k]);
-      for (k=0; k<3; k++) ASSERT_GE(cell.rcell[k], cell.bbmin[k]);
+      for (k=0; k<3; k++) ASSERT_LE(cell.rcell[k], cell.bb.max[k]);
+      for (k=0; k<3; k++) ASSERT_GE(cell.rcell[k], cell.bb.min[k]);
     }
 
     // Check that bounding boxes of cells on each level do not overlap each other
     for (cc=0; cc<kdtree->Ncell; cc++) {
       overlap_flag = false;
       if (c != cc && kdtree->celldata[cc].level == cell.level) {
-        if (cell.bbmin[0] < kdtree->celldata[cc].bbmax[0] &&
-            cell.bbmax[0] > kdtree->celldata[cc].bbmin[0] &&
-            cell.bbmin[1] < kdtree->celldata[cc].bbmax[1] &&
-            cell.bbmax[1] > kdtree->celldata[cc].bbmin[1] &&
-            cell.bbmin[2] < kdtree->celldata[cc].bbmax[2] &&
-            cell.bbmax[2] > kdtree->celldata[cc].bbmin[2]) {
+        if (cell.bb.min[0] < kdtree->celldata[cc].bb.max[0] &&
+            cell.bb.max[0] > kdtree->celldata[cc].bb.min[0] &&
+            cell.bb.min[1] < kdtree->celldata[cc].bb.max[1] &&
+            cell.bb.max[1] > kdtree->celldata[cc].bb.min[1] &&
+            cell.bb.min[2] < kdtree->celldata[cc].bb.max[2] &&
+            cell.bb.max[2] > kdtree->celldata[cc].bb.min[2]) {
           overlap_flag = true;
         }
       }
@@ -317,12 +320,12 @@ TEST_F(TreeTest, PeriodicWalkTest)
   /*for (int cc=0; cc<kdtree->Ncell; cc++) {
     bool overlap_flag = false;
     if (c != cc && kdtree->celldata[cc].level == cell.level) {
-      if (cell.bbmin[0] < kdtree->celldata[cc].bbmax[0] &&
-          cell.bbmax[0] > kdtree->celldata[cc].bbmin[0] &&
-          cell.bbmin[1] < kdtree->celldata[cc].bbmax[1] &&
-          cell.bbmax[1] > kdtree->celldata[cc].bbmin[1] &&
-          cell.bbmin[2] < kdtree->celldata[cc].bbmax[2] &&
-          cell.bbmax[2] > kdtree->celldata[cc].bbmin[2]) {
+      if (cell.bb.min[0] < kdtree->celldata[cc].bb.max[0] &&
+          cell.bb.max[0] > kdtree->celldata[cc].bb.min[0] &&
+          cell.bb.min[1] < kdtree->celldata[cc].bb.max[1] &&
+          cell.bb.max[1] > kdtree->celldata[cc].bb.min[1] &&
+          cell.bb.min[2] < kdtree->celldata[cc].bb.max[2] &&
+          cell.bb.max[2] > kdtree->celldata[cc].bb.min[2]) {
           overlap_flag = true;
       }
     }

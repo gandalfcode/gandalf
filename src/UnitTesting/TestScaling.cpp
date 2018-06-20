@@ -35,8 +35,8 @@ class ScalingTest : public testing::Test
 {
 public:
 
-  void SetUp(void);
-  void TearDown(void);
+  void SetUp();
+  void TearDown();
 
   SimUnits units;
   Parameters params;
@@ -48,7 +48,7 @@ public:
 //=================================================================================================
 //  ScalingTest::Setup
 //=================================================================================================
-void ScalingTest::SetUp(void)
+void ScalingTest::SetUp()
 {
   units.SetupUnits(&params);
 
@@ -60,7 +60,7 @@ void ScalingTest::SetUp(void)
 //=================================================================================================
 //  ScalingTest::TearDown
 //=================================================================================================
-void ScalingTest::TearDown(void)
+void ScalingTest::TearDown()
 {
   return;
 }
@@ -69,11 +69,11 @@ void ScalingTest::TearDown(void)
 
 TEST_F(ScalingTest, rTest)
 {
-  EXPECT_DOUBLE_EQ(units.r.inscale*units.r.inSI,units.r.outscale*units.r.outSI);
-  EXPECT_DOUBLE_EQ(units.r.OutputScale("pc"),units.r.outscale);
-  EXPECT_DOUBLE_EQ(units.r.OutputScale("m"),units.r.outscale*units.r.outSI);
-  EXPECT_DOUBLE_EQ(units.r.OutputScale("cm"),units.r.outscale*units.r.outcgs);
-  EXPECT_DOUBLE_EQ(units.r.OutputScale("au"),r_pc/r_au);
+  EXPECT_DOUBLE_EQ(units.r.inscale*units.r.inSI, units.r.outscale*units.r.outSI);
+  EXPECT_DOUBLE_EQ(units.r.OutputScale("pc"), units.r.outscale);
+  EXPECT_DOUBLE_EQ(units.r.OutputScale("m"), units.r.outscale*units.r.outSI);
+  EXPECT_DOUBLE_EQ(units.r.OutputScale("cm"), units.r.outscale*units.r.outcgs);
+  EXPECT_DOUBLE_EQ(units.r.OutputScale("au"), r_pc/r_au);
 }
 
 

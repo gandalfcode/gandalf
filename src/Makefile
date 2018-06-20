@@ -230,7 +230,7 @@ OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
 endif
 
 
-TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
+TEST_OBJ = TestScaling.o TestTree.o #TestOctTree.o #TestSinks.o
 
 .SUFFIXES: .cpp .i .o
 

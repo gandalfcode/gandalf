@@ -24,6 +24,7 @@
 #include <math.h>
 #include "Constants.h"
 #include "Parameters.h"
+#include "Particle.h"
 #include "RandomNumber.h"
 #include "Sph.h"
 #include "OctTree.h"
@@ -46,13 +47,16 @@ public:
   static const FLOAT thetamaxsqd = 0.1;
   static const FLOAT kernrange = 2.0;
   static const FLOAT macerror = 0.0001;
+  static const bool prunedflag = false;
   string gravity_mac = "geometric";
   string multipole = "monopole";
 
-  SphParticle<3> *partdata;
+  GradhSphParticle<3> *partdata;
   Parameters params;
-  OctTree<3,SphParticle,OctTreeCell> *octtree;
+  OctTree<3,GradhSphParticle,OctTreeCell> *octtree;
   RandomNumber *randnumb;
+  DomainBox<3> simbox;
+  ParticleTypeRegister *types;
 
 };
 
@@ -64,10 +68,9 @@ public:
 void OctTreeTest::SetUp(void)
 {
   // Create all objects for test
-  partdata = new SphParticle<3>[Npart];
+  partdata = new GradhSphParticle<3>[Npart];
   randnumb = new XorshiftRand(rseed);
-  octtree  = new OctTree<3,SphParticle,OctTreeCell>(Nleafmax, thetamaxsqd, kernrange,
-                                                    macerror, gravity_mac, multipole);
+  types = new ParticleTypeRegister(&params);
 
   // Create some simple particle configuration (random population of a cube)
   for (int i=0; i<Npart; i++) {
@@ -76,13 +79,25 @@ void OctTreeTest::SetUp(void)
     partdata[i].h = 0.2*randnumb->floatrand();
   }
 
+  for (int k=0; k<3; k++) {
+    simbox.min[k] = -1.0;
+    simbox.max[k] = 1.0;
+    simbox.size[k] = 2.0;
+    simbox.half[k] = 1.0;
+  }
+
+
   // Now build the tree using the particle configuration
+  octtree = new OctTree<3,GradhSphParticle,OctTreeCell>(Nleafmax, thetamaxsqd, kernrange,
+                                                   macerror, gravity_mac, multipole,
+                                                   simbox, (*types), prunedflag);
   octtree->Ntot       = Npart;
-  octtree->Ntotmaxold = 0;
+  //octtree->Ntotmaxold = 0;
   octtree->Ntotmax    = Npart;
   octtree->ifirst     = 0;
   octtree->ilast      = Npart - 1;
-  octtree->BuildTree(0, Npart-1, Npart, Npart, partdata, 0.0);
+  octtree->BuildTree(0, Npart-1, Npart, Npart, 0.0, partdata);
+  octtree->StockTree(partdata, true);
   //octtree->StockTree(octtree->celldata[0],partdata);
 
   return;
