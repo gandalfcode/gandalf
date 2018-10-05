@@ -597,11 +597,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = (FLOAT) 0.0;
     nbody->stardata[i].gpot   = (FLOAT) 0.0;
     nbody->stardata[i].gpe    = (FLOAT) 0.0;
-    nbody->stardata[i].tlast  = t;
     nbody->stardata[i].flags.set(active);
     nbody->stardata[i].level  = 0;
-    nbody->stardata[i].nstep  = 0;
-    nbody->stardata[i].nlast  = 0;
     nbody->nbodydata[i]       = &(nbody->stardata[i]);
   }
   nbody->Nnbody = nbody->Nstar;
@@ -621,8 +618,6 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     for (k=0; k<ndim+2; k++) part.dQ[k] = (FLOAT) 0.0;
     for (k=0; k<ndim+2; k++) part.dQdt[k] = (FLOAT) 0.0;
     part.level  = 0;
-    part.nstep  = 0;
-    part.nlast  = 0;
     part.dt     = 0;
     part.flags.set(active);
   }
@@ -767,9 +762,9 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Call EndTimestep to set all 'beginning-of-step' variables
-  uint->EndTimestep(n, t, timestep, mfv);
-  hydroint->EndTimestep(n, t, timestep, mfv);
-  nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
+  uint->EndTimestep(level_step, n, t, timestep, mfv);
+  hydroint->EndTimestep(level_step, n, t, timestep, mfv);
+  nbody->EndTimestep(level_step, n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
   this->CalculateDiagnostics();
   this->diag0 = this->diag;

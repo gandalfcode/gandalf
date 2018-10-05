@@ -357,11 +357,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = (FLOAT) 0.0;
     nbody->stardata[i].gpot   = (FLOAT) 0.0;
     nbody->stardata[i].gpe    = (FLOAT) 0.0;
-    nbody->stardata[i].tlast  = t;
-    nbody->stardata[i].flags.set(active);
     nbody->stardata[i].level  = 0;
-    nbody->stardata[i].nstep  = 0;
-    nbody->stardata[i].nlast  = 0;
+    nbody->stardata[i].flags.set(active);
     nbody->nbodydata[i]       = &(nbody->stardata[i]);
   }
   nbody->Nnbody = nbody->Nstar;
@@ -407,8 +404,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.level     = 0;
       part.levelneib = 0;
-      part.nstep     = 0;
-      part.nlast     = 0;
       part.dalphadt  = (FLOAT) 0.0;
       part.div_v     = (FLOAT) 0.0;
       part.dudt      = (FLOAT) 0.0;
@@ -546,9 +541,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
   // Set particle values for initial step (e.g. r0, v0, a0, u0)
-  uint->EndTimestep(n, t, timestep, sph);
-  hydroint->EndTimestep(n,t, timestep, sph);
-  nbody->EndTimestep(n, nbody->Nstar, t, timestep, nbody->nbodydata);
+  uint->EndTimestep(level_step, n, t, timestep, sph);
+  hydroint->EndTimestep(level_step, n, t, timestep, sph);
+  nbody->EndTimestep(level_step, n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
   this->CalculateDiagnostics();
   this->diag0 = this->diag;
@@ -585,9 +580,9 @@ void SphSimulation<ndim>::MainLoop(void)
   if (n%integration_step == 0) Nfullsteps = Nfullsteps + 1;
 
   // Advance SPH and N-body particles' positions and velocities
-  uint->EnergyIntegration(n, (FLOAT) t, (FLOAT) timestep, sph);
-  hydroint->AdvanceParticles(n, (FLOAT) t, (FLOAT) timestep, sph);
-  nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+  uint->EnergyIntegration(level_step, n, (FLOAT) t, (FLOAT) timestep, sph);
+  hydroint->AdvanceParticles(level_step, n, (FLOAT) t, (FLOAT) timestep, sph);
+  nbody->AdvanceParticles(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Update radiative feedback object with sink data
   if (radfb) radfb->SetSinks(sinks);
@@ -810,7 +805,7 @@ CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_GHOSTS_MPI");
     // Calculate correction step for all stars at end of step, except the
     // final iteration (since correction is computed in EndStep also).
     //if (it < nbody->Npec - 1)
-    nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+    nbody->CorrectionTerms(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -818,7 +813,7 @@ CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_GHOSTS_MPI");
   // Search for new sink particles (if activated) and accrete to existing sinks
   if (sink_particles == 1) {
     if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
-      sinks->SearchForNewSinkParticles(n, t ,sph, nbody);
+      sinks->SearchForNewSinkParticles(level_step, n, t ,sph, nbody);
     }
     if (sinks->Nsink > 0) {
       sph->mmean = (FLOAT) 0.0;
@@ -829,7 +824,7 @@ CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_GHOSTS_MPI");
         sph->hmin_sink = min(sph->hmin_sink, (FLOAT) sinks->sink[i].star->h);
       }
 
-      sinks->AccreteMassToSinks(n, timestep, sph, nbody);
+      sinks->AccreteMassToSinks(level_step, n, timestep, sph, nbody);
       nbody->UpdateStellarProperties();
       if (extra_sink_output) WriteExtraSinkOutput();
     }
@@ -842,7 +837,7 @@ CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_GHOSTS_MPI");
   // Compute the dust forces if present.
   if (sphdust != NULL) {
     // Need to reset active particles:
-    hydroint->SetActiveParticles(n, sph) ;
+    hydroint->SetActiveParticles(level_step, n, sph) ;
     sphneib->UpdateActiveParticleCounters(sph);
 
     // Copy properties from original particles to ghost particles
@@ -868,18 +863,16 @@ CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_GHOSTS_MPI");
 
   // End-step terms for all SPH particles
   if (sph->Nhydro > 0) {
-    uint->EndTimestep(n, (FLOAT) t, (FLOAT) timestep, sph);
-    hydroint->EndTimestep(n, (FLOAT) t, (FLOAT) timestep, sph);
+    uint->EndTimestep(level_step, n, (FLOAT) t, (FLOAT) timestep, sph);
+    hydroint->EndTimestep(level_step, n, (FLOAT) t, (FLOAT) timestep, sph);
   }
 
   // End-step terms for all star particles
-  if (nbody->Nstar > 0) nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+  if (nbody->Nstar > 0) nbody->EndTimestep(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
 
   return;
 }
-
-
 
 
 
@@ -889,10 +882,8 @@ CodeTiming::BlockTimer timer = timing->StartNewTimer("SEARCH_GHOSTS_MPI");
 /// variables are converted into dimensionless code units here.
 //=================================================================================================
 template <int ndim>
-void SphSimulation<ndim>::WriteExtraSinkOutput(void)
+void SphSimulation<ndim>::WriteExtraSinkOutput()
 {
-  int k;                               // ..
-  int s;                               // ..
   string filename;                     // Output snapshot filename
   string nostring;                     // String of number of snapshots
   stringstream ss;                     // Stream object for preparing filename
@@ -900,9 +891,9 @@ void SphSimulation<ndim>::WriteExtraSinkOutput(void)
 
 
   //-----------------------------------------------------------------------------------------------
-  for (s=0; s<sinks->Nsink; s++) {
+  for (int s=0; s<sinks->Nsink; s++) {
 
-    SinkParticle<ndim> &sink = sinks->sink[s];
+    const SinkParticle<ndim> &sink = sinks->sink[s];
     nostring = "";
     ss << setfill('0') << setw(5) << s;
     nostring = ss.str();
@@ -912,10 +903,10 @@ void SphSimulation<ndim>::WriteExtraSinkOutput(void)
     outfile.open(filename.c_str(), std::ofstream::app);
     outfile << t << "    ";
     outfile << Nsteps << "    ";
-    for (k=0; k<ndim; k++) outfile << sink.star->r[k] << "    ";
-    for (k=0; k<ndim; k++) outfile << sink.star->v[k] << "    ";
-    for (k=0; k<ndim; k++) outfile << sink.star->a[k] << "    ";
-    for (k=0; k<3; k++) outfile << sink.angmom[k] << "    ";
+    for (int k=0; k<ndim; k++) outfile << sink.star->r[k] << "    ";
+    for (int k=0; k<ndim; k++) outfile << sink.star->v[k] << "    ";
+    for (int k=0; k<ndim; k++) outfile << sink.star->a[k] << "    ";
+    for (int k=0; k<3; k++) outfile << sink.angmom[k] << "    ";
     outfile << sink.star->m  << "    ";
     outfile << sink.menc     << "    ";
     outfile << sink.mmax     << "    ";

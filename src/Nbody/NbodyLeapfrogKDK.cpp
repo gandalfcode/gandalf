@@ -76,7 +76,7 @@ NbodyLeapfrogKDK<ndim, kernelclass>::~NbodyLeapfrogKDK()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
- (int N,                               ///< [in] Number of stars
+ (const int N,                         ///< [in] Number of stars
   NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
@@ -98,7 +98,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
   for (int i=0; i<N; i++) {
     if (not star[i]->flags.check(active)) continue;
@@ -150,10 +150,10 @@ private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectHydroForces
  (NbodyParticle<ndim> *star,           ///< [inout] Pointer to star
-  int Nhydro,                          ///< [in] Number of SPH gas particles
-  int Ndirect,                         ///< [in] No. of direct sum gas particles
-  int *hydrolist,                      ///< [in] List of SPH neib. particles
-  int *directlist,                     ///< [in] List of direct cum gas particles
+  const int Nhydro,                    ///< [in] Number of SPH gas particles
+  const int Ndirect,                   ///< [in] No. of direct sum gas particles
+  const int *hydrolist,                ///< [in] List of SPH neib. particles
+  const int *directlist,               ///< [in] List of direct cum gas particles
   Hydrodynamics<ndim> *hydro,          ///< [in] Array of SPH particles
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
@@ -251,35 +251,29 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectHydroForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
- (int n,                               ///< Integer time
-  int N,                               ///< No. of stars/systems
-  FLOAT t,                             ///< Current time
-  FLOAT timestep,                      ///< Smallest timestep value
-  NbodyParticle<ndim> **star)          ///< Main star/system array
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time
+  const int N,                         ///< [in] No. of stars/systems
+  const FLOAT t,                       ///< [in] Current time
+  const FLOAT timestep,                ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                              // Integer time since beginning of step
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
-  int nstep;                           // Particle (integer) step size
-  FLOAT dt;                            // Timestep since start of step
-
   debug2("[NbodyLeapfrogKDK::AdvanceParticles]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("NBODY_ADVANCE");
 
   // Advance positions and velocities of all star particles
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
+  for (int i=0; i<N; i++) {
 
-    // Compute time since beginning of step
-    nstep = star[i]->nstep;
-    dn = n - star[i]->nlast;
-    //dt = timestep*(FLOAT) dn;
-    dt = t - star[i]->tlast;
+    const int nstep = pow(2, level_step - star[i]->level);     // Particle integer timestep
+    int dn = n%nstep;                                      // Integer time since start of step
+    if (dn == 0) dn = nstep;
+    const FLOAT dt = timestep*(FLOAT) dn;                  // Particle physical timestep size
 
     // Advance positions to second order and velocities to first order
-    for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] +
+    for (int k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] +
       star[i]->v0[k]*dt + (FLOAT) 0.5*star[i]->a0[k]*dt*dt;
-    for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a0[k]*dt;
+    for (int k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a0[k]*dt;
 
     // If at end of step, set system particle as active
     if (dn == nstep) star[i]->flags.set(active);
@@ -302,29 +296,28 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
- (int n,                               ///< Integer time
-  int N,                               ///< No. of stars/systems
-  FLOAT t,                             ///< Current time
-  FLOAT timestep,                      ///< Smallest timestep value
-  NbodyParticle<ndim> **star)          ///< Main star/system array
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time
+  const int N,                         ///< [in] No. of stars/systems
+  const FLOAT t,                       ///< [in] Current time
+  const FLOAT timestep,                ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                              // Integer time since beginning of step
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
-  int nstep;                           // Particle (integer) step size
-
   debug2("[NbodyLeapfrogKDK::CorrectionTerms]");
   CodeTiming::BlockTimer timer = timing->StartNewTimer("NBODY_CORRECTION_TERMS");
 
   // Loop over all star particles and calculate correction terms only for
   // those at end of step.
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
-    if (dn == nstep) {
-      for (k=0; k<ndim; k++) star[i]->v[k] +=
-        (FLOAT) 0.5*(star[i]->a[k] - star[i]->a0[k])*(t - star[i]->tlast);
+  for (int i=0; i<N; i++) {
+    const int nstep = pow(2, level_step - star[i]->level);     // Particle integer timestep
+    int dn = n%nstep;                                      // Integer time since start of step
+
+    // Only perform correction if reached end of current timestep
+    if (dn == 0) {
+      const FLOAT dt    = timestep*(FLOAT) nstep;          // Physical time step size
+      for (int k=0; k<ndim; k++) star[i]->v[k] +=
+        (FLOAT) 0.5*(star[i]->a[k] - star[i]->a0[k])*dt;
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -341,11 +334,12 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
- (int n,                               ///< Integer time
-  int N,                               ///< No. of stars/systems
-  FLOAT t,                             ///< Current time
-  FLOAT timestep,                      ///< Smallest timestep value
-  NbodyParticle<ndim> **star)          ///< Main star/system array
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time
+  const int N,                         ///< [in] No. of stars/systems
+  const FLOAT t,                       ///< [in] Current time
+  const FLOAT timestep,                ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
@@ -364,13 +358,12 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
       for (k=0; k<ndim; k++) star[i]->adot0[k] = star[i]->adot[k];
       for (k=0; k<ndim; k++) star[i]->apert[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) star[i]->adotpert[k] = (FLOAT) 0.0;
-      star[i]->nlast = n;
-      star[i]->tlast = t;
-      star[i]->dt = star[i]->dt_next ;
-      star[i]->dt_next = 0 ;
+      star[i]->dt = star[i]->dt_next;
+      star[i]->dt_next = 0;
       star[i]->flags.unset(active);
       star[i]->flags.unset(end_timestep);
     }
+
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -414,10 +407,11 @@ DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::PerturberCorrectionTerms
- (int n,                               ///< [in] Integer time
-  int N,                               ///< [in] No. of stars/systems
-  FLOAT t,                             ///< [in] Current time
-  FLOAT timestep,                      ///< [in] Smallest timestep value
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time
+  const int N,                         ///< [in] No. of stars/systems
+  const FLOAT t,                       ///< [in] Current time
+  const FLOAT timestep,                ///< [in] Smallest timestep value
   NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
   int dn;                              // Integer time since beginning of step
@@ -432,13 +426,13 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::PerturberCorrectionTerms
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
    for (i=0; i<N; i++) {
-     dn = n - star[i]->nlast;
-     nstep = star[i]->nstep;
+     const int nstep = pow(2, level_step - star[i]->level);     // Particle integer timestep
+     int dn = n%nstep;                                      // Integer time since start of step
 
-     if (dn == nstep) {
-       //dt = timestep*(FLOAT) nstep;
-       dt = t - star[i]->tlast;
-       invdt = 1.0 / dt;
+     // Only perform correction if reached end of current timestep
+     if (dn == 0) {
+       const FLOAT dt    = timestep*(FLOAT) nstep;          // Physical time step size
+       const FLOAT invdt = (FLOAT) 1.0 / dt;                // 1 / dt
        for (k=0; k<ndim; k++) star[i]->a[k] += star[i]->apert[k]*invdt;
      }
 

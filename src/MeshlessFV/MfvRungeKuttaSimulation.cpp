@@ -53,11 +53,9 @@ using namespace std;
 /// Main SPH simulation integration loop.
 //=================================================================================================
 template <int ndim>
-void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
+void MfvRungeKuttaSimulation<ndim>::MainLoop()
 {
-  //int activecount = 0;                 // Flag if we need to recompute particles
   int i;                               // Particle loop counter
-  //int it;                              // Time-symmetric iteration counter
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
 
@@ -75,7 +73,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
   // Update the numerical fluxes of all active particles
   if (mfv->hydro_forces) {
-    mfvneib->UpdateGodunovFluxes(timestep, mfv, nbody, simbox);
+    mfvneib->UpdateGodunovFluxes(level_step, timestep, mfv, nbody, simbox);
   }
 
   // Advance all global time variables
@@ -87,12 +85,12 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
 
 
   // Integrate positions of particles
-  hydroint->AdvanceParticles(n, t, timestep, mfv);
-  nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+  hydroint->AdvanceParticles(level_step, n, t, timestep, mfv);
+  nbody->AdvanceParticles(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Check all boundary conditions
   // (DAVID : create an analagous of this function for N-body)
-  hydroint->CheckBoundaries(simbox,mfv);
+  hydroint->CheckBoundaries(simbox, mfv);
 
   // Re-build/re-stock tree now particles have moved
   mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep, timestep, mfv);
@@ -102,7 +100,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
   // Search for new sink particles (if activated) and accrete to existing sinks
   if (sink_particles == 1) {
     if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
-      sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
+      sinks->SearchForNewSinkParticles(level_step, n, t, mfv, nbody);
     }
     if (sinks->Nsink > 0) {
       mfv->mmean = (FLOAT) 0.0;
@@ -112,7 +110,7 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
       for (i=0; i<sinks->Nsink; i++) {
         mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
       }
-      sinks->AccreteMassToSinks(n, timestep, mfv, nbody);
+      sinks->AccreteMassToSinks(level_step, n, timestep, mfv, nbody);
       nbody->UpdateStellarProperties();
       //if (extra_sink_output) WriteExtraSinkOutput();
     }
@@ -175,15 +173,15 @@ void MfvRungeKuttaSimulation<ndim>::MainLoop(void)
     }
 
     // Calculate correction step for all stars at end of step.
-    nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+    nbody->CorrectionTerms(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   }
   //-----------------------------------------------------------------------------------------------
 
 
   // End-step terms for all hydro particles
-  hydroint->EndTimestep(n, t, timestep, mfv);
-  nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+  hydroint->EndTimestep(level_step, n, t, timestep, mfv);
+  nbody->EndTimestep(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
 
   // Rebuild or update local neighbour and gravity tree

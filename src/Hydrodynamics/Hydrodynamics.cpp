@@ -150,8 +150,6 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   part.ptype     = ptype;
   part.level     = sim->level_max;
   part.levelneib = sim->level_max;
-  part.nstep     = pow(2,sim->level_step - part.level);
-  part.nlast     = sim->n - part.nstep;
   part.m         = m;
   part.h         = (FLOAT) 1.0;
   part.u         = u;
@@ -165,7 +163,7 @@ Particle<ndim>& Hydrodynamics<ndim>::CreateNewParticle
   for (int k=0; k<ndim; k++) part.a0[k] = (FLOAT) 0.0;
 
 
-  // Set particle flag to active to ensure force is computed asap
+  // Set particle active flag to ensure force is computed asap
   part.flags = none;
   part.flags.set(active);
 

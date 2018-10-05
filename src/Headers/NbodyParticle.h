@@ -47,8 +47,6 @@ class NbodyParticle
   int istar;                           ///< Internal i.d.
   int Ncomp;                           ///< No. of internal components
   int level;                           ///< Current timestep level
-  int nstep;                           ///< Integer step-size of particle
-  int nlast;                           ///< Integer time at beginning of step
   FLOAT r[ndim];                       ///< Position
   FLOAT v[ndim];                       ///< Velocity
   FLOAT a[ndim];                       ///< Acceleration
@@ -66,7 +64,6 @@ class NbodyParticle
   FLOAT h;                             ///< Smoothing length
   FLOAT invh;                          ///< 1 / h
   FLOAT radius;                        ///< Softening/sink radius of particle
-  //FLOAT hfactor;                       ///< invh^(ndim + 1)
   FLOAT gpot;                          ///< Gravitational potential
   FLOAT gpe;                           ///< Gravitational potential energy
   FLOAT gpe_internal;                  ///< Internal grav. potential energy
@@ -74,7 +71,6 @@ class NbodyParticle
   DOUBLE dt;                           ///< Particle timestep
   DOUBLE dt_next;                      ///< Particle timestep for next step
   DOUBLE dt_internal;                  ///< Internal timestep (e.g. due to sub-systems)
-  DOUBLE tlast;                        ///< Time at beginning of last step
   DOUBLE NLyC;                         ///< No. of ionising photons per second
 
 
@@ -83,8 +79,6 @@ class NbodyParticle
   NbodyParticle()
   {
     level  = 0;
-    nstep  = 0;
-    nlast  = 0;
     Ncomp  = 1;
     for (int k=0; k<ndim; k++) r[k]        = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k]        = (FLOAT) 0.0;
@@ -101,14 +95,12 @@ class NbodyParticle
     m            = 0;
     h            = 0;
     invh         = (FLOAT) 0.0;
-    //hfactor      = (FLOAT) 0.0;
     gpot         = (FLOAT) 0.0;
     gpe          = (FLOAT) 0.0;
     gpe_internal = (FLOAT) 0.0;
     gpe_pert     = (FLOAT) 0.0;
     dt           = 0.0;
     dt_internal  = big_number;
-    tlast        = 0.0;
     NLyC         = 0.0;
   }
 

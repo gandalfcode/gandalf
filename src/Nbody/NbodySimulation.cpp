@@ -206,12 +206,9 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
       for (k=0; k<ndim; k++) nbody->stardata[i].adotpert[k] = 0.0;
       nbody->stardata[i].gpot   = 0.0;
       nbody->stardata[i].gpe    = 0.0;
-      nbody->stardata[i].tlast  = t;
-      nbody->stardata[i].flags.set(active);
       nbody->stardata[i].level  = level_step;
-      nbody->stardata[i].nstep  = 0;
-      nbody->stardata[i].nlast  = 0;
       nbody->stardata[i].istar  = i;
+      nbody->stardata[i].flags.set(active);
       nbody->nbodydata[i]       = &(nbody->stardata[i]);
     }
 
@@ -238,7 +235,7 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
   else this->ComputeBlockTimesteps();
 
   // Set particle values for initial step (e.g. r0, v0, a0)
-  nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
+  nbody->EndTimestep(level_step, n, nbody->Nstar, t, timestep, nbody->nbodydata);
 
   this->CalculateDiagnostics();
   this->diag0 = this->diag;
@@ -317,7 +314,7 @@ void NbodySimulation<ndim>::MainLoop(void)
 
 
   // Advance SPH particles positions and velocities
-  nbody->AdvanceParticles(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
+  nbody->AdvanceParticles(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
 
   // Compute N-body forces
@@ -357,7 +354,7 @@ void NbodySimulation<ndim>::MainLoop(void)
       }
 
       // Calculate correction step for all stars at end of step
-      nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+      nbody->CorrectionTerms(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
     }
     //---------------------------------------------------------------------------------------------
@@ -373,7 +370,8 @@ void NbodySimulation<ndim>::MainLoop(void)
         // The cast is needed because the function is defined only in SystemParticle, not in
         // NbodyParticle.  The safety of the cast relies on the correctness of the Ncomp value.
         subsystem->IntegrateInternalMotion
-         (static_cast<SystemParticle<ndim>* > (nbody->nbodydata[i]), n, t - timestep, t, simbox, ewald);
+         (static_cast<SystemParticle<ndim>* > (nbody->nbodydata[i]),
+          level_step, n, t - timestep, t, simbox, ewald);
       }
     }
   }
@@ -399,268 +397,7 @@ void NbodySimulation<ndim>::MainLoop(void)
   else this->ComputeBlockTimesteps();
 
   // Set all end-of-step variables
-  nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+  nbody->EndTimestep(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   return;
 }
-
-/*
-
-//=================================================================================================
-//  NbodySimulation::ComputeGlobalTimestep
-/// Computes global timestep for SPH simulation.  Calculates the minimum
-/// timestep for all SPH and N-body particles in the simulation.
-//=================================================================================================
-template <int ndim>
-void NbodySimulation<ndim>::ComputeGlobalTimestep(void)
-{
-  const FLOAT nbody_mult = simparams->floatparams["nbody_mult"];   // Local copy of multiplier
-  DOUBLE dt_min = big_number_dp;                                // Local copy of minimum timestep
-
-  debug2("[NbodySimulation::ComputeGlobalTimestep]");
-
-  //-----------------------------------------------------------------------------------------------
-  if (n == nresync) {
-
-    n          = 0;
-    level_max  = 0;
-    level_step = level_max + integration_step - 1;
-    nresync    = integration_step;
-
-    // Compute minimum timestep due to stars/systems
-    for (int i=0; i<nbody->Nnbody; i++) {
-      if (Nlevels <= 0) {
-        nbody->nbodydata[i]->dt = nbody_mult;
-      }
-      else {
-        nbody->nbodydata[i]->dt = nbody->Timestep(nbody->nbodydata[i]);
-      }
-      dt_min = min(dt_min,nbody->nbodydata[i]->dt);
-    }
-
-    // Set all particles to same timestep
-    timestep = dt_min;
-    for (int i=0; i<nbody->Nnbody; i++) {
-      nbody->nbodydata[i]->level = level_max;
-      nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
-      nbody->nbodydata[i]->nlast = n;
-      nbody->nbodydata[i]->dt = timestep;
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  NbodySimulation::ComputeBlockTimesteps
-/// Compute timesteps for all particles using hierarchical block timesteps.
-//=================================================================================================
-template <int ndim>
-void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
-{
-  int i;                                     // Particle counter
-  int istep;                                 // Aux. variable for changing steps
-  int level;                                 // Particle timestep level
-  int last_level;                            // Previous timestep level
-  int level_max_aux;                         // Aux. maximum level variable
-  int level_max_old;                         // Old level_max
-  int level_max_nbody = 0;                   // level_max for star particles only
-  int level_nbody;                           // local thread var. for N-body level
-  int nfactor;                               // Increase/decrease factor of n
-  int nstep;                                 // Particle integer step-size
-  DOUBLE dt;                                 // Aux. timestep variable
-  DOUBLE dt_min = big_number_dp;             // Minimum timestep
-  DOUBLE dt_min_aux;                         // Aux. minimum timestep variable
-  DOUBLE dt_min_nbody = big_number_dp;       // Maximum N-body particle timestep
-  DOUBLE dt_nbody;                           // Aux. minimum N-body timestep
-
-  debug2("[SphSimulation::ComputeBlockTimesteps]");
-  CodeTiming::BlockTimer timer = timing->StartNewTimer("BLOCK_TIMESTEPS");
-
-
-  // Synchronise all timesteps and reconstruct block timestep structure.
-  //===============================================================================================
-  if (n == nresync) {
-    n = 0;
-    timestep = big_number_dp;
-
-#pragma omp parallel default(none) shared(dt_min_nbody) private(dt,dt_min_aux,dt_nbody,i)
-    {
-      // Initialise all timestep and min/max variables
-      dt_min_aux = big_number_dp;
-      dt_nbody = big_number_dp;
-
-      // Now compute minimum timestep due to stars/systems
-#pragma omp for
-      for (i=0; i<nbody->Nnbody; i++) {
-        dt = nbody->Timestep(nbody->nbodydata[i]);
-        dt_min_aux = min(dt_min_aux,dt);
-        dt_nbody = min(dt_nbody,dt);
-        nbody->nbodydata[i]->dt = dt;
-      }
-
-#pragma omp critical
-      {
-        timestep = min(timestep,dt_min_aux);
-        dt_min_nbody = min(dt_min_nbody,dt_nbody);
-      }
-#pragma omp barrier
-    }
-
-
-    // Calculate new block timestep levels
-    level_max = Nlevels - 1;
-    level_step = level_max + integration_step - 1;
-    dt_max = timestep*powf(2.0, level_max);
-
-    // Calculate the maximum level occupied by all SPH particles
-    level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, level_max);
-
-    // Populate timestep levels with N-body particles.
-    // Ensures that N-body particles occupy levels lower than all SPH particles
-    for (i=0; i<nbody->Nnbody; i++) {
-      nbody->nbodydata[i]->tlast = t;
-      nbody->nbodydata[i]->nlast = n;
-      if (nbody->nbodydata[i]->Ncomp > 1) {
-        nbody->nbodydata[i]->level = level_max;
-        nbody->nbodydata[i]->nstep = pow(2, level_step - level_max);
-      }
-      else {
-        dt = nbody->nbodydata[i]->dt;
-        level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
-        level = max(level, 0);
-        nbody->nbodydata[i]->level = level;
-        nbody->nbodydata[i]->nstep = pow(2, level_step - nbody->nbodydata[i]->level);
-      }
-    }
-
-    nresync = pow(2, level_step);
-    timestep = dt_max / (DOUBLE) nresync;
-
-  }
-  // If not resynchronising, check if any SPH/N-body particles need to move
-  // up or down timestep levels.
-  //===============================================================================================
-  else {
-
-    level_max_old = level_max;
-    level_max = 0;
-
-
-#pragma omp parallel default(none) shared(dt_min,dt_min_nbody,level_max_nbody)\
-  private(dt,dt_min_aux,dt_nbody,i,istep,last_level,level,level_max_aux,level_nbody,nstep,nfactor)
-    {
-      dt_min_aux = big_number_dp;
-      dt_nbody = big_number_dp;
-      level_max_aux = 0;
-      level_nbody = 0;
-
-      // Now find all N-body particles at the beginning of a new timestep
-      //-------------------------------------------------------------------------------------------
-#pragma omp for
-      for (i=0; i<nbody->Nnbody; i++) {
-
-        // Skip particles that are not at end of step
-        if (nbody->nbodydata[i]->nlast == n) {
-          nstep = nbody->nbodydata[i]->nstep;
-          last_level = nbody->nbodydata[i]->level;
-
-          // Compute new timestep value and level number
-          dt = nbody->Timestep(nbody->nbodydata[i]);
-          nbody->nbodydata[i]->dt = dt;
-          level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
-
-          // Move up one level (if levels are correctly synchronised) or
-          // down several levels if required
-          if (level < last_level && last_level > 1 && n%(2*nstep) == 0) {
-            nbody->nbodydata[i]->level = last_level - 1;
-          }
-          else if (level > last_level) {
-            nbody->nbodydata[i]->level = level;
-          }
-          else {
-            nbody->nbodydata[i]->level = last_level;
-          }
-
-          nbody->nbodydata[i]->tlast = t;
-          nbody->nbodydata[i]->nlast = n;
-          nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
-        }
-
-        // Find maximum level of all N-body particles
-        level_nbody = max(level_nbody,nbody->nbodydata[i]->level);
-        level_max_aux = max(level_max_aux,nbody->nbodydata[i]->level);
-        dt_nbody = min(dt_nbody,nbody->nbodydata[i]->dt);
-      }
-      //-------------------------------------------------------------------------------------------
-
-
-#pragma omp critical
-      {
-        dt_min = min(dt_min,dt_min_aux);
-        dt_min_nbody = min(dt_min_nbody,dt_nbody);
-        level_max = max(level_max,level_max_aux);
-        level_max_nbody = max(level_max_nbody,level_nbody);
-      }
-#pragma omp barrier
-
-    }
-
-
-    // For now, don't allow levels to be removed
-    //level_max = max(level_max,level_max_old);
-    level_step = level_max + integration_step - 1;
-
-
-    // Reduce all sub-systems to lowest level (if any exist)
-    for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->nlast == n && nbody->nbodydata[i]->Ncomp > 1) {
-        nbody->nbodydata[i]->nlast = n;
-        nbody->nbodydata[i]->level = level_max;
-        nbody->nbodydata[i]->nstep = pow(2,level_step - level_max);
-      }
-    }
-
-
-    istep = pow(2, level_step - level_max_old + 1);
-
-    // Update all timestep variables if we have removed or added any levels
-    //---------------------------------------------------------------------------------------------
-    if (level_max > level_max_old) {
-      nfactor = pow(2, level_max - level_max_old);
-      n *= nfactor;
-      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
-      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
-    }
-    else if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0) {
-      nfactor = pow(2, level_max_old - level_max);
-      n /= nfactor;
-      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
-      for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
-    }
-
-    nresync = pow(2, level_step);
-    timestep = dt_max / (DOUBLE) nresync;
-
-    // Update values of nstep for both SPH and star particles
-    for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep =
-        pow(2,level_step - nbody->nbodydata[i]->level);
-    }
-
-  }
-  //===============================================================================================
-
-
-#if defined(VERIFY_ALL)
-  //VerifyBlockTimesteps();
-#endif
-
-  return;
-}
-
-*/

@@ -85,7 +85,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Iterate to ensure level hierarchy of active particles is correct
 
   if (mfv->hydro_forces) {
-    mfvneib->UpdateGodunovFluxes(timestep, mfv, nbody, simbox);
+    mfvneib->UpdateGodunovFluxes(level_step, timestep, mfv, nbody, simbox);
   }
 
 #ifdef MPI_PARALLEL
@@ -101,12 +101,12 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // Integrate positions of particles
-  hydroint->AdvanceParticles(n, t, timestep, mfv);
-  nbody->AdvanceParticles(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+  hydroint->AdvanceParticles(level_step, n, t, timestep, mfv);
+  nbody->AdvanceParticles(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Check all boundary conditions
   // (DAVID : create an analagous of this function for N-body)
-  hydroint->CheckBoundaries(simbox,mfv);
+  hydroint->CheckBoundaries(simbox, mfv);
 
   // Apply Saitoh & Makino type time-step limiter
   hydroint->CheckTimesteps(level_diff_max, level_step, n, timestep, mfv);
@@ -248,7 +248,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
     }
 
     // Calculate correction step for all stars at end of step.
-    nbody->CorrectionTerms(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+    nbody->CorrectionTerms(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -256,7 +256,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   // Search for new sink particles (if activated) and accrete to existing sinks
   if (sink_particles == 1) {
     if (sinks->create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0)) {
-      sinks->SearchForNewSinkParticles(n, t, mfv, nbody);
+      sinks->SearchForNewSinkParticles(level_step, n, t, mfv, nbody);
     }
     if (sinks->Nsink > 0) {
       mfv->mmean = (FLOAT) 0.0;
@@ -266,7 +266,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
       for (i=0; i<sinks->Nsink; i++) {
         mfv->hmin_sink = min(mfv->hmin_sink, (FLOAT) sinks->sink[i].star->h);
       }
-      sinks->AccreteMassToSinks(n, timestep, mfv, nbody);
+      sinks->AccreteMassToSinks(level_step, n, timestep, mfv, nbody);
       nbody->UpdateStellarProperties();
       //if (extra_sink_output) WriteExtraSinkOutput();
     }
@@ -302,9 +302,9 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   // End-step terms for all hydro particles
-  uint->EndTimestep(n, t, timestep, mfv);
-  hydroint->EndTimestep(n, t, timestep, mfv);
-  nbody->EndTimestep(n, nbody->Nnbody, t, timestep, nbody->nbodydata);
+  uint->EndTimestep(level_step, n, t, timestep, mfv);
+  hydroint->EndTimestep(level_step, n, t, timestep, mfv);
+  nbody->EndTimestep(level_step, n, nbody->Nnbody, t, timestep, nbody->nbodydata);
 
   // Update all active cell counters in the tree
   mfvneib->UpdateActiveParticleCounters(mfv);
@@ -313,8 +313,8 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfvneib->UpdateAllProperties(mfv, nbody, simbox);
 
 #ifdef MPI_PARALLEL
-  LocalGhosts->CopyHydroDataToGhosts(simbox,mfv);
-  MpiGhosts->CopyHydroDataToGhosts(simbox,mfv);
+  LocalGhosts->CopyHydroDataToGhosts(simbox, mfv);
+  MpiGhosts->CopyHydroDataToGhosts(simbox, mfv);
 #endif
 
 

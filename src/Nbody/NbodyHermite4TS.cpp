@@ -75,40 +75,35 @@ NbodyHermite4TS<ndim, kernelclass>::~NbodyHermite4TS()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
-(int n,                             ///< [in] Integer time
- int N,                             ///< [in] No. of stars/systems
- FLOAT t,                          ///< ..
- FLOAT timestep,                   ///< ..
- NbodyParticle<ndim> **star)        ///< [inout] Main star/system array
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time
+  const int N,                         ///< [in] No. of stars/systems
+  const FLOAT t,                       ///< [in] Current time
+  const FLOAT timestep,                ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
-  FLOAT dt;                        // Physical time step size
-  FLOAT invdt;                     // 1 / dt
-
   debug2("[NbodyHermite4TS::CorrectionTerms]");
 
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
+  for (int i=0; i<N; i++) {
 
-    if (dn == nstep) {
-      //dt = timestep*(FLOAT) nstep;
-      dt = t - star[i]->tlast;
-      invdt = 1.0 / dt;
+    const int nstep = pow(2, level_step - star[i]->level);     // Particle integer timestep
+    int dn = n%nstep;                                      // Integer time since start of step
 
-      for (k=0; k<ndim; k++) {
+    // Only perform correction if reached end of current timestep
+    if (dn == 0) {
+      const FLOAT dt    = timestep*(FLOAT) nstep;          // Physical time step size
+      const FLOAT invdt = (FLOAT) 1.0 / dt;                // 1 / dt
+
+      for (int k=0; k<ndim; k++) {
         star[i]->a2dot[k] = (-6.0*(star[i]->a0[k] - star[i]->a[k]) - dt*
                              (4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))*invdt*invdt;
         star[i]->a3dot[k] = (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
                              (star[i]->adot0[k] + star[i]->adot[k]))*invdt*invdt*invdt;
       }
 
-      for (k=0; k<ndim; k++) {
+      for (int k=0; k<ndim; k++) {
         star[i]->v[k] = star[i]->v0[k] + 0.5*(star[i]->a0[k] + star[i]->a[k])*dt -
           onetwelfth*(star[i]->adot[k] - star[i]->adot0[k])*dt*dt;
         star[i]->r[k] = star[i]->r0[k] + 0.5*(star[i]->v0[k] + star[i]->v[k])*dt -

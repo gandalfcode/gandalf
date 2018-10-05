@@ -106,12 +106,12 @@ EnergyRadwsBase<ndim>::~EnergyRadwsBase()
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EnergyIntegration
- (const int n,                         ///< [in] Integer time in block time struct
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time in block time struct
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  Hydrodynamics<ndim>* hydro)
+  Hydrodynamics<ndim>* hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
-  int i;                               // Particle counter
   ParticleType<ndim>* partdata = hydro->template GetParticleArray<ParticleType>();
 
   debug2("[EnergyRadws::EnergyIntegration]");
@@ -119,14 +119,16 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i) shared(partdata, hydro)
-  for (i=0; i<hydro->Nhydro; i++) {
+#pragma omp parallel for default(none) shared(partdata, hydro)
+  for (int i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim>& part = partdata[i];
     if (part.flags.is_dead()) continue;
 
     // Compute time since beginning of current step
-    FLOAT dn = n - part.nlast;
-    FLOAT dt = timestep*(FLOAT) dn;
+    const int nstep = pow(2, level_step - part.level);
+    int dn = n%nstep;
+    if (dn == 0) dn = nstep;
+    const FLOAT dt = timestep*(FLOAT) dn;
 
     if (part.dt_therm <= small_number) {
       part.u = part.u0;
@@ -151,10 +153,11 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void EnergyRadws<ndim,ParticleType>::EndTimestep
- (const int n,                         ///< [in] Integer time in block time struct
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time in block time struct
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  Hydrodynamics<ndim>* hydro)
+  Hydrodynamics<ndim>* hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
   int i;                               // Particle counter
   FLOAT temp;                          // Particle temperature
@@ -199,10 +202,11 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
 //=================================================================================================
 template <int ndim>
 void EnergyRadws<ndim,MeshlessFVParticle>::EndTimestep
- (const int n,                         ///< [in] Integer time in block time struct
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time in block time struct
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  Hydrodynamics<ndim>* hydro)
+  Hydrodynamics<ndim>* hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
   int i;                               // Particle counter
   FLOAT temp;                          // Particle temperature
@@ -265,7 +269,8 @@ void EnergyRadws<ndim,MeshlessFVParticle>::EndTimestep
 //=================================================================================================
 template <int ndim>
 void EnergyRadws<ndim,MeshlessFVParticle>::EnergyIntegration
- (const int n,                         ///< [in] Integer time in block time struct
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time in block time struct
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
   Hydrodynamics<ndim>* hydro)
@@ -290,7 +295,11 @@ void EnergyRadws<ndim,MeshlessFVParticle>::EnergyIntegration
     MeshlessFVParticle<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
 
-    if (n == part.nlast) {
+    const int nstep = pow(2, level_step - part.level);     // Particle integer timestep
+    int dn = n%nstep;                                      // Integer time since start of step
+
+    //if (n == part.nlast) {
+    if (dn == 0) {
 
       FLOAT Qcons[MeshlessFV<ndim>::nvar] ;
       for (int k=0; k<MeshlessFV<ndim>::nvar; k++) Qcons[k] = part.Qcons0[k] + part.dQdt[k]*part.dt;
@@ -326,7 +335,8 @@ void EnergyRadws<ndim,MeshlessFVParticle>::EnergyIntegration
 //=================================================================================================
 template <int ndim>
 void EnergyRadws<ndim,MeshlessFVParticle>::EnergyCorrectionTerms
- (const int n,                         ///< [in] Integer time in block time struct
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time in block time struct
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
   Hydrodynamics<ndim>* hydro)

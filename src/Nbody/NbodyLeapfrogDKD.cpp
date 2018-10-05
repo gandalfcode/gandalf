@@ -76,7 +76,7 @@ NbodyLeapfrogDKD<ndim, kernelclass>::~NbodyLeapfrogDKD()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
- (int N,                               ///< [in] Number of stars
+ (const int N,                         ///< [in] Number of stars
   NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
@@ -98,7 +98,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+#pragma omp parallel for if (N > this->maxNbodyOpenMp) default(none) shared(ewald, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux, potperiodic, wmean)
   for (int i=0; i<N; i++) {
     if (not star[i]->flags.check(active)) continue;
@@ -151,10 +151,10 @@ private(aperiodic, dr, dr_corr, drdt, drmag, drsqd, dv, invdrmag, invhmean, paux
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
  (NbodyParticle<ndim> *star,           ///< [inout] Pointer to star
-  int Nhydro,                          ///< [in] No. of SPH neighbour gas ptcls
-  int Ndirect,                         ///< [in] No. of distant SPH ptcls.
-  int *hydrolist,                      ///< [in] List of neighbour ids
-  int *directlist,                     ///< [in] List of distant ptcl ids
+  const int Nhydro,                    ///< [in] No. of SPH neighbour gas ptcls
+  const int Ndirect,                   ///< [in] No. of distant SPH ptcls.
+  const int *hydrolist,                ///< [in] List of neighbour ids
+  const int *directlist,               ///< [in] List of distant ptcl ids
   Hydrodynamics<ndim> *hydro,          ///< [in] Array of SPH particles
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
@@ -251,38 +251,32 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
- (int n,                               ///< Integer time
-  int N,                               ///< No. of stars/systems
-  FLOAT t,                             ///< Current time
-  FLOAT timestep,                      ///< Smallest timestep value
-  NbodyParticle<ndim> **star)          ///< Main star/system array
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time
+  const int N,                         ///< [in] No. of stars/systems
+  const FLOAT t,                       ///< [in] Current time
+  const FLOAT timestep,                ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
-  int dn;                              // Integer time since beginning of step
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
-  int nstep;                           // Particle (integer) step size
-  FLOAT dt;                            // Timestep since start of step
-
   debug2("[NbodyLeapfrogDKD::AdvanceParticles]");
 
   // Advance positions and velocities of all star particles
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
+  for (int i=0; i<N; i++) {
 
-    // Compute time since beginning of step
-    nstep = star[i]->nstep;
-    dn    = n - star[i]->nlast;
-    //dt = timestep*(FLOAT) dn;
-    dt    = t - star[i]->tlast;
+    const int nstep = pow(2, level_step - star[i]->level);     // Particle integer timestep
+    int dn = n%nstep;                                      // Integer time since start of step
+    if (dn == 0) dn = nstep;
+    const FLOAT dt = timestep*(FLOAT) dn;                  // Particle physical timestep size
 
     // Advance positions and velocities to first order
     if (dn < nstep) {
-      for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] + star[i]->v0[k]*dt;
-      for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a[k]*dt;
+      for (int k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] + star[i]->v0[k]*dt;
+      for (int k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a[k]*dt;
     }
     else {
-      for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a[k]*dt;
-      for (k=0; k<ndim; k++) star[i]->r[k] =
+      for (int k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a[k]*dt;
+      for (int k=0; k<ndim; k++) star[i]->r[k] =
         star[i]->r0[k] + 0.5*(star[i]->v0[k] + star[i]->v[k])*dt;
     }
 
@@ -304,11 +298,12 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::EndTimestep
- (int n,                               ///< Integer time
-  int N,                               ///< No. of stars/systems
-  FLOAT t,                             ///< Current time
-  FLOAT timestep,                      ///< Smallest timestep value
-  NbodyParticle<ndim> **star)          ///< Main star/system array
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer time
+  const int N,                         ///< [in] No. of stars/systems
+  const FLOAT t,                       ///< [in] Current time
+  const FLOAT timestep,                ///< [in] Smallest timestep value
+  NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
@@ -323,8 +318,6 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::EndTimestep
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
-      star[i]->nlast = n;
-      star[i]->tlast = t;
       star[i]->dt = star[i]->dt_next ;
       star[i]->dt_next = 0 ;
       star[i]->flags.unset(active);

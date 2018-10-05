@@ -82,7 +82,7 @@ protected:
   }
   virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *,DomainBox<ndim> &) = 0;
   virtual void UpdateGradientMatrices(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
-  virtual void UpdateGodunovFluxes(FLOAT, MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
+  virtual void UpdateGodunovFluxes(const int, const FLOAT, MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateAllGravForces(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &,
                                    Ewald<ndim> *) = 0;
 };
@@ -161,7 +161,7 @@ protected:
   //-----------------------------------------------------------------------------------------------
   virtual void UpdateAllProperties(MeshlessFV<ndim> *, Nbody<ndim> *,DomainBox<ndim> &);
   virtual void UpdateGradientMatrices(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
-  virtual void UpdateGodunovFluxes(FLOAT, MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
+  virtual void UpdateGodunovFluxes(const int, const FLOAT, MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllGravForces(MeshlessFV<ndim> *, Nbody<ndim> *, DomainBox<ndim> &,
                                    Ewald<ndim> *);
 };

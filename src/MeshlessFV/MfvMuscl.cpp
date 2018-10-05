@@ -75,9 +75,10 @@ MfvMuscl<ndim, kernelclass,SlopeLimiter>::~MfvMuscl()
 //=================================================================================================
 template <int ndim, template<int> class kernelclass, class SlopeLimiter>
 void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
-(MeshlessFVParticle<ndim>& part,                                ///< [inout] Particle data
- NeighbourList<typename MeshlessFV<ndim>::FluxNeib>& neibpart,  ///< [inout] Neighbour data
- FLOAT timestep)                                                ///< [in]    Current timstep size
+ (MeshlessFVParticle<ndim>& part,                                ///< [inout] Particle data
+  NeighbourList<typename MeshlessFV<ndim>::FluxNeib>& neibpart,  ///< [inout] Neighbour data
+  const int level_step,                                          ///< [in] Level for lowest step
+  const FLOAT timestep)                                          ///< [in] Current timstep size
 {
   int k;                               // Dimension counter
   int var;                             // Particle state vector variable counter
@@ -95,9 +96,10 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   FLOAT Wdot[nvar];                    // Time derivative of primitive vector
   FLOAT gradW[nvar][ndim];             // Gradient of primitive vector
   FLOAT dW[nvar];                      // Change in primitive quantities
-  const FLOAT dt = timestep*(FLOAT) part.nstep;    // Timestep of given particle
-  const FLOAT invh_i   = 1.0/part.h;
-  const FLOAT volume_i = 1.0/part.ndens;
+  const int nstep = pow(2, level_step - part.level);  // Integer timestep of particle
+  const FLOAT dt = timestep*(FLOAT) nstep;            // Timestep of given particle
+  const FLOAT invh_i   = 1.0/part.h;                  // 1 / h
+  const FLOAT volume_i = 1.0/part.ndens;              // Numerical volume of particle
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------

@@ -173,8 +173,8 @@ struct Particle
   float vsig_max;                   ///< Maximum signal velocity.
 
   // To be deleted
-  int nstep;                        ///< Integer step-size of particle
-  int nlast;                        ///< Integer time at beginning of step
+  //int nstep;                        ///< Integer step-size of particle
+  //int nlast;                        ///< Integer time at beginning of step
   //int sinkid;                       ///< i.d. of sink particle
   FLOAT dt;                         ///< Particle timestep
   //DOUBLE tlast;                     ///< Time at beginning of current step
@@ -216,8 +216,8 @@ struct Particle
     vsig_max  = 0.0f;
 
     //sinkid    = -1;
-    nstep     = 0;
-    nlast     = 0;
+    //nstep     = 0;
+    //nlast     = 0;
     dt        = (DOUBLE) 0.0;
     //tlast     = (DOUBLE) 0.0;
 

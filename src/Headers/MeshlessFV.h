@@ -128,7 +128,8 @@ public:
   virtual int ComputeH(MeshlessFVParticle<ndim> &, FLOAT, const NeighbourList<DensNeib>&,
                        Nbody<ndim> *) = 0;
   virtual void ComputeGradients(MeshlessFVParticle<ndim>&, NeighbourList<GradNeib>&) = 0;
-  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&, FLOAT) = 0;
+  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&,
+                                  const int, const FLOAT) = 0;
   virtual void ComputeSmoothedGravForces(MeshlessFVParticle<ndim>&, NeighbourList<GravNeib>&) = 0;
   virtual void ComputeDirectGravForces(MeshlessFVParticle<ndim>&, NeighbourList<DirectNeib>&) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &) = 0;
@@ -323,7 +324,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&, FLOAT);
+  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&,
+                                  const int, const FLOAT);
 
 
 };
@@ -396,8 +398,8 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
 
   // ..
   //-----------------------------------------------------------------------------------------------
-  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&,FLOAT);
-
+  virtual void ComputeGodunovFlux(MeshlessFVParticle<ndim>&, NeighbourList<FluxNeib>&,
+                                  const int, const FLOAT);
 
 };
 

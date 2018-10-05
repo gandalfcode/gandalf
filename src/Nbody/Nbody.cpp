@@ -183,7 +183,7 @@ void Nbody<ndim>::LoadStellarPropertiesTable
 /// Updates the stellar properties of all stars/sinks based on their new mass after accretion.
 //=================================================================================================
 template<int ndim>
-void Nbody<ndim>::UpdateStellarProperties(void)
+void Nbody<ndim>::UpdateStellarProperties()
 {
   int i;                               // Star counter
   int jbin;                            // Stellar table bin number
@@ -231,7 +231,7 @@ void Nbody<ndim>::UpdateStellarProperties(void)
 //=================================================================================================
 template <int ndim>
 void Nbody<ndim>::CalculateDirectGravForces
- (int N,                               ///< [in] Number of stars
+ (const int N,                         ///< [in] Number of stars
   NbodyParticle<ndim> **star,          ///< [inout] Array of stars/systems
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in] Ewald gravity object pointer
@@ -249,7 +249,7 @@ void Nbody<ndim>::CalculateDirectGravForces
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for if (N > maxNbodyOpenMp) default(none) shared(ewald, N, simbox, star) \
+#pragma omp parallel for if (N > maxNbodyOpenMp) default(none) shared(ewald, simbox, star) \
 private(aperiodic, dr, dr_corr, drdt, drsqd, dv, invdrmag, potperiodic)
   for (int i=0; i<N; i++) {
     if (not star[i]->flags.check(active)) continue;
@@ -295,11 +295,11 @@ private(aperiodic, dr, dr_corr, drdt, drsqd, dv, invdrmag, potperiodic)
 //=================================================================================================
 template <int ndim>
 void Nbody<ndim>::CheckBoundaries
- (int n,                               ///< [in] Integer time
-  int N,                               ///< [in] No. of stars/systems
-  FLOAT t,                             ///< [in] Current time
-  FLOAT timestep,                      ///< [in] Smallest timestep value
-  DomainBox<ndim> &simbox,             ///< [in] Main simulation domain box
+ (const int n,                         ///< [in] Integer time
+  const int N,                         ///< [in] No. of stars/systems
+  const FLOAT t,                       ///< [in] Current time
+  const FLOAT timestep,                ///< [in] Smallest timestep value
+  const DomainBox<ndim> &simbox,       ///< [in] Main simulation domain box
   NbodyParticle<ndim> **star)          ///< [inout] Main star/system array
 {
   debug2("[Nbody::CheckBoundaries]");
@@ -308,7 +308,7 @@ void Nbody<ndim>::CheckBoundaries
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   //===============================================================================================
-#pragma omp parallel for if (N > maxNbodyOpenMp) default(none) shared(N,simbox,star)
+#pragma omp parallel for if (N > maxNbodyOpenMp) default(none) shared(simbox,star)
   for (int i=0; i<N; i++) {
 
     // --------------------------------------------------------------------------------------------
@@ -370,15 +370,14 @@ void Nbody<ndim>::CheckBoundaries
 
 
 
-
 //=================================================================================================
 //  Nbody::CalculatePerturberForces
 /// Calculate perturber tidal forces on all stars in a N-body sub-system.
 //=================================================================================================
 template <int ndim>
 void Nbody<ndim>::CalculatePerturberForces
- (int N,                               ///< [in] Number of stars
-  int Npert,                           ///< [in] Number of perturbing stars
+ (const int N,                         ///< [in] Number of stars
+  const int Npert,                     ///< [in] Number of perturbing stars
   NbodyParticle<ndim> **star,          ///< [in] Array of stars/systems
   NbodyParticle<ndim> *perturber,      ///< [in] Array of perturbing stars/systems
   DomainBox<ndim> &simbox,             ///< [in] Simulation domain box
@@ -485,9 +484,10 @@ void Nbody<ndim>::CalculatePerturberForces
 template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
  (SystemParticle<ndim>* systemi,       ///< [inout] System to integrate the internal motionv for
+  const int level_step,                ///< [in]    Block timestep level for lowest step
   const int n,                         ///< [in]    Integer time
   const FLOAT tstart,                  ///< [in]    Initial (local) simulation time
-  const FLOAT tend,                    ///< [in]    Final (current) simulation
+  const FLOAT tend,                    ///< [in]    Final (current) simulation time
   DomainBox<ndim> &simbox,             ///< [in]    Simulation domain box
   Ewald<ndim> *ewald)                  ///< [in]    Ewald gravity object pointer
 {
@@ -510,9 +510,10 @@ void Nbody<ndim>::IntegrateInternalMotion
   const int Nchildren = systemi->Nchildren;
   const int Npert = systemi->Npert;
 
-
   // Only integrate internal motion once COM motion has finished
-  if (n - systemi->nlast != systemi->nstep) return;
+  //if (n - systemi->nlast != systemi->nstep) return;
+  const int nstep = pow(2, level_step - systemi->level);
+  if (n%nstep != 0) return;
 
   debug2("[Nbody::IntegrateInternalMotion]");
 
@@ -539,8 +540,6 @@ void Nbody<ndim>::IntegrateInternalMotion
     // Create local copies of perturbers
     for (i=0; i<Npert; i++) {
       perturber[i].m     = systemi->perturber[i]->m;
-      perturber[i].nlast = systemi->perturber[i]->nlast;
-      perturber[i].tlast = systemi->perturber[i]->tlast;
 
       for (k=0; k<ndim; k++) perturber[i].apert[k]    = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) perturber[i].adotpert[k] = (FLOAT) 0.0;
@@ -550,7 +549,8 @@ void Nbody<ndim>::IntegrateInternalMotion
       for (k=0; k<ndim; k++) perturber[i].adot[k]     = systemi->perturber[i]->adot0[k];
 
       // Set properties of perturbers at beginning of current step
-      tpert = tlocal - perturber[i].tlast;
+      // TODO : Fix issue with tlast being removed here
+      //tpert = tlocal - perturber[i].tlast;
       for (k=0; k<ndim; k++) perturber[i].r[k] = perturber[i].r0[k] + perturber[i].v0[k]*tpert +
         (FLOAT) 0.5*perturber[i].a0[k]*tpert*tpert +
         onesixth*perturber[i].adot0[k]*tpert*tpert*tpert;
@@ -612,20 +612,21 @@ void Nbody<ndim>::IntegrateInternalMotion
     // Calculate time-step
     dt = std::min(big_number, (FLOAT) 1.00000000000001*(tend - tlocal));
     for (i=0; i<Nchildren; i++) {
-      children[i]->nlast = n - 1;
-      children[i]->nstep = 1;
+      //children[i]->nlast = n - 1;
+      //children[i]->nstep = 1;
       dt = std::min(dt, (FLOAT) Timestep(children[i]));
     }
     nsteps_local += 1;
     tlocal += dt;
 
     // Advance position and velocities
-    AdvanceParticles(n, Nchildren, tlocal, dt, children);
+    AdvanceParticles(level_step, n, Nchildren, tlocal, dt, children);
 
     // Advance positions and velocities of perturbers
     if (perturbers == 1 && Npert > 0) {
       for (i=0; i<Npert; i++) {
-        tpert = tlocal - perturber[i].tlast;
+        // TODO : Fix issue with tlast being removed here
+        //tpert = tlocal - perturber[i].tlast;
         for (k=0; k<ndim; k++) perturber[i].r[k] = perturber[i].r0[k] + perturber[i].v0[k]*tpert +
           (FLOAT) 0.5*perturber[i].a0[k]*tpert*tpert +
           onesixth*perturber[i].adot0[k]*tpert*tpert*tpert;
@@ -662,7 +663,7 @@ void Nbody<ndim>::IntegrateInternalMotion
       }
 
       // Apply correction terms
-      CorrectionTerms(n, Nchildren, tlocal, dt, children);
+      CorrectionTerms(level_step, n, Nchildren, tlocal, dt, children);
 
     }
     //---------------------------------------------------------------------------------------------
@@ -682,7 +683,7 @@ void Nbody<ndim>::IntegrateInternalMotion
         // The cast is needed because the function is defined only in SystemParticle, not in
         // NbodyParticle.  The safety of the cast relies on the correctness of the Ncomp value.
         IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > (children[i]),
-                                n, tlocal - dt, tlocal, simbox, ewald);
+                                level_step, n, tlocal - dt, tlocal, simbox, ewald);
       }
     }
 
@@ -702,7 +703,7 @@ void Nbody<ndim>::IntegrateInternalMotion
     //}
 
     // Set end-of-step variables
-    EndTimestep(n, Nchildren, tlocal, dt, children);
+    EndTimestep(level_step, n, Nchildren, tlocal, dt, children);
 
 
   } while (tlocal < tend);

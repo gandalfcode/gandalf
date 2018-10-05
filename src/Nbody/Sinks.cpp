@@ -116,7 +116,8 @@ void Sinks<ndim>::DeallocateMemory(void)
 //=================================================================================================
 template <int ndim>
 void Sinks<ndim>::SearchForNewSinkParticles
- (const int n,                         ///< [in] Current integer time
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Current integer time
   const FLOAT t,                       ///< [in] Current time
   Hydrodynamics<ndim> *hydro,          ///< [inout] Object containing SPH ptcls
   Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
@@ -167,7 +168,8 @@ void Sinks<ndim>::SearchForNewSinkParticles
       if (part.rho < rho_sink || part.rho < rho_max) continue;
 
       // Make sure candidate particle is at the end of its current timestep
-      if (n%part.nstep != 0) continue;
+      const int nstep = pow(2, level_step - sink[s].star->level);
+      if (n%nstep != 0) continue;
 
       // If hydro particle neighbours a nearby sink, skip to next particle
       for (s=0; s<Nsink; s++) {
@@ -326,10 +328,7 @@ void Sinks<ndim>::CreateNewSinkParticle
   sink[Nsink].star->m            = part.m;
   sink[Nsink].star->gpot         = part.gpot;
   sink[Nsink].star->gpe_internal = (FLOAT) 0.0;
-  sink[Nsink].star->dt           = part.dt;
-  sink[Nsink].star->tlast        = t;
-  sink[Nsink].star->nstep        = part.nstep;
-  sink[Nsink].star->nlast        = part.nlast;
+  sink[Nsink].star->dt           = part.dt;;
   sink[Nsink].star->level        = part.level;
   sink[Nsink].star->flags.set(active, part.flags.check(active));
   sink[Nsink].star->Ncomp        = 1;
@@ -363,7 +362,8 @@ void Sinks<ndim>::CreateNewSinkParticle
 //=================================================================================================
 template <int ndim>
 void Sinks<ndim>::AccreteMassToSinks
- (const int n,                         ///< [in] Integer timestep
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const int n,                         ///< [in] Integer timestep
   const FLOAT timestep,                ///< [in] Minimum timestep size
   Hydrodynamics<ndim> *hydro,          ///< [inout] Object containing SPH ptcls
   Nbody<ndim> *nbody)                  ///< [inout] Object containing star ptcls
@@ -504,7 +504,8 @@ void Sinks<ndim>::AccreteMassToSinks
 #endif
 
       // Skip sink if it contains no gas, or unless it's at the beginning of its current step.
-      if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
+      const int nstep = pow(2, level_step - sink[s].star->level);
+      if (sink[s].Ngas == 0 || n%nstep != 0) continue;
 
 
       // Initialise all variables for current sink
@@ -621,7 +622,7 @@ void Sinks<ndim>::AccreteMassToSinks
         if (sink[s].mmax > small_number && sink[s].menc > sink[s].mmax) {
           sink[s].taccrete *= pow(sink[s].mmax/sink[s].menc,2);
         }
-        dt = (FLOAT) sink[s].star->nstep*timestep;
+        dt = (FLOAT) nstep*timestep;
         macc = sink[s].menc*max((FLOAT) 1.0 - (FLOAT) exp(-dt/sink[s].taccrete), (FLOAT) 0.0);
         sink[s].dmdt = macc / dt;
 

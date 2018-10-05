@@ -52,10 +52,10 @@ class TimeIntegration
   TimeIntegration() : timing(NULL) { } ;
   virtual ~TimeIntegration(){};
 
-  virtual void SetActiveParticles(const int, Hydrodynamics<ndim> *) = 0 ;
-  virtual void AdvanceParticles(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
-  virtual void CorrectionTerms(const int, const FLOAT, const FLOAT,Hydrodynamics<ndim> *) = 0;
-  virtual void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
+  virtual void SetActiveParticles(const int, const int, Hydrodynamics<ndim> *) = 0 ;
+  virtual void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
+  virtual void CorrectionTerms(const int, const int, const FLOAT, const FLOAT,Hydrodynamics<ndim> *) = 0;
+  virtual void EndTimestep(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
   virtual int CheckTimesteps(const int, const int, const int, const FLOAT,
                              Hydrodynamics<ndim> *) = 0;
   virtual DOUBLE Timestep(Particle<ndim> &, Hydrodynamics<ndim> *) = 0;
@@ -80,10 +80,10 @@ class SphIntegration : public TimeIntegration<ndim>
   SphIntegration(DOUBLE, DOUBLE, DOUBLE, bool, tdaviscenum);
   virtual ~SphIntegration();
 
-  void SetActiveParticles(const int, Hydrodynamics<ndim> *) = 0 ;
-  void AdvanceParticles(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
-  void CorrectionTerms(const int, const FLOAT, const FLOAT,Hydrodynamics<ndim> *) = 0;
-  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
+  void SetActiveParticles(const int, const int, Hydrodynamics<ndim> *) = 0 ;
+  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT,Hydrodynamics<ndim> *) = 0;
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *) = 0;
   int CheckTimesteps(const int, const int, const int, const FLOAT, Hydrodynamics<ndim> *) = 0;
   DOUBLE Timestep(Particle<ndim> &, Hydrodynamics<ndim> *);
 
@@ -117,10 +117,10 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
   SphLeapfrogKDK(DOUBLE, DOUBLE, DOUBLE, bool, tdaviscenum);
   virtual ~SphLeapfrogKDK();
 
-  void SetActiveParticles(const int, Hydrodynamics<ndim> *);
-  void AdvanceParticles(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
-  void CorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
-  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void SetActiveParticles(const int, const int, Hydrodynamics<ndim> *);
+  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   int CheckTimesteps(const int, const int, const int, const FLOAT, Hydrodynamics<ndim> *);
 
 };
@@ -148,10 +148,10 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
   SphLeapfrogDKD(DOUBLE, DOUBLE, DOUBLE, bool, tdaviscenum);
   virtual  ~SphLeapfrogDKD();
 
-  void SetActiveParticles(const int, Hydrodynamics<ndim> *);
-  void AdvanceParticles(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
-  void CorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *){};
-  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void SetActiveParticles(const int, const int, Hydrodynamics<ndim> *);
+  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *){};
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   int CheckTimesteps(const int, const int, const int, const FLOAT, Hydrodynamics<ndim> *);
 
 
@@ -180,10 +180,10 @@ public:
   { } ;
   virtual ~MfvIntegration() {} ;
 
-  void SetActiveParticles(const int, Hydrodynamics<ndim> *);
-  void AdvanceParticles(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
-  void CorrectionTerms(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *){};
-  void EndTimestep(const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void SetActiveParticles(const int, const int, Hydrodynamics<ndim> *);
+  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *){};
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Hydrodynamics<ndim> *);
   int CheckTimesteps(const int, const int, const int, const FLOAT, Hydrodynamics<ndim> *);
   DOUBLE Timestep(Particle<ndim> &, Hydrodynamics<ndim> *);
 

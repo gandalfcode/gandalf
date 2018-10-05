@@ -136,12 +136,12 @@ class Sinks
   // Function prototypes
   //-----------------------------------------------------------------------------------------------
   void AllocateMemory(int);
-  void DeallocateMemory(void);
-  void SearchForNewSinkParticles(const int, const FLOAT,
+  void DeallocateMemory();
+  void SearchForNewSinkParticles(const int, const int, const FLOAT,
                                  Hydrodynamics<ndim> *, Nbody<ndim> *);
   void CreateNewSinkParticle(const int, const FLOAT, Particle<ndim>&,
                              Hydrodynamics<ndim> *, Nbody<ndim> *);
-  void AccreteMassToSinks(const int, const FLOAT,
+  void AccreteMassToSinks(const int, const int, const FLOAT,
                           Hydrodynamics<ndim> *, Nbody<ndim> *);
 
 

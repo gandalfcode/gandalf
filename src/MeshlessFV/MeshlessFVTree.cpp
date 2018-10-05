@@ -422,7 +422,8 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGradientMatrices
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
- (FLOAT timestep,                          ///< [in] Lowest timestep value
+ (const int level_step,                ///< [in] Block timestep level for lowest step
+  const FLOAT timestep,                    ///< [in] Lowest timestep value
   MeshlessFV<ndim> *mfv,                   ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
   DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
@@ -437,8 +438,9 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   CodeTiming::BlockTimer timer = timing->StartNewTimer("MFV_UPDATE_FLUXES");
 
   // Make sure we have enough neibmanagers
-  for (int t = neibmanagerbufflux.size(); t < Nthreads; ++t)
+  for (int t = neibmanagerbufflux.size(); t < Nthreads; ++t) {
     neibmanagerbufflux.push_back(NeighbourManagerFlux(mfv, simbox));
+  }
 
   int Ntot = mfv->Ntot;
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray();
@@ -451,16 +453,16 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     return;
   }
 
-   typedef FLOAT (*fluxArray)[ndim+2];
-   typedef FLOAT (*rdmdtArray)[ndim];
+  typedef FLOAT (*fluxArray)[ndim+2];
+  typedef FLOAT (*rdmdtArray)[ndim];
 
-    fluxArray* dQBufferGlob = new fluxArray[Nthreads];
-    fluxArray* fluxBufferGlob = new fluxArray[Nthreads];
-    rdmdtArray* rdmdtBufferGlob = new rdmdtArray[Nthreads];
+  fluxArray* dQBufferGlob = new fluxArray[Nthreads];
+  fluxArray* fluxBufferGlob = new fluxArray[Nthreads];
+  rdmdtArray* rdmdtBufferGlob = new rdmdtArray[Nthreads];
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout,dQBufferGlob,fluxBufferGlob,rdmdtBufferGlob,timestep)
+#pragma omp parallel default(none) shared(cactive,celllist,mfv,mfvdata,Ntot,cout,dQBufferGlob,fluxBufferGlob,rdmdtBufferGlob)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -471,11 +473,11 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
     int k;                                         // Dimension counter
     int Nactive;                                   // ..
     int* activelist   = activelistbuf[ithread];    // ..
-    fluxArray dQBuffer      = new FLOAT[Ntot][ndim+2];  // ..
-    dQBufferGlob[ithread] = dQBuffer;
-    fluxArray fluxBuffer   = new FLOAT[Ntot][ndim+2];  // ..
-    fluxBufferGlob[ithread] = fluxBuffer;
-    rdmdtArray rdmdtBuffer    = new FLOAT[Ntot][ndim];    // ..
+    fluxArray dQBuffer       = new FLOAT[Ntot][ndim+2];  // ..
+    dQBufferGlob[ithread]    = dQBuffer;
+    fluxArray fluxBuffer     = new FLOAT[Ntot][ndim+2];  // ..
+    fluxBufferGlob[ithread]  = fluxBuffer;
+    rdmdtArray rdmdtBuffer   = new FLOAT[Ntot][ndim];    // ..
     rdmdtBufferGlob[ithread] = rdmdtBuffer;
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
     NeighbourManager<ndim,FluxParticle>& neibmanager = neibmanagerbufflux[ithread];
@@ -530,7 +532,7 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
 #endif
 
         // Compute all neighbour contributions to hydro fluxes
-        mfv->ComputeGodunovFlux(activepart[j], neiblist, timestep);
+        mfv->ComputeGodunovFlux(activepart[j], neiblist, level_step, timestep);
 
       }
       //-------------------------------------------------------------------------------------------
@@ -571,14 +573,13 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
         for (int k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += dQBufferGlob[ithread][i][k];
       }
     }
-    
+
     delete[] rdmdtBuffer;
     delete[] fluxBuffer;
     delete[] dQBuffer;
-    
+
   }
   //===============================================================================================
-
 
   delete[] rdmdtBufferGlob;
   delete[] fluxBufferGlob;
@@ -593,7 +594,6 @@ void MeshlessFVTree<ndim,ParticleType>::UpdateGodunovFluxes
   cout << "Time computing fluxes : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 #endif
-
 
   return;
 }

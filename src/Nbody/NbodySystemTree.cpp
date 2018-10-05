@@ -406,11 +406,8 @@ void NbodySystemTree<ndim>::BuildSubSystems
 //cout << "CREATING NEW SYSTEM" << "    " << Nsystem << "    " << NNtree[c].Ncomp << endl;
 //cout << "A : " << NNtree[c].a[0] << "    " << NNtree[c].a[1] << "    " << NNtree[c].a[2] << endl;
           // Copy centre-of-mass properties of new sub-system
-          nbody->system[Nsystem].inode        = c;
-          nbody->system[Nsystem].nlast        = n;
-          nbody->system[Nsystem].nstep        = 1;
+          nbody->system[Nsystem].inode        = c;;
           nbody->system[Nsystem].level        = level_max;
-          nbody->system[Nsystem].tlast        = t;
           nbody->system[Nsystem].dt_internal  = NNtree[c].tcross;
           nbody->system[Nsystem].m            = NNtree[c].m;
           nbody->system[Nsystem].h            = NNtree[c].h;

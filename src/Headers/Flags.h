@@ -32,14 +32,14 @@ enum flags {
   dead           = 1 << 0,
   active         = 1 << 1,
   end_timestep   = 1 << 2,             // Particle has reached the end of this timestep
-  potmin         = 1 << 3,
+  sm_limiter     = 1 << 3,             // Has particle timestep been reduced by SM limiter
+  potmin         = 1 << 4,
 
-  update_density = 1 << 4,             // For meshless
-  bad_gradients  = 1 << 5,             // For meshless
+  update_density = 1 << 5,             // For meshless
+  bad_gradients  = 1 << 6,             // For meshless
 
-  inside_sink    = 1 << 6,             // Is particle inside a sink?
-  ionised        = 1 << 7,             // Is gas ionised or partly-ionised?
-
+  inside_sink    = 1 << 7,             // Is particle inside a sink?
+  ionised        = 1 << 8,             // Is gas ionised or partly-ionised?
 
   x_periodic_lhs = 1 << 20,
   y_periodic_lhs = 1 << 21,
@@ -56,7 +56,6 @@ enum flags {
   x_mirror_rhs   = 1 << 29,
   y_mirror_rhs   = 1 << 30,
   z_mirror_rhs   = 1 << 31,
-
 
   x_periodic = x_periodic_lhs | x_periodic_rhs,
   y_periodic = y_periodic_lhs | y_periodic_rhs,
@@ -89,7 +88,7 @@ const int mirror_bound_flags[3][2] = {
 
 //=================================================================================================
 //  Class type_flag
-/// \brief  ...
+/// \brief  Simple bit-flag class to be used for setting all individual particle flags.
 /// \author R. A. Booth
 /// \date   31/3/2016
 //=================================================================================================
