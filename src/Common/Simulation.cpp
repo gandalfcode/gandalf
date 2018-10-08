@@ -1984,8 +1984,9 @@ void Simulation<ndim>::ComputeBlockTimesteps()
             level          = max(ComputeTimestepLevel(dt, dt_max), part.levelneib - level_diff_max);
             part.level     = max(part.level, level);
             part.levelneib = part.level;
-            part.dt_next   = (FLOAT) nstep * timestep;
+            part.dt_next   = (FLOAT) pow(2, level_step - part.level) * timestep;
             part.flags.set(end_timestep);
+            part.flags.unset(sm_limiter);
           }
           // hydro particles that have naturally reached the end of their step
           else if (n%nstep == 0) {
