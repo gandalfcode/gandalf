@@ -168,7 +168,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       if (part.rho < rho_sink || part.rho < rho_max) continue;
 
       // Make sure candidate particle is at the end of its current timestep
-      const int nstep = pow(2, level_step - sink[s].star->level);
+      const int nstep = pow(2, level_step - part.level);
       if (n%nstep != 0) continue;
 
       // If hydro particle neighbours a nearby sink, skip to next particle
