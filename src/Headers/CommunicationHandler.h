@@ -174,7 +174,6 @@ class MeshlessCommunicationHandler {
       flags = p.flags.get();
       ptype = p.ptype;
       level = p.level;
-      nstep = p.nstep;
       for (int k=0; k<ndim; k++) {
         r[k] = p.r[k];
         v[k] = p.v[k];
@@ -199,7 +198,6 @@ class MeshlessCommunicationHandler {
     unsigned int flags;
     int ptype;
     int level;
-    int nstep;
 
     FLOAT r[ndim];
     FLOAT v[ndim];
@@ -272,7 +270,6 @@ public:
     p2.flags = type_flag(p.flags);
     p2.ptype = p.ptype;
     p2.level = p.level;
-    p2.nstep = p.nstep;
 
     for (int k=0; k<ndim; k++) {
       p2.r[k]=p.r[k];

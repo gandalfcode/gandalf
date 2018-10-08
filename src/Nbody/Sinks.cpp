@@ -299,9 +299,14 @@ void Sinks<ndim>::CreateNewSinkParticle
   debug2("[Sinks::CreateNewSinkParticle]");
 
   // If we've reached the maximum number of sinks, then throw exception
-  if (Nsink == Nsinkmax || nbody->Nstar == nbody->Nstarmax) {
-    cout << "Run out of memory : " << Nsink << "    " << Nsinkmax << endl;
-    ExceptionHandler::getIstance().raise("Error : run out of memory for new sinks");
+  if (Nsink == Nsinkmax) {
+    AllocateMemory(2*Nsinkmax);
+  }
+
+  // If we've reached the maximum number of sinks, then throw exception
+  if (nbody->Nstar == nbody->Nstarmax) {
+    cout << "Run out of memory : " << nbody->Nstar << "    " << nbody->Nstarmax << endl;
+    ExceptionHandler::getIstance().raise("Error : run out of memory for stars creating new sinks");
   }
 
   // First create new star and set N-body pointer to star
