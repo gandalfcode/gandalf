@@ -501,40 +501,22 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 
     // Rotate velocity to original frame
     this->RotateVector(rotMat, Wface);
-
-
     for (k=0; k<ndim; k++) Wface[k] += vface[k];
+
+    FLOAT fluxTensor[nvar][ndim];
     FLOAT etot = (FLOAT) 0.0;
     for (kv=0; kv<ndim; kv++) etot += Wface[kv]*Wface[kv];
     etot = (FLOAT) 0.5*etot + Wface[ipress]/(gamma - (FLOAT) 1.0)/Wface[irho];
     for (k=0; k<ndim; k++) {
-      for (kv=0; kv<ndim; kv++) flux[kv][k] = Wface[irho]*(Wface[k] - vface[k])*Wface[kv];
-      flux[k][k]     = Wface[irho]*Wface[k]*(Wface[k] - vface[k]) + Wface[ipress];
-      flux[irho][k]  = Wface[irho]*(Wface[k] - vface[k]);
-      flux[ietot][k] = Wface[irho]*etot*(Wface[k] - vface[k]) + Wface[ipress]*Wface[k];
-      //(Wface[ipress]/(gamma - 1.0) + 0.5*Wface[irho]*ekin)*(Wface[k])
+      for (kv=0; kv<ndim; kv++) fluxTensor[kv][k] = Wface[irho]*(Wface[k] - vface[k])*Wface[kv];
+      fluxTensor[k][k]     = Wface[irho]*Wface[k]*(Wface[k] - vface[k]) + Wface[ipress];
+      fluxTensor[irho][k]  = Wface[irho]*(Wface[k] - vface[k]);
+      fluxTensor[ietot][k] = Wface[irho]*etot*(Wface[k] - vface[k]) + Wface[ipress]*Wface[k];
     }
 
-
-    // Compute fluxes in moving frame
-    /*FLOAT ekin = (FLOAT) 0.0;
-    for (kv=0; kv<ndim; kv++) ekin += Wface[kv]*Wface[kv];
-    for (k=0; k<ndim; k++) {
-      for (kv=0; kv<ndim; kv++) flux[kv][k] = Wface[irho]*Wface[k]*Wface[kv];
-      flux[k][k]     = Wface[irho]*Wface[k]*Wface[k] + Wface[ipress];
-      flux[irho][k]  = Wface[irho]*Wface[k];
-      flux[ietot][k] = (Wface[ipress]/(gamma - (FLOAT) 1.0) + (FLOAT) 0.5*Wface[irho]*ekin)*Wface[k]
-        + Wface[ipress]*Wface[k];
+    for (int var=0; var<nvar; var++) {
+      for (int k=0; k<ndim; k++) flux[var] += fluxTensor[var][k]*runit[k];
     }
-
-    // Add corrections for transforming back to original lab frame
-    for (k=0; k<ndim; k++) {
-      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] +
-        DotProduct(vface, flux[k], ndim);
-    }
-    for (k=0; k<ndim; k++) {
-      for (kv=0; kv<ndim; kv++) flux[kv][k] += vface[kv]*flux[irho][k];
-    }*/
 
   }
   // Otherwise assume vacuum state conditions
@@ -545,9 +527,7 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
     p = 0.0;
 
     for (kv=0; kv<ndim; kv++) Wface[kv] = (FLOAT) 0.0;
-    for (int var=0; var<ndim+2; var++) {
-      for (k=0; k<ndim; k++) flux[var][k] = (FLOAT) 0.0;
-    }
+
   }
   //-----------------------------------------------------------------------------------------------
 
