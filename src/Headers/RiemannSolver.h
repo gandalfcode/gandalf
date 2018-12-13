@@ -15,7 +15,8 @@
 
 enum RiemannSolverEnum {
   exact = 1,
-  hllc  = 2  
+  hll   = 2,
+  hllc  = 3,
 } ;
 
 
@@ -59,10 +60,35 @@ class RiemannSolver
   virtual void ComputeStarRegion(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
                                  FLOAT, FLOAT, FLOAT &, FLOAT &) {};
   virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
-                             const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2][ndim]) = 0;
+                             const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2]) = 0;
 
   void ComputeRotationMatrices(const FLOAT dr[ndim], FLOAT rotMat[ndim][ndim], FLOAT invRotMat[ndim][ndim]);
-  void RotateVector(const FLOAT rotMat[ndim][ndim], FLOAT vec[ndim]);
+  void RotateVector(const FLOAT rotMat[ndim][ndim], FLOAT *);
+
+  inline void ComputeFlux1d
+   (FLOAT W[nvar],
+    FLOAT flux[nvar])
+  {
+    FLOAT eTot = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) eTot += W[k]*W[k];
+    eTot += (W[ipress]/(gamma - (FLOAT) 1.0)/W[irho]);
+    for (int k=0; k<ndim; k++) flux[k] = W[irho]*W[ivx]*W[k];
+    flux[ivx]    = W[irho]*W[ivx]*W[ivx] + W[ipress];
+    flux[irho]   = W[irho]*W[ivx];
+    flux[ipress] = W[ivx]*(eTot + W[ipress]);
+  }
+
+  inline void ComputeUFluidVector
+   (FLOAT W[nvar],
+    FLOAT U[nvar])
+  {
+    const FLOAT gammam1 = gamma - (FLOAT) 1.0;
+    FLOAT vSqd = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) vSqd += (W[k]*W[k]);
+    for (int k=0; k<ndim; k++) U[k] = W[irho]*W[k];
+    U[irho]   = W[irho];
+    U[ipress] = W[ipress]/gammam1 + (FLOAT) 0.5*W[irho]*vSqd;
+  }
 
 };
 
@@ -76,8 +102,10 @@ class RiemannSolver
 /// \date    01/10/2014
 //=================================================================================================
 template <int ndim>
-class ExactRiemannSolver: public RiemannSolver<ndim>
+class ExactRiemannSolver : public RiemannSolver<ndim>
 {
+ private:
+
   using RiemannSolver<ndim>::gamma;
   using RiemannSolver<ndim>::g1;
   using RiemannSolver<ndim>::g2;
@@ -99,6 +127,7 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
+
  public:
 
   ExactRiemannSolver(FLOAT gamma_aux, bool _zeroMassFlux) : RiemannSolver<ndim>(gamma_aux, _zeroMassFlux) {};
@@ -107,10 +136,104 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
   virtual void ComputeStarRegion(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                                  const FLOAT, const FLOAT, const FLOAT, FLOAT &, FLOAT &);
   virtual void ComputeFluxes(const FLOAT [nvar], const FLOAT [nvar],
-                             const FLOAT [ndim], FLOAT [ndim], FLOAT [nvar][ndim]);
+                             const FLOAT [ndim], FLOAT [ndim], FLOAT [nvar]);
   void SampleExactSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, FLOAT &, FLOAT &, FLOAT &);
+
+};
+
+
+
+//=================================================================================================
+//  Class HllRiemannSolver
+/// \brief   HLL approximate Riemann solver.
+/// \date    13/12/2018
+//=================================================================================================
+template<int ndim>
+class HllRiemannSolver : public RiemannSolver<ndim>
+{
+private:
+
+  using RiemannSolver<ndim>::gamma;
+  using RiemannSolver<ndim>::g1;
+  using RiemannSolver<ndim>::g2;
+  using RiemannSolver<ndim>::g3;
+  using RiemannSolver<ndim>::g4;
+  using RiemannSolver<ndim>::g5;
+  using RiemannSolver<ndim>::g6;
+  using RiemannSolver<ndim>::g7;
+  using RiemannSolver<ndim>::g8;
+  using RiemannSolver<ndim>::g9;
+  using RiemannSolver<ndim>::invgamma;
+  using RiemannSolver<ndim>::zeroMassFlux;
+
+  static const int nvar = ndim + 2;
+  static const int ivx = 0;
+  static const int ivy = 1;
+  static const int ivz = 2;
+  static const int irho = ndim;
+  static const int ietot = ndim + 1;
+  static const int ipress = ndim + 1;
+
+  EOS<ndim> *eos;
+
+
+ public:
+
+  HllRiemannSolver(EOS<ndim> *_eos, FLOAT _gamma, bool _zeroMassFlux) :
+   RiemannSolver<ndim>(_gamma, _zeroMassFlux), eos(_eos) {};
+
+  virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
+                             const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2]);
+
+  // Computes estimates of the left and right wave speeds.
+  // Currently uses the simple sound wave-only approximation.
+  void ComputeWaveSpeedEstimates
+   (FLOAT Wleft[nvar],
+    FLOAT Wright[nvar],
+    FLOAT &Sleft,
+    FLOAT &Sright)
+  {
+    const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);
+    const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);
+    Sleft  = Wleft[ivx] - cl;
+    Sright = Wright[ivx] + cr;
+  }
+
+  // Compute the velocity of the central star region
+  FLOAT ComputeStarVelocity
+   (FLOAT Wleft[nvar],
+    FLOAT Wright[nvar],
+    FLOAT Sleft,
+    FLOAT Sright)
+  {
+    const FLOAT jLeft = Wleft[irho]*(Sleft - Wleft[ivx]);
+    const FLOAT jRight = Wright[irho]*(Sright - Wright[ivx]);
+    FLOAT Sstar = (jRight*Wright[ivx] - jLeft*Wleft[ivx] + Wleft[ipress] - Wright[ipress]);
+    Sstar /= (jRight - jLeft);
+    return Sstar;
+  }
+
+  // Compute the HLL flux of the central star region
+  void ComputeHllFlux1d
+   (FLOAT Wleft[nvar],
+    FLOAT Wright[nvar],
+    FLOAT Sleft,
+    FLOAT Sright,
+    FLOAT flux[nvar])
+  {
+    FLOAT fluxLeft[nvar], fluxRight[nvar], Uleft[nvar], Uright[nvar];
+    this->ComputeFlux1d(Wleft, fluxLeft);
+    this->ComputeFlux1d(Wright, fluxRight);
+    this->ComputeUFluidVector(Wleft, Uleft);
+    this->ComputeUFluidVector(Wright, Uright);
+    const FLOAT invSdiff = FLOAT(1.0) / (Sright - Sleft);
+    for (int k=0; k<nvar; k++) {
+      flux[k] = Sright*fluxLeft[k] - Sleft*fluxRight[k] + Sleft*Sright*(Uright[k] - Uleft[k]);
+      flux[k] *= invSdiff;
+    }
+  }
 
 };
 
@@ -123,7 +246,7 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
 /// \author  S. Heigl, R. Booth
 /// \date    01/10/2014
 //=================================================================================================
-template<int ndim>
+/*template<int ndim>
 class HllcRiemannSolver
 {
  public:
@@ -321,11 +444,10 @@ class HllcRiemannSolver
   }
 
 
-  /* Roe_average_HLL_speeds
-   *
-   * Compute the Roe-averaged HLL wave speeds. Max/min wave-speed estimates
-   * are from Einfeldt et al (1991), Batten et al (1997) or Toro (1999).
-   */
+  // Roe_average_HLL_speeds
+  //
+  // Compute the Roe-averaged HLL wave speeds. Max/min wave-speed estimates
+  // are from Einfeldt et al (1991), Batten et al (1997) or Toro (1999).
   void HLL_Speeds(const HLLC_State& Sl, const HLLC_State& Sr,
                   double& Smin, double& Smax) const {
 
@@ -384,7 +506,7 @@ class HllcRiemannSolver
     }
   }
 
-  /* Evaluate the hydrodynamic flux from state s in direction [0] */
+  // Evaluate the hydrodynamic flux from state s in direction [0]
   void Hydro_Flux(const HLLC_State& S, const FLOAT n[ndim],
                   FLOAT flux[ndim+2]) const
   {
@@ -410,7 +532,9 @@ class HllcRiemannSolver
   static const int ipress = ndim + 1 ;
   static const int iE     = ipress ;
 
-} ;
+} ;*/
+
+
 //=================================================================================================
 //  Class ShocktubeSolution
 /// \brief   Simple wrapper class to communicate Shocktube problem solution to python module.
@@ -463,10 +587,10 @@ class ViscousFlux
 
   void ComputeViscousFlux(const FLOAT Wl[ndim+2], const FLOAT Wr[ndim+2],
                           const FLOAT gradv_l[][ndim], const FLOAT gradv_r[][ndim],
-                          FLOAT flux[ndim+2][ndim]) const {
+                          FLOAT flux[ndim+2]) const {
 
     // Compute average face state
-    FLOAT W[ndim+2], gradv[ndim][ndim], div_v(0) ;
+    /*FLOAT W[ndim+2], gradv[ndim][ndim], div_v(0) ;
     for (int i=0; i < ndim+2; i++) W[i] = (Wl[i] + Wr[i])/2 ;
     for (int i=0; i < ndim; i++) {
       for (int j=0; j < ndim; j++) {
@@ -494,7 +618,7 @@ class ViscousFlux
         flux[i][j]  -= stress[i][j];
         flux[iE][j] -= stress[i][j]*W[i];
       }
-    }
+    }*/
   }
 
 protected:

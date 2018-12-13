@@ -208,6 +208,7 @@ class MfvCommon : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::size_hydro_part;
   using MeshlessFV<ndim>::staticParticles;
   using Hydrodynamics<ndim>::create_sinks;
+  using Hydrodynamics<ndim>::eos;
   using Hydrodynamics<ndim>::hmin_sink;
   using Hydrodynamics<ndim>::types;
 
@@ -245,7 +246,8 @@ class MfvCommon : public MeshlessFV<ndim>
   kernelclass<ndim> kern;                  ///< SPH kernel
   SlopeLimiterType limiter;
   ExactRiemannSolver<ndim> riemannExact ;
-  HllcRiemannSolver<ndim> riemannHLLC ;
+  //HllcRiemannSolver<ndim> riemannHLLC ;
+  HllRiemannSolver<ndim> riemannHll;
   int RiemannSolverType ;
   ViscousFlux<ndim> viscosity;
   bool need_viscosity;
@@ -292,7 +294,8 @@ class MfvMuscl : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
-  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
+  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHll;
+  //using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::viscosity;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::need_viscosity;
@@ -366,7 +369,7 @@ class MfvRungeKutta : public MfvCommon<ndim,kernelclass,SlopeLimiterType>
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::limiter;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::kern;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannExact;
-  using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
+  //using MfvCommon<ndim,kernelclass,SlopeLimiterType>::riemannHLLC;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::RiemannSolverType;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::viscosity;
   using MfvCommon<ndim,kernelclass,SlopeLimiterType>::need_viscosity;

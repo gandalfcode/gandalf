@@ -78,7 +78,7 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   FLOAT psitildaj[ndim];               // Normalised gradient psi value for neighbour j
   FLOAT rface[ndim];                   // Position of working face (to compute Godunov fluxes)
   FLOAT vface[ndim];                   // Velocity of working face (to compute Godunov fluxes)
-  FLOAT flux[nvar][ndim];              // Flux tensor
+  FLOAT flux[nvar];                    // Flux vector
   FLOAT Wleft[nvar];                   // Primitive vector for LHS of Riemann problem
   FLOAT Wright[nvar];                  // Primitive vector for RHS of Riemann problem
   FLOAT Wdot[nvar];                    // Time derivative of primitive vector
@@ -167,15 +167,15 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     assert(Wright[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    if (RiemannSolverType == exact)
+    //if (RiemannSolverType == exact)
       riemannExact.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
-    else
-      riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    //else
+    //  riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      part.dQ[var] -= 0.5*DotProduct(flux[var], Aij, ndim)*dt;
-      neibpart[j].dQ[var] += 0.5*DotProduct(flux[var], Aij, ndim)*dt;
+      part.dQ[var] -= 0.5*flux[var]*dt;
+      neibpart[j].dQ[var] += 0.5*flux[var]*dt;
     }
 
     // Time-integrate LHS state to half-timestep value
@@ -194,15 +194,15 @@ void MfvRungeKutta<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     assert(Wright[ipress] > 0.0);
 
     // Calculate Godunov flux using the selected Riemann solver
-    if (RiemannSolverType == exact)
+    //if (RiemannSolverType == exact)
       riemannExact.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
-    else
-      riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    //else
+    //  riemannHLLC.ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      part.dQ[var] -= 0.5*DotProduct(flux[var], Aij, ndim)*dt;
-      neibpart[j].dQ[var] += 0.5*DotProduct(flux[var], Aij, ndim)*dt;
+      part.dQ[var] -= 0.5*flux[var]*dt;
+      neibpart[j].dQ[var] += 0.5*flux[var]*dt;
     }
 
   }

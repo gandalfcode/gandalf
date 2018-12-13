@@ -103,7 +103,7 @@ void RiemannSolver<ndim>::ComputeRotationMatrices
 template <int ndim>
 void RiemannSolver<ndim>::RotateVector
  (const FLOAT rotMat[ndim][ndim],      ///< [in] Rotation mtrix
-  FLOAT vec[ndim])                     ///< [inout] Vector to be rotated
+  FLOAT *vec)                          ///< [inout] Vector to be rotated
 {
   if (ndim == 1) {
     vec[0] = rotMat[0][0]*vec[0];
@@ -432,7 +432,7 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   const FLOAT Wright[nvar],            ///< [in] RHS primitive state
   const FLOAT runit[ndim],             ///< [in] Unit vector pointing from left to right state
   FLOAT vface[ndim],                   ///< [in] Velocity of the working face
-  FLOAT flux[nvar][ndim])              ///< [out] Flux vector
+  FLOAT flux[nvar])                    ///< [out] Flux vector
 {
   const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);      // LHS sound speed
   const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);    // RHS sound speed
@@ -450,6 +450,8 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   assert(Wleft[irho] > 0.0);
   assert(Wright[ipress] > 0.0);
   assert(Wright[irho] > 0.0);
+
+  for (int var=0; var<ndim+2; var++) flux[var] = (FLOAT) 0.0;
 
   for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
   for (k=0; k<ndim; k++) uright[k] = Wright[k];
@@ -555,6 +557,81 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 
 
 
+//=================================================================================================
+//  ExactRiemannSolver::ComputeFluxes
+/// Exact Riemann solver, based on approach outlined by Toro (1999).
+//=================================================================================================
+template <int ndim>
+void HllRiemannSolver<ndim>::ComputeFluxes
+ (const FLOAT Wleft[nvar],             ///< [in] LHS primitive state
+  const FLOAT Wright[nvar],            ///< [in] RHS primitive state
+  const FLOAT runit[ndim],             ///< [in] Unit vector pointing from left to right state
+  FLOAT vface[ndim],                   ///< [in] Velocity of the working face
+  FLOAT flux[nvar])                    ///< [out] Flux vector
+{
+  int k,kv;                            // Dimension counters
+  FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
+  FLOAT Sleft;                         // Left-travelling wave speed of star region
+  FLOAT Sright;                        // Right-travelling wave speed of star region
+  FLOAT rotMat[ndim][ndim];            // Rotation matrix
+  FLOAT invRotMat[ndim][ndim];         // Inverse rotation matrix
+  //FLOAT uleft[ndim];                   // Left velocity state
+  //FLOAT uright[ndim];                  // Right velocity state
+  FLOAT Wleftrot[ndim];
+  FLOAT Wrightrot[ndim];
+  FLOAT flux1d[ndim];
+
+  assert(Wleft[ipress] > 0.0);
+  assert(Wleft[irho] > 0.0);
+  assert(Wright[ipress] > 0.0);
+  assert(Wright[irho] > 0.0);
+
+  //for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
+  //for (k=0; k<ndim; k++) uright[k] = Wright[k];
+  for (int k=0; k<nvar; k++) Wleftrot[k] = Wleft[k];
+  for (int k=0; k<nvar; k++) Wrightrot[k] = Wright[k];
+
+  // Compute rotation matrices and rotate both left and right velocity states
+  this->ComputeRotationMatrices(runit, rotMat, invRotMat);
+  this->RotateVector(invRotMat, Wleftrot);
+  this->RotateVector(invRotMat, Wrightrot);
+  //this->RotateVector(invRotMat, uleft);
+  //this->RotateVector(invRotMat, uright);
+
+  // Compute left and right wave speeds, and the speed of the star region
+  ComputeWaveSpeedEstimates(Wleftrot, Wrightrot, Sleft, Sright);
+
+  // If selecting zero-mass flux fame (e.g. for MFM), then move to frame of contact discontinuity
+  if (zeroMassFlux) {
+    const FLOAT Sstar = ComputeStarVelocity(Wleftrot, Wrightrot, Sleft, Sright);
+    Wleftrot[ivx] -= Sstar;
+    Wrightrot[ivx] -= Sstar;
+    for (k=0; k<ndim; k++) vface[k] += u*runit[k];
+  }
+
+  // Compute flux depending on the different wave speeds in the simplified HLL shock structure
+  if (Sleft >= (FLOAT) 0.0) {
+    this->ComputeFlux1d(Wleftrot, flux);
+  }
+  else if (Sright <= (FLOAT) 0.0) {
+    this->ComputeFlux1d(Wrightrot, flux);
+  }
+  else {
+    ComputeHllFlux1d(Wleftrot, Wrightrot, Sleft, Sright, flux);
+  }
+
+  // Guarantee mass flux is zero (should be zero but in case of floating point rounding error)
+  if (zeroMassFlux) {
+    flux[irho] = (FLOAT) 0.0;
+  }
+
+  // Rotate velocity to original frame
+  this->RotateVector(rotMat, flux);
+
+  return;
+}
+
+
 
 //=================================================================================================
 //  ShocktubeSolution::ShocktubeSolution
@@ -631,6 +708,9 @@ template class RiemannSolver<3>;
 template class ExactRiemannSolver<1>;
 template class ExactRiemannSolver<2>;
 template class ExactRiemannSolver<3>;
-template class HllcRiemannSolver<1>;
-template class HllcRiemannSolver<2>;
-template class HllcRiemannSolver<3>;
+template class HllRiemannSolver<1>;
+template class HllRiemannSolver<2>;
+template class HllRiemannSolver<3>;
+//template class HllcRiemannSolver<1>;
+//template class HllcRiemannSolver<2>;
+//template class HllcRiemannSolver<3>;

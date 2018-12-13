@@ -89,7 +89,8 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
   FLOAT psitildaj[ndim];               // Normalised gradient psi value for neighbour j
   FLOAT rface[ndim];                   // Position of working face (to compute Godunov fluxes)
   FLOAT vface[ndim];                   // Velocity of working face (to compute Godunov fluxes)
-  FLOAT flux[nvar][ndim];              // Flux tensor
+  //FLOAT flux[nvar][ndim];              // Flux tensor
+  FLOAT flux[nvar];                    // Flux vector (along direction of Aij)
   FLOAT Wi[nvar];                      // Primitive vector for LHS of Riemann problem
   FLOAT Wj[nvar];                      // Primitive vector for RHS of Riemann problem
   FLOAT Wdot[nvar];                    // Time derivative of primitive vector
@@ -198,7 +199,10 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     if (RiemannSolverType == exact) {
       riemannExact.ComputeFluxes(Wi, Wj, Aunit, vface, flux);
     }
-    else {
+    else if (RiemannSolverType == hll) {
+      riemannHll.ComputeFluxes(Wi, Wj, Aunit, vface, flux);
+    }
+    /*else if (RiemannSolverType == hllc) {
       // Compute both the primitive and conserved quantities so the HLLC solver doesn't
       // have to make assumptions about the EOS.
       EosParticleProxy<ndim> Pi, Pj;
@@ -222,7 +226,7 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
 
       //riemannHLLC.ComputeFluxes(Wi, Wj, Aunit, vface, flux);
       riemannHLLC.ComputeFluxes(Si, Sj, Aunit, vface, flux);
-    }
+    }*/
 
     // Add the viscosity
     if (need_viscosity) {
@@ -231,17 +235,17 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      const FLOAT f = DotProduct(flux[var], Aij, ndim);
-      part.dQ[var] -= f*dt;
-      part.dQdt[var] -= f;
-      neibpart[j].dQ[var] += f*dt;
-      neibpart[j].dQdt[var] += f;
+      //const FLOAT f = DotProduct(flux[var], Aij, ndim);
+      part.dQ[var] -= flux[var]*dt;
+      part.dQdt[var] -= flux[var];
+      neibpart[j].dQ[var] += flux[var]*dt;
+      neibpart[j].dQdt[var] += flux[var];
     }
 
     // Compute mass-loss moments for gravitational correction terms
     for (k=0; k<ndim; k++) {
-      part.rdmdt[k]        -= (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim) * dt;
-      neibpart[j].rdmdt[k] += (part.r[k] - neibpart[j].r[k])*DotProduct(flux[irho], Aij, ndim) * dt;
+      part.rdmdt[k]        -= (part.r[k] - neibpart[j].r[k])*flux[irho] * dt;
+      neibpart[j].rdmdt[k] += (part.r[k] - neibpart[j].r[k])*flux[irho] * dt;
     }
   }
   //-----------------------------------------------------------------------------------------------
