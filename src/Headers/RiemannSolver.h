@@ -23,7 +23,6 @@ enum RiemannSolverEnum {
 //=================================================================================================
 //  Class RiemannSolver
 /// \brief   Virtual parent class for all Riemann solver classes.
-/// \details Virtual parent class for all Riemann solver classes.
 /// \author  D. A. Hubber, S. Heigl, J. Ngoumou
 /// \date    01/10/2014
 //=================================================================================================
@@ -75,7 +74,7 @@ class RiemannSolver
     for (int k=0; k<ndim; k++) flux[k] = W[irho]*W[ivx]*W[k];
     flux[ivx]    = W[irho]*W[ivx]*W[ivx] + W[ipress];
     flux[irho]   = W[irho]*W[ivx];
-    flux[ipress] = W[ivx]*(eTot + W[ipress]);
+    flux[ipress] = W[ivx]*(W[irho]*eTot + W[ipress]);
   }
 
   inline void ComputeUFluidVector
@@ -97,7 +96,6 @@ class RiemannSolver
 //=================================================================================================
 //  Class ExactRiemannSolver
 /// \brief   Exact Riemann solver solution; based on algorithm presented in Toro (1999).
-/// \details Exact Riemann solver solution; based on algorithm presented in Toro (1999).
 /// \author  D. A. Hubber, S. Heigl, J. Ngoumou
 /// \date    01/10/2014
 //=================================================================================================
@@ -197,8 +195,14 @@ private:
   {
     const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);
     const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);
-    Sleft  = Wleft[ivx] - cl;
-    Sright = Wright[ivx] + cr;
+
+    // Super simple estimate (Davis)
+    //Sleft  = Wleft[ivx] - cl;
+    //Sright = Wright[ivx] + cr;
+
+    // Simple estimate (Davis)
+    Sleft  = std::min(Wleft[ivx] - cl, Wright[ivx] - cr);
+    Sright = std::max(Wleft[ivx] + cl, Wright[ivx] + cr);
   }
 
   // Compute the velocity of the central star region
@@ -215,6 +219,26 @@ private:
     return Sstar;
   }
 
+  // Compute the velocity of the central star region
+  void ComputeStarState
+   (FLOAT Wleft[nvar],
+    FLOAT Wright[nvar],
+    FLOAT Sleft,
+    FLOAT Sright,
+    FLOAT Ustar[nvar])
+  {
+    FLOAT fluxLeft[nvar], fluxRight[nvar], Uleft[nvar], Uright[nvar];
+    this->ComputeFlux1d(Wleft, fluxLeft);
+    this->ComputeFlux1d(Wright, fluxRight);
+    this->ComputeUFluidVector(Wleft, Uleft);
+    this->ComputeUFluidVector(Wright, Uright);
+    const FLOAT invSdiff = FLOAT(1.0) / (Sright - Sleft);
+    for (int k=0; k<nvar; k++) {
+      Ustar[k] = Sright*Uright[k] - Sleft*Uleft[k] + fluxLeft[k] - fluxRight[k];
+      Ustar[k] *= invSdiff;
+    }
+  }
+
   // Compute the HLL flux of the central star region
   void ComputeHllFlux1d
    (FLOAT Wleft[nvar],
@@ -228,11 +252,18 @@ private:
     this->ComputeFlux1d(Wright, fluxRight);
     this->ComputeUFluidVector(Wleft, Uleft);
     this->ComputeUFluidVector(Wright, Uright);
-    const FLOAT invSdiff = FLOAT(1.0) / (Sright - Sleft);
+    const FLOAT invSdiff = (FLOAT) 1.0 / (Sright - Sleft);
     for (int k=0; k<nvar; k++) {
       flux[k] = Sright*fluxLeft[k] - Sleft*fluxRight[k] + Sleft*Sright*(Uright[k] - Uleft[k]);
       flux[k] *= invSdiff;
     }
+
+    /*FLOAT fluxCheck[nvar], Ustar[nvar];
+    this->ComputeStarState(Wleft, Wright, Sleft, Sright, Ustar);
+    for (int k=0; k<nvar; k++) {
+      fluxCheck[k] = fluxLeft[k] + Sleft*(Ustar[k] - Uleft[k]);
+      std::cout << "CHECK : " << k << "  flux : " << flux[k] << "  " << fluxCheck[k] << std::endl;
+    }*/
   }
 
 };

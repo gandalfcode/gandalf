@@ -236,10 +236,10 @@ void MfvMuscl<ndim, kernelclass,SlopeLimiter>::ComputeGodunovFlux
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
       //const FLOAT f = DotProduct(flux[var], Aij, ndim);
-      part.dQ[var] -= flux[var]*dt;
-      part.dQdt[var] -= flux[var];
-      neibpart[j].dQ[var] += flux[var]*dt;
-      neibpart[j].dQdt[var] += flux[var];
+      part.dQ[var] -= flux[var]*Amag*dt;
+      part.dQdt[var] -= flux[var]*Amag;
+      neibpart[j].dQ[var] += flux[var]*Amag*dt;
+      neibpart[j].dQdt[var] += flux[var]*Amag;
     }
 
     // Compute mass-loss moments for gravitational correction terms

@@ -500,7 +500,7 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 
 
     // Rotate velocity to original frame
-    this->RotateVector(rotMat, Wface);
+    /*this->RotateVector(rotMat, Wface);
     for (k=0; k<ndim; k++) Wface[k] += vface[k];
 
     FLOAT fluxTensor[nvar][ndim];
@@ -516,7 +516,25 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 
     for (int var=0; var<nvar; var++) {
       for (int k=0; k<ndim; k++) flux[var] += fluxTensor[var][k]*runit[k];
-    }
+    }*/
+
+    /*FLOAT eTot = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) eTot += Wface[k]*Wface[k];
+    eTot += (Wface[ipress]/(gamma - (FLOAT) 1.0)/Wface[irho]);
+    for (int k=0; k<ndim; k++) flux[k] = Wface[irho]*Wface[ivx]*Wface[k];
+    flux[ivx]    = Wface[irho]*Wface[ivx]*Wface[ivx] + Wface[ipress];
+    flux[irho]   = Wface[irho]*Wface[ivx];
+    flux[ipress] = Wface[ivx]*(Wface[irho]*eTot + Wface[ipress]);*/
+
+    this->ComputeFlux1d(Wface, flux);
+    this->RotateVector(rotMat, flux);
+
+    // Add corrections for boosting back to original lab frame
+    FLOAT fv[ndim];
+    for (int k=0; k<ndim; k++) fv[k] = flux[k];
+    flux[ipress] += ((FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho]);
+    flux[ipress] += DotProduct(vface, fv, ndim);
+    for (int k=0; k<ndim; k++) flux[k] += vface[k]*flux[irho];
 
   }
   // Otherwise assume vacuum state conditions
@@ -549,7 +567,6 @@ void HllRiemannSolver<ndim>::ComputeFluxes
   FLOAT vface[ndim],                   ///< [in] Velocity of the working face
   FLOAT flux[nvar])                    ///< [out] Flux vector
 {
-  int k,kv;                            // Dimension counters
   FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
   FLOAT Sleft;                         // Left-travelling wave speed of star region
   FLOAT Sright;                        // Right-travelling wave speed of star region
@@ -557,17 +574,18 @@ void HllRiemannSolver<ndim>::ComputeFluxes
   FLOAT invRotMat[ndim][ndim];         // Inverse rotation matrix
   //FLOAT uleft[ndim];                   // Left velocity state
   //FLOAT uright[ndim];                  // Right velocity state
-  FLOAT Wleftrot[ndim];
-  FLOAT Wrightrot[ndim];
-  FLOAT flux1d[ndim];
+  FLOAT Wleftrot[nvar];
+  FLOAT Wrightrot[nvar];
+
+
+  for (int var=0; var<ndim+2; var++) flux[var] = (FLOAT) 0.0;
+
 
   assert(Wleft[ipress] > 0.0);
   assert(Wleft[irho] > 0.0);
   assert(Wright[ipress] > 0.0);
   assert(Wright[irho] > 0.0);
 
-  //for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
-  //for (k=0; k<ndim; k++) uright[k] = Wright[k];
   for (int k=0; k<nvar; k++) Wleftrot[k] = Wleft[k];
   for (int k=0; k<nvar; k++) Wrightrot[k] = Wright[k];
 
@@ -575,8 +593,14 @@ void HllRiemannSolver<ndim>::ComputeFluxes
   this->ComputeRotationMatrices(runit, rotMat, invRotMat);
   this->RotateVector(invRotMat, Wleftrot);
   this->RotateVector(invRotMat, Wrightrot);
-  //this->RotateVector(invRotMat, uleft);
-  //this->RotateVector(invRotMat, uright);
+
+  /*FLOAT uleft[ndim], uright[ndim];
+  for (int k=0; k<ndim; k++) uleft[k] = Wleft[k];
+  for (int k=0; k<ndim; k++) uright[k] = Wright[k];
+  this->RotateVector(invRotMat, uleft);
+  this->RotateVector(invRotMat, uright);
+  for (int k=0; k<ndim; k++) Wleftrot[k] = uleft[k];
+  for (int k=0; k<ndim; k++) Wrightrot[k] = uright[k];*/
 
   // Compute left and right wave speeds, and the speed of the star region
   ComputeWaveSpeedEstimates(Wleftrot, Wrightrot, Sleft, Sright);
@@ -586,14 +610,14 @@ void HllRiemannSolver<ndim>::ComputeFluxes
     const FLOAT Sstar = ComputeStarVelocity(Wleftrot, Wrightrot, Sleft, Sright);
     Wleftrot[ivx] -= Sstar;
     Wrightrot[ivx] -= Sstar;
-    for (k=0; k<ndim; k++) vface[k] += u*runit[k];
+    for (int k=0; k<ndim; k++) vface[k] += Sstar*runit[k];
   }
 
   // Compute flux depending on the different wave speeds in the simplified HLL shock structure
-  if (Sleft >= (FLOAT) 0.0) {
+  if (Sleft > (FLOAT) 0.0) {
     this->ComputeFlux1d(Wleftrot, flux);
   }
-  else if (Sright <= (FLOAT) 0.0) {
+  else if (Sright < (FLOAT) 0.0) {
     this->ComputeFlux1d(Wrightrot, flux);
   }
   else {
@@ -607,6 +631,13 @@ void HllRiemannSolver<ndim>::ComputeFluxes
 
   // Rotate velocity to original frame
   this->RotateVector(rotMat, flux);
+
+  // Add corrections for boosting back to original lab frame
+  FLOAT fv[ndim];
+  for (int k=0; k<ndim; k++) fv[k] = flux[k];
+  flux[ipress] += ((FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho]);
+  flux[ipress] += DotProduct(vface, fv, ndim);
+  for (int k=0; k<ndim; k++) flux[k] += vface[k]*flux[irho];
 
   return;
 }
