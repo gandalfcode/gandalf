@@ -1980,12 +1980,12 @@ void Simulation<ndim>::ComputeBlockTimesteps()
 
           // hydro particles whose timestep has been artificially reduced by Saitoh & Makino scheme.
           if (part.flags.check(sm_limiter)) {
-            assert(n%nstep != 0);
+            assert(n%nstep == 0);
             dt             = hydroint->Timestep(part, hydro);
             level          = max(ComputeTimestepLevel(dt, dt_max), part.levelneib - level_diff_max);
             part.level     = max(part.level, level);
             part.levelneib = part.level;
-            part.dt        = (FLOAT) (n%nstep) * timestep;
+            //part.dt        = (FLOAT) (n%nstep) * timestep;
             part.dt_next   = (FLOAT) pow(2, level_step - part.level) * timestep;
             part.flags.set(end_timestep);
             part.flags.unset(sm_limiter);

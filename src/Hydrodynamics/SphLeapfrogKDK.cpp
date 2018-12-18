@@ -293,7 +293,7 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
  (const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
   const int level_step,                ///< [in] Level of base timestep
   const int n,                         ///< [in] Integer time in block time struct
-  const FLOAT timetep,                 ///< [in] Current time-step
+  const FLOAT timestep,                ///< [in] Current time-step
   Hydrodynamics<ndim>* hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
   int level_new;                       // New timestep level
@@ -307,7 +307,7 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
   Sph<ndim>* sph = reinterpret_cast<Sph<ndim>*>(hydro);
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i,level_new,nnewstep) \
+//#pragma omp parallel for default(none) private(i,level_new,nnewstep) \
   shared(sphdata, sph) reduction(+:activecount)
   for (i=0; i<sph->Nhydro; i++) {
     ParticleType<ndim> &part = sphdata[i];
@@ -327,11 +327,13 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
 
       // If new level is correctly synchronised, then change all quantities
       if (dn%nnewstep == 0) {
-        //if (dn > 0) part.nstep = dn;
-        part.level  = level_new;
         part.flags.set(active);
         part.flags.set(sm_limiter);
+        part.level   = level_new;
+        part.dt      = timestep * (FLOAT) dn;
+        part.dt_next = timestep * (FLOAT) nnewstep;
         activecount++;
+        assert(dn%nnewstep == 0);
       }
     }
 

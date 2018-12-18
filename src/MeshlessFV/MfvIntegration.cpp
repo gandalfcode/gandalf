@@ -254,16 +254,16 @@ int MfvIntegration<ndim,ParticleType>::CheckTimesteps
 
       // Force recalculation of fluxes for particles at the end of their step
       if (dn%nnewstep == 0 && dn != nstep) {
-        part.level = level_new;
-        part.dt = (FLOAT) nstep * tstep;
+        part.flags.set(active);
+        part.flags.set(sm_limiter);
+        part.level   = level_new;
+        part.dt      = timestep * (FLOAT) dn;
+        part.dt_next = timestep * (FLOAT) nnewstep;
 
         // Use current predicted value for dQ
         for (int var=0; var<nvar; var++) {
           part.dQ[var] = part.dt * part.dQdt[var];
         }
-
-        part.flags.set(active);
-        part.flags.set(sm_limiter);
       }
     }
   }

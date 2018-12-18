@@ -227,7 +227,7 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
  (const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
   const int level_step,                ///< [in] Level of base timestep
   const int n,                         ///< [in] Integer time in block time struct
-  const FLOAT timetep,                 ///< [in] Current time-step
+  const FLOAT timestep,                ///< [in] Current time-step
   Hydrodynamics<ndim>* hydro)          ///< [inout] Pointer to Hydrodynamics object
 {
   int dn;                              // Integer time since beginning of step
@@ -254,10 +254,7 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
     // Compute time since beginning of current step
     const int nstep = pow(2, level_step - part.level);
     int dn = n%nstep;
-    //if (dn == 0) dn = nstep;
     if (dn == 0) continue;
-    //dn = n - part.nlast;
-    //if (dn == part.nstep) continue;
 
     // Check if neighbour timesteps are too small.  If so, then reduce timestep if possible
     if (part.levelneib - part.level > level_diff_max) {
@@ -267,10 +264,11 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
       // If new level is correctly synchronised at the half-step of the
       // new-step (where acceleration is computed), then change all quantities
       if ((2*dn)%nnewstep == 0) {
-        //if (dn > 0) part.nstep = dn;
-        part.level = level_new;
         part.flags.set(active);
         part.flags.set(sm_limiter);
+        part.level   = level_new;
+        part.dt      = timestep * (FLOAT) dn;
+        part.dt_next = timestep * (FLOAT) nnewstep;
         activecount++;
       }
     }
