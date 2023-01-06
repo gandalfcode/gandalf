@@ -872,7 +872,7 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
 
     // Loop over all required particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(r,rcentre)\
+#pragma omp parallel for default(none) shared(amp,invmpert,Npart,mpert,r,rcentre)\
   private(i,j,k,phi,phiprime,phi1,phi2,rpos,Rmag,Rsqd)
     for (i=0; i<Npart; i++) {
       for (k=0; k<2; k++) rpos[k] = r[ndim*i + k] - rcentre[k];
@@ -994,7 +994,7 @@ void Ic<ndim>::AddRotationalVelocityField
 
     // Loop over all required particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(r,rcentre,v) private(dr,i,k,Rmag,Rsqd)
+#pragma omp parallel for default(none) shared(angvelaux,Npart,r,rcentre,v) private(dr,i,k,Rmag,Rsqd)
     for (i=0; i<Npart; i++) {
       for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
       for (k=0; k<ndim; k++) v[ndim*i + k] = (FLOAT) 0.0;
@@ -1291,7 +1291,7 @@ void Ic<ndim>::InterpolateVelocityField
     // Now interpolate velocity field onto particle positions
     //---------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dx,i,j,k,kk,p,vint) \
-    shared(cout,r,v,vfield)
+    shared(cout,dxgrid,Ngrid,Npart,r,v,vfield,xmin)
     for (p=0; p<Npart; p++) {
       for (kk=0; kk<ndim; kk++) dx[kk] = (r[ndim*p + kk] - xmin)/dxgrid;
 

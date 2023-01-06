@@ -327,7 +327,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
 
   // Now emit all photons from radiation sources, updating the radiation field
   //===============================================================================================
-#pragma omp parallel default(none) reduction(+:Ncellcount,Nscattercount) shared(kfreq,source)
+#pragma omp parallel default(none) reduction(+:Ncellcount,Nscattercount) shared(kfreq,level,Nphoton,source)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();        // OpenMP thread i.d.

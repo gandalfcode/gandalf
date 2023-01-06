@@ -94,7 +94,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(sphdata, sph)
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(n,sphdata,sph,t,timestep)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;
@@ -147,7 +147,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::SetActiveParticles
   Sph<ndim>* sph = reinterpret_cast<Sph<ndim>*>(hydro);
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
-#pragma omp parallel for default(none) shared(sphdata, sph)
+#pragma omp parallel for default(none) shared(n,sphdata,sph)
   for (int i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     int dn = n - part.nlast;
@@ -186,7 +186,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(sphdata, sph)
+#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sphdata,sph,t,timestep)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;
@@ -225,7 +225,7 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
  (const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
   const int level_step,                ///< [in] Level of base timestep
   const int n,                         ///< [in] Integer time in block time struct
-  const FLOAT timetep,                 ///< [in] Current time-step
+  const FLOAT timestep,                ///< [in] Current time-step
   Hydrodynamics<ndim>* hydro)
 {
   int dn;                              // Integer time since beginning of step
@@ -242,7 +242,7 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,level_new,nnewstep) \
-  shared(sphdata, sph) reduction(+:activecount)
+  shared(level_diff_max,n,level_step,sphdata,sph) reduction(+:activecount)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;

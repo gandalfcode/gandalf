@@ -1036,7 +1036,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::SumRadiationField
   if (cell.level != level) {
 #if defined _OPENMP
     if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell) num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(cell,level) num_threads(2)
       for (i=0; i<2; i++) {
         if (i == 0) SumRadiationField(level,radcell[cell.c1]);
         else if (i == 1) SumRadiationField(level,radcell[cell.c2]);

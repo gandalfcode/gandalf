@@ -388,7 +388,7 @@ void Sinks<ndim>::AccreteMassToSinks
 #if defined MPI_PARALLEL
 #pragma omp parallel default(none) shared(ghosts_accreted,hydro,mydomain,nbody,partdata)
 #else
-#pragma omp parallel default(none) shared(hydro,nbody,partdata)
+#pragma omp parallel default(none) shared(hydro,n,nbody,partdata,timestep)
 #endif
   {
     int i,j,k;                               // Particle and dimension counters

@@ -59,7 +59,7 @@ void MfvIntegration<ndim,ParticleType>::AdvanceParticles
 
   // Integrate all conserved variables to end of timestep
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(partdata, mfv, nvar, irho, ietot, cout)
+#pragma omp parallel for default(none) shared(n,partdata,t,timestep,mfv,nvar,irho,ietot,cout)
   for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
@@ -138,7 +138,7 @@ void MfvIntegration<ndim,ParticleType>::EndTimestep
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(partdata, mfv, nvar, irho, ietot, cout)
+#pragma omp parallel for default(none) shared(n,partdata,t,timestep,mfv,nvar,irho,ietot,cout)
   for (int i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];    // Local reference to particle
     if (part.flags.is_dead()) continue;
@@ -238,7 +238,7 @@ int MfvIntegration<ndim,ParticleType>::CheckTimesteps
   int nvar = MeshlessFV<ndim>::nvar;
   //-----------------------------------------------------------------------------------------------
   #pragma omp parallel for default(none) private(dn,i,level_new,nnewstep) \
-    shared(mfvdata,cout,mfv, nvar) reduction(+:activecount)
+    shared(level_diff_max,level_step,n,tstep,mfvdata,cout,mfv,nvar) reduction(+:activecount)
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim>& part = mfvdata[i];
     if (part.flags.is_dead()) continue;
@@ -282,7 +282,7 @@ void MfvIntegration<ndim, ParticleType>::SetActiveParticles
   MeshlessFV<ndim>* mfv = reinterpret_cast<MeshlessFV<ndim>*>(hydro);
   MeshlessFVParticle<ndim> *mfvdata = mfv->GetMeshlessFVParticleArray() ;
 
-#pragma omp parallel for default(none) shared(mfvdata, mfv)
+#pragma omp parallel for default(none) shared(mfvdata,mfv,n)
   for (int i=0; i<mfv->Nhydro; i++) {
     Particle<ndim>& part = mfvdata[i];
 

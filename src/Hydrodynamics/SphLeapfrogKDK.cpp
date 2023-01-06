@@ -93,7 +93,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(sphdata, sph)
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(n,sphdata,sph,t,timestep)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     if (part.flags.is_dead()) continue;
@@ -153,7 +153,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep)  shared(sphdata, sph)
+#pragma omp parallel for default(none) private(dn,i,k,nstep)  shared(n,sphdata,sph)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;
@@ -196,7 +196,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::SetActiveParticles
   Sph<ndim>* sph = reinterpret_cast<Sph<ndim>*>(hydro);
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
-#pragma omp parallel for default(none) shared(sphdata, sph)
+#pragma omp parallel for default(none) shared(n, sphdata, sph)
   for (int i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
 
@@ -232,7 +232,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i,k) shared(sphdata, sph)
+#pragma omp parallel for default(none) private(i,k) shared(n,sphdata,sph,t,timestep)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;
@@ -301,7 +301,7 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,level_new,nnewstep) \
-  shared(sphdata, sph) reduction(+:activecount)
+  shared(level_diff_max,level_step,n,sphdata,sph) reduction(+:activecount)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;

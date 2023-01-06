@@ -120,7 +120,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
 
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,i) shared(partdata, hydro)
+#pragma omp parallel for default(none) private(dt,i) shared(hydro,n,partdata,t,timestep)
   for (i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim>& part = partdata[i];
     if (part.flags.is_dead()) continue;
@@ -285,7 +285,7 @@ void EnergyRadws<ndim,MeshlessFVParticle>::EnergyIntegration
   int ietot  = MeshlessFV<ndim>::ietot;
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i, temp, col2) shared(partdata, mfv, temp_amb, cout, irho, ietot)
+#pragma omp parallel for default(none) private(i, temp, col2) shared(n,partdata,t,timestep, mfv, temp_amb, cout, irho, ietot)
   for (i=0; i<mfv->Nhydro; i++) {
     MeshlessFVParticle<ndim> &part = partdata[i];
     if (part.flags.is_dead()) continue;
