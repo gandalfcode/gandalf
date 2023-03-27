@@ -188,7 +188,7 @@ private:
   double _tCurrent;
   double _dtLevel[__maxlevels] ;
   unsigned int _levelfactor[__maxlevels] ;
-  unsigned int _nlevelmax, _nstepCurrent ;
+  unsigned int _nstepCurrent, _nlevelmax ;
   unsigned long long int _tot_num_steps ;
 };
 

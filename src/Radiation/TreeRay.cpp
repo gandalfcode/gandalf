@@ -201,10 +201,10 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
 
 
   // Map from cells to particles??
-  for (c=0; c<tree->Ncell; c++) {
+  /*for (c=0; c<tree->Ncell; c++) {
     TreeRayCell<ndim> &cell = tree->celldata[c];
 
-  }
+  }*/
 
 
   return;
@@ -231,7 +231,6 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateIntersectList(void)
   long int ipix;                               // ..
   long int ispix;                              // ..
   FLOAT dotprod;                               // ..
-  FLOAT ilNSSampFacI = 1.0/ilNSSampFac;        // ..
   FLOAT max_dotprod;                           // ..
   FLOAT nshalf;                                // ..
   FLOAT phi;                                   // ..
@@ -603,17 +602,9 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::CalculateCellRadiationProperties
  (TreeCell<ndim> &cell)                ///< [in] Pointer to cell
   //const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
 {
-  int cc = 0;                          // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int k;                               // Neighbour counter
   long int ipix;                       // ..
   long int iR;                         // ..
   int iF;                              // ..
-  FLOAT cellEdgeSize;                  // ..
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT rc[ndim];                      // Position of cell
   FLOAT **eflux;                       // ..
 
 
@@ -682,12 +673,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRayWalk
   FLOAT **eflux)
 {
   int cc = 0;                          // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
-  long int ipix;                       // ..
-  long int iR;                         // ..
-  int iF;                              // ..
   FLOAT cellEdgeSize;                  // ..
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
@@ -999,5 +985,3 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::FinaliseCell
 
 
 template class TreeRay<3, 1, GradhSphParticle, TreeRayCell>;
-template class TreeRay<2, 1, GradhSphParticle, TreeRayCell>;
-template class TreeRay<1, 1, GradhSphParticle, TreeRayCell>;

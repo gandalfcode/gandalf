@@ -174,8 +174,6 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
   const FLOAT timestep,                ///< [in] Base timestep value
   Hydrodynamics<ndim>* hydro)
 {
-  int dn;                              // Integer time since beginning of step
-  int nstep;                           // Particle (integer) step size
   int i;                               // Particle counter
   int k;                               // Dimension counter
 
@@ -186,7 +184,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sphdata,sph,t,timestep)
+#pragma omp parallel for default(none) private(i,k) shared(n,sphdata,sph,t,timestep)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.flags.is_dead()) continue;

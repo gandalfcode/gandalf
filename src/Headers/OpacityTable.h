@@ -26,7 +26,7 @@
 #include "InlineFuncs.h"
 #include "SimUnits.h"
 
-template<int> class EosParticleProxy;
+template<int> struct EosParticleProxy;
 
 //=================================================================================================
 //  Class OpacityTable

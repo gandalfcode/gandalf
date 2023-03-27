@@ -154,8 +154,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
   FLOAT h_upper_bound = hmax;          // Upper bound on h
   FLOAT invh;                          // 1 / h
   FLOAT invhsqd;                       // (1 / h)^2
-  FLOAT invrho;                        // 1 / rho
-  FLOAT rho_hmin = (FLOAT) 0.0;        // ..
   FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
 
@@ -163,11 +161,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // If there are sink particles present, check if the particle is inside one.
   // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
   if (sink_particles) {
-    rho_hmin      = this->rho_sink;
-    h_lower_bound = h_fac*pow(parti.m/this->rho_sink, Sph<ndim>::invndim);
+    h_lower_bound = h_fac*pow(parti.m/this->rho_sink, Hydrodynamics<ndim>::invndim);
     if (hmax < h_lower_bound) return -1;
   }
-  rho_hmin = (FLOAT) 0.0;
 
   int Nneib = ngbs.size();
 
@@ -212,9 +208,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // (failure could indicate neighbour list problem)
     assert(parti.rho >= 0.99*parti.m*parti.hfactor*kern.w0_s2(0.0));
 
-    if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;
-    else invrho = (FLOAT) 0.0;
-
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
         fabs(parti.h - h_rho_func(parti.m, parti.rho))*invh < h_converge) break;
@@ -232,7 +225,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
     else if (iteration < 5*iteration_max) {
       if (parti.rho < small_number || parti.h > h_rho_func(parti.m, parti.rho)) {
-        //(parti.rho + rho_hmin)*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m) {
         h_upper_bound = parti.h;
       }
       else {

@@ -34,8 +34,7 @@ namespace Regularization {
 
 template<int ndim>
 ParticleRegularizer<ndim>::ParticleRegularizer(Parameters* simparams, const DomainBox<ndim>& icbox)
-: Nreg(simparams->intparams["Nreg"]),
-  localBox(icbox)
+: localBox(icbox), Nreg(simparams->intparams["Nreg"])
 {
 }
 

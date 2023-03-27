@@ -1986,14 +1986,8 @@ template class Tree<2,MeshlessFVParticle,OctTreeCell>;
 template class Tree<3,MeshlessFVParticle,OctTreeCell>;
 
 
-template class Tree<1,GradhSphParticle,TreeRayCell>;
-template class Tree<2,GradhSphParticle,TreeRayCell>;
 template class Tree<3,GradhSphParticle,TreeRayCell>;
-template class Tree<1,SM2012SphParticle,TreeRayCell>;
-template class Tree<2,SM2012SphParticle,TreeRayCell>;
 template class Tree<3,SM2012SphParticle,TreeRayCell>;
-template class Tree<1,MeshlessFVParticle,TreeRayCell>;
-template class Tree<2,MeshlessFVParticle,TreeRayCell>;
 template class Tree<3,MeshlessFVParticle,TreeRayCell>;
 
 

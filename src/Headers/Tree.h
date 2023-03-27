@@ -236,10 +236,10 @@ protected:
        string _gravity_mac, string _multipole, const DomainBox<ndim>& domain,
        const ParticleTypeRegister& pt_reg, const bool _IAmPruned) :
     	   TreeBase<ndim>(domain),
-    gravity_mac(geometric), multipole(_multipole), Nleafmax(_Nleafmax),
+    IAmPruned(_IAmPruned), gravity_mac(geometric), multipole(_multipole), Nleafmax(_Nleafmax),
     invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd),
-    gravmask(pt_reg.gravmask), IAmPruned(_IAmPruned)
+    gravmask(pt_reg.gravmask)
     {
       if (_gravity_mac == "eigenmac")
         gravity_mac = eigenmac ;

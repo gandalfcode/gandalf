@@ -40,8 +40,8 @@ using namespace std;
 
 
 // Declare invndim constant here (prevents warnings with some compilers)
-template <int ndim>
-const FLOAT Hydrodynamics<ndim>::invndim = 1.0/ndim;
+//template <int ndim>
+//const FLOAT Hydrodynamics<ndim>::invndim = 1.0/ndim;
 
 
 

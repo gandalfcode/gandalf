@@ -96,8 +96,8 @@ public:
   // Constructor for setting important variables and pointers
   //-----------------------------------------------------------------------------------------------
   Ic(Simulation<ndim>* _sim, FLOAT _invndim) :
-    sim(_sim), hydro(_sim->hydro), nbody(_sim->nbody), neib(_sim->neib), icBox(_sim->icBox),
-    invndim(_invndim), simunits(_sim->simunits), simbox(_sim->simbox),
+    sim(_sim), hydro(_sim->hydro), nbody(_sim->nbody), neib(_sim->neib),
+    invndim(_invndim), simunits(_sim->simunits), icBox(_sim->icBox), simbox(_sim->simbox),
     simparams(_sim->simparams), randnumb(_sim->randnumb)
   {
   };

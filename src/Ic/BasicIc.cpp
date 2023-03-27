@@ -63,7 +63,6 @@ void BasicIc<ndim>::Generate(void)
 
   //-----------------------------------------------------------------------------------------------
   if (ic == "basic_sine") {
-    int i,k;                                     // Particle and dimension counters
     FLOAT volume;
     Box<ndim> box;
 

@@ -563,8 +563,8 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 ShocktubeSolution::ShocktubeSolution
  (FLOAT _rhol, FLOAT _rhor, FLOAT _vl, FLOAT _vr, FLOAT _pl, FLOAT _pr,
   FLOAT _xl, FLOAT _x0, FLOAT _xr, FLOAT _t, int _nvalues, FLOAT _gamma) :
-  rhol(_rhol), rhor(_rhor), vl(_vl), vr(_vr), pl(_pl), pr(_pr),
-  xl(_xl), x0(_x0), xr(_xr), t(_t), nvalues(_nvalues), gamma(_gamma)
+  nvalues(_nvalues), gamma(_gamma), pl(_pl), pr(_pr), rhol(_rhol), rhor(_rhor), t(_t),
+  vl(_vl), vr(_vr), x0(_x0), xl(_xl), xr(_xr)
 {
   const FLOAT cl = sqrt(gamma*pl/rhol);        // LHS sound speed
   const FLOAT cr = sqrt(gamma*pr/rhor);        // RHS sound speed

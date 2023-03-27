@@ -52,10 +52,10 @@ MeshlessFV<ndim>::MeshlessFV(int _hydro_forces, int _self_gravity, FLOAT _accel_
                              SimUnits &units, Parameters *params):
   FV<ndim>(_hydro_forces, _self_gravity, _accel_mult, _courant_mult, _h_fac,
            _h_converge, _gamma, _gas_eos, KernelName, size_part, units, params),
+  staticParticles(params->intparams["static_particles"]),
   accel_mult(_accel_mult),
   courant_mult(_courant_mult),
-  h_converge(_h_converge),
-  staticParticles(params->intparams["static_particles"])
+  h_converge(_h_converge)
 {
   // Local references to parameter variables for brevity
   map<string, int> &intparams = params->intparams;

@@ -89,7 +89,6 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
   CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_LFKDK_ADVANCE_PARTICLES");
 
   Sph<ndim>* sph = reinterpret_cast<Sph<ndim>*>(hydro);
-  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*>(sph->GetSphParticleArray());
 
   // Advance positions and velocities of all SPH particles
   //-----------------------------------------------------------------------------------------------

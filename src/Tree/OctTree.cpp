@@ -1073,14 +1073,8 @@ template class OctTree<1, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<2, MeshlessFVParticle, OctTreeCell>;
 template class OctTree<3, MeshlessFVParticle, OctTreeCell>;
 
-template class OctTree<1, GradhSphParticle, TreeRayCell>;
-template class OctTree<2, GradhSphParticle, TreeRayCell>;
 template class OctTree<3, GradhSphParticle, TreeRayCell>;
 
-template class OctTree<1, SM2012SphParticle, TreeRayCell>;
-template class OctTree<2, SM2012SphParticle, TreeRayCell>;
 template class OctTree<3, SM2012SphParticle, TreeRayCell>;
 
-template class OctTree<1, MeshlessFVParticle, TreeRayCell>;
-template class OctTree<2, MeshlessFVParticle, TreeRayCell>;
 template class OctTree<3, MeshlessFVParticle, TreeRayCell>;

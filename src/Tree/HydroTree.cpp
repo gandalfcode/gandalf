@@ -58,18 +58,18 @@ HydroTree<ndim,ParticleType>::HydroTree
   FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
   DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing,
   ParticleTypeRegister& types):
-  neibcheck(true),
-  kernrange(_kernrange),
-  kernrangesqd(_kernrange*_kernrange),
-  Nleafmax(_Nleafmax),
-  Nmpi(_Nmpi),
   pruning_level_min(_pruning_level_min),
   pruning_level_max(_pruning_level_max),
+  Nleafmax(_Nleafmax),
+  Nmpi(_Nmpi),
   thetamaxsqd(_thetamaxsqd),
   invthetamaxsqd((FLOAT) 1.0/_thetamaxsqd),
   macerror(_macerror),
   gravity_mac(_gravity_mac),
   multipole(_multipole),
+  neibcheck(true),
+  kernrange(_kernrange),
+  kernrangesqd(_kernrange*_kernrange),
   timing(_timing),
   box(_box),
   kernp(_kern)
@@ -177,7 +177,7 @@ TreeBase<ndim>* HydroTree<ndim,ParticleType>::CreateTree
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,
                    gravity_mac,  multipole,domain, reg, IAmPruned);
   }
-  else if (tree_type == "treeray") {
+  else if (ndim == 3 && tree_type == "treeray") {
     typedef OctTree<ndim,ParticleType, TreeRayCell> __tree ;
 
     t = new __tree(Nleafmax, thetamaxsqd, kernrange, macerror,

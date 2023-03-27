@@ -113,12 +113,10 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 #endif
     int celldone;                              // Flag if cell is done
     int cc;                                    // Aux. cell counter
-    int i;                                     // Particle id
     int j;                                     // Aux. particle counter
     int jj;                                    // Aux. particle counter
     int k;                                     // Dimension counter
     int Nactive;                               // No. of active particles in cell
-    int Ngather;                               // No. of gather neighbours
     int Nneib;                                 // No. of neighbours from tree-walk
     int okflag;                                // Flag if particle is done
     FLOAT draux[ndim];                         // Aux. relative position vector var
@@ -126,11 +124,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
     FLOAT hrangesqd;                           // Kernel extent
     FLOAT hmax;                                // Maximum smoothing length
     FLOAT rp[ndim];                            // Local copy of particle position
-    FLOAT *mu2 = 0;                            // Trimmed array (dummy for grad-h)
     int Nneibmax = Nneibmaxbuf[ithread];       // Local copy of neighbour buffer size
     int* activelist = activelistbuf[ithread];  // Local array of active particle ids
     int* neiblist = new int[Nneibmax];         // Local array of neighbour particle ids
-    int* ptype    = new int[Nneibmax];         // Local array of particle types
     vector<typename Sph<ndim>::DensityParticle> ngb;           // Local array of neighbour data
     vector<typename Sph<ndim>::DensityParticle> ngb2;          // Local array of reduced neighbour data
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
@@ -193,7 +189,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         // Loop over all active particles in the cell
         //-----------------------------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
-          i = activelist[j];
           for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
 
           // Set gather range as current h multiplied by some tolerance factor
@@ -221,7 +216,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) this->CheckValidNeighbourList(i, Ntot, Nneib, neiblist, sphdata, "gather");
+          if (neibcheck) this->CheckValidNeighbourList(activelist[j], Ntot, Nneib, neiblist, sphdata, "gather");
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i

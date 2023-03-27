@@ -37,10 +37,10 @@
 template <int ndim>
 MCRadiationEOS<ndim>::MCRadiationEOS(Parameters* simparams, SimUnits *units):
   EOS<ndim>(simparams->floatparams["gamma_eos"]),
-  temp0(simparams->floatparams["temp0"]/units->temp.outscale),
   mu_bar(simparams->floatparams["mu_bar"]),
-  temp_ion(simparams->floatparams["temp_ion"]/units->temp.outscale),
-  mu_ion(simparams->floatparams["mu_ion"])
+  mu_ion(simparams->floatparams["mu_ion"]),
+  temp0(simparams->floatparams["temp0"]/units->temp.outscale),
+  temp_ion(simparams->floatparams["temp_ion"]/units->temp.outscale)
 {
   // Set 'internal' EOS for non-ionised gas
   string gas_eos = simparams->stringparams["gas_eos"] ;

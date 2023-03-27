@@ -244,7 +244,7 @@ void SilccSupernovaDriver<ndim>::Update
 
   // Create supernova at requested time (and ensure that only one is made)
   //-----------------------------------------------------------------------------------------------
-  if (t >= SNtime[SNid]) {
+  if (ndim == 3 && t >= SNtime[SNid]) {
 
     cout << "ADDING SUPERNOVA " << SNid <<  " !!" << endl;
 

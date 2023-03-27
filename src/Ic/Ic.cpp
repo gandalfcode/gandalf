@@ -872,7 +872,7 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
 
     // Loop over all required particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(amp,invmpert,Npart,mpert,r,rcentre)\
+#pragma omp parallel for default(none) shared(amp,invmpert,Npart,mpert,r,rcentre,spacing)\
   private(i,j,k,phi,phiprime,phi1,phi2,rpos,Rmag,Rsqd)
     for (i=0; i<Npart; i++) {
       for (k=0; k<2; k++) rpos[k] = r[ndim*i + k] - rcentre[k];

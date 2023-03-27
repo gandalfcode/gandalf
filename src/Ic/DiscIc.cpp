@@ -272,7 +272,6 @@ void DiscIc<ndim>::Generate(void)
 
 }
 
-template class DiscIc<1>;
 template class DiscIc<2>;
 template class DiscIc<3>;
 

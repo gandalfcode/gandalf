@@ -121,7 +121,7 @@ public:
   const int self_gravity;              ///< Compute gravitational forces?
   const string gas_eos;                ///< Gas EOS option
   const FLOAT h_fac;                   ///< Smoothing length-density factor
-  static const FLOAT invndim;          ///< Copy of 1/ndim
+  static constexpr FLOAT invndim = (FLOAT)1.0/ndim;;          ///< Copy of 1/ndim
 
 
   // SPH particle counters and main particle data array
