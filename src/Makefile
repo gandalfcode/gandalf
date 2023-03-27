@@ -22,10 +22,10 @@
 
 ifneq ($(PYTHON),)
 ifeq ($(NUMPY),)
-NUMPY = $(shell $(PYTHON) -c "import numpy; print numpy.get_include()")
+NUMPY = $(shell $(PYTHON) -c "import numpy; print(numpy.get_include())")
 endif
 ifeq ($(PYLIB),)
-PYLIB = $(shell $(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_inc()")
+PYLIB = $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_paths()['include'])")
 endif
 endif
 

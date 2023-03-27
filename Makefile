@@ -23,6 +23,7 @@
 CPP                = 
 PYTHON             = python
 COMPILER_MODE      = FAST
+PYTHON             = python3
 PRECISION          = DOUBLE
 OPENMP             = 1
 PYSNAP_PRECISION   = DOUBLE
