@@ -311,7 +311,7 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
     // Check if neighbour timesteps are too small.  If so, then reduce timestep if possible
     if (part.levelneib - part.level > level_diff_max) {
       level_new = part.levelneib - level_diff_max;
-      nnewstep  = pow(2,level_step - level_new);
+      nnewstep  = PowInt(2,level_step - level_new);
 
       // If new level is correctly synchronised, then change all quantities
       if (dn%nnewstep == 0) {

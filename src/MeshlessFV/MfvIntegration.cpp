@@ -248,7 +248,7 @@ int MfvIntegration<ndim,ParticleType>::CheckTimesteps
     // Check if neighbour timesteps are too small.  If so, then reduce timestep if possible
     if (part.levelneib - part.level > level_diff_max) {
       level_new = part.levelneib - level_diff_max;
-      nnewstep  = pow(2,level_step - level_new);
+      nnewstep  = PowInt(2,level_step - level_new);
 
       // Force recalculation of fluxes for particles at the end of their step
       if(dn%nnewstep == 0 && dn != part.nstep) {

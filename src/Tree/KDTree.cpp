@@ -28,6 +28,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <vector>
 #include "Precision.h"
 #include "Exception.h"
 #include "DomainBox.h"
@@ -325,18 +326,18 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
 
   // Calculate maximum level of tree that can contain max. no. of particles
   lmax = 0;
-  while (Nleafmax*pow(2,lmax) < Ntotmax) {
+  while (Nleafmax*PowInt(2,lmax) < Ntotmax) {
     lmax++;
   };
-  gmax = pow(2,lmax);
+  gmax = PowInt(2,lmax);
   Ncellmax = 2*gmax - 1;
 
   // Calculate level of tree that can contain all current particles
   ltot = 0;
-  while (Nleafmax*pow(2,ltot) < Ntot) {
+  while (Nleafmax*PowInt(2,ltot) < Ntot) {
     ltot++;
   };
-  gtot = pow(2,ltot);
+  gtot = PowInt(2,ltot);
   Ncell = 2*gtot - 1;
 
 
@@ -364,21 +365,16 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   int c;                            // Dummy id of tree-level, then tree-cell
   int g;                            // Dummy id of grid-cell
   int l;                            // Dummy id of level
-  int *c2L;                         // Increment to second child-cell
-  int *cNL;                         // Increment to next cell if cell unopened
+  int c2L[ltot+1];                         // Increment to second child-cell
+  int cNL[ltot+1];                         // Increment to next cell if cell unopened
 
   debug2("[KDTree::CreateTreeStructure]");
 
-  // Allocate memory for local arrays
-  c2L = new int[ltot + 1];
-  cNL = new int[ltot + 1];
-
   // Set pointers to second child-cell (if opened) and next cell (if unopened)
-  for (l=0; l<ltot; l++) {
-    c2L[l] = pow(2,ltot - l);
-    cNL[l] = 2*c2L[l] - 1;
+  for (l=0; l<ltot+1; l++) {
+    c2L[l] = PowInt(2, ltot-l);
+    cNL[l] = (2*c2L[l]) - 1;
   }
-
 
   // Zero tree cell variables
   for (g=0; g<gmax; g++) g2c[g] = 0;
@@ -390,18 +386,17 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
     celldata[c].c2      = -1;
     celldata[c].ifirst  = -1;
     celldata[c].ilast   = -1;
+    celldata[c].level   = -1;
     celldata[c].N       = 0;
     celldata[c].Nactive = 0;
   }
   g = 0;
   celldata[0].level = 0;
 
-
   // Loop over all cells and set all other pointers
   //-----------------------------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     celldata[c].id = c;
-
     if (celldata[c].level == ltot) {                           // If on leaf level
       celldata[c].cnext = c + 1;                               // id of next cell
       celldata[c].c2g = g;                                     // Record leaf id
@@ -409,25 +404,21 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
       g2c[g++] = c;                                            // Record inverse id
     }
     else {
-      celldata[c+1].level            = celldata[c].level + 1;        // Level of 1st child
       celldata[c].copen              = c + 1;                        // id of 1st child
       celldata[c].c1                 = c + 1;                        // id of 1st child
       celldata[c].c2                 = c + c2L[celldata[c].level];   // id of 2nd child
+      assert(celldata[c].c1 <= Ncellmax);
+      assert(celldata[c].c2 <= Ncellmax);
+      celldata[celldata[c].c1].level = celldata[c].level + 1;        // Level of 1st child
       celldata[celldata[c].c2].level = celldata[c].level + 1;        // Level of 2nd child
       celldata[c].cnext              = c + cNL[celldata[c].level];   // Next cell id
     }
-
 
     // Some assert statements (for debugging)
     assert(c >= celldata[c].level);
 
   }
   //-----------------------------------------------------------------------------------------------
-
-
-  // Free locally allocated memory
-  delete[] cNL;
-  delete[] c2L;
 
   return;
 }
@@ -548,7 +539,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 
   // Now divide the new child cells as a recursive function
 #if defined _OPENMP
-  if (pow(2,cell.level) < Nthreads) {
+  if (PowInt(2,cell.level) < Nthreads) {
 #pragma omp parallel default(none) private(i) shared(cell,ifirst,ilast,partdata) num_threads(2)
     {
 #pragma omp for
@@ -1136,7 +1127,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
   // If cell is not leaf, stock child cells
   if (cell.level != ltot) {
 #if defined _OPENMP
-    if (pow(2,cell.level) < Nthreads) {
+    if (PowInt(2,cell.level) < Nthreads) {
 #pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
       for (i=0; i<2; i++) {
         if (i == 0) UpdateHmaxValues(celldata[cell.c1],partdata);
@@ -1272,7 +1263,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters
   //-----------------------------------------------------------------------------------------------
   if (cell.level != ltot && cell.c1 >= 0) {
 #if defined _OPENMP
-    if (pow(2,cell.level) < Nthreads) {
+    if (PowInt(2,cell.level) < Nthreads) {
 #pragma omp parallel for default(none) private(i) shared(cell) num_threads(2)
       for (i=0; i<2; i++) {
         if (i == 0) UpdateWorkCounters(celldata[cell.c1]);

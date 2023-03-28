@@ -564,6 +564,13 @@ inline bool isPowerOfTwo (int x)
  return (x == 1);
 }
 
+template <typename T>
+constexpr inline T PowInt(T a, T b)
+{
+  T result = 1;
+  for (T i=0; i<b; ++i) result *= a;
+  return result;
+}
 
 
 //=================================================================================================
