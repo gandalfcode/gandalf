@@ -250,7 +250,7 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   stringparams["sph_integration"] = "lfkdk";
   stringparams["kernel"] = "m4";
-  intparams["conservative_sph_star_gravity"] = 1;
+  intparams["conservative_sph_star_gravity"] = 0;
   intparams["tabulated_kernel"] = 1;
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
