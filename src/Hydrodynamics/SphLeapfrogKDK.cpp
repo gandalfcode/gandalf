@@ -92,7 +92,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(n,sphdata,sph,t,timestep)
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(n,sph,t,timestep)
   for (i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     if (part.flags.is_dead()) continue;
