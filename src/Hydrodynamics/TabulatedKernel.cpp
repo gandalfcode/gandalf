@@ -69,8 +69,8 @@ TabulatedKernel<ndim>::TabulatedKernel
   invkernrange = kernel->invkernrange;
   kernnorm     = kernel->kernnorm;
   kernnormdrag = kernel->kernnormdrag;
-  resinvkernrange    = res/kernrange;
-  resinvkernrangesqd = res/kernrangesqd;
+  resinvkernrange    = (res - 1)/kernrange;
+  resinvkernrangesqd = (res - 1)/kernrangesqd;
 
   // Allocate memory
   tableW0        = new FLOAT[res];

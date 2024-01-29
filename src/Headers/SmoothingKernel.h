@@ -547,12 +547,12 @@ inline FLOAT GaussianKernel<ndim>::wpot(const FLOAT s)
 template <int ndim>
 class TabulatedKernel: public SmoothingKernel<ndim>
 {
-	using SmoothingKernel<ndim>::kernnorm;                 ///< Kernel normalisation constant
-	using SmoothingKernel<ndim>::kernnormdrag;             ///< Normalization factor for drag kernel
+  using SmoothingKernel<ndim>::kernnorm;                 ///< Kernel normalisation constant
+  using SmoothingKernel<ndim>::kernnormdrag;             ///< Normalization factor for drag kernel
 public:
-	using SmoothingKernel<ndim>::kernrange;                ///< Maximum extent of kernel
-	using SmoothingKernel<ndim>::invkernrange;             ///< 1/kernrange
-	using SmoothingKernel<ndim>::kernrangesqd;               ///< kernrange^2
+  using SmoothingKernel<ndim>::kernrange;                ///< Maximum extent of kernel
+  using SmoothingKernel<ndim>::invkernrange;             ///< 1/kernrange
+  using SmoothingKernel<ndim>::kernrangesqd;               ///< kernrange^2
  private:
 
   SmoothingKernel<ndim>* kernel;       ///< Pointer to kernel object
@@ -581,11 +581,12 @@ public:
   /// Initialise kernel table
   //===============================================================================================
   void initializeTable(FLOAT* table, FLOAT (SmoothingKernel<ndim>::*function) (const FLOAT s)) {
-    const FLOAT step = kernel->kernrange/res;
+    const FLOAT step = kernel->kernrange/(res - 1);
     for (int i=0; i< res; i++) {
       table[i] = (kernel->*function)(step*i);
     }
   }
+
 
   //===============================================================================================
   //  TabulatedKernel<ndim>::duplicateTable
@@ -600,12 +601,13 @@ public:
 	  return newtable ;
   }
 
+
   //===============================================================================================
   //  TabulatedKernel<ndim>::initializeTable
   /// Initialise kernel table
   //===============================================================================================
   void initializeTableSqd(FLOAT* table, FLOAT (SmoothingKernel<ndim>::*function) (const FLOAT s)) {
-    const FLOAT step = kernel->kernrangesqd/res;
+    const FLOAT step = kernel->kernrangesqd/(res - 1);
     for (int i=0; i< res; i++) {
       table[i] = (kernel->*function)(sqrt(step*i));
     }
@@ -618,11 +620,11 @@ public:
   //===============================================================================================
   FLOAT tableLookup(FLOAT* table, const FLOAT s) {
     if (s >= (kernrange)) return (FLOAT) 0.0;
-    FLOAT indexf = s*resinvkernrange;
-    int index = (int) indexf;
-    return table[index];
+    const FLOAT indexf = s*resinvkernrange;
+    const int index = static_cast<int>(indexf);
+    const FLOAT weight = indexf - index;
+    return table[index]*(1.0f - weight) + table[index + 1]*weight;
   }
-
 
 
   //===============================================================================================
@@ -631,11 +633,11 @@ public:
   //===============================================================================================
   FLOAT tableLookupSqd(FLOAT* table, const FLOAT s) {
     if (s >= (kernrangesqd)) return (FLOAT) 0.0;
-    FLOAT indexf = s*resinvkernrangesqd;
-    int index = (int) indexf;
-    return table[index];
+    const FLOAT indexf = s*resinvkernrangesqd;
+    const int index = static_cast<int>(indexf);
+    const FLOAT weight = indexf - index;
+    return table[index]*(1.0f - weight) + table[index + 1]*weight;
   }
-
 
 
   //===============================================================================================
@@ -644,11 +646,11 @@ public:
   //===============================================================================================
   FLOAT GravTableLookup(FLOAT* table, const FLOAT s) {
     if (s >= (kernrange)) return (FLOAT) 1.0/(s*s);
-    FLOAT indexf = s*resinvkernrange;
-    int index = (int) indexf;
-    return table[index];
+    const FLOAT indexf = s*resinvkernrange;
+    const int index = static_cast<int>(indexf);
+    const FLOAT weight = indexf - index;
+    return table[index]*(1.0f - weight) + table[index + 1]*weight;
   }
-
 
 
   //===============================================================================================
@@ -657,15 +659,16 @@ public:
   //===============================================================================================
   FLOAT GravPotTableLookup(FLOAT* table, const FLOAT s) {
     if (s >= (kernrange)) return (FLOAT) 1.0/s;
-    FLOAT indexf = s*resinvkernrange;
-    int index = (int) indexf;
-    return table[index];
+    const FLOAT indexf = s*resinvkernrange;
+    const int index = static_cast<int>(indexf);
+    const FLOAT weight = indexf - index;
+    return table[index]*(1.0f - weight) + table[index + 1]*weight;
   }
 
 
 
  public:
-  TabulatedKernel(string KernelName, int resaux=1000);
+  TabulatedKernel(string KernelName, int resaux=513);
   TabulatedKernel(const TabulatedKernel<ndim>&);
 
   ~TabulatedKernel() {
