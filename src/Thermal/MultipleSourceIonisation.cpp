@@ -704,21 +704,21 @@ for (ii=0;ii<N;ii++)
 	sphdata[ii].u=ionisedsph[ii].u;				//Write new internal energy to gandalf
 
 	//Working out radiation pressure (NOT COMPLEATE)
-	photon_acceleration=3.4455561764e-34*rad_cont*ionisedsph[ii].rho/(mu_bar*mu_bar);
+	//photon_acceleration=3.4455561764e-34*rad_cont*ionisedsph[ii].rho/(mu_bar*mu_bar);
 
-	for(jj=0;jj<nos;jj++)
-		{
+	//for(jj=0;jj<nos;jj++)
+	//	{
 		//Copying ionised state over to holding array
-		ionisation_fraction[ii][newnosid[jj]]=ionisedsph[ii].ionised[jj];
-		if(ionisedsph[ii].fionised==1)
-			{
-			theta=atan((ionisedsph[ii].y-ionisedsph[sinkid[jj]].y)/(ionisedsph[ii].z-ionisedsph[sinkid[jj]].z));
-			thi=atan((ionisedsph[ii].y-ionisedsph[sinkid[jj]].y)/(ionisedsph[ii].x-ionisedsph[sinkid[jj]].x));
-			ionisedsph[ii].rad_pre_acc[0]=ionisedsph[ii].rad_pre_acc[0]+ionisedsph[ii].prob[jj]*photon_acceleration*sin(theta)*cos(thi);
-			ionisedsph[ii].rad_pre_acc[1]=ionisedsph[ii].rad_pre_acc[1]+ionisedsph[ii].prob[jj]*photon_acceleration*sin(theta)*sin(thi);
-			ionisedsph[ii].rad_pre_acc[2]=ionisedsph[ii].rad_pre_acc[2]+ionisedsph[ii].prob[jj]*photon_acceleration*cos(theta);
-			}
-		}
+	//	ionisation_fraction[ii][newnosid[jj]]=ionisedsph[ii].ionised[jj];
+	//	if(ionisedsph[ii].fionised==1)
+	//		{
+	//		theta=atan((ionisedsph[ii].y-ionisedsph[sinkid[jj]].y)/(ionisedsph[ii].z-ionisedsph[sinkid[jj]].z));
+	//		thi=atan((ionisedsph[ii].y-ionisedsph[sinkid[jj]].y)/(ionisedsph[ii].x-ionisedsph[sinkid[jj]].x));
+	//		ionisedsph[ii].rad_pre_acc[0]=ionisedsph[ii].rad_pre_acc[0]+ionisedsph[ii].prob[jj]*photon_acceleration*sin(theta)*cos(thi);
+	//		ionisedsph[ii].rad_pre_acc[1]=ionisedsph[ii].rad_pre_acc[1]+ionisedsph[ii].prob[jj]*photon_acceleration*sin(theta)*sin(thi);
+	//		ionisedsph[ii].rad_pre_acc[2]=ionisedsph[ii].rad_pre_acc[2]+ionisedsph[ii].prob[jj]*photon_acceleration*cos(theta);
+	//		}
+	//	}
 
 	//sphdata[ii].rad_pres[0]=0;//ionisedsph[ii].rad_pre_acc[0];
 	//sphdata[ii].rad_pres[1]=0;//ionisedsph[ii].rad_pre_acc[1];
