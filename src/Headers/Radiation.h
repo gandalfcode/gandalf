@@ -115,11 +115,11 @@ struct ionpar
   int *checked;
   int *ionised;                     // Is particle ionised by source?
   int *neigh;                       // Part. neib array (Neibs closest to sources)
-  int *neighstor;
+  int neighstor[200];
   double *angle;
   double *prob;                     // Prob. of transmition from each source
   double *photons;                  // No. of photons lost up to this point
-  double *rad_pre_acc;
+  double rad_pre_acc[3];
 };
 
 

@@ -333,14 +333,12 @@ for (ii=0;ii<N-nos;ii++)
 	ionisedsph[ii].t=tn;			//Neutral gas temp
 	ionisedsph[ii].fionised=0;		//Is the particle ionised at all
 	ionisedsph[ii].neighstorcont=0;	//Controle varible for building of neighstore
-	ionisedsph[ii].neighstor=new int[200];	//Array containing references to all particles that consider this one a neighbour
 	ionisedsph[ii].angle=new double[nos];
 	ionisedsph[ii].neigh=new int[nos];
 	ionisedsph[ii].photons=new double[nos];
 	ionisedsph[ii].prob=new double[nos];
 	ionisedsph[ii].checked=new int[nos];
 	ionisedsph[ii].ionised=new int[nos];
-	ionisedsph[ii].rad_pre_acc=new double[ndim];
 	for(jj=0;jj<ndim;jj++)
 		{
 		ionisedsph[ii].rad_pre_acc[jj]=0;
@@ -380,7 +378,6 @@ for (ii=0;ii<nos;ii++)
 	ionisedsph[N-nos+ii].z=ndata[newnosid[ii]]->r[2];				//Source z from gandalf
 	ionisedsph[N-nos+ii].fionised=1;					//As this is source it is marked as ionised
 	ionisedsph[N-nos+ii].neighstorcont=0;					//Controle varible for building of neighstore
-	ionisedsph[N-nos+ii].neighstor=new int[200];				//Array containing references to all particles that consider this one a neighbour
 	sinkid[ii]=N-nos+ii;
 	ndot[ii]=pow(2.4e-24,2.)*ndata[newnosid[ii]]->NLyC/(4.*pi*2.6e-13)*scale; 	//Ndot table s^-1
 	ionisedsph[N-nos+ii].angle=new double[nos];
@@ -389,7 +386,6 @@ for (ii=0;ii<nos;ii++)
 	ionisedsph[N-nos+ii].checked=new int[nos];
 	ionisedsph[N-nos+ii].prob=new double[nos];
 	ionisedsph[N-nos+ii].ionised=new int[nos];
-	ionisedsph[N-nos+ii].rad_pre_acc=new double[3];
 	for(jj=0;jj<3;jj++)
 		{
 		ionisedsph[N-nos+ii].rad_pre_acc[jj]=0;
@@ -422,7 +418,6 @@ ionisedsph[N].photons=new double[nos];
 ionisedsph[N].checked=new int[nos];
 ionisedsph[N].prob=new double[nos];
 ionisedsph[N].ionised=new int[nos];
-ionisedsph[N].rad_pre_acc=new double[ndim];
 for(jj=0;jj<ndim;jj++)
 	{
 	ionisedsph[N].rad_pre_acc[jj]=0;
@@ -452,10 +447,10 @@ cout<<"Particle arrays created"<<endl;
 
 int current_paricle_nn[maxneigh],Nneigb;		//Working particle neighbour list,Nneigb is the number of neighbours found by neighbour roughtine
 double dot,mag,angletest; 				//holding variables
-double distanceii,distancejj,temp_radius,temp_radius2;	//Distance between the source of the test particle ii and the neighbour particle jj
+double distanceiisqd,distancejjsqd,temp_radius_sqd,temp_radius2_sqd;	//Distance between the source of the test particle ii and the neighbour particle jj
 
 //Begin neighbour find
-#pragma omp parallel for private(current_paricle_nn,ii,jj,tt,Nneigb,temp_radius,temp_radius2,dot,mag,angletest,pp,distanceii,distancejj) //Initiate openmp
+#pragma omp parallel for private(current_paricle_nn,ii,jj,tt,Nneigb,temp_radius_sqd,temp_radius2_sqd,dot,mag,angletest,pp,distanceiisqd,distancejjsqd) //Initiate openmp
 for (ii=0;ii<N;ii++) 				//Loop over all particles
 	{
 
@@ -481,11 +476,11 @@ for (ii=0;ii<N;ii++) 				//Loop over all particles
 			}
 		else
 			{
-			temp_radius=sqrt(pow(ionisedsph[ii].x-ionisedsph[current_paricle_nn[jj]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[current_paricle_nn[jj]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[current_paricle_nn[jj]].z,2.));
+			temp_radius_sqd=pow(ionisedsph[ii].x-ionisedsph[current_paricle_nn[jj]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[current_paricle_nn[jj]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[current_paricle_nn[jj]].z,2.);
 			for(tt=0;tt<200;tt++)
 				{
-				temp_radius2=sqrt(pow(ionisedsph[ii].x-ionisedsph[ionisedsph[current_paricle_nn[jj]].neighstor[tt]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[ionisedsph[current_paricle_nn[jj]].neighstor[tt]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[ionisedsph[current_paricle_nn[jj]].neighstor[tt]].z,2.));
-				if(temp_radius>temp_radius2)
+				temp_radius2_sqd=pow(ionisedsph[ii].x-ionisedsph[ionisedsph[current_paricle_nn[jj]].neighstor[tt]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[ionisedsph[current_paricle_nn[jj]].neighstor[tt]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[ionisedsph[current_paricle_nn[jj]].neighstor[tt]].z,2.);
+				if(temp_radius_sqd > temp_radius2_sqd)
 					{
 						ionisedsph[current_paricle_nn[jj]].neighstor[tt]=ii; //Write id
 						break;
@@ -496,10 +491,10 @@ for (ii=0;ii<N;ii++) 				//Loop over all particles
 		for(pp=0;pp<nos;pp++)
 			{
 			//Work out the distances for both test and candidate particle
-			distanceii=sqrt(pow(ionisedsph[ii].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[sinkid[pp]].z,2.));
-			distancejj=sqrt(pow(ionisedsph[current_paricle_nn[jj]].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[current_paricle_nn[jj]].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[current_paricle_nn[jj]].z-ionisedsph[sinkid[pp]].z,2.));
+			distanceiisqd = pow(ionisedsph[ii].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[sinkid[pp]].z,2.);
+			distancejjsqd = pow(ionisedsph[current_paricle_nn[jj]].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[current_paricle_nn[jj]].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[current_paricle_nn[jj]].z-ionisedsph[sinkid[pp]].z,2.);
 			//If the candidate particle is closer than the test particle it is a candidate (Also has controle so a particle cant be its own neighbour)
-			if (distancejj<distanceii and ii!=current_paricle_nn[jj])
+			if (distancejjsqd < distanceiisqd and ii!=current_paricle_nn[jj])
 				{
 
 				//Use the dot product to work out the angle between the conneting line and the neighbour particle
@@ -535,7 +530,7 @@ cout<<"neigbour step one compleate"<<endl;
 }
 
 //Initiate openmp
-#pragma omp parallel for private(current_paricle_nn,dot,mag,angletest,jj,pp,distanceii,distancejj,ii,tt,Nneigb,temp_radius,temp_radius2)
+#pragma omp parallel for private(current_paricle_nn,dot,mag,angletest,jj,pp,distanceiisqd,distancejjsqd,ii,tt,Nneigb,temp_radius_sqd,temp_radius2_sqd)
 for (ii=0;ii<N;ii++) 				//Loop over all particles
 	{
 
@@ -545,10 +540,10 @@ for (ii=0;ii<N;ii++) 				//Loop over all particles
 		for (jj=0;jj<ionisedsph[ii].neighstorcont;jj++)
 			{
 			//Work out the distances for both the test and candidate particle
-			distanceii=sqrt(pow(ionisedsph[ii].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[sinkid[pp]].z,2.));
-			distancejj=sqrt(pow(ionisedsph[ionisedsph[ii].neighstor[jj]].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[ionisedsph[ii].neighstor[jj]].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[ionisedsph[ii].neighstor[jj]].z-ionisedsph[sinkid[pp]].z,2.));
+			distanceiisqd = pow(ionisedsph[ii].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[sinkid[pp]].z,2.);
+			distancejjsqd = pow(ionisedsph[ionisedsph[ii].neighstor[jj]].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[ionisedsph[ii].neighstor[jj]].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[ionisedsph[ii].neighstor[jj]].z-ionisedsph[sinkid[pp]].z,2.);
 			//If the candidate particle is closer than the test particle it is a candidate (Also has controle so a particle cant be its own neighbour)
-			if (distancejj<distanceii and ii!=ionisedsph[ii].neighstor[jj])
+			if (distancejjsqd < distanceiisqd and ii!=ionisedsph[ii].neighstor[jj])
 				{
 
 				//Use the dot product to work out the angle between the conneting line and the candidate particle
@@ -608,8 +603,9 @@ while (change!=0 or finalcheck==0)	//loop until no changes are made (We have con
 		//Call fucntion to deturmine if test particle is ionised
 		photoncount(ionisedsph,sinkid,ndot,N,nos,ii,change);
 		}
-	#pragma omp parallel for private(ii,pp)
-	for (ii=1;ii<N;ii++)
+
+    #pragma omp parallel for private(ii,pp)
+    for (ii=1;ii<N;ii++)
 		{
 		for(pp=0;pp<nos;pp++)
 			{
@@ -730,17 +726,14 @@ for (ii=0;ii<N;ii++)
 delete [] sinkid;
 delete [] ndot;
 
-#pragma omp parallel for private(ii)
 for(ii=0;ii<N;ii++)
 	{
 	delete [] ionisedsph[ii].angle;
 	delete [] ionisedsph[ii].neigh;
 	delete [] ionisedsph[ii].photons;
-	delete [] ionisedsph[ii].neighstor;
 	delete [] ionisedsph[ii].checked;
 	delete [] ionisedsph[ii].prob;
 	delete [] ionisedsph[ii].ionised;
-	delete [] ionisedsph[ii].rad_pre_acc;
 	}
 
 delete [] ionisedsph;
