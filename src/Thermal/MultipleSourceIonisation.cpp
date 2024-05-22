@@ -537,7 +537,7 @@ for (ii=0;ii<N;ii++) 				//Loop over all particles
 	for (pp=0;pp<nos;pp++)		//For each source
 		{
 		//For each particle that considers me a neighbour
-		for (jj=0;jj<ionisedsph[ii].neighstorcont;jj++)
+		for (jj=0;jj<ionisedsph[ii].neighstorcont;jj++ && jj<200)
 			{
 			//Work out the distances for both the test and candidate particle
 			distanceiisqd = pow(ionisedsph[ii].x-ionisedsph[sinkid[pp]].x,2.)+pow(ionisedsph[ii].y-ionisedsph[sinkid[pp]].y,2.)+pow(ionisedsph[ii].z-ionisedsph[sinkid[pp]].z,2.);
